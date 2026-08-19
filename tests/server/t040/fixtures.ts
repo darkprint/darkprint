@@ -433,3 +433,91 @@ export function sentinelInput(sentinel: string, cardCount: number): EngineInput 
     cardFiles,
   };
 }
+
+/* --------------------- D-40-D/F/G: the measure's own inputs --------------------- */
+
+/**
+ * A chain of `depth` nested objects, built ITERATIVELY.
+ *
+ * Iterative because a recursive builder blows this suite's own stack long before it reaches the
+ * depths the ceiling is about — and a fixture that cannot construct the input is a test that
+ * reports something about the fixture. Nothing here calls `JSON.stringify` on the result either,
+ * for the same reason.
+ */
+export function nestedTo(depth: number): Record<string, unknown> {
+  const root: Record<string, unknown> = {};
+  let cursor = root;
+  for (let i = 0; i < depth; i += 1) {
+    const next: Record<string, unknown> = {};
+    cursor.deep = next;
+    cursor = next;
+  }
+  return root;
+}
+
+/** `n` sibling plain objects — containers with nothing boxed anywhere in them. */
+export function manyContainers(n: number): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (let i = 0; i < n; i += 1) out[`c${i}`] = { a: i, b: `v${i}` };
+  return out;
+}
+
+/**
+ * How many containers a value actually holds, counted by WALKING IT.
+ *
+ * Deliberately not the loop bound that built it. T040's round-4 implementer mutated one of its own
+ * anti-vacuity controls and got 0, because the control compared two numbers both computed from the
+ * loop bound — so a declared count could not move with the thing it described. A count taken from
+ * the artefact can; a count taken from the recipe cannot.
+ */
+export function countContainers(value: unknown): number {
+  let n = 0;
+  const stack: unknown[] = [value];
+  while (stack.length > 0) {
+    const v = stack.pop();
+    if (v === null || typeof v !== "object") continue;
+    n += 1;
+    for (const child of Array.isArray(v) ? v : Object.values(v as Record<string, unknown>)) {
+      stack.push(child);
+    }
+  }
+  return n;
+}
+
+/**
+ * The two halves of D-40-G's partition, built from what the serialiser ACTUALLY does rather than
+ * from a list of what it is supposed to do. Every entry below was measured against
+ * `JSON.stringify` before it was written here, and `measure.test.ts` re-measures the partition at
+ * run time rather than trusting these labels — a construction over an author's transcription of
+ * the serialiser's branches is a maintained list one level up, which is D-40-G's own charge.
+ */
+export const REFUSED_BY_SERIALISER: Readonly<Record<string, () => unknown>> = {
+  "a bigint": () => BigInt(1),
+  "a boxed bigint": () => Object(BigInt(1)),
+  "a bigint inside an array": () => [BigInt(2)],
+  "a bigint one level down": () => ({ inner: BigInt(3) }),
+};
+
+export const DROPPED_BY_SERIALISER: Readonly<Record<string, () => unknown>> = {
+  undefined: () => undefined,
+  "a function": () => () => 1,
+  "a symbol": () => Symbol("dropped"),
+};
+
+/** Values the serialiser UNBOXES rather than refusing — the three slots that were implemented. */
+export const UNBOXED_BY_SERIALISER: Readonly<Record<string, () => unknown>> = {
+  "a boxed string": () => Object("boxed"),
+  "a boxed number": () => Object(1234),
+  "a boxed boolean": () => Object(true),
+};
+
+/** Put a value in the submission at a place the walk must reach. */
+export function manifestCarrying(base: EngineInput, value: unknown): EngineInput {
+  return { ...base, manifest: { ...base.manifest, planted: value } as never };
+}
+
+/** The same, through the other caller-built object the published block says this module walks. */
+export function extensionsCarrying(base: EngineInput, value: unknown): EngineInput {
+  const { manifest, dot, cardFiles } = base;
+  return { manifest, dot, cardFiles, extensions: [{ planted: value }] as never };
+}

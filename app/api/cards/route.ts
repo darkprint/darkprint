@@ -7,9 +7,11 @@
 
 import { getSharedDbClient } from "@/lib/db";
 import { ok } from "@/lib/server/http";
-import { actorFrom, cards } from "@/lib/server/registry";
+import { actorFrom, cards, withRegistryErrors } from "@/lib/server/registry";
 
 export async function GET(request: Request): Promise<Response> {
-  const { db } = getSharedDbClient();
-  return ok({ cards: await cards(db, actorFrom(request)) });
+  return withRegistryErrors(request, async () => {
+    const { db } = getSharedDbClient();
+    return ok({ cards: await cards(db, actorFrom(request)) });
+  });
 }

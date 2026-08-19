@@ -146,6 +146,33 @@ export function circularMessage(operation: string): string {
   return `${operation}: the submission contains a circular reference.`;
 }
 
+/**
+ * D-40-D's ceiling, published at last in both binding surfaces after standing in neither.
+ *
+ * A NEW REFUSAL CRITERION rather than an implementation detail: a submission the ruled formula
+ * accepts is refused past 10 000 levels. Admissible because the recursive alternative refused it
+ * either — it threw a bare `RangeError` at a host-dependent depth — so every input that produced
+ * a number still produces one, and the inputs that produced nothing now produce a typed refusal.
+ */
+export const PUBLISHED_MAX_NESTING_DEPTH =
+  "const MAX_NESTING_DEPTH = 10_000   // D-40-D, exported from @/lib/server/engine";
+
+/**
+ * The nesting refusal's message, written out as a LITERAL.
+ *
+ * This is also what pins the CONSTANT's value without importing it: the number is in the
+ * sentence. A boundary test that read `MAX_NESTING_DEPTH` and bounded against it would move with
+ * the constant and stop being a bound — D-70-17's note about `MAX_NAME_LENGTH` — so the two jobs
+ * are split: the literal below pins the value, and `measure.test.ts` brackets the behaviour.
+ */
+export const NESTING_MESSAGE =
+  "validateBundle: the nesting depth exceeds the limit of 10000 levels.";
+
+export async function bindMaxNestingDepth(): Promise<unknown> {
+  const mod = await loadEngine();
+  return requireFrom(mod, "MAX_NESTING_DEPTH", PUBLISHED_MAX_NESTING_DEPTH);
+}
+
 /** D-40-07: absent `limits` means the DEFAULT applies, not unlimited, and the default is published. */
 export const PUBLISHED_DEFAULT_LIMITS =
   "const DEFAULT_ENGINE_LIMITS: EngineLimits   // chosen so all nine archive bundles pass";

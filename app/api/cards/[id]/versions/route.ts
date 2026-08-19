@@ -14,13 +14,15 @@
 
 import { getSharedDbClient } from "@/lib/db";
 import { ok } from "@/lib/server/http";
-import { actorFrom, versionsOf } from "@/lib/server/registry";
+import { actorFrom, versionsOf, withRegistryErrors } from "@/lib/server/registry";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  const { id } = await params;
-  const { db } = getSharedDbClient();
-  return ok({ versions: await versionsOf(db, actorFrom(request), id) });
+  return withRegistryErrors(request, async () => {
+    const { id } = await params;
+    const { db } = getSharedDbClient();
+    return ok({ versions: await versionsOf(db, actorFrom(request), id) });
+  });
 }

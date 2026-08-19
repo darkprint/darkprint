@@ -38,6 +38,7 @@
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
+import { execFileSync } from "node:child_process";
 import { readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -58,10 +59,55 @@ interface Published {
 }
 
 async function publishedErrorClasses(): Promise<readonly Published[]> {
-  const barrels = readdirSync(SERVER_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
+  /*
+   * The domain is what has SHIPPED, not what is in this checkout, and the count below is a property
+   * of the shipped tree — so reading `readdirSync` here made the two describe different sets by
+   * construction.
+   *
+   * Measured cost of that: with the floor replaced by an equality, T040's worktree discovered 20
+   * (base's 18 plus `engine/LimitExceededError` and `engine/CircularReferenceError`) and reported
+   * `expected 20 to be 18`. **There is no value of that constant correct in both trees while the
+   * domain is the working tree**: raising it to 20 reds on base until T040 merges. The floor it
+   * replaced was too weak; the equality was not too strong, it was counting a different set from the
+   * one it was measuring.
+   *
+   * This is the third file with this shape and I fixed the other two. `architecture-current` had a
+   * working-tree domain that made it red in every implementer worktree and unfixable by the session
+   * hitting it — `tests/**` is in no task's `Owns`. `store-modules-seal-their-faults` had a `backend`
+   * domain read through the working filesystem. Here I made it STRICTER without checking the axis
+   * both of those had already been charged on. Found by T040's implementer, one file over from where
+   * it was fixed.
+   *
+   * The import still comes from the working tree, because a class must be CONSTRUCTED to be measured
+   * and `git show` yields text. That is sound as long as every shipped barrel exists locally, which
+   * is why the missing case below is an error rather than a skip: a worktree behind base gets a
+   * message naming the merge, not an ENOENT.
+   */
+  const shipped = execFileSync("git", ["ls-tree", "-d", "--name-only", "backend", "lib/server/"], {
+    cwd: fileURLToPath(new URL("..", import.meta.url)),
+    encoding: "utf8",
+  })
+    .split("\n")
+    .flatMap((line) => {
+      const m = /^lib\/server\/([^/]+)\/?$/.exec(line.trim());
+      return m ? [m[1]!] : [];
+    })
     .sort();
+
+  const present = new Set(
+    readdirSync(SERVER_DIR, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name),
+  );
+  const absent = shipped.filter((name) => !present.has(name));
+  if (absent.length > 0) {
+    throw new Error(
+      `These modules are on \`backend\` and absent from this checkout: ${absent.join(", ")}. ` +
+        `This guard measures what has shipped, so it cannot run against a tree that is behind base. ` +
+        `Merge \`backend\` and re-run.`,
+    );
+  }
+  const barrels = shipped;
 
   const found: Published[] = [];
   for (const barrel of barrels) {
@@ -100,13 +146,30 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
 
     /* A zero here has three causes and only one of them is good news. This rules out the two bad
        ones: if the walk found nothing, the assertions below would all pass over an empty set. */
+    /*
+     * EXACT, not a floor, and the change is the point.
+     *
+     * This was `toBeGreaterThanOrEqual(8)` with a comment saying "if one was added, raise it" —
+     * and nothing reds when the raise is skipped, which is the whole defect of a hand-maintained
+     * number. Measured at `d7ee3ca`: the walk discovers **17**. Raised to **18** at T081's merge (`752721d`), which added `registry/RegistryStoreError` — and the raise happened because the equality RED, which is the whole reason it is an equality. So the floor sat at 8 across
+     * T070's three naming classes, T030's six ontology classes and T050's four accounts classes,
+     * detecting none of them, and it would no longer have detected any of those nine going
+     * missing either. It was written to catch a class the walk stops reaching; after three merges
+     * it could only have caught nine disappearing at once.
+     *
+     * An equality reds in BOTH directions, so a merge that adds a class cannot land without
+     * somebody looking at this line, and a class that quietly stops being exported reds
+     * immediately rather than being absorbed. The maintenance cost is identical — one number —
+     * and the difference is that skipping it is now impossible instead of invisible.
+     */
     expect(
       classes.length,
-      "Fewer published error classes were discovered than exist. Either a barrel stopped " +
-        "exporting its rejections or this walk no longer reaches them, and every class it stops " +
-        "reaching is one the assertion below passes over in silence. If a class was deliberately " +
-        "removed, lower this floor in the same commit; if one was added, raise it.",
-    ).toBeGreaterThanOrEqual(8);
+      "The number of published error classes changed. This is an EQUALITY rather than a floor, " +
+        "deliberately: a floor absorbs additions silently and then stops detecting removals, " +
+        "which is what happened here across three merges. If a class was added, raise this number " +
+        "in the same commit and say which. If one was removed, lower it and say why — a class " +
+        "that stopped being exported is exactly what this walk exists to notice.",
+    ).toBe(18);
 
     const rendered: string[] = [];
     const traceless: string[] = [];
