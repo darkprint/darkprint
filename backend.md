@@ -2560,6 +2560,86 @@ deny set is only as wide as the thing it is derived from**, and that thing was d
 express its name** — third session today, and the one reading a failing set structurally cannot
 classify.
 
+## A merge check that compares byte-for-byte beats one that counts missing lines
+
+**T081's adversary ran three checks on `backend.md` where the standing rule asks for one.** *0 base
+lines missing* — the rule, which catches deletion. *0 lines occurring more often in merged than in
+base* — the bidirectional half T040's implementer added, which catches duplication. **And then
+`git diff backend -- backend.md` EMPTY, which is stronger than both: byte-identical rather than
+not-obviously-broken.**
+
+**That is the form owed in every handback from here.** A line-count check answers *did I lose
+anything*; a diff answers *is this the same file*, and only the second one cannot be satisfied by two
+errors cancelling.
+
+**It also read the two preamble entries out of `git show` before merging**, having measured that its
+worktree was **two commits behind base** — and both entries are about **this task**. **Reading only its
+own copy would have left it told their contents by me rather than reading them**, which it named as
+*evidence that predates a request* pointed the other way.
+
+**And it could not resolve my display name as an address, so it resolved me by measurement** — socket
+path to pid to cwd — and said so, with *I have no delivery receipt and you should expect this quoted
+back*. **The channel works and the name is unhelpful, and it should not have had to do that.** I quoted
+its content back rather than acknowledging it, which is the only receipt this run has.
+
+**Its stop condition is the sharpest formulation of a rule already here:** *a count cannot tell your two
+pre-registered reds from two different ones with the same arithmetic.* Three expected failures, each
+named by **which assertion fired**, and a fourth stops the round. **Pre-registering the identity, not
+just the number, is what makes an expected red evidence instead of an explanation.**
+
+## I predicted two guards would fire and they differ in exactly the axis I had just written about
+
+**I told T081's adversary to expect three reds. Two fired. The third could not, and the reason is a fix
+this very task made and that I recorded myself.**
+
+`store-modules-seal-their-faults` reads from **`backend`** in both loops — the domain via `git ls-tree
+backend` and the expiry via `git show backend:<path>` — **because T081's implementer found the first
+version deriving its domain from the shipped tree and then `readFileSync`ing the working tree**, and I
+wrote the entry about it. **So its exemption expires the day `errors.ts` lands on `backend`, not the day
+the class exists in a worktree.** Measured: `git show backend:lib/server/registry/errors.ts` exits 128.
+
+**`error-hygiene` builds its domain from the WORKING tree** — `readdirSync` plus a dynamic import — so it
+sees the eighteenth class and reds.
+
+**Two guards, opposite scopes, and my prediction treated them as one.** The axis they differ on is the
+axis of the entry I had written two commits earlier. **Writing the fix down did not make me apply it to
+the next prediction I made about the same file**, which is *a distinction stated in your own words is not
+a distinction you are applying*, arriving against the author of the sentence.
+
+**Its handling is the standard: 2-where-3-was-predicted is exactly the ambiguity that must be resolved by
+identity rather than arithmetic**, and it reported the missing red as a finding about the prediction
+rather than treating its own count as the anomaly.
+
+## Every leak instrument in T081 is scoped to the problem document; nothing reads the response
+
+**F1, reported and not charged.** T081's adversary put the driver's `ECONNREFUSED` on an `x-store-code`
+header on all eleven responses. **It reddened nothing — blind or colocated.** The key-set whitelist is
+the strongest instrument in the task and it is a whitelist over the **body's members**, not over the
+**response**.
+
+**No live leak, because the module sets no headers — so this is an unobserved region rather than a
+defect.** And it is *the region with no prior defects is the region still holding them* with **nothing on
+either side to show it**: no test covers it and no code reaches it. **It is the honest answer to *what
+passes every pin*, asked one surface further out than the extension member was.**
+
+**F2: `title`'s freedom from driver values is held colocated-only, by a contract gap of mine.** D-81-02
+fixes `title` as *the problem type's own* **without publishing the string**, so the blind author could
+not pin it without inventing wording that would red a correct implementation phrased differently — it
+said so in place and labelled it the weaker instrument. **The cheap fix is to publish the `title` string
+in the block.** And the second-order risk it named: **if anyone de-duplicates the colocated `title`
+literal against `http.ts`, that pin goes tautological and F1's neighbour opens.**
+
+**Its M1 MISS is the useful kind — the suite was right and it was wrong.** It predicted 0 for a driver
+value in `title` because the blind suite pins `title` only as *a string identical across eleven routes*,
+which a constant driver code satisfies. **The implementer's colocated `fault-path.test.ts` pins it to an
+exact literal per route and caught it.** And it confirmed the mutation expressed its name by reading the
+assertion's received value: `title "Store failed (ECONNREFUSED)"`.
+
+**And it discarded a zero rather than counting it.** Its first M6 appended header lines **after** the
+existing `return` — dead code, a mutation that did not mutate, redding 0. Re-run as M6b with a self-check
+that throws `HEADER-SET-DID-NOT-TAKE` if the write is refused. **It did not throw, which is what makes
+M6b's zero a measurement.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -5720,7 +5800,7 @@ it does not decide differently inside a worktree.
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
 | T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 4 at HEAD, **gates NOT taken — the slot is T081's adversary's**, so every figure below is an in-process probe. **D-40-F** the boxed-primitive test no longer decides by throwing: on a conforming 1 200 141-byte submission of 400 005 containers, 57% of the default, `measureSubmission` goes **8 281 ms to 68 ms** against the ruled formula's 6 ms, same number. Witness is the mechanism rather than a clock — a counter on the four prototypes' `valueOf`, **0 across 2 000 plain objects against 2005 each pre-fix**, two-factor with 1 on a boxed string. Cost held by a **ratio of ratios** at 9.7 and 8.8 against 976 and 580, with a byte-equal 15 001x-container-count control. **D-40-G** the fourth internal slot, and the corpus gains a third partition for the cells the formula **refuses** rather than drops: 486 cells as 454 plus 5 plus 27, reverse mutation reds **9 and 58**. D-40-B's depth ratio **re-derived not re-tuned** — min-of-5 and an asserted denominator, since the fix moved shallow from 115 ms to 2.1 ms and the old floor would have become a millisecond bound. **S10 closed after three rounds**: round 2's replacement conclusion is falsified, `resolve.ts:191` IS the mechanism, and the 2x2 reds in the predicted cell once the input is a bundle with two files claiming one id and version. **D-40-F and D-40-G are published in no surface of this file** and reached me only in a dispatch, which is reported in the Log rather than fixed by me |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
-| T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | tests-written | implementation `0c1cd48` (committed by the orchestrator; its author's user did not answer): typecheck 0, lint 0 read in full, build 0, triple `2 failed, 5457 passed, 0 skipped` with both reds named in advance, 44 mutations all discriminating, 0 newly-green. Blind suite `f0d9b25`: **93 failed / 12 passed** against no implementation, **105/105 against a correct reference**, 7 mutations predicted first. **Thirteen cells deleted for being unfalsifiable**, 118 → 105. Adversary round owed |
+| T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | — | — | todo | — |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | — | — | todo | — |
@@ -10773,7 +10853,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   - 2026-08-15 implementer, round 2: **three defects addressed, two falsified, and the gate block cleared by implementation rather than by a suite rewrite.** Took the adversary's tree at `a2cac88` rather than re-merging, then merged `backend` at `110dd6b`.
 ### T081, Registry store wrapper: D-13 for the read model
 
-- **State:** tests-written
+- **State:** merged
 - **Depends on:** T080 (merged)
 - **Owns:** `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**`
 - **Contract:** D-13 says no rejection may carry the failed statement or its bound parameters. **T080 ships no error class and no store wrapper**, so a driver failure escapes a merged, tagged route as a raw `DrizzleQueryError` **whose message opens with the full query**. Measured by T050's adversary against a closed port: `GET /api/cards` and `GET /api/blueprints` both threw `Failed query: select "id", "owner_id", "slug", … from "bundle"`. `params:` was empty only because that query is unparameterised — a parameterised one carries the bound values, which is D-13's clause verbatim.

@@ -20,7 +20,7 @@
 
 import { getSharedDbClient } from "@/lib/db";
 import { notFound, ok } from "@/lib/server/http";
-import { actorFrom, card, usersOf, versionsOf } from "@/lib/server/registry";
+import { actorFrom, card, usersOf, versionsOf, withRegistryErrors } from "@/lib/server/registry";
 
 const NO_SUCH_CARD = "card: no such card.";
 
@@ -28,23 +28,25 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ ref: string[] }> },
 ): Promise<Response> {
-  const { ref } = await params;
-  const { db } = getSharedDbClient();
-  const actor = actorFrom(request);
+  return withRegistryErrors(request, async () => {
+    const { ref } = await params;
+    const { db } = getSharedDbClient();
+    const actor = actorFrom(request);
 
-  const last = ref[ref.length - 1];
-  // `ref.length > 1` is what keeps `/api/cards/versions` — a one-segment path naming no
-  // card — out of the sub-resource branches; it falls through and 404s as the malformed
-  // ref it is, rather than answering `[]` for the empty id.
-  if (ref.length > 1 && (last === "versions" || last === "users")) {
-    const id = ref.slice(0, -1).join("/");
-    return last === "versions"
-      ? ok({ versions: await versionsOf(db, actor, id) })
-      : ok({ users: await usersOf(db, actor, id) });
-  }
+    const last = ref[ref.length - 1];
+    // `ref.length > 1` is what keeps `/api/cards/versions` — a one-segment path naming no
+    // card — out of the sub-resource branches; it falls through and 404s as the malformed
+    // ref it is, rather than answering `[]` for the empty id.
+    if (ref.length > 1 && (last === "versions" || last === "users")) {
+      const id = ref.slice(0, -1).join("/");
+      return last === "versions"
+        ? ok({ versions: await versionsOf(db, actor, id) })
+        : ok({ users: await usersOf(db, actor, id) });
+    }
 
-  // One answer for three states — no such ref, a ref that is not a pinned reference, and a
-  // card private to somebody else — for the reason the blueprint route states (B-03).
-  const record = await card(db, actor, ref.join("/"));
-  return record === undefined ? notFound(request, NO_SUCH_CARD) : ok({ card: record });
+    // One answer for three states — no such ref, a ref that is not a pinned reference, and a
+    // card private to somebody else — for the reason the blueprint route states (B-03).
+    const record = await card(db, actor, ref.join("/"));
+    return record === undefined ? notFound(request, NO_SUCH_CARD) : ok({ card: record });
+  });
 }

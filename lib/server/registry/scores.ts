@@ -16,6 +16,7 @@ import type { AutonomyResult, PhaseCoverage, SecurityResult } from "@/lib/server
 import type { Scores } from "./types";
 import { cmpReleasesCurrentFirst } from "./order";
 import { readable } from "./snapshot";
+import { withRegistryStore } from "./store";
 
 /**
  * The scorecard of a blueprint's current release, or `undefined`. One value for four
@@ -27,6 +28,21 @@ import { readable } from "./snapshot";
  * together or the answer is that there is none.
  */
 export async function scoresOf(
+  db: Db,
+  actor: Actor,
+  ownerHandle: string,
+  slug: string,
+): Promise<Scores | undefined> {
+  return withRegistryStore("scoresOf", () => readScores(db, actor, ownerHandle, slug));
+}
+
+/**
+ * The body, so the store boundary above is one line and the three queries below are not
+ * indented inside a callback. `ownerHandle` and `slug` are caller-supplied and reach only
+ * the `where` clauses — the operation handed to `withRegistryStore` is a literal, so
+ * neither can enter a rendering (D-13).
+ */
+async function readScores(
   db: Db,
   actor: Actor,
   ownerHandle: string,
