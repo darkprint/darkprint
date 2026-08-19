@@ -218,7 +218,11 @@ describe("the barrel publishes what the two blocks name, and nothing else", () =
       .map(([name]) => name)
       .sort();
 
-    const expected = [...READER_NAMES, ...NON_READER_EXPORTS, ...T081_NAMES].sort();
+    /* `string[]`, spelled out: the three constants are literal-union arrays, so the inferred
+       element type is that union and `expected.includes(name)` refuses a plain `string`. Widening
+       here rather than casting at each call site keeps both set differences comparing the same
+       thing — which is the whole point of the assertion. */
+    const expected: string[] = [...READER_NAMES, ...NON_READER_EXPORTS, ...T081_NAMES].sort();
 
     const unpublished = exported.filter((name) => !expected.includes(name));
     const missing = expected.filter((name) => !exported.includes(name));
