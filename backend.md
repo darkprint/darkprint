@@ -2560,6 +2560,33 @@ deny set is only as wide as the thing it is derived from**, and that thing was d
 express its name** — third session today, and the one reading a failing set structurally cannot
 classify.
 
+## A merge check that compares byte-for-byte beats one that counts missing lines
+
+**T081's adversary ran three checks on `backend.md` where the standing rule asks for one.** *0 base
+lines missing* — the rule, which catches deletion. *0 lines occurring more often in merged than in
+base* — the bidirectional half T040's implementer added, which catches duplication. **And then
+`git diff backend -- backend.md` EMPTY, which is stronger than both: byte-identical rather than
+not-obviously-broken.**
+
+**That is the form owed in every handback from here.** A line-count check answers *did I lose
+anything*; a diff answers *is this the same file*, and only the second one cannot be satisfied by two
+errors cancelling.
+
+**It also read the two preamble entries out of `git show` before merging**, having measured that its
+worktree was **two commits behind base** — and both entries are about **this task**. **Reading only its
+own copy would have left it told their contents by me rather than reading them**, which it named as
+*evidence that predates a request* pointed the other way.
+
+**And it could not resolve my display name as an address, so it resolved me by measurement** — socket
+path to pid to cwd — and said so, with *I have no delivery receipt and you should expect this quoted
+back*. **The channel works and the name is unhelpful, and it should not have had to do that.** I quoted
+its content back rather than acknowledging it, which is the only receipt this run has.
+
+**Its stop condition is the sharpest formulation of a rule already here:** *a count cannot tell your two
+pre-registered reds from two different ones with the same arithmetic.* Three expected failures, each
+named by **which assertion fired**, and a fourth stops the round. **Pre-registering the identity, not
+just the number, is what makes an expected red evidence instead of an explanation.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
