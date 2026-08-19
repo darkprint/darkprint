@@ -127,28 +127,46 @@ describe("AC5 — identical bytes, identical output", () => {
    *     INTACT               REMOVED                 226 passed
    *     REMOVED              REMOVED                 226 passed  <- predicted to RED
    *
-   * With **both** sorts gone, permuting the record still changes nothing: driven directly,
-   * forward against reversed, **0 of 9 archive bundles differ**. So `resolve.ts:191` is not
-   * what makes the module's sort unobservable, and a true conclusion was resting on a false
-   * cause — the reading this repository's own notes call *a mechanism claim that is false
-   * about code that is correct*.
+   * With **both** sorts gone, permuting the record still changed nothing over that suite:
+   * driven directly, forward against reversed, **0 of 9 archive bundles differ**. The
+   * conclusion drawn was that `resolve.ts:191` is not what makes the module's sort
+   * unobservable. The retraction of *proved* was right, and **that replacement conclusion is
+   * wrong**, measured in round 4: it is a zero from a probe that could not reach.
    *
-   * **So the warrant reverts to the blind author's, and it stays SAMPLED.** `sortDiagnostics`
-   * orders every array `loadBundle` returns, and a tie needs two diagnostics from one card
-   * agreeing on severity, file, line, column and code and differing only in `message` —
-   * possible in principle, ruled out only while every card-derived diagnostic carries a
-   * location, which is a property of today's `lib/core` and not a theorem. A witness was
-   * hunted across the nine bundles, an under-carded bundle, unparseable files, duplicate ids,
-   * empty documents and unknown terms, and none was found. **Equivalent through the published
-   * surface, sampled.** What normalises it instead is not established: that `sortDiagnostics`
-   * is the whole of it is an unverified successor hypothesis, and it is left labelled that way
-   * rather than written in as the new mechanism, because replacing one unproved cause with
-   * another is what this correction exists to undo.
+   * **What the four cells held constant is the INPUT, and the input is the variable.**
+   * `resolve.ts:191` sits inside the branch its own comment calls order-dependent — *"the
+   * first file wins"*, reached only when two files claim one `id@version` with **different
+   * content**. No archive bundle carries such a pair and neither did any of the 226 tests, so
+   * no arrangement of the two sorts could have been observed by them. Re-run through
+   * `validateBundle` on a `frontline-triage` submission with one card duplicated under two
+   * filenames and one field changed, each patch state verified by grep:
    *
-   * What that leaves the clause: AC5's "`cardFiles` is rebuilt in sorted key order before
-   * `loadBundle` sees it" is **defence-in-depth against a future change in `lib/core`**,
-   * not against anything reachable today, and `lib/core` is Forbidden here so this module
-   * cannot be the one to notice if that line moves.
+   *     module sortedByKey   core .sort(cmpString)   archive bundle   duplicate-ref bundle
+   *     INTACT               INTACT                  same             same
+   *     REMOVED              INTACT                  same             same
+   *     INTACT               REMOVED                 same             same
+   *     REMOVED              REMOVED                 same             DIFFERS
+   *
+   * Forward resolves `AAA COPY`, reversed resolves `ZZZ COPY`, and the diagnostics move with
+   * it. So **`resolve.ts:191` is the mechanism after all**, and the module's sort is the only
+   * thing standing between a caller and an order-dependent answer the moment that line
+   * changes — which is exactly what row 3 shows and row 4 shows the absence of.
+   *
+   * **The clause is defence-in-depth and its subject is now named.** Round 2 left it as
+   * *"`sortedByKey` is unobservable through the published surface, and what it defends
+   * against is unnamed"*. It defends against a change to `resolve.ts:191`, on the input class
+   * above. `lib/core` is Forbidden here, so this module still cannot notice if that line
+   * moves — but AC5's own property can be asserted on the input where it is decidable, which
+   * is the test below, and that one reds in row 4.
+   *
+   * S10 is therefore an equivalent mutant **conditional on `resolve.ts:191`** rather than
+   * unconditionally, which is a narrower claim than three rounds of "equivalent, sampled" and
+   * a stronger one than "cause unknown". The `sortDiagnostics` argument still covers
+   * diagnostic ORDER and is still sampled for the reason the round-1 adversary gave: a tie
+   * needs two diagnostics from one card agreeing on severity, file, line, column and code and
+   * differing only in `message`, ruled out only while every card-derived diagnostic carries a
+   * location. That is a property of today's `lib/core` and not a theorem. It was never the
+   * whole account, and this is the half it was standing in for.
    *
    * The sort stays: the contract mandates it, and it is what keeps AC5 true of this module
    * rather than true of `lib/core`'s current internals. What it must not do is be reported
@@ -168,6 +186,61 @@ describe("AC5 — identical bytes, identical output", () => {
         JSON.stringify(revalidate(loaded, forward)),
       );
     }
+  });
+
+  /**
+   * AC5 on the one input class where the answer is decidable by the order, which is the
+   * assertion the sweep above cannot make and the reason it went three rounds calling a
+   * zero equivalent.
+   *
+   * Two files claiming one `id@version` with different content is the branch `resolve.ts`
+   * documents as *"the first file wins"*. Everywhere else the card entries are consumed by
+   * lookup and the node order comes from the DOT, so permuting the record reaches nothing;
+   * here it decides which card resolves.
+   *
+   * **It is a guard that can fail, and the falsification is the fourth cell above**: with
+   * both sorts removed this reds, forward resolving `AAA COPY` and reversed `ZZZ COPY`.
+   * With either sort present it is green, which is the correct shape — the property AC5
+   * states is held today by `lib/core`, and the clause in this module is what keeps holding
+   * it if `lib/core` stops.
+   */
+  it("does not move on a bundle where two files claim one id and version", () => {
+    const loaded = ARCHIVE.find((b) => Object.keys(b.bundle.cardFiles).length > 1);
+    expect(loaded, "no archive bundle carries more than one card").toBeDefined();
+    if (loaded === undefined) return;
+
+    const names = Object.keys(loaded.bundle.cardFiles);
+    const body = loaded.bundle.cardFiles[names[0]];
+
+    /* The pair the branch needs: one `id@version`, two filenames, different content. The
+       replaced field is the card's own `name`, so the two are legal cards that disagree. */
+    const changed = body.replace(/^name: .*$/m, "name: AAA COPY");
+    const other = body.replace(/^name: .*$/m, "name: ZZZ COPY");
+    expect(changed, "the fixture must actually change the card").not.toBe(body);
+    expect(other).not.toBe(changed);
+
+    const withDuplicate: Record<string, string> = { ...loaded.bundle.cardFiles };
+    delete withDuplicate[names[0]];
+    withDuplicate["cards/aaa-copy.yaml"] = changed;
+    withDuplicate["cards/zzz-copy.yaml"] = other;
+
+    const forward: Record<string, string> = {};
+    for (const name of Object.keys(withDuplicate)) forward[name] = withDuplicate[name];
+    const reversed: Record<string, string> = {};
+    for (const name of Object.keys(withDuplicate).reverse()) reversed[name] = withDuplicate[name];
+
+    const answer = revalidate(loaded, forward);
+
+    /* The control the assertion needs: the duplicate pair has to REACH the resolution, or
+       this is permutation-independence over an input that carries no decision. One of the
+       two copies is resolved onto a node, and it is one of the two names planted here. */
+    const resolvedNames = (answer.blueprint?.nodes ?? []).map((node) => node.card.name);
+    expect(
+      resolvedNames.filter((name) => name === "AAA COPY" || name === "ZZZ COPY").length,
+      "the planted duplicate reaches the resolution",
+    ).toBe(1);
+
+    expect(JSON.stringify(revalidate(loaded, reversed))).toBe(JSON.stringify(answer));
   });
 
   it("returns the same answer twice in the same process", () => {

@@ -21,6 +21,10 @@
    is two limits.
    ============================================================ */
 
+/* The boxed-primitive question `SerializeJSONProperty` asks, asked of the runtime rather
+   than of a forgeable rendering or of a thrown exception. See `unbox`, and D-40-F. */
+import { types } from "node:util";
+
 /**
  * The three bounds, each optional: an absent field takes its default rather than
  * meaning "unbounded", so a caller tightening one does not silently remove the other two.
@@ -359,28 +363,50 @@ function normalise(value: unknown, key: string): unknown {
 const NOT_BOXED = Symbol("not-boxed");
 
 /**
- * The boxed-primitive step, tested by internal slot rather than by `instanceof`.
+ * The boxed-primitive step, tested by internal slot, and asked without throwing (D-40-F).
  *
- * `instanceof` is realm-scoped and `Object.prototype.toString` is forgeable through
- * `Symbol.toStringTag`; calling the prototype's own `valueOf` throws unless the object
- * genuinely carries the slot, which is the same question the specification asks.
+ * The slot is the right question and the previous version asked it the expensive way.
+ * `instanceof` answers a realm-scoped approximation, `Object.prototype.toString` answers a
+ * forgeable one — `Symbol.toStringTag` replaces the builtin tag, so a boxed `String` can
+ * report `[object Foo]` and a plain object can report `[object String]` — and calling each
+ * prototype's own `valueOf` and catching is exact because `valueOf` throws unless the slot
+ * is genuinely there. That reasoning was correct. Its cost was three thrown and caught
+ * `TypeError`s **for every object that is not boxed**, which is every object in every real
+ * submission.
+ *
+ * Measured on this host, in-process: 25 993 ns to decide a plain object is not boxed
+ * against 30 ns here. Through the published surface, on a **conforming** submission of
+ * 400 005 containers at 1 200 141 bytes — 57% of the 2 MiB default, so accepted and owed an
+ * answer — `measureSubmission` took **8 281 ms** where the ruled formula answers the same
+ * input in 6 ms, and 976 ms against 0.73 ms on the 60 000-container payload the cost
+ * property below uses. D-40-20 bought the substitution with a claim about the **exponent**,
+ * O(`maxBytes`) rather than O(paths), and the defect was in the **constant**: it made an
+ * O(`maxBytes`) bound a nine-second bound at `maxBytes`. The depth ceiling does not reach
+ * it, because `MAX_NESTING_DEPTH` bounds nesting and that payload is three deep.
+ *
+ * `node:util`'s `types` puts the slot question to V8 directly. It is cross-realm correct
+ * where `instanceof` is not, unforgeable where the tag is not, and it runs **no user code
+ * at all** — no `Symbol.toStringTag` getter, no proxy trap — so nothing this walk used to
+ * measure can start throwing here, which is the clause D-40-D was charged for losing.
+ * Verified against the cells that separate the three instruments: a boxed `String` carrying
+ * `Symbol.toStringTag = "Foo"`, a plain object carrying `Symbol.toStringTag = "String"`, a
+ * `Proxy` over a boxed `String`, and a boxed `String` from another realm.
+ *
+ * **`[[BigIntData]]` is the fourth slot and it was absent (D-40-G).** The serialiser's steps
+ * name four and this asked three, so `Object(BigInt(1))` fell through to the object branch,
+ * found no enumerable keys, and cost 2 as `{}` — `{ k: Object(BigInt(1)) }` measured **8**
+ * for a submission `JSON.stringify` refuses to serialise at all. Unboxed it reaches the
+ * scalar branch and throws exactly where the formula throws.
+ *
+ * A boxed `Symbol` is deliberately not here. It carries `[[SymbolData]]`, the serialiser has
+ * no step for it, and `JSON.stringify(Object(Symbol()))` is `{}` — so falling through to the
+ * object branch is agreement rather than an omission.
  */
 function unbox(value: object): unknown {
-  try {
-    return String.prototype.valueOf.call(value);
-  } catch {
-    /* not a String object */
-  }
-  try {
-    return Number.prototype.valueOf.call(value);
-  } catch {
-    /* not a Number object */
-  }
-  try {
-    return Boolean.prototype.valueOf.call(value);
-  } catch {
-    /* not a Boolean object */
-  }
+  if (types.isStringObject(value)) return String.prototype.valueOf.call(value);
+  if (types.isNumberObject(value)) return Number.prototype.valueOf.call(value);
+  if (types.isBooleanObject(value)) return Boolean.prototype.valueOf.call(value);
+  if (types.isBigIntObject(value)) return BigInt.prototype.valueOf.call(value);
   return NOT_BOXED;
 }
 

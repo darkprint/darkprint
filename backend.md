@@ -5718,7 +5718,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 3 at `c3aa441`: **D-40-D** iterative frame stack, `MAX_NESTING_DEPTH = 10 000` refusing as a typed error, asserted over **outcome kind across four orders of magnitude** with thresholds as witnesses under it. **D-40-E** 50 classes x 9 positions over `SerializeJSONProperty`'s own branches plus 500 composed values, generator asserted before its results, `normalise` ordering making the three charged classes unreachable. Gates `tsc` 0, `lint` 0, scoped `vitest` 69/69, peak foreign 0 over 22 samples. Sweep 10 mutations, 9 CAUGHT, 1 equivalent (S10, third round running). Count 79 -> 69 reconciled exactly. **Full suite not claimed** |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 4 at HEAD, **gates NOT taken — the slot is T081's adversary's**, so every figure below is an in-process probe. **D-40-F** the boxed-primitive test no longer decides by throwing: on a conforming 1 200 141-byte submission of 400 005 containers, 57% of the default, `measureSubmission` goes **8 281 ms to 68 ms** against the ruled formula's 6 ms, same number. Witness is the mechanism rather than a clock — a counter on the four prototypes' `valueOf`, **0 across 2 000 plain objects against 2005 each pre-fix**, two-factor with 1 on a boxed string. Cost held by a **ratio of ratios** at 9.7 and 8.8 against 976 and 580, with a byte-equal 15 001x-container-count control. **D-40-G** the fourth internal slot, and the corpus gains a third partition for the cells the formula **refuses** rather than drops: 486 cells as 454 plus 5 plus 27, reverse mutation reds **9 and 58**. D-40-B's depth ratio **re-derived not re-tuned** — min-of-5 and an asserted denominator, since the fix moved shallow from 115 ms to 2.1 ms and the old floor would have become a millisecond bound. **S10 closed after three rounds**: round 2's replacement conclusion is falsified, `resolve.ts:191` IS the mechanism, and the 2x2 reds in the predicted cell once the input is a bundle with two files claiming one id and version. **D-40-F and D-40-G are published in no surface of this file** and reached me only in a dispatch, which is reported in the Log rather than fixed by me |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | tests-written | implementation `0c1cd48` (committed by the orchestrator; its author's user did not answer): typecheck 0, lint 0 read in full, build 0, triple `2 failed, 5457 passed, 0 skipped` with both reds named in advance, 44 mutations all discriminating, 0 newly-green. Blind suite `f0d9b25`: **93 failed / 12 passed** against no implementation, **105/105 against a correct reference**, 7 mutations predicted first. **Thirteen cells deleted for being unfalsifiable**, 118 → 105. Adversary round owed |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -10471,6 +10471,150 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     was in its eye line rather than because anything would check it again, its own words. It is now
     three assertions beside the three maxima. Four lines, and it converts a claim that reads as checked
     into one that is.
+  - **2026-08-19 implementer, round 4 — and the first thing to report is that the round's two
+    charges are published NOWHERE.** `D-40-F` and `D-40-G` occur **zero** times in `backend.md`,
+    on `backend` at `b35b4d8` and in this worktree: not in the preamble, not in this task's
+    contract section, not in this Log. Both reached me only in a dispatch. The dispatch says
+    *"both in the contract section"*, and it is not a claim anyone could have checked from the
+    file. This is *a ruling granted in a reply is a ruling published nowhere* with the reply
+    being a dispatch and both charges accepted — and the exposure is the one that rule already
+    names: the module is about to match them, so **nothing I do reveals the gap**, and the whole
+    cost lands on the blind author, which binds the published block and cannot see the dispatch.
+    Numbering, message forms and any binding text are the orchestrator's; what follows is
+    implemented from the dispatch and reported rather than published by me.
+  - 2026-08-19 implementer, **base merged off-slot before anything else.** `backend` at `b35b4d8`
+    into `c5501da`, reaching `14c0e31`, porcelain empty, **no conflicts** — and the standing check
+    in both directions: `git show backend:backend.md` diffed against the merged file, **0 base
+    lines missing**.
+  - 2026-08-19 implementer, **D-40-F reproduced before it was fixed, and the numbers are mine
+    rather than carried.** In-process, through `measureSubmission`: `unbox` on a plain object
+    **25 993 ns**, on `new String("x")` **12.4 ns**, `Object.prototype.toString.call` **8.6 ns**.
+    On the adversary's payload rebuilt from its description — 400 005 containers, **1 200 141
+    bytes, 57% of the 2 MiB default, so conforming and owed an answer** — the ruled formula
+    answers in **6 ms** and the walk took **8 281 ms**, agreeing on the number. **My figures are
+    1.5x to 1.8x the adversary's** (9 140 ns, 4 834 ms, 751x) and the conclusion is identical;
+    the difference is a host and a `tsx` loader, and it is stated rather than smoothed because
+    quoting its numbers back as mine would have been a measurement I did not take.
+  - 2026-08-19 implementer, **D-40-F fixed by asking the runtime the question the previous
+    version asked by throwing.** `node:util`'s `types.is{String,Number,Boolean,BigInt}Object` is
+    the internal-slot predicate itself: cross-realm correct where `instanceof` is not,
+    unforgeable where `Object.prototype.toString` is not, and it runs **no user code at all** —
+    no `Symbol.toStringTag` getter, no proxy trap — so nothing this walk used to measure can
+    start throwing here, which is the clause D-40-D was charged for losing. The obvious cheaper
+    candidate was measured and rejected on that last axis: `Object.prototype.toString` plus a
+    `Symbol.toStringTag` fallback runs at 40 ms where this runs at 68 ms, and it invokes a
+    getter the old code did not. **Four separating cells were driven against all three
+    instruments** — a boxed `String` tagged `"Foo"`, a plain object tagged `"String"`, a `Proxy`
+    over a boxed `String`, and a boxed `String` from another realm — and all four agree with the
+    formula. Result on the conforming payload: **8 281 ms → 68 ms**, still exactly `1 200 141`.
+  - 2026-08-19 implementer, **the witness is the mechanism, not a clock.** The defect is whether
+    three functions are *called*, so a counter on `String`/`Number`/`Boolean`/`BigInt.prototype
+    .valueOf` answers it deterministically and no threshold is involved. Installed on the
+    prototypes rather than on the module, because `unbox` reads them at call time, so it measures
+    the shipped code and reds for any implementation that goes back to asking by throwing.
+    Measured over 2 000 plain objects: fixed **`{String:0, Number:0, Boolean:0, BigInt:0}`**,
+    reverse mutation **`{String:2005, Number:2005, Boolean:2005, BigInt:0}`** — three per
+    container, and that fourth zero is D-40-G visible in the tally. **Two-factor**: the same
+    installation registers **1** on a submission carrying a boxed string, so the zero is a
+    measurement rather than a dead probe.
+  - 2026-08-19 implementer, **the cost assertion is a ratio of ratios, because one ratio still
+    carries the host.** `walk / formula` on one payload measures this machine's native
+    serialiser against interpreted JavaScript as much as anything else. Dividing the
+    container-dense ratio by the ratio for **the same byte count arranged as one string**
+    cancels that too and leaves the only quantity the defect moved. Both operating points
+    measured twice: throwing `unbox` **976 and 580**, slot predicates **9.7 and 8.8**; the
+    threshold is 100, a midpoint in the only scale a ratio has. **The control measures the
+    quantity the ratio names**: the two payloads are asserted **byte-identical in length** and
+    **15 001x apart in container count**, because a ratio between two payloads that were already
+    the same shape holds for the reason it is supposed to detect.
+  - 2026-08-19 implementer, **the instrument beside the fix was changed by the fix, exactly as
+    warned.** D-40-B's depth ratio took one sample per depth and divided by
+    `Math.max(shallow, 0.05)`. The floor was chosen against a walk **sixty times slower**: the
+    depth-25 refusal went **115 ms → 2.1 ms**, so a GC pause that used to be a rounding error is
+    now the measurement. Single samples on this host spread **0.58 to 4.58** against a threshold
+    of 4 — the assertion would have failed with nothing wrong. **Re-derived rather than
+    re-tuned**: `min` of five per depth, because a pause only ever *adds* time and the minimum is
+    the estimator noise cannot move in the failing direction (measured after: 1.13, 1.16, 1.20).
+    And the floor is **replaced by an asserted precondition**, not lowered — a floor that engages
+    turns `deep / floor < 4` into `deep < 0.2 ms`, an absolute millisecond bound wearing a
+    ratio's clothes, which is the defect the ratio exists to remove arriving silently. It now
+    says so instead.
+  - 2026-08-19 implementer, **D-40-G fixed, and the corpus that could not see it is the more
+    interesting half.** `[[BigIntData]]` is the fourth slot the serialiser's steps name; `unbox`
+    implemented three, so `Object(BigInt(1))` fell through to the object branch and measured
+    **8** for `{ k: Object(1n) }` where `JSON.stringify` **throws**. `VALUE_CLASSES` had no
+    bigint entry at the same time and in the same direction — **a construction over the
+    serialiser's branches is a construction over one author's transcription of them, and the
+    transcription dropped the branch in the code and in the domain together**, which is why
+    nothing reddened.
+  - 2026-08-19 implementer, **the corpus gains a third partition rather than three more rows.**
+    `cells()` split cells by `JSON.stringify(...) === undefined`, so a value the serialiser
+    **drops** and a value the serialiser **refuses** were the same event to this file —
+    `Buffer.byteLength(undefined)` throws as loudly as a bigint does. They are different
+    obligations: for a dropped key the walk may produce anything, for a refusal it owes the same
+    refusal. Three partitions now, summed against `classes x positions` so a fourth nobody
+    asserts is impossible rather than unlikely, and the per-class check is an **exact count**
+    over all three instead of `some` over the measurable half — which is what lets three classes
+    that can never be measurable be covered with no exemption anybody maintains. 54 classes x 9
+    positions = **486 cells: 454 measurable, 5 undefined, 27 unserialisable**, 0 divergences on
+    all three. The composed half asserts the refusal too instead of `continue`-ing past it, with
+    a floor on how many composed values reach it: **325 checked, 175 refused, 0 divergences**.
+  - 2026-08-19 implementer, **the acceptance number for D-40-G is the reverse mutation, and it is
+    not 0.** Restoring the three-slot `unbox` against the new corpus reds **9** in the
+    unserialisable partition (all nine positions of `bigint/boxed`) and **58** among the composed
+    values, independently. `bigint/raw` and `bigint/toJSON-returns-bigint` throw under both, so
+    they are controls rather than padding: only the boxed class discriminates, which is the class
+    the missing slot was about.
+  - **2026-08-19 implementer, S10 is settled, and round 2's replacement conclusion is FALSE.**
+    The C1 experiment measured four patch states and found the fourth — both sorts removed,
+    predicted to red — green, and concluded *"`resolve.ts:191` is not what makes the module's
+    sort unobservable"*. **Retracting *proved* was right; that replacement is a zero from a probe
+    that could not reach.** C1 held the **input** constant and varied the patch, and the input is
+    the variable: `resolve.ts:191` sits inside the branch its own comment calls order-dependent —
+    *"the first file wins"*, reached only when two files claim one `id@version` with **different
+    content** — and no archive bundle and none of the 226 tests carries such a pair, so no
+    arrangement of the two sorts could have been observed by any of them.
+  - 2026-08-19 implementer, **the 2x2 re-run with a discriminating input, through
+    `validateBundle`, in a throwaway `git worktree` at `14c0e31`, each patch state verified by
+    grep before its run:**
+
+        module sortedByKey   core .sort(cmpString)   archive bundle   duplicate-ref bundle
+        INTACT               INTACT                  same             same
+        REMOVED              INTACT                  same             same
+        INTACT               REMOVED                 same             same
+        REMOVED              REMOVED                 same             DIFFERS
+
+    Forward resolves `AAA COPY`, reversed resolves `ZZZ COPY`, and the diagnostics move with it.
+    So **`resolve.ts:191` is the mechanism after all**, and the module's sort is the only thing
+    between a caller and an order-dependent answer the moment that line changes — row 3 shows it
+    doing that job, row 4 shows the absence of it. **S10 is an equivalent mutant CONDITIONAL on
+    `resolve.ts:191`**, which is narrower than three rounds of "equivalent, sampled" and stronger
+    than "cause unknown".
+  - 2026-08-19 implementer, **and the clause's subject has a name and a witness now.** Round 2
+    left AC5's `cardFiles` line as *"defence-in-depth, and what it defends against is unnamed"*.
+    It defends against a change to `resolve.ts:191`, on the input class above — and that property
+    is assertable through the published surface even though the module's own sort is not.
+    `engine.test.ts` gains one test: a `frontline`-shaped submission with one card duplicated
+    under two filenames and one field changed must answer identically permuted. **It is a guard
+    that can fail and the falsification is row 4**, measured on the bundle the test actually
+    picks; rows 1 to 3 are green, which is the correct shape. Its control asserts the planted
+    duplicate **reaches the resolution** — 1 of the two copies resolves onto a node in all four
+    cells — so it is not permutation-independence over an input carrying no decision. Three
+    rounds of a zero, closed by changing the input rather than the instrument.
+  - 2026-08-19 implementer, **what I have NOT run, and it is most of a gate.** The gate slot is
+    T081's adversary's, granted by name, so **no `vitest`, no `tsc`, no `eslint`, no
+    `npm run build`** has been taken on this tree. Every number above is an in-process probe
+    against the shipped module, plus `esbuild.transformSync` as a syntax check on the three
+    changed files. **`measure.test.ts` goes 18 -> 21 `it()` declarations and `engine.test.ts` 
+    gains 1, so the targeted count should move 69 -> 73**, and that is arithmetic rather than a
+    measurement. Owed at a slot, by name: the four gates unfiltered, `ls .next/types` before
+    quoting a typecheck, the targeted run, and a base reconciliation against a base line measured
+    then rather than carried. `node:util` is a new import in `lib/server/**`, precedented by
+    `node:crypto` in `lib/server/auth/**` and by `Buffer` in this file, and **it makes one
+    sentence of the published block false**: *"this module's only import is `@/lib/core`"*. The
+    property that sentence exists for — synchronous, pure, no `Db`, no I/O, no clock, no
+    randomness — is untouched, and `types` is a pure predicate namespace. Reported rather than
+    edited, because the block is base's.
 
 ### T080, Registry read model and read API
 

@@ -127,6 +127,19 @@ const VALUE_CLASSES: readonly ValueClass[] = [
   { name: "container/symbol-key", make: () => ({ [Symbol("k")]: 1, plain: 2 }) },
   { name: "container/numeric-keys", make: () => ({ 2: "b", 1: "a" }) },
 
+  /* step 4-6: the fourth internal slot, and the class this construction could not see.
+     `SerializeJSONProperty` names `[[StringData]]`, `[[NumberData]]`, `[[BooleanData]]` and
+     `[[BigIntData]]`; `unbox` implemented three (D-40-G), so `Object(BigInt(1))` fell
+     through to the object branch and measured 2 for a value the formula refuses to
+     serialise at all. **The same branch was missing here at the same time**: a construction
+     over the serialiser's branches is a construction over one author's transcription of
+     them, and the transcription dropped the branch in the code and in the domain together,
+     which is why nothing reddened. These cells land in the third partition below, where the
+     formula throws and the walk is required to throw the same thing. */
+  { name: "bigint/raw", make: () => BigInt(1) },
+  { name: "bigint/boxed", make: () => Object(BigInt(1)) },
+  { name: "bigint/toJSON-returns-bigint", make: () => ({ toJSON: () => BigInt(2) }) },
+
   /* step 3: boxed primitives. The class the list missed entirely, and the one where the
      walk's own object branch would otherwise walk the box's indices. */
   { name: "boxed/string", make: () => new String("xy") },
@@ -188,39 +201,71 @@ const POSITIONS: readonly Position[] = [
  * with. A flag would have needed a fourth entry the day someone adds a fifth way to
  * resolve to `undefined`.
  */
+interface Cell {
+  readonly name: string;
+  readonly value: unknown;
+}
+
 function cells(): {
-  readonly measurable: readonly { name: string; value: unknown }[];
-  readonly outsideDomain: readonly { name: string; value: unknown }[];
+  readonly measurable: readonly Cell[];
+  readonly outsideDomain: readonly Cell[];
+  readonly unserialisable: readonly Cell[];
 } {
-  const measurable: { name: string; value: unknown }[] = [];
-  const outsideDomain: { name: string; value: unknown }[] = [];
+  const measurable: Cell[] = [];
+  const outsideDomain: Cell[] = [];
+  const unserialisable: Cell[] = [];
   for (const cls of VALUE_CLASSES) {
     for (const position of POSITIONS) {
       const cell = { name: `${cls.name} @ ${position.name}`, value: position.wrap(cls.make()) };
-      (JSON.stringify(cell.value) === undefined ? outsideDomain : measurable).push(cell);
+      let serialised: string | undefined;
+      try {
+        serialised = JSON.stringify(cell.value);
+      } catch {
+        /* The formula does not merely lack a value here, it refuses. A `bigint` anywhere in
+           the cell is the whole of this partition today, and it exists because two cases
+           were being collapsed: a cell the serialiser drops and a cell the serialiser
+           throws on are different obligations, and `Buffer.byteLength(undefined)` throwing
+           made them look like one. */
+        unserialisable.push(cell);
+        continue;
+      }
+      (serialised === undefined ? outsideDomain : measurable).push(cell);
     }
   }
-  return { measurable, outsideDomain };
+  return { measurable, outsideDomain, unserialisable };
 }
 
 describe("D-40-E — the walk agrees with the formula over the serialiser's classes", () => {
-  const { measurable: CORPUS, outsideDomain: UNDEFINED_CELLS } = cells();
+  const {
+    measurable: CORPUS,
+    outsideDomain: UNDEFINED_CELLS,
+    unserialisable: UNSERIALISABLE,
+  } = cells();
+  const ALL = [...CORPUS, ...UNDEFINED_CELLS, ...UNSERIALISABLE];
 
   /**
    * The instrument before its results, because a corpus that silently stopped generating
    * would report agreement over nothing — the shape this file charges more than any other.
    */
   it("generates every class in every position, and accounts for every cell", () => {
-    /* The whole product, with nothing silently dropped: the two halves must add up. */
-    expect(CORPUS.length + UNDEFINED_CELLS.length).toBe(VALUE_CLASSES.length * POSITIONS.length);
+    /* The whole product, with nothing silently dropped: the three partitions must add up.
+       It was two until `bigint` arrived, and the sum is what makes a fourth partition
+       somebody forgets to assert impossible rather than merely unlikely. */
+    expect(CORPUS.length + UNDEFINED_CELLS.length + UNSERIALISABLE.length).toBe(
+      VALUE_CLASSES.length * POSITIONS.length,
+    );
     expect(CORPUS.length).toBeGreaterThan(400);
 
-    /* Nothing listed is dead: every class reaches at least one measurable cell. */
+    /* Nothing listed is dead, and it is stated as an EXACT count rather than as `some`.
+       Every one of the three partitions is asserted below, so a class is measured wherever
+       it lands — which is what lets a class that can never be measurable, as all three
+       `bigint` ones are, be covered without an exemption anybody maintains. `some` over the
+       measurable half would have needed one. */
     for (const cls of VALUE_CLASSES) {
       expect(
-        CORPUS.some((cell) => cell.name.startsWith(`${cls.name} @ `)),
+        ALL.filter((cell) => cell.name.startsWith(`${cls.name} @ `)).length,
         cls.name,
-      ).toBe(true);
+      ).toBe(POSITIONS.length);
     }
   });
 
@@ -244,6 +289,51 @@ describe("D-40-E — the walk agrees with the formula over the serialiser's clas
        produced this partition: a `toJSON` returning `undefined` lands here too. */
     expect(UNDEFINED_CELLS.some((c) => c.name.startsWith("toJSON/undefined @ top"))).toBe(true);
     expect(UNDEFINED_CELLS.some((c) => c.name.startsWith("toJSON/function @ top"))).toBe(true);
+  });
+
+  /**
+   * The third partition, which is D-40-G: the cells where the formula does not return a
+   * number and does not return `undefined` either, but **refuses**.
+   *
+   * `Buffer.byteLength(JSON.stringify(v))` throwing was being read as "out of the domain"
+   * whichever half threw, so a `bigint` and a dropped key were the same event to this file.
+   * They are not: for a dropped key the walk is entitled to produce anything, and for a
+   * `bigint` the walk owes the same refusal, because agreeing with the formula on the
+   * numbers and inventing one where the formula refuses is not agreement.
+   *
+   * The kinds are compared, not merely the fact of throwing: a `LimitExceededError` here
+   * would mean the walk refused for its own reason and the cell would pass on a coincidence.
+   */
+  it("refuses exactly where the formula refuses, and with the same kind", () => {
+    expect(UNSERIALISABLE.length).toBeGreaterThan(0);
+
+    const kindOf = (run: () => unknown): string => {
+      try {
+        run();
+        return "no throw";
+      } catch (thrown) {
+        return (thrown as Error).constructor.name;
+      }
+    };
+
+    const divergent: string[] = [];
+    for (const cell of UNSERIALISABLE) {
+      const expected = kindOf(() => formula(cell.value));
+      const measured = kindOf(() => measureSubmission("probe", cell.value, GENEROUS));
+      if (measured !== expected) divergent.push(`${cell.name}: ${measured} vs ${expected}`);
+    }
+    expect(divergent).toEqual([]);
+
+    /* The cell that put this partition here, named so a regression says which one. Before
+       D-40-G, `Object(BigInt(1))` was walked as a container and measured 2. */
+    expect(UNSERIALISABLE.some((c) => c.name.startsWith("bigint/boxed @"))).toBe(true);
+    expect(UNSERIALISABLE.some((c) => c.name.startsWith("bigint/raw @"))).toBe(true);
+    /* Driven rather than left to the sweep above, with the pre-fix answer written down:
+       three-slot `unbox` returned the box unchanged, the object branch found no enumerable
+       keys, and `{"k":{}}` measured 8 for a submission the formula will not serialise. */
+    expect(() => measureSubmission("probe", { k: Object(BigInt(1)) }, GENEROUS)).toThrow(
+      TypeError,
+    );
   });
 
   /**
@@ -316,20 +406,43 @@ describe("D-40-E — the walk agrees with the formula over the serialiser's clas
     };
 
     const divergent: string[] = [];
+    let refused = 0;
     for (let i = 0; i < 500; i += 1) {
       const value = compose(3);
-      let expected: number;
+
+      /* **The two ways the formula has no number are different obligations**, and collapsing
+         them is what let `bigint` sit outside this file. `JSON.stringify` returning
+         `undefined` puts the cell out of the domain, exactly as the top-level exclusion
+         says; `JSON.stringify` THROWING is a refusal the walk owes too. The first version
+         caught `Buffer.byteLength` and could not tell which had happened, because
+         `Buffer.byteLength(undefined)` throws as loudly as a `bigint` does. */
+      let serialised: string | undefined;
       try {
-        expected = formula(value);
-      } catch {
-        /* A composed value whose root normalises to a droppable: the formula throws and the
-           cell is out of the domain, exactly as the top-level exclusion above says. */
+        serialised = JSON.stringify(value);
+      } catch (thrown) {
+        refused += 1;
+        const kind = (thrown as Error).constructor.name;
+        let measured = "no throw";
+        try {
+          measureSubmission("probe", value, GENEROUS);
+        } catch (own) {
+          measured = (own as Error).constructor.name;
+        }
+        if (measured !== kind) divergent.push(`#${i}: ${measured} where the formula threw ${kind}`);
         continue;
       }
+      if (serialised === undefined) continue;
+
+      const expected = Buffer.byteLength(serialised, "utf8");
       const measured = measureSubmission("probe", value, GENEROUS);
       if (measured !== expected) divergent.push(`#${i}: ${measured} vs ${expected}`);
     }
     expect(divergent).toEqual([]);
+
+    /* The refusing branch is reachable from this generator rather than dead code beside it:
+       a zero here would mean the `bigint` classes never composed and the assertion above
+       measured nothing, which is the shape this file charges everywhere else. */
+    expect(refused, "composed values reaching the formula's refusal").toBeGreaterThan(0);
   });
 
   /**
@@ -346,6 +459,188 @@ describe("D-40-E — the walk agrees with the formula over the serialiser's clas
     const big = { k: BigInt(1) };
     expect(() => JSON.stringify(big)).toThrow(TypeError);
     expect(() => measureSubmission("probe", big, GENEROUS)).toThrow(TypeError);
+  });
+});
+
+/* ------------- D-40-F: the constant, which is where the bound actually went ------------- */
+
+/**
+ * Two submissions of the **same byte count** whose bytes are arranged differently: one
+ * spread across containers, one inside a single string. `containers` is what the ratio is
+ * about, and it is returned rather than counted afterwards so the control below measures the
+ * quantity it names.
+ */
+function samePayloadTwoShapes(objects: number): {
+  readonly dense: { value: unknown; containers: number };
+  readonly flat: { value: unknown; containers: number };
+} {
+  const wrap = (extra: unknown) => ({
+    manifest: { slug: "p", title: "P", summary: "s", tags: [], ontologyVersion: "0.1.0", extra },
+    dot: "digraph g { a -> b }",
+    cardFiles: {},
+  });
+
+  const empties: unknown[] = [];
+  for (let i = 0; i < objects; i += 1) empties.push({});
+  const dense = wrap(empties);
+
+  /* `manifest`, `tags`, `cardFiles`, the submission itself, and the array of empties, plus
+     the empties themselves. The exact figure does not matter to the assertion; the ratio
+     between the two does, and both are counted the same way. */
+  const structural = 5;
+  const target = Buffer.byteLength(JSON.stringify(dense), "utf8");
+  const empty = Buffer.byteLength(JSON.stringify(wrap("")), "utf8");
+  const flat = wrap("x".repeat(target - empty));
+
+  return {
+    dense: { value: dense, containers: structural + objects },
+    flat: { value: flat, containers: structural - 1 },
+  };
+}
+
+describe("D-40-F — deciding whether a value is boxed costs no thrown exceptions", () => {
+  /**
+   * The mechanism, observed directly rather than through a clock.
+   *
+   * The defect was that `unbox` decided the boxed-primitive question by calling each
+   * prototype's own `valueOf` and catching, so **every object that is not boxed** cost three
+   * thrown `TypeError`s. That is not a property of how fast a machine is, and pinning it
+   * with a stopwatch would have made it one: it is a property of whether those functions are
+   * called at all, and a counter on them answers exactly that, deterministically.
+   *
+   * The counter goes on the prototypes rather than on the module, because `unbox` reads
+   * `String.prototype.valueOf` at call time. So this measures the shipped code and not a
+   * copy of it, and it reds for any implementation that goes back to asking by throwing,
+   * whatever the implementation is otherwise.
+   */
+  function countingValueOfs(): {
+    readonly count: () => number;
+    readonly byName: () => Record<string, number>;
+    readonly restore: () => void;
+  } {
+    const tally: Record<string, number> = { String: 0, Number: 0, Boolean: 0, BigInt: 0 };
+    const slots: [string, { valueOf: () => unknown }][] = [
+      ["String", String.prototype as unknown as { valueOf: () => unknown }],
+      ["Number", Number.prototype as unknown as { valueOf: () => unknown }],
+      ["Boolean", Boolean.prototype as unknown as { valueOf: () => unknown }],
+      ["BigInt", BigInt.prototype as unknown as { valueOf: () => unknown }],
+    ];
+    const originals = slots.map(([name, proto]) => [name, proto, proto.valueOf] as const);
+
+    for (const [name, proto, original] of originals) {
+      Object.defineProperty(proto, "valueOf", {
+        configurable: true,
+        writable: true,
+        value: function (this: unknown): unknown {
+          tally[name] += 1;
+          return original.call(this);
+        },
+      });
+    }
+
+    return {
+      count: () => Object.values(tally).reduce((a, b) => a + b, 0),
+      byName: () => ({ ...tally }),
+      restore: () => {
+        for (const [, proto, original] of originals) {
+          Object.defineProperty(proto, "valueOf", {
+            configurable: true,
+            writable: true,
+            value: original,
+          });
+        }
+      },
+    };
+  }
+
+  it("asks no prototype's valueOf about the objects a real submission is made of", () => {
+    const { dense } = samePayloadTwoShapes(2_000);
+    const boxed = { manifest: { k: new String("xy") }, dot: "digraph g { a }", cardFiles: {} };
+
+    const spy = countingValueOfs();
+    /* Seeded to values that FAIL, so a `measureSubmission` that throws before either count is
+       taken reds instead of reporting the zero this test is looking for. */
+    let onPlain: Record<string, number> = { "the walk did not run": 1 };
+    let onBoxed = -1;
+    try {
+      measureSubmission("validateBundle", dense.value, GENEROUS);
+      onPlain = spy.byName();
+
+      /* **Two-factor, and this is the half that makes the zero a measurement.** A counter
+         that cannot register reads zero for the same reason a clean module does, so the
+         probe is shown to move under the same installation the zero was taken under, on the
+         one input where a boxed primitive genuinely is there to unbox. */
+      const before = spy.count();
+      measureSubmission("validateBundle", boxed, GENEROUS);
+      onBoxed = spy.count() - before;
+    } finally {
+      spy.restore();
+    }
+
+    expect(
+      onPlain,
+      "D-40-F: 2 000 plain objects, none of them boxed. Asking by throwing cost three " +
+        "caught TypeErrors each, which is 25 993 ns per object against 30 ns, and turned " +
+        "an O(maxBytes) bound into a nine-second bound at maxBytes.",
+    ).toEqual({ String: 0, Number: 0, Boolean: 0, BigInt: 0 });
+
+    expect(onBoxed, "the probe registers when a value IS boxed").toBeGreaterThan(0);
+  });
+
+  /**
+   * The cost the mechanism was producing, as a property rather than as a duration.
+   *
+   * **A millisecond bound is a host-dependent threshold**, which this file has already paid
+   * for once at 2 187 ms, so the instrument is a ratio. It is a ratio of two ratios, because
+   * one ratio is not enough here: `walk / formula` on one payload still carries whatever
+   * this host's native serialiser costs relative to interpreted JavaScript. Dividing the
+   * container-dense ratio by the flat one cancels that as well, leaving the only quantity
+   * the defect moved — **how much a byte costs when it arrives as a container rather than as
+   * text**.
+   *
+   * Both operating points are measured rather than assumed, and the threshold sits between
+   * them rather than beside either. Measured on this host, twice each: with the throwing
+   * `unbox` **976 and 580**, with the slot predicates **9.7 and 8.8**. 100 is the midpoint in
+   * the only scale a ratio has, an order of magnitude clear of the live value and most of one
+   * below the defect at its quietest. The defect's own figure moves more than the fix's does,
+   * because its flat denominator is a tenth of a millisecond and the numerator is a second.
+   *
+   * `min` of several samples, not the mean: a GC pause or a scheduler slice only ever adds
+   * time, so the minimum is the estimator that noise cannot move upward. Single samples at
+   * this operating point spread from 0.58 to 4.58 on this host, which would have made a
+   * threshold of 4 flaky the moment the walk got fast enough for a pause to matter — the
+   * instrument next to the fix, changed by the fix.
+   */
+  it("costs no more for bytes arriving as containers than for the same bytes as text", () => {
+    const { dense, flat } = samePayloadTwoShapes(60_000);
+
+    /* The control, and it measures the quantity the ratio is about rather than one beside
+       it: equal bytes, and container counts three orders of magnitude apart. Without it a
+       fixture that made both payloads flat would satisfy the assertion by having nothing to
+       compare — a ratio holding between two things that were already equal. */
+    expect(Buffer.byteLength(JSON.stringify(flat.value), "utf8")).toBe(
+      Buffer.byteLength(JSON.stringify(dense.value), "utf8"),
+    );
+    expect(dense.containers / flat.containers).toBeGreaterThan(1_000);
+
+    const fastest = (run: () => void): number => {
+      let best = Infinity;
+      for (let i = 0; i < 7; i += 1) {
+        const started = performance.now();
+        run();
+        best = Math.min(best, performance.now() - started);
+      }
+      return best;
+    };
+    const overhead = (payload: unknown): number =>
+      fastest(() => void measureSubmission("validateBundle", payload, GENEROUS)) /
+      fastest(() => void Buffer.byteLength(JSON.stringify(payload), "utf8"));
+
+    /* Warm both paths before either is timed, so the first call's compilation lands in
+       neither numerator nor denominator. */
+    void overhead(dense.value);
+
+    expect(overhead(dense.value) / overhead(flat.value)).toBeLessThan(100);
   });
 });
 
@@ -400,12 +695,40 @@ describe("D-40-B — the measurement is bounded by the limit, not by the input g
     /* Warm the path first, so the ratio measures the walk rather than the first call's
        compilation. Its result is deliberately discarded. */
     timed(25);
-    const shallow = timed(25);
-    const deep = timed(40);
+
+    /**
+     * `min` of five, not one. **This was one sample and a floor, and D-40-F moved the
+     * operating point out from under both.** With the throwing `unbox` a depth-25 refusal
+     * took ~115 ms here and a GC pause was a rounding error against it; the same refusal now
+     * takes ~2.1 ms, and a single pause landing in one of two samples took the measured ratio
+     * to **4.58** on this host, over a threshold of 4, with nothing wrong. A pause only ever
+     * adds time, so the minimum of several samples is the estimator noise cannot move in the
+     * direction that fails the assertion. Measured after the change: 1.13, 1.16, 1.20.
+     */
+    let shallow = Infinity;
+    let deep = Infinity;
+    for (let i = 0; i < 5; i += 1) {
+      shallow = Math.min(shallow, timed(25));
+      deep = Math.min(deep, timed(40));
+    }
+
+    /**
+     * The denominator is asserted rather than floored. `Math.max(shallow, 0.05)` stood here,
+     * chosen against a walk sixty times slower, and a floor that engages turns
+     * `deep / floor < 4` into `deep < 0.2 ms` — an absolute millisecond bound wearing a
+     * ratio's clothes, which is the defect the ratio exists to remove, arriving silently.
+     * Stating it instead means that if the walk ever gets fast enough for the denominator to
+     * stop being a measurement, this says so and someone re-derives the operating point,
+     * rather than the assertion quietly becoming the thing it replaced.
+     */
+    expect(
+      shallow,
+      "the shallow case is too small to divide by; the ratio below would be a millisecond bound",
+    ).toBeGreaterThan(0.2);
 
     /* 15 more levels is 32 768x the paths. A factor of 4 is enormous headroom for scheduler
        noise and nowhere near the signal an exponential walk would produce. */
-    expect(deep / Math.max(shallow, 0.05)).toBeLessThan(4);
+    expect(deep / shallow).toBeLessThan(4);
   });
 
   /**
