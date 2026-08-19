@@ -2481,6 +2481,43 @@ characters is what makes it feel like it does not need permission, and that feel
 mechanism.* **The cheapness of an act is not authority to perform it** — which is the same sentence as
 its refusal to commit on a peer's word, pointed at a different boundary.
 
+## A stronger instrument can make a weaker one unreachable, and only asking finds it
+
+**T081's implementer added D-81-02's byte-equality pin per route — `detail === `${operation}: the
+registry store failed.`` — and that made the derived deny-word scan a guard nothing could reach.** With
+`type`, `title` and `detail` all pinned, every leak the scan was written for is caught by a pin first.
+
+**It asked what could still pass every pin, and the answer is an RFC 9457 §3.2 EXTENSION MEMBER.**
+`sqlstate: err.cause.code` is a completely realistic leak, it passes `type`, `title` and `detail`
+untouched, **and it fires the scan and nothing else.** So the scan has a witness instead of decoration.
+
+**The new shape: adding a stronger assertion can silently retire a weaker one.** This file has charged
+guards that never reached, guards that could not fail, and exemptions that outlived their defect —
+**this is the first case of a guard that was reachable when written and became unreachable because
+something better landed beside it.** Nothing reds when that happens. **The question that finds it is
+*what passes every other instrument here*, asked after each one is added.**
+
+**And it corrected the scan's own failure message rather than leaving it**: the message said *the
+`detail` is a fixed string*, which **D-81-02 made false**. *A stale claim in the message a reader meets
+while failing is worse than none* — that reader is by construction someone who has just made a mistake.
+
+## The lint rule caught its author within hours, and caught the author rather than the tree
+
+**T081's implementer's first `npm run lint` after the rule came back exit 0 with 2 problems** —
+`'_a' is assigned a value but never used`, twice, **in its own new D-81-02 assertion**, where it
+destructured `instance` out with a rename. `ignoreRestSiblings` does not cover a renamed binding.
+
+**`tail -1` there prints a blank line and it would have written `lint 0`.** Same instrument, same blind
+spot, a different author, within hours of the rule being written — which is the evidence that the rule
+was about the instrument and not about me.
+
+**Two more things it did that are the standard.** Its reconciliation says **which half is whose**:
+5459 − 15 = 5444, with the +15 measured by it in isolation and **5444 acknowledged as mine and not
+offered as its own** — the agreement is worth something only because neither side derived the other by
+arithmetic. And **it left its own mislabelled mutation name wrong in its spec and said so**, rather than
+quietly renaming it, so the record shows the name over-claimed rather than showing a name that always
+fitted.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
