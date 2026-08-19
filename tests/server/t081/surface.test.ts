@@ -300,20 +300,24 @@ describe("the leak instrument can register the quantity it measures", () => {
   }, 30_000);
 });
 
-describe("the driver-invariance axis is not vacuous", () => {
+describe("what a driver error's OWN message does and does not carry", () => {
   /**
-   * The control T081's implementer named and this suite did not have.
+   * This began as an anti-vacuity control for a thirteen-cell reader-level axis — each reader
+   * driven against two unreachable servers, asserting one message. Falsification deleted that
+   * axis and this is what is left of it: the measurement that shows why it could never fire.
    *
-   * `readers.test.ts` concludes "no driver value reached the rendering" from two unreachable
-   * servers producing one sealed message. That inference needs a premise nothing was checking:
-   * that the two servers produce DIFFERENT driver errors in the first place. If they did not,
-   * the equality would hold for a reason with nothing to do with sealing, and thirteen greens
-   * would mean nothing — a set that can only be equal is not a measurement.
+   * The control as first written compared the whole cause CHAIN and found the two errors
+   * different, which is true and is about a quantity ADJACENT to the one the axis needed. What
+   * the axis actually rested on is the driver error's OWN message, and that is byte-identical
+   * for two servers running one statement, because the connection detail lives one link down.
+   * So thirteen equalities held between two things that were already equal, and reddened under
+   * none of seven mutations including one that leaks the driver outright.
    *
-   * Asserted once, on the fixture, and independently of T081: both errors come from
-   * `@/lib/db`'s own client, so this control holds whether or not the module exists.
+   * Kept as an assertion rather than a comment for one reason: it reds if drizzle ever starts
+   * putting connection detail in its own message, at which point the reader-level axis becomes
+   * available again and someone should know.
    */
-  it("the two closed ports produce different driver errors", async () => {
+  it("the same statement against two closed ports gives one driver message and two chains", async () => {
     const near = deadDb(DEAD_URL);
     const far = deadDb(OTHER_DEAD_URL);
     try {
@@ -326,19 +330,24 @@ describe("the driver-invariance axis is not vacuous", () => {
         `select against ${OTHER_DEAD_URL}`,
       );
 
-      const render = (err: unknown): string =>
+      expect(
+        (b as Error).message,
+        "The two servers' own driver messages differ. That is NEWS: it was the premise a " +
+          "reader-level driver-invariance axis needed, and it was false when this suite was " +
+          "written, which is why those thirteen cells were deleted rather than left green. If " +
+          "this reds, the axis is worth having again.",
+      ).toBe((a as Error).message);
+
+      const chain = (err: unknown): string =>
         causeChain(err)
           .map((link) => String((link as { message?: unknown }).message ?? link))
           .join(" | ");
-
       expect(
-        render(b),
-        "The two unreachable servers produced identical driver errors, so `readers.test.ts`'s " +
-          "driver-invariance axis proves nothing: a sealed message equal across them would be " +
-          "equal across two errors that were already the same. Thirteen greens there would be " +
-          "thirteen restatements of this fact. Change the connection strings until the driver " +
-          "distinguishes them, or drop the axis and say it is gone.",
-      ).not.toBe(render(a));
+        chain(b),
+        "and the difference between the two servers is genuinely present ONE LINK DOWN, which " +
+          "is the whole reason the equality above is not evidence of sealing: `cause` carries " +
+          "what the message does not.",
+      ).not.toBe(chain(a));
     } finally {
       await near.close();
       await far.close();

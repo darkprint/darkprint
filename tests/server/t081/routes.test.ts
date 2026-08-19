@@ -430,10 +430,11 @@ describe("AC4/G2 — the problem document carries nothing the caller put in the 
       const first = await readAnswer(name, probe.path);
       const second = await readAnswer(name, probe.variantPath!);
 
-      const strip = (answered: Answered): Record<string, unknown> => {
-        const { instance: _instance, ...rest } = answered.body;
-        return rest;
-      };
+      /* `instance` is the request path (D-02), so it is the one member that MUST move with the
+         caller. Dropped by key rather than by destructuring-with-a-rest, which leaves an unused
+         binding behind and a lint warning with it. */
+      const strip = (answered: Answered): Record<string, unknown> =>
+        Object.fromEntries(Object.entries(answered.body).filter(([key]) => key !== "instance"));
 
       expect(
         strip(second),

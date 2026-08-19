@@ -38,7 +38,6 @@ import { describe, expect, it } from "vitest";
 import {
   ANONYMOUS,
   DEAD_URL,
-  OTHER_DEAD_URL,
   PUBLISHED_READERS,
   READER_NAMES,
   READER_PROBES,
@@ -224,24 +223,28 @@ describe("AC1/AC3 — the message carries nothing but the operation", () => {
     }, 30_000);
   }
 
-  for (const name of READER_NAMES) {
-    it(`${name}: two unreachable servers, one message`, async () => {
-      const probe = READER_PROBES[name];
-      const near = await faultOf(name, probe.args, DEAD_URL);
-      const far = await faultOf(name, probe.args, OTHER_DEAD_URL);
+  /* ── the driver-invariance axis was here, and it is REMOVED rather than left green ──
+     Thirteen cells drove each reader against two unreachable servers differing in user,
+     password, port and database, and asserted one message. They passed on `backend` with the
+     module absent, and they reddened under ZERO of seven mutations — including M3, which makes
+     the message `${operation}: ${String(cause)}` and leaks the driver outright.
 
-      expect(
-        (far as Error)?.message,
-        `${name} rendered two different messages for two different unreachable servers. The ` +
-          `two connection strings share no user, password, port or database name, and every ` +
-          `one of those appears in \`String(cause)\`, so a message built by interpolating the ` +
-          `driver error diverges here without anyone having to predict which field the host, ` +
-          `the port or the credentials arrived in.\n` +
-          `  ${DEAD_URL} -> ${JSON.stringify((near as Error)?.message)}\n` +
-          `  ${OTHER_DEAD_URL} -> ${JSON.stringify((far as Error)?.message)}`,
-      ).toBe((near as Error)?.message);
-    }, 30_000);
-  }
+     Measured, rather than reasoned: a `DrizzleQueryError`'s OWN message is `Failed query: <sql>`
+     plus its params, and the connection detail lives on `cause.cause`. Two servers running the
+     same statement therefore produce a byte-identical driver message, so an equality over it is
+     an equality between two things that were already equal, whatever the module does with them.
+
+     My anti-vacuity control did not catch this and the reason is worth keeping: it compared the
+     whole cause CHAIN, where the port genuinely differs, and concluded the two errors differ.
+     True, and about a quantity ADJACENT to the one the axis needed. A control measuring a nearby
+     quantity is the failure this run keeps recording, arriving inside the control written to
+     prevent it.
+
+     The property is not lost. `surface.test.ts`'s "the message is a function of the operation and
+     of nothing else" holds it with two hand-built causes whose own messages differ, and it reds
+     under M3 where all thirteen of these stayed green. One instrument that fires beats thirteen
+     that cannot. What is genuinely unobservable through the published READER surface is recorded
+     here rather than represented by a passing test. */
 
   it("the thirteen messages are pairwise distinct", async () => {
     const messages = new Map<string, string[]>();
