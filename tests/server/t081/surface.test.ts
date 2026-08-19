@@ -15,18 +15,22 @@
    call shapes, so a green there is about this class rather than
    about an empty set.
 
-   ── the pin, and why it is not a literal ──
-   The block says `message` is "the OPERATION alone" and also that
-   the wrapper mirrors T050's, whose form is
-   `changeHandle: the account store failed.` Those are two different
-   strings and the block does not choose. Inventing one here would
-   red every implementation that phrased it the other way, which is
-   a candidate list in a new hat. So the property is asserted in the
-   form that needs no wording: `message` is a FUNCTION OF THE
-   OPERATION AND OF NOTHING ELSE — invariant under the cause,
-   distinct across operations, and containing the operation. Those
-   are exact equalities between measured values and cannot go
-   vacuous the way a substring scan does. The gap is reported.
+   ── the pin, and the two instruments it does not replace ──
+   The block said `message` is "the OPERATION alone" and also that
+   the wrapper mirrors T050's `changeHandle: the account store
+   failed.` Two different strings, and the block did not choose.
+   That was reported as a gap rather than guessed, and D-81-01 has
+   since ruled it: `${operation}: the registry store failed.`,
+   pinned here by exact match against a LITERAL written in this
+   suite. An expectation imported from the module would assert only
+   that the module agrees with itself.
+
+   The pin does not retire the invariances beside it, and the
+   direction matters: an exact match is blind to whether a DRIVER
+   value reached the rendering, because the literal is the same
+   either way. `message` invariant under two different causes is
+   what observes that. A stronger instrument silently retiring a
+   weaker one is a live failure mode in this task.
 
    Nothing in this file opens a socket except the positive control,
    which points at a closed port. No database, no gate slot.
@@ -37,12 +41,15 @@ import { describe, expect, it } from "vitest";
 import { schema } from "@/lib/db";
 
 import {
+  DEAD_URL,
+  OTHER_DEAD_URL,
   PUBLISHED_T081,
   READER_NAMES,
   NON_READER_EXPORTS,
   REGISTRY,
   T081_NAMES,
   bindT081,
+  causeChain,
   checkNoStatementLeak,
   deadDb,
   loadRegistry,
@@ -285,6 +292,52 @@ describe("the leak instrument can register the quantity it measures", () => {
       ).toBeGreaterThan(0);
     } finally {
       await dead.close();
+    }
+  }, 30_000);
+});
+
+describe("the driver-invariance axis is not vacuous", () => {
+  /**
+   * The control T081's implementer named and this suite did not have.
+   *
+   * `readers.test.ts` concludes "no driver value reached the rendering" from two unreachable
+   * servers producing one sealed message. That inference needs a premise nothing was checking:
+   * that the two servers produce DIFFERENT driver errors in the first place. If they did not,
+   * the equality would hold for a reason with nothing to do with sealing, and thirteen greens
+   * would mean nothing — a set that can only be equal is not a measurement.
+   *
+   * Asserted once, on the fixture, and independently of T081: both errors come from
+   * `@/lib/db`'s own client, so this control holds whether or not the module exists.
+   */
+  it("the two closed ports produce different driver errors", async () => {
+    const near = deadDb(DEAD_URL);
+    const far = deadDb(OTHER_DEAD_URL);
+    try {
+      const a = await rejects(
+        () => near.client.db.select().from(schema.bundle),
+        `select against ${DEAD_URL}`,
+      );
+      const b = await rejects(
+        () => far.client.db.select().from(schema.bundle),
+        `select against ${OTHER_DEAD_URL}`,
+      );
+
+      const render = (err: unknown): string =>
+        causeChain(err)
+          .map((link) => String((link as { message?: unknown }).message ?? link))
+          .join(" | ");
+
+      expect(
+        render(b),
+        "The two unreachable servers produced identical driver errors, so `readers.test.ts`'s " +
+          "driver-invariance axis proves nothing: a sealed message equal across them would be " +
+          "equal across two errors that were already the same. Thirteen greens there would be " +
+          "thirteen restatements of this fact. Change the connection strings until the driver " +
+          "distinguishes them, or drop the axis and say it is gone.",
+      ).not.toBe(render(a));
+    } finally {
+      await near.close();
+      await far.close();
     }
   }, 30_000);
 });

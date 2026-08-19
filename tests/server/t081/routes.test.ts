@@ -336,6 +336,47 @@ describe("AC3 across the transport — no response carries the statement", () =>
   }
 });
 
+describe("the problem document carries no member the contract did not publish", () => {
+  /**
+   * The hole T081's implementer found in its own deny-word scan, closed here as a WHITELIST
+   * over the document's shape rather than as another scan.
+   *
+   * Once `type`, `title`, `detail`, `status` and `instance` are each pinned, every leak a
+   * word scan was written for is caught by a pin first — so the scan stops being reachable and
+   * nothing reds when that happens. What still passes every pin is an RFC 9457 §3.2 EXTENSION
+   * MEMBER: `sqlstate: err.cause.code` sits beside the five, satisfies all of them, and is a
+   * driver value on the wire.
+   *
+   * This suite's own AC3 sweep could not see it either, and that is worth being exact about
+   * rather than generous: the deny set there is derived from the STATEMENT and its bound
+   * parameters, and a SQLSTATE is neither. The scan was never going to catch it.
+   *
+   * A key-set equality does, and it fails closed: any member beyond the five is a surface
+   * nobody published, whatever it contains. That is the difference between forbidding the
+   * leaks somebody thought of and admitting only what the contract names.
+   */
+  const RFC9457_CORE = ["detail", "instance", "status", "title", "type"];
+
+  for (const name of ROUTE_NAMES) {
+    it(`${ROUTE_PROBES[name].url}: the document's members are exactly RFC 9457's five`, async () => {
+      const answered = await readAnswer(name, ROUTE_PROBES[name].path);
+      const keys = Object.keys(answered.body).sort();
+
+      expect(
+        keys,
+        `\`${ROUTE_PROBES[name].url}\` served a problem document with a member the contract ` +
+          `does not publish. AC4 publishes \`type\` and the status; D-81-02 publishes ` +
+          `\`detail\` and \`title\`; D-02 publishes \`instance\`. Anything else is an RFC 9457 ` +
+          `§3.2 extension member, which is a published surface nobody published — and it is ` +
+          `the one shape that passes every field pin in this file AND the statement scan, ` +
+          `since a SQLSTATE appears in neither the statement nor its bound parameters. If an ` +
+          `extension member is wanted, it goes in the block first.\n` +
+          `  served: ${answered.text.slice(0, 400)}`,
+      ).toEqual(RFC9457_CORE);
+    }, 30_000);
+  }
+});
+
 describe("D-81-02 — `title` is the problem type's own, so it is one string everywhere", () => {
   /**
    * The `title` literal is still unpublished: D-81-02 fixes it PER TYPE without giving the
