@@ -4503,6 +4503,71 @@ session's load and label it *mine, before*. **A measurement owes its sha, its te
 host it was taken on** — and the third is the one this run keeps discovering, most recently in my own
 54s-versus-155s suite.
 
+## D-130-12: the 404 detail is published, and THREE merged routes already agreed on its shape
+
+T130's implementer reported, holding it with no sha, that it invented `"No such handle."` for a `detail`
+D-130-05 never published — **and that a blind author pinning that string had to invent one too**, so a
+correct route would red against a correct suite over a string nobody wrote down. T081's F2 exactly, and
+T-04's *no task publishes the admissible message form per rejection path*, which is a checkbox on my own
+contract checklist.
+
+**The coin flip did not land, and the reason is worth more than the escape.** I read the blind suite
+before ruling: `unknown-handle.test.ts` **pins no string at all.** It asserts that three unknown-handle
+answers are **one value between them** — an invariance, not a spelling — and its header says why in a
+sentence that is better than my ruling would have been: *there is nothing here to pin and the reason is a
+ruling rather than a silence, which is a different fact and worth the sentence.* **One party invented and
+the other refused to; the gap was real and only one of the two walked into it.**
+
+**And reading the tree to rule found what neither reported: FIVE spellings of a 404 detail have merged.**
+
+        T050  "account: no such account."      <resource>: no such <thing>.
+        T080  "blueprint: no such bundle."     same shape, named constant
+        T020  "card: no such card."            same shape, named constant
+        T090  "Not found."                     T000's default, unadopted
+        T130  "No such handle."                a fifth shape
+
+**Three of the four merged routes agree, so this was never an open question — it was an unwritten
+convention, which is the failure mode a convention has.** Ruled: **`"author: no such handle."`**, as a
+named constant like T080's and T020's, published in T130's block. T090's `"Not found."` is the outlier and
+is left alone; changing a merged, tagged route to tidy a convention is not what this ruling is for.
+
+**The mechanism its implementer reported on itself is the part I am keeping.** It noticed the gap while
+writing the route, wrote itself a note to raise it with the gate results, and then did not — **through a
+gate report and a handover, both of which had a slot for it.** Not the *acknowledging is not answering*
+failure: **it never asked.** A finding parked in one's own head is not held anywhere, and the two
+documents that would have carried it both went out complete-looking.
+
+## D-130-13: a barrel export nothing consumes, and one operation name over two statements
+
+**`withProfileStore` is published and no caller needs it** — the route uses `withProfileErrors` only.
+Its implementer reports the mechanism plainly: *I matched T081's barrel shape rather than deriving it from
+consumers.* **Ruled: it comes off the barrel and stays module-internal.** A barrel is a contract with
+consumers, and **copying a neighbour's barrel is the contract following a precedent rather than a need** —
+T081's surface is not authority for T130's. `error-hygiene` is unaffected: it counts exported error
+classes and this is a function.
+
+**`read.ts` passes `"getProfile"` to both wrapped statements** — the account read and the term count — so
+a fault in either renders identically. **That is the convention working as ruled** (the operation is the
+published reader, not the statement) **and it stays.** The cost is stated rather than fixed: an adversary
+driving a store fault **cannot tell which statement it reached from the message alone**, so no store-fault
+cell may claim to have reached a specific one. Making them distinguishable would make T130 the one module
+that names statements in its rendering, which is a bigger change than the testability it buys.
+
+## One profile request reads the entire registry, and it is the PRICE of D-130-04
+
+`counts.blueprints` calls `blueprints(db, actor)` → `loadSnapshot` → `db.select().from(schema.bundle)` for
+**every bundle in the archive**, then every release of every one, then the cards. **So
+`GET /api/authors/[handle]` costs a full-registry scan to answer a count of one author's blueprints,
+unbounded in the archive's size.** Reported by its implementer as **read, not measured** — `snapshot.ts`
+read, nothing timed — and labelled that way, which is the labelling this run keeps having to ask for.
+
+**It is the price of the ruling, not a defect against it, and that is why it is a record rather than a
+fix.** The cheap query is `bundle` filtered by `owner_id`, **and that is the second `readable()`
+D-130-04 forbids.** The two are one trade: correctness of visibility bought with the cost of reading
+everything. **A cost recorded as the ruling's price cannot later be reported as somebody's laziness**, and
+whoever wants it cheap needs a T080 amendment — T132's shape again. §11.1 at T130's merge, beside the
+other two shortcuts, in those words.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -14428,6 +14493,22 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T130, Profiles and the public author surface
 
 - **State:** impl-done
+- **D-130-12: the 404 `detail` is `"author: no such handle."`**, as a named constant. Three merged
+  routes already agreed on `<resource>: no such <thing>.` — T050's `account:`, T080's `blueprint:`,
+  T020's `card:` — so this was an unwritten convention rather than an open question. The shipped
+  `"No such handle."` was invented by the implementer and reported by it; **the blind suite pins no string
+  at all**, asserting only that three unknown-handle answers are one value between them, so the two halves
+  did not in fact collide. T090's `"Not found."` stays as it is.
+- **D-130-13: `withProfileStore` comes OFF the barrel** — nothing consumes it, and it was there because
+  T081's barrel shape was copied rather than derived from consumers. **`read.ts`'s single `"getProfile"`
+  over both wrapped statements STANDS**, with the cost stated: a store fault in the account read and one
+  in the term count render identically, so **no store-fault cell may claim to have reached a specific
+  statement.**
+- **Recorded cost, for §11.1 at merge:** `counts.blueprints` reaches `loadSnapshot`, so one
+  `GET /api/authors/[handle]` scans the entire registry — every bundle, every release, then the cards —
+  to count one author's blueprints. **The cheap query is `bundle` filtered by `owner_id`, which is the
+  second `readable()` D-130-04 forbids**, so this is the ruling's price rather than a defect against it.
+  Read from `snapshot.ts`, not measured.
 - **D-130-11: remove `pinSpellingFor`, `blueprintPinSpellings`, `cardPinSpellings` and
   `type PinSpelling` with the rest.** They read `record.pinned`, so `contract.ts` will not typecheck
   without them going, and their only consumer is `pins.test.ts`, which does not merge. **The adversary
