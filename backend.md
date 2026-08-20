@@ -4152,6 +4152,132 @@ before AC4 is observable at all. Re-using these cells against an unsettled contr
 that **cannot red** — which is the strongest sentence in either file and is an argument for settling the
 contract first, not for reusing the cells.
 
+## A table can hold measurement and arithmetic in the same column, and only one of them reruns
+
+T230's reconciliation prints `delta +84` beside `predicted merged 5954` and **labels which is which**:
+the delta measured by it, the total arithmetic against a base line it has not run and I handed over.
+**Both are numbers in one table and only one is wrong in a way a rerun would catch.**
+
+It also **pre-commits an explanation as unavailable**: *vitest collected something I did not intend* is
+closed by reading rather than by hoping — all ten repo guards declare statically with `.each` = 0, the
+twelve `.each`-plus-filesystem suites walk `app/spec` or filter to `.tsx` while its routes are `.ts`, and
+its routes have no colocated tests. **So a miss is a miscount or a file that failed to collect, and those
+two separate by the SKIPPED count and the failed-FILE count, never by the test total** — a hook that
+throws runs no test and adds nothing to the failed column. **A pre-registration is worth what it forecloses,
+not what it predicts.**
+
+## A premise handed to you by the party that just found the bug in it is the thing to re-examine
+
+I told three sessions that `rulings-bind` was widened and their ids were now bound. **T230's implementer
+did not take my word for the conclusion of a bug I had just reported in my own guard.** It measured its own
+section instead and reported the sharper answer: **no preamble heading opens with a `D-230-*` id, so the
+trigger fires on none of them** — and all ten ids appear in T230's section regardless. *Green, and now
+green for a reason.*
+
+**The distinction is the point.** My message conflated *the guard can now see three-digit ids* with *your
+rulings are now checked*. The first is true and the second is vacuous for T230, because nothing of its
+enters the domain until someone writes a `## D-230-xx` heading. **A widening reported by the party that
+widened it is a claim about the instrument, not about the subject.**
+
+It also corrected me on a number I had corrected it on: it carried `error-hygiene` **18 → 22** into three
+messages, I said 21 → 22, and it verified the mechanism rather than the value — `git ls-tree -d backend
+lib/server/` returns twelve directories, `engine` among them because T040 merged, and 18 was a figure
+from before that. **Correct in direction, wrong in value, and it had stopped measuring the thing it was
+quoting.**
+
+## D-230-11: the three surfaces D-230-01 named and did not close
+
+**D-230-01 wrote *its own `app/api/account/keys/**` has no published URL, method, body or response* and
+then fixed the RENDERER.** So the gap it named is still open, its implementer shipped three values nothing
+blind can bind, and it was the party who could not close it alone who reported that. **Third instance this
+run of a ruling that names a gap and closes a neighbour** — D-140-04 was the last, discharged an hour ago.
+
+**The 429's `title` and `type`, published as VALUES rather than as members.** D-230-09 published `title`
+as a member of the key set and never its string, which is **T081's F2 verbatim on another task**: a blind
+author cannot pin wording without inventing it, and inventing it reds a correct implementation phrased
+differently.
+
+        title  "Rate limited"
+        type   `${PROBLEM_TYPE_BASE}/rate-limited`
+
+**`type` is the more load-bearing of the two and its implementer said so**: it is the member a client
+branches on. `store-failed` was safe because T050 and T081 shipped that slug first and it consumed the
+convention; **`rate-limited` is new, so it needed publishing rather than consuming.**
+
+**The route surface, and I am RATIFYING two decisions rather than deriving them — said plainly, because
+the difference matters to whoever reads this next.**
+
+        GET    /api/account/keys           —          200 KeyList   | 401 500
+        POST   /api/account/keys           { label }  201 IssuedKey | 400 401 500
+        DELETE /api/account/keys/{keyId}   —          200 KeyList   | 401 500
+
+        interface KeyList   { keys: readonly ApiKeyRecord[] }
+        interface IssuedKey { record: ApiKeyRecord; secret: string }
+
+**RATIFIED — `POST` at 201 carrying the secret.** It is the only response in the module that ever carries
+one, and 201 is the status whose semantics are *here is the representation of the thing just made*. Its
+`ok(payload, { status: 201 })` keeps it inside T000's envelope instead of building a `Response` beside it.
+**RATIFIED — revocation is idempotent**: `revokeKey` already returns silently for a non-UUID, and that
+generalises to unknown and already-revoked ids. **Cost stated: a client cannot tell *revoked* from *never
+existed*.** Accepted, because the alternative is an oracle over key ids.
+
+**CHANGED — `DELETE` answers `200 KeyList`, not `204`.** Two reasons and the second is the real one.
+`new Response(null, { status: 204 })` is the **one** response in the module built outside T000's envelope,
+and its own sibling `POST` demonstrates the alternative. **And with no `GET` and a 204 `DELETE`, AC4 — *a
+revoked key is refused immediately* — has no HTTP-observable form at all**: nothing a caller can request
+shows a key's state, so the criterion could only ever be driven at the module. `200` with the resulting
+list makes revocation observable in one request. It is also the shipped `200 <resulting state>` convention
+and it matches D-140-07 in the sibling task; **204 here and 200-with-state there is exactly the
+two-conventions-for-one-act drift D-140-06 had to rule around.**
+
+**ADDED — `GET`, which nothing published had.** `ApiKeyRecord` is `{ keyId, accountId, label, createdAt,
+revokedAt }` and **has no secret field, so listing is safe by construction rather than by a filter someone
+must remember not to drop.** `revokedAt: Date | null` is in the record, so a revoked key is **listed as
+revoked rather than hidden** — which is what makes AC4 observable at all. **`{keyId}` is a path segment
+here and was a body in T140 for a stated reason**: `keyId` is a UUID and `revokeKey` already pattern-tests
+it, while T140's `refId` had no published lexical shape per kind. Same question, opposite answer, because
+the contract answers it in one task and not the other.
+
+## An UNREACHABLE published in prose is a binding on code that does not exist, and it needs a witness
+
+D-140-07 says *every route passes `session.accountId`, so `NotAccountOwnerError` compares an id against
+itself* and calls the 403 unreachable. **T140's blind author read that as what it is: a binding on an
+implementation nobody has written, not a fact about one** — and written as prose it is exactly the shape
+this run charges, because **nothing reds when it stops being true.**
+
+So it put an instrument under it: a route cell driving a body that carries **somebody else's
+`accountId`**, requiring the save to land on the session's account and the victim's list to stay empty.
+**A route that reads an account from the request would make the 403 reachable after all, and that cell is
+the only thing that would say so.** It reports it as the one `unreachable` in six files with an instrument
+beneath it, and marks the others as claims.
+
+**The general form: a contract sentence that forecloses a behaviour is a test, or it is a hope.** T050's
+`http.ts` carries the same sentence for the same reason and has no such cell; that is now a known gap
+rather than a settled one.
+
+## D-140-07 clause 5 bought less than I said it bought, and its blind author priced it
+
+I ruled that `count` comes from `countSaves` and never `saves.length`, because deriving it *would satisfy
+AC3's agreement by making it unobservable*. **That reason is wrong at the transport and I should not have
+written it as though it held there.** Against a correct module the two are equal in every state, so **a
+route computing the wrong one is an equivalent mutant through the wire** — no route cell can separate
+them, and its author says so instead of writing a green that looks like it covers it.
+
+**What the clause actually buys is the agreement asserted in one response**, which is real and is worth
+the extra query. **What it does not buy is provenance**, which is held by nothing and is now recorded as
+held by nothing. *The clause stands; the second half of its stated reason is withdrawn.*
+
+## `instance` is not a reading — `ProblemInput` makes it unsettable
+
+T140's blind author flagged `instance` = the route's own path as a reading inherited by citation, and
+offered to own the red if it turned out to be a naming question. **It is not a reading and there is
+nothing to own.** `problem()` derives it from the request pathname, and `ProblemInput` is `ProblemDetails`
+**minus `instance`, spelled out member by member rather than as `Omit<>`** — the header says `Omit`
+collapses to `Record<string, unknown>` against an index signature and would have stopped `problem()`
+requiring anything at all. **So no task can pass an `instance` and none can differ.** D-02 was every
+caller being asked to remember one and none doing it. The cell is stronger than its author thought: it
+cannot red as wording, only as a wrapper that never reached `problem()`.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -13970,6 +14096,23 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Contract:** B-17 — limits apply to reads as well as writes, with keys issued per account for volume. Two limits already exist in the code and are the starting numbers: 512 KB per uploaded file (`components/upload/BundleDropzone.tsx:91`) and a card `params` nesting depth of 100 (`lib/core/card/validate.ts:108`). A refusal names the limit and when it resets, as `problem+json` 429. This reverses D-83, so the cost is explicit: an unkeyed MCP or crawler client hits a ceiling, and the product's discoverability by agents depends on that ceiling being generous.
 - **Acceptance criteria:** (1) an over-limit request returns 429 naming the limit and the reset; (2) limits are enforced server-side regardless of any client cap; (3) a valid API key raises the ceiling and is attributable in the audit log; (4) a revoked key is refused immediately; (5) an anonymous read below the ceiling is never delayed or challenged.
 - **Open:** the actual numbers per tier, and what constitutes a malicious bundle given that the registry distributes instructions an agent will execute.
+- **Open (owner), raised by T230's implementer with D-70-15 as its precedent — 255 was a storage bound
+  and the PRODUCT bound stayed the owner's.** Two literals it chose that are product-visible, flagged by
+  it as decisions rather than details, **and it is right that they are not its call**:
+  **`SECRET_PREFIX = "dp_"`** — in every key a user copies, and **the token a secret-scanning partner
+  registers to detect leaked keys in public repositories. That is an external commitment, not a
+  formatting choice**, and changing it after keys exist invalidates every issued one.
+  **`MAX_LABEL_LENGTH = 100`** — argued as a storage bound in D-70-17's sense and **also** the sentence a
+  user meets when a settings form refuses their input; the two were not split.
+  **Everything else it ships is classified and none of it is a ruled rate**: `DEFAULT_LIMITS` is `{}`
+  exported empty with `limitFor` refusing an unconfigured bucket, so emptiness cannot read as permissive;
+  `MAX_UPLOAD_KB`/`MAX_PARAM_DEPTH` are transcribed under D-230-02 at the cited sites' own spelling;
+  the memory and cryptographic bounds carry computed assertions rather than sentences.
+- **D-230-11 publishes the three surfaces D-230-01 named and left open**: `app/api/account/keys/**` as
+  `GET`/`POST`/`DELETE`, the 429's `title` as `"Rate limited"` and its `type` as
+  `${PROBLEM_TYPE_BASE}/rate-limited`. **`POST` 201 and idempotent revocation are RATIFIED** rather than
+  derived; **`DELETE` changes from 204 to `200 KeyList`** and a **`GET` is added**, without which AC4 has
+  no HTTP-observable form.
 - **Out of scope:** content moderation (T170), abuse takedown (T060's operator).
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-17; numbers still open.
