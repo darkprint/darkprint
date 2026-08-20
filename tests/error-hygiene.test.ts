@@ -151,7 +151,7 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
      *
      * This was `toBeGreaterThanOrEqual(8)` with a comment saying "if one was added, raise it" —
      * and nothing reds when the raise is skipped, which is the whole defect of a hand-maintained
-     * number. Measured at `d7ee3ca`: the walk discovers **17**. Raised to **18** at T081's merge (`752721d`), which added `registry/RegistryStoreError` — and the raise happened because the equality RED, which is the whole reason it is an equality. So the floor sat at 8 across
+     * number. Measured at `d7ee3ca`: the walk discovers **17**. Raised to **18** at T081's merge, then to **21** at T040's (`ad44537`) with `engine/{LimitExceededError,CircularReferenceError,UnserializableValueError}` — **and the equality RED at each, which is why it is an equality** (`752721d`), which added `registry/RegistryStoreError` — and the raise happened because the equality RED, which is the whole reason it is an equality. So the floor sat at 8 across
      * T070's three naming classes, T030's six ontology classes and T050's four accounts classes,
      * detecting none of them, and it would no longer have detected any of those nine going
      * missing either. It was written to catch a class the walk stops reaching; after three merges
@@ -169,7 +169,7 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
         "which is what happened here across three merges. If a class was added, raise this number " +
         "in the same commit and say which. If one was removed, lower it and say why — a class " +
         "that stopped being exported is exactly what this walk exists to notice.",
-    ).toBe(18);
+    ).toBe(21);
 
     const rendered: string[] = [];
     const traceless: string[] = [];
