@@ -3415,6 +3415,57 @@ predicted with the total off is collection; `failed` **less** than predicted wit
 undefined)` arms. **Naming your own vacuity candidates before the run is what stops the kinder
 explanation being invented after it.**
 
+## A transcribed operation can DELEGATE a sub-operation, and one row per operation cannot record that
+
+**T040 round 7: FAIL, D-40-L, and it is inside round 6's own fix.** `limits.ts:468` reads
+`Number((container as {length:unknown}).length)`. **`LengthOfArrayLike` is `ToLength` is
+`ToIntegerOrInfinity` is `ToNumber`; `Number(v)` is `ToNumeric` then BigInt→Number, so it ACCEPTS a
+BigInt where `ToNumber` REFUSES one.** Four divergences, six controls holding, and **the direction is
+neither over- nor under-count: the walk ANSWERS where the ruled formula REFUSES.** Repair measured
+rather than proposed — `Number(...)` → `+(...)`, **10 of 10 agree, D-40-K's own halves untouched.**
+
+**The countermeasure was already written, 95 lines below, at `limits.ts:562-564`:** *"`ToNumber(value)`,
+and `+` is the only spelling of it. `Number(value)` is a DIFFERENT function — it accepts a BigInt where
+`ToNumber` refuses one."* **The next transcription was written at line 468 and did not read it** — *a
+countermeasure only fires if it is re-read at the moment it applies*, third instance, this time with
+author and reader the same session.
+
+**And the audit artefact fails one column over, in a way its shape cannot express.** The **delegated**
+column survives — all seven walked, every one genuinely the spec operation, so its author's named
+hypothesis does not fire. **But a TRANSCRIBED operation can itself DELEGATE a sub-operation to a
+primitive.** `ToLength` has three parts — `ToNumber`, truncate toward zero, NaN→0 — and round 6's fix
+**transcribed two and delegated the third to `Number()`.** **One row per operation leaves nowhere to
+record a delegation nested inside a transcription**, so the closing claim *nothing in the transcribed
+column is unobserved* is **true of the two halves the charge named and false of the third.**
+
+**Coverage measured rather than read off fixtures**: blind's five D-40-K cells and the corpus's five are
+1.5, 2.9, NaN, −1, `"2"`, `{valueOf:()=>2}` — every one a number, a string, or a `valueOf` returning
+one. **Nothing reaches the `ToNumber` half.** With the repair applied, **306 passed, 0 newly red** —
+**and the probe registers a difference the suites cannot, so the suites are demonstrably blind to a
+divergence that exists.** That is what separates the zero from a dead instrument, **and it reads in both
+directions: too little, and not too much.**
+
+## An unexplained 1-in-21 red on a task whose AC5 is a determinism criterion
+
+**Its first narrow run returned `1 failed | 84 passed` on a cold vite cache. It did not recur in twenty
+further runs** — three cold-cache, two replays of the exact wide-then-narrow sequence, six under a
+declared six-way burner. **It does not have the identity and refused to classify it**, because *an
+unreproduced red classified from its neighbours is the shape this file charges.*
+
+**Both host-dependent assertions were measured rather than assumed**: D-40-F's cost ratio spreads
+4.20–29.16 idle and **8.12–9.58 under a six-way burner** against a threshold of 100 — **the min-of-7
+estimator is STEADIER under load**, which is why load did not reproduce it. D-40-B's depth ratio passed
+6 of 6 under the same burner.
+
+**So the reason it could not be reproduced is the reason the round could not classify it**, and it hands
+that to a successor **ahead of its own charge**. **An unexplained red on a determinism criterion is worth
+more attention than a measured defect, and it said so.**
+
+**Its merge was refused twice by its own session's permission classifier and it did not work around it**
+— surfaced to its user, and it reported that **11 base lines are missing, both commits prose-only, and
+that two of the ten root guards parse that file and are green WITHOUT those lines rather than with
+them.** *State that when you quote me.*
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
