@@ -250,9 +250,26 @@ export function measureSubmission(
   return total;
 }
 
-/** One open container, with the cursor into it that an explicit stack has to carry itself. */
+/**
+ * One open container, with the cursor into it that an explicit stack has to carry itself.
+ *
+ * **`length` is carried rather than re-read, and the object branch's `keys` is the same
+ * decision (D-40-I).** The rule is not *snapshot the length*: it is **snapshot exactly what
+ * the serialiser snapshots and read live exactly what it reads live.**
+ * `SerializeJSONArray` takes `LengthOfArrayLike(value)` **once** and then `Get(value, index)`
+ * **per iteration**; `SerializeJSONObject` takes `EnumerableOwnPropertyNames(value)` once and
+ * `Get(value, P)` per key. So the **extent** of a container is fixed when it is entered and
+ * its **contents** are not — and a fix that also froze the contents would be a new defect in
+ * the opposite direction, which is why `measure.test.ts` holds five cells that replace an
+ * element or a value mid-walk and require the number not to move.
+ */
 type Frame =
-  | { readonly kind: "array"; readonly container: readonly unknown[]; index: number }
+  | {
+      readonly kind: "array";
+      readonly container: readonly unknown[];
+      readonly length: number;
+      index: number;
+    }
   | {
       readonly kind: "object";
       readonly container: Record<string, unknown>;
@@ -310,7 +327,7 @@ function walk(root: unknown, spend: (bytes: number) => void, operation: string):
     spend(2);
     stack.push(
       Array.isArray(container)
-        ? { kind: "array", container, index: 0 }
+        ? { kind: "array", container, length: container.length, index: 0 }
         : {
             kind: "object",
             container: container as Record<string, unknown>,
@@ -327,7 +344,11 @@ function walk(root: unknown, spend: (bytes: number) => void, operation: string):
     const frame = stack[stack.length - 1];
 
     if (frame.kind === "array") {
-      if (frame.index >= frame.container.length) {
+      /* The extent taken at enter, never re-read: caller code running mid-walk — a `toJSON`,
+         a getter, or either of the two coercions D-40-H introduced — can push or truncate
+         while this loop is open, and the serialiser would not see it. Reading it live made
+         growth over-count and refuse a conforming submission, and shrink under-count. */
+      if (frame.index >= frame.length) {
         /* Path-scoped: leaving a container makes it legal again on a different path, which
            is what keeps legitimate shared substructure from reading as a cycle. */
         open.delete(frame.container);

@@ -624,6 +624,300 @@ describe("D-40-E — the walk agrees with the formula over the serialiser's clas
   });
 });
 
+/* -------- D-40-I: the extent is snapshotted, the content is read live -------- */
+
+/**
+ * A fixture that mutates itself while it is being walked, plus a count of how many times its
+ * own code ran.
+ *
+ * **The count is the control, and the first version of it measured an adjacent quantity.** It
+ * asked whether serialising the value a second time gave a different string — which is true
+ * only for a mutation that is both visible on a second pass **and** non-idempotent, and **five
+ * of these ten fixtures are neither**. `{a:{toJSON(){delete o.b}}, b:"gone"}` renders `{"a":1}`
+ * on both passes, because the key set was snapshotted before `b` went; `[{toJSON(){a[1]=X}},…]`
+ * renders identically twice because the write is idempotent. Both mutations fire; the proxy for
+ * them did not. Caught by running the helper before trusting it.
+ *
+ * The quantity this axis is actually about is **whether the caller's code runs mid-walk**, so
+ * that is what is counted — by the fixture, at the moment it happens.
+ */
+interface MutatingFixture {
+  readonly value: unknown;
+  readonly fired: () => number;
+}
+
+describe("D-40-I — the walk snapshots what the serialiser snapshots, and no more", () => {
+  /**
+   * **Every value is built twice, once per reading, and that is why this axis lives in a named
+   * test rather than as classes in the corpus above.**
+   *
+   * `cells()` calls `make()` **once** and reads the result three times — `JSON.stringify` to
+   * partition it, `formula` for the expected number, `measureSubmission` for the measured one.
+   * A value that mutates while it is walked answers differently on each of those, so this is
+   * not a cell nobody thought to write: **it is a cell that construction cannot hold.** Which
+   * of the two it is matters, because the obvious response to *the corpus cannot see this* is
+   * to add a class, and a class here would produce nonsense.
+   */
+  function bothReadings(build: () => MutatingFixture, label: string): void {
+    const first = build();
+    const expected = Buffer.byteLength(JSON.stringify(first.value), "utf8");
+    expect(first.fired(), `${label}: the fixture's own code must run inside JSON.stringify`)
+      .toBeGreaterThan(0);
+
+    const second = build();
+    const measured = measureSubmission("probe", second.value, GENEROUS);
+    expect(second.fired(), `${label}: and inside the walk, or the two readings differ in what they ran`)
+      .toBeGreaterThan(0);
+
+    expect(measured, label).toBe(expected);
+  }
+
+  const growsByToJSON = (): MutatingFixture => {
+    let fired = 0;
+    const array: unknown[] = [
+      {
+        toJSON: () => {
+          fired += 1;
+          array.push("late");
+          return 1;
+        },
+      },
+    ];
+    return { value: array, fired: () => fired };
+  };
+  const shrinksByToJSON = (): MutatingFixture => {
+    let fired = 0;
+    const array: unknown[] = [
+      {
+        toJSON: () => {
+          fired += 1;
+          array.length = 1;
+          return 1;
+        },
+      },
+      "gone",
+      "gone2",
+    ];
+    return { value: array, fired: () => fired };
+  };
+  const growsByGetter = (): MutatingFixture => {
+    let fired = 0;
+    const array: unknown[] = [];
+    Object.defineProperty(array, "0", {
+      get: () => {
+        fired += 1;
+        array[1] = "late";
+        return 1;
+      },
+      enumerable: true,
+      configurable: true,
+    });
+    array.length = 1;
+    return { value: array, fired: () => fired };
+  };
+
+  /**
+   * `SerializeJSONArray` computes `len = LengthOfArrayLike(value)` **once** and then loops
+   * `0..len-1`. The frame re-read `frame.container.length` on every iteration, so caller code
+   * running mid-walk moved the extent under it: growth **over-counts** and shrink
+   * **under-counts**, and both are `maxBytes` defects in opposite directions.
+   *
+   * **The getter cell is what says this is not downstream of D-40-H**: it needs no coercion at
+   * all, so the axis existed before `+value` and `String(value)` were written. What D-40-H did
+   * was multiply the ways to reach it.
+   */
+  it("takes an array's extent once, however the caller moves it", () => {
+    bothReadings(growsByToJSON, "grows through toJSON");
+    bothReadings(shrinksByToJSON, "shrinks through toJSON");
+    bothReadings(growsByGetter, "grows through a plain getter");
+  });
+
+  /**
+   * **The control that makes the asymmetry a mechanism rather than a sample.** The object
+   * branch snapshots `Object.keys` at enter, matching `EnumerableOwnPropertyNames`, and was
+   * already right — so these agree **before and after** the array fix. A report showing only
+   * the array cells could not tell *the array branch is wrong* from *mid-walk mutation is
+   * handled nowhere*.
+   */
+  it("was already taking an object's key set once, which is why only one branch changed", () => {
+    const grows = (): MutatingFixture => {
+      let fired = 0;
+      const object: Record<string, unknown> = {
+        a: {
+          toJSON: () => {
+            fired += 1;
+            object.late = "x";
+            return 1;
+          },
+        },
+      };
+      return { value: object, fired: () => fired };
+    };
+    const shrinks = (): MutatingFixture => {
+      let fired = 0;
+      const object: Record<string, unknown> = {
+        a: {
+          toJSON: () => {
+            fired += 1;
+            delete object.b;
+            return 1;
+          },
+        },
+        b: "gone",
+      };
+      return { value: object, fired: () => fired };
+    };
+
+    bothReadings(grows, "an object that grows");
+    bothReadings(shrinks, "an object that shrinks");
+  });
+
+  /**
+   * **The other half of the rule, and the control against the over-eager fix.**
+   *
+   * The serialiser snapshots the **extent** and reads the **content** live — `Get(value, i)`
+   * per index, `Get(value, P)` per key — so a fix that also snapshotted the elements or the
+   * values would be a new defect in the other direction. These agree today because the walk
+   * already reads content live, and they are what reds if that stops being true.
+   *
+   * D-40-I's charger tested extent and said it had not tested content, rather than letting its
+   * round read as exhaustive. Measured here: clean, and clean for a stated reason.
+   */
+  it("reads an array's and an object's contents live, because the serialiser does", () => {
+    const replacing = (
+      install: (record: () => void) => unknown,
+    ): (() => MutatingFixture) => {
+      return () => {
+        let fired = 0;
+        const value = install(() => {
+          fired += 1;
+        });
+        return { value, fired: () => fired };
+      };
+    };
+
+    bothReadings(
+      replacing((record) => {
+        const array: unknown[] = [
+          {
+            toJSON: () => {
+              record();
+              array[1] = "REPLACED-LONGER";
+              return 1;
+            },
+          },
+          "orig",
+        ];
+        return array;
+      }),
+      "an array element ahead of the cursor",
+    );
+
+    bothReadings(
+      replacing((record) => {
+        const array: unknown[] = [
+          "first",
+          {
+            toJSON: () => {
+              record();
+              array[0] = "REPLACED-LONGER";
+              return 1;
+            },
+          },
+        ];
+        return array;
+      }),
+      "an array element behind the cursor",
+    );
+
+    bothReadings(
+      replacing((record) => {
+        const array: unknown[] = [1, 2];
+        Object.defineProperty(array, "0", {
+          get: () => {
+            record();
+            array[1] = "REPLACED-LONGER";
+            return 1;
+          },
+          enumerable: true,
+          configurable: true,
+        });
+        return array;
+      }),
+      "an array element, from a getter",
+    );
+
+    bothReadings(
+      replacing((record) => {
+        const object: Record<string, unknown> = {
+          a: {
+            toJSON: () => {
+              record();
+              object.b = "REPLACED-LONGER";
+              return 1;
+            },
+          },
+          b: "orig",
+        };
+        return object;
+      }),
+      "an object value ahead of the cursor",
+    );
+
+    bothReadings(
+      replacing((record) => {
+        const object: Record<string, unknown> = {
+          a: "first",
+          b: {
+            toJSON: () => {
+              record();
+              object.a = "REPLACED-LONGER";
+              return 1;
+            },
+          },
+        };
+        return object;
+      }),
+      "an object value behind the cursor",
+    );
+  });
+
+  /**
+   * The `maxBytes` half, driven at a bound and in the direction that is easy to miss: an
+   * over-count **refuses a submission the ruled number accepts**, which no assertion about a
+   * returned number can see, because there is no returned number.
+   */
+  it("does not refuse a submission the ruled number accepts", () => {
+    const build = (): MutatingFixture => {
+      let fired = 0;
+      const array: unknown[] = [
+        {
+          toJSON: () => {
+            fired += 1;
+            for (let i = 0; i < 60; i += 1) array.push("padpadpad");
+            return 1;
+          },
+        },
+      ];
+      return { value: array, fired: () => fired };
+    };
+
+    const first = build();
+    const ruled = Buffer.byteLength(JSON.stringify(first.value), "utf8");
+    expect(first.fired(), "the fixture's own code must run").toBeGreaterThan(0);
+
+    /* The control: the two readings really are far apart, so the bound below is not being
+       driven between two numbers that were already the same. */
+    expect(ruled).toBeLessThan(200);
+
+    const second = build();
+    expect(
+      measureSubmission("validateBundle", second.value, resolveLimits({ maxBytes: 200 })),
+    ).toBe(ruled);
+    expect(second.fired()).toBeGreaterThan(0);
+  });
+});
+
 /* ------- D-40-H: the step reads a slot where the serialiser performs a coercion ------- */
 
 describe("D-40-H — steps 4a and 4b coerce, and only 4c and 4d read a slot", () => {
