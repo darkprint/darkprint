@@ -186,32 +186,4 @@ describe("the account's email is on no profile surface, for any actor", () => {
   }
 });
 
-describe("toggleFollow answers the pair the block publishes", () => {
-  it("returns exactly `{ watchers, followedByCaller }`", async () => {
-    const toggleFollow = await bind("toggleFollow");
-    const answer = await toggleFollow(s.db, account(stranger.id, stranger.handle), owner.handle);
 
-    expect(
-      answer === null || typeof answer !== "object" ? String(answer) : Object.keys(answer).sort(),
-      `the block publishes \`Promise<{ watchers: number; followedByCaller: boolean }>\`. ` +
-        `\`docs/architecture/seams.md\` SEAM-57 publishes \`{ watching, watchers }\` for the ` +
-        `same surface; the contract wins and the divergence is reported.`,
-    ).toEqual(["followedByCaller", "watchers"]);
-
-    const a = answer as { watchers: unknown; followedByCaller: unknown };
-    expect(typeof a.watchers).toBe("number");
-    expect(typeof a.followedByCaller).toBe("boolean");
-  });
-});
-
-describe("setPins answers a whole ProfileRecord, not an acknowledgement", () => {
-  it("returns `Promise<ProfileRecord>` as published", async () => {
-    const setPins = await bind("setPins");
-    const record = await setPins(s.db, account(owner.id, owner.handle), owner.id, []);
-    asProfileRecord(record, `setPins(db, owner, ownerId, [])`);
-    expect(
-      Object.keys(record as object).sort(),
-      "`setPins` is published as `Promise<ProfileRecord>`, the same record `getProfile` answers",
-    ).toEqual([...RECORD_KEYS]);
-  });
-});

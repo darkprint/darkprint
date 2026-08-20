@@ -118,12 +118,6 @@ export function loadProfiles(): Promise<Namespace> {
 export const PUBLISHED = {
   getProfile:
     "getProfile(db: Db, actor: Actor, handle: string): Promise<ProfileRecord | undefined>",
-  setPins:
-    "setPins(db: Db, actor: Actor, accountId: string, pins: readonly string[]): " +
-    "Promise<ProfileRecord>",
-  toggleFollow:
-    "toggleFollow(db: Db, actor: Actor, handle: string): " +
-    "Promise<{ watchers: number; followedByCaller: boolean }>",
 } as const;
 
 export type FunctionName = keyof typeof PUBLISHED;

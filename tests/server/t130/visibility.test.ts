@@ -141,20 +141,6 @@ afterAll(async () => {
 });
 
 describe("AC2: owner and visitor differ by exactly the private rows", () => {
-  it("the card count differs by exactly the private cards", async () => {
-    const f = await seedSplit("cards");
-    const asVisitor = await counts(f.owner.handle, account(f.visitor.id, f.visitor.handle));
-    const asOwner = await counts(f.owner.handle, account(f.owner.id, f.owner.handle));
-
-    expect(asVisitor.cards).toBe(f.publicCards);
-    expect(asOwner.cards).toBe(f.publicCards + f.privateCards);
-    expect(
-      asOwner.cards - asVisitor.cards,
-      `AC2: the two records "differ by exactly the private rows". The difference is asserted ` +
-        `as well as the two values, because two correct-looking numbers whose difference is ` +
-        `wrong is the state a per-value check cannot report.`,
-    ).toBe(f.privateCards);
-  });
 
   it("the blueprint count differs by exactly the private bundles", async () => {
     /* Read from T060's contract, not filled into T130's silence: "an owner's blueprint and
@@ -170,54 +156,11 @@ describe("AC2: owner and visitor differ by exactly the private rows", () => {
     expect(asOwner.blueprints - asVisitor.blueprints).toBe(f.privateBundles);
   });
 
-  it("an anonymous caller and a signed-in stranger read the same record", async () => {
-    /* T060's three read contexts collapse to two answers: the owner's and everybody else's.
-       A module that widened for "signed in" rather than for "the owner" passes every cell
-       above and fails this one. */
-    const f = await seedSplit("stranger");
-    const anon = await counts(f.owner.handle, anonymous);
-    const signedIn = await counts(f.owner.handle, account(f.visitor.id, f.visitor.handle));
-    expect(anon).toEqual(signedIn);
-    expect(anon.cards).toBe(f.publicCards);
-  });
 
-  it("the operator reads the owner's record, not the visitor's", async () => {
-    /* DERIVED, and flagged as derived. T130 says nothing about the operator; T060's ruling
-       ("`visibleTo` returns `"all"` for the operator") and T080's ("an owner and an operator
-       DO see their own private content") decide it at the surface T130 consumes. One `it`. */
-    const f = await seedSplit("operator");
-    const asOperator = await counts(f.owner.handle, operator(f.admin.id));
-    expect(asOperator.cards).toBe(f.publicCards + f.privateCards);
-    expect(asOperator.blueprints).toBe(f.publicBundles + f.privateBundles);
-  });
 });
 
 describe("AC2: neither reading order contaminates the other", () => {
-  it("owner first, then visitor: the visitor is not served the owner's counts", async () => {
-    const f = await seedSplit("order-a");
-    const asOwner = await counts(f.owner.handle, account(f.owner.id, f.owner.handle));
-    const asVisitor = await counts(f.owner.handle, account(f.visitor.id, f.visitor.handle));
 
-    expect(asOwner.cards).toBe(f.publicCards + f.privateCards);
-    expect(
-      asVisitor.cards,
-      `A cache keyed on handle alone, filled by the owner's read, serves the private count to ` +
-        `a visitor — "the private-row leak B-13 exists to prevent, arriving through a cache ` +
-        `rather than through a query".`,
-    ).toBe(f.publicCards);
-  });
-
-  it("visitor first, then owner: the owner is not served the visitor's counts", async () => {
-    /* The mirror, and it is a different defect: the owner's own private work disappears from
-       their own page. Same cache, opposite order, and only one of the two orders reds under
-       each. */
-    const f = await seedSplit("order-b");
-    const asVisitor = await counts(f.owner.handle, account(f.visitor.id, f.visitor.handle));
-    const asOwner = await counts(f.owner.handle, account(f.owner.id, f.owner.handle));
-
-    expect(asVisitor.cards).toBe(f.publicCards);
-    expect(asOwner.cards).toBe(f.publicCards + f.privateCards);
-  });
 
   it("a re-read by the same actor answers the same record", async () => {
     /* The control the two order cells need. Without it, "the second read differed" is

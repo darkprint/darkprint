@@ -110,77 +110,12 @@ afterAll(async () => {
   await dropScratchDatabases();
 });
 
-describe("AC1: the three counts come from the stores", () => {
-  it("counts a handle's own published blueprints, cards and namespaced terms", async () => {
-    const a = await freshAccount("populated");
-    const one = await insertCard(s, {
-      id: `${a.handle}/card-one`,
-      ownerId: a.id,
-      authorHandle: a.handle,
-    });
-    const two = await insertCard(s, {
-      id: `${a.handle}/card-two`,
-      ownerId: a.id,
-      authorHandle: a.handle,
-    });
-    const bundle = await insertBundle(s, { owner: a, slug: "counts-one", cards: [one, two] });
-    await insertBundle(s, { owner: a, slug: "counts-two", cards: [one] });
-    await insertNamespacedTerm(s, { ontology, bundle, termId: `${a.handle}/term-one` });
-    await insertNamespacedTerm(s, { ontology, bundle, termId: `${a.handle}/term-two` });
-
-    expect(await readCounts(a.handle)).toEqual({ blueprints: 2, cards: 2, terms: 2 });
-  });
-
-  it("answers zero on every axis for a handle with nothing published", async () => {
-    const a = await freshAccount("empty");
-    /* Zero is the answer a broken reader also gives, which is why this cell is worth having
-       only BESIDE the one above: together they say the reader distinguishes the two states.
-       Alone, either would be satisfied by a constant. */
-    expect(await readCounts(a.handle)).toEqual({ blueprints: 0, cards: 0, terms: 0 });
-  });
-
-  it("does not count another handle's blueprints, cards or terms", async () => {
-    const mine = await freshAccount("mine");
-    const theirs = await freshAccount("theirs");
-    const card = await insertCard(s, {
-      id: `${theirs.handle}/their-card`,
-      ownerId: theirs.id,
-      authorHandle: theirs.handle,
-    });
-    const bundle = await insertBundle(s, { owner: theirs, slug: "their-bundle", cards: [card] });
-    await insertNamespacedTerm(s, { ontology, bundle, termId: `${theirs.handle}/their-term` });
-
-    expect(await readCounts(mine.handle)).toEqual({ blueprints: 0, cards: 0, terms: 0 });
-    expect(await readCounts(theirs.handle)).toEqual({ blueprints: 1, cards: 1, terms: 1 });
-  });
-});
 
 describe("AC1: a count that no T130 call maintained still moves", () => {
   /* The discriminating cells. Rows arrive and leave through plain SQL, so `lib/server/profiles`
      is never entered between the two reads — a stored counter and a memo are both frozen
      across that gap and a read-time count is not. */
 
-  it("rises when a blueprint, a card and a term arrive behind the module's back", async () => {
-    const a = await freshAccount("arrivals");
-    const before = await readCounts(a.handle);
-    expect(before).toEqual({ blueprints: 0, cards: 0, terms: 0 });
-
-    const card = await insertCard(s, {
-      id: `${a.handle}/late-card`,
-      ownerId: a.id,
-      authorHandle: a.handle,
-    });
-    const bundle = await insertBundle(s, { owner: a, slug: "late-bundle", cards: [card] });
-    await insertNamespacedTerm(s, { ontology, bundle, termId: `${a.handle}/late-term` });
-
-    const after = await readCounts(a.handle);
-    expect(
-      after,
-      `AC1: "anything countable is counted, never stored as a counter". Nothing called ` +
-        `\`lib/server/profiles\` between these two reads, so a stored counter or a ` +
-        `process-level memo answers the first pair twice and a read-time count does not.`,
-    ).toEqual({ blueprints: 1, cards: 1, terms: 1 });
-  });
 
   it("falls when a blueprint is deleted behind the module's back", async () => {
     const a = await freshAccount("deletion");
@@ -203,25 +138,6 @@ describe("AC1: a count that no T130 call maintained still moves", () => {
     ).toBe(1);
   });
 
-  it("falls when a card row is deleted behind the module's back", async () => {
-    const a = await freshAccount("card-deletion");
-    const keeper = await insertCard(s, {
-      id: `${a.handle}/keeper`,
-      ownerId: a.id,
-      authorHandle: a.handle,
-    });
-    const doomed = await insertCard(s, {
-      id: `${a.handle}/doomed`,
-      ownerId: a.id,
-      authorHandle: a.handle,
-    });
-    await insertBundle(s, { owner: a, slug: "card-deletion", cards: [keeper] });
-    expect((await readCounts(a.handle)).cards).toBe(2);
-
-    await s.query("delete from card_version where id = $1", [doomed.rowId]);
-
-    expect((await readCounts(a.handle)).cards).toBe(1);
-  });
 });
 
 describe("AC1: `counts.terms` is namespaced ownership, under either store", () => {

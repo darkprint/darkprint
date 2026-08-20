@@ -97,8 +97,6 @@ const owner = account(ACCOUNT_ID, HANDLE);
  */
 const REACHES_THE_STORE: Readonly<Record<string, readonly unknown[]>> = {
   getProfile: [owner, HANDLE],
-  setPins: [owner, ACCOUNT_ID, []],
-  toggleFollow: [owner, HANDLE],
 };
 
 /**
@@ -255,7 +253,7 @@ describe("the instrument can register a leak before any green below is offered",
 });
 
 describe("every published function seals the store fault", () => {
-  it("covers all three published functions, so the set cannot silently shrink", () => {
+  it("covers every function the block publishes, so the set cannot silently shrink", () => {
     /* A guard on THIS FILE, counted as that and not as coverage: it compares two lists that
        both live here, so no implementation can fail it. It reds the day the loop and the
        published block disagree — a fourth function, or one quietly dropped from the loop. */

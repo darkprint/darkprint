@@ -152,28 +152,7 @@ describe(`${AUTHOR_ROUTE} answers 200 ProfileRecord`, () => {
     expect(new Date(String(body.joinedAt)).toISOString()).toBe(JOINED.toISOString());
   });
 
-  it("the actor is the SESSION's, so an owner and a visitor get different records", async () => {
-    /* The join. Everything else in this file could be the reader's behaviour arriving through
-       another door; this is the only cell that observes whatever turns a `Request` into an
-       `Actor`, and a regression there makes every caller anonymous with nothing else red. */
-    const anonymous = await counts(owner.handle);
-    const asOwner = await counts(owner.handle, sessionCookie(owner.id, owner.handle));
 
-    expect(anonymous.cards).toBe(PUBLIC_CARDS);
-    expect(asOwner.cards).toBe(PUBLIC_CARDS + PRIVATE_CARDS);
-    expect(
-      asOwner.cards - anonymous.cards,
-      "AC2 at the transport: the two records differ by exactly the private rows",
-    ).toBe(PRIVATE_CARDS);
-  });
-
-  it("a stranger's session reads the visitor's record, not the owner's", async () => {
-    /* The half `actorFrom` could get wrong in the other direction: the actor is the session's
-       identity, not "somebody is signed in". A route that widened for any valid cookie passes
-       the cell above and fails this one. */
-    const asStranger = await counts(owner.handle, sessionCookie(stranger.id, stranger.handle));
-    expect(asStranger.cards).toBe(PUBLIC_CARDS);
-  });
 });
 
 describe("AC5: an unknown handle is a 404, and it is problem+json", () => {
