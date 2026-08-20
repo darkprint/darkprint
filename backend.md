@@ -3327,6 +3327,94 @@ probe retired.** Re-expressed against the new line, it reports 0 like the rest. 
 retired probe both show up as a mutation that stops applying, and only reading the diff separates
 them.**
 
+## `error-hygiene`'s domain is shipped DIRECTORIES, so a new module's class moves the number at the merge
+
+**I told three sessions: *the day you publish an error class it reds and the number moves in the same
+commit as the class*. That is false for a NEW module directory, and T230's implementer measured it
+rather than taking it.**
+
+**The guard's domain is `git ls-tree -d --name-only backend lib/server/` — eleven shipped directories —
+and `readdirSync` is only a presence check that throws when a shipped module is missing locally.**
+`lib/server/limits` is in neither list, **so it is never in `barrels`, so it is never imported, so its
+classes are never discovered.** Publishing `RateLimitedError` there **does not move 18 in the
+worktree. It moves it in the merge commit**, when the directory becomes shipped.
+
+**T081 was different, and that is exactly why the sentence fitted then**: it added a class to
+`lib/server/registry`, **a directory already on `backend`**, so the working-tree import of an
+already-shipped barrel found it immediately.
+
+**The axis is shipped-DIRECTORY versus shipped-CLASS and my briefing treated them as one** — which is
+this file's own entry *I predicted two guards would fire and they differ in exactly the axis I had just
+written about*, **arriving on the fix for that same file rather than on the file.** Third time on this
+guard.
+
+**And it declined to ask me for the change that would have caused the damage.** Moving 18 → 19 now would
+red `error-hygiene` **on base and in every other worktree**, none of which has `lib/server/limits`
+shipped — *a guard must not demand what its own reader is forbidden to write*. **It saw that the ask
+itself was the defect and refused to make it.**
+
+**Standing correction, sent to every session that got the wrong version: for a NEW module directory the
+number moves in the merge commit and the implementer reports the count to write. For a class added to an
+already-shipped directory it moves with the class.**
+
+## I ruled four defects about a section contradicting itself, and landed three of them as additions
+
+**T130's implementer measured the section after my rulings and found all three superseded sentences
+still standing, in the imperative, beside the rulings that overturn them**: `validated: boolean` 25
+lines above D-130-01, the withdrawn admissible message form, and the withdrawn Open line.
+
+**This is the file's own worst-instance entry repeated** — *an amendment is not applied until the
+sentence it replaces is gone; adding the correction and leaving the original is worse than doing
+nothing, because the original was at least uncontested.*
+
+**And the damage runs in the wrong direction because of which surface is authoritative.** *The criteria
+say what must be true; the block says what to type; a reader types the block.* **So a blind author
+typing from T130's block would have written `validated: boolean` and a throwing `getProfile` — the two
+things D-130-01 and D-130-02 exist to prevent — and both were freshly ruled rather than stale.**
+
+**Two of the four rulings were themselves about a section contradicting itself.** D-130-02 charges the
+block for publishing a rejection its signature contradicts; D-130-03 charges the Open line for
+contradicting the block. **Both were then in that shape.** *The correction is where the defect lands,
+every time.*
+
+**And nothing red, structurally.** `rulings-bind` triggers on a **preamble heading opening with an id**;
+D-130-01..04 are bold inline text inside a task-section bullet, **so the guard has nothing to look for
+and is green by construction** — the fourth failure mode its own docblock names. **Its implementer
+reported that rather than proposing a guard, because the id-presence check cannot be made to see it.**
+
+**It also declined to make the three edits**, though they have no design space, on the correct ground:
+**the design-space test governs who may edit inside their own partition, not whether a boundary may be
+crossed because the crossing is small — and a brief may narrow a rule and never widen it.** Same call
+T081's implementer made. **All three displaced by me at this commit, and the block re-stamped.**
+
+## A decision about scope written down as a claim about reach
+
+**T230's blind author swept its own files for `unreachable`, `unobservable`, `by construction` — and
+then for `structural`, `not reachable`, `cannot` — and found two of its own claims false.**
+
+**The first is the one the sweep exists for**: a file asserted the two starting numbers were *quantified
+over by construction* while the citation list was **something it had typed**. Rewritten so the value,
+the path **and the line** are parsed from the block and the cited line is read from the tree. **Its own
+note is why the sweep beats judgement: *this is the one I would not have found by asking where are my
+claims weak — I had just written that file and believed it.***
+
+**The second is a new shape.** It had written that an audit **count** was *not reachable from here*. **It
+is reachable** — the value is in the same function. **The true statement is that it is not ITS to pin**:
+exactly-one-row is T240's AC1, and asserting it would make this suite a second contract for a `todo`
+task.
+
+**So a decision about SCOPE had been written down as a claim about REACH** — and the two are recorded
+identically, in the place a later reader stops. **A scope decision invites *should we?*; an
+unreachability claim closes the question.** Recording the wrong one retires a check that was never
+examined, and **nothing reds either way.**
+
+**Its pre-registration also names the direction that is cheap to accept**: `failed` **greater** than
+predicted with the total off is collection; `failed` **less** than predicted with the total right means
+**a cell it expected to red went vacuously green** — and it names its own candidates in advance, a
+`beforeAll` that failed and took its file's cells out of the failing set, and three `.catch(() =>
+undefined)` arms. **Naming your own vacuity candidates before the run is what stops the kinder
+explanation being invented after it.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -11445,6 +11533,28 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 - **Goal:** one bookmarks store keyed on `(account, target)`, replacing the two disjoint save sets that exist today.
 - **Contract:** a save is private and so is its count — a visitor sees neither the list nor its size, and the `saved` tab is owner-only (`app/u/[username]/saved/page.tsx`). A save is not a star and the two never merge (`lib/data/bundles.ts:528-534`). The target is the polymorphic `(kind, id)` of B-10, over blueprint, card and term. Browser-local favourites migrate into the account on first sign-in.
+- **Rulings from T140's implementer's opening report, all charged before anything was built:**
+
+  **D-140-04, ruled on F6: `docs/architecture/seams.md`'s T140 rows are SUPERSEDED, and the route surface is owed by me before either half builds against it.** `Owns` includes `app/api/account/saves/**` and the block publishes no path, method, request shape or status — **sixth instance of an owned route tree with nothing published.** But **silence is not what its implementer found**: `seams.md:128-129` publishes SEAM-61/62 and `components/ui/FavoriteStar.tsx:28` carries a `TODO(SEAM-62)` **in the code**, so the contradicting surface is reachable without opening a document. ***Silence makes an author ask; a contradiction lets them proceed.***
+
+  **And the contradiction is not cosmetic — the published key space cannot address what the column stores.** SEAM-62's keys are `blueprint:<slug>`, `node:<id>@<version>`, `bundle:<owner>/<slug>`: **three names against a three-member enum with two outside it and `term` absent** while AC4 requires all three kinds to round-trip; **`node:<id>@<version>` carries exactly the version grain `schema.ts:229` and B-10 forbid**; `blueprint:<slug>` cannot resolve, since B-09 makes slugs unique **per owner**; and SEAM-61's `Save[]` is a **third** naming of the same three kinds. **Two published request shapes for one route.**
+
+  **So AC5's translation from that key space to `(target_kind, target_id)` is lossy one way and needs a lookup the other, and `migrateLocalSaves` is published taking values ALREADY translated — which means the translation lives in a route nobody published.** Its implementer declined to invent one, correctly: **a route surface invented here is the contract following the code, and a blind author cannot pin what an implementer invents.**
+
+  **Also superseded: `seams.md:299-301` still asks whether the browser-local set is migrated or discarded — a question T140's Contract line and AC5 already answer.** A binding document holding an open question the contract closed.
+
+  **D-140-01: `countSaves` stays `Promise<number>` and a denied caller gets `0`; the prose is amended.** The block published `Promise<number>` beside prose saying *a visitor gets `undefined`-equivalent behaviour, not zero*, four lines apart and both imperative. **Its analysis is the ruling: under `Promise<number>`, *not yours*, *no such account* and *yours and empty* all answer 0 — indistinguishable, which is B-03 satisfied rather than violated.** The leak AC1 is actually about is **answering a non-owner the TRUE count**, and both readings refuse that, so **the prose's stated reason was never the discriminator.** *Zero is an answer, and answering zero for a set you may not see tells the caller the set exists* is **withdrawn** — an owner with no saves also gets 0.
+
+  **And its consequence check is why the ruling is cheap**: AC3 requires `listSaves` and `countSaves` to agree by construction, so the other reading would have forced `listSaves` to `| undefined` as well. **One ruling, zero signature edits.**
+
+  **D-140-02: this module HAS a decision, on the write half only, and T081's answer does not transfer.** The readers return values; **the three writers return `Promise<void>`, and `void` cannot express *denied*** — a silent no-op tells a caller its save succeeded when it did not, **which is a write failing silently rather than a read declining to distinguish.** So: **consume `NotAccountOwnerError` from `@/lib/server/accounts`** rather than minting a second class for one decision — it is sealed, published and is exactly this decision, and T050 already uses it for this shape. **Publish `SaveStoreError` for D-13**, sealed, with the form
+
+        SaveStoreError  "<operation>: the saves store failed."
+
+  **and the store fault is NOT optional-by-construction here the way T081's was**: `save` writes bind `account_id`, `target_kind` and `target_id`, so a `DrizzleQueryError` carries them — **D-13's clause verbatim rather than a closed-port approximation.**
+
+  **D-140-03: AC3's `visibleTo` reaches two of the three kinds, and the third asks a different question.** **Blueprint** — clean; re-derive registry's composition from published `visibleTo` rather than reaching into `snapshot.ts`. **Card** — **any version visible to the actor makes the card visible**, matching registry's existing per-version filter, because **T140 must not mint a second visibility semantics for the same rows.** **Term** — `ontology_term` has no owner column and B-07 makes terms public, **so the question is existence, not visibility: a saved term is shown if it exists in the CURRENT ontology version**, which is what AC3's *deleted* means. **The asymmetry is deliberate: cards ask *visible* and terms ask *exists*, and they are different predicates.**
+
 - **Acceptance criteria:** (1) a save is invisible to every caller but its owner and the operator, including its count; (2) saving one target twice is idempotent; (3) a save whose target went private or was deleted is handled by a stated rule and does not break the list; (4) the three kinds round-trip distinguishably; (5) migration of a browser-local set is idempotent across repeated sign-ins.
 - **Out of scope:** stars (T150), the `FavoriteStar` cutover (T262).
 - **Log:**
@@ -11457,7 +11567,15 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Blocks:** —
 - **Owns:** `lib/server/limits/**`, `app/api/account/keys/**`
 - **Forbidden:** every other route file, `lib/server/auth/**`
-- **Published signatures** (checked against `backend` at `912666e`. Two limits already exist in the code and are the **starting numbers, consumed not restated**: 512 KB per uploaded file (`components/upload/BundleDropzone.tsx:91`) and a card `params` nesting depth of 100 (`lib/core/card/validate.ts:108`). **No API-key table exists in `lib/db/schema.ts`** — a dependency on T000's owner, reported not worked around. Barrel: `@/lib/server/limits`.)
+- **Published signatures** (checked against `backend` at `912666e`. Two limits already exist in the code and are the **starting numbers, consumed not restated**: 512 KB per uploaded file (`components/upload/BundleDropzone.tsx:91`) and a card `params` nesting depth of 100 (`lib/core/card/validate.ts:108`). **WITHDRAWN, and it was wrong in two ways.** It said *no API-key table exists in `lib/db/schema.ts` — a dependency on T000's owner*. **The table exists**: `lib/db/schema.ts:537` defines `api_key` with `id`, `accountId`, `tokenHash`, `label`, `createdAt`, `revokedAt`, a unique index on `token_hash` and an index on `account_id`, behind `0002_community.up.sql:9`. **T005 landed it, not T000**, and its header comment names T230 and B-17 — **it was built for this task.** Charged by T230's implementer against its own block before building anything on it.
+
+  **Its three inline rulings are consumed as given, confirmed here rather than restated**: `revoked_at` is nullable because *when* is worth keeping; `ApiKeyRecord.keyId` is that row's `id`, since this block publishes no separate public identifier; and **nothing in the table can deliver AC4, because the no-cache prohibition is a property of this module.**
+
+  **The general defect this exposes is mine and is not fixed by this paragraph.** **Every Published signatures block in this file carries *checked against `backend` at `912666e`*, and base has moved through twelve merged tasks since.** T130's and T140's were re-read and make no comparable claim, so nothing else was binding on a stale fact — **but that is a measurement of two blocks, not a property of the file.**
+
+  **THAT SENTENCE IS FALSE AND IT WAS FALSE WHEN WRITTEN.** T140's block **does** carry the same stale claim, and both its blind author and its implementer charged it independently within the hour. **My re-read was itself a measurement and it was a wrong one** — so the sharper general form, given by T140's implementer, is: *that was a measurement of two blocks, and one of the two was measured wrong.* **A re-read offered as reassurance is a claim, and this one was doing exactly the work of the stale claims it was reassuring about.**
+
+  **And the block T005 built for T140 cites T140's own criteria as its reasons**: the `save` table's header names T140 and B-10, argues the inline `target_kind`/`target_id` from **T140's AC1**, and names `save_account_target_key` as **T140's AC2**. **The dependency was not merely satisfied — it was satisfied on purpose, by a task that read this one's contract.** A block's *checked against* line is a claim with a timestamp, exactly like a base line, **and nothing re-checks it when the thing it was checked against moves.** Barrel: `@/lib/server/limits`.)
 
         interface LimitVerdict { allowed: boolean; limit: number; remaining: number; resetAt: Date }
         interface ApiKeyRecord { keyId: string; accountId: string; label: string; createdAt: Date; revokedAt: Date | null }
@@ -11472,6 +11590,47 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **AC4 — "a revoked key is refused immediately" — forbids caching `resolveKey`.** The natural optimisation is a process-local map, and it satisfies every other criterion while leaving a revoked key live until the process restarts. If a cache is ever wanted it needs invalidation on revoke, which is a harder thing to get right; state the prohibition rather than leaving it to be discovered.
 
   **AC5 is a negative and negatives go untested.** "An anonymous read below the ceiling is never delayed or challenged" — asserted by measuring that `checkLimit` on an under-ceiling read performs **no write**, not by observing that a response came back. A counter implementation that writes on every read passes a latency-free test on an idle machine and falls over under load.
+
+  **D-230-09, ruled on F-230-E: T220's AC6 and T230's admissible form could not both be satisfied, and the fix publishes the 429's KEY SET.** `backend.md` requires T230's 429 to reach the MCP client *with the limit, the reset instant **and the fact that a key exists***. **T230's form carries bucket, number, window and instant — and an admissible form is EXACT-MATCHED, which is its whole purpose.** So an implementation satisfying T220 by naming the key affordance in the message **violates T230's published form**, and one satisfying the form **leaves T220's AC6 unsatisfiable.**
+
+  **Ruled: the message form is unchanged and the key affordance is an RFC 9457 §3.2 EXTENSION MEMBER**, published here so it is bindable:
+
+        problem+json 429  members exactly:
+          type, title, status, detail, instance          (RFC 9457's five)
+          limit, remaining, resetAt                       (the verdict, machine-readable)
+          keysAvailable: true                             (T220 AC6's affordance)
+
+  **`detail` is the admissible form byte for byte.** **And the key SET is published, not just the members** — T081's key-set whitelist is the only instrument that caught an extension member carrying a driver value after `type`, `title` and `detail` were all pinned, **so a task publishing extension members owes the set or the strongest available pin cannot be written.**
+
+  **F-230-B and F-230-E are the same gap seen from two sides** — one says the criterion has no published caller, the other says the response has no published shape — **and `rateLimited(request, verdict, bucket)` plus this key set answers both.** **Measured rather than asserted: `RateLimitedError` occurs ONCE in 12 152 lines, and that once is the admissible-form line itself.**
+
+  **D-230-03, ruled: the limit configuration's SHAPE is contract while its numbers stay `TBD:`.**
+
+        type Tier = "anonymous" | "account" | "key"
+        interface BucketLimit { limit: number; windowMs: number }
+        type LimitConfig = Readonly<Record<string, Readonly<Record<Tier, BucketLimit>>>>
+
+  `checkLimit` **reads** a `LimitConfig`; the values are the owner's and are not invented here. **A `TBD:` that names the type is bindable; one that names only the question is not** — so a blind author binds every property that is not a number: that a keyed subject's `limit` is **≥** an anonymous subject's for the same bucket (**AC3's *raises the ceiling* is an ORDERING, falsifiable today**), that `remaining` is `limit` minus the count and never negative, and that `resetAt` is `windowStart + windowMs`.
+
+  **D-230-04, ruled and a CRITERION rather than a note: an unconfigured bucket REFUSES, it does not pass.** D-70-18's shape — **a config lookup returning `undefined` read as *no limit* is a criterion satisfiable by never limiting anything.**
+
+  **D-230-05, ruled: AC5's instrument is `checkLimit` never touching `db` on an under-ceiling anonymous read**, measured with a **`Proxy`-backed `Db` asserting `touched() === false`** — a proof the resource was never reached rather than a latency claim. **AC5 and a durable counter are incompatible by definition and the absent counter table is not the constraint**: a durable counter is a write per request, which is the whole of what the phrase means. **The counter is in-process.** `db` stays in the signature for a stated reason: **anonymous, zero access; keyed, one indexed read that AC4 already mandates; never a write.** **And the per-instance weakening of AC2 is published rather than inferred** — N warm instances multiply the effective ceiling by N, so a reader must not conclude one number is enforced.
+
+  **D-230-06, ruled: the counter is a FIXED number of slots, `hash(subject) mod N`, and `N` is a MEMORY bound in D-70-17's sense rather than a ceiling.** Memory is exactly `N` **by construction**. **It fails CLOSED — a collision makes two subjects share one budget, stricter never looser — where an LRU fails OPEN, since an attacker evicts their own entry and the limit silently stops existing.** TTL eviction is a bound in name: live entries are `R·W`, the attacker's rate. **The cost is real and stated: a colliding caller can be pushed toward a ceiling it never approached.** `N` is published with its reasoning and a test that reds if it is raised past what the process should hold, the way `MAX_NAME_LENGTH` is held at 255. **The ceilings stay `TBD:`.**
+
+  **D-230-07, ruled: `resolveKey` refuses anything not of the minted shape BEFORE hashing, and returns `undefined` rather than throwing.** The secret is unauthenticated caller input of unbounded length, so hashing it first is work proportional to attacker input performed to decide the input is worthless — **D-40-B's clause on a path nobody has to be authenticated to reach.** The module **mints** the secret, so its length and alphabet are known by construction. **`undefined` and not a throw, because a caller able to distinguish *malformed* from *no such key* has an identity oracle** — the same thing D-13 charges. **Corollary: `label` is caller data into an unbounded `text` column and gets a published number, and it REFUSES rather than truncates (D-05-09).** **And `subject.ip` arrives from the edge and is bounded before it reaches a hash** — the same shape one call over, reported by its implementer rather than found in a round.
+
+  **D-230-08, ruled: AC3's audit half is (a) ATTRIBUTABLE, not (b) audited.** This module publishes the attribution — `resolveKey` returns `keyId` and `accountId`, and `checkLimit`'s subject carries both — and whoever writes the audit row has what it needs. **T240 is not a dependency and T230 is correctly waved.** **And the guard is blind to the alternative: `tests/wave-dependencies.test.ts` would be green over a (b) reading, because T230's section names no `@/lib/server/observability` and a module nobody imports is not a barrel** — the same blindness as the five-tasks-need-T005 drift.
+
+  **D-230-01, ruled on T230's blind author's F-230-B: AC1 named a behaviour NO PUBLISHED SURFACE COULD PRODUCE, and the fix is a published renderer.** `checkLimit` **returns** a `LimitVerdict`; it does not throw. `RateLimitedError` sat in the admissible-form block **in no signature, with no published constructor, returned or thrown by nothing** — and every route that could render a 429 is Forbidden to this task, while its own `app/api/account/keys/**` has no published URL, method, body or response. **So *an over-limit request returns 429* had no published caller and nothing blind could drive it.** Fourth instance of *a criterion nothing published can reach*, and the first where the criterion rather than a guard is the thing out of reach.
+
+  **Ruled: `@/lib/server/limits` publishes the renderer, and consuming routes call it.**
+
+        rateLimited(request: Request, verdict: LimitVerdict, bucket: string): Response
+
+  `problem+json` **429**, `detail` exactly the admissible form below, and **T230 owns the message and the headers** while the route that applies it stays its own task's. **That makes AC1 drivable from the barrel without T230 owning a rate-limited route**, which is what neither reading could do before.
+
+  **D-230-02, ruled on F-230-C: *consumed not restated* is UNSATISFIABLE as written and is amended.** Both starting numbers are module-private `const`s — `MAX_KB = 512` in `components/upload/BundleDropzone.tsx:91` (a client component) and `MAX_PARAM_DEPTH = 100` in `lib/core/card/validate.ts:108` — **and neither is exported from anything**, so `lib/server/limits` cannot consume either and the only available act is the one the clause forbids. **Amended: the numbers are TRANSCRIBED, and a drift guard pins the agreement against both cited sites.** Its blind author proposed exactly that and is writing it, **labelled as a guard on the contract's premise rather than on T230** — which is the correct attribution.
 
   **AC1's refusal carries the limit and the reset and is `problem+json` 429** (B-03). Admissible form:
 
@@ -11546,11 +11705,11 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Blocks:** T250, T262
 - **Owns:** `lib/server/profiles/**`, `app/api/authors/**`
 - **Forbidden:** `lib/server/accounts/**`, `app/api/account/**`
-- **Published signatures** (checked against `backend` at `912666e` and against `lib/data/profiles.ts:33-60`'s record — `{ joinedAt, watchers, support, validated, pinned }`. Barrel: `@/lib/server/profiles`.)
+- **Published signatures** (checked against `backend` at `912666e`, **re-stamped at `d9c5467`** — where D-130-01 made `validated` a number, D-130-02 removed the published rejection and D-130-03 removed the Open line, **all three by DISPLACEMENT rather than addition**, charged by this task's implementer and against `lib/data/profiles.ts:33-60`'s record — `{ joinedAt, watchers, support, validated, pinned }`. Barrel: `@/lib/server/profiles`.)
 
         interface ProfileRecord {
           author: PublicAuthor; joinedAt: Date;
-          watchers: number; support: number; validated: boolean;
+          watchers: number; support: number; validated: number;
           pinned: readonly string[];
           counts: { blueprints: number; cards: number; terms: number };
         }
@@ -11567,14 +11726,34 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **AC4's "watcher count equals the follower count" is a consistency criterion between two things that could drift**, so the count is derived from the follow rows rather than incremented alongside them — same rule as `counts`, and the same reason.
 
-  **Admissible message form:** `"getProfile: no such handle."` — identical for an unknown handle and one the caller may not see, since a distinguishable message reinstates the existence oracle the 404 closes.
 
   **Inherited read semantics from T080, published here so this task's author binds to the same rules.** These are properties of the barrel this task consumes, ruled at T080's implementation and identical everywhere: `BlueprintSummary.cardRefs` is **filtered to cards the actor may read**, so a partial caller's `cardRefs` does not reproduce `digest`'s input; a card pinned only by an invisible bundle is **not indexed** for that actor; a bundle whose owner has **no handle** is excluded; lists sort **by slug, then owner handle**; `scoresOf` is **all four axes or nothing**; and pins are canonicalised to `id@version`, with an unparseable pin dropped. Raised by T080's implementer, which noticed that ten tasks list it under `Blocks` and that these are read semantics they inherit rather than implementation details they may ignore.
 
 - **Goal:** serve the page at one handle — identity, published work, pins, follows, and the summary figures.
 - **Contract:** the profile record holds only what the archive cannot count: `{ joinedAt, watchers, support, validated, pinned }` (`lib/data/profiles.ts:33-60`); anything countable is counted, never stored as a counter. A pin is at most two, a blueprint or a card ref, and a pin whose target no longer resolves is omitted rather than returned null (`components/profile/load.ts:182-190`). Owner and visitor counts differ by exactly the private rows (B-13, T060).
+- **Rulings from T130's implementer's opening measurement, all charged before anything was built:**
+
+  **D-130-05, ruled: T130's route surface, published now because it is MINE and it is being paid for.** Its implementer charged that I quoted Finding 4 back and deferred the `ARCHITECTURE` rows *after the route surface is settled* — **which reads as agreeing it is unsettled while ruling nothing.** And it is right that this one is separable: **Finding 1 is a schema-or-scope call and Finding 2 amends a merged task, but a path, a method, a request shape and a status code are mine to write**, and **`GET /api/authors/{handle}` survives whatever the owner decides about follows and pins.**
+
+        GET /api/authors/[handle]   -> 200 ProfileRecord   | 404
+
+  **404 is AC5 and it is the route's**, since `getProfile` answers `undefined` (D-130-02) and `undefined` is not a status. **`detail` is the route's `problem` detail, not a class's message.** `seams.md`'s SEAM-52/53 `ProfileView` is **superseded** — the contract wins, as at T050.
+
+  **The two write routes are NOT published and cannot be until Finding 1 is decided**: `PUT .../pinned` needs pin storage and `POST/DELETE .../watch` needs follow storage, **and both have no column.** Stated as blocked rather than omitted, **so a blind author can see that the gap is a decision rather than an oversight** — which is the whole difference between silence and a marked absence.
+
+  **The cost of leaving even this much unpublished was measured on T040 and is not hypothetical: 81 blind cells all bound the module and six route mutations reddened zero**, in a task where the surface was published **during** the round. Here it had not been published at all, with a blind author already on the contract.
+
+  **D-130-01: `validated` is a NUMBER, not a boolean.** The block published `validated: number` while both surfaces it claims to have been checked against declare a count — `lib/data/profiles.ts:57` is `validated: number` with a docblock defining it as *how many other accounts' blueprints this handle downloaded, ran and reported on*, and `ProfileHeader.tsx:77` takes a `number` rendered through `compact()`. **The five NAMES matched, which is all the header's claim was ever about; the quantity did not.** And the boolean is already carried elsewhere — `ProfileRecord.author` is a `PublicAuthor`, which has `validator: boolean` — **so the published field was either a duplicate of that or a wrong transcription of a count.** It is the count, and it therefore depends on T180's run reports, which do not exist: **a fourth blocked field.**
+
+  **D-130-02: `getProfile` returns a VALUE and publishes no rejection.** The block listed `"getProfile: no such handle."` as an admissible message on a function published as `Promise<ProfileRecord | undefined>`. **B-03 answers 404 over 403, and T081's readers return values precisely so a route cannot distinguish *no such row* from *not yours*.** Ruled: **`undefined` is the answer, the 404 is the route's, and that message belongs in the route's `problem` detail rather than on a class.** The admissible-form entry is withdrawn.
+
+  **D-130-03: the Open line and the published block contradicted each other.** *Open: pinning has no control anywhere in the UI — is there a write path?* against a block publishing `setPins(...)`. **A paragraph that rules and defers produces two correct readings**, and the reader binds to whichever it reaches first. **Ruled: `setPins` stands as the write path** — the Open line is withdrawn, and the UI's lack of a control is a frontend gap rather than evidence the seam is operator-curated.
+
+  **D-130-04: `counts.cards` is not reachable through the declared dependency and is NOT to be worked around.** `CardSummary` (`lib/server/registry/types.ts:38-46`) carries no owner; the only attribution through T080's barrel is `card.author`, declared `author?: string` — **optional, and content the uploader wrote rather than the row's ownership** — while `card_version.owner_id` is `NOT NULL`, authoritative and unpublished. **Ruled: do not re-implement T080's visibility filter against `card_version`.** That is the exact thing this section's inherited-read-semantics paragraph exists to prevent. **`counts.cards` is blocked pending an amendment to T080's published record, which is a merged task's shape and therefore the owner's call.**
+
+  **BLOCKING AND NOT MINE TO RULE: three of `ProfileRecord`'s five stored fields have no storage, and a fourth is D-130-01.** Measured on the shipped tree at `22e426e` over a **constructed** domain — all 125 columns across all 16 tables, enumerated from the file's own import list, with `check`/`index`/`uniqueIndex`/`pgTable`/`pgEnum` named as the only non-column constructors so that **nothing live is missing and nothing listed is dead**. `grep -rni "follow|pin|pinned|watcher|support"` over `lib/db/schema.ts` and all four migrations returns **zero**. `target_kind` is `["blueprint","card","term"]` and `target_actor_kind` is `["star","note_vote"]`, so **neither the polymorphic target nor the actor table can name an account as a target or a follow as an act**, and adding a member is an `ALTER TYPE`. **`support` has no column AND no derivation** — `ProfileShell.tsx:63-66` sums stars off the item lists while `support` is a separate per-account figure passed straight through, so *anything countable is counted* does not reach it. **Sixth instance of the class this file already records: five tasks need tables `lib/db/schema.ts` does not have, and the Phase 0 graph contains no owner for them.**
+
 - **Acceptance criteria:** (1) blueprints, cards and namespaced terms are counted from the stores, not stored; (2) an owner's card count includes private rows and a visitor's does not; (3) a pin at a deleted target is omitted; (4) a follow toggles and the watcher count equals the follower count; (5) an unknown handle returns 404.
-- **Open:** pinning has no control anywhere in the UI — is there a write path, or is the pinned pair operator-curated?
 - **Out of scope:** the account's own fields (T050), signal arithmetic (T150, T160, T180).
 - **D-50-19, handed here rather than ruled in T050 (open, PENDING-OWNER-REVIEW):** `/u/Mara` — 404, or 301 to `/u/mara`? T070's grammar admits `[a-z0-9-]` only, so **exactly one casing of any handle is storable** and case-insensitive comparison, case-folding and a lower-case unique index are all answers to a collision the alphabet already prevents. T050's two doors are total and agree — `changeHandle(…, "Mara")` is a 400 and `getPublicAuthor(db, "Mara")` is `undefined` → 404, both with the store untouched — so **T050 needs no ruling and has no surface to hold one.** What is left is a **redirect policy**, and it belongs to whoever owns `app/u/[username]/**`. Raised by T050's adversary, which declined to pick and pointed out that ruling it in T050 would be the D-70-06 shape: a ruling landing in the section of the task that raised it rather than the section it governs.
 - **Log:**
