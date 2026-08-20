@@ -3949,6 +3949,38 @@ where these are the two loudest things running.
 **I could not terminate them: the action was refused by this session's permission classifier.** Surfaced
 to the owner rather than worked around, and reported to the session that owns them.
 
+## A substitution displaces the QUOTATION of what was wrong along with the instruction
+
+**T130's implementer found that my D-130-01 displacement broke the ruling it was applying.** The
+substitution replaced `validated: boolean` with `validated: number` **everywhere in the section —
+including inside the ruling's own sentence *the block published `validated: boolean`***, which is
+**evidence rather than instruction.** The ruling then read *the block published `validated: number`
+while both surfaces declare a count*, **arguing with itself.**
+
+**So the rule has a second half nobody had stated: a substitution displaces every occurrence, and some
+occurrences are the record of what was wrong.** *A retraction has to keep what it retracts* — this file
+says that about deletions and had not said it about **replacements**, which is the form displacement
+actually takes. **Displacing correctly is not one operation; it is remove the instruction, keep the
+quotation.**
+
+**Four charges against that section for landing rulings as additions, and the fifth is for landing one
+as an over-broad substitution.** Fixed here.
+
+## A `grep -c` that counted the sentence making the claim
+
+**T130's implementer shipped a comment asserting `grep -rn "throw "` over its module returns exactly one
+line. It returns six — and three are its own PROSE describing the rule, including the sentence making
+the claim.**
+
+**The count answers *does the string appear*; the claim was *does this module author a refusal*.** Two
+sentences, **and its own tell fired**. Corrected with the question and the claim in one sentence and the
+real numbers: three `throw` statements, **none taking a caller's input as its subject, so no published
+function of this module rejects anything a caller can send** — which is the property, and why there is
+one error class and no `isDecision`.
+
+**Its third correlated-measurement instance this session**, after reading `head`'s exit code. **Its own
+note: *attention is not the variable* — both were caught by re-running rather than by re-reading.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -7116,7 +7148,7 @@ it does not decide differently inside a worktree.
 | T100 | Publishing and releases | T010, T020, T025, T040, T050, T060, T070, T090 | `lib/server/publish/**`, `app/api/bundles/**` | — | — | todo | — |
 | T130 | Profiles and the public author surface | T050, T060, T080 | `lib/server/profiles/**`, `app/api/authors/**` | `../darkprint-wt-t130-profiles` (impl), `../darkprint-wt-t130-profiles-tests` (blind) | `feat/t130-profiles`, `test/t130-profiles` | tests-written | blind suite `32556b7`: **73 cells over 8 files**, pre-registration exact on all four figures **and all six pass identities** — `67 failed, 6 passed, 0 skipped`. Base measured independently at `1b90422`, its one red identity-matched; reconciliation pre-registered as arithmetic and measured exact at 5637. **Reference 73/73 first try, offered as the WEAKER result.** 26 mutations, 20 HIT; **two of its own patches reddened 0 and had not mutated**; six aimed at its own controls, six caught; **K2 truncating candidates to index 0 reds 8, which is what makes K1's green the discovery discovering.** Handed over with a CONTENT DIGEST in place of a sha, verified before staging. Standing: `counts.cards` asserted against a field D-130-04 blocks, `watchers` has no derived-versus-stored witness, `support`/`validated` typed only, two AC3 cells pass over an empty array. **Task blocked: three of five stored fields have no table** |
 | T131 | Profiles: follows, pins and the tables they need | T130, T180 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**`, `lib/server/profiles/**` (extension), `app/api/authors/**` (extension) | — | — | todo | **Created by D-130-06 (owner, 2026-08-20).** Carries the half T130 could not build: `watchers` + `toggleFollow` + AC4, `pinned` + `setPins` + AC3, `support`, and `validated` (a count, D-130-01, blocked on T180). **It owes the TABLES before the behaviour** — no follow relation, no pin storage, no `support` column, and neither `target_kind` nor `target_actor_kind` can name an account as a target or a follow as an act, so both need `ALTER TYPE`. **Inherits AC1's clause unchanged: anything countable is counted, never stored as a counter.** T130's blind suite already holds the pins, follow and `counts.cards` families |
-| T132 | `counts.cards`: an owner on the published card record | T080, T130 | `lib/server/registry/types.ts`, `lib/server/registry/**` (extension), `lib/server/profiles/**` (extension) | — | — | todo | **Created by D-130-06.** `CardSummary` carries no owner and `card.author` is `author?: string` — optional, and content the uploader wrote rather than the row's ownership — while `card_version.owner_id` is `NOT NULL`, authoritative and unpublished. **D-130-04 forbids re-implementing T080's visibility filter against `card_version`**, so this is an amendment to a MERGED task's published record and therefore not T130's to take |
+| T132 | Amendments to merged published records that T130 needs | T080, T130 | `lib/server/registry/types.ts`, `lib/server/registry/**` (extension), `lib/server/profiles/**` (extension) | — | — | todo | **Created by D-130-06.** `CardSummary` carries no owner and `card.author` is `author?: string` — optional, and content the uploader wrote rather than the row's ownership — while `card_version.owner_id` is `NOT NULL`, authoritative and unpublished. **D-130-04 forbids re-implementing T080's visibility filter against `card_version`**, so this is an amendment to a MERGED task's published record and therefore not T130's to take |
 | T041 | D-40-L: `ToNumber` is `+`, not `Number()` | T040 | `lib/server/engine/limits.ts` | — | — | todo | **Created at T040's merge (`ad44537`), charged and measured by its round-7 adversary and NOT fixed there.** `limits.ts:468` reads `Number((container).length)` where `LengthOfArrayLike` is `ToLength` is `ToNumber`; `Number(v)` is `ToNumeric` then BigInt→Number, **so it accepts a BigInt where `ToNumber` refuses one and the walk ANSWERS where the ruled formula REFUSES.** Repair is one line — `+(...)` — **measured at 4 divergences closing, 6 controls holding, 10 of 10 agreeing, D-40-K's own halves untouched**, after which the walk throws the same bare `TypeError` the formula does and lands inside D-40-24's already-numbered class. **Barrel-only**, sixth in the transcription sequence. **Owes a witness BEFORE the fix**: coverage is zero in both suites and no cell reaches the `ToNumber` half |
 | T150 | Counters: stars and downloads | T050, T060, T080, T090 | `lib/server/counters/**`, `app/api/signals/**` | — | — | todo | — |
 | T160 | Community ballot and vote weighting | T050, T060, T080 | `lib/server/ballot/**`, `app/api/votes/**` | — | — | todo | — |
@@ -13542,13 +13574,14 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Already written:** T130's blind suite at `32556b7` holds the pins, follow and `counts.cards` families, including a pin spelling **discovered rather than chosen** with K2 as the control that makes the discovery meaningful.
 - **Log:**
 
-### T132, `counts.cards`: an owner on the published card record
+### T132, Amendments to merged published records that T130 needs
 
 - **State:** todo
 - **Depends on:** T080, T130
 - **Owns:** `lib/server/registry/types.ts`, `lib/server/registry/**` (extension), `lib/server/profiles/**` (extension)
 - **Created by:** D-130-06.
 - **Contract:** `CardSummary` (`lib/server/registry/types.ts:38-46`) carries **no owner**. The only attribution through T080's barrel is `card.author`, declared `author?: string` — **optional, and content the uploader wrote rather than the row's ownership** — while `card_version.owner_id` is `NOT NULL`, authoritative and **unpublished**. **D-130-04 forbids re-implementing T080's visibility filter against `card_version`**, which is exactly what T130's inherited-read-semantics paragraph exists to prevent, **so this is an amendment to a MERGED task's published record and was never T130's to take.**
+- **Second item, added by D-130-07: T090 publishes `storedVocabulary` from its barrel.** `release.local_vocabulary` is `jsonb` and **T010 publishes its writer's input as `vocabulary?: unknown`**, so the column's interpretation is held by no type anywhere and any caller of `addRelease` can store any shape. **Its only reader, `lib/server/export/vocabulary.ts`'s `storedVocabulary`, is NOT on T090's barrel** — and that file's own docblock says *a second opinion about it in this module is exactly the second reader that file exists to prevent*. T130 therefore has one, by necessity and under D-130-07. **Publishing it collapses the two readers back to one.**
 - **Standing:** T130's blind author asserted these cells against a reference that reads `card_version.owner_id` directly — **the route the ruling forbids** — and said so. **Those cells are not evidence about anything buildable until this task lands.**
 - **Log:**
 
@@ -13787,6 +13820,16 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
         getProfile(db: Db, actor: Actor, handle: string): Promise<ProfileRecord | undefined>
 
+  **D-130-07, ruled on T130's implementer's second divergence: `counts.terms` REFUSES an unreadable stored vocabulary rather than skipping it, and does not require `text`.**
+
+  **Three parts, and the first two are upheld as built.** It consumes **`parseOntologyTerms` from `@/lib/content/ontology-file` — the same parser `storedVocabulary` consumes** — rather than writing a second opinion about what a term is, **so the oracle and the standard are the same object and cannot disagree.** And it does **not** require `text`: **`text` exists so `exportBundle` can write the author's own bytes into a folder unaltered, and a count emits no bytes**, so a `{ terms }` row with no `text` is **refused by T090 under D-90-03 and counted here.** That divergence is real, stated, and correct — the two readers are answering different questions.
+
+  **The third it asked to have overruled and I am upholding it: refuse, do not skip.** Its own cost is named and I am not softening it — **one unreadable release anywhere in an author's history 500s their whole profile page**, which is a large blast radius for a summary figure. **Upheld because D-05-09 already rules that direction: refusal is loud and recoverable, truncation is silent.** A silently short count is AC1's own failure — *a count that drifts* — arriving through a parse rather than through a column, **and T090 already refuses such a release, so refusing is the behaviour the archive already has rather than a new severity.** The parser's message quotes the offending entry's index and `kind`, i.e. **stored content**, so sealing it as a `ProfileStoreError` is required rather than stylistic.
+
+  **And its wrapper-width divergence (A) is upheld without a ruling being needed**: `withProfileStore` wraps only this module's own statements because `getPublicAuthor` and `blueprints` seal their own, **and pulling their faults into this wrapper would re-wrap them — a sanitizer applied twice does not sanitize twice, it relabels**, naming a store that was working. **D-13 holds by construction rather than by breadth.**
+
+  **The durable fix is T090 publishing `storedVocabulary` from its barrel**, at which point there is one reader of that column again. **That is an amendment to a MERGED task and is therefore not T130's to take** — same class as D-130-04, and it is added to **T132**, which already exists to carry exactly that.
+
   **D-130-06, the OWNER'S decision on Finding 1, taken 2026-08-20: T130 ships the countable half and the rest becomes a follow-up task.** Measured by both halves independently, by different methods: **`watchers`, `support` and `pinned` have no column**, `grep -in "follow|watcher|pinned|support"` over `lib/db/schema.ts` and all four migrations returns **zero**, and neither `target_kind` (`blueprint|card|term`) nor `target_actor_kind` (`star|note_vote`) can name an account as a target or a follow as an act. **`validated` is a count (D-130-01) and depends on T180's run reports, which do not exist.** **`counts.cards` is unreachable through the declared dependency (D-130-04)** — `CardSummary` carries no owner, `card.author` is optional content rather than row ownership, and re-implementing T080's visibility filter is what this section's inherited-read-semantics paragraph exists to prevent.
 
   **So `ProfileRecord` is `{ author, joinedAt, counts: { blueprints, terms } }`, and `setPins`/`toggleFollow` are removed from the published surface.** AC3 (pins) and AC4 (watchers) are **not in this task**. **The alternative was a schema task, which T005 already showed costs a full three-agent loop.**
@@ -13820,7 +13863,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **The cost of leaving even this much unpublished was measured on T040 and is not hypothetical: 81 blind cells all bound the module and six route mutations reddened zero**, in a task where the surface was published **during** the round. Here it had not been published at all, with a blind author already on the contract.
 
-  **D-130-01: `validated` is a NUMBER, not a boolean.** The block published `validated: number` while both surfaces it claims to have been checked against declare a count — `lib/data/profiles.ts:57` is `validated: number` with a docblock defining it as *how many other accounts' blueprints this handle downloaded, ran and reported on*, and `ProfileHeader.tsx:77` takes a `number` rendered through `compact()`. **The five NAMES matched, which is all the header's claim was ever about; the quantity did not.** And the boolean is already carried elsewhere — `ProfileRecord.author` is a `PublicAuthor`, which has `validator: boolean` — **so the published field was either a duplicate of that or a wrong transcription of a count.** It is the count, and it therefore depends on T180's run reports, which do not exist: **a fourth blocked field.**
+  **D-130-01: `validated` is a NUMBER, not a boolean.** The block published `validated: boolean` while both surfaces it claims to have been checked against declare a count — `lib/data/profiles.ts:57` is `validated: number` with a docblock defining it as *how many other accounts' blueprints this handle downloaded, ran and reported on*, and `ProfileHeader.tsx:77` takes a `number` rendered through `compact()`. **The five NAMES matched, which is all the header's claim was ever about; the quantity did not.** And the boolean is already carried elsewhere — `ProfileRecord.author` is a `PublicAuthor`, which has `validator: boolean` — **so the published field was either a duplicate of that or a wrong transcription of a count.** It is the count, and it therefore depends on T180's run reports, which do not exist: **a fourth blocked field.**
 
   **D-130-02: `getProfile` returns a VALUE and publishes no rejection.** The block listed `"getProfile: no such handle."` as an admissible message on a function published as `Promise<ProfileRecord | undefined>`. **B-03 answers 404 over 403, and T081's readers return values precisely so a route cannot distinguish *no such row* from *not yours*.** Ruled: **`undefined` is the answer, the 404 is the route's, and that message belongs in the route's `problem` detail rather than on a class.** The admissible-form entry is withdrawn.
 
