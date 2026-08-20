@@ -58,7 +58,6 @@ import {
   mark,
   routePatternFor,
   scratchDatabase,
-  sessionCookie,
   type AccountFixture,
   type Scratch,
 } from "./contract";
@@ -67,23 +66,13 @@ const SHARED_CLIENT_KEY = Symbol.for("darkprint.db.sharedClient");
 
 let s: Scratch;
 let owner: AccountFixture;
-let stranger: AccountFixture;
 
 const JOINED = new Date("2026-03-04T11:22:33.000Z");
-const PUBLIC_CARDS = 1;
-const PRIVATE_CARDS = 1;
 
 let originalDatabaseUrl: string | undefined;
 
 function path(handle: string): string {
   return `/api/authors/${handle}`;
-}
-
-async function counts(handle: string, headers: Record<string, string> = {}) {
-  const answer = await callRoute(path(handle), headers);
-  expect(answer.status, `${AUTHOR_ROUTE} for a handle that exists`).toBe(200);
-  const body = asWireProfileRecord(await answer.json(), `${AUTHOR_ROUTE} 200 body`);
-  return body.counts as Record<string, number>;
 }
 
 beforeAll(async () => {
@@ -93,7 +82,6 @@ beforeAll(async () => {
     createdAt: JOINED,
     displayName: "Route Owner",
   });
-  stranger = await insertAccount(s, { handle: mark("t130-route-other").toLowerCase() });
 
   const openCard = await insertCard(s, {
     id: `${owner.handle}/open`,

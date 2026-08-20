@@ -50,7 +50,6 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   account,
-  anonymous,
   asProfileRecord,
   bind,
   dropScratchDatabases,
@@ -58,7 +57,6 @@ import {
   insertBundle,
   insertCard,
   mark,
-  operator,
   scratchDatabase,
   type AccountFixture,
   type Scratch,
