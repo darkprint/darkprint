@@ -5616,6 +5616,155 @@ inconvenienced. **This one inconvenienced nobody**, and the only session that wo
 the one it flattered. **It changes nothing operationally — the blind axis gets measured first either way
 and neither half offers a prediction. It changes what a green MEANS when one arrives.**
 
+## An agent introspecting itself with `$$` and `tty` measures its TOOL CALL, not its session
+
+I asked both T130 sessions to print a banner identifying their pane, with `printf … "$(tty)" "$$"`.
+**Both refused the command as given and both found a different reason it does not work.**
+
+**T130's adversary: `$$` and `tty` are the tool call's.** Run literally they give `not a tty` and a pid that
+changes every command — `45547`, `44710` one call earlier. **A Bash tool call is a short-lived `zsh` with
+no controlling terminal, born and dead inside one tool use.** The banner would have named a pid that had
+already exited and printed the string `not a tty` into the field meant to identify the pane. It walked the
+parent chain instead — `ps -o ppid= -p $$`, then `ps -o tty= -p <that>` — and arrived at `99371` /
+`ttys021`, **which are its parent's rather than its own.** Confirmed identically from my own tool call:
+`tty` → `not a tty`, and my session is two levels up.
+
+**T130's implementer: tool stdout does not reach the pane at all.** `[ -t 1 ]` is false; **the harness
+captures stdout and renders it into the transcript, which is a different surface from the terminal.** So a
+`printf` banner goes where the owner is not looking. It put the banner in its **own assistant text**, which
+is what the pane renders. *The adversary's redirect to `/dev/$TTY` reaches the device directly and is the
+other correct answer* — two sessions, two working methods, from one broken instruction.
+
+**The general shape, in the implementer's words**: *the banner was a countermeasure whose PREMISE was that
+the process printing it owns a terminal — true for a shell, false for an agent's tool call.* **And the
+failure is silent in the dangerous direction: `printf` exits 0 and prints something**, so nothing anywhere
+says the pane never got it. ***`tty` exiting 1 is the check and it costs one line.***
+
+**Its second-order warning is the one I acted on**: if both panes had run my command as written, the owner
+would have seen **no banner in either**, which reads as *neither is the one* rather than as *the instrument
+did not fire.* **A silent countermeasure produces evidence of the opposite of what happened.**
+
+**And both derived the tty independently rather than confirming mine.** The adversary: *your values are
+correct and the method you gave would not have produced them.* The implementer: *agreement, and it is
+worth something only because neither side derived it from the other.* **Same shape as reading a ref at
+measurement time rather than quoting one from a message** — the shell equivalent of it, in the same day.
+
+## D-140-11: `saved_at` orders at MICROSECOND grain and crosses at MILLISECOND, so the published order is not computable
+
+T140's adversary pre-registered, **before measuring anything**, a *known false-red mechanism*: its
+comparator ties `savedAt` at millisecond grain while Postgres orders at microsecond grain, so two writes
+inside one millisecond would red a conforming module. It rated the probability negligible and undertook to
+attribute it correctly if it fired.
+
+**It is not a false red. It is a gap in D-140-08, and measuring it took one query.**
+
+        pg text            2026-08-20 19:17:22.956849+00        microsecond precision
+        as a JS Date       2026-08-20T19:17:22.956Z             milliseconds — 849µs discarded
+        two values 100µs apart      equal in `SaveRecord.savedAt`, strictly ordered in SQL
+
+**`save.created_at` is `timestamptz`, so SQL sorts on a value the published record does not carry.** A
+caller sorting `SaveRecord` applies `target_kind, ref_id` to a pair SQL considered strictly ordered — so
+**the two orders can differ, and D-140-09's whole point was that the published order be computable from the
+published fields.** D-140-10 made the *enum* term true by construction and left the *timestamp* term
+resting on a grain nobody had checked.
+
+**Ruled: `ORDER BY date_trunc('milliseconds', saved_at) DESC, target_kind::text ASC, ref_id ASC`**, so the
+SQL sort key is **exactly the value that crosses in `SaveRecord`** and the tie-break engages precisely when
+a caller would apply it. Same argument as D-140-10, one term over. Cost: a truncation in the sort key, over
+one person's bookmarks, on a column no index orders either way. **The alternative — a `timestamp(3)`
+column — is T005's merged schema and far more expensive than the defect.**
+
+**Holder and moment, per D-140-14: T140's implementer, at the adversary's verdict, NOT now.** The
+adversary's pre-registration is frozen and it measures the current artefact; **changing the artefact
+mid-round would invalidate a registration made correctly.** It must not charge the divergence — **it
+already classified it correctly as a mechanism rather than a defect, which is what surfaced it.**
+
+***A pre-registered false-red that turns out to be a real gap is the strongest thing a pre-registration can
+produce***, because the alternative was meeting it as a red with no prior claim and arguing about which
+half was wrong.
+
+## A NAMING is a claim about the host, and the host is measurable — the stamp moves to TAKING the slot
+
+T130's adversary was told its owner had ruled, claimed the slot on my stated condition, **and took a
+contention stamp before starting because the rule's substance is checkable.**
+
+        load averages     10.45  8.70  9.51
+        vitest            running in ../darkprint-wt-t140-saves, 9 worker forks, one at 88.7% CPU
+        postgres          12 connections to darkprint%, 5 ACTIVE
+
+**The slot was not free when I said it was.** T140's adversary was mid-run. It retracted before my stop
+message reached it — **and it retracted on the instrument rather than on my word.**
+
+**My condition was badly worded and invited it**: *tell me when your owner rules and I will name you*
+reads as the naming being a formality. **It is not — it is the serialisation point**, and the value of the
+rule is that the holder is known to everyone rather than inferred by whoever is ready. **The slot is
+granted, never claimed, and never announced as free.**
+
+**And the rule change is its proposal, adopted: the contention stamp is required when TAKING the slot, not
+only when reporting a run.** *The ceremony said the slot was mine; `pgrep -fl vitest` said otherwise, and
+the second one is the fact.*
+
+**SHARPENED, two minutes later, by the same session: the stamp is a VETO, not a PERMIT.** A busy host
+proves the slot is not free. **A quiet host proves nothing**, because `vitest` exiting measures a *phase*
+and a slot is a claim about a session's *whole round* — reproduction, integration, suite, mutations,
+`tsc`, census — **and no process signature corresponds to that.** Its own background waiter fired at 21:20
+between T140's adversary's reproduction and its integration; under *run ends, therefore my turn* that
+notification was a go signal. ***It had built the tool that would have fooled it, and the tool fired before
+it could take it down.***
+
+**So: granted by name, always. The stamp can only ever stop you.**
+
+**The reason it is worth a rule is the asymmetry it named**, and it is the sharpest statement of the
+failure this run has:
+
+> ***A contention collision does not red — it inflates, and then it disappears.***
+
+Neither run would have failed. Both would have completed, both green, both slower **in a way nobody would
+attribute to the other**, and the evidence would be gone from both result sets. **Same silent-green family
+as the `beforeAll` skip: no failure, no signal, and a number that reads as a result.** My own 54s→155s
+instance is the same event caught only because I happened to compare two durations on an unchanged tree.
+
+**It also offered to wait past all three runs** rather than slot into the gaps: *a triple with one clean
+run and two contended ones is worth less than a delay.* **Accepted** — a determinism claim built from runs
+under different host conditions measures the host.
+
+## The most misleading git message of the run, and it nearly became a false alarm about a real event
+
+Merging base, git said ***"Your local changes to the following files would be overwritten by merge"***,
+naming all seven staged `tests/server/t130/*` files. **That reads as *backend contains these and they
+conflict*.** It does not: `git ls-tree -r fbf17eb -- tests/server/t130` is **empty**. **The real cause is
+git's index-must-match-HEAD rule, violated by seven staged adds.**
+
+**It nearly filed *the blind half has landed on backend*** — and **I would have believed it**, because I
+reset base off exactly that merge four hours ago and would have read it as a recurrence. **A plausible
+reading of an error message, pointing at an event that had actually happened once already.**
+
+Handled without a commit, since committing is its owner's call: stash, merge, pop, **and all seven blobs
+verified byte-identical across the manoeuvre by diffing `git ls-files -s` either side.** *That verification
+is what makes a stash manoeuvre reportable rather than merely done.*
+
+**And `psql` is not installed — exit 127, `command not found`, not a permission refusal.** So one of its
+three blockers was never a permission at all.
+
+## A detector that matches itself reports the thing it was built to detect, forever
+
+`pgrep -fl "darkprint-wt-t140"` returned a hit — **its own shell**, because the pattern string was in its
+own command line. It had filtered `grep -v pgrep` and **not itself.** *The same joke one level down*, its
+phrase, arriving inside the detector built to catch the first one.
+
+**The corrected reading was a clear host, and it declined to treat that as a reason to start** — which is
+the sharpened rule working before the rule was written.
+
+## A false alarm is most dangerous when it confirms something the reader already fears
+
+Its observation about the misleading merge message, and it is the half I supplied without noticing what it
+meant. **I would have believed *the blind half has landed on backend* — because I reset base off exactly
+that merge four hours earlier and would have read it as a recurrence.** *That one had a prepared audience.*
+
+**A false positive against a background of no expectation gets checked. A false positive that lands on a
+reader already primed for it gets acted on** — and the priming is invisible to the party reporting, who
+does not know what the reader has spent the evening resetting.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -15258,6 +15407,13 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         unsaveTarget(db: Db, actor: Actor, accountId: string, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<void>
         countSaves(db: Db, actor: Actor, accountId: string): Promise<number>
         migrateLocalSaves(db: Db, actor: Actor, accountId: string, targets: readonly { kind: "blueprint" | "card" | "term"; refId: string }[]): Promise<void>
+
+  **D-140-11: `ORDER BY date_trunc('milliseconds', saved_at) DESC, …`.** `save.created_at` is
+  `timestamptz` (microseconds) and `SaveRecord.savedAt` is a JS `Date` (milliseconds), so **SQL sorts on a
+  value the published record does not carry** and two rows 100µs apart are tied for a caller and strictly
+  ordered for the store. Truncating the sort key makes it exactly the value that crosses. **Owed by T140's
+  implementer at the adversary's verdict, not before** — its pre-registration is frozen and classified this
+  correctly as a mechanism, which is what surfaced it.
 
   **D-140-10: the store sorts `target_kind::text`**, so D-140-09 is true by construction rather than by a
   premise plus a guard in a file T140 cannot see. Proposed by its implementer, which did **not** make the
