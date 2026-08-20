@@ -142,6 +142,36 @@ export class CircularReferenceError extends Error {
 CircularReferenceError.prototype.name = "CircularReferenceError";
 
 /**
+ * A submission carrying a value `JSON.stringify` will not serialise (D-40-23).
+ *
+ * The branch below used to let the serialiser throw naturally, with a comment calling that
+ * *the serialiser's own behaviour rather than a decision taken here*. It is a decision: a
+ * bare `TypeError` escaped a module whose every other rejection is typed and sealed, and
+ * `tests/error-hygiene.test.ts` cannot see it, because a `TypeError`'s own hygiene is
+ * perfect. That is `CircularReferenceError`'s situation exactly, one ruling later.
+ *
+ * **The value is never named**, which is the clause the size refusal already carries and for
+ * the same reason: a refusal about an input is the last place that input's own content
+ * belongs. Nor is the key it sat under, nor the submission it came from.
+ *
+ * **Scope, because the widest reading of the ruling would be wrong.** This is raised where
+ * the serialiser refuses a value it cannot represent. It is **not** raised when the caller's
+ * own code throws — a `toString` that throws propagates untouched, because `JSON.stringify`
+ * propagates it too and relabelling it would name a refusal the caller never got and lose
+ * the only true thing it had.
+ *
+ * Barrel-only, and that is not a reason to leave it untyped: `JSON.parse` produces no
+ * bigints, and T100, T263 and T270 consume this barrel in-process.
+ */
+export class UnserializableValueError extends Error {
+  constructor(operation: string = "validate") {
+    super(`${operation}: the submission contains a value JSON cannot serialise.`);
+    define(this, "cause", undefined);
+  }
+}
+UnserializableValueError.prototype.name = "UnserializableValueError";
+
+/**
  * The deepest nesting this walk will hold frames for, before refusing as a typed error.
  *
  * D-40-D requires a ceiling as well as a shape, because an iterative walk over a deeply
@@ -256,11 +286,19 @@ function walk(root: unknown, spend: (bytes: number) => void, operation: string):
     if (kind === "number") return spend(Number.isFinite(value) ? String(value).length : 4);
     if (kind === "boolean") return spend(value === true ? 4 : 5);
     if (kind !== "object") {
-      /* `bigint` throws out of `JSON.stringify` and still does, which is the serialiser's
-         own behaviour rather than a decision taken here. A droppable never reaches this
-         call: both containers below handle it in the two different ways the serialiser
-         does, and the top-level case is documented at the call site. */
-      return spend(Buffer.byteLength(JSON.stringify(value) ?? "", "utf8"));
+      /* A `bigint` is the value the serialiser will not represent, and D-40-23 rules that a
+         typed refusal rather than the bare `TypeError` this used to let through. The catch is
+         narrow on purpose: it wraps the serialiser refusing, and nothing else reaches here,
+         because a droppable is handled by both containers below in the two different ways the
+         serialiser does and the top-level case is documented at the call site. A caller's own
+         error is raised in `normalise`, well before this line. */
+      let serialised: string | undefined;
+      try {
+        serialised = JSON.stringify(value);
+      } catch {
+        throw new UnserializableValueError(operation);
+      }
+      return spend(Buffer.byteLength(serialised ?? "", "utf8"));
     }
 
     const container = value as object;
@@ -403,8 +441,15 @@ const NOT_BOXED = Symbol("not-boxed");
  * object branch is agreement rather than an omission.
  */
 function unbox(value: object): unknown {
-  if (types.isStringObject(value)) return String.prototype.valueOf.call(value);
-  if (types.isNumberObject(value)) return Number.prototype.valueOf.call(value);
+  /* 4a: `ToNumber(value)`, and `+` is the only spelling of it. `Number(value)` is a DIFFERENT
+     function — it accepts a BigInt where `ToNumber` refuses one — so a `valueOf` returning
+     `7n` measures 7 under `Number()` and throws under both `+` and the serialiser. */
+  if (types.isNumberObject(value)) return +(value as unknown as number);
+  /* 4b: `ToString(value)`. `String(x)` is `ToString(x)` for every argument that is not itself
+     a symbol, and the argument here is always an object. */
+  if (types.isStringObject(value)) return String(value);
+  /* 4c and 4d read the slot, so they stay reads. Coercing them would answer `true` for every
+     boxed boolean and would consult channels the serialiser never looks at. */
   if (types.isBooleanObject(value)) return Boolean.prototype.valueOf.call(value);
   if (types.isBigIntObject(value)) return BigInt.prototype.valueOf.call(value);
   return NOT_BOXED;

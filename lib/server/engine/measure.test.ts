@@ -67,6 +67,38 @@ interface ValueClass {
   readonly make: () => unknown;
 }
 
+/**
+ * Own properties installed on a box, so the coercion channel differs from the slot.
+ *
+ * `Object.defineProperty` rather than assignment, because `Symbol.toPrimitive` has to be
+ * installable the same way the string keys are and a literal would not carry it.
+ */
+function tamper<T extends object>(box: T, patch: Record<PropertyKey, unknown>): T {
+  for (const key of Reflect.ownKeys(patch)) {
+    Object.defineProperty(box, key, {
+      value: patch[key as keyof typeof patch],
+      configurable: true,
+      writable: true,
+    });
+  }
+  return box;
+}
+
+/**
+ * A genuine internal slot with a prototype chain that is not the builtin's.
+ *
+ * `Reflect.construct(String, ["xy"], Alien)` sets `[[StringData]]` and takes its prototype from
+ * `Alien`, so `types.isStringObject` still says yes and the coercion resolves `toString` to
+ * `Object.prototype`'s. Nothing is overridden here: this is the cell that says the divergence
+ * needs no tampering at all.
+ */
+function foreignBox(builtin: unknown, args: readonly unknown[]): unknown {
+  function Alien(): void {
+    /* a constructor with its own `prototype`, and nothing else */
+  }
+  return Reflect.construct(builtin as never, args as never, Alien as never);
+}
+
 const VALUE_CLASSES: readonly ValueClass[] = [
   /* step 4-5: the literals */
   { name: "null", make: () => null },
@@ -147,6 +179,64 @@ const VALUE_CLASSES: readonly ValueClass[] = [
   { name: "boxed/number", make: () => new Number(5) },
   { name: "boxed/boolean-true", make: () => new Boolean(true) },
   { name: "boxed/boolean-false", make: () => new Boolean(false) },
+
+  /* step 4a-4b: the boxed classes with the COERCION CHANNEL tampered with, which is D-40-H.
+     Every boxed cell above is a **virgin box** — nothing overriding `toString`, `valueOf` or
+     `@@toPrimitive` — and on a virgin box a slot read and a coercion agree, so the whole boxed
+     region of this construction was blind to the difference between them. That is D-40-G's own
+     charge one level in: D-40-G's transcription dropped a **branch**, and this dropped **the
+     operation inside a branch**, which no amount of adding slots reaches.
+
+     The two hint orders are cells rather than commentary. `ToString` (string hint) tries
+     `toString` then `valueOf`; `ToNumber` (number hint) tries `valueOf` then `toString`. So
+     `boxed/string-valueOf-overridden` and `boxed/number-toString-overridden` **must agree** even
+     against a wrong implementation of the slot, and they red only for a fix that runs the wrong
+     hint — which nothing else here would catch. */
+  { name: "boxed/string-toString-overridden", make: () => tamper(new String("xy"), { toString: () => "OVERRIDDEN" }) },
+  { name: "boxed/string-valueOf-overridden", make: () => tamper(new String("xy"), { valueOf: () => "VO" }) },
+  { name: "boxed/string-toPrimitive", make: () => tamper(new String("xy"), { [Symbol.toPrimitive]: () => "PRIM" }) },
+  { name: "boxed/number-valueOf-overridden", make: () => tamper(new Number(5), { valueOf: () => 12345 }) },
+  { name: "boxed/number-toString-overridden", make: () => tamper(new Number(5), { toString: () => "999" }) },
+  { name: "boxed/number-toPrimitive", make: () => tamper(new Number(5), { [Symbol.toPrimitive]: () => 777 }) },
+
+  /* Reachable with nobody overriding anything: a genuine `[[StringData]]` whose prototype chain
+     is not `String.prototype`, so the coercion finds `Object.prototype.toString` and answers
+     `"[object String]"` where a slot read answers `"xy"`. */
+  { name: "boxed/string-foreign-prototype", make: () => foreignBox(String, ["xy"]) },
+  { name: "boxed/number-foreign-prototype", make: () => foreignBox(Number, [5]) },
+
+  /* **The control is built into the construction rather than argued beside it.** Steps 4c and 4d
+     are direct slot reads, so these must agree under exactly the tampering that makes the two
+     above diverge. A fix that coerced all four would red here and nowhere else. */
+  { name: "boxed/boolean-both-overridden", make: () => tamper(new Boolean(true), { valueOf: () => false, toString: () => "nope" }) },
+  { name: "boxed/boolean-toPrimitive", make: () => tamper(new Boolean(true), { [Symbol.toPrimitive]: () => "X" }) },
+  { name: "boxed/bigint-valueOf-overridden", make: () => tamper(Object(BigInt(1)) as object, { valueOf: () => BigInt(9) }) },
+
+  /* A THIRD axis, and finding it is the whole lesson of D-40-H repeated: the cells above vary
+     **which channel** the coercion consults, and these vary **what the channel returns**. They
+     separate implementations the other axis cannot tell apart — `Number(v)` and `ToNumber(v)` are
+     different functions, and `Number(v)` converts a BigInt where `ToNumber(v)` refuses it, so a
+     fix written with `Number()` passes every cell above and reds here. Most land in the third
+     partition, where the formula refuses.
+
+     `string-toString-throws` is the boundary control for D-40-23 rather than a coercion case: the
+     serialiser **propagates** a caller's own error instead of refusing, so a refusal class
+     substituted there would name a refusal the caller never got. */
+  { name: "boxed/number-valueOf-returns-bigint", make: () => tamper(new Number(5), { valueOf: () => BigInt(7) }) },
+  { name: "boxed/number-valueOf-returns-symbol", make: () => tamper(new Number(5), { valueOf: () => Symbol("s") }) },
+  { name: "boxed/number-no-primitive", make: () => tamper(new Number(5), { valueOf: () => ({}), toString: () => ({}) }) },
+  { name: "boxed/string-toString-returns-symbol", make: () => tamper(new String("x"), { toString: () => Symbol("s") }) },
+  { name: "boxed/string-toString-returns-bigint", make: () => tamper(new String("x"), { toString: () => BigInt(3) }) },
+  { name: "boxed/string-no-primitive", make: () => tamper(new String("x"), { toString: () => ({}), valueOf: () => ({}) }) },
+  {
+    name: "boxed/string-toString-throws",
+    make: () =>
+      tamper(new String("x"), {
+        toString: () => {
+          throw new RangeError("the caller's own error, propagated rather than refused");
+        },
+      }),
+  },
 
   /* step 2: `toJSON`, across what it may RETURN and what it may READ. Both halves were
      divergences: the walk decided droppability before unwrapping, and never passed the key. */
@@ -304,35 +394,92 @@ describe("D-40-E — the walk agrees with the formula over the serialiser's clas
    * The kinds are compared, not merely the fact of throwing: a `LimitExceededError` here
    * would mean the walk refused for its own reason and the cell would pass on a coincidence.
    */
-  it("refuses exactly where the formula refuses, and with the same kind", () => {
+  it("refuses wherever the formula refuses", () => {
     expect(UNSERIALISABLE.length).toBeGreaterThan(0);
 
-    const kindOf = (run: () => unknown): string => {
+    /**
+     * **The universal property is that it refuses, and the CLASS is asserted per kind below.**
+     * It was one assertion comparing constructor names, which was right while every refusal was
+     * the serialiser's own bare `TypeError`. D-40-23 makes that false on purpose: a value JSON
+     * cannot serialise now answers `UnserializableValueError`, so a name comparison against the
+     * formula would red on the ruling being implemented. What stays universal is that neither
+     * side invents a number.
+     */
+    const refuses = (run: () => unknown): boolean => {
       try {
         run();
-        return "no throw";
-      } catch (thrown) {
-        return (thrown as Error).constructor.name;
+        return false;
+      } catch {
+        return true;
       }
     };
 
     const divergent: string[] = [];
     for (const cell of UNSERIALISABLE) {
-      const expected = kindOf(() => formula(cell.value));
-      const measured = kindOf(() => measureSubmission("probe", cell.value, GENEROUS));
-      if (measured !== expected) divergent.push(`${cell.name}: ${measured} vs ${expected}`);
+      if (!refuses(() => measureSubmission("probe", cell.value, GENEROUS))) {
+        divergent.push(`${cell.name}: the walk answered a number where the formula refuses`);
+      }
     }
     expect(divergent).toEqual([]);
 
     /* The cell that put this partition here, named so a regression says which one. Before
-       D-40-G, `Object(BigInt(1))` was walked as a container and measured 2. */
+       D-40-G, `Object(BigInt(1))` was walked as a container and measured 8 for `{"k":{}}`. */
     expect(UNSERIALISABLE.some((c) => c.name.startsWith("bigint/boxed @"))).toBe(true);
     expect(UNSERIALISABLE.some((c) => c.name.startsWith("bigint/raw @"))).toBe(true);
-    /* Driven rather than left to the sweep above, with the pre-fix answer written down:
-       three-slot `unbox` returned the box unchanged, the object branch found no enumerable
-       keys, and `{"k":{}}` measured 8 for a submission the formula will not serialise. */
-    expect(() => measureSubmission("probe", { k: Object(BigInt(1)) }, GENEROUS)).toThrow(
-      TypeError,
+  });
+
+  /**
+   * D-40-23, and the two halves are one criterion because an implementation satisfying either
+   * alone is wrong in a different direction.
+   *
+   * A value the serialiser cannot represent answers a **typed, sealed** refusal, because the
+   * branch was letting `JSON.stringify` throw naturally and a bare `TypeError` escaped a module
+   * whose every other rejection is typed — invisible to `tests/error-hygiene.test.ts`, whose
+   * domain is the classes a module exports and whose clauses a `TypeError` satisfies perfectly.
+   *
+   * And a caller's **own** error is propagated rather than relabelled. `JSON.stringify` passes a
+   * throwing `toString` straight through; answering `UnserializableValueError` there would name a
+   * refusal this module did not make and lose the one true thing the caller had. Without this
+   * half, the widest possible reading of the ruling — wrap everything that throws — satisfies the
+   * first half completely.
+   */
+  it("answers a typed refusal for a value it cannot serialise, and propagates one it did not raise", async () => {
+    const { UnserializableValueError } = await import("./index");
+
+    for (const [label, value] of [
+      ["a raw bigint", { k: BigInt(1) }],
+      ["a boxed bigint", { k: Object(BigInt(1)) }],
+      ["a bigint in an array", { k: [BigInt(2)] }],
+    ] as const) {
+      const thrown = (() => {
+        try {
+          measureSubmission("validateBundle", value, GENEROUS);
+          return undefined;
+        } catch (error) {
+          return error;
+        }
+      })();
+      expect(thrown, label).toBeInstanceOf(UnserializableValueError);
+      expect((thrown as Error).message, label).toBe(
+        "validateBundle: the submission contains a value JSON cannot serialise.",
+      );
+      /* The value is never named, and the control sits beside it: the digits really are in the
+         submission, so a clean message is about the refusal rather than about an input with
+         nothing to leak. */
+      expect((thrown as Error).message).not.toContain("1");
+    }
+
+    const propagated = tamper(new String("x"), {
+      toString: () => {
+        throw new RangeError("the caller's own error");
+      },
+    });
+    expect(() => formula({ k: propagated })).toThrow(RangeError);
+    expect(() => measureSubmission("validateBundle", { k: propagated }, GENEROUS)).toThrow(
+      RangeError,
+    );
+    expect(() => measureSubmission("validateBundle", { k: propagated }, GENEROUS)).not.toThrow(
+      UnserializableValueError,
     );
   });
 
@@ -419,16 +566,23 @@ describe("D-40-E — the walk agrees with the formula over the serialiser's clas
       let serialised: string | undefined;
       try {
         serialised = JSON.stringify(value);
-      } catch (thrown) {
+      } catch {
         refused += 1;
-        const kind = (thrown as Error).constructor.name;
-        let measured = "no throw";
+        /* **Both refuse; the CLASS is not compared here and that is D-40-23.** This compared
+           constructor names, which was right while the walk let the serialiser's own
+           `TypeError` through — and the ruling replaced it with a typed refusal, so a name
+           comparison reds on the ruling being implemented, 117 times, with **zero** number
+           divergences underneath. The classes are pinned per kind in their own witness, where
+           the distinction between a refusal this module makes and one it propagates can be
+           stated; what belongs here is the property that neither side invents a number. */
+        let answered = false;
         try {
           measureSubmission("probe", value, GENEROUS);
-        } catch (own) {
-          measured = (own as Error).constructor.name;
+          answered = true;
+        } catch {
+          /* refused, as the formula did */
         }
-        if (measured !== kind) divergent.push(`#${i}: ${measured} where the formula threw ${kind}`);
+        if (answered) divergent.push(`#${i}: the walk answered where the formula refused`);
         continue;
       }
       if (serialised === undefined) continue;
@@ -452,13 +606,162 @@ describe("D-40-E — the walk agrees with the formula over the serialiser's clas
    * walk must not invent one. Asserted in both directions: both throw, and both throw the
    * same kind of thing.
    */
-  it("throws where the formula throws, on a bigint", () => {
+  it("throws where the formula throws, on a bigint", async () => {
     /* `BigInt(1)` rather than the `1n` literal: this project targets ES2017, where the
        literal is a syntax error, while `lib` carries esnext so the global is typed. The
        value under test is the bigint, not the spelling. */
     const big = { k: BigInt(1) };
     expect(() => JSON.stringify(big)).toThrow(TypeError);
-    expect(() => measureSubmission("probe", big, GENEROUS)).toThrow(TypeError);
+
+    /* **The class here is no longer the formula's, and that is D-40-23 rather than a
+       divergence.** This asserted `TypeError` on both sides while the branch let the
+       serialiser throw naturally; the ruling replaced the bare throw with a typed, sealed
+       refusal, so a test still pinning `TypeError` would red on the ruling being implemented.
+       What the domain boundary is about survives unchanged: the formula has no number here and
+       the walk must not invent one. */
+    const { UnserializableValueError } = await import("./index");
+    expect(() => measureSubmission("probe", big, GENEROUS)).toThrow(UnserializableValueError);
+  });
+});
+
+/* ------- D-40-H: the step reads a slot where the serialiser performs a coercion ------- */
+
+describe("D-40-H — steps 4a and 4b coerce, and only 4c and 4d read a slot", () => {
+  /**
+   * The asymmetry, asserted as an asymmetry rather than as a list of numbers.
+   *
+   * `SerializeJSONProperty` step 4 is **two coercions and two reads**: `[[NumberData]]` becomes
+   * `ToNumber(value)` and `[[StringData]]` becomes `ToString(value)`, both of which consult
+   * `@@toPrimitive`, `toString` and `valueOf` on the object; `[[BooleanData]]` and
+   * `[[BigIntData]]` are read straight out of the slot. `unbox` implemented all four as a slot
+   * read, which is exact for two of them and bypasses three user-visible channels for the other
+   * two.
+   *
+   * **Each side of the asymmetry carries its own control, and neither control is the mechanism
+   * under test.** For a coercing slot the tampering must **move the formula's own number** —
+   * otherwise the cell carries no decision and agreeing with it proves nothing. For a
+   * non-coercing slot the identical tampering must **leave the formula's number alone**, which
+   * is what "direct slot read" means and is the half that would red if a fix coerced all four.
+   * The formula is the thing being agreed with, so both controls are read off it rather than
+   * declared here.
+   */
+  it("tampering moves the formula only where the serialiser coerces", () => {
+    const virginString = Buffer.byteLength(JSON.stringify({ k: new String("xy") }), "utf8");
+    const virginNumber = Buffer.byteLength(JSON.stringify({ k: new Number(5) }), "utf8");
+    const virginBoolean = Buffer.byteLength(JSON.stringify({ k: new Boolean(true) }), "utf8");
+
+    const formulaFor = (value: unknown): number =>
+      Buffer.byteLength(JSON.stringify({ k: value }), "utf8");
+
+    /* 4a and 4b: the coercion is observable, so tampering with it moves the number. */
+    const coercing: [string, unknown, number][] = [
+      ["string/toString", tamper(new String("xy"), { toString: () => "OVERRIDDEN" }), virginString],
+      [
+        "string/@@toPrimitive",
+        tamper(new String("xy"), { [Symbol.toPrimitive]: () => "PRIM" }),
+        virginString,
+      ],
+      ["string/foreign-prototype", foreignBox(String, ["xy"]), virginString],
+      ["number/valueOf", tamper(new Number(5), { valueOf: () => 12345 }), virginNumber],
+      [
+        "number/@@toPrimitive",
+        tamper(new Number(5), { [Symbol.toPrimitive]: () => 777 }),
+        virginNumber,
+      ],
+      ["number/foreign-prototype", foreignBox(Number, [5]), virginNumber],
+    ];
+    for (const [label, value, virgin] of coercing) {
+      expect(formulaFor(value), `${label}: the tampering must reach the serialiser`).not.toBe(
+        virgin,
+      );
+      expect(measureSubmission("probe", { k: value }, GENEROUS), label).toBe(formulaFor(value));
+    }
+
+    /* 4c and 4d: the same tampering, and the number must not move. This is the built-in
+       control, and it is the half a fix that coerced all four would fail. */
+    const reading: [string, unknown, number][] = [
+      [
+        "boolean/valueOf+toString",
+        tamper(new Boolean(true), { valueOf: () => false, toString: () => "nope" }),
+        virginBoolean,
+      ],
+      [
+        "boolean/@@toPrimitive",
+        tamper(new Boolean(true), { [Symbol.toPrimitive]: () => "X" }),
+        virginBoolean,
+      ],
+    ];
+    for (const [label, value, virgin] of reading) {
+      expect(formulaFor(value), `${label}: a direct slot read ignores every channel`).toBe(virgin);
+      expect(measureSubmission("probe", { k: value }, GENEROUS), label).toBe(virgin);
+    }
+  });
+
+  /**
+   * The two cells that agree, and the reason they agree, because an agreeing cell with no stated
+   * reason is the first thing a later reader deletes as redundant.
+   *
+   * `ToString` runs the **string** hint, which tries `toString` and then `valueOf`; `ToNumber`
+   * runs the **number** hint, which tries `valueOf` and then `toString`. So overriding the
+   * *second* method of each pair changes nothing, and these two cells red **only** for a fix that
+   * ran the wrong hint — a mis-repair no other assertion here would catch, because every other
+   * cell agrees under both hint orders.
+   */
+  it("the hint order is per slot, and overriding the second method of a pair changes nothing", () => {
+    const formulaFor = (value: unknown): number =>
+      Buffer.byteLength(JSON.stringify({ k: value }), "utf8");
+
+    const stringWithValueOf = tamper(new String("xy"), { valueOf: () => "VO" });
+    const numberWithToString = tamper(new Number(5), { toString: () => "999" });
+
+    expect(formulaFor(stringWithValueOf), "string hint tries toString first").toBe(
+      formulaFor(new String("xy")),
+    );
+    expect(formulaFor(numberWithToString), "number hint tries valueOf first").toBe(
+      formulaFor(new Number(5)),
+    );
+
+    expect(measureSubmission("probe", { k: stringWithValueOf }, GENEROUS)).toBe(
+      formulaFor(stringWithValueOf),
+    );
+    expect(measureSubmission("probe", { k: numberWithToString }, GENEROUS)).toBe(
+      formulaFor(numberWithToString),
+    );
+  });
+
+  /**
+   * The half that makes this a `maxBytes` defect rather than a wrong number, driven at a bound.
+   *
+   * A slot read is bounded by what the box was constructed with; a coercion is bounded by
+   * nothing, because `toString` may return any string. So the under-count is **arbitrary**, which
+   * is what makes this strictly worse than D-40-E's charged ~5x — and the consequence is not that
+   * the answer is wrong but that **a submission the ruled number refuses is accepted**.
+   *
+   * Driven rather than argued, and driven at the bound rather than asserted as a number: refused
+   * at `maxBytes` one below the ruled figure, accepted at the ruled figure. That is the same
+   * shape as D-40-21's guard and it is the one that cannot go vacuous, because both operands
+   * would have to be the same measurement for it to pass trivially and one of them is
+   * `JSON.stringify`'s.
+   *
+   * 100 000 characters rather than the 5 000 000 the charge used: the same defect one order
+   * smaller, and a test that allocates five megabytes to prove a bound is the shape this task has
+   * already been charged for.
+   */
+  it("refuses a submission the ruled number refuses, however small the slot is", () => {
+    const inflated = { k: tamper(new String("xy"), { toString: () => "z".repeat(100_000) }) };
+    const literal = Buffer.byteLength(JSON.stringify(inflated), "utf8");
+
+    /* The control: the two readings really are far apart, so the bound below is not being
+       driven between two numbers that were already the same. */
+    expect(literal).toBeGreaterThan(100_000);
+
+    expect(() =>
+      measureSubmission("validateBundle", inflated, resolveLimits({ maxBytes: literal - 1 })),
+    ).toThrow(LimitExceededError);
+
+    expect(measureSubmission("validateBundle", inflated, resolveLimits({ maxBytes: literal }))).toBe(
+      literal,
+    );
   });
 });
 
@@ -570,24 +873,41 @@ describe("D-40-F — deciding whether a value is boxed costs no thrown exception
 
   it("asks no prototype's valueOf about the objects a real submission is made of", () => {
     const { dense } = samePayloadTwoShapes(2_000);
-    const boxed = { manifest: { k: new String("xy") }, dot: "digraph g { a }", cardFiles: {} };
+
+    const expected = Buffer.byteLength(JSON.stringify(dense), "utf8");
 
     const spy = countingValueOfs();
     /* Seeded to values that FAIL, so a `measureSubmission` that throws before either count is
        taken reds instead of reporting the zero this test is looking for. */
     let onPlain: Record<string, number> = { "the walk did not run": 1 };
-    let onBoxed = -1;
+    let probeMoved = -1;
+    let measured = -1;
     try {
-      measureSubmission("validateBundle", dense, GENEROUS);
+      measured = measureSubmission("validateBundle", dense, GENEROUS);
       onPlain = spy.byName();
 
-      /* **Two-factor, and this is the half that makes the zero a measurement.** A counter
-         that cannot register reads zero for the same reason a clean module does, so the
-         probe is shown to move under the same installation the zero was taken under, on the
-         one input where a boxed primitive genuinely is there to unbox. */
+      /**
+       * **Two failure modes, two controls, and neither of them is the mechanism under test.**
+       *
+       * A zero here can mean the module asks the question cheaply, which is the claim; it can
+       * mean the counter never installed; and it can mean the walk measured nothing. The first
+       * control takes the call **direct**, inside the same installation the zero was taken
+       * under, the way `determinism.test.ts` does `void Date.now()` in its own window.
+       *
+       * **It used to drive the module instead, on a submission carrying a boxed string, and
+       * D-40-H killed it.** A spec-correct `unbox` unwraps a boxed string through
+       * `ToString`, whose string hint reaches `toString` and never `valueOf` — so the counter
+       * stopped registering and the control reported itself dead against a correct module.
+       * Swapping in a boxed type whose coercion still happens to call `valueOf` would have kept
+       * it green and made **the control depend on the mechanism it is controlling for**, which
+       * is the same defect one step along.
+       */
       const before = spy.count();
-      measureSubmission("validateBundle", boxed, GENEROUS);
-      onBoxed = spy.count() - before;
+      void String.prototype.valueOf.call(new String("x"));
+      void Number.prototype.valueOf.call(new Number(1));
+      void Boolean.prototype.valueOf.call(new Boolean(true));
+      void BigInt.prototype.valueOf.call(Object(BigInt(1)));
+      probeMoved = spy.count() - before;
     } finally {
       spy.restore();
     }
@@ -599,7 +919,10 @@ describe("D-40-F — deciding whether a value is boxed costs no thrown exception
         "an O(maxBytes) bound into a nine-second bound at maxBytes.",
     ).toEqual({ String: 0, Number: 0, Boolean: 0, BigInt: 0 });
 
-    expect(onBoxed, "the probe registers when a value IS boxed").toBeGreaterThan(0);
+    expect(probeMoved, "the counter registers when these functions ARE called").toBe(4);
+
+    /* The second control: the zero above is not a zero from a walk that measured nothing. */
+    expect(measured, "the walk measured the payload the zero was taken over").toBe(expected);
   });
 
   /**

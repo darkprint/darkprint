@@ -21,6 +21,7 @@ export {
   DEFAULT_ENGINE_LIMITS,
   LimitExceededError,
   MAX_NESTING_DEPTH,
+  UnserializableValueError,
 } from "./limits";
 
 /* --------------------- the four entry points --------------------- */
