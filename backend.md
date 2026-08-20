@@ -3357,6 +3357,36 @@ itself was the defect and refused to make it.**
 number moves in the merge commit and the implementer reports the count to write. For a class added to an
 already-shipped directory it moves with the class.**
 
+## I ruled four defects about a section contradicting itself, and landed three of them as additions
+
+**T130's implementer measured the section after my rulings and found all three superseded sentences
+still standing, in the imperative, beside the rulings that overturn them**: `validated: boolean` 25
+lines above D-130-01, the withdrawn admissible message form, and the withdrawn Open line.
+
+**This is the file's own worst-instance entry repeated** — *an amendment is not applied until the
+sentence it replaces is gone; adding the correction and leaving the original is worse than doing
+nothing, because the original was at least uncontested.*
+
+**And the damage runs in the wrong direction because of which surface is authoritative.** *The criteria
+say what must be true; the block says what to type; a reader types the block.* **So a blind author
+typing from T130's block would have written `validated: boolean` and a throwing `getProfile` — the two
+things D-130-01 and D-130-02 exist to prevent — and both were freshly ruled rather than stale.**
+
+**Two of the four rulings were themselves about a section contradicting itself.** D-130-02 charges the
+block for publishing a rejection its signature contradicts; D-130-03 charges the Open line for
+contradicting the block. **Both were then in that shape.** *The correction is where the defect lands,
+every time.*
+
+**And nothing red, structurally.** `rulings-bind` triggers on a **preamble heading opening with an id**;
+D-130-01..04 are bold inline text inside a task-section bullet, **so the guard has nothing to look for
+and is green by construction** — the fourth failure mode its own docblock names. **Its implementer
+reported that rather than proposing a guard, because the id-presence check cannot be made to see it.**
+
+**It also declined to make the three edits**, though they have no design space, on the correct ground:
+**the design-space test governs who may edit inside their own partition, not whether a boundary may be
+crossed because the crossing is small — and a brief may narrow a rule and never widen it.** Same call
+T081's implementer made. **All three displaced by me at this commit, and the block re-stamped.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -11634,11 +11664,11 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Blocks:** T250, T262
 - **Owns:** `lib/server/profiles/**`, `app/api/authors/**`
 - **Forbidden:** `lib/server/accounts/**`, `app/api/account/**`
-- **Published signatures** (checked against `backend` at `912666e` and against `lib/data/profiles.ts:33-60`'s record — `{ joinedAt, watchers, support, validated, pinned }`. Barrel: `@/lib/server/profiles`.)
+- **Published signatures** (checked against `backend` at `912666e`, **re-stamped at `d9c5467`** — where D-130-01 made `validated` a number, D-130-02 removed the published rejection and D-130-03 removed the Open line, **all three by DISPLACEMENT rather than addition**, charged by this task's implementer and against `lib/data/profiles.ts:33-60`'s record — `{ joinedAt, watchers, support, validated, pinned }`. Barrel: `@/lib/server/profiles`.)
 
         interface ProfileRecord {
           author: PublicAuthor; joinedAt: Date;
-          watchers: number; support: number; validated: boolean;
+          watchers: number; support: number; validated: number;
           pinned: readonly string[];
           counts: { blueprints: number; cards: number; terms: number };
         }
@@ -11655,7 +11685,6 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **AC4's "watcher count equals the follower count" is a consistency criterion between two things that could drift**, so the count is derived from the follow rows rather than incremented alongside them — same rule as `counts`, and the same reason.
 
-  **Admissible message form:** `"getProfile: no such handle."` — identical for an unknown handle and one the caller may not see, since a distinguishable message reinstates the existence oracle the 404 closes.
 
   **Inherited read semantics from T080, published here so this task's author binds to the same rules.** These are properties of the barrel this task consumes, ruled at T080's implementation and identical everywhere: `BlueprintSummary.cardRefs` is **filtered to cards the actor may read**, so a partial caller's `cardRefs` does not reproduce `digest`'s input; a card pinned only by an invisible bundle is **not indexed** for that actor; a bundle whose owner has **no handle** is excluded; lists sort **by slug, then owner handle**; `scoresOf` is **all four axes or nothing**; and pins are canonicalised to `id@version`, with an unparseable pin dropped. Raised by T080's implementer, which noticed that ten tasks list it under `Blocks` and that these are read semantics they inherit rather than implementation details they may ignore.
 
@@ -11673,7 +11702,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **The cost of leaving even this much unpublished was measured on T040 and is not hypothetical: 81 blind cells all bound the module and six route mutations reddened zero**, in a task where the surface was published **during** the round. Here it had not been published at all, with a blind author already on the contract.
 
-  **D-130-01: `validated` is a NUMBER, not a boolean.** The block published `validated: boolean` while both surfaces it claims to have been checked against declare a count — `lib/data/profiles.ts:57` is `validated: number` with a docblock defining it as *how many other accounts' blueprints this handle downloaded, ran and reported on*, and `ProfileHeader.tsx:77` takes a `number` rendered through `compact()`. **The five NAMES matched, which is all the header's claim was ever about; the quantity did not.** And the boolean is already carried elsewhere — `ProfileRecord.author` is a `PublicAuthor`, which has `validator: boolean` — **so the published field was either a duplicate of that or a wrong transcription of a count.** It is the count, and it therefore depends on T180's run reports, which do not exist: **a fourth blocked field.**
+  **D-130-01: `validated` is a NUMBER, not a boolean.** The block published `validated: number` while both surfaces it claims to have been checked against declare a count — `lib/data/profiles.ts:57` is `validated: number` with a docblock defining it as *how many other accounts' blueprints this handle downloaded, ran and reported on*, and `ProfileHeader.tsx:77` takes a `number` rendered through `compact()`. **The five NAMES matched, which is all the header's claim was ever about; the quantity did not.** And the boolean is already carried elsewhere — `ProfileRecord.author` is a `PublicAuthor`, which has `validator: boolean` — **so the published field was either a duplicate of that or a wrong transcription of a count.** It is the count, and it therefore depends on T180's run reports, which do not exist: **a fourth blocked field.**
 
   **D-130-02: `getProfile` returns a VALUE and publishes no rejection.** The block listed `"getProfile: no such handle."` as an admissible message on a function published as `Promise<ProfileRecord | undefined>`. **B-03 answers 404 over 403, and T081's readers return values precisely so a route cannot distinguish *no such row* from *not yours*.** Ruled: **`undefined` is the answer, the 404 is the route's, and that message belongs in the route's `problem` detail rather than on a class.** The admissible-form entry is withdrawn.
 
@@ -11684,7 +11713,6 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **BLOCKING AND NOT MINE TO RULE: three of `ProfileRecord`'s five stored fields have no storage, and a fourth is D-130-01.** Measured on the shipped tree at `22e426e` over a **constructed** domain — all 125 columns across all 16 tables, enumerated from the file's own import list, with `check`/`index`/`uniqueIndex`/`pgTable`/`pgEnum` named as the only non-column constructors so that **nothing live is missing and nothing listed is dead**. `grep -rni "follow|pin|pinned|watcher|support"` over `lib/db/schema.ts` and all four migrations returns **zero**. `target_kind` is `["blueprint","card","term"]` and `target_actor_kind` is `["star","note_vote"]`, so **neither the polymorphic target nor the actor table can name an account as a target or a follow as an act**, and adding a member is an `ALTER TYPE`. **`support` has no column AND no derivation** — `ProfileShell.tsx:63-66` sums stars off the item lists while `support` is a separate per-account figure passed straight through, so *anything countable is counted* does not reach it. **Sixth instance of the class this file already records: five tasks need tables `lib/db/schema.ts` does not have, and the Phase 0 graph contains no owner for them.**
 
 - **Acceptance criteria:** (1) blueprints, cards and namespaced terms are counted from the stores, not stored; (2) an owner's card count includes private rows and a visitor's does not; (3) a pin at a deleted target is omitted; (4) a follow toggles and the watcher count equals the follower count; (5) an unknown handle returns 404.
-- **Open:** pinning has no control anywhere in the UI — is there a write path, or is the pinned pair operator-curated?
 - **Out of scope:** the account's own fields (T050), signal arithmetic (T150, T160, T180).
 - **D-50-19, handed here rather than ruled in T050 (open, PENDING-OWNER-REVIEW):** `/u/Mara` — 404, or 301 to `/u/mara`? T070's grammar admits `[a-z0-9-]` only, so **exactly one casing of any handle is storable** and case-insensitive comparison, case-folding and a lower-case unique index are all answers to a collision the alphabet already prevents. T050's two doors are total and agree — `changeHandle(…, "Mara")` is a 400 and `getPublicAuthor(db, "Mara")` is `undefined` → 404, both with the store untouched — so **T050 needs no ruling and has no surface to hold one.** What is left is a **redirect policy**, and it belongs to whoever owns `app/u/[username]/**`. Raised by T050's adversary, which declined to pick and pointed out that ruling it in T050 would be the D-70-06 shape: a ruling landing in the section of the task that raised it rather than the section it governs.
 - **Log:**
