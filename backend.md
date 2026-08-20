@@ -5683,6 +5683,59 @@ already classified it correctly as a mechanism rather than a defect, which is wh
 produce***, because the alternative was meeting it as a red with no prior claim and arguing about which
 half was wrong.
 
+## A NAMING is a claim about the host, and the host is measurable — the stamp moves to TAKING the slot
+
+T130's adversary was told its owner had ruled, claimed the slot on my stated condition, **and took a
+contention stamp before starting because the rule's substance is checkable.**
+
+        load averages     10.45  8.70  9.51
+        vitest            running in ../darkprint-wt-t140-saves, 9 worker forks, one at 88.7% CPU
+        postgres          12 connections to darkprint%, 5 ACTIVE
+
+**The slot was not free when I said it was.** T140's adversary was mid-run. It retracted before my stop
+message reached it — **and it retracted on the instrument rather than on my word.**
+
+**My condition was badly worded and invited it**: *tell me when your owner rules and I will name you*
+reads as the naming being a formality. **It is not — it is the serialisation point**, and the value of the
+rule is that the holder is known to everyone rather than inferred by whoever is ready. **The slot is
+granted, never claimed, and never announced as free.**
+
+**And the rule change is its proposal, adopted: the contention stamp is required when TAKING the slot, not
+only when reporting a run.** *The ceremony said the slot was mine; `pgrep -fl vitest` said otherwise, and
+the second one is the fact.* **A naming is a claim about the host and costs one command to check.**
+
+**The reason it is worth a rule is the asymmetry it named**, and it is the sharpest statement of the
+failure this run has:
+
+> ***A contention collision does not red — it inflates, and then it disappears.***
+
+Neither run would have failed. Both would have completed, both green, both slower **in a way nobody would
+attribute to the other**, and the evidence would be gone from both result sets. **Same silent-green family
+as the `beforeAll` skip: no failure, no signal, and a number that reads as a result.** My own 54s→155s
+instance is the same event caught only because I happened to compare two durations on an unchanged tree.
+
+**It also offered to wait past all three runs** rather than slot into the gaps: *a triple with one clean
+run and two contended ones is worth less than a delay.* **Accepted** — a determinism claim built from runs
+under different host conditions measures the host.
+
+## The most misleading git message of the run, and it nearly became a false alarm about a real event
+
+Merging base, git said ***"Your local changes to the following files would be overwritten by merge"***,
+naming all seven staged `tests/server/t130/*` files. **That reads as *backend contains these and they
+conflict*.** It does not: `git ls-tree -r fbf17eb -- tests/server/t130` is **empty**. **The real cause is
+git's index-must-match-HEAD rule, violated by seven staged adds.**
+
+**It nearly filed *the blind half has landed on backend*** — and **I would have believed it**, because I
+reset base off exactly that merge four hours ago and would have read it as a recurrence. **A plausible
+reading of an error message, pointing at an event that had actually happened once already.**
+
+Handled without a commit, since committing is its owner's call: stash, merge, pop, **and all seven blobs
+verified byte-identical across the manoeuvre by diffing `git ls-files -s` either side.** *That verification
+is what makes a stash manoeuvre reportable rather than merely done.*
+
+**And `psql` is not installed — exit 127, `command not found`, not a permission refusal.** So one of its
+three blockers was never a permission at all.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
