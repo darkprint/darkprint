@@ -5616,6 +5616,39 @@ inconvenienced. **This one inconvenienced nobody**, and the only session that wo
 the one it flattered. **It changes nothing operationally — the blind axis gets measured first either way
 and neither half offers a prediction. It changes what a green MEANS when one arrives.**
 
+## An agent introspecting itself with `$$` and `tty` measures its TOOL CALL, not its session
+
+I asked both T130 sessions to print a banner identifying their pane, with `printf … "$(tty)" "$$"`.
+**Both refused the command as given and both found a different reason it does not work.**
+
+**T130's adversary: `$$` and `tty` are the tool call's.** Run literally they give `not a tty` and a pid that
+changes every command — `45547`, `44710` one call earlier. **A Bash tool call is a short-lived `zsh` with
+no controlling terminal, born and dead inside one tool use.** The banner would have named a pid that had
+already exited and printed the string `not a tty` into the field meant to identify the pane. It walked the
+parent chain instead — `ps -o ppid= -p $$`, then `ps -o tty= -p <that>` — and arrived at `99371` /
+`ttys021`, **which are its parent's rather than its own.** Confirmed identically from my own tool call:
+`tty` → `not a tty`, and my session is two levels up.
+
+**T130's implementer: tool stdout does not reach the pane at all.** `[ -t 1 ]` is false; **the harness
+captures stdout and renders it into the transcript, which is a different surface from the terminal.** So a
+`printf` banner goes where the owner is not looking. It put the banner in its **own assistant text**, which
+is what the pane renders. *The adversary's redirect to `/dev/$TTY` reaches the device directly and is the
+other correct answer* — two sessions, two working methods, from one broken instruction.
+
+**The general shape, in the implementer's words**: *the banner was a countermeasure whose PREMISE was that
+the process printing it owns a terminal — true for a shell, false for an agent's tool call.* **And the
+failure is silent in the dangerous direction: `printf` exits 0 and prints something**, so nothing anywhere
+says the pane never got it. ***`tty` exiting 1 is the check and it costs one line.***
+
+**Its second-order warning is the one I acted on**: if both panes had run my command as written, the owner
+would have seen **no banner in either**, which reads as *neither is the one* rather than as *the instrument
+did not fire.* **A silent countermeasure produces evidence of the opposite of what happened.**
+
+**And both derived the tty independently rather than confirming mine.** The adversary: *your values are
+correct and the method you gave would not have produced them.* The implementer: *agreement, and it is
+worth something only because neither side derived it from the other.* **Same shape as reading a ref at
+measurement time rather than quoting one from a message** — the shell equivalent of it, in the same day.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
