@@ -1,6 +1,6 @@
 /* ============================================================
-   `target_kind`'s declaration order is alphabetical, and
-   D-140-08's published order silently depends on it.
+   `target_kind`'s declaration order is alphabetical, and a
+   consumer sorting it in SQL will silently depend on that.
 
    ── the coincidence, and why it is not a convention ──
    Postgres orders an enum column by DECLARATION order, not
@@ -82,7 +82,7 @@ function declaredMembers(enumName: string): readonly string[] | undefined {
   return [...match[1]!.matchAll(/"([^"]*)"/g)].map((m) => m[1]!);
 }
 
-describe("D-140-08's published order does not depend on an accident", () => {
+describe("no SQL sort on target_kind silently depends on an accident", () => {
   it("target_kind is declared in alphabetical order", () => {
     const members = declaredMembers("target_kind");
 
