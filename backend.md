@@ -4081,8 +4081,12 @@ oracle AC1 closes — 404 for a private blueprint and 200 for a public one tells
 slugs are real. AC3 already answers it at read time. **Cost: a client typo is accepted silently.**
 
 **The read returns both published functions' answers.** AC3 requires `listSaves` and `countSaves` to
-agree by construction; **a route deriving `count` from `saves.length` would satisfy that agreement by
-making it unobservable.** One payload, both values, one extra query per read.
+agree by construction; ~~a route deriving `count` from `saves.length` would satisfy that agreement by
+making it unobservable.~~ **WITHDRAWN — against a correct module the two are equal in every state, so a
+route computing the wrong one is an EQUIVALENT MUTANT through the wire and no route cell separates
+them.** The clause stands for what it buys: the agreement asserted in one payload. **Provenance is held
+by module cells — T140's mutation M4 separates them at 7 reds — and by nothing at the route.**
+One payload, both values, one extra query per read.
 
 **The writes answer the resulting `SavesView` rather than 204**, because `lib/server/http` publishes `ok`
 and no `noContent` and is not in T140's `Owns` — a 204 would be a raw `Response` beside the envelope
@@ -4272,11 +4276,118 @@ held by nothing. *The clause stands; the second half of its stated reason is wit
 T140's blind author flagged `instance` = the route's own path as a reading inherited by citation, and
 offered to own the red if it turned out to be a naming question. **It is not a reading and there is
 nothing to own.** `problem()` derives it from the request pathname, and `ProblemInput` is `ProblemDetails`
-**minus `instance`, spelled out member by member rather than as `Omit<>`** — the header says `Omit`
+~~minus `instance`, spelled out member by member rather than as `Omit<>`~~ — **WRONG MECHANISM, RIGHT
+CONCLUSION**, and the wrong half is the one that propagates. `ProblemInput` carries
+`[extension: string]: unknown`, so **a task CAN pass an `instance` and it typechecks.** What makes it
+unable to differ is the SPREAD ORDER — `{ ...details, instance: instanceOf(request) }`, derived value
+written **last**, so a caller's value is overwritten rather than rejected. The header does say `Omit`
 collapses to `Record<string, unknown>` against an index signature and would have stopped `problem()`
 requiring anything at all. **So no task can pass an `instance` and none can differ.** D-02 was every
 caller being asked to remember one and none doing it. The cell is stronger than its author thought: it
 cannot red as wording, only as a wrapper that never reached `problem()`.
+
+## A guard that reads "not mine" as "must not exist" reds for every task it names
+
+`tests/server/t050/routes.test.ts` compared every served pattern under `app/api/account/` against T050's
+five and called the difference **a partition breach — its own word**. But `Forbidden` in T050's section
+means *forbidden to T050*: `app/api/account/{notifications,saves,delete,keys}/**` are T190's, T140's,
+T120's and T230's `Owns`. **The predicate turned "not mine" into "must not exist", and those are different
+claims.**
+
+T140's implementer met it at `ecd6b29` — two reds naming `/api/account/saves` and
+`/api/account/saves/migrate`, **paths D-140-07 publishes and T140's `Owns` grants** — in a merged blind
+suite it may not edit. **`## A guard must not demand what its own reader is forbidden to write`, verbatim,
+and the reader is four tasks rather than one.** It stopped its round on its own pre-registration rather
+than reading the red as its own defect, and reported that **T230's `app/api/account/keys/**` is next and
+T230 was queued for a triple that would have discovered it the expensive way.** The cheap reading is *my
+route is in the wrong place* and the cheap fix is to move a route the contract publishes.
+
+Rewritten to what it always meant: **a served route under that tree belongs to SOME task**, with the
+domain derived from every section's `Owns` line rather than from a list here, so the next task granted a
+subtree is covered the day its row says so and this file is not edited again.
+
+## The narrowest claim in the document subsumed every other, and only the RE-falsification saw it
+
+Fixing that guard, I normalised both claim shapes to one string. **`app/api/account/route.ts` then became
+the bare claim `/api/account`, and prefix-matching made it swallow the entire tree** — an unclaimed
+`/api/account/zzz` went green. A subtree claim and a single-file claim are **not** the same shape: T050's
+`Owns` enumerates five exact route FILES, and a file claims its own path and nothing under it.
+
+**Nothing announced this.** The guard passed, the file passed, `28 passed` — and the only thing that said
+otherwise was **the falsification I had already run once, re-run, and no longer redding.** A widening that
+silently subsumes reads exactly like a fix. *Falsify after every edit to a guard, not after the first one.*
+
+## `instance` is unsettable by POSITION, not by type — my published mechanism was wrong
+
+I wrote that `ProblemInput` is `ProblemDetails` minus `instance` **so no task can pass one**. T140's blind
+author measured it instead of inheriting it: `ProblemInput` carries `[extension: string]: unknown`, so **a
+task CAN pass an `instance` and it typechecks.** What makes it unable to differ is the spread order —
+`{ ...details, instance: instanceOf(request) }`, derived value written **last**, so a caller's value is
+**overwritten rather than rejected**.
+
+**The conclusion held and the mechanism did not, which is the worse half.** Somebody implementing my
+sentence would write a type-level test asserting `ProblemInput` rejects an `instance` member; **it would
+pass, prove nothing, and the index signature would still admit one.** *A true conclusion recorded with the
+wrong mechanism propagates the mechanism.*
+
+## The withdrawal of a reason is a ruling, and mine was published nowhere — TWICE
+
+I told two sessions in replies that clause 5's provenance reason was *withdrawn and recorded as held by
+nothing*. T140's blind author checked the surface rather than the claim and found the sentence **live, in
+T140's Published block, with no marker on it and no retraction in the preamble** — the one place a reader
+types from. **My own rule arriving on me, and on the withdrawal of a reason rather than on a reason.**
+
+**It found one copy and there were two**: the same wrong reason was in D-140-07's preamble heading as well.
+So the displacement it asked for reached a sentence it could not see from where it stands. **A ruling
+published in two places is withdrawn in two places, and the party who reads one surface cannot tell you
+about the other.**
+
+**And it classified rather than counted**, which is the second correction it owed itself: last time it ran
+`grep -c`, got 1, and reported a struck sentence as standing. This time — *which sentence, which surface,
+is there a marker, does the preamble carry the retraction* — because **only the second and third can
+distinguish a live claim from a quoted dead one.**
+
+## D-130-09: the denominator is an OUTPUT of T130's round, not an input to it
+
+**D-130-08's 43 was wrong in three ways and its adversary found all three from the object store, without
+writing to the tree.**
+
+**(1) 60 counted static `it(` sites, not cells.** Three `for (const name of FUNCTION_NAMES)` loops wrap
+one `it` each over a three-key `PUBLISHED`, so those 3 sites emit **9**. Runtime is ~66.
+**(2) The cut bleeds outside the two files** — roughly 10 more stale cells across `surface`,
+`store-faults` and `unknown-handle`.
+**(3) The decisive one: D-130-06 cut four record MEMBERS and a count key, not two functions.**
+`contract.ts`'s `RECORD_KEYS` is seven and `asProfileRecord` **hard-throws** on `watchers`, `support`,
+`validated`, `pinned`. **It is the shared gateway, so every cell that runs a record through it dies before
+reaching its own assertion.** Most of the 43 measures the pre-cut contract.
+
+**Ruled.** The adversary repairs `contract.ts` **by removal only**, restricted to exactly what D-130-06
+cut, and publishes the diff. A removal from a required-key set cannot make a cell assert more; it can only
+stop one dying early. **It then reports three numbers, not one**: cells that ran before the repair, cells
+the repair **RESURRECTED**, and cells still red. **A red in a resurrected cell is real coverage, not
+residue.** Every remaining red is classified *pre-cut residue*, *implementation defect* or *ruling attack*.
+`pins.test.ts` and `follow.test.ts` still do not merge — D-130-08 stands on those two.
+
+**It declined to pick the denominator itself and that is why this ruling exists.** *43/43 would have been
+exactly as uninterpretable as the number D-130-08 was written to prevent* — its sentence, about my ruling.
+
+## D-130-10: a parse failure rendered as `store-failed` is a false statement about which subsystem failed
+
+D-130-07 has `terms.ts` refuse an unparseable vocabulary. Its adversary traced the refusal out: `read.ts`
+calls it **inside** `withProfileStore("getProfile", …)`, so the parse failure becomes a `ProfileStoreError`
+and renders `type: …/store-failed`, `title: "Store failed"`, 500. **The store worked. A stored release did
+not parse.**
+
+**This is the relabelling `store.ts`'s own header refuses** for `AccountStoreError`/`RegistryStoreError` —
+*"the rendering would name a store that was working"* — committed one layer in, against the module's own
+stated rule. **And the attack is on my stated COST, not on the choice**: I priced D-130-07 at *one bad
+release 500s a profile*, and the true price is that it 500s **as a false statement about which subsystem
+failed**, which is the one thing this module's boundary exists to prevent. **Attacking the price of a
+ruling it agrees with is a sharper move than attacking the ruling.**
+
+**Ruled: the refusal gets its own sealed class rendered as its own `type`**, and either the call moves
+outside `withProfileStore` or the wrapper passes it through unrelabelled. **`error-hygiene` goes to 23 at
+T130's merge, not 22**, re-stated against the tree actually merged.
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
@@ -13951,8 +14062,13 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   are real — and AC3 already answers the case at read time. **A save of a target that does not exist is
   accepted and never listed; the cost is that a client typo is silently accepted.**
 
-  **`count` comes from `countSaves`, never from `saves.length`.** AC3's *agree by construction* would
-  otherwise be satisfied by making the agreement unobservable. One extra query per read, paid so AC3 has
+  **`count` comes from `countSaves`, never from `saves.length`.** ~~AC3's *agree by construction* would
+  otherwise be satisfied by making the agreement unobservable.~~ **WITHDRAWN and displaced here rather
+  than joined, on T140's blind author's charge**: against a correct module `count` and `saves.length`
+  are equal in every state, so **a route computing the wrong one is an equivalent mutant through the
+  wire** and no route cell can separate them. **The clause STANDS** for the agreement it asserts in one
+  payload; **provenance is held by MODULE cells and by nothing at the route** — T140's mutation M4
+  separates them at 7 reds. One extra query per read, paid so AC3 has
   a cell that goes through the transport. **The three writes answer the resulting `SavesView`** rather
   than a 204 that `lib/server/http` does not publish and this task may not add — which is the shipped
   `200 AccountRecord` convention and makes **AC2 drivable in two requests instead of three**.
@@ -14096,6 +14212,21 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Contract:** B-17 — limits apply to reads as well as writes, with keys issued per account for volume. Two limits already exist in the code and are the starting numbers: 512 KB per uploaded file (`components/upload/BundleDropzone.tsx:91`) and a card `params` nesting depth of 100 (`lib/core/card/validate.ts:108`). A refusal names the limit and when it resets, as `problem+json` 429. This reverses D-83, so the cost is explicit: an unkeyed MCP or crawler client hits a ceiling, and the product's discoverability by agents depends on that ceiling being generous.
 - **Acceptance criteria:** (1) an over-limit request returns 429 naming the limit and the reset; (2) limits are enforced server-side regardless of any client cap; (3) a valid API key raises the ceiling and is attributable in the audit log; (4) a revoked key is refused immediately; (5) an anonymous read below the ceiling is never delayed or challenged.
 - **Open:** the actual numbers per tier, and what constitutes a malicious bundle given that the registry distributes instructions an agent will execute.
+- **CONFIRMED by the owner, 2026-08-20, in conversation.** `SECRET_PREFIX = "dp_"` **ships as built** —
+  three characters, registrable with a secret-scanning partner, short enough that a key stays readable in
+  a `.env`. `MAX_LABEL_LENGTH = 100` **ratified by me and not escalated**: unlike the prefix it commits to
+  nothing outside the product, and no reading of it changes the work.
+  **Rate ceilings, CONFIRMED by the owner and generous by design, per B-17's own stated cost:**
+
+        anonymous read     600 / hour      (10/min sustained)
+        keyed read       6,000 / hour
+        write (keyed)      120 / hour
+        upload              30 / hour
+
+  **The reason is B-17's**: an agent crawling the registry must never notice the ceiling and a scraper
+  re-fetching every bundle must. `DEFAULT_LIMITS` stops being `{}` for these four buckets and `limitFor`
+  keeps refusing every bucket outside the table, so **emptiness still cannot read as permissive for a
+  bucket nobody sized.**
 - **Open (owner), raised by T230's implementer with D-70-15 as its precedent — 255 was a storage bound
   and the PRODUCT bound stayed the owner's.** Two literals it chose that are product-visible, flagged by
   it as decisions rather than details, **and it is right that they are not its call**:
@@ -14170,6 +14301,19 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T130, Profiles and the public author surface
 
 - **State:** impl-done
+- **D-130-09 supersedes the denominator below: it is an OUTPUT of the round, not an input.** Its
+  adversary measured three faults in the 43 before touching the tree — 60 counted static `it(` sites and
+  three loops emit 9 cells so runtime is ~66; the cut bleeds ~10 more stale cells into `surface`,
+  `store-faults` and `unknown-handle`; and decisively **`asProfileRecord` hard-throws on `watchers`,
+  `support`, `validated` and `pinned`, so every cell running a record through that shared gateway dies
+  before its own assertion.** The adversary repairs `contract.ts` **by removal only**, restricted to what
+  D-130-06 cut, publishes the diff, and reports **three numbers: cells that ran before, cells the repair
+  RESURRECTED, cells still red** — a red in a resurrected cell being real coverage rather than residue.
+- **D-130-10: `counts.terms`' refusal must not render as `store-failed`.** `read.ts` calls `terms.ts`
+  inside `withProfileStore("getProfile", …)`, so an unparseable vocabulary becomes a `ProfileStoreError`
+  and 500s as *Store failed* — **naming a store that was working**, which is the relabelling `store.ts`'s
+  own header refuses. Its own sealed class, its own `type`; the call moves outside the wrapper or the
+  wrapper passes it through unrelabelled. **`error-hygiene` goes to 23 at merge, not 22.**
 - **Adversary round scope (D-130-08): 43 of the blind suite's 60 cells.** `pins.test.ts` (10) and
   `follow.test.ts` (7) drive `setPins` and `toggleFollow`, which **D-130-06 cut to T131 after the blind
   suite was committed**. They do not merge, they are not deleted and they are not skipped; they stay on
