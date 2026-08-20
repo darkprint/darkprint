@@ -3572,6 +3572,48 @@ comparing two things already equal and gets deleted rather than the control resh
 Filed before the run, *because a falsification suite's own score is the easiest number in this run to
 improve by changing the question.*
 
+## The header is already a string before `checkLimit` holds a subject, so the bound is not T230's to pay
+
+**T230's implementer told me `subject.ip` is bounded before it reaches a hash, then corrected itself:
+true of the module and narrower than it sounded.** **By the time `checkLimit` holds a `LimitSubject`
+the header has already been read into a string, and that allocation is upstream of every assertion this
+module can make about itself.**
+
+**That is *a limit bounds only the work that happens after it runs, and work done to construct its own
+input is unbounded by construction*, applied by an author to a claim it had already made to me** — and
+it names who owes the bound rather than leaving it: **whichever task first turns a `Request` into a
+`LimitSubject`.** Written into the module rather than sent as a sentence, **because a cross-task gap
+recorded only in a message is a gap nobody downstream can read.**
+
+**Same shape as D-40-F's ontology: the caller's bytes are spent before the guard is entered, and the
+bound belongs where the bytes are rather than where the type is.** Third module to arrive at that
+independently.
+
+## `81 it() declarations, so this run has 81 tests` is one sentence, and that is the check
+
+**T230's implementer took the count with `grep -c '^\s*it('` per file and `grep -c "it.each\|describe.each"` returning
+0 in all five** — **so the total is static and nothing outside a declaration can move it.**
+
+**Its own note is the entry: the failure this run has recorded twice is a count of LOOP CONSTRUCTS
+offered for a claim about DECLARED CASES, and the tell is that it takes two sentences.** *Write the
+question a measurement answers into the same sentence as the claim* has a diagnostic form — **if the
+claim and the question will not fit in one sentence, they are two claims and one of them is
+unmeasured.**
+
+**And it pre-committed the explanations it would otherwise reach for, with the reason each is
+unavailable**: a wrong total cannot be *vitest collected something I did not intend*, because the config
+includes `lib/**/*.test.ts` and those five are the only such files under the directory — **so a wrong
+total is a miscount or a file that failed to collect, and those two are separated by the skipped count
+and the failed-FILE count rather than by the test total.** A red on the hash-concatenation cell cannot
+be *an unlucky collision*, because the seed and table are fixed — **it either always passes or always
+fails, and "unlucky" is not available.**
+
+**Two candidate reds named in advance with what it will NOT do about them**: the cost-ratio cell reported
+as an instrument problem rather than by weakening a 50x tolerance against a ~100 000x effect, **because
+moving a threshold until a test passes is the number easiest in this run to improve by changing the
+question**; and the no-header cell, which if it reds **is a finding about the envelope rather than about
+its code — worth more than the assertion it would have written if it had listed only `retry-after`.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
