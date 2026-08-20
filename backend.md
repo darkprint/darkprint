@@ -3387,6 +3387,34 @@ reported that rather than proposing a guard, because the id-presence check canno
 crossed because the crossing is small — and a brief may narrow a rule and never widen it.** Same call
 T081's implementer made. **All three displaced by me at this commit, and the block re-stamped.**
 
+## A decision about scope written down as a claim about reach
+
+**T230's blind author swept its own files for `unreachable`, `unobservable`, `by construction` — and
+then for `structural`, `not reachable`, `cannot` — and found two of its own claims false.**
+
+**The first is the one the sweep exists for**: a file asserted the two starting numbers were *quantified
+over by construction* while the citation list was **something it had typed**. Rewritten so the value,
+the path **and the line** are parsed from the block and the cited line is read from the tree. **Its own
+note is why the sweep beats judgement: *this is the one I would not have found by asking where are my
+claims weak — I had just written that file and believed it.***
+
+**The second is a new shape.** It had written that an audit **count** was *not reachable from here*. **It
+is reachable** — the value is in the same function. **The true statement is that it is not ITS to pin**:
+exactly-one-row is T240's AC1, and asserting it would make this suite a second contract for a `todo`
+task.
+
+**So a decision about SCOPE had been written down as a claim about REACH** — and the two are recorded
+identically, in the place a later reader stops. **A scope decision invites *should we?*; an
+unreachability claim closes the question.** Recording the wrong one retires a check that was never
+examined, and **nothing reds either way.**
+
+**Its pre-registration also names the direction that is cheap to accept**: `failed` **greater** than
+predicted with the total off is collection; `failed` **less** than predicted with the total right means
+**a cell it expected to red went vacuously green** — and it names its own candidates in advance, a
+`beforeAll` that failed and took its file's cells out of the failing set, and three `.catch(() =>
+undefined)` arms. **Naming your own vacuity candidates before the run is what stops the kinder
+explanation being invented after it.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -11562,6 +11590,19 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **AC4 — "a revoked key is refused immediately" — forbids caching `resolveKey`.** The natural optimisation is a process-local map, and it satisfies every other criterion while leaving a revoked key live until the process restarts. If a cache is ever wanted it needs invalidation on revoke, which is a harder thing to get right; state the prohibition rather than leaving it to be discovered.
 
   **AC5 is a negative and negatives go untested.** "An anonymous read below the ceiling is never delayed or challenged" — asserted by measuring that `checkLimit` on an under-ceiling read performs **no write**, not by observing that a response came back. A counter implementation that writes on every read passes a latency-free test on an idle machine and falls over under load.
+
+  **D-230-09, ruled on F-230-E: T220's AC6 and T230's admissible form could not both be satisfied, and the fix publishes the 429's KEY SET.** `backend.md` requires T230's 429 to reach the MCP client *with the limit, the reset instant **and the fact that a key exists***. **T230's form carries bucket, number, window and instant — and an admissible form is EXACT-MATCHED, which is its whole purpose.** So an implementation satisfying T220 by naming the key affordance in the message **violates T230's published form**, and one satisfying the form **leaves T220's AC6 unsatisfiable.**
+
+  **Ruled: the message form is unchanged and the key affordance is an RFC 9457 §3.2 EXTENSION MEMBER**, published here so it is bindable:
+
+        problem+json 429  members exactly:
+          type, title, status, detail, instance          (RFC 9457's five)
+          limit, remaining, resetAt                       (the verdict, machine-readable)
+          keysAvailable: true                             (T220 AC6's affordance)
+
+  **`detail` is the admissible form byte for byte.** **And the key SET is published, not just the members** — T081's key-set whitelist is the only instrument that caught an extension member carrying a driver value after `type`, `title` and `detail` were all pinned, **so a task publishing extension members owes the set or the strongest available pin cannot be written.**
+
+  **F-230-B and F-230-E are the same gap seen from two sides** — one says the criterion has no published caller, the other says the response has no published shape — **and `rateLimited(request, verdict, bucket)` plus this key set answers both.** **Measured rather than asserted: `RateLimitedError` occurs ONCE in 12 152 lines, and that once is the admissible-form line itself.**
 
   **D-230-03, ruled: the limit configuration's SHAPE is contract while its numbers stay `TBD:`.**
 
