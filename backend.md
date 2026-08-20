@@ -6250,7 +6250,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | round 4 at `dfc71e1`, 40 ahead. **D-40-F** closed with `node:util`'s slot predicates — 8 281 ms → 68 ms on a 1.2 MB submission — `Object.prototype.toString` dispatch rejected though faster, because it **invokes user code the old version did not**. **D-40-G** closed with the fourth slot; acceptance is the reverse mutation, 9 + 58. **S10 closed after three rounds by changing the INPUT**: `resolve.ts:191` is the mechanism, observable only on a bundle where two files claim one `id@version`. Gates 0 unfiltered; targeted 73/0/0 hitting the pre-registered 69→73; triple `1 failed, 5783 passed, 0 skipped` of 5784 identical; reconciliation measured both sides, `5784 − 220 = 5564` = base at `752721d`. 7 mutations, 4 HIT / 3 MISS / 0 newly green, **all three MISSes one diagnosis against itself**. **Adversary round 5 FAIL at `2468c09`: D-40-I charged** — the array branch reads its extent LIVE where `SerializeJSONArray` snapshots it once, while the object branch already snapshots correctly; **5 of 5 array cells diverge, both object cells agree**, both directions, and growth **refuses a submission the ruled number accepts**. **Fourth axis: WHEN caller code runs relative to the walk's bookkeeping** — one channel is a plain getter, so not downstream of D-40-H. Not one cell in either corpus mutates the container it is inside. Triple `1 failed, 5830 passed, 0 skipped` of 5831 identical, `5831 − 190 − 77 = 5564`. 7 mutations, 5 HIT / 2 MISS; **R7 confirms the blind re-open shut its gap** — 13 reds split colocated AND blind. **Round 5 at `0bb7ef8`, 6 commits: D-40-H closed** — `ToNumber` as `+value` not `Number()`, a **third axis** nobody's cells varied and the only mutation redding it alone; **D-40-23 built with its propagation half normative** (D-40-24). Witness written **before** the fix, pre-registration exact twice. Targeted 77/77 (pre-registered 73→77), blind 173/173 with its nine reds cleared, triple `1 failed, 5813 passed, 0 skipped` of 5814 identical, reconciliation `5814 − 250 = 5564`. 8 mutations, 5 HIT / 3 MISS, no zeros, 0 newly green. **Adversary round 4 had FAILed at `ccd1dac`**: **D-40-H** charged — `unbox` reads a slot where `SerializeJSONProperty` steps 4a/4b **coerce**, so `[[String/Number]Data]` bypass `@@toPrimitive`/`toString`/`valueOf`; **7 of 15 channels diverge, under-count unbounded** (5 000 008 measured as 10), and at `maxBytes = 100` it **accepts** a submission the ruled number refuses. Barrel-only. Triple `10 failed, 5800 passed, 0 skipped` of 5810 identical, pre-registered on all four figures; base measured independently at `7db3b5e` = 5564; reconciliation `5810 − 173 − 73 = 5564`. 7 mutations, 5 HIT / 1 MISS, 0 newly green; **both rebuilt controls confirmed by reverse mutation**. Also measured: **D-40-23 unimplemented, 9 red, attributed to the orchestrator**. Blind round **re-opened and closed a second time** at `4c961d1`: **190 tests**, triple `183 failed, 5571 passed, 0 skipped` of 5754 identical, **pre-registration exact and conditional on a base line it measured itself**, 11 mutations 11 CAUGHT / 0 MISS / 0 GAP, every prediction naming what **else** saw it. Earlier blind round closed at `759881e`: **173 tests**, triple `166 failed, 5571 passed, 0 skipped` of 5737 identical, pre-registration exact on all four figures, D-40-23 pinned with the value-never-named clause held on **three** axes, 5 mutations on the new cells all CAUGHT. **Adversary round owed — all three of T040's earlier sessions are gone** |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 6 at HEAD, on the gate slot granted by name. **D-40-I closed as the SNAPSHOT BOUNDARY rather than as a length**: the array frame carries the extent taken at enter and both branches keep reading content live, because `SerializeJSONArray` takes `LengthOfArrayLike` once and `Get(value, index)` per iteration. **The fifth axis its charger left open measures CLEAN, and for a structural reason** — five cells replacing an element or a value mid-walk agree, and they are the control against an over-eager fix that freezes contents too, which P2 and P3b each red. Reproduced first on my own cells: **3 of 3 array-extent diverge, both object controls agree**, and at `maxBytes = 200` the ruled number is 3 while the walk **refuses a conforming submission**. **The corpus cannot represent this axis at all** — `cells()` reads one `make()` three times and a self-mutating value answers differently each time — so it lives in a named test with per-reading construction, recorded so nobody adds a class that would produce nonsense. **The witness's own control was rebuilt before it ran**: *re-serialising differs* is an adjacent quantity, true only for a mutation both visible on a second pass and non-idempotent, and **5 of 10 fixtures were neither**. **`what did this fix stop being able to fail` answered by measurement: 12 earlier-round mutations re-run and NOT ONE test red under any of them is green now** — counts rose, identities did not move, and every rise is a blind cell from the re-opened blind round, named individually. Gates `tsc` **0 unfiltered**, `lint` **0 read in full**, `build` 0 clean; engine+routes **81/81**, blind **190/190**. **Triple identical: 1 failed, 5834 passed, 0 skipped of 5835**, pre-registered exactly; reconciliation **5835 − 271 = 5564**. Residue 0, foreign darkprint processes 0. Sweep **5 mutations, 3 HIT 2 MISS, no zeros, 0 newly green**, finding **a third control measuring an adjacent quantity** (0 → 1 on the fix) and **a mutation whose red set reached cycles and depth**, re-expressed. **Measured: the blind suite does not cover D-40-I** — reverting it reds two colocated tests and nothing blind |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -10406,7 +10406,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
@@ -11603,6 +11603,103 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     caller threw" needs `ToPrimitive` reimplemented so the caller's channels are ours to call and
     only the final conversion is wrapped — a transcription of the very step D-40-H was charged for
     transcribing wrongly. **I am not taking that decision inside a fix round.**
+  - 2026-08-20 implementer, **round 6. Merged twice, because base moved with the ruling.**
+    `2468c09` + `b643085` → `c3ef68c`, then `bd1b6fd` → **`3734dae`**; every sha from
+    `git rev-parse HEAD`, porcelain empty at each, **0 base lines missing** both times.
+  - 2026-08-20 implementer, **D-40-I reproduced on my own cells first.** 3 array-extent cells
+    against the charger's 5, **unreconciled**: grows-through-`toJSON` 3 against 10, shrinks 13
+    against 3, grows-through-a-plain-**getter** 3 against 10, **and both object controls agree**.
+    The bound driven in the direction that is easy to miss: at `maxBytes = 200` the ruled number
+    is **3** and the walk **refuses**. An over-count refuses a **conforming** submission, and no
+    assertion about a returned number can see it, because there is no returned number.
+  - 2026-08-20 implementer, **the fifth axis was open, I looked, and it is clean for a reason.**
+    Five cells replacing an array element or an object value mid-walk — ahead of the cursor,
+    behind it, and through a getter — **all agree**. Not luck: `SerializeJSONArray` takes
+    `LengthOfArrayLike` **once** and `Get(value, index)` **per iteration**, and
+    `SerializeJSONObject` does the same with `EnumerableOwnPropertyNames`. **So the rule is not
+    *snapshot the length*: it is snapshot exactly what the serialiser snapshots, the EXTENT, and
+    read live exactly what it reads live, the CONTENT.** That says why the object branch was
+    already right and — the useful half — **why an over-eager fix freezing the contents would be a
+    new defect**, so those five cells are the control against it. `P2` and `P3b` make each half of
+    that fix and each reds exactly the content test.
+  - 2026-08-20 implementer, **why neither corpus could see this, and it is stronger than nobody
+    having written a cell.** `cells()` calls `make()` **once** and reads the result **three
+    times** — `JSON.stringify` to partition, `formula` for expected, `measureSubmission` for
+    measured — so a value that mutates while it is walked answers differently on each. **It is not
+    a cell nobody wrote; it is a cell the instrument's design excludes.** Which of the two it is
+    decides what to do about it: this axis lives in a named test with **per-reading
+    construction**, and a corpus class here would produce nonsense.
+  - 2026-08-20 implementer, **the witness's own anti-vacuity control was rebuilt BEFORE it ran,
+    and it is the third of this family.** Its first version asked whether serialising the value a
+    second time gave a different string. That is an adjacent quantity: true only for a mutation
+    both **visible on a second pass** and **non-idempotent**, and **five of the ten fixtures are
+    neither** — `{a:{toJSON(){delete o.b}}, b:"gone"}` renders `{"a":1}` twice because the key set
+    was snapshotted before `b` went, and an idempotent element write renders identically twice.
+    **Both mutations fire; the proxy for them did not.** The quantity the axis is about is
+    **whether the caller's code runs mid-walk**, so the fixture counts that at the moment it
+    happens, and **both readings assert it** — two readings that ran different amounts of caller
+    code are not two readings of one value.
+  - 2026-08-20 implementer, **witness first, measured red against the unfixed module, and the
+    pre-registration was exact**: the two extent tests red, **the object-key control and all five
+    content cells green — before the fix**. The asymmetry stated as an assertion rather than as
+    prose, which is what makes it a mechanism instead of a sample.
+  - **2026-08-20 implementer, *what did this fix stop being able to fail?* — answered by
+    measurement, and the answer is NOTHING.** Twelve mutations from rounds 4 and 5 re-run against
+    the fixed tree. **Counts are the wrong instrument** — seven rose — so the comparison is by
+    **identity**: for each mutation, which tests were red then, still exist now, and are green
+    now. **Zero, for every one.** And the rises are accounted for rather than shrugged at: every
+    added red is a **blind** cell from the re-opened blind round, named individually — seven for
+    `N1` covering `@@toPrimitive`, `valueOf`, `toString` and the BigInt coercion result, four for
+    `N5` covering `[[BigIntData]]` staying refused. **Not one is a colocated test changing what it
+    can see.** Round 5 found the D-40-D ceiling had retired round 3's `withLimits` probe two rounds
+    late and by accident; this is the same question asked **at** the fix, and a measurement rather
+    than a reassurance.
+  - 2026-08-20 implementer, **gates at `504c53d`.** `ls .next/types` present; `npx tsc --noEmit`
+    **unfiltered, 0 lines, exit 0**; `npm run lint` read in **full**, four lines all banner,
+    **`warning` 0, `problems` 0, `error` 0**; `npm run build` exit 0 `Compiled successfully` with
+    porcelain clean. Targeted **engine + routes 81 of 81**, **blind 190 of 190**, whole surface
+    **271**. **Triple identical: `1 failed | 5834 passed | 0 skipped (5835)`**, pre-registered on
+    all four figures and exact, the one red T090's known AC6, stamps identical and porcelain empty
+    at both ends of each run. Reconciliation measured both sides: **5835 − 271 = 5564**. Residue
+    **0**. **Zero foreign darkprint-named processes** across all three, peak loads 13, 14 and 15.
+  - 2026-08-20 implementer, **the sweep: 5 mutations from one tree, 3 HIT and 2 MISS, no zeros
+    and 0 newly green.**
+
+        P1  read the extent live again          2 red   HIT   both extent tests, and NOTHING blind
+        P2  snapshot the array content too      2 red   MISS  the content test, plus the extent one
+        P3b snapshot the object content too     2 red   MISS  the content test, plus the key-set control
+        P4  a fixture whose mutation never runs 1 red   HIT   the control, on its own message
+        P5  the bound cell decides nothing      1 red   HIT   the re-aimed control, 0 -> 1
+
+  - 2026-08-20 implementer, **the sweep found a third control measuring an adjacent quantity, and
+    it is mine.** The bound cell's control asserted only that the ruled number is under the
+    bound — **which stays true of a fixture that grows by nothing at all** — so reducing the growth
+    to zero left the cell with no decision and reddened **0**. The quantity it is about is the size
+    the array reaches **after** the caller's code runs, because that is what a live extent read
+    would have charged. Both sides are required now, and the acceptance number is the re-run:
+    **0 → 1**, firing on *what a live extent read would have charged must exceed the bound*.
+  - 2026-08-20 implementer, **and a mutation whose red set reached subjects it had no business
+    touching.** `P3`'s first version snapshotted the object's contents by replacing the container
+    with a spread copy, which also destroys **object identity**, so it reddened the cycle,
+    shared-substructure and depth tests as well. **A content snapshot has no business reaching
+    *does not mistake legitimate sharing for a cycle*.** Re-expressed to change only the **read**,
+    it reds 2 and both are about content. **The identity of the reds is what showed it; the count
+    would have read as a thorough mutation.**
+  - **2026-08-20 implementer, measured and worth a decision that is not mine: the blind suite does
+    not cover D-40-I.** `P1` — reverting the extent snapshot — reds **two colocated tests and
+    nothing blind**. The blind round closed at `4c961d1` before D-40-I was charged, so the axis is
+    held by this file alone, which is D-70-12's shape for the third time on this task. Its two
+    predecessors were closed by re-opening the blind round; whether this one is, is yours.
+  - 2026-08-20 implementer, **what would overturn this round.** The extent/content rule rests on my
+    reading of `SerializeJSONArray` and `SerializeJSONObject` **plus** ten agreeing cells; a third
+    thing the serialiser snapshots that neither names would be invisible to both. The retirement
+    measurement covers the **twelve mutations I hold on disk** from rounds 4 and 5 over the T040
+    surface — an adversary's own probes are not in it, and a probe retired outside that surface
+    would not appear. `P2` and `P3b` prove a frozen-content fix is caught and **not** that every
+    wrong placement of the snapshot is. And the five content cells run through `toJSON` and
+    getters: a container mutated from a **coercion** — the two channels D-40-H added — is the same
+    axis reached by a route I built no cell for, though `P1`'s getter cell shows the axis does not
+    depend on which channel runs.
 
 ### T080, Registry read model and read API
 
