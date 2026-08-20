@@ -2981,6 +2981,52 @@ wrongly in fact: it required the anchor to be absent after the write, **which re
 mutation**. **Refusing was the good direction — a strict instrument said it could not measure, where a
 lenient one would have handed back two more zeros.**
 
+## A blind reference carrying the defect would have validated the defect
+
+**T040's blind author's reference implementation read all four slots directly — the shape D-40-H
+charges.** It found that only because **the suite was written first and the reference corrected to the
+ruling**, not the reverse.
+
+**That is a way for a blind round to go quietly wrong that nothing here had recorded.** A blind suite is
+validated by passing against a correct reference; **a reference written from the same reading of the spec
+that produced the defect is not a second opinion, it is the same opinion twice.** The suite would have
+reported `n passed` against it and the whole round would have been green.
+
+**The order is the safeguard: write the cells from the contract, then correct the reference until it
+passes.** Reference-first inverts which artefact is the authority.
+
+## The oracle is the standard, reached from both roles in one round
+
+**T040's blind author: the measured number is on no published return, so every coercion cell is a PAIR
+driven at the `maxBytes` boundary** — accepted at exactly `Buffer.byteLength(JSON.stringify(input),
+"utf8")`, refused at one fewer. **The serialiser is the oracle and never a number it wrote down**, and its
+reason is *a cell carrying its own arithmetic would be checking my transcription of it, which is
+D-40-G's charge one level over.*
+
+**T040's implementer reached the same form from the other side two rounds earlier**: a corpus
+establishing that two procedures agree **must not carry a third party's belief about the answer**, so
+droppability is decided by asking `JSON.stringify` itself, **which cannot make the same mistake because
+it IS the thing being agreed with.**
+
+**Two sessions, opposite roles, one rule.** The implementer was avoiding a hand-set flag; the blind
+author was avoiding a hand-written number. **Both are a transcription standing in for the standard.**
+
+## Assert only as far as the contract decides, especially where it deliberately stopped
+
+**T040's blind author found a case D-40-24 defers — a coercion throwing from ENGINE code, neither the
+caller's object nor obviously the module's refusal — and asserted only that it refuses and is not the
+caller's object.** Then it asked.
+
+**Pinning it either way would have bound a decision explicitly deferred, and made a numbered follow-up
+look settled.** *A blind author that picks one of two readings removes the finding rather than making
+it* — and here the second cost is worse than the first: **a deferred item that reads as decided is
+invisible at the merge.**
+
+**And every prediction in its sweep names what ELSE saw the mutation**, which is the answer to six MISSes
+across two rounds rather than a promise to be more careful. **11 of 11 caught. H03 — `Number()` written
+for `+` — reds exactly two cells with nothing on the channel axis seeing it at all**, which **measures**
+the claim that the axes are independent rather than repeating it.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
