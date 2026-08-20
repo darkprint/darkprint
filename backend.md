@@ -6085,6 +6085,175 @@ a comment, asserts the rejection, and restores the mapping. **One test exercisin
 keep it*** — its words, about the only sentence in my message that reduced its share of the fault.
 **T133 stands on the untyped-column ground alone, which was always enough.**
 
+## A mutation sweep is invalidated by the oracle sharing the defect, and the numbers stay in the record
+
+T130's blind author volunteered the consequence nobody had drawn: **its sweep's `counts.terms` results were
+taken against a reference that could not read the column.** So every one of those numbers **measures two
+artefacts sharing a premise** rather than measuring the criterion — *and some may have been green for the
+wrong reason.*
+
+***It would rather find that than let the 20/26 stand unqualified***, and it offered the re-run without
+being asked.
+
+**The general form, and it is the half a sweep never reports about itself: a mutation score is a claim
+about the CELLS, computed against an ORACLE, and it inherits every defect the oracle has.** A green mutation
+means *the cells did not distinguish the mutant from the reference* — **which is a fact about the cells only
+if the reference was right.** Nothing in a sweep's output carries that condition, so **the numbers survive
+the discovery that invalidates them** unless somebody goes back for them.
+
+**Both-wrong-agreeing and both-right-agreeing are identical in a pass count**, its phrase, and that is why
+it will report **which cells moved and in which direction** rather than a total.
+
+## The port is an APPLY, not a re-derivation — checked rather than assumed
+
+It asked whether the four anchors survive in the repaired copy, so its patch could be applied rather than
+re-expressed from a description. **Measured:** the repaired `contract.ts` differs from the archived one only
+at the D-130-09/17/18 regions — the key sets, the record interfaces, `asProfileRecord`'s arms and the pin
+machinery — **and every fixture anchor is untouched**: `insertBundle` 1/1, `insertOntologyVersion` 1/1,
+`namespacedTerm` 3/3, `insertNamespacedTerm` 1/1, `localVocabulary` 2/2, `local_vocabulary` 7/7.
+
+**Asking which of two operations you are performing, before performing either, is the cheap version of a
+question that is expensive after** — a re-derivation presented as an apply is a rewrite nobody reviewed.
+
+## D-130-20: `error-hygiene` is 24 at T130's merge — the RULING that moved the count travelled separately
+
+T130's implementer corrected the sixth number on that line, and **the mechanism is new**: not a stale tree
+this time, but **a ruling whose consequence for a count was never propagated.** D-130-10 requires the
+vocabulary refusal to get *its own sealed class* — **so T130 contributes +2, not +1.** Verified here: the
+barrel exports **`MalformedStoredVocabularyError` and `ProfileStoreError`**.
+
+        base today   21        T140 merges   22        T130 merges   24
+
+***The ruling that created the second class and the count travelled in different messages, which is how the
+23 stayed correct-looking.*** **A count derived from a contract goes stale when the contract moves, and
+nothing connects them** — I wrote D-130-10 and then wrote *22 → 23* in a later message without noticing that
+the first had changed the second.
+
+**And it labelled the figure arithmetic rather than measurement, because it could not run the guard** — the
+slot was T140's — **so it has not seen the domain sha and refused to quote one.** *If it prints 23 the delta
+is wrong and that is a finding about my barrel, not about your count.*
+
+## Grepping your own claims after editing found five sentences the same commit had falsified
+
+**Every one sat in a docblock that reads as settled**, and every one was made false by an edit in the commit
+that carried it: `errors.ts` opening *"One class, and the count is MEASURED"* and closing *"there is no
+decision to recognise, no arm to pass one through"*; `index.ts` repeating *"One class, because this module
+authors no refusal of its own"*; `http.ts`'s header asking *"Why THREE classes and not one"*; and `terms.ts`
+still saying the refusal *"runs inside `withProfileStore` for exactly that."*
+
+***The check is the one this section has been charged five times for skipping, and it took one grep.***
+`grep -rn "One class\|no decision to recognise\|THREE classes\|authors no refusal of its own"` now returns
+nothing.
+
+**And it kept the precision rather than collapsing it**, which is the harder half: *no published function of
+this module refuses anything a caller can send* is **still true and still the measured claim** — the new
+class refuses **the archive's own content**. **Two classes, and the line between them is whose fault the
+condition is, not how it is raised.**
+
+## An arm order that is load-bearing, said in the file rather than in a ruling
+
+`withProfileErrors` places the new class's arm **before** the store-fault chain, **with a comment saying the
+ordering is load-bearing** — because an arm order reaching `store-failed` first **restores exactly the
+relabelling D-130-10 removed**, and *nothing else in the file would say so.*
+
+**A ruling that can be undone by a reordering nobody would read as a change needs its own sentence at the
+line that would do it.** Same shape as the `bundle.ownerId` filter comment placed at the `where` clause
+rather than in the header — *because that is the line somebody deletes.*
+
+## A green about an UNCOMMITTED tree reads exactly like a green about a sha
+
+T140's implementer ran a whole triple with `store.ts` carrying D-140-11 **unstaged**. **The numbers were
+fine and described a tree with no sha, which nobody could check out.** *Caught by the porcelain in its own
+stamp block, not by noticing* — and it committed and re-ran **the entire triple** rather than keeping
+numbers that were almost certainly identical.
+
+***The only reason it has the right one is that the stamp is mechanical.*** A stamp block that prints
+`HEAD` and porcelain from one command turns a class of error that is invisible by inspection into one that
+is impossible to miss, **and it costs nothing on the runs where it says nothing.**
+
+## The ref stamp earned its keep on the first round it was used
+
+It added `backend` before-and-after around the triple **because of the moving-ref finding two rounds ago,
+expecting ceremony. It fired both times** — base moved three times inside its round,
+`e570f40 → 68190f9 → 821f09d → 008894d`, and its `error-hygiene` run began **35 seconds** after one of
+those moves.
+
+**Last round the same question was answerable only from the reflog, and that was called luck about the
+tooling rather than a practice. This round the answer was in the measurement.**
+
+**And it did better than picking a sha.** Asked which domain sha to quote when the ref moved under the run,
+it checked **the thing that actually matters**: `git diff --name-only e570f40 008894d` filtered to
+`^(lib/server|tests)/` returns **nothing**, so **the guard's domain is invariant across the entire window**
+and `21` is not a claim about which sha it caught. ***A moving ref only invalidates a measurement if the
+thing the ref selects moved*** — which is one diff to check and is the only reason a run against a ref that
+moved under it is usable at all.
+
+## T140 MERGED at `174cb0e`
+
+Both halves, `feat/t140-saves` at `7f85f19` and `test/t140-saves` at `b623332`, into `backend`. **13
+implementation files, 10 test files, 215 blind cells that had already met the module once in the
+adversary's integration and passed 215/215.**
+
+**`error-hygiene` red at exactly the merge and named its own domain sha** — *expected 22 to be 21*,
+`Domain resolved from backend at 174cb0e5…` — **which is the equality doing precisely what it was converted
+from a floor to do**: *a merge commit remains the only place it changes.* Raised to 22 in the merge commit,
+which is the orchestrator's edit and not the implementer's, as its implementer correctly refused to make.
+
+## D-130-21: the fixture correction and a witness for `MalformedStoredVocabularyError` land TOGETHER
+
+T130's implementer's gate found that **the three fixture reds are D-130-10's only live witness.** The
+`Caused by:` chain reads `Error: release.local_vocabulary is not a YAML mapping.` and **the trace passes
+through `withProfileStore` at `store.ts:61` — the pass-through arm.** So the amendment is not merely
+present, it is **observed end to end**: the class fires, the message carries the operation and nothing
+else, the parser's diagnostic stays on `cause`, and the wrapper declines to relabel. **Before the amendment
+those same three rendered `getProfile: the profile store failed.`, naming a store that had just answered.**
+*Said from a run rather than from an argument.*
+
+**And correcting the fixture makes all three green and leaves the class with no witness at all.**
+
+***A fix that closes a path closes every probe that used it***, and the question owed at every fix is
+**what did this stop being able to fail?** It is not arguing against the correction — the correction is
+right — **it is saying the class needs a cell of its own in the same change, or D-130-10 ships unobserved
+and reverting it reds nothing.**
+
+**Ruled: they land together.** The fixture correction and a dedicated `MalformedStoredVocabularyError` cell
+are one change, written by T130's blind author, which owns `tests/server/t130/**`. **The witness must drive
+the class through the published surface** — a stored vocabulary the parser refuses, `getProfile`, and an
+assertion on the **class and its `type`** rather than on the message text, since D-130-10's whole content is
+that this condition is distinguishable from a store fault.
+
+## A pre-registration that MISSES on identity while the count is right
+
+It predicted T090's red, `error-hygiene` green, and `cards`-member reds in `counts.test.ts` and
+`routes.test.ts` — **and did not predict the three `MalformedStoredVocabularyError` reds as their own
+family**, having assumed all seven `counts.test.ts` reds were `cards` residue when two are the vocabulary
+fixture.
+
+***The suite was right and the prediction was incomplete, which is the useful kind*** — **and the count
+would have hidden it: 25 was going to be 25 either way.** This is the argument for pre-registering by
+**identity and scope** rather than by total, made by a session whose total was correct.
+
+## An instrument that records a COUNT cannot comply with the rule to read the LINE
+
+Run 2's contention figure is **unusable and it declined to report it as a number.** It simplified the
+sampler between runs, **dropping the own-process-group filter**, so `foreign=10` is almost certainly its
+own vitest workers — **and it cannot prove that, because the simplified version recorded a count and not
+the matching lines.**
+
+***An instrument that records a count cannot comply with the rule to read the line*** — committed **one
+run after using the correct form.** Runs 1 and 3 used the filtered sampler: **peak foreign 0** in both, run
+3 keeping the lines and capturing none.
+
+**And it read its own detector's single match rather than counting it**: one `darkprint` line, **its own
+grep pipeline** — the self-matching detector caught the way this file says to catch it, by a session that
+had read the entry.
+
+## "Added none" reasoned from a record is not "added none" measured from a delta
+
+Its residue statement, and the precision is the point: **it did not take a before-stamp**, so *added none*
+is reasoned from **every name present being one the file already names**, not from a delta it measured.
+**Stated as the weaker claim it is**, rather than borrowed from the shape of the stronger one.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -9247,7 +9416,7 @@ it does not decide differently inside a worktree.
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
-| T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | adversarial-pass | blind suite `3337fb0`: **176 cells over 6 files**, `167 failed, 9 passed, 0 skipped` twice with identical failing sets. **The nine greens measure the DRIVER** — closed port `ECONNREFUSED`, dropped table `42P01`, and **drizzle rendering bound `accountId`/`refId`, which settles D-140-06's premise before implementation.** Reference 176/176 first try, offered as the weaker result. 18 mutations: **four one-red mutations on four rulings**, and **exactly one of seven non-owner shapes reds** under a re-implemented ownership check. **`SaveRecord`'s `Exact<>` is vacuous from a blind tree — `Exact<any,T>` is `true` — and cannot be falsified from there.** Implementation at `3f0f3f9`+ pending its own gate. **Route surface was owed by the orchestrator (D-140-04) and is now PUBLISHED as D-140-07**: four routes under `app/api/account/saves/**` over one request shape, which is `saveTarget`'s own `target`. No 403 (T050's reason, cited not re-derived) and no 404 on a write (the existence oracle AC1 closes), so **AC1's non-owner denial is unreachable from HTTP and route cells must not expect it**. `seams.md`'s SEAM-61/62 and `FavoriteStar.tsx`'s `TODO(SEAM-62)` corrected in the same commit **Implementation at `914e531`, gates and triple measured there; `9345e22` is the same thirteen files with only `backend.md` moved — an acceptance is of an ARTEFACT, not of a tip.** Thirteen files under `lib/server/saves/**` and `app/api/account/saves/**`, built against D-140-01..07. Triple `1 failed`, `5896 passed`, `0 skipped` of 5897, three identical sorted failing sets, the one red T090's `B-08 RE-SCORE`; **0 skipped by ARITHMETIC rather than by a printed column** — `1 + 5896 = 5897` leaves nothing for a silently-skipping `skipIf` file to hide in. Reconciliation `5897 − 5871 = 26`, delta measured in isolation as 9 + 17 and base's 5871 measured independently by me. typecheck 0, lint exit 0 read in full with 0 `warning`/`problems`, build 0 with both routes dynamic. **Six mutations, each pre-registered by IDENTITY and scope, all HIT**: decision arm 2, message leak 2, `can` re-implemented 2 (the second the operator cell, which a bare id comparison refuses), unfiltered count 7 all inside AC3, term filter 2, card half 1. `SaveRecord`'s `Exact<>` falsified in BOTH directions — the guard its blind author correctly reported it could not falsify, since `Exact<any,T>` is `true`. **`impl-done` HERE MEANS ONLY THAT THE LATER HALF ARRIVED. It does NOT mean ready for an adversary, and its implementer flagged that rather than let the field read as an invitation**: the blind suite has never run against this module, the join has not happened, and the acceptance surface is **209, not the 176 this row cites** — 33 route cells sit uncommitted in the blind author's tree. **No number here is an acceptance measurement.** Clause 5 held below the transport at 7 reds and unheld at it; ~~`error-hygiene` 18/19~~ **STALE — the equality is 21 and the merge raise is 21 → 22** (D-140-12) **Verified at `e1a5a60` after D-140-08/09/10: triple `1 failed`, `5898 passed`, `0 skipped` of 5899, three identical sorted failing sets, reconciliation `5899 − 5872 = 27` with base measured independently by me. typecheck 0, lint read in full 0. **All four registered predictions hit**, including the probabilistic one: reverting to `asc(save.id)` reds the witness **28 of 30 runs**, against a predicted 25 on `Binomial(30, 5/6)` — reported as a rate with its n rather than as a red. **Its read-back `sed` errored and it caught that the 28 was printed under a failed check**: a rate consistent with the prediction proves something changed, not that the intended change landed. **Blind suite complete at `b623332`: 215 cells over 9 files**, taken at a release-at-a-stamp reproduced exactly — four per-file digests, a four-path combined digest, a **nine-file suite digest for what the adversary runs**, 5 077 lines, 221 603 bytes, zero discrepancies. **Route half 33 cells asserting membership and length and never order** (verified by grep before D-140-08 was ruled, so the ruling cost it nothing); order cells 4, **and its reference RED for the first time in this run** — 4 of 215 without the ordering, then 215/215 corrected. **JOIN AND ADVERSARY ROUND NOW UNBLOCKED.** **ADVERSARY VERDICT: PASS** at `d2578544`, integration of `e1a5a60` + base + `b623332`, `feat/t140-saves` untouched. **215 of 215 on the first meeting of the halves**, per-file runtime counts equal to its pre-registered expansion arithmetic exactly; full tree `1 failed`, `6113 passed` of 6114, 0 skipped by arithmetic. **`Exact<>` DISCHARGED in both directions** — `refId` optional yields TS2322 at the `saveRecordIsExact` declaration **and** at the implementer's own colocated pin, restored to 0. **Suite reach converted from an inherited claim to a measurement on THIS module**: `asc(save.id)` reds exactly order cells 1 and 2, **10 of 10 deterministically where the reference measured 28 of 30**, because single-statement batches guarantee the tie groups; a `reverse()`ing route reds **exactly one** cell, the transport one. **D-140-11 ruled-and-unobserved** across every run. Census 4 before, 4 after. |
+| T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | **merged** | blind suite `3337fb0`: **176 cells over 6 files**, `167 failed, 9 passed, 0 skipped` twice with identical failing sets. **The nine greens measure the DRIVER** — closed port `ECONNREFUSED`, dropped table `42P01`, and **drizzle rendering bound `accountId`/`refId`, which settles D-140-06's premise before implementation.** Reference 176/176 first try, offered as the weaker result. 18 mutations: **four one-red mutations on four rulings**, and **exactly one of seven non-owner shapes reds** under a re-implemented ownership check. **`SaveRecord`'s `Exact<>` is vacuous from a blind tree — `Exact<any,T>` is `true` — and cannot be falsified from there.** Implementation at `3f0f3f9`+ pending its own gate. **Route surface was owed by the orchestrator (D-140-04) and is now PUBLISHED as D-140-07**: four routes under `app/api/account/saves/**` over one request shape, which is `saveTarget`'s own `target`. No 403 (T050's reason, cited not re-derived) and no 404 on a write (the existence oracle AC1 closes), so **AC1's non-owner denial is unreachable from HTTP and route cells must not expect it**. `seams.md`'s SEAM-61/62 and `FavoriteStar.tsx`'s `TODO(SEAM-62)` corrected in the same commit **Implementation at `914e531`, gates and triple measured there; `9345e22` is the same thirteen files with only `backend.md` moved — an acceptance is of an ARTEFACT, not of a tip.** Thirteen files under `lib/server/saves/**` and `app/api/account/saves/**`, built against D-140-01..07. Triple `1 failed`, `5896 passed`, `0 skipped` of 5897, three identical sorted failing sets, the one red T090's `B-08 RE-SCORE`; **0 skipped by ARITHMETIC rather than by a printed column** — `1 + 5896 = 5897` leaves nothing for a silently-skipping `skipIf` file to hide in. Reconciliation `5897 − 5871 = 26`, delta measured in isolation as 9 + 17 and base's 5871 measured independently by me. typecheck 0, lint exit 0 read in full with 0 `warning`/`problems`, build 0 with both routes dynamic. **Six mutations, each pre-registered by IDENTITY and scope, all HIT**: decision arm 2, message leak 2, `can` re-implemented 2 (the second the operator cell, which a bare id comparison refuses), unfiltered count 7 all inside AC3, term filter 2, card half 1. `SaveRecord`'s `Exact<>` falsified in BOTH directions — the guard its blind author correctly reported it could not falsify, since `Exact<any,T>` is `true`. **`impl-done` HERE MEANS ONLY THAT THE LATER HALF ARRIVED. It does NOT mean ready for an adversary, and its implementer flagged that rather than let the field read as an invitation**: the blind suite has never run against this module, the join has not happened, and the acceptance surface is **209, not the 176 this row cites** — 33 route cells sit uncommitted in the blind author's tree. **No number here is an acceptance measurement.** Clause 5 held below the transport at 7 reds and unheld at it; ~~`error-hygiene` 18/19~~ **STALE — the equality is 21 and the merge raise is 21 → 22** (D-140-12) **Verified at `e1a5a60` after D-140-08/09/10: triple `1 failed`, `5898 passed`, `0 skipped` of 5899, three identical sorted failing sets, reconciliation `5899 − 5872 = 27` with base measured independently by me. typecheck 0, lint read in full 0. **All four registered predictions hit**, including the probabilistic one: reverting to `asc(save.id)` reds the witness **28 of 30 runs**, against a predicted 25 on `Binomial(30, 5/6)` — reported as a rate with its n rather than as a red. **Its read-back `sed` errored and it caught that the 28 was printed under a failed check**: a rate consistent with the prediction proves something changed, not that the intended change landed. **Blind suite complete at `b623332`: 215 cells over 9 files**, taken at a release-at-a-stamp reproduced exactly — four per-file digests, a four-path combined digest, a **nine-file suite digest for what the adversary runs**, 5 077 lines, 221 603 bytes, zero discrepancies. **Route half 33 cells asserting membership and length and never order** (verified by grep before D-140-08 was ruled, so the ruling cost it nothing); order cells 4, **and its reference RED for the first time in this run** — 4 of 215 without the ordering, then 215/215 corrected. **JOIN AND ADVERSARY ROUND NOW UNBLOCKED.** **ADVERSARY VERDICT: PASS** at `d2578544`, integration of `e1a5a60` + base + `b623332`, `feat/t140-saves` untouched. **215 of 215 on the first meeting of the halves**, per-file runtime counts equal to its pre-registered expansion arithmetic exactly; full tree `1 failed`, `6113 passed` of 6114, 0 skipped by arithmetic. **`Exact<>` DISCHARGED in both directions** — `refId` optional yields TS2322 at the `saveRecordIsExact` declaration **and** at the implementer's own colocated pin, restored to 0. **Suite reach converted from an inherited claim to a measurement on THIS module**: `asc(save.id)` reds exactly order cells 1 and 2, **10 of 10 deterministically where the reference measured 28 of 30**, because single-statement batches guarantee the tie groups; a `reverse()`ing route reds **exactly one** cell, the transport one. **D-140-11 ruled-and-unobserved** across every run. Census 4 before, 4 after. **MERGED at `174cb0e`, tagged `t140-verified`.** D-140-11 and D-140-12 landed first: its implementer derived the equality from its own tree rather than taking my number, and **checked the thing that mattered instead of picking a domain sha** — base moved three times inside its round and `git diff --name-only e570f40 008894d` filtered to `lib/server|tests` returns nothing, so the guard's domain was invariant across the whole window. It also **ran a whole triple against an uncommitted tree**, caught it by its own porcelain stamp rather than by noticing, committed and re-ran the entire triple. Final: three identical runs at `1 failed`, `5898 passed`, `0 skipped` of 5899, no-movement measured twice at `27 passed`, census 4 before and after. 
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | `../darkprint-wt-t230-limits` (impl), `../darkprint-wt-t230-limits-tests` (blind) | `feat/t230-limits`, `test/t230-limits` | impl-done | module `8338951`, 17 files across two trees, four sealed classes so the merge count is **18 → 22**. Gates ITS measurements at `0f23379`, scope TARGETED: `typecheck` 0 unfiltered, `lint` 0 read in full, `vitest lib/server/limits` **84/84** — **not a full suite, not a triple, and the three repo guards it pre-registered green were outside that scope so their green is still a prediction.** **Both pre-registered candidate reds passed and the two real ones were elsewhere**: a lone surrogate walking a control-character check **in the opposite direction from a NUL**, and a refusal test whose input was accepted. Blind suite at `test/t230-limits`, 7 ahead **Implementation `5d79039`**, taken at the standing release-at-a-stamp: `10a8ab1` plus eight modified paths, reproduced here as eight blob ids with zero `fatal` lines and an identical path set. **`T230-gate-2`: three identical runs at `1 failed`, `5963 passed`, `0 skipped` of 5964**, identical sorted failing sets, the one red base's own t090 `B-08 RE-SCORE`; typecheck 0 unfiltered, lint exit 0 read in full. **Reconciliation exact — `5871 + 93 = 5964`**, delta measured, base measured independently by me. **Its FIRST triple was not identical and it chased both extras rather than reporting the disjunction**: `D-40-F` a contention artifact at 102.69 under load 57, and `t010` AC5 a permanent 1-in-230 fixture red — *one moved for load and one moved for a coin*, and the second is fixed on base at `85b2c9e`. **It attributed the two orphan databases to ME by creation time** after three sessions had stopped at *zero connections, cannot attribute*. D-230-11's routes shipped with `listKeys` added, `DELETE` at `200 KeyList`, and **revoked rows LISTED rather than filtered because that is AC4's observation rather than a convenience**. Nine ceiling cells as ruled with `REFUSED` written out rather than absent. `error-hygiene` 21 → 22 at merge. Adversary round owed |
 | T100 | Publishing and releases | T010, T020, T025, T040, T050, T060, T070, T090 | `lib/server/publish/**`, `app/api/bundles/**` | — | — | todo | — |
 | T130 | Profiles and the public author surface | T050, T060, T080 | `lib/server/profiles/**`, `app/api/authors/**` | `../darkprint-wt-t130-profiles` (impl), `../darkprint-wt-t130-profiles-tests` (blind) | `feat/t130-profiles`, `test/t130-profiles` | adversarial-pass | implementation `6ffdb17`, blind suite `32556b7`. **Cut to `{ author, joinedAt, counts: { blueprints, terms } }` by D-130-06 (owner)** — `setPins`/`toggleFollow` removed, AC3/AC4 to T131, `counts.cards` to T132. **No owner/visitor branch anywhere: AC2 falls out of the `Actor`, T080 decides visibility, no second `readable()`.** `withProfileStore` deliberately narrower than `withRegistryStore` — re-wrapping a sealed fault relabels a working store. **D-130-07: `counts.terms` consumes the shared parser, does not require `text`, and REFUSES an unreadable vocabulary rather than skipping** (cost stated: one bad release 500s a profile). Gates by its author at `eccab30`: typecheck 0, lint 0 with the single `warning` match read as a LINE — the prebuild's own `--disable-warning=` — and build 0 **with the route table showing the handler collected, which typecheck cannot claim.** Handed over with a content digest **and its method**, reproduced exactly. Adversary round owed **ADVERSARY VERDICT: PASS at `d9b5dcb`. No implementation defect in `lib/server/profiles/**` or the route.** D-130-09's three numbers: **BEFORE 33 failed, 23 passed of 56, AFTER 24, 32, 9 RESURRECTED, ZERO newly red** — the removal-only safety property holding empirically. 32 passed reads as **30 meaningful + 2 vacuous**. Full suite `25 failed, 5903 passed, 0 skipped` of 5928, **every red classified**: 10 cut-function residue, 11 `counts.cards` residue (deliberate, documented, travelling to T132), 3 blind-fixture reds from the untyped `local_vocabulary` column (T133), 1 base's own. **Identical numbers either side of D-130-18** — a type-only change verified by a number that did not move. `error-hygiene` derived 21 shipped / 22 hygiene; `ProfileStoreError` confirmed reached and clean at both arities. **Owed at merge: D-130-12's named constant, D-130-10's sealed class, the `terms.ts` load-bearing-filter comment, the blind fixture correction, and `error-hygiene` 21 → 22.** |
@@ -15738,7 +15907,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Log:**
 ### T140, Saves (private bookmarks)
 
-- **State:** adversarial-pass
+- **State:** merged
 - **Depends on:** T050, T060, **T005** (the `save` table; `lib/db/schema.ts` is Forbidden here)
 - **Blocks:** T262
 - **Owns:** `lib/server/saves/**`, `app/api/account/saves/**`
@@ -16098,6 +16267,17 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   mapping**, so the module is correct and the fixture is wrong. **The untyped `jsonb` column is the real
   defect — T133 created for it** — and T130 is its victim rather than its author. **The blind suite owes the
   fixture correction.**
+- **D-130-21: the fixture correction and a `MalformedStoredVocabularyError` witness land TOGETHER**, both
+  the blind author's. The three fixture reds are the class's **only live witness** — the trace passes
+  through `withProfileStore`'s pass-through arm, so D-130-10 is observed end to end rather than merely
+  present — and **correcting the fixture retires it.** *A fix that closes a path closes every probe that
+  used it.* The witness drives the class through `getProfile` and asserts the **class and its `type`**, not
+  the message text.
+- **D-130-20: `error-hygiene` is 24 at T130's merge, not 23.** D-130-10 requires a **second** sealed
+  class, so T130 contributes **+2** — verified: the barrel exports `MalformedStoredVocabularyError` and
+  `ProfileStoreError`. **The ruling that created the second class and the count travelled in different
+  messages**, which is how the 23 stayed correct-looking. Sixth number on that line, and the first whose
+  staleness came from a contract moving rather than a tree.
 - **D-130-19: applying D-130-18 to the TRUE compiler error set is COMPLETING it, not widening it.** Its
   `8 × TS2339` came from `typecheck | tail -8`; there were **eleven**, and three were outside
   `visibility` — so **its objection's point 2 was false**, having been grepped with `head -14`. **Two
