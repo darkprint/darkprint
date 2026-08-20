@@ -5251,6 +5251,89 @@ meet as a red.* And it proposed the disambiguating question rather than the answ
 author whether its route cells assert `saves` by order, membership or length** — *which settles which of
 the three we are in without either of us seeing the other's work.*
 
+## D-140-08 published an order, so the order became contract HELD BY NOTHING within the hour
+
+T140's blind author answered the one-word question with the word **and the grep** — *a claim about my own
+file is a measurement like any other and I have been wrong recalling one before.* **Membership and length,
+never order**: every set comparison goes through `viewTargetSet`, which is `.saves.map(targetOf).sort()`,
+and a grep for a deep-equal against a raw `saves` array across seven files returns nothing.
+
+**So the ruling cost it nothing — and it immediately named what the ruling created.** D-140-08 publishes an
+order; **nothing holds it.** *The D-70-12 shape, arriving on a ruling made an hour ago.* It is writing the
+cell, at both surfaces, because `SavesView.saves` forwards whatever `listSaves` returns and **a route that
+re-sorted would satisfy a module cell alone.**
+
+**And its own cells were never flaky against the random `asc(save.id)` tie-break — but not by foresight**,
+which it says plainly: *order was unruled, and "assert only as far as the contract decides" pointed at a
+set.* **A discipline applied to one question paid off against a defect nobody had found yet.**
+
+## Three design choices in a cell that does not exist yet, published for review before measuring
+
+**The same-instant case is REACHED rather than manufactured.** `migrateLocalSaves` is the one published
+surface that produces rows sharing a transaction timestamp — **exactly the case the random tie-break was
+about**, through the barrel rather than through a fixture that arranges it. **And the premise is asserted
+from the returned records — `savedAt` equal within a batch — before anything is concluded from the
+order**, because *a fixture whose premise is wrong inverts the result built on it.*
+
+**A random tie-break AGREES with a ruled order by luck**, and a three-item cell cannot rule that out at
+1-in-6. So the batch is sized until accidental agreement is negligible **and the number gets reported
+rather than the word "unlikely"** — `1/n!` per batch, so 4 items is 1 in 24 and 5 is 1 in 120, and two
+independent batches multiply. **Two batches, so `savedAt DESC` is exercised across groups and the
+tie-break within them.**
+
+**The expected order is COMPUTED from the returned records under the ruled comparator, never written as a
+literal** — *a literal would be me transcribing the ruling*, which is the transcription-for-the-standard
+shape this run has charged five times. **And it is not circular**: asserting a list equals its own sort
+under a total comparator fails exactly when the list was not in that order, and the comparator is total
+because `save_account_target_key` forbids a tie on all three keys.
+
+## D-140-09: `target_kind ASC` is LEXICOGRAPHIC, and the enum's declaration order agreeing is an accident
+
+T140's implementer noticed while building D-140-08 that **Postgres orders an enum column by DECLARATION
+order, not alphabetically** — and that `target_kind` is declared `["blueprint", "card", "term"]`, which is
+**both**. It flagged it rather than spending it: *a blind author computing the expected order from
+`SaveRecord` will assume alphabetical, and will be right for a reason that is not the one they are relying
+on.*
+
+**Measured here, and the coincidence is thinner than it said. Three of the five `pgEnum`s in
+`lib/db/schema.ts` ALREADY declare out of alphabetical order** — `visibility` is `[public, private]`,
+`target_actor_kind` is `[star, note_vote]`, `actor_kind` is `[owner, operator, system]`. **The house habit
+is semantic order and `target_kind` is one of two exceptions.** So a fourth member added by somebody
+following the local style is the LIKELY case, not the exotic one.
+
+**Ruled: D-140-08's `target_kind ASC` means lexicographic on the string**, because that is what a caller
+can compute from `SaveRecord`, which publishes the three fields and no ordinal. **The SQL agreeing today is
+a premise, not the definition** — and if a member ever lands out of alphabetical order the store owes a
+cast or an explicit `CASE`, not a re-reading of the contract.
+
+**Pinned by `tests/enum-declaration-order.test.ts`**, scoped to `target_kind` alone — asserting alphabetical
+order across all five would be **inventing a convention this repository does not have and does not need**.
+It reads the **working tree**, unlike its neighbours, and deliberately: *the failure it catches is a member
+being ADDED, and the moment worth catching it is while the person adding it is still looking at the diff.*
+Falsified three ways: base green; the enum reordered reds naming the sequence; the enum renamed **errors
+on the missing parse rather than passing over an empty match.**
+
+## A suite that could not see a defect cannot see its fix
+
+T140's implementer grepped its own 26 cells rather than predicting from memory: **every array assertion is
+empty, single-element, or `.sort()`ed before comparison.** So the ordering fix moves nothing in either
+direction — **and it reported that as the reason for zero movement rather than as a prediction that
+happened to be right.**
+
+**So a witness ships WITH the fix**: four rows, three sharing one `created_at`, asserted in the ruled
+sequence and asserted **equal across two reads**. The `blueprint` row is deliberately older so it sorts
+**last despite being first in the enum**, which exercises the whole `ORDER BY` rather than its second and
+third terms.
+
+**And it registered the falsification as PROBABILISTIC before running it**, not after: reverting to
+`asc(save.id)` matches a fixed expectation **1 time in 6** for three tied rows, so a single red is not a
+clean `0 → 1`. It will run the mutant repeatedly and report the **rate**. ***A witness whose mutant reds
+usually is worth having; reporting it as if it reds always is not.***
+
+**And it owned the defect without softening it**: *my stated reason for having a tie-break was that an
+unordered read makes downstream assertions flaky, and the column I reached for is an unordered read with
+extra steps* — both written in the same docblock, and neither of us said it out loud for eleven hours.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -14893,6 +14976,12 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         unsaveTarget(db: Db, actor: Actor, accountId: string, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<void>
         countSaves(db: Db, actor: Actor, accountId: string): Promise<number>
         migrateLocalSaves(db: Db, actor: Actor, accountId: string, targets: readonly { kind: "blueprint" | "card" | "term"; refId: string }[]): Promise<void>
+
+  **D-140-09: `target_kind ASC` is LEXICOGRAPHIC on the string**, which is what a caller can compute from
+  `SaveRecord`. Postgres sorts an enum by **declaration** order and `["blueprint","card","term"]` happens
+  to be both — **an accident, not a convention: three of the five enums in `schema.ts` already declare
+  semantically.** Pinned by `tests/enum-declaration-order.test.ts`, scoped to this enum alone. If a member
+  ever lands out of alphabetical order the store owes a cast or a `CASE`, not a re-reading of the contract.
 
   **D-140-08: `listSaves` returns `saved_at DESC, target_kind ASC, ref_id ASC`**, newest-first with the
   tie-break on **published** fields. Total within an account because `save_account_target_key` is unique
