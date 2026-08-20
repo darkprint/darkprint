@@ -3922,6 +3922,33 @@ as a conjunction and executes as last-wins**, one patched in the wrong file and 
 vitest quotes test names.** **Second session this hour whose classifier missed on quoting** — T130's was
 backticks — **and both recorded it as one diagnosis rather than five lapses.**
 
+## Two declared-as-short burners have been at 95% CPU for five and a half hours
+
+**T040's adversary declared its own cost honestly: *two short deliberate CPU burners (4-way and 6-way,
+under a minute each), used to try to reproduce the red below.*** **Measured now: pgids 62717 and 68110,
+`05:32` and `05:30` elapsed, 95–97% CPU each, four processes.**
+
+**The loop spawned them with `&` and moved on.** They are `/bin/zsh -c … burner $! started … npx vitest
+run lib/server/engine/measure.test.ts`, so **the burner shells outlived the round by five hours and the
+session that made them believed they had ended within a minute.**
+
+**And every contention sampler in this run is blind to them, by construction.** They match on `vitest`
+process groups or on a `darkprint` path; **these are `zsh` wrappers whose own argv carries the word but
+whose process group is neither a test run nor a worktree.** So the *"peak foreign 0"* and *"no foreign
+darkprint-named processes"* readings of the last five hours were taken **on a host carrying two runaway
+groups**, and none of them was wrong about what it measured.
+
+**Three things this makes true at once.** A **declared** cost is a claim about intent, not a
+measurement of duration — *the scope of a permission is a claim about a deliverable, and here the
+duration was a claim about a command that had already been backgrounded.* Every determinism triple since
+is **stronger** than it read, because identical failing sets were obtained under two saturated cores
+nobody could see. And **the one instrument that would have caught it is the one T230's implementer built
+and nobody else adopted: filter on ACTIVITY, not on a name** — `%CPU` over every process on the host,
+where these are the two loudest things running.
+
+**I could not terminate them: the action was refused by this session's permission classifier.** Surfaced
+to the owner rather than worked around, and reported to the session that owns them.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
