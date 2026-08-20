@@ -35,7 +35,7 @@
    stops the next composition from being wrong silently.
    ============================================================ */
 
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { schema, type Db } from "@/lib/db";
 import { NotAccountOwnerError } from "@/lib/server/accounts";
 import { SaveStoreError } from "./errors";
@@ -85,12 +85,29 @@ export async function withStore<T>(operation: string, work: () => Promise<T>): P
  * `id` never was — a blind author can predict this order from `SaveRecord`; it could not
  * predict one keyed on a column no published shape carries.
  *
- * **One agreement here is luck and is written down so nobody spends it.** `ORDER BY` on a
- * Postgres enum sorts by DECLARATION order, not alphabetically. `target_kind` is declared
- * `["blueprint", "card", "term"]` (`lib/db/schema.ts:46`), which happens to be alphabetical
- * too — so the SQL order and the obvious reading of `ASC` coincide **today, by coincidence
- * rather than by design**. A fourth member declared out of alphabetical order would separate
- * them silently, and nothing here would red.
+ * **`target_kind` is cast to `text` before sorting, and that is D-140-09 rather than a
+ * flourish.** `ORDER BY` on a Postgres enum sorts by DECLARATION order, not alphabetically.
+ * `target_kind` is declared `["blueprint", "card", "term"]` (`lib/db/schema.ts:46`), which
+ * happens to be alphabetical too — so an uncast sort agrees with the ruled order **today, by
+ * coincidence rather than by design**.
+ *
+ * D-140-09 rules the contract LEXICOGRAPHIC on the string, because that is what a caller can
+ * compute from `SaveRecord`, which publishes three fields and no ordinal. The cast makes the
+ * module sort the strings the contract names, so **the declaration order stops being
+ * load-bearing here at all** — satisfied by construction rather than by a premise.
+ *
+ * Two reasons the coincidence was not safe to lean on. Measured across all five `pgEnum`s,
+ * **three already declare semantically** — `visibility` is `[public, private]`,
+ * `target_actor_kind` is `[star, note_vote]`, `actor_kind` is `[owner, operator, system]` —
+ * so the house habit is the failure mode and `target_kind` is the exception. And the guard
+ * that would catch a member landing out of order lives in `tests/**`, which this module
+ * cannot see and may not write: **a dependency and its defence in different files, where
+ * deleting the defence leaves the dependency unobserved and nothing reds.**
+ *
+ * Its own falsification is EMPTY and that is the signature of a by-construction change
+ * rather than an objection to one: reverting the cast reds nothing until a member exists out
+ * of alphabetical order AND is saved. Nothing here catches a reachable input, and it is not
+ * claimed to.
  */
 export async function saveRowsFor(
   db: Db,
@@ -100,7 +117,12 @@ export async function saveRowsFor(
     .select()
     .from(schema.save)
     .where(eq(schema.save.accountId, accountId))
-    .orderBy(desc(schema.save.createdAt), asc(schema.save.targetKind), asc(schema.save.targetId));
+    .orderBy(
+      desc(schema.save.createdAt),
+      /* D-140-09: lexicographic on the string, never the enum ordinal. */
+      asc(sql`${schema.save.targetKind}::text`),
+      asc(schema.save.targetId),
+    );
 }
 
 /**
