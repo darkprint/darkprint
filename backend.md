@@ -6038,6 +6038,53 @@ lucky with, where a four-row fixture left it a 1-in-6 escape and only a rate to 
 **A probabilistic result and a deterministic one about one defect are not two qualities of evidence; they
 are two fixtures**, and the fixture is the part that was improvable.
 
+## The blindness caught the BLIND AUTHOR, which is the direction nobody designs for
+
+T130's blind author found that its **reference implementation carried the identical misreading as its
+fixture** — `if (!Array.isArray(lv)) continue;` against a column both merged readers require to be a
+mapping, **written by the same author, hours apart.**
+
+**So the oracle and the cells agreed, and no mutation could separate them.** Not one of its 26, and **not
+one of the six control mutations aimed at its own controls**: those test whether a control can fire, not
+whether both sides of a comparison share a premise. ***A reference written from the same reading that
+produced the defect is not a second opinion, it is the same opinion twice*** — **its own rule, quoted in
+its T040 handback, and then shipped.**
+
+**This is the concrete proof of a sentence this run has repeated for weeks as a hedge.** *A reference that
+goes green first try is the WEAKER result.* **73/73 was a measurement of its own consistency.** The thing
+that surfaced the divergence was **the implementation, written by somebody who could not see either
+artefact** — so the blindness paid out **backwards**, catching the blind author rather than the
+implementer, which is not the direction the protocol is built for and is the direction it turns out to
+also cover.
+
+**And its consequence for T133 is sharper than my framing.** I had it as the untyped column's victim.
+**It points out that an untyped `jsonb` defeats the standard countermeasure too**: the remedy this run
+reaches for is an independent second implementation, **and here both implementations were its own, so the
+independence was structural rather than a matter of care.** ***A column whose shape lives in no type
+cannot be checked by a reference written from the same prose.***
+
+## The fixture was wrong twice and a one-line fix would have looked like it worked
+
+Beyond the bare array, `namespacedTerm` emitted `{ id, kind, label, definition }` — **no `description`,
+no `since`, and `definition` is not a field of anything.** `toTerm` requires five non-empty strings.
+**Wrapping the array in a mapping would have moved the refusal one layer down** and produced a *different*
+`ProfileStoreError` from the same fixture. **A one-line fix would have passed the reading that motivated it
+and failed at `terms[0]`.**
+
+**And the root of the first error is named**: `insertNamespacedTerm` read the column back **as a list**, so
+*reading it as an array is what put an array there.* Fixed to go through the key.
+
+## It corrected MY account against its own interest
+
+I wrote that the export corpus already disagrees with itself, and offered it as evidence that its guess was
+*not even the first divergence*. **False.** `export.scratch.test.ts:187` is titled *AC3: a release whose
+stored vocabulary is the pre-amendment bare term array is **refused***, stores that shape deliberately with
+a comment, asserts the rejection, and restores the mapping. **One test exercising both sides of a boundary.**
+
+***So "your guess was not even the first divergence" is not available to me and I would rather lose it than
+keep it*** — its words, about the only sentence in my message that reduced its share of the fault.
+**T133 stands on the untyped-column ground alone, which was always enough.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -15664,10 +15711,19 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Goal:** give the column one published shape, asserted at the writer, so two readers cannot disagree about it.
 - **Contract:** `release.local_vocabulary` is `jsonb` and **its interpretation is held by no type anywhere**. The writer is `localVocabulary: input.vocabulary ?? null` over `vocabulary?: unknown` (`lib/server/archive/release.ts:110`), so **any caller of `addRelease` can store any shape**. Both merged readers require a **mapping**: `parseOntologyTerms` rejects arrays outright, and T090's `storedVocabulary` (`lib/server/export/vocabulary.ts:36`) rejects them at the same check. `terms.ts`'s own header warned this in prose and nothing enforced it.
 - **Acceptance criteria:** (1) the column has one published shape and `addRelease` refuses anything else **at the write**, rather than the readers refusing it later; (2) both existing readers consume that shape rather than each re-deriving it; (3) a release already stored in a refused shape is detectable without reading every row — a migration or a reported query, stated either way; (4) the refusal at the write names the field and never the caller's value (D-13).
-- **Open:** whether existing rows can be in a refused shape, and what happens to them. **`export.scratch.test.ts:193` and `:202` store two DIFFERENT shapes into that column in one file** — a bare `terms` array and a `{ text, terms }` mapping — so at least the test corpus already disagrees with itself.
+- **Open:** whether existing rows can be in a refused shape, and what happens to them.
+  ~~`export.scratch.test.ts:193` and `:202` store two different shapes, so the test corpus already
+  disagrees with itself.~~ **WITHDRAWN — false, and corrected by T130's blind author against its own
+  interest.** Verified here: `:187` is titled *"AC3: a release whose stored vocabulary is the pre-amendment
+  bare term array is **refused**"*, stores the bare array **deliberately** with a comment saying so, asserts
+  the rejection, then restores `{ text, terms }`. **One test exercising both sides of a boundary, not two
+  conventions colliding.** T133 stands on the untyped-column ground alone, which is enough.
 - **Out of scope:** the ontology parser's grammar (T030), the export bundle's format (T090).
 - **Log:**
-  - 2026-08-20 orchestrator: **created at T130's adversary round, from a demonstrated instance rather than a warning.** T130's blind author independently guessed `readonly Record<string, unknown>[]` for this column and stored a bare array; neither merged reader accepts it, and the result was three reds that looked like a T130 implementation defect until its adversary traced them. **Two authors who could not see each other, one untyped column, two incompatible readings.** Cost, measured rather than estimated: **a release stored in a refused shape makes every profile for that handle 500 forever**, and under D-130-10 as *Store failed* while the store was working.
+  - 2026-08-20 orchestrator: **created at T130's adversary round, from a demonstrated instance rather than a warning.** T130's blind author independently guessed `readonly Record<string, unknown>[]` for this column and stored a bare array; neither merged reader accepts it, and the result was three reds that looked like a T130 implementation defect until its adversary traced them. **Two authors who could not see each other, one untyped column, two incompatible readings — and a
+    THIRD reading inside one of them**: T130's blind author's own reference implementation carried
+    `if (!Array.isArray(lv)) continue;`, **the identical misreading as its fixture**, so the oracle and the
+    cells agreed and **no mutation in a 26-mutation sweep could have separated them.** Cost, measured rather than estimated: **a release stored in a refused shape makes every profile for that handle 500 forever**, and under D-130-10 as *Store failed* while the store was working.
 
 ### T041, D-40-L: `ToNumber` is `+`, not `Number()`
 
