@@ -5006,6 +5006,51 @@ more than one that closes.**
 `backend`, base carries 0 of its nine files, its tip is unchanged. **A reset it was told was safe, checked
 by the party it would have cost.**
 
+## A missing `DATABASE_URL` makes a suite SKIP, not fail, and skipped cells add nothing to the failed column
+
+T130's adversary is refused permission to source `.env.example` in its own session, and rather than run
+anyway it traced what a run would have produced. **`tests/support/env.ts:38` `requiredEnv` THROWS when
+`DATABASE_URL` is unset; the throw lands in `beforeAll`; and vitest reports a file whose `beforeAll` threw
+as SKIPPED rather than failed.** The recorded instance, quoted in `pins.test.ts`'s own header, is
+`75 failed | 3 passed | 7 skipped`.
+
+**So a gate run without the five env vars exported returns a number that reads as a result and is a
+stand-down.** Nothing is red. The failed column is untouched by every cell that never ran.
+
+**It refused to produce the number, which is the harder half** — a skipped run is cheap and would have
+looked like progress against a task it has been blocked on for hours. **And it confirmed the mechanism
+rather than asserting it**, which is why this is in the file as a property of the harness rather than as
+one session's guess.
+
+**The defence already exists and is T140's implementer's**: derive `0 skipped` by **arithmetic** rather
+than by reading the printed column — `1 + 5896 = 5897` leaves nothing for a silent skip to hide in.
+**Two sessions arrived at the two halves of one hazard independently**, one from the mechanism and one
+from the arithmetic, and neither had seen the other's.
+
+## Path checkout makes no ancestry claim, and that is the reset-versus-revert lesson on a different tool
+
+D-130-08 keeps `pins.test.ts` and `follow.test.ts` off T130's merge. Its adversary needed the other seven
+blind files in its tree and used **`git checkout 32556b7 -- <7 paths>` rather than a merge**, deliberately:
+**a merge commit that dropped the two would record them as DELETED in this branch's ancestry**, and they
+would then arrive at T130's real merge as a **no-op** — the exact failure `a2e7e23`'s reset avoided one
+table over. **A path checkout makes no ancestry claim, so D-130-08 stays reversible.**
+
+**It had only read the reset-versus-revert reasoning in a message and applied it to a tool it was not
+about.** *An ancestry claim is a side effect of the tool, not of the intent*, and the two tools that look
+interchangeable — merge-then-delete, and checkout-those-paths — differ only in what they assert about
+history.
+
+## An idle slot behind a blocked session is worse than a queue
+
+It held the gate slot, found its session refused the credentials the measurement needs, and **asked to be
+taken out of the queue entirely rather than kept warm.** *I would rather re-queue than have the host idle
+on my account.*
+
+**And it left its tree deliberately UNREPAIRED while blocked.** D-130-09 asks for *cells that ran before
+the repair*, which can only be read on the unrepaired tree, so applying the removals early would have
+destroyed the ordering the ruling asks for. **Seven adds in the porcelain and `contract.ts` untouched —
+refusing to look productive while blocked.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
