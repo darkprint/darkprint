@@ -5649,6 +5649,40 @@ correct and the method you gave would not have produced them.* The implementer: 
 worth something only because neither side derived it from the other.* **Same shape as reading a ref at
 measurement time rather than quoting one from a message** — the shell equivalent of it, in the same day.
 
+## D-140-11: `saved_at` orders at MICROSECOND grain and crosses at MILLISECOND, so the published order is not computable
+
+T140's adversary pre-registered, **before measuring anything**, a *known false-red mechanism*: its
+comparator ties `savedAt` at millisecond grain while Postgres orders at microsecond grain, so two writes
+inside one millisecond would red a conforming module. It rated the probability negligible and undertook to
+attribute it correctly if it fired.
+
+**It is not a false red. It is a gap in D-140-08, and measuring it took one query.**
+
+        pg text            2026-08-20 19:17:22.956849+00        microsecond precision
+        as a JS Date       2026-08-20T19:17:22.956Z             milliseconds — 849µs discarded
+        two values 100µs apart      equal in `SaveRecord.savedAt`, strictly ordered in SQL
+
+**`save.created_at` is `timestamptz`, so SQL sorts on a value the published record does not carry.** A
+caller sorting `SaveRecord` applies `target_kind, ref_id` to a pair SQL considered strictly ordered — so
+**the two orders can differ, and D-140-09's whole point was that the published order be computable from the
+published fields.** D-140-10 made the *enum* term true by construction and left the *timestamp* term
+resting on a grain nobody had checked.
+
+**Ruled: `ORDER BY date_trunc('milliseconds', saved_at) DESC, target_kind::text ASC, ref_id ASC`**, so the
+SQL sort key is **exactly the value that crosses in `SaveRecord`** and the tie-break engages precisely when
+a caller would apply it. Same argument as D-140-10, one term over. Cost: a truncation in the sort key, over
+one person's bookmarks, on a column no index orders either way. **The alternative — a `timestamp(3)`
+column — is T005's merged schema and far more expensive than the defect.**
+
+**Holder and moment, per D-140-14: T140's implementer, at the adversary's verdict, NOT now.** The
+adversary's pre-registration is frozen and it measures the current artefact; **changing the artefact
+mid-round would invalidate a registration made correctly.** It must not charge the divergence — **it
+already classified it correctly as a mechanism rather than a defect, which is what surfaced it.**
+
+***A pre-registered false-red that turns out to be a real gap is the strongest thing a pre-registration can
+produce***, because the alternative was meeting it as a red with no prior claim and arguing about which
+half was wrong.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -15291,6 +15325,13 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         unsaveTarget(db: Db, actor: Actor, accountId: string, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<void>
         countSaves(db: Db, actor: Actor, accountId: string): Promise<number>
         migrateLocalSaves(db: Db, actor: Actor, accountId: string, targets: readonly { kind: "blueprint" | "card" | "term"; refId: string }[]): Promise<void>
+
+  **D-140-11: `ORDER BY date_trunc('milliseconds', saved_at) DESC, …`.** `save.created_at` is
+  `timestamptz` (microseconds) and `SaveRecord.savedAt` is a JS `Date` (milliseconds), so **SQL sorts on a
+  value the published record does not carry** and two rows 100µs apart are tied for a caller and strictly
+  ordered for the store. Truncating the sort key makes it exactly the value that crosses. **Owed by T140's
+  implementer at the adversary's verdict, not before** — its pre-registration is frozen and classified this
+  correctly as a mechanism, which is what surfaced it.
 
   **D-140-10: the store sorts `target_kind::text`**, so D-140-09 is true by construction rather than by a
   premise plus a guard in a file T140 cannot see. Proposed by its implementer, which did **not** make the
