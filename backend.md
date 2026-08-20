@@ -3496,6 +3496,46 @@ leaving a sentence that happened to reach the right answer.
 reds, it picked a reading without noticing and the finding is gone.** *A test that the suite has not
 resolved an ambiguity* is an instrument this run has not had before.
 
+## T-01 fired three times and neither instrument built for it could see any of them
+
+**T230's implementer typed raw control bytes into a deliberate-control-character fixture three times in
+three consecutive attempts, and all three were stopped by the TOOL LAYER refusing the command** — not by
+`tests/no-raw-control-bytes.test.ts`, **which cannot see a file that was never written.** Occurrences
+nine, ten and eleven.
+
+**And the reflex is the one the fixture's own header names**: *the reason they type it is that there was
+nowhere to import it from.* **There was somewhere. It did not reach for it until the third refusal.**
+
+**The transferable half is about the instruments rather than about the author.**
+`no-raw-control-bytes` catches the byte **once it is on disk**; `tests/support/control-bytes.ts` removes
+the **need** to type it. **Neither reaches the moment of typing, which is where all three happened.**
+**The only thing that has ever caught this before the file exists is an unrelated tool refusing a
+command it could not display** — the same shape as the orchestrator's own occurrence being *prevented
+rather than detected*.
+
+**Measured rather than assumed, off-slot: `tr -d` over all fourteen changed files, every byte outside
+tab, newline, carriage return and printable — 0 in all fourteen.**
+
+## A base class kept off the barrel, because a barrel base is an arm waiting to be grown
+
+**T230's implementer publishes four error classes and deliberately keeps `LimitsError` — the base — off
+the barrel.** Its reason: **a base on the barrel is a base a wrapper can grow an arm for, and that arm
+is what stops the four concrete classes being disjoint siblings.**
+
+**That is D-50-21's withdrawn construction avoided rather than rediscovered.** There, a naive guard
+demanded an arm on `AccountError`, which would have made the five classes non-disjoint **at the exact
+moment the neighbouring ruling documented arm order as inert** — and the defect was found by an
+implementer reading what the guard would demand. **Here the shape is closed before the guard exists, by
+not publishing the thing that invites it**, with `armsNotDisjoint()` beside the wrapper measuring it
+rather than asserting it.
+
+**And its memory bound is arithmetic rather than a sentence**: `DEFAULT_SLOTS × BYTES_PER_SLOT <=
+MAX_COUNTER_BYTES` as an assertion, **plus a second test asserting `BYTES_PER_SLOT` equals what the
+allocation actually costs** — because *a declared count that does not move with the thing it describes*
+is the anti-vacuity defect this run has charged three times. **The collision property is driven the same
+way**: two subjects found to land in one slot, the second seeing count 2 — **an LRU answers 1 there
+forever, so the cell is the falsification for the whole design rather than a restatement of it.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
