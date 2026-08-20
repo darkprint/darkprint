@@ -3092,6 +3092,99 @@ stopped it scoring that.**
 superset of R1's, R1 is empty, so it is — **and proves nothing.** *A superset claim against an empty set
 is not evidence.* Nobody would have checked.
 
+## Measure retirement by IDENTITY, because the counts move for the right reasons
+
+**T040's implementer answered *what did this fix stop being able to fail* by re-running twelve mutations
+from rounds 4 and 5 against the fixed tree — the first time this run has measured retirement AT the fix
+rather than two rounds downstream.**
+
+**Counts are the wrong instrument and it said so: seven of the twelve ROSE.** So it compared
+**identities** — for each mutation, which tests were red then, **still exist now, and are green now.**
+**Zero, for every one of the twelve.**
+
+**And it accounted for the rises rather than shrugging at them**: every added red is a **blind** cell
+from the re-opened blind round, named individually — seven for one mutation, four for another. **Not one
+is a colocated test changing what it can see.** A rising count is what a *widening* suite looks like and
+what a *retiring* probe looks like, and only the identities separate them.
+
+## A third control measuring an adjacent quantity, and two caught before they ran
+
+**The bound cell's control asserted only that the ruled number is UNDER the bound — which stays true of a
+fixture that grows by nothing at all.** Reducing the growth to zero left the cell with no decision in it
+and the control reddened **0**. **The quantity it is about is the size the array reaches AFTER the
+caller's code runs**, because that is what a live extent read charges. Both sides required now,
+acceptance 0 → 1. **Third instance in this run of a control measuring the quantity beside the one its
+axis rests on.**
+
+**And two were caught before they ran, which is new.** The witness's own control claimed *re-serialising
+differently* — **true only for a mutation both visible on a second pass AND non-idempotent, and five of
+ten fixtures are neither.** `{a:{toJSON(){delete o.b}}, b:"gone"}` renders `{"a":1}` twice. **Both
+mutations fire; the proxy for them did not.** The fixture counts its own code running now, and **both
+readings assert it, because two readings that ran different amounts of caller code are not two readings
+of one value.** Found **by running the helper rather than trusting it.**
+
+## A mutation's red set reaching a subject it had no business touching
+
+**Its content-freezing mutation replaced the container with a spread copy — which also destroys object
+IDENTITY** — so it reddened the **cycle**, **shared-substructure** and **depth** tests.
+
+**A content snapshot has no business reaching *does not mistake legitimate sharing for a cycle*.**
+Re-expressed to change only the **read**: 2 red, both about content.
+
+**The identity showed it; the count would have read as thorough.** That is *the identity of the reds
+separates a mutation that mutated from one that did not*, in its second form: **not a patch that did too
+little, but one that did too much**, and a plausible-looking count is the disguise either way.
+
+## A blind reference inherits whatever the contract underspecifies
+
+**Second round running that T040's blind author's reference had to be corrected to a ruling rather than
+the ruling checked against it.** Round 5: its `normalise` read all four slots directly — the shape D-40-H
+charges. Round 6: its walk snapshotted `children` at enter — **the frozen-content shape D-40-I's control
+exists to catch** — and the content cells reddened it before any mutation ran.
+
+**Its framing is the entry and it is a pattern rather than an incident: a blind reference is written from
+the same contract the suite is, so it inherits whatever the contract UNDERSPECIFIES — and when the suite
+reds it, that is the suite working, not the reference failing.**
+
+**Which makes a red reference a measurement of the contract.** Both times the reference went wrong in
+exactly the direction my ruling was loose: D-40-H's four slots read as four reads, and D-40-I's *extent*
+read as *the whole container's shape*. **The suite catching its own reference is the cheapest signal
+available that a binding surface is ambiguous**, and it fires before any implementation is involved.
+
+**And the order is what makes it possible.** Suite first, then correct the reference until it passes. A
+reference-first round would have validated both defects and reported `n passed`.
+
+**Completed from inside it, by the author: it did not notice either defect by READING its reference.
+Both times the CELLS reddened it.** So the signal exists only if the suite is written from the ruling
+and the reference **independently** — **had it written the reference first and the cells to match, both
+defects would have been invisible and both rulings would still be loose.** The independence is the
+instrument; the order is only what preserves it.
+
+## A flag that does not fire, on evidence you hold, is a premise you no longer carry
+
+**T040's blind author filed that a total other than its prediction was LIKELIER this round**, because
+base's line had been reported as the same figure at three shas while base gained twelve commits. **It
+did not fire: base measured `1 failed | 5563 passed | 0 skipped` of 5564 at a fourth sha, eighteen
+commits on, so all eighteen added no test.**
+
+**Its own reading is the entry: *a flag that fires is a finding; a flag that does not fire, on evidence
+you hold, is a premise you no longer have to carry.*** The prediction was worth filing **although it
+turned out not to be needed**, because measuring base itself converted an assumption into a fact —
+**and an unfired flag on borrowed evidence converts nothing.**
+
+## A no-op patch reads as expressing the defect; only the execution does not
+
+**Four sessions have now shipped a mutation that did not do what its name said, and the tell is
+identical every time.** T040's blind author's statement of it: **the patch reads as expressing the
+defect while the execution does not.** *Rebuilding a snapshot per iteration reads exactly like
+snapshotting.*
+
+**The only thing that catches it is reading the patch as CODE rather than as a DESCRIPTION** — which is
+what *check the instrument, not the result* means when the instrument is a diff. **A diff is prose with
+a syntax**, and every reader of one is reading a claim about what it will do.
+
+
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -6250,7 +6343,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 6 at HEAD, on the gate slot granted by name. **D-40-I closed as the SNAPSHOT BOUNDARY rather than as a length**: the array frame carries the extent taken at enter and both branches keep reading content live, because `SerializeJSONArray` takes `LengthOfArrayLike` once and `Get(value, index)` per iteration. **The fifth axis its charger left open measures CLEAN, and for a structural reason** — five cells replacing an element or a value mid-walk agree, and they are the control against an over-eager fix that freezes contents too, which P2 and P3b each red. Reproduced first on my own cells: **3 of 3 array-extent diverge, both object controls agree**, and at `maxBytes = 200` the ruled number is 3 while the walk **refuses a conforming submission**. **The corpus cannot represent this axis at all** — `cells()` reads one `make()` three times and a self-mutating value answers differently each time — so it lives in a named test with per-reading construction, recorded so nobody adds a class that would produce nonsense. **The witness's own control was rebuilt before it ran**: *re-serialising differs* is an adjacent quantity, true only for a mutation both visible on a second pass and non-idempotent, and **5 of 10 fixtures were neither**. **`what did this fix stop being able to fail` answered by measurement: 12 earlier-round mutations re-run and NOT ONE test red under any of them is green now** — counts rose, identities did not move, and every rise is a blind cell from the re-opened blind round, named individually. Gates `tsc` **0 unfiltered**, `lint` **0 read in full**, `build` 0 clean; engine+routes **81/81**, blind **190/190**. **Triple identical: 1 failed, 5834 passed, 0 skipped of 5835**, pre-registered exactly; reconciliation **5835 − 271 = 5564**. Residue 0, foreign darkprint processes 0. Sweep **5 mutations, 3 HIT 2 MISS, no zeros, 0 newly green**, finding **a third control measuring an adjacent quantity** (0 → 1 on the fix) and **a mutation whose red set reached cycles and depth**, re-expressed. **Measured: the blind suite does not cover D-40-I** — reverting it reds two colocated tests and nothing blind |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 4 at `dfc71e1`, 40 ahead. **D-40-F** closed with `node:util`'s slot predicates — 8 281 ms → 68 ms on a 1.2 MB submission — `Object.prototype.toString` dispatch rejected though faster, because it **invokes user code the old version did not**. **D-40-G** closed with the fourth slot; acceptance is the reverse mutation, 9 + 58. **S10 closed after three rounds by changing the INPUT**: `resolve.ts:191` is the mechanism, observable only on a bundle where two files claim one `id@version`. Gates 0 unfiltered; targeted 73/0/0 hitting the pre-registered 69→73; triple `1 failed, 5783 passed, 0 skipped` of 5784 identical; reconciliation measured both sides, `5784 − 220 = 5564` = base at `752721d`. 7 mutations, 4 HIT / 3 MISS / 0 newly green, **all three MISSes one diagnosis against itself**. **Round 6 at `70a4074`: D-40-I closed as the snapshot boundary** — extent at enter, content live in both branches. Witness before fix, pre-registration exact. Targeted 81/81, blind 190/190, triple `1 failed, 5834 passed, 0 skipped` of 5835 identical, reconciliation `5835 − 271 = 5564`. **Retirement measured by IDENTITY over twelve prior mutations: zero retired**, with every risen count accounted for as a blind cell. 5 mutations, 3 HIT / 2 MISS, no zeros. **Blind does not cover D-40-I** — `P1` reds two colocated and nothing blind. **Adversary round 5 FAIL at `2468c09`: D-40-I charged** — the array branch reads its extent LIVE where `SerializeJSONArray` snapshots it once, while the object branch already snapshots correctly; **5 of 5 array cells diverge, both object cells agree**, both directions, and growth **refuses a submission the ruled number accepts**. **Fourth axis: WHEN caller code runs relative to the walk's bookkeeping** — one channel is a plain getter, so not downstream of D-40-H. Not one cell in either corpus mutates the container it is inside. Triple `1 failed, 5830 passed, 0 skipped` of 5831 identical, `5831 − 190 − 77 = 5564`. 7 mutations, 5 HIT / 2 MISS; **R7 confirms the blind re-open shut its gap** — 13 reds split colocated AND blind. **Round 5 at `0bb7ef8`, 6 commits: D-40-H closed** — `ToNumber` as `+value` not `Number()`, a **third axis** nobody's cells varied and the only mutation redding it alone; **D-40-23 built with its propagation half normative** (D-40-24). Witness written **before** the fix, pre-registration exact twice. Targeted 77/77 (pre-registered 73→77), blind 173/173 with its nine reds cleared, triple `1 failed, 5813 passed, 0 skipped` of 5814 identical, reconciliation `5814 − 250 = 5564`. 8 mutations, 5 HIT / 3 MISS, no zeros, 0 newly green. **Adversary round 4 had FAILed at `ccd1dac`**: **D-40-H** charged — `unbox` reads a slot where `SerializeJSONProperty` steps 4a/4b **coerce**, so `[[String/Number]Data]` bypass `@@toPrimitive`/`toString`/`valueOf`; **7 of 15 channels diverge, under-count unbounded** (5 000 008 measured as 10), and at `maxBytes = 100` it **accepts** a submission the ruled number refuses. Barrel-only. Triple `10 failed, 5800 passed, 0 skipped` of 5810 identical, pre-registered on all four figures; base measured independently at `7db3b5e` = 5564; reconciliation `5810 − 173 − 73 = 5564`. 7 mutations, 5 HIT / 1 MISS, 0 newly green; **both rebuilt controls confirmed by reverse mutation**. Also measured: **D-40-23 unimplemented, 9 red, attributed to the orchestrator**. Blind round **re-opened and closed a THIRD time** at `f7d1407`: **201 tests**, triple `194 failed, 5571 passed, 0 skipped` of 5765 identical, pre-registration exact against a base line measured itself at a fourth sha, 8 mutations 8 CAUGHT — **after a first sweep whose 1 GAP, 1 MISS and two no-ops were the round's actual content, and whose I03 MISS amended D-40-I**. Second re-open closed at `4c961d1`: **190 tests**, triple `183 failed, 5571 passed, 0 skipped` of 5754 identical, **pre-registration exact and conditional on a base line it measured itself**, 11 mutations 11 CAUGHT / 0 MISS / 0 GAP, every prediction naming what **else** saw it. Earlier blind round closed at `759881e`: **173 tests**, triple `166 failed, 5571 passed, 0 skipped` of 5737 identical, pre-registration exact on all four figures, D-40-23 pinned with the value-never-named clause held on **three** axes, 5 mutations on the new cells all CAUGHT. **Adversary round owed — all three of T040's earlier sessions are gone** |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -10542,6 +10635,13 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **The fifth axis was looked for and measures CLEAN, with a structural reason that turns D-40-I into a rule rather than a patch.** Its charger flagged array **content** as unchecked rather than letting the round read as exhaustive; its implementer measured it — element replaced mid-walk, replaced behind the cursor, replaced by a getter, and both object equivalents — **five cells, all agreeing.**
 
   **And not by luck.** `SerializeJSONArray` snapshots the **extent** (`LengthOfArrayLike`, once) and reads the **content** live (`Get(value, index)`, per iteration). `SerializeJSONObject` does the same — extent once via `EnumerableOwnPropertyNames`, content live. **So the rule is not *snapshot the length*. It is: snapshot exactly what the serialiser snapshots — the EXTENT — and read live exactly what it reads live — the CONTENT.**
+
+  **AMENDED: *extent* is a LENGTH for arrays and a KEY SET for objects, and those are not the same claim.** T040's blind author's `I03` re-read `Object.keys` per index while keeping the snapshotted length and **reddened nothing** — because on a **two-key** object a key added lands past the loop bound and a key deleted leaves index 1 answering `undefined` either way. **Both equivalent.** What separates them is **three keys with the MIDDLE one deleted and a new one added**:
+
+        serialiser              {"a":1,"c":"CCCC"}
+        re-reading the key set  {"a":1,"c":"CCCC","zzz":"ZZZZZZZZZZZZ"}
+
+  **My wording said *extent* and meant *length*, and for the object branch the extent IS the key set** — a distinction the two existing object cells could not tell apart. **It came from a mutation, not from re-reading the cells**, which is the whole argument for aiming mutations at a suite that already passes.
 
   **That is why the object branch was already right, and, more usefully, why an over-eager fix that ALSO snapshotted the elements would be a new defect.** The five content cells are the control against that repair, the way `[[BooleanData]]` is the control for D-40-H. **A fix ruled as *snapshot the length* invites the next charge; ruled as *match the serialiser's own snapshot boundary*, it does not.**
 
