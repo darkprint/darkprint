@@ -125,8 +125,12 @@ describe("T230 the bound, driven against the ceiling the module publishes", () =
   it("consumes exactly one unit per call and holds `limit` and `resetAt` still", async () => {
     const subject = anonymousSubject();
     const first = await check(subject);
+    /* Bounded by the module's own ceiling as well as by 4, so a small ceiling makes this
+       cell measure fewer steps rather than red for a reason that is not about consumption. */
+    const steps = Math.min(4, first.limit - 1);
+    expect(steps, `a ceiling of ${first.limit} leaves no second call to measure`).toBeGreaterThan(0);
     let previous = first;
-    for (let i = 0; i < 4; i += 1) {
+    for (let i = 0; i < steps; i += 1) {
       const next = await check(subject);
       expect(
         next.remaining,
@@ -141,7 +145,7 @@ describe("T230 the bound, driven against the ceiling the module publishes", () =
         `\`resetAt\` moved between calls inside one window, so every request pushes the reset ` +
           `out and a caller at the ceiling is never told a time that arrives.`,
       ).toBe(first.resetAt.getTime());
-      expect(next.allowed).toBe(true);
+      expect(next.allowed, `call ${i + 2} of a ceiling of ${first.limit} was refused`).toBe(true);
       previous = next;
     }
   });
