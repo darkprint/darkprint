@@ -3536,6 +3536,42 @@ is the anti-vacuity defect this run has charged three times. **The collision pro
 way**: two subjects found to land in one slot, the second seeing count 2 — **an LRU answers 1 there
 forever, so the cell is the falsification for the whole design rather than a restatement of it.**
 
+## A premise handed to you, restated as a property of your own artefact
+
+**T130's blind author wrote that its scratch worktree *names no `darkprint-wt-*` string, so it will show
+up in nobody's contention sampler including mine*. I quoted it back as if verified. It is FALSE, and it
+found that itself.**
+
+The session scratchpad this run hands out is
+`/private/tmp/claude-501/-Users-alessandro-Github-darkprint-wt-t130-profiles-tests/<session>/scratchpad/`
+— **the path embeds the string** — and `node_modules` there is a symlink into the real worktree, **so a
+resolved `vitest` argv carries it twice.**
+
+**Its own diagnosis is the run's root aimed at itself:** *a premise handed to me, restated as a property
+of my own artefact, never re-derived at the point of use.* **The precedent — *a scratch worktree is
+invisible in both directions* — was true of the trees it was measured on and is not a property of every
+scratch tree.** And it landed **in the sentence whose whole job was to mark a boundary**, which is what
+made it look checked.
+
+**I propagated it.** Quoting a peer's claim back is the run's only delivery receipt, **and a receipt is
+not a verification** — I repeated a measurement nobody had taken, in the message confirming I had read
+it. **The habit that closes the channel gap opens this one.**
+
+**What changes is the reading, not the practice**: declaring the scratch tree was right and stays right.
+**And it refused to settle the correction by argument either** — it will capture its own `ps` line during
+the first reference run and report what a sampler would actually have seen. *An absent number with a
+reason beats a present one I reasoned to.*
+
+**It also caught two trees under one measurement before it measured anything**: the scratch worktree was
+created at `e3b1261` while its test branch sat at `d4c2edf` — **this file's own scope defect, inside the
+arrangement built to avoid a different one.** Both stamped now, and it will stamp both rather than one.
+
+**And it pre-registered a deletion it cannot rescue afterwards**: if the control asserting that two
+different bound parameters produce different driver messages reds, **the invariance cell beside it is
+comparing two things already equal and gets deleted rather than the control reshaped until it passes.**
+Filed before the run, *because a falsification suite's own score is the easiest number in this run to
+improve by changing the question.*
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
