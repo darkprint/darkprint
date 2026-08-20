@@ -10870,6 +10870,48 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     for 4b, direct reads for 4c and 4d, and **no `catch` anywhere near a coercion**, which is what
     D-40-24 requires: a caller's own throwing `toString` propagates untouched because
     `JSON.stringify` propagates it too.
+  - 2026-08-20 test author, **round 6: D-40-I, the extent/content boundary.** 11 tests in
+    `extent.test.ts`; suite **201**. Targeted **193 failed | 8 passed | 0 skipped (201)**;
+    `npx eslint .` **zero bytes**, exit 0, read in full; `tsc --noEmit` 2, both the absent module.
+    The 8 green are the same module-independent set as round 5 — this round added none.
+  - 2026-08-20 test author: **the cells live in a named file with per-reading construction, and
+    that is forced rather than chosen.** A self-mutating value answers differently on every read,
+    so a helper that built one submission and read it three times would be handing the second
+    reader a value whose caller code had already run — *two readings that ran different amounts of
+    caller code are not two readings of one value*. `expectMeasuredFresh` builds a fresh submission
+    per reading and exists so that is impossible to forget.
+    **The fired-check is not "it re-serialises differently."** That proxy holds only for a mutation
+    both visible on a second pass and non-idempotent, and the shrinking-object fixture is neither —
+    measured, it renders `{"a":1}` twice. What is checked instead is the quantity the axis rests
+    on: **the extent the serialiser emitted against the extent the value reaches after the
+    caller's code has run**, which a fixture growing by nothing cannot satisfy.
+  - 2026-08-20 test author: **the boundary is held on both sides.** Three array-extent cells
+    (growth by `toJSON`, shrinkage, and growth by a **plain getter**, so the axis is not downstream
+    of D-40-H) and **six content cells as the control against a fix that also froze the elements**.
+    Each content cell computes what a walk snapshotting its children at enter would have rendered —
+    `frozenRendering`, which captures the container BEFORE anything reads it — and requires the
+    live rendering to differ. **Growth OVER-counts**, so the `maxBytes: expected` half of each pair
+    is what sees it: an over-count refuses a conforming submission and no test that only checks
+    refusals would notice.
+  - 2026-08-20 test author: **8 mutations, 8 CAUGHT — after a first sweep that returned 1 GAP, 1
+    MISS and 2 of my own defective patches, which is where the round's value is.**
+    **I02 was a no-op**: my "snapshot the content" patch rebuilt the snapshot every iteration, which
+    is a live read. **K07 was a no-op**: my "reuse one submission" patch left every call site still
+    building a fresh one. Both re-expressed as single contiguous patches — a memoised snapshot, and
+    redefining the builder itself — and both then CAUGHT at 8 and 5.
+    **And I03 was a REAL MISS that demanded a new cell.** Re-reading `Object.keys` per index while
+    keeping the snapshotted length reddened nothing, because for a two-key object a key added lands
+    past the loop bound and a key deleted leaves index 1 answering `undefined` either way — both
+    equivalent. **Three keys with the MIDDLE one deleted and a new one added is what separates
+    them**: measured, the serialiser emits `{"a":1,"c":"CCCC"}` where a key-set re-read emits
+    `{"a":1,"c":"CCCC","zzz":"ZZZZZZZZZZZZ"}`. So the claim is not *the length is snapshotted* but
+    *the KEY SET is*, and the two existing object cells could not tell those apart.
+  - 2026-08-20 test author: **the reference carried the opposite defect and the suite caught it.**
+    Its walk snapshotted `children` at enter — the frozen-content shape — so the content cells
+    reddened it before any mutation was run. Fixed to snapshot the EXTENT (`length` for an array,
+    `Object.keys` for an object) and read the CONTENT live at each index, which is
+    `Get(value, index)`. Second round running that a blind reference has had to be corrected to a
+    ruling rather than the ruling checked against it.
 
 ### T080, Registry read model and read API
 
