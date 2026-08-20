@@ -3223,6 +3223,46 @@ agree with it** — *take `backend`'s version* is about **authority**, not **rec
 recency signal pointed the wrong way. **A rule that has coincided with a heuristic twice is a rule
 nobody has tested.**
 
+## A finding is a measurement and goes stale the same way — this one inside its own round
+
+**A claim I put in T040's row — *the blind suite does not cover D-40-I; reverting it reds two colocated
+tests and nothing blind* — was true when measured and false by the time anyone read it.** T040's
+adversary re-ran it: **five reds, two colocated and three in `extent.test.ts`.**
+
+**The blind re-open at `f7d1407` overtook it, and the re-open happened BECAUSE of that finding.** So the
+measurement's own consequence invalidated it — **inside the same round, by the action it caused.**
+
+**This file already says a reconciliation is only valid against the base line it was computed from, and
+that a live task state is evidence about a branch rather than a session.** This is the same rule for a
+**finding**: *the blind suite does not cover X* is a measurement with a timestamp, **and the fastest way
+to make it false is to act on it.**
+
+## An agreeing cell that agrees by delegating to the oracle is not evidence
+
+**D-40-J's top-level cell agrees, 7 = 7 — and agrees by accident.** The walk falls through to
+`Buffer.byteLength(JSON.stringify(value) ?? "")` for a non-object, **and `JSON.stringify` applies its own
+holder wrapper, which calls `toJSON`.** **The walk agrees there by delegating to the very thing it is
+supposed to be independent of.**
+
+**Its charger named that rather than banking it**, and the consequence is precise: the divergence is
+exactly *callables nested inside a container*, and **the agreeing cell is not evidence the gate is
+right.**
+
+**The general form: in a differential test, an agreement produced by calling the oracle is not an
+agreement.** It is the strongest-looking cell in the set and the only one carrying no information —
+**and it sits beside three controls that agree for real reasons**, which is what makes it hard to see.
+
+## A model that separates axes more cleanly than the fixtures can
+
+**Its Q2 predicted the content controls and NOT the extent cells. It reds both.** The diagnosis, against
+itself and not against the suite: **the extent fixtures grow by mutating content, so freezing content
+necessarily disturbs them.**
+
+**Two axes that are separable in the ruling are not always separable in the artefacts that test them**,
+and a prediction written from the ruling will over-separate. **A MISS whose diagnosis is *the suite was
+right and I was wrong* — the fourth this run, and the only one where the cause is that the fixtures
+cannot be as clean as the rule.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -6381,7 +6421,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind) | `feat/t040-engine`, `test/t040-engine` | impl-done | **Round 6 at `70a4074`; blind at `f7d1407` (201 tests); adversary round 6 pending.** Nine charges closed across six rounds — D-40-A/B/C, D-40-D, D-40-F, D-40-G, D-40-H, D-40-I — plus D-40-23 (mine, ruled after a round closed). **Every charge but the first was introduced by the fix for the one before, until D-40-I was ruled as a boundary to break that.** Latest triple `1 failed, 5834 passed, 0 skipped` of 5835, reconciliation `5835 − 271 = 5564`. **The Log is the history; this row is a summary and stops growing** — it reached 4 568 characters and a conflict resolved toward base silently deleted three claims that existed only in it |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind) | `feat/t040-engine`, `test/t040-engine` | reverted | **Round 6 at `70a4074`; blind at `f7d1407` (201 tests); adversary round 6 pending.** Nine charges closed across six rounds — D-40-A/B/C, D-40-D, D-40-F, D-40-G, D-40-H, D-40-I — plus D-40-23 (mine, ruled after a round closed). **Every charge but the first was introduced by the fix for the one before, until D-40-I was ruled as a boundary to break that.** Latest triple `1 failed, 5834 passed, 0 skipped` of 5835, reconciliation `5835 − 271 = 5564`. **Adversary round 6 FAIL at `456bfc6`: D-40-J** — `typeof === "object"` for *Type(value) is Object*, so a callable carrying `toJSON` is dropped; unbounded under-count, `maxBytes` bypass, barrel-only. **The Log is the history; this row is a summary and stops growing** |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -10537,7 +10577,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** impl-done
+- **State:** reverted
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
@@ -10653,6 +10693,29 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         UnserializableValueError  "<operation>: the submission contains a value JSON cannot serialise."
 
   **The value is never named** — an unserialisable input's own content is the last thing a refusal about it should carry, which is the same clause the size refusal carries. **Barrel-only, and that is not a reason to leave it untyped**: D-40-C was barrel-only too, and T100/T263/T270 consume this barrel in-process. **Raised by the blind author rather than guessed at — which is exactly what the implementer did for the cycle at D-40-22, and the reason that ruling exists.**
+
+  **D-40-J, ruled (adversary round 6, charged and accepted). The binding surface owes the CONDITION, not the symptom, because its charger asked for that and gave the reason: a reader told *functions too* fixes the instance, and the next `typeof` transcription reads exactly as safe as this one did.**
+
+  **`SerializeJSONProperty` step 2 applies to every value whose *Type is Object* — which includes callables — and to BigInt.** The gate was `typeof resolved === "object" || typeof resolved === "bigint"`, **and the BigInt half being explicit and correct is the tell that step 2 was read**: what was transcribed is *Type(value) is Object* into `typeof === "object"`, and `typeof` answers `"function"` for a callable. **So a function carrying a `toJSON` is dropped by the walk and serialised by the serialiser.**
+
+        function with toJSON, object slot     formula 16   walk  2   DIVERGES
+        function with toJSON, ARRAY slot      formula 18   walk 12   DIVERGES
+        class / async / generator with toJSON formula 11   walk  2   DIVERGES
+        function whose toJSON returns undefined      2 =  2   agrees   <- control
+        plain function, no toJSON                    2 =  2   agrees   <- control
+        plain OBJECT with toJSON                    16 = 16   agrees   <- control
+
+  **Three controls agree and together they separate the cause**: the drop is right with no `toJSON`, right when `toJSON` returns a droppable, and the `toJSON` path works for non-callables. **Only the callable gate is wrong.** Under-count **unbounded** and a `maxBytes` bypass driven: a `toJSON` returning 1 000 000 characters is 1 000 008 by the ruled number and **2** by the walk, accepted at `maxBytes = 100`.
+
+  **The general repair is *Type(value) is Object*, i.e. `Object(x) === x`, not `typeof === "function"`** — the narrow one fixes the instance and leaves the condition mis-stated.
+
+  **One agreeing cell agrees BY ACCIDENT and must not be read as evidence.** At top level the two agree 7 = 7 **because the walk falls through to `Buffer.byteLength(JSON.stringify(value) ?? "")`, and `JSON.stringify` applies its own holder wrapper, which calls `toJSON`.** **The walk agrees there by delegating to the very thing it is supposed to be independent of.** The divergence is exactly *callables nested inside a container*.
+
+  **Barrel-only** — `JSON.parse` cannot produce a function — the same standing as D-40-E/G/H/I. **Neither corpus can see it: `droppable/function` is a bare function and `toJSON/function` is an object whose `toJSON` RETURNS a function, the opposite direction. Not one cell in the tree attaches `toJSON` to a callable.**
+
+  **Fourth in one sequence, and the sequence is the finding**: a **list** for the branches (D-40-G), **four reads** for two coercions and two reads (D-40-H), a **length** for a key set (D-40-I), and a **`typeof`** for a spec type predicate (D-40-J). **Not a snapshot but a DOMAIN CONDITION**, which is why neither the extent nor the content rule names it. **Every one is a transcription read as the thing transcribed.**
+
+  **Unwalked and named rather than left: `QuoteJSONString` and `LengthOfArrayLike`'s `ToLength` clamp.** The step-by-step covered the three serialise algorithms and neither of those, **so a fifth transcription could live in either.**
 
   **D-40-I, ruled (adversary round 5, charged and accepted): the array branch reads its extent LIVE where `SerializeJSONArray` snapshots it — and the object/array asymmetry is DELIBERATE and published here rather than in a Log entry.**
 
