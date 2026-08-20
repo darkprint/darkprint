@@ -5371,6 +5371,69 @@ condition: **if a year passes with no such consumer, delete it** — *a guard wh
 whose replacement never arrived is a red with no consequence, and a red with no consequence teaches people
 to ignore reds.*
 
+## A MUTATION answers the question a printed number only gestures at
+
+T140's blind author was going to report *6 tied `savedAt` pairs of 7 adjacent* as evidence its tie-break
+was exercised. **It then noticed the number appears only in a failure message — so on a green nobody sees
+it, and the measurement would have been invisible exactly when it mattered.**
+
+**So it removed the tie-break instead: O2 reds 2.** *A zero there would have meant the fixture produced no
+ties and the tie-break half was unobserved; a 2 means it is observed.* **The mutation answers the question
+the printed number was only going to gesture at**, and it answers it on a green run rather than on a red
+one.
+
+**O3 is the shipped defect reproduced against the suite.** `asc(save.id)` over a random uuid — the tie-break
+I found by reading `store.ts:86` to rule something else — reds **1**. Not a hypothetical.
+**O4 is the both-surfaces argument measured rather than argued**: a route that re-sorts satisfies every
+module cell, keeps `count` agreeing, passes every membership cell in the file, and reds **exactly one — the
+transport cell.** *Without it that defect ships.*
+
+## Its reference RED, for the first time, and in the right order
+
+Run deliberately **without** D-140-08's ordering: **`4 failed | 211 passed (215)`**, all four the new order
+cells and nothing else. Corrected to the ruling: **215/215.**
+
+**The cells were written from the ruling and the reference was corrected until it passed, never the
+reverse.** Both of T040's blind rounds found their reference carrying the exact defect their ruling was
+loose about, and only the cells caught it. **A reference that goes green first try is the weaker result**
+has been this run's refrain; this is the first time the stronger one has landed, on a ruling two hours old.
+
+## A true conclusion resting on a collation that does not exist
+
+Its comparator's docblock said the string comparison is code-point *"because SQL's `ASC` on `text` under
+this database's collation is a code-point ordering"*. **True of `ref_id`. False of `target_kind`, which is
+a `pgEnum` and never consults a collation at all.** The comparator was right, the stated reason was wrong,
+**and nothing in the data would ever have told it** — the next reader goes looking for a collation on a
+column that has none.
+
+**Corrected in place with the old reason quoted inside the correction**, not quietly replaced. **Third
+instance today of the correction being the mechanism rather than the finding, and this one is a session
+catching its own.**
+
+## `npm run lint | tail -1` hid a warning again, and reading in full is what caught it
+
+`'Seen' is defined but never used` — **exit 0, one problem, zero errors**, and `tail -1` prints a blank
+line. **The stanza I ran for about twenty commits before this run's rule was written.** Its instance is the
+live proof the rule earns its cost: the warning appeared only because the whole output was read.
+
+## The `describe` TITLE is a fourth surface, not another instance of the third
+
+T140's implementer's classification of my own defect, and it is right to separate them. This run already
+had three: **the criteria versus the published block; prose versus both; a stale claim in the message a
+reader meets while failing.** Its addition: ***the name the RUNNER prints*** — *not a surface anybody edits,
+read by everyone who sees the output, and invisible in the region of the diff where the fix happens.*
+
+**A file's opening lines and its test names are both read far more often than its body, and are the two
+places nobody looks when editing its middle.**
+
+## An expiry is the missing half of every rule this file has about guards
+
+Its observation: **they all say how to build one and none says when to stop maintaining one.** The clause
+on `tests/enum-declaration-order.test.ts` — *if a year passes with no such consumer, delete it* — is the
+first. **And its cast is that guard's dependent moving away**, which it stated out loud rather than
+leaving implicit: T140 no longer depends on the declaration order at all, so the rewrite that says the
+guard protects only a future consumer **is now true rather than aspirational.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
