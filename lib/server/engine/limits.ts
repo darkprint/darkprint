@@ -327,7 +327,7 @@ function walk(root: unknown, spend: (bytes: number) => void, operation: string):
     spend(2);
     stack.push(
       Array.isArray(container)
-        ? { kind: "array", container, length: container.length, index: 0 }
+        ? { kind: "array", container, length: lengthOfArrayLike(container), index: 0 }
         : {
             kind: "object",
             container: container as Record<string, unknown>,
@@ -388,6 +388,26 @@ function walk(root: unknown, spend: (bytes: number) => void, operation: string):
   }
 }
 
+/**
+ * `LengthOfArrayLike(value)`, which is `ToLength(Get(value, "length"))`.
+ *
+ * The extent snapshot (D-40-I) stored `container.length` **raw**, and for a real array that is
+ * always a uint32 so the clamp is the identity. **`Array.isArray` pierces a `Proxy` exactly as
+ * the spec's `IsArray` does**, so a proxied array reaches this branch with whatever its trap
+ * returns — and `index >= raw` is not `ToLength`. Found by walking the two algorithms an
+ * adversary had named as unwalked, rather than by being charged for it.
+ *
+ * `>=` already coerces a string and an object with `valueOf` the way `ToNumber` does, so those
+ * agreed and are kept as controls. **What `>=` does not do is truncate toward zero or map NaN
+ * to zero** — and `index >= NaN` is always false, so before this the walk did not terminate on
+ * the extent at all and ran until the byte budget stopped it.
+ */
+function lengthOfArrayLike(container: readonly unknown[]): number {
+  const length = Number((container as { length: unknown }).length);
+  if (Number.isNaN(length)) return 0;
+  return Math.min(Math.max(Math.trunc(length), 0), Number.MAX_SAFE_INTEGER);
+}
+
 /** `undefined`, a function and a symbol are the three values the serialiser will not emit. */
 function isDroppable(value: unknown): boolean {
   return value === undefined || typeof value === "function" || typeof value === "symbol";
@@ -403,7 +423,21 @@ function isDroppable(value: unknown): boolean {
 function normalise(value: unknown, key: string): unknown {
   let resolved = value;
 
-  if (resolved !== null && (typeof resolved === "object" || typeof resolved === "bigint")) {
+  /* **`SerializeJSONProperty` step 2 applies to every value whose *Type is Object*, and to
+     BigInt.** `Object(x) === x` is that predicate: it is the identity `ToObject` has on objects
+     and on nothing else, so it answers yes for a callable, a `Proxy` over one, and every exotic
+     object, and no for every primitive.
+
+     **It was `typeof resolved === "object"`, and the BigInt half beside it is the tell that step
+     2 was read**: what was mis-transcribed is the type condition, not the step. `typeof` answers
+     `"function"` for a callable, so a function carrying a `toJSON` was dropped here and
+     serialised by the serialiser — an unbounded under-count, since a `toJSON` may return any
+     string (D-40-J).
+
+     **Written as the condition rather than as `typeof === "function"`**, which would fix the
+     instance and leave the next reader with a predicate that reads exactly as safe as this one
+     did. */
+  if (Object(resolved) === resolved || typeof resolved === "bigint") {
     const toJSON = (resolved as { toJSON?: unknown }).toJSON;
     if (typeof toJSON === "function") {
       resolved = (toJSON as (k: string) => unknown).call(resolved, key);

@@ -92,6 +92,14 @@ function tamper<T extends object>(box: T, patch: Record<PropertyKey, unknown>): 
  * `Object.prototype`'s. Nothing is overridden here: this is the cell that says the divergence
  * needs no tampering at all.
  */
+/** An array whose `length` comes from a trap, so `LengthOfArrayLike`'s clamp is observable. */
+function proxiedArrayOfLength(length: unknown): unknown {
+  return new Proxy([10, 20, 30], {
+    get: (target, property, receiver) =>
+      property === "length" ? length : Reflect.get(target, property, receiver),
+  });
+}
+
 function foreignBox(builtin: unknown, args: readonly unknown[]): unknown {
   function Alien(): void {
     /* a constructor with its own `prototype`, and nothing else */
@@ -249,6 +257,44 @@ const VALUE_CLASSES: readonly ValueClass[] = [
   { name: "toJSON/boxed", make: () => ({ toJSON: () => new String("boxed") }) },
   { name: "toJSON/reads-key", make: () => ({ toJSON: (k: string) => `key=${k}` }) },
   { name: "toJSON/date", make: () => new Date(0) },
+
+  /* step 2 applies to every value whose **Type is Object**, which includes CALLABLES, and to
+     BigInt. The gate transcribed that as `typeof === "object"`, and `typeof` answers
+     `"function"` for a callable — so a function carrying a `toJSON` was dropped by the walk and
+     serialised by the serialiser (D-40-J).
+
+     **Neither corpus could see it and the two nearest cells point the other way**:
+     `droppable/function` is a bare function, and `toJSON/function` is an object whose `toJSON`
+     **returns** a function. Nothing attached `toJSON` to a callable. Every kind of callable is
+     here rather than one, because the defect is the CONDITION and a fix reading
+     `typeof === "function"` would satisfy a single cell while still mis-stating it. */
+  { name: "toJSON/on-a-function", make: () => Object.assign(function named() {}, { toJSON: () => "REPLACED" }) },
+  { name: "toJSON/on-an-arrow", make: () => Object.assign(() => 1, { toJSON: () => "REPLACED" }) },
+  { name: "toJSON/on-a-class", make: () => Object.assign(class C {}, { toJSON: () => "REPLACED" }) },
+  { name: "toJSON/on-an-async-function", make: () => Object.assign(async function a() {}, { toJSON: () => "REPLACED" }) },
+  { name: "toJSON/on-a-generator", make: () => Object.assign(function* g() {}, { toJSON: () => "REPLACED" }) },
+  {
+    name: "toJSON/on-a-proxied-function",
+    make: () => new Proxy(Object.assign(function named() {}, { toJSON: () => "REPLACED" }), {}),
+  },
+  /* The control: a callable whose `toJSON` resolves to a droppable is still dropped, so the
+     drop is right when the resolution says so and wrong only when the gate skips it. */
+  { name: "toJSON/on-a-function-returning-undefined", make: () => Object.assign(function named() {}, { toJSON: () => undefined }) },
+
+  /* `LengthOfArrayLike` is `ToLength(Get(value, "length"))`, and `ToLength` truncates toward
+     zero, maps NaN to 0 and clamps to [0, 2^53-1]. `Array.isArray` pierces a `Proxy` exactly as
+     the spec's `IsArray` does, so a proxied array reaches `SerializeJSONArray` with a length the
+     trap decides. The finite cells live here; the two that make the pre-fix walk run until the
+     byte budget stops it are in a named test with a tight bound, because they cannot be run
+     under this file's generous one. */
+  { name: "array-like/length-1.5", make: () => proxiedArrayOfLength(1.5) },
+  { name: "array-like/length-2.9", make: () => proxiedArrayOfLength(2.9) },
+  /* Controls: `>=` already coerces a string and an object with `valueOf` the way `ToNumber`
+     does, and a negative length ends the loop immediately as `ToLength` says it should. So the
+     divergence is precisely truncation and the NaN rule, not "any odd length". */
+  { name: "array-like/length-negative", make: () => proxiedArrayOfLength(-1) },
+  { name: "array-like/length-string", make: () => proxiedArrayOfLength("2") },
+  { name: "array-like/length-valueOf", make: () => proxiedArrayOfLength({ valueOf: () => 2 }) },
   {
     name: "toJSON/nested-in-container",
     make: () => ({ a: { toJSON: () => undefined }, b: [{ toJSON: () => undefined }] }),
@@ -621,6 +667,116 @@ describe("D-40-E — the walk agrees with the formula over the serialiser's clas
        the walk must not invent one. */
     const { UnserializableValueError } = await import("./index");
     expect(() => measureSubmission("probe", big, GENEROUS)).toThrow(UnserializableValueError);
+  });
+});
+
+/* ---- D-40-J: the gate is a spec TYPE predicate, and a length is a spec CONVERSION ---- */
+
+describe("D-40-J — step 2 applies to every value whose Type is Object, callables included", () => {
+  const formulaFor = (value: unknown): number =>
+    Buffer.byteLength(JSON.stringify(value), "utf8");
+
+  /**
+   * The condition, driven across every kind of callable rather than one.
+   *
+   * `SerializeJSONProperty` step 2 resolves `toJSON` for every value whose **Type is Object**,
+   * and for BigInt. The gate said `typeof resolved === "object" || typeof resolved === "bigint"`,
+   * and **the BigInt half being explicit and correct is the tell that step 2 was read**: what
+   * went wrong is the transcription of *Type is Object* into `typeof === "object"`, which
+   * answers `"function"` for a callable.
+   *
+   * **Every callable kind is here because the defect is the condition.** A repair reading
+   * `typeof === "function"` satisfies one cell and leaves the condition mis-stated, so the next
+   * transcription reads exactly as safe as this one did. The repair is `Object(x) === x`.
+   */
+  it("resolves toJSON on a callable, in every shape a callable comes in", () => {
+    const callables: [string, () => unknown][] = [
+      ["a function declaration", () => Object.assign(function named() {}, { toJSON: () => "REPLACED" })],
+      ["an arrow", () => Object.assign(() => 1, { toJSON: () => "REPLACED" })],
+      ["a class", () => Object.assign(class C {}, { toJSON: () => "REPLACED" })],
+      ["an async function", () => Object.assign(async function a() {}, { toJSON: () => "REPLACED" })],
+      ["a generator", () => Object.assign(function* g() {}, { toJSON: () => "REPLACED" })],
+      [
+        "a Proxy over a callable, where typeof still answers function",
+        () => new Proxy(Object.assign(function named() {}, { toJSON: () => "REPLACED" }), {}),
+      ],
+    ];
+
+    for (const [label, make] of callables) {
+      /* Nested, not at the top. **The top-level cell agrees BY ACCIDENT and is not evidence**:
+         there the walk falls through to `Buffer.byteLength(JSON.stringify(value) ?? "")`, and
+         `JSON.stringify` applies its own holder wrapper, which calls `toJSON`. It agrees by
+         delegating to the very thing it is supposed to be independent of, so it is documented
+         here and deliberately not asserted as coverage. */
+      for (const wrap of [
+        (value: unknown) => ({ k: value }),
+        (value: unknown) => [value],
+        (value: unknown) => ({ outer: [{ inner: value }] }),
+      ]) {
+        const value = wrap(make());
+        expect(measureSubmission("probe", value, GENEROUS), label).toBe(formulaFor(value));
+      }
+    }
+  });
+
+  /**
+   * The three controls, and together they separate the cause rather than confirming it.
+   *
+   * The drop is **right** with no `toJSON`; **right** when `toJSON` resolves to a droppable; and
+   * the `toJSON` path **works** for a non-callable. So only the gate is wrong, and a fix that
+   * made callables stop being dropped altogether would red the first two.
+   */
+  it("still drops a callable the resolution says to drop, and still resolves a non-callable", () => {
+    for (const [label, value] of [
+      ["a plain function with no toJSON", { k: function named() {} }],
+      [
+        "a function whose toJSON resolves to undefined",
+        { k: Object.assign(function named() {}, { toJSON: () => undefined }) },
+      ],
+      ["a plain object with toJSON", { k: { toJSON: () => "REPLACED" } }],
+    ] as const) {
+      expect(measureSubmission("probe", value, GENEROUS), label).toBe(formulaFor(value));
+    }
+  });
+
+  /** The under-count is unbounded, so it is a `maxBytes` bypass, driven at a bound. */
+  it("refuses a submission the ruled number refuses, however small the callable looks", () => {
+    const inflated = {
+      k: Object.assign(function named() {}, { toJSON: () => "z".repeat(100_000) }),
+    };
+    const ruled = formulaFor(inflated);
+    expect(ruled).toBeGreaterThan(100_000);
+
+    expect(() =>
+      measureSubmission("validateBundle", inflated, resolveLimits({ maxBytes: ruled - 1 })),
+    ).toThrow(LimitExceededError);
+    expect(measureSubmission("validateBundle", inflated, resolveLimits({ maxBytes: ruled }))).toBe(
+      ruled,
+    );
+  });
+
+  /**
+   * `LengthOfArrayLike` is `ToLength(Get(value, "length"))`, and the round-6 fix stored
+   * `container.length` **raw**. Found by walking the two algorithms D-40-J's charger named as
+   * unwalked, rather than by being charged for it.
+   *
+   * These two cells are here rather than in the corpus because **before the fix they do not
+   * terminate on the extent at all**: `index >= NaN` is always false, so the walk runs until the
+   * byte budget stops it. Under this file's generous bound that is not a test, it is a hang, so
+   * the bound is tight and stated.
+   *
+   * The finite cells and all three controls live in the corpus, where the controls are what
+   * isolate the cause: `>=` already coerces a string and a `valueOf` object exactly as
+   * `ToNumber` does, and a negative length ends the loop at once as `ToLength` says. **What
+   * `>=` does not do is truncate toward zero or map NaN to zero**, and those are the two cells
+   * that move.
+   */
+  it("clamps an array-like's length the way ToLength does, including NaN", () => {
+    const nanLength = proxiedArrayOfLength(NaN);
+    expect(JSON.stringify({ k: nanLength })).toBe('{"k":[]}');
+    expect(measureSubmission("probe", { k: nanLength }, resolveLimits({ maxBytes: 4096 }))).toBe(
+      Buffer.byteLength('{"k":[]}', "utf8"),
+    );
   });
 });
 
