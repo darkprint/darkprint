@@ -3922,6 +3922,33 @@ as a conjunction and executes as last-wins**, one patched in the wrong file and 
 vitest quotes test names.** **Second session this hour whose classifier missed on quoting** — T130's was
 backticks — **and both recorded it as one diagnosis rather than five lapses.**
 
+## Two declared-as-short burners have been at 95% CPU for five and a half hours
+
+**T040's adversary declared its own cost honestly: *two short deliberate CPU burners (4-way and 6-way,
+under a minute each), used to try to reproduce the red below.*** **Measured now: pgids 62717 and 68110,
+`05:32` and `05:30` elapsed, 95–97% CPU each, four processes.**
+
+**The loop spawned them with `&` and moved on.** They are `/bin/zsh -c … burner $! started … npx vitest
+run lib/server/engine/measure.test.ts`, so **the burner shells outlived the round by five hours and the
+session that made them believed they had ended within a minute.**
+
+**And every contention sampler in this run is blind to them, by construction.** They match on `vitest`
+process groups or on a `darkprint` path; **these are `zsh` wrappers whose own argv carries the word but
+whose process group is neither a test run nor a worktree.** So the *"peak foreign 0"* and *"no foreign
+darkprint-named processes"* readings of the last five hours were taken **on a host carrying two runaway
+groups**, and none of them was wrong about what it measured.
+
+**Three things this makes true at once.** A **declared** cost is a claim about intent, not a
+measurement of duration — *the scope of a permission is a claim about a deliverable, and here the
+duration was a claim about a command that had already been backgrounded.* Every determinism triple since
+is **stronger** than it read, because identical failing sets were obtained under two saturated cores
+nobody could see. And **the one instrument that would have caught it is the one T230's implementer built
+and nobody else adopted: filter on ACTIVITY, not on a name** — `%CPU` over every process on the host,
+where these are the two loudest things running.
+
+**I could not terminate them: the action was refused by this session's permission classifier.** Surfaced
+to the owner rather than worked around, and reported to the session that owns them.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -7084,10 +7111,10 @@ it does not decide differently inside a worktree.
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
-| T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | claimed | wave 7, claimed alongside T140/T130/T230; partitions verified disjoint from each other and from T040 |
-| T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | `../darkprint-wt-t230-limits` (impl), `../darkprint-wt-t230-limits-tests` (blind) | `feat/t230-limits`, `test/t230-limits` | claimed | wave 7, claimed alongside T140/T130/T230; partitions verified disjoint from each other and from T040 |
+| T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | tests-written | blind suite `3337fb0`: **176 cells over 6 files**, `167 failed, 9 passed, 0 skipped` twice with identical failing sets. **The nine greens measure the DRIVER** — closed port `ECONNREFUSED`, dropped table `42P01`, and **drizzle rendering bound `accountId`/`refId`, which settles D-140-06's premise before implementation.** Reference 176/176 first try, offered as the weaker result. 18 mutations: **four one-red mutations on four rulings**, and **exactly one of seven non-owner shapes reds** under a re-implemented ownership check. **`SaveRecord`'s `Exact<>` is vacuous from a blind tree — `Exact<any,T>` is `true` — and cannot be falsified from there.** Implementation at `3f0f3f9`+ pending its own gate. **Route surface owed by the orchestrator (D-140-04)** |
+| T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | `../darkprint-wt-t230-limits` (impl), `../darkprint-wt-t230-limits-tests` (blind) | `feat/t230-limits`, `test/t230-limits` | tests-written | module `8338951`, 17 files across two trees, four sealed classes so the merge count is **18 → 22**. Gates ITS measurements at `0f23379`, scope TARGETED: `typecheck` 0 unfiltered, `lint` 0 read in full, `vitest lib/server/limits` **84/84** — **not a full suite, not a triple, and the three repo guards it pre-registered green were outside that scope so their green is still a prediction.** **Both pre-registered candidate reds passed and the two real ones were elsewhere**: a lone surrogate walking a control-character check **in the opposite direction from a NUL**, and a refusal test whose input was accepted. Blind suite at `test/t230-limits`, 7 ahead |
 | T100 | Publishing and releases | T010, T020, T025, T040, T050, T060, T070, T090 | `lib/server/publish/**`, `app/api/bundles/**` | — | — | todo | — |
-| T130 | Profiles and the public author surface | T050, T060, T080 | `lib/server/profiles/**`, `app/api/authors/**` | `../darkprint-wt-t130-profiles` (impl), `../darkprint-wt-t130-profiles-tests` (blind) | `feat/t130-profiles`, `test/t130-profiles` | claimed | wave 7, claimed alongside T140/T130/T230; partitions verified disjoint from each other and from T040 |
+| T130 | Profiles and the public author surface | T050, T060, T080 | `lib/server/profiles/**`, `app/api/authors/**` | `../darkprint-wt-t130-profiles` (impl), `../darkprint-wt-t130-profiles-tests` (blind) | `feat/t130-profiles`, `test/t130-profiles` | tests-written | blind suite `32556b7`: **73 cells over 8 files**, pre-registration exact on all four figures **and all six pass identities** — `67 failed, 6 passed, 0 skipped`. Base measured independently at `1b90422`, its one red identity-matched; reconciliation pre-registered as arithmetic and measured exact at 5637. **Reference 73/73 first try, offered as the WEAKER result.** 26 mutations, 20 HIT; **two of its own patches reddened 0 and had not mutated**; six aimed at its own controls, six caught; **K2 truncating candidates to index 0 reds 8, which is what makes K1's green the discovery discovering.** Handed over with a CONTENT DIGEST in place of a sha, verified before staging. Standing: `counts.cards` asserted against a field D-130-04 blocks, `watchers` has no derived-versus-stored witness, `support`/`validated` typed only, two AC3 cells pass over an empty array. **Task blocked: three of five stored fields have no table** |
 | T150 | Counters: stars and downloads | T050, T060, T080, T090 | `lib/server/counters/**`, `app/api/signals/**` | — | — | todo | — |
 | T160 | Community ballot and vote weighting | T050, T060, T080 | `lib/server/ballot/**`, `app/api/votes/**` | — | — | todo | — |
 | T170 | Notes and note votes | T050, T060, T080 | `lib/server/notes/**`, `app/api/notes/**` | — | — | todo | — |
@@ -12017,7 +12044,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 ### T140, Saves (private bookmarks)
 
-- **State:** claimed
+- **State:** tests-written
 - **Depends on:** T050, T060, **T005** (the `save` table; `lib/db/schema.ts` is Forbidden here)
 - **Blocks:** T262
 - **Owns:** `lib/server/saves/**`, `app/api/account/saves/**`
@@ -12075,7 +12102,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 ### T230, Rate limiting and API keys
 
-- **State:** claimed
+- **State:** tests-written
 - **Depends on:** T000 (contract: middleware), T050 (data: identity), **T005** (the `api_key` table; `lib/db/schema.ts` is Forbidden here)
 - **Blocks:** —
 - **Owns:** `lib/server/limits/**`, `app/api/account/keys/**`
@@ -12223,7 +12250,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 ### T130, Profiles and the public author surface
 
-- **State:** claimed
+- **State:** tests-written
 - **Depends on:** T050, T060, T080
 - **Blocks:** T250, T262
 - **Owns:** `lib/server/profiles/**`, `app/api/authors/**`
