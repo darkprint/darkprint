@@ -193,7 +193,7 @@ const VALUE_CLASSES: readonly ValueClass[] = [
      against a wrong implementation of the slot, and they red only for a fix that runs the wrong
      hint — which nothing else here would catch. */
   { name: "boxed/string-toString-overridden", make: () => tamper(new String("xy"), { toString: () => "OVERRIDDEN" }) },
-  { name: "boxed/string-valueOf-overridden", make: () => tamper(new String("xy"), { valueOf: () => "VO" }) },
+  { name: "boxed/string-valueOf-overridden", make: () => tamper(new String("xy"), { valueOf: () => "VALUE-OF-BRANCH" }) },
   { name: "boxed/string-toPrimitive", make: () => tamper(new String("xy"), { [Symbol.toPrimitive]: () => "PRIM" }) },
   { name: "boxed/number-valueOf-overridden", make: () => tamper(new Number(5), { valueOf: () => 12345 }) },
   { name: "boxed/number-toString-overridden", make: () => tamper(new Number(5), { toString: () => "999" }) },
@@ -711,8 +711,33 @@ describe("D-40-H — steps 4a and 4b coerce, and only 4c and 4d read a slot", ()
     const formulaFor = (value: unknown): number =>
       Buffer.byteLength(JSON.stringify({ k: value }), "utf8");
 
-    const stringWithValueOf = tamper(new String("xy"), { valueOf: () => "VO" });
+    const stringWithValueOf = tamper(new String("xy"), { valueOf: () => "VALUE-OF-BRANCH" });
     const numberWithToString = tamper(new Number(5), { toString: () => "999" });
+
+    /**
+     * **The control, and the sweep is what found it missing.** These cells assert a NUMBER, so an
+     * override that happens to serialise to the same length as the slot's own value **cannot
+     * fail** whatever hint the implementation runs. The first version used `"VO"` against
+     * `"xy"` — two characters each — and a deliberately wrong-hinted `unbox` reddened every other
+     * assertion in this file and left these two green, which is a discriminator designed out of
+     * reach by its own fixture.
+     *
+     * So the wrong hint's answer is computed and required to be distinguishable, rather than
+     * arranged and trusted. Whoever next edits one of these fixture strings finds out here.
+     */
+    const wrongHint = (value: unknown): number =>
+      Buffer.byteLength(
+        JSON.stringify({ k: (value as { valueOf: () => unknown }).valueOf() }),
+        "utf8",
+      );
+    expect(
+      wrongHint(stringWithValueOf),
+      "the override must be length-distinguishable from the slot, or this cell cannot fail",
+    ).not.toBe(formulaFor(stringWithValueOf));
+    expect(
+      Buffer.byteLength(JSON.stringify({ k: String(numberWithToString) }), "utf8"),
+      "the override must be length-distinguishable from the slot, or this cell cannot fail",
+    ).not.toBe(formulaFor(numberWithToString));
 
     expect(formulaFor(stringWithValueOf), "string hint tries toString first").toBe(
       formulaFor(new String("xy")),
