@@ -4386,8 +4386,326 @@ failed**, which is the one thing this module's boundary exists to prevent. **Att
 ruling it agrees with is a sharper move than attacking the ruling.**
 
 **Ruled: the refusal gets its own sealed class rendered as its own `type`**, and either the call moves
-outside `withProfileStore` or the wrapper passes it through unrelabelled. **`error-hygiene` goes to 23 at
-T130's merge, not 22**, re-stated against the tree actually merged.
+outside `withProfileStore` or the wrapper passes it through unrelabelled. ~~`error-hygiene` goes to 23 at
+T130's merge, not 22~~ — **CORRECTED by D-130-14: 23 counts a class nobody has written.** It is **22 if
+T130 merges as it stands and 23 only once this ruling is implemented**, re-stated against the tree
+actually merged and never carried as a prediction.
+
+## I ran a full suite inside a slot I had granted by name, for the second time
+
+I named T140's blind author holder at `580d5f1` and then ran `npm test` on base while it was working.
+**The duration says so: 54s at `580d5f1` alone, 155s during its run** — same tree, same machine, nearly
+three times the wall clock. **So the number that run produced is not quotable and I am not quoting it**;
+contention is exactly the condition under which a DB-touching suite goes flaky, and a total measured
+through it cannot be told from a total measured cleanly.
+
+**Second instance, and the first one is already a rule here.** I exempted myself once by calling a
+`vitest` run *the file-parsing guards* — a name used as the property, inside the rule that says a name is
+not the property. This time I did not even reach for a name. **The rule is a queue, and a queue with an
+author who steps out of it is a preference.** The gates below are the ones that cost no database:
+typecheck, lint, and the two guard files. The suite total is owed and will be re-measured when the slot
+comes back to me.
+
+## D-130-11: the pin machinery goes, and the compiler is why the question existed at all
+
+T130's adversary found that `pinSpellingFor`, `blueprintPinSpellings`, `cardPinSpellings` and
+`type PinSpelling` read `record.pinned`, so removing `pinned` from the interface makes `contract.ts`
+**fail to typecheck** with them left in. Their only consumer is `pins.test.ts`, which does not merge.
+
+**It refused to widen the repair on its own authority even though the compiler forces it**, and asked
+instead — *widening a repair to a blind instrument is the one thing an adversary should never do on its
+own authority*. **That distinction is exactly right and the answer is trivial**: remove them, they are pin
+machinery and D-130-06 cut pins. **The point worth keeping is that "the compiler forces it" and "it is
+mine to do" are different claims**, and a repair that grows because a type broke is still a repair that
+grew.
+
+**Its scope finding shrinks D-130-09's work rather than growing it**: `asWireProfileRecord` derives from
+`RECORD_KEYS` and `COUNT_KEYS` rather than hardcoding members, so repairing the two constants repairs the
+wire validator for free and resurrects `routes.test.ts` with no second edit. **And it flagged the trap in
+its own prediction**: `routes.test.ts:207` is `not.toContain("pinned")`, which post-cut **can no longer
+fail** — an equivalent-mutant cell whose green is worth nothing and must not be counted as coverage.
+Same for `visibility.test.ts:231`, whose leak sweep says *the only member that can carry an archive
+identifier is `pinned`* and now has nothing to sweep: **reported as VACUOUS, not as a pass.**
+
+## The owner's four ceilings fill three of nine cells, and the type refuses to let the gap be quiet
+
+T230's implementer transcribed the ruling into `Readonly<Record<string, Readonly<Record<Tier,
+BucketLimit>>>>` and found it does not fit. **Three buckets × three tiers is nine cells; the ruling names
+four quantities and one of them names no tier at all** — `upload 30/hour` is *a number I know and cannot
+place*, its words. `anonymous read`, `keyed read` and `write (keyed)` determine three cells; six are
+undetermined.
+
+**It did not populate three and invent six, and the type would not have let it do so quietly**: the inner
+map is TOTAL over `Tier`, so a three-cell object does not typecheck. **Its own published type refusing a
+correct instruction is the useful part** — the gap could not be papered over even by an author willing to.
+
+**Two structural questions it declined to answer**, both real:
+**(a) does an ABSENT tier refuse, as an absent bucket does?** `limitFor` already reads through
+`Object.hasOwn` at both levels, so relaxing to `Partial<Record<Tier, BucketLimit>>` transcribes the ruling
+**inventing nothing** — and `write.anonymous` and `upload.anonymous` become absent-and-refused, which is
+correct by construction since an anonymous caller has no session. **But `read.account` absent-and-refused
+would refuse every signed-in reader**, so omission cannot be the universal rule.
+**(b) is `account` a tier the owner intends at all?** The ruling's words are *anonymous read*, *keyed
+read*, *write (keyed)*, *upload* — **two axes, not three** — which reads as *for rate purposes an account
+without a key IS anonymous*. **That would be a change to D-230-03's `Tier`, not to the numbers.**
+
+**Put to the owner rather than resolved here.** Its own recommendation — `account` falls back to
+`anonymous` unless a higher ceiling is named — needs zero new numbers and matches the two-axis phrasing,
+**and it says plainly that it is a rule it would be inventing, which is why it is a proposal.**
+
+## A zsh modifier turned a comparison into zeros that looked like answers
+
+`git show "$ref:tests/..."` — **zsh reads `:t` as its own tail modifier**, so the argument became
+`backendests/server/...`, every `git show` failed, and `grep -c` over the empty result printed a clean `0`
+for every count. **Sixth zsh instance in this run** (its own count said fifth; it had not been told about
+T130's implementer's digest, which was the fifth).
+
+**And the family is now unmistakable**: `SCOPE="a b c"` reaching one argument, eight newline-joined paths
+reaching one argument, and now a parameter eating its own suffix as a modifier. **All three produced
+well-formed output from an instrument that never ran** — *No test files found*, a valid sha256, a column
+of `0`. **What caught this one was the `fatal:` lines interleaved above the numbers, not the numbers**,
+which is the same tell as the digest and is a channel a skim discards.
+
+## The scratch worktree is EVIDENCE the blindness held, and `git worktree prune` destroys it silently
+
+T130's blind author left a worktree registered at
+`/private/tmp/claude-501/…-t130-profiles-tests/76db55fb…/scratchpad/t130-sighted`, checked out at
+`1b90422`. T140's blind author reported it as an orphan; **T130's adversary read the sha and found it is
+the opposite of a hazard.**
+
+**Verified here independently rather than taken:** `git merge-base feat/t130-profiles test/t130-profiles`
+is `1b904224c50332e1d072375097ebdb76ae3b3868` exactly, `git ls-tree -r 1b90422 lib/server/profiles`
+returns **nothing**, and the seven implementation files appear only at `6ffdb17` — not even at `eccab30`.
+**So a worktree named *sighted*, belonging to the blind author of this task, was pointed at the common
+ancestor and could not have seen the implementation it was writing tests against.** That is the blindness
+claim made checkable after the fact, which nothing else in this run is.
+
+**And the hazard is not the loss — it is the tidying.** The directory is under `tmp`. When `tmp` is
+reaped the directory vanishes and the **registration remains**, so the repository carries an entry
+pointing at nothing. Somebody later runs `git worktree prune` to clean the list, **it succeeds silently**,
+and **the record that a sighted worktree stood at the merge base goes with it.** The evidence is worth
+more than the directory, so it is written here where a prune cannot reach it:
+
+        t130-sighted  registered at 1b90422  ==  merge-base(feat/t130-profiles, test/t130-profiles)
+                      lib/server/profiles/ absent at that commit; present only from 6ffdb17
+
+**A cleanup command that cannot fail is the same shape as a guard that cannot fail**, and this one deletes
+a measurement rather than reporting one.
+
+## A "before" reading taken during someone else's run is a stale base line wearing a fresh label
+
+T130's adversary declined to count `darkprint%` when asked, because T230's implementer holds the slot and
+a count taken now **measures its scratch databases mid-flight rather than a baseline.** Its own framing:
+*a number labelled "before" that was actually taken during someone else's run is the stale-base-line-in-
+present-tense mistake one table over.*
+
+**It is the same error I made, moved from time to ownership.** I carried a base line measured at an older
+sha into a dispatch and labelled it present tense; this would carry a number measured through another
+session's load and label it *mine, before*. **A measurement owes its sha, its tense AND the state of the
+host it was taken on** — and the third is the one this run keeps discovering, most recently in my own
+54s-versus-155s suite.
+
+## D-130-12: the 404 detail is published, and THREE merged routes already agreed on its shape
+
+T130's implementer reported, holding it with no sha, that it invented `"No such handle."` for a `detail`
+D-130-05 never published — **and that a blind author pinning that string had to invent one too**, so a
+correct route would red against a correct suite over a string nobody wrote down. T081's F2 exactly, and
+T-04's *no task publishes the admissible message form per rejection path*, which is a checkbox on my own
+contract checklist.
+
+**The coin flip did not land, and the reason is worth more than the escape.** I read the blind suite
+before ruling: `unknown-handle.test.ts` **pins no string at all.** It asserts that three unknown-handle
+answers are **one value between them** — an invariance, not a spelling — and its header says why in a
+sentence that is better than my ruling would have been: *there is nothing here to pin and the reason is a
+ruling rather than a silence, which is a different fact and worth the sentence.* **One party invented and
+the other refused to; the gap was real and only one of the two walked into it.**
+
+**And reading the tree to rule found what neither reported: FIVE spellings of a 404 detail have merged.**
+
+        T050  "account: no such account."      <resource>: no such <thing>.
+        T080  "blueprint: no such bundle."     same shape, named constant
+        T020  "card: no such card."            same shape, named constant
+        T090  "Not found."                     T000's default, unadopted
+        T130  "No such handle."                a fifth shape
+
+**Three of the four merged routes agree, so this was never an open question — it was an unwritten
+convention, which is the failure mode a convention has.** Ruled: **`"author: no such handle."`**, as a
+named constant like T080's and T020's, published in T130's block. T090's `"Not found."` is the outlier and
+is left alone; changing a merged, tagged route to tidy a convention is not what this ruling is for.
+
+**The mechanism its implementer reported on itself is the part I am keeping.** It noticed the gap while
+writing the route, wrote itself a note to raise it with the gate results, and then did not — **through a
+gate report and a handover, both of which had a slot for it.** Not the *acknowledging is not answering*
+failure: **it never asked.** A finding parked in one's own head is not held anywhere, and the two
+documents that would have carried it both went out complete-looking.
+
+## D-130-13: a barrel export nothing consumes, and one operation name over two statements
+
+**`withProfileStore` is published and no caller needs it** — the route uses `withProfileErrors` only.
+Its implementer reports the mechanism plainly: *I matched T081's barrel shape rather than deriving it from
+consumers.* **Ruled: it comes off the barrel and stays module-internal.** A barrel is a contract with
+consumers, and **copying a neighbour's barrel is the contract following a precedent rather than a need** —
+T081's surface is not authority for T130's. `error-hygiene` is unaffected: it counts exported error
+classes and this is a function.
+
+**`read.ts` passes `"getProfile"` to both wrapped statements** — the account read and the term count — so
+a fault in either renders identically. **That is the convention working as ruled** (the operation is the
+published reader, not the statement) **and it stays.** The cost is stated rather than fixed: an adversary
+driving a store fault **cannot tell which statement it reached from the message alone**, so no store-fault
+cell may claim to have reached a specific one. Making them distinguishable would make T130 the one module
+that names statements in its rendering, which is a bigger change than the testability it buys.
+
+## One profile request reads the entire registry, and it is the PRICE of D-130-04
+
+`counts.blueprints` calls `blueprints(db, actor)` → `loadSnapshot` → `db.select().from(schema.bundle)` for
+**every bundle in the archive**, then every release of every one, then the cards. **So
+`GET /api/authors/[handle]` costs a full-registry scan to answer a count of one author's blueprints,
+unbounded in the archive's size.** Reported by its implementer as **read, not measured** — `snapshot.ts`
+read, nothing timed — and labelled that way, which is the labelling this run keeps having to ask for.
+
+**It is the price of the ruling, not a defect against it, and that is why it is a record rather than a
+fix.** The cheap query is `bundle` filtered by `owner_id`, **and that is the second `readable()`
+D-130-04 forbids.** The two are one trade: correctness of visibility bought with the cost of reading
+everything. **A cost recorded as the ruling's price cannot later be reported as somebody's laziness**, and
+whoever wants it cheap needs a T080 amendment — T132's shape again. §11.1 at T130's merge, beside the
+other two shortcuts, in those words.
+
+## D-130-14: a ruling made after a round closes is unimplemented contract, and it needs a HOLDER and a MOMENT
+
+T130's implementer, released and holding nothing, reported the fourth finding I invited: **D-130-12 and
+D-130-10 are now contract that no code satisfies.** `6ffdb17` emits `"No such handle."`, not
+`"author: no such handle."`; the vocabulary refusal has no sealed class and no arm. **Both landed after
+the round closed.**
+
+**It is the shape this file already names** — *an amendment to a published signature is not done when it
+is written; it is done when the module matches it or when someone is holding a ticket to make it match* —
+**and neither was true of either.** Not a charge, and it said so: T040's precedent is that an implementer
+cannot have built a ruling that did not exist, and it is not asking for the tree back mid-adversary.
+
+**And `error-hygiene = 23` was the tell.** I wrote it into two places as a fact about the merge. **It is a
+count of classes, one of which nobody has written**, so it would have sat in a report as a measurement of
+code that does not exist. Corrected in both places: **22 if T130 merges as it stands, 23 only once
+D-130-10 is implemented**, and never carried forward as a prediction.
+
+**Ruled — holder and moment, both named.** Both amendments are **owed by T130's implementer**, at **the
+moment the adversary's round returns its verdict**, before any merge. They enter the same queue as the
+round's charges without being charges. **The adversary must not spend a cell on either divergence**: they
+are dated contract, not defects, and a cell that reds on one measures the date a ruling was written.
+
+## A distinction stated in your own words is not a distinction you are applying
+
+T130's implementer's own diagnosis of D-130-10, and it is better than my ruling was. **`http.ts` argues at
+length that pulling `getPublicAuthor`'s fault into the wrapper would relabel a store that was working** —
+and then `terms.ts`, **in the same commit**, seals a *parse* failure as `store-failed`, naming a store
+that was working, for the same reason one level in.
+
+**The tell it names is the one to keep: the argument reads as finished because it IS finished — about
+foreign faults, which is the case it was thinking about.** A distinction written down completely for the
+instance that provoked it looks handled, and the second instance never gets asked. **Not a lapse of
+attention; a property of having done the work well once.**
+
+## Two candidates hunted and both dead, and the second died because the author had priced it out loud
+
+I handed T130's adversary a hunting pattern — *a careful argument in one file not carried to the file
+beside it* — and it came back with **two candidates, both dead, reported as dead.** *I would rather hand
+you that than a third candidate padded to look like a yield.*
+
+**Candidate 1, release-level visibility.** `terms.ts` argues about *bundle* visibility and then queries
+`release` joined to `bundle` with no visibility predicate on releases — **the exact shape.** Dead on the
+schema, and verified here rather than taken: `visibility` appears at `schema.ts:81` (an account default),
+`:152` (`bundle`) and `:209` (`card_version`), and `release` begins at `:174` carrying none. **There is no
+release-level visibility to fail to carry**, so counting every release of a visible bundle is right, and
+the header's *every visible release* is loose wording rather than an unexamined inheritance.
+
+**Candidate 2, the fourth barrel reaching the route, and this is the instructive one.** `http.ts` closes
+its recognised set over *the barrels `getProfile` calls*, while `route.ts` beside it calls
+`getSharedDbClient()` and `actorFrom()` — neither raising a recognised class, so both land on the rethrow
+arm and answer Next's generic 500 outside the B-03 envelope, **which is the precise defect `http.ts` says
+survived a merge and a tag on eleven registry routes.** Dead because **the rethrow arm names both by
+name**: *reached by a misconfigured host — `getSharedDbClient()` with `DATABASE_URL` unset, `actorFrom`
+with `SESSION_SECRET` unset and a session cookie present.*
+
+**Charging it would have been charging a cost the author priced out loud** — its phrase, and it is the
+cleanest statement this run has of the difference between an undisclosed gap and a disclosed one. **A
+hunting pattern that finds a disclosed cost has found the author already there.**
+
+## A filter that looks like duplication and is carrying the weight
+
+Not a charge, and it is the observation most likely to be destroyed by someone tidying. `read.ts` selects
+owned bundles in JS by `b.ownerHandle === handle`; `terms.ts` re-scopes in SQL by
+`bundle.ownerId = accountId`. **They agree only because both descend from one validated handle** — and the
+SQL filter is **load-bearing rather than redundant**, because `bundle_owner_slug_key` is unique on
+`(ownerId, slug)` and **not** on `slug`, so `inArray(bundle.slug, slugs)` alone would reach **another
+owner's identically-slugged bundle.** Verified at `schema.ts:159` and B-06's own line.
+
+**Two ownership notions that coincidentally agree are a deletion waiting to happen**, and a message is not
+where that survives. **Owed as a comment in `terms.ts`, by T130's implementer, at the same moment as
+D-130-14's two amendments** — which is a holder and a moment, applied to the rule that produced them.
+
+## A permanent 1-in-230 red sat in a merged suite, and its own comment claimed the property it lacked
+
+`tests/server/t010/integrity.test.ts > AC5` minted `first` once and then re-minted **only** `second` up to
+199 times, so a run where `first` drew the smallest of the candidates **cannot** satisfy its own
+precondition. `marker()` carries `Math.random()`, so the draw is fresh per run. **Analytically `1/199` =
+0.503%; T230's implementer measured 87 in 20 000 markers, 0.435%; I simulated both logics over 200 000
+draws and got 1 035 old-logic failures (0.517%) against 0 for the fix.**
+
+**The comment above the loop said *the digests are minted until they land on the required order rather
+than assumed into it*, and the minting is one-sided, so they are assumed after all.** A comment asserting
+the property its code lacks is worse than no comment: it is the sentence a reader checks the loop
+against and stops.
+
+**What identified it was separating it from a genuine artifact in the same triple.** T230's implementer
+got three non-identical failing sets at an identical total, and rather than report the disjunction it
+chased both: **one moved for load and one moved for a coin.** *A defect is stable and an artifact moves* —
+and a report of `2 failed` twice would have read as one phenomenon.
+
+Fixed to two digests and a swap, O(1) and unfailable, with an added assertion that the two mints differ,
+**because `>` and `>=` differ for exactly the collision case and a non-strict order makes the criterion
+vacuous.**
+
+## `.catch(err => err as Error)` types the RESOLVED value as an error too
+
+T230's implementer's own typecheck error before its triple, and it is another guard that could not fail:
+a module that **accepted** the label would have reached the absence assertion carrying a record whose
+`.message` is `undefined`, **which `not.toContain` passes.** In the cell written to check a message.
+Fixed to a two-armed `then` whose resolve arm answers `undefined` plus an `instanceof`, so the absence
+check is reachable only through an actual rejection.
+
+## `D-40-F` is a ratio of ratios and it still crossed, because the two windows differ
+
+`overhead(dense) / overhead(flat) < 100` where each `overhead` is `fastest(measure) / fastest(stringify)`.
+**The ratio is the correct instrument** — *a millisecond bound is host-dependent; a ratio cancels the
+host* — **but a ratio whose numerator and denominator are timed in DIFFERENT windows does not cancel a
+host whose load changes between them.** `fastest` takes a min over repeats, which resists noise and not
+drift. Measured at 102.69 against a bound of 100 at peak load 57; five isolated runs at load 12–22 all
+passed. **Not charged, reported, and it is T040's merged code.**
+
+## Two scratch databases are invisible to every session's residue check, and they are still there
+
+`darkprint_t090_attractor_33059` and `darkprint_t090_attractor_broken_33059` match no `darkprint_test%`
+grep. **Six sessions counting that prefix would all report clean over them.** Confirmed still present by
+T230's implementer, which also counted with the repo's own `pg` client rather than `psql` — **`psql` is
+not on this host's PATH, which the residue rule assumes.**
+
+**And the three `darkprint_test_*` orphans sat unchanged across six full suites with zero connections
+throughout.** That is the evidence I said I would rule on, and **I am ruling: still not dropped.** Its own
+reading is why — *evidence of unattributable, not of unused; zero connections is what a session between
+runs looks like too.* **The untried step is attribution rather than inference**, so the question goes to
+the sessions by name before anything is dropped.
+
+## `peers=0` must not read as `nobody was working`, and both directions of the bias were stated
+
+T230's implementer's sampler filters on **activity** (`%CPU >= 5`) and ownership by **pgid**, so its own
+shell, npm shim and workers are excluded as a group before any label is read — **the name is only a
+label** — and it falsified the sampler against a decoy in another process group before using it. Then it
+stated **both** biases: it over-reports peers (anything whose args contain `darkprint`, including an
+editor) and **under-reports** them (a peer running from a scratch worktree names no darkprint path and
+lands in `host` — and this run builds throwaway trees, so the hole is real; its own `claude` process
+classifies as `host` for the same reason).
+
+**Three identical runs at peak load 41 is a stronger determinism claim than three at load 5**, and none of
+that load is serialisable by any slot: a Virtualization VM, WindowServer, `corespotlightd`, Spotify.
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
@@ -14216,12 +14534,25 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   three characters, registrable with a secret-scanning partner, short enough that a key stays readable in
   a `.env`. `MAX_LABEL_LENGTH = 100` **ratified by me and not escalated**: unlike the prefix it commits to
   nothing outside the product, and no reading of it changes the work.
-  **Rate ceilings, CONFIRMED by the owner and generous by design, per B-17's own stated cost:**
+  **Rate ceilings, CONFIRMED by the owner (2026-08-20) and generous by design, per B-17's own stated
+  cost. Nine cells of nine, after T230's implementer showed the first ruling filled three:**
 
-        anonymous read     600 / hour      (10/min sustained)
-        keyed read       6,000 / hour
-        write (keyed)      120 / hour
-        upload              30 / hour
+                          anonymous     account         key
+        read                600 / h     600 / h     6,000 / h
+        write               refused     120 / h       120 / h
+        upload              refused      30 / h        30 / h
+
+  **`account` reads at the anonymous rate and the KEY is what lifts it, which makes AC3 literal**: *a
+  valid API key raises the ceiling* is the key's entire effect, ×10 on reads and nothing else. **No number
+  here was invented** — the four the owner ruled, placed. The alternative considered and declined was a
+  middle read ceiling for signed-in callers, which would have been **one number nobody ruled** and would
+  have weakened the only reason to register a key.
+  **`anonymous` is `refused` for write and upload by CONSTRUCTION, not by choice**: both need a session,
+  so the cell cannot be reached rather than being set low. `limitFor` keeps refusing every bucket outside
+  this table, so a bucket nobody sized still cannot read as permissive.
+  **`upload`'s tier was the one thing the ruling did not determine** — T230's implementer flagged it as *a
+  number I know and cannot place* rather than placing it, and it is placed here at `account` and above so
+  an ordinary signed-in uploader is not refused, which B-17's stated cost is precisely about.
 
   **The reason is B-17's**: an agent crawling the registry must never notice the ceiling and a scraper
   re-fetching every bundle must. `DEFAULT_LIMITS` stops being `{}` for these four buckets and `limitFor`
@@ -14301,6 +14632,42 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T130, Profiles and the public author surface
 
 - **State:** impl-done
+- **Owed with D-130-14, same holder and moment: a comment in `terms.ts` saying its
+  `bundle.ownerId = accountId` filter is LOAD-BEARING.** It looks redundant beside `read.ts`'s JS
+  `ownerHandle` filter and is not: `bundle_owner_slug_key` is unique on `(ownerId, slug)` and not on
+  `slug`, so `inArray(bundle.slug, slugs)` alone reaches another owner's identically-slugged bundle.
+  Found by the adversary, verified at `schema.ts:159`. **Two ownership notions that coincidentally agree
+  are a deletion waiting to happen.**
+- **D-130-14: D-130-12 and D-130-10 are unimplemented contract, owed by T130's implementer at the
+  adversary's verdict, before any merge.** Both landed after the round closed, so they are dated contract
+  rather than defects — **the adversary must not spend a cell on either divergence.** `6ffdb17` emits
+  `"No such handle."` and has no sealed class for the vocabulary refusal. Reported by the implementer
+  itself, released and holding nothing, against its own work.
+- **D-130-12: the 404 `detail` is `"author: no such handle."`**, as a named constant. Three merged
+  routes already agreed on `<resource>: no such <thing>.` — T050's `account:`, T080's `blueprint:`,
+  T020's `card:` — so this was an unwritten convention rather than an open question. The shipped
+  `"No such handle."` was invented by the implementer and reported by it; **the blind suite pins no string
+  at all**, asserting only that three unknown-handle answers are one value between them, so the two halves
+  did not in fact collide. T090's `"Not found."` stays as it is.
+- **D-130-13: `withProfileStore` comes OFF the barrel** — nothing consumes it, and it was there because
+  T081's barrel shape was copied rather than derived from consumers. **`read.ts`'s single `"getProfile"`
+  over both wrapped statements STANDS**, with the cost stated: a store fault in the account read and one
+  in the term count render identically, so **no store-fault cell may claim to have reached a specific
+  statement.**
+- **Recorded cost, for §11.1 at merge:** `counts.blueprints` reaches `loadSnapshot`, so one
+  `GET /api/authors/[handle]` scans the entire registry — every bundle, every release, then the cards —
+  to count one author's blueprints. **The cheap query is `bundle` filtered by `owner_id`, which is the
+  second `readable()` D-130-04 forbids**, so this is the ruling's price rather than a defect against it.
+  Read from `snapshot.ts`, not measured.
+- **D-130-11: remove `pinSpellingFor`, `blueprintPinSpellings`, `cardPinSpellings` and
+  `type PinSpelling` with the rest.** They read `record.pinned`, so `contract.ts` will not typecheck
+  without them going, and their only consumer is `pins.test.ts`, which does not merge. **The adversary
+  asked rather than widening a blind instrument on its own authority, and that was right even though the
+  compiler forced the answer** — *the compiler forces it* and *it is mine to do* are different claims.
+  The counts error message quoting `cards` is prose rather than an arm: trim it in the same edit.
+  **Two cells go VACUOUS rather than green and are reported that way**: `routes.test.ts:207`
+  (`not.toContain("pinned")`) can no longer fail, and `visibility.test.ts:231`'s leak sweep has nothing
+  left to sweep.
 - **D-130-09 supersedes the denominator below: it is an OUTPUT of the round, not an input.** Its
   adversary measured three faults in the 43 before touching the tree — 60 counted static `it(` sites and
   three loops emit 9 cells so runtime is ~66; the cut bleeds ~10 more stale cells into `surface`,
@@ -14313,7 +14680,8 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   inside `withProfileStore("getProfile", …)`, so an unparseable vocabulary becomes a `ProfileStoreError`
   and 500s as *Store failed* — **naming a store that was working**, which is the relabelling `store.ts`'s
   own header refuses. Its own sealed class, its own `type`; the call moves outside the wrapper or the
-  wrapper passes it through unrelabelled. **`error-hygiene` goes to 23 at merge, not 22.**
+  wrapper passes it through unrelabelled. **`error-hygiene` is 22 if T130 merges as it stands, 23 only
+  once this ruling is implemented** (D-130-14) — re-stated against the tree actually merged.
 - **Adversary round scope (D-130-08): 43 of the blind suite's 60 cells.** `pins.test.ts` (10) and
   `follow.test.ts` (7) drive `setPins` and `toggleFollow`, which **D-130-06 cut to T131 after the blind
   suite was committed**. They do not merge, they are not deleted and they are not skipped; they stay on
