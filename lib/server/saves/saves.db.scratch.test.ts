@@ -337,6 +337,48 @@ describe.skipIf(!hasDb)("lib/server/saves against Postgres", () => {
   });
 
   /* ============================================================
+     D-140-08 — the published listing order
+     ============================================================ */
+
+  describe("D-140-08", () => {
+    it("orders ties by (target_kind, ref_id), deterministically across reads", async () => {
+      const actor = actorFor(owner);
+      /* All four share ONE `created_at`, so `saved_at DESC` decides nothing between them and
+         the tie-break is the whole of the answer. Written directly rather than through
+         `saveTarget`, because the module has no way to make two saves share an instant and
+         that is exactly the state the tie-break exists for. */
+      const tied = new Date("2026-08-20T12:00:00.000Z");
+      const older = new Date("2026-08-19T12:00:00.000Z");
+      await makeCardVersion(owner, "cc", "1.0.0", "public");
+      await makeCardVersion(owner, "aa", "1.0.0", "public");
+      await makeOntologyVersion("1.0.0", ["tt"]);
+      const b = await makeBundle(owner, "b-order", "public");
+
+      for (const row of [
+        { targetKind: "term" as const, targetId: "tt", createdAt: tied },
+        { targetKind: "card" as const, targetId: "cc", createdAt: tied },
+        { targetKind: "card" as const, targetId: "aa", createdAt: tied },
+        { targetKind: "blueprint" as const, targetId: b, createdAt: older },
+      ]) {
+        await db.insert(schema.save).values({ accountId: owner, ...row });
+      }
+
+      const expected = [`card:aa`, `card:cc`, `term:tt`, `blueprint:${b}`];
+      const seen = (await listSaves(db, actor, owner)).map((s) => `${s.targetKind}:${s.refId}`);
+
+      /* `blueprint` sorts LAST despite being first in the enum, because `saved_at DESC` beats
+         the tie-break — which is what makes this a test of the whole ORDER BY rather than of
+         its second and third terms. */
+      expect(seen).toEqual(expected);
+
+      /* Read twice: a random tie-break can match a fixed expectation by luck once, and the
+         property being ruled is that the order does not vary between two reads of one set. */
+      const again = (await listSaves(db, actor, owner)).map((s) => `${s.targetKind}:${s.refId}`);
+      expect(again).toEqual(seen);
+    });
+  });
+
+  /* ============================================================
      AC1 — the count is private too, against a real database
      ============================================================ */
 

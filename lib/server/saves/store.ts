@@ -68,12 +68,29 @@ export async function withStore<T>(operation: string, work: () => Promise<T>): P
 /**
  * Every save row an account holds, newest first.
  *
- * **The order is this module's choice and the block publishes none.** Newest-first is what
- * a bookmark list is everywhere in the product, and the `id` tie-break is what makes it a
- * total order rather than one Postgres may vary between two rows written in the same
- * transaction — an unordered read would make every downstream assertion flaky for a reason
- * nobody could reproduce. Reported in the handback rather than treated as settled, since a
- * published order would bind both halves and there is none.
+ * **D-140-08: `saved_at DESC, target_kind ASC, ref_id ASC`.** Newest-first is what a bookmark
+ * list is everywhere in the product, and a tie-break is what stops two rows written in the
+ * same instant coming back in an order Postgres is free to vary — an unordered read would
+ * make every downstream assertion flaky for a reason nobody could reproduce.
+ *
+ * **The first version tie-broke on `save.id` and that defeated its own reason.** `id` is
+ * `uuid().primaryKey().defaultRandom()`, so rows that tie on `created_at` were ordered by a
+ * RANDOM value: not merely unobservable through `SaveRecord`, but arbitrary and unstable
+ * between two runs of the same data. A random tie-break is an unordered read with extra
+ * steps, for exactly the rows that tie.
+ *
+ * `(target_kind, ref_id)` is total for the reason that matters: `save_account_target_key` is
+ * unique on `(account_id, target_kind, target_id)`, so within one account no two rows tie on
+ * all three. **And it is total in terms a caller can compute from the records alone**, which
+ * `id` never was — a blind author can predict this order from `SaveRecord`; it could not
+ * predict one keyed on a column no published shape carries.
+ *
+ * **One agreement here is luck and is written down so nobody spends it.** `ORDER BY` on a
+ * Postgres enum sorts by DECLARATION order, not alphabetically. `target_kind` is declared
+ * `["blueprint", "card", "term"]` (`lib/db/schema.ts:46`), which happens to be alphabetical
+ * too — so the SQL order and the obvious reading of `ASC` coincide **today, by coincidence
+ * rather than by design**. A fourth member declared out of alphabetical order would separate
+ * them silently, and nothing here would red.
  */
 export async function saveRowsFor(
   db: Db,
@@ -83,7 +100,7 @@ export async function saveRowsFor(
     .select()
     .from(schema.save)
     .where(eq(schema.save.accountId, accountId))
-    .orderBy(desc(schema.save.createdAt), asc(schema.save.id));
+    .orderBy(desc(schema.save.createdAt), asc(schema.save.targetKind), asc(schema.save.targetId));
 }
 
 /**
