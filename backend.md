@@ -3263,6 +3263,29 @@ and a prediction written from the ruling will over-separate. **A MISS whose diag
 right and I was wrong* — the fourth this run, and the only one where the cause is that the fixtures
 cannot be as clean as the rule.**
 
+## The audit that ends the sequence is *what does this code re-implement rather than delegate*
+
+**Five charges on one module share one mechanism: a transcription read as the thing transcribed.** A
+**list** for the serialiser's branches (D-40-G). **Four reads** for two coercions and two reads
+(D-40-H). A **length** for a key set (D-40-I). A **`typeof`** for a spec type predicate (D-40-J). And a
+**raw `.length`** for `ToLength` (D-40-K).
+
+**T040's implementer found the fifth by looking where round 6 had named as unwalked, and in doing so
+supplied the domain that ends the sequence rather than extending it: `QuoteJSONString` is clean, and it
+is clean BECAUSE IT IS DELEGATED.** The walk spends `Buffer.byteLength(JSON.stringify(value))` for
+strings and keys, **so the quoter is never read by anyone here and cannot be mis-transcribed.**
+
+**So the audit is not *which spec algorithms exist* but *which spec operations does this code
+re-implement rather than delegate*.** Delegated is safe **by construction**; transcribed is a
+**candidate**, and the candidate set is small, enumerable and written in the code itself. **Every one of
+the five charges is inside it and every clean probe is outside it.**
+
+**That is a constructed domain for a defect class that has produced five separate rounds**, and it
+arrived from the party being charged, by treating a stated gap as an invitation rather than as a
+hypothetical. **It also probed the delegated one anyway — 7 of 7 — and swept two transcriptions nobody
+had named.** *Clean because delegated* is a claim; **7 of 7 is the measurement that makes it one worth
+believing.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -10693,6 +10716,27 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         UnserializableValueError  "<operation>: the submission contains a value JSON cannot serialise."
 
   **The value is never named** — an unserialisable input's own content is the last thing a refusal about it should carry, which is the same clause the size refusal carries. **Barrel-only, and that is not a reason to leave it untyped**: D-40-C was barrel-only too, and T100/T263/T270 consume this barrel in-process. **Raised by the blind author rather than guessed at — which is exactly what the implementer did for the cycle at D-40-22, and the reason that ruling exists.**
+
+  **D-40-K, ruled (found by T040's implementer looking where round 6 named as unwalked): `LengthOfArrayLike` applies `ToLength`, and the walk stores `container.length` RAW.**
+
+  `Array.isArray` pierces a `Proxy` and so does the spec's `IsArray`, so a proxied array reaches `SerializeJSONArray`, where `len = ToLength(Get(value, "length"))` **clamps**.
+
+        length trap -> 1.5              formula 10   walk 13         DIVERGES
+        length trap -> 2.9              formula 13   walk 16         DIVERGES
+        length trap -> NaN              formula  8   walk REFUSES    DIVERGES
+        length trap -> -1               formula  8   walk  8         agrees   <- control
+        length trap -> "2"              formula 13   walk 13         agrees   <- control
+        length trap -> {valueOf:()=>2}  formula 13   walk 13         agrees   <- control
+
+  **The three agreeing cells isolate the cause and are the reason this is a ruling rather than a patch.** `-1` agrees because `index >= -1` is immediately true and `ToLength(-1)` is 0; `"2"` and `{valueOf:()=>2}` agree because `>=` coerces exactly as `ToNumber` would. **So it is not *any odd length*: it is precisely the two things `ToLength` does that `>=` does not — truncation toward zero, and NaN becoming 0.**
+
+  **The NaN cell is severe: `index >= NaN` is always false, so the loop does not terminate on the extent at all** and runs until the byte budget stops it. **A walk bounded only by `maxBytes` is D-40-B's clause a FIFTH time — in the branch the previous round fixed.**
+
+  **Ruled: apply `ToLength`. No design space — the spec names the operation.** And **the refusal-set change is published here rather than left in a Log entry, on D-40-D's precedent**: today `{k: proxyWithNaNLength}` is **refused** and after the clamp it is **accepted at 8 bytes**, which is what the ruled number says. **Every input that previously produced a number still produces the same one — the three agreeing cells are exactly that guarantee — and inputs that previously produced nothing now produce the ruled answer.** Same shape as `MAX_NESTING_DEPTH`.
+
+  **One residual, ruled as a stated divergence rather than closed: at `length -> 1e30` the formula throws `RangeError` building a 2^53-element string while the walk refuses with `LimitExceededError`. Both refuse; the kinds differ.** **Making the walk throw `RangeError` to match would reintroduce D-40-D**, so the walk refuses for the better reason and the difference is recorded rather than manufactured away.
+
+  **`QuoteJSONString` is CLEAN, and the reason is the useful half: it is DELEGATED, not transcribed.** The walk spends `Buffer.byteLength(JSON.stringify(value))` for a string **and** for a key, so the quoter is never read by anyone here. Probed anyway — lone surrogates, an astral pair, all seven Table-74 escapes, `U+0001`, `U+007F` which is deliberately not escaped, and an astral-plus-lone-surrogate **key**: **7 of 7 agree.** Two further transcriptions nobody had named were swept and agree: `String(n).length` for `Number::toString` (including `1e21`, `5e-324`, `-0`, `Number.MAX_VALUE`) and `Object.keys` against `EnumerableOwnPropertyNames` through a `Proxy` whose `ownKeys` adds an undescribed and a non-enumerable key.
 
   **D-40-J, ruled (adversary round 6, charged and accepted). The binding surface owes the CONDITION, not the symptom, because its charger asked for that and gave the reason: a reader told *functions too* fixes the instance, and the next `typeof` transcription reads exactly as safe as this one did.**
 
