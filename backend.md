@@ -6254,6 +6254,60 @@ Its residue statement, and the precision is the point: **it did not take a befor
 is reasoned from **every name present being one the file already names**, not from a delta it measured.
 **Stated as the weaker claim it is**, rather than borrowed from the shape of the stronger one.
 
+## D-130-22: a disposition stated as a COUNT goes stale when the set moves — the `counts.cards` cells are TWELVE
+
+T130's blind author asked the question rather than letting it become a contradiction later: **D-130-08's
+arithmetic said eleven `counts.cards` cells travel to T132, and the family is now twelve.** The twelfth is
+**a resurrection** — a `counts` cell that used to die at its vocabulary error and now reaches its own
+`cards` assertion instead. *Its fix moved a cell between residue families rather than clearing one.*
+
+**Ruled: twelve travel, and the record is corrected. The criterion is the PROPERTY, not the number** —
+*every cell asserting `counts.cards`* — and a cell that acquires that property later acquires the
+disposition with it. **Measured on the current tree: `counts` 5, `routes` 2, `visibility` 5 = 12**, matching
+the assertion families exactly (8 × `expected undefined to be`, 4 × `deeply equal`).
+
+***A disposition written as a count is a hand-maintained number beside a set that moves*** — the same shape
+as `error-hygiene`'s floor before it became an equality, and as the *nine files* label beside a ten-file
+digest. **The number was correct when written and nothing reds when the set changes under it.** Written as
+a criterion it needs no maintenance and no reconciliation.
+
+**And it asked rather than assuming, citing the 60-versus-73 reconciliation from earlier tonight**: *a
+count nobody reconciles is how two true statements become a contradiction later.* **Twice now that sentence
+has been the reason a number got checked instead of inherited, and both times by the party the number was
+not about.**
+
+## A witness made layering-INDEPENDENT by measuring it against two references
+
+Given *a witness validated against a reference measures the reference*, it did not validate against a
+better reference — **it built the reference that had broken the old cell** and required both to pass:
+
+        reference A — its own layering: this module's own store call first        77 passed
+        reference B — the PUBLISHED layering: `getPublicAuthor` first, outside
+                      the wrapper, so a dead store raises `AccountStoreError`     77 passed
+
+**Layering-independence measured across two oracles rather than asserted from one**, with B built
+specifically to be the shape that had falsified the previous version. **A property claimed to be
+independent of X is tested by varying X**, which is the one thing a single reference structurally cannot do.
+
+**And it corrected the cell to the property the ruling actually protects** rather than to the module's
+current shape: *whatever a dead store raises, it is not the vocabulary class.* **The title says so**, so a
+later reader cannot mistake the assertion for a claim about which class arrives.
+
+**With the caveat stated in place rather than left to be re-derived**: under the published layering, **this
+module's own store fault is unreachable through a closed port at all** — the cell exercises the first call's
+seal, not this module's, and reaching the module's own needs the store up and one of its own statements
+failing. ***Reported as owed rather than faked***, and it is structurally the same gap as T050's
+`NamingStoreError` arm.
+
+## The MISS was a structural signal and got filed as a forecasting note
+
+Its W4 MISS had shown cells 2 and 3 **co-firing**, and that pair is exactly the pair that diverged under a
+different implementation. **It read the MISS as an incomplete prediction; it was a fact about the cells.**
+
+***Cells that a mutation cannot separate are cells resting on one shared assumption*** — and the corrected
+sweep is **5 mutations, 5 HIT, 0 MISS**, the first of its sweeps this task with no miss, **written by an
+author who knew where its previous predictions had been wrong.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -16267,6 +16321,11 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   mapping**, so the module is correct and the fixture is wrong. **The untyped `jsonb` column is the real
   defect — T133 created for it** — and T130 is its victim rather than its author. **The blind suite owes the
   fixture correction.**
+- **D-130-22: TWELVE `counts.cards` cells travel to T132, not eleven**, and **the criterion is the
+  property rather than the number** — *every cell asserting `counts.cards`* — so a cell that acquires it
+  later acquires the disposition with it. The twelfth is a resurrection: a `counts` cell that used to die
+  at the vocabulary error now reaches its own `cards` assertion. Measured: `counts` 5, `routes` 2,
+  `visibility` 5. **A disposition written as a count is a hand-maintained number beside a set that moves.**
 - **D-130-21: the fixture correction and a `MalformedStoredVocabularyError` witness land TOGETHER**, both
   the blind author's. The three fixture reds are the class's **only live witness** — the trace passes
   through `withProfileStore`'s pass-through arm, so D-130-10 is observed end to end rather than merely
