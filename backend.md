@@ -4795,6 +4795,42 @@ query and a subtraction against a log.
 **A conservative refusal is not the same as an exhausted one**, and the three refusals were right while
 the collective conclusion — *unattributable* — was wrong. **The instrument was missing, not the evidence.**
 
+## A peer refused to route around MY permission denial, as a decision rather than an omission
+
+I was refused permission to drop the two scratch databases I had left, and surfaced it. **T140's
+implementer had the client open and the statement would have taken one line — and it declined, on the
+record.** *A boundary that stops you cleaning up your own mess is not routed around by handing the
+statement to the session next door; that would make my session the workaround.*
+
+**This is the permission-laundering rule pointed at me**, and I have been the party enforcing it on peers
+all run. **It is worth more coming from a session that could trivially have obliged and framed the refusal
+as a decision** rather than quietly not mentioning it.
+
+## `impl-done` carries two meanings and only one of them is ever checked
+
+Its implementer refused to hand me a state field it thought would read falsely. The convention is that
+`impl-done` and `tests-written` are parallel, the field records **the later arrival**, and that arrival is
+also what means **ready for an adversary**. **The first is true for T140 and the second is not**: the
+blind suite has never run against the module, the join has not happened, and the acceptance surface is
+**209 rather than the 176 the row cites**, because 33 route cells sit uncommitted in the blind author's
+tree.
+
+`tests/branch-carries-work.test.ts` checks that a state asserting work has a branch carrying it —
+**nothing checks the second meaning at all**, and it is the one another session acts on. *I would rather
+flag it than write a state that reads as an invitation* is the sentence, and the field is now set with the
+disclaimer inside the Evidence cell rather than left to be inferred.
+
+## An acceptance is of an ARTEFACT, not of a tip
+
+Its triple was measured at `914e531` and the tip is `9345e22`. Rather than re-measure or quietly quote the
+tip, it published the difference: `git diff --name-only 914e531 HEAD` is **`backend.md` and nothing
+else**, and `git diff … -- lib/server/saves app/api/account/saves` is **empty**. **The same thirteen files
+under both shas; only the document moved.**
+
+**That is the general form of the sha-and-tense rule**, and it is cheaper than the alternatives: a
+measurement does not expire because the tree moved, it expires because **the measured artefact** moved,
+and a two-line diff separates the two.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -7957,7 +7993,7 @@ it does not decide differently inside a worktree.
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
-| T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | tests-written | blind suite `3337fb0`: **176 cells over 6 files**, `167 failed, 9 passed, 0 skipped` twice with identical failing sets. **The nine greens measure the DRIVER** — closed port `ECONNREFUSED`, dropped table `42P01`, and **drizzle rendering bound `accountId`/`refId`, which settles D-140-06's premise before implementation.** Reference 176/176 first try, offered as the weaker result. 18 mutations: **four one-red mutations on four rulings**, and **exactly one of seven non-owner shapes reds** under a re-implemented ownership check. **`SaveRecord`'s `Exact<>` is vacuous from a blind tree — `Exact<any,T>` is `true` — and cannot be falsified from there.** Implementation at `3f0f3f9`+ pending its own gate. **Route surface was owed by the orchestrator (D-140-04) and is now PUBLISHED as D-140-07**: four routes under `app/api/account/saves/**` over one request shape, which is `saveTarget`'s own `target`. No 403 (T050's reason, cited not re-derived) and no 404 on a write (the existence oracle AC1 closes), so **AC1's non-owner denial is unreachable from HTTP and route cells must not expect it**. `seams.md`'s SEAM-61/62 and `FavoriteStar.tsx`'s `TODO(SEAM-62)` corrected in the same commit |
+| T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | impl-done | blind suite `3337fb0`: **176 cells over 6 files**, `167 failed, 9 passed, 0 skipped` twice with identical failing sets. **The nine greens measure the DRIVER** — closed port `ECONNREFUSED`, dropped table `42P01`, and **drizzle rendering bound `accountId`/`refId`, which settles D-140-06's premise before implementation.** Reference 176/176 first try, offered as the weaker result. 18 mutations: **four one-red mutations on four rulings**, and **exactly one of seven non-owner shapes reds** under a re-implemented ownership check. **`SaveRecord`'s `Exact<>` is vacuous from a blind tree — `Exact<any,T>` is `true` — and cannot be falsified from there.** Implementation at `3f0f3f9`+ pending its own gate. **Route surface was owed by the orchestrator (D-140-04) and is now PUBLISHED as D-140-07**: four routes under `app/api/account/saves/**` over one request shape, which is `saveTarget`'s own `target`. No 403 (T050's reason, cited not re-derived) and no 404 on a write (the existence oracle AC1 closes), so **AC1's non-owner denial is unreachable from HTTP and route cells must not expect it**. `seams.md`'s SEAM-61/62 and `FavoriteStar.tsx`'s `TODO(SEAM-62)` corrected in the same commit **Implementation at `914e531`, gates and triple measured there; `9345e22` is the same thirteen files with only `backend.md` moved — an acceptance is of an ARTEFACT, not of a tip.** Thirteen files under `lib/server/saves/**` and `app/api/account/saves/**`, built against D-140-01..07. Triple `1 failed | 5896 passed | 0 skipped` of 5897, three identical sorted failing sets, the one red T090's `B-08 RE-SCORE`; **0 skipped by ARITHMETIC rather than by a printed column** — `1 + 5896 = 5897` leaves nothing for a silently-skipping `skipIf` file to hide in. Reconciliation `5897 − 5871 = 26`, delta measured in isolation as 9 + 17 and base's 5871 measured independently by me. typecheck 0, lint exit 0 read in full with 0 `warning`/`problems`, build 0 with both routes dynamic. **Six mutations, each pre-registered by IDENTITY and scope, all HIT**: decision arm 2, message leak 2, `can` re-implemented 2 (the second the operator cell, which a bare id comparison refuses), unfiltered count 7 all inside AC3, term filter 2, card half 1. `SaveRecord`'s `Exact<>` falsified in BOTH directions — the guard its blind author correctly reported it could not falsify, since `Exact<any,T>` is `true`. **`impl-done` HERE MEANS ONLY THAT THE LATER HALF ARRIVED. It does NOT mean ready for an adversary, and its implementer flagged that rather than let the field read as an invitation**: the blind suite has never run against this module, the join has not happened, and the acceptance surface is **209, not the 176 this row cites** — 33 route cells sit uncommitted in the blind author's tree. **No number here is an acceptance measurement.** Clause 5 held below the transport at 7 reds and unheld at it; `error-hygiene` 18 there and 19 at merge 
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | `../darkprint-wt-t230-limits` (impl), `../darkprint-wt-t230-limits-tests` (blind) | `feat/t230-limits`, `test/t230-limits` | tests-written | module `8338951`, 17 files across two trees, four sealed classes so the merge count is **18 → 22**. Gates ITS measurements at `0f23379`, scope TARGETED: `typecheck` 0 unfiltered, `lint` 0 read in full, `vitest lib/server/limits` **84/84** — **not a full suite, not a triple, and the three repo guards it pre-registered green were outside that scope so their green is still a prediction.** **Both pre-registered candidate reds passed and the two real ones were elsewhere**: a lone surrogate walking a control-character check **in the opposite direction from a NUL**, and a refusal test whose input was accepted. Blind suite at `test/t230-limits`, 7 ahead |
 | T100 | Publishing and releases | T010, T020, T025, T040, T050, T060, T070, T090 | `lib/server/publish/**`, `app/api/bundles/**` | — | — | todo | — |
 | T130 | Profiles and the public author surface | T050, T060, T080 | `lib/server/profiles/**`, `app/api/authors/**` | `../darkprint-wt-t130-profiles` (impl), `../darkprint-wt-t130-profiles-tests` (blind) | `feat/t130-profiles`, `test/t130-profiles` | impl-done | implementation `6ffdb17`, blind suite `32556b7`. **Cut to `{ author, joinedAt, counts: { blueprints, terms } }` by D-130-06 (owner)** — `setPins`/`toggleFollow` removed, AC3/AC4 to T131, `counts.cards` to T132. **No owner/visitor branch anywhere: AC2 falls out of the `Actor`, T080 decides visibility, no second `readable()`.** `withProfileStore` deliberately narrower than `withRegistryStore` — re-wrapping a sealed fault relabels a working store. **D-130-07: `counts.terms` consumes the shared parser, does not require `text`, and REFUSES an unreadable vocabulary rather than skipping** (cost stated: one bad release 500s a profile). Gates by its author at `eccab30`: typecheck 0, lint 0 with the single `warning` match read as a LINE — the prebuild's own `--disable-warning=` — and build 0 **with the route table showing the handler collected, which typecheck cannot claim.** Handed over with a content digest **and its method**, reproduced exactly. Adversary round owed |
@@ -14423,7 +14459,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Log:**
 ### T140, Saves (private bookmarks)
 
-- **State:** tests-written
+- **State:** impl-done
 - **Depends on:** T050, T060, **T005** (the `save` table; `lib/db/schema.ts` is Forbidden here)
 - **Blocks:** T262
 - **Owns:** `lib/server/saves/**`, `app/api/account/saves/**`
@@ -14523,6 +14559,19 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Out of scope:** stars (T150), the `FavoriteStar` cutover (T262).
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-10.
+  - 2026-08-20 implementer: six contract findings charged before anything was built, all ruled as
+    D-140-01..07. Module, four routes, and two colocated suites at `914e531`. **The route surface was
+    declined rather than invented (D-140-04)** and `seams.md`'s key space was withdrawn rather than
+    mapped. **Stopped its own round on a pre-registered second red**, which was
+    `tests/server/t050/routes.test.ts` turning *not mine* into *must not exist* against a path T140's
+    `Owns` grants — fixed on base before T230 met it inside a triple.
+  - 2026-08-20 orchestrator: **`impl-done` set with an explicit disclaimer, at the implementer's
+    flagging.** The field carries two meanings — *the later half arrived* and *ready for an adversary* —
+    and only the first is true here. **The join is deliberately not ordered**: the blind author's 33 route
+    cells are uncommitted, so a join today measures 176 of a surface that is 209, which is *a blind suite
+    merged into an adversary's tree is a snapshot* **with the date known in advance rather than discovered
+    afterwards.** When it happens: re-join before measuring the blind axis, and report the blind branch's
+    tip sha beside the result, because *blind red 0* has two readings and only the sha separates them.
 
 ### T230, Rate limiting and API keys
 
