@@ -52,3 +52,9 @@ export { SaveStoreError } from "./errors";
 
 export { countSaves, listSaves } from "./read";
 export { migrateLocalSaves, saveTarget, unsaveTarget } from "./write";
+
+/* The transport boundary, published by D-140-07. Here rather than beside the four route
+   files for T050's and T081's reason: handlers that share a wrapper need somewhere shared,
+   and `app/api/**` holds route handlers and nothing else. */
+export type { SavesView } from "./http";
+export { savesViewFor, targetFrom, targetsFrom, withSaveErrors } from "./http";
