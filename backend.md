@@ -12193,6 +12193,122 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     branch, because `Array.isArray` gates it. And D-40-K is **barrel-only** like its four
     predecessors: `JSON.parse` produces no proxies and no callables.
 
+  - **2026-08-20 adversary round 7, FAIL. One charge, and it is inside the round's own fix.**
+    Measured on `feat/t040-engine` at **`1f3df72`** after merging `test/t040-engine` at
+    `7ec22d8`; every sha from `git rev-parse HEAD`, porcelain empty at both ends of every run,
+    `ls .next/types` present before any typecheck was quoted. **`backend` at `dae638e` is NOT
+    merged**: `git merge backend` was refused twice by this session's own permission layer, not
+    by anything in the repository. Both unmerged commits touch `backend.md` and nothing else
+    (`dae638e` 6+/6−, `22e426e` 5+/1−), so **11 base lines are missing from this tree and no code
+    or test file is**; two of the ten root guards parse that file and they are green without those
+    lines rather than with them. The one merge conflict was T040's own task-index row and it was
+    resolved by taking base's text, which already carries the round-7 summary and says the row
+    stops growing.
+  - **D-40-L (defect, charged): `lengthOfArrayLike` spells `ToNumber` as `Number()`, and
+    `Number()` is not `ToNumber` — which is the sentence this file wrote in round 5 and the
+    comment `limits.ts` carries 95 lines below the defect.** `LengthOfArrayLike` is
+    `ToLength(Get(value,"length"))`, `ToLength` is `ToIntegerOrInfinity`, and that is **`ToNumber`**.
+    `Number(v)` is `ToNumeric(v)` followed by BigInt→Number, so it **accepts a BigInt where
+    `ToNumber` refuses one**. Measured through `measureSubmission` at `1f3df72`:
+
+        length trap -> 3n                    formula TypeError   walk 19    DIVERGES
+        length trap -> {valueOf: () => 2n}   formula TypeError   walk 15    DIVERGES
+        length trap -> Object(2n)            formula TypeError   walk 15    DIVERGES
+        length trap -> 3n at TOP level       formula TypeError   walk 13    DIVERGES
+        length trap -> 2                     formula 15   walk 15   agrees  <- control
+        length trap -> "2"                   formula 15   walk 15   agrees  <- control
+        length trap -> {valueOf: () => 2}    formula 15   walk 15   agrees  <- control
+        length trap -> 1.5                   formula 11   walk 11   agrees  <- D-40-K's own cell
+        length trap -> NaN                   formula  8   walk  8   agrees  <- D-40-K's own cell
+        length trap -> Symbol()              both TypeError        agrees  <- D-40-24's class
+
+    **The direction is neither an over-count nor an under-count: the walk ANSWERS where the ruled
+    formula REFUSES.** That is the half round 5 named when it declined to delete the two
+    class-comparing assertions — *the check that the walk does not answer where the formula
+    refuses, which is the `maxBytes` half*. Under D-40-23 a value `JSON.stringify` will not
+    serialise owes a typed refusal; here it owes one and gets 19. **It is not D-40-24's deferred
+    item**: the `Symbol()` cell is that one, where both sides throw the same bare `TypeError` and
+    only the class is in question. Here one side refuses and the other accepts.
+  - **Coverage is ZERO in both suites, and that is a measurement rather than a reading of the
+    fixtures.** The blind suite's five D-40-K cells (`domain.test.ts:257-345`) and the corpus's
+    five (`measure.test.ts:284-299`) are 1.5, 2.9, NaN, −1, `"2"` and `{valueOf:()=>2}` — every one
+    a number, a string, or a `valueOf` returning a number. `Q3`/`Q4`/`Q5` mutate the truncation
+    half and the NaN half. **Nothing in either reaches the `ToNumber` half.** Driven: with the
+    one-line repair applied in the tree, the whole T040 surface is **306 passed | 0 failed | 0
+    skipped over 18 files — 0 newly red.** The zero has its two-factor built in, because the
+    probe above registers a difference the suites cannot: **the suites are blind to a divergence
+    that demonstrably exists**, which is what separates this zero from a dead instrument.
+  - **The repair is one line and it was measured, not proposed.** `Number(...)` becomes `+(...)`.
+    All four divergences close, all six controls hold, **10 of 10 agree**, and D-40-K's own two
+    halves are untouched. Afterwards the walk throws the same bare `TypeError` the formula does,
+    which lands it inside D-40-24's already-numbered class rather than opening a new one.
+  - **This is a finding about the candidate-set artefact, and the artefact's weak column is not
+    the one its author named.** The DELEGATED column survives audit: all seven were walked —
+    `QuoteJSONString` via `JSON.stringify`, `String(value)` for `ToString`, `+value` for
+    `ToNumber`, `util.types.is*Object`, the BigInt refusal, `Object.keys` for
+    `EnumerableOwnPropertyNames`, `Array.isArray` for `IsArray` — and every one is genuinely the
+    spec operation. **The block fails one column over, in a way its shape cannot express: a
+    TRANSCRIBED operation can itself DELEGATE a sub-operation to a primitive.** `ToLength` has
+    three parts — `ToNumber`, truncation toward zero, NaN→0 with the clamp — and D-40-K's fix
+    transcribed two and delegated the third to `Number()`. One row per operation leaves nowhere
+    to record a delegation nested inside a transcription, so the block's closing claim —
+    *nothing in the transcribed column is unobserved* — is true of the two halves the charge
+    named and false of the third. **And the countermeasure was already written down in the same
+    file**, at `limits.ts:562-564`: *"`ToNumber(value)`, and `+` is the only spelling of it.
+    `Number(value)` is a DIFFERENT function — it accepts a BigInt where `ToNumber` refuses one"*.
+    The next transcription was written at `limits.ts:468` and did not read it.
+  - **Barrel-only, sixth in the sequence.** `Array.isArray` gates the branch, so only a `Proxy`
+    over an array reaches it and `JSON.parse` produces none. Disposition is the orchestrator's
+    standing instruction: a numbered follow-up task, not an eighth round.
+  - **The audit's negative results, stated so the search has a shape.** 15 further cells across
+    the predicates in neither column: **14 agree**, and the fifteenth is D-40-23's *ruled*
+    difference (a boxed bigint in an array — formula `TypeError`, walk `UnserializableValueError`),
+    which is conformance. **Step 4's gate is `typeof resolved === "object"` at `limits.ts:509` —
+    D-40-J's charged predicate, left standing one line below its own fix.** `Object(x) === x` was
+    applied to step 2 and not to step 4. Measured and NOT charged: no callable in this runtime
+    carries any of the four slots — `Reflect.construct(String, ["xy"], function Alien(){})` gives
+    a `typeof "object"` String exotic, a `class extends Function` instance carries no slot, and a
+    `Proxy` over a callable answers `false` to all four `util.types` predicates. Same standing as
+    `Q2`. It is worth a line only because D-40-J ruled that *the general repair is the condition*,
+    and the general repair reached one of the two gates. `IsCallable` is transcribed as
+    `typeof === "function"` twice — `normalise`'s `toJSON` check and `isDroppable` — and is in
+    neither column; equivalent for `Q2`'s reason.
+  - **Gates at `1f3df72`, each read the way this file requires.** `npx tsc --noEmit` written to a
+    file and read **unfiltered: 0 lines, exit 0**. `npm run lint` read in **full**, four lines all
+    npm banner, **`warning` 0, `error` 0, `problems` 0** by grep rather than inferred from a tail.
+    `npm run build` exit 0, `Compiled successfully`, porcelain clean afterwards with no
+    `public/bundles` diff. Targeted: engine + routes **85 passed | 0 failed | 0 skipped** over 5
+    files; blind **221 passed | 0 failed | 0 skipped** over 13; whole T040 surface **306 passed |
+    0 failed | 0 skipped** over 18, and **85 + 221 = 306 exactly**. The ten root guards **15
+    passed | 0 failed | 0 skipped** over 10 files.
+  - **No full-suite triple and no reconciliation, and the arithmetic is not offered as a result.**
+    The slot is contended — six fresh worktrees are taking `npm ci` and a first build and four
+    darkprint sessions read busy — so a triple taken now is a number taken off somebody else's.
+    `5564 + 306 = 5870` is arithmetic. Residue and the contention reading are owed with it.
+    Disclosed instead: my own load was one `npm run build`, two `npm run lint`, about thirty
+    targeted `vitest` runs over three globs, and two short deliberate CPU burners (four-way and
+    six-way, under a minute each) used to try to reproduce the red below. No database was reached
+    at any point — `DATABASE_URL` was never exported in this shell and the T040 surface takes no
+    `Db` — so the cost was CPU rather than the resource the slot names.
+  - **What would overturn this verdict, and the first item is a red I cannot name.** The round's
+    **first** narrow-scope run returned **`1 failed | 84 passed | 0 skipped (85)`**, `Test Files 1
+    failed | 4 passed (5)`, on a cold vite cache with transform 16.56 s against 1.13 s warm. It
+    did not recur in **20 further narrow runs** — including three cold-cache runs, two replays of
+    the exact wide-then-narrow sequence, and six runs of the two timing tests under a declared
+    six-way burner. **I do not have its identity and I am not classifying it**, because an
+    unreproduced red classified from its neighbours is the shape this file charges. The two
+    host-dependent assertions were measured rather than assumed: the D-40-F cost ratio spreads
+    **4.20 – 29.16 idle** and **8.12 – 9.58 under a six-way burner** against a threshold of 100 —
+    the `min`-of-7 estimator is *steadier* under load, which is why load did not reproduce it —
+    and the D-40-B depth ratio passed 6 of 6 under the same burner. **So a 1-in-21 red on this
+    surface is unexplained on a task whose AC5 is a determinism criterion**, and it is the first
+    thing a successor should take. Further: my probes are values I chose, and the `Proxy` route to
+    `lengthOfArrayLike` is the only one I found, as D-40-K itself says. The triple is not taken.
+    `backend` is unmerged and two root guards parse the 11 lines it carries. And the 306 green is
+    measured against a suite whose D-40-K cells I have just shown incomplete on one of three axes;
+    the other transcribed rows' counts (3, 7, 2, 27, 36, 5) are the implementer's and were
+    re-derived by nobody this round.
+
 ### T080, Registry read model and read API
 
 - **State:** merged
