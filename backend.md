@@ -14291,12 +14291,25 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   three characters, registrable with a secret-scanning partner, short enough that a key stays readable in
   a `.env`. `MAX_LABEL_LENGTH = 100` **ratified by me and not escalated**: unlike the prefix it commits to
   nothing outside the product, and no reading of it changes the work.
-  **Rate ceilings, CONFIRMED by the owner and generous by design, per B-17's own stated cost:**
+  **Rate ceilings, CONFIRMED by the owner (2026-08-20) and generous by design, per B-17's own stated
+  cost. Nine cells of nine, after T230's implementer showed the first ruling filled three:**
 
-        anonymous read     600 / hour      (10/min sustained)
-        keyed read       6,000 / hour
-        write (keyed)      120 / hour
-        upload              30 / hour
+                          anonymous     account         key
+        read                600 / h     600 / h     6,000 / h
+        write               refused     120 / h       120 / h
+        upload              refused      30 / h        30 / h
+
+  **`account` reads at the anonymous rate and the KEY is what lifts it, which makes AC3 literal**: *a
+  valid API key raises the ceiling* is the key's entire effect, ×10 on reads and nothing else. **No number
+  here was invented** — the four the owner ruled, placed. The alternative considered and declined was a
+  middle read ceiling for signed-in callers, which would have been **one number nobody ruled** and would
+  have weakened the only reason to register a key.
+  **`anonymous` is `refused` for write and upload by CONSTRUCTION, not by choice**: both need a session,
+  so the cell cannot be reached rather than being set low. `limitFor` keeps refusing every bucket outside
+  this table, so a bucket nobody sized still cannot read as permissive.
+  **`upload`'s tier was the one thing the ruling did not determine** — T230's implementer flagged it as *a
+  number I know and cannot place* rather than placing it, and it is placed here at `account` and above so
+  an ordinary signed-in uploader is not refused, which B-17's stated cost is precisely about.
 
   **The reason is B-17's**: an agent crawling the registry must never notice the ceiling and a scraper
   re-fetching every bundle must. `DEFAULT_LIMITS` stops being `{}` for these four buckets and `limitFor`
