@@ -5827,6 +5827,69 @@ command and the gate command are in the same tool call, so the exit status I rea
 Separating them costs one round trip and removes the failure entirely — which is what I did here and what
 I did not do the three times it bit.
 
+## D-130-15: the three non-residue reds are a FIXTURE defect, and the untyped `jsonb` column is the real one
+
+T130's adversary's three unexplained reds are `ProfileStoreError: getProfile: the profile store failed`,
+caused by `release.local_vocabulary is not a YAML mapping`. **It adjudicated them as a blind-suite fixture
+defect rather than an implementation defect and declined to charge them. Upheld.** `contract.ts:767`
+declares `localVocabulary?: readonly Record<string, unknown>[]` and stores a **bare array**; **both merged
+readers of that column require a mapping** — `parseOntologyTerms` rejects arrays outright and T090's
+`storedVocabulary` rejects them at the same check. **The fixture's shape is accepted by neither, so the
+module is behaving correctly.**
+
+**The reason it happened is worth more than the verdict, and it is a demonstrated hazard rather than a
+warned one.** `terms.ts`'s own header says *the column's interpretation is held by no type anywhere and any
+caller of `addRelease` can store any shape* — and the writer is literally
+`localVocabulary: input.vocabulary ?? null` over `vocabulary?: unknown` (`archive/release.ts:110`).
+**A blind author then independently guessed a different shape for that same column.** Two authors who could
+not see each other, one untyped `jsonb`, two incompatible readings. ***The untyped column is the defect and
+T130 is its victim rather than its author.***
+
+**T133 created**: give `release.local_vocabulary` a published shape, at the writer and at both readers.
+
+**And it prices D-130-07 empirically, which nobody had.** A release stored in a shape the parser refuses
+makes **every profile for that handle 500 forever** — and under D-130-10, 500 as *"Store failed"* while the
+store was working. **The cost I estimated as *one bad release 500s a profile* is a permanent condition, not
+an incident.**
+
+## D-130-16: the compiler forced a THIRD widening, and the cells travel rather than die
+
+`npm run typecheck` is red on the adversary's tree — **8 × TS2339 `Property 'cards' does not exist on type
+'Counts'`**, all in `visibility.test.ts`, because the ruled removal of `cards` from `COUNT_KEYS`/`Counts`
+breaks eight readers. **Third time a removal-only repair has been widened by the compiler** (D-130-11 was
+the pin machinery), and **third time the adversary refused to widen it on its own authority.**
+
+**Ruled: drop the eight cells from the integration tree.** They assert `counts.cards`, which D-130-06 cut,
+so they are the residue already counted in the 11 — **removing a cell that asserts a cut member cannot make
+anything assert more, which is the same safety property as the constant removal.** Keeping `cards` on
+`Counts` is refused: **the blind suite's `Counts` is its model of the published type, and modelling a member
+the contract does not have is the suite carrying a second contract.**
+
+**They are not deleted from `test/t130-profiles`.** That branch keeps all ten files; the eight cells travel
+to **T132**, which owes `counts.cards`, exactly as `pins`/`follow` travel to T131 under D-130-08.
+
+## D-130-17: a green named after a contract that no longer exists
+
+The adversary's repair left the pre-cut **titles** standing: *"carries exactly the seven published
+members"* now asserts three; *"the three published counts"* asserts two; routes' *"answers the record's
+seven members"* asserts three. **A reader scanning green cell names would conclude the seven-member
+contract passed.**
+
+**It did not rename, because renaming is not removal and D-130-09 said removal only. Correct, and now
+ruled: rename them.** This is the **fourth surface** T140's implementer classified hours ago — *the name
+the runner prints, read by everyone who sees the output, edited by nobody* — arriving in a different task
+on the same day, and found by a session that had not seen that classification.
+
+## Its own arithmetic was wrong and it reported it before I found it
+
+It pre-registered ~49 runtime cells and the real number is **56**: it under-counted by 7 because **two
+further loops multiply — `surface.test.ts:175` over `contexts` and `unknown-handle.test.ts:100` over
+`absent` — which it had SEEN AND LISTED earlier and then failed to carry into the arithmetic.**
+
+***Same class of error as the one it charged D-130-08 with***, its words. **A session that has just been
+right about somebody else's miscount is not thereby protected from its own**, and the tell is identical:
+an enumeration made in one place and a total computed in another.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -8995,6 +9058,7 @@ it does not decide differently inside a worktree.
 | T130 | Profiles and the public author surface | T050, T060, T080 | `lib/server/profiles/**`, `app/api/authors/**` | `../darkprint-wt-t130-profiles` (impl), `../darkprint-wt-t130-profiles-tests` (blind) | `feat/t130-profiles`, `test/t130-profiles` | impl-done | implementation `6ffdb17`, blind suite `32556b7`. **Cut to `{ author, joinedAt, counts: { blueprints, terms } }` by D-130-06 (owner)** — `setPins`/`toggleFollow` removed, AC3/AC4 to T131, `counts.cards` to T132. **No owner/visitor branch anywhere: AC2 falls out of the `Actor`, T080 decides visibility, no second `readable()`.** `withProfileStore` deliberately narrower than `withRegistryStore` — re-wrapping a sealed fault relabels a working store. **D-130-07: `counts.terms` consumes the shared parser, does not require `text`, and REFUSES an unreadable vocabulary rather than skipping** (cost stated: one bad release 500s a profile). Gates by its author at `eccab30`: typecheck 0, lint 0 with the single `warning` match read as a LINE — the prebuild's own `--disable-warning=` — and build 0 **with the route table showing the handler collected, which typecheck cannot claim.** Handed over with a content digest **and its method**, reproduced exactly. Adversary round owed |
 | T131 | Profiles: follows, pins and the tables they need | T130, T180 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**`, `lib/server/profiles/**` (extension), `app/api/authors/**` (extension) | — | — | todo | **Created by D-130-06 (owner, 2026-08-20).** Carries the half T130 could not build: `watchers` + `toggleFollow` + AC4, `pinned` + `setPins` + AC3, `support`, and `validated` (a count, D-130-01, blocked on T180). **It owes the TABLES before the behaviour** — no follow relation, no pin storage, no `support` column, and neither `target_kind` nor `target_actor_kind` can name an account as a target or a follow as an act, so both need `ALTER TYPE`. **Inherits AC1's clause unchanged: anything countable is counted, never stored as a counter.** T130's blind suite already holds the pins, follow and `counts.cards` families |
 | T132 | Amendments to merged published records that T130 needs | T080, T130 | `lib/server/registry/types.ts`, `lib/server/registry/**` (extension), `lib/server/profiles/**` (extension) | — | — | todo | **Created by D-130-06.** `CardSummary` carries no owner and `card.author` is `author?: string` — optional, and content the uploader wrote rather than the row's ownership — while `card_version.owner_id` is `NOT NULL`, authoritative and unpublished. **D-130-04 forbids re-implementing T080's visibility filter against `card_version`**, so this is an amendment to a MERGED task's published record and therefore not T130's to take |
+| T133 | `release.local_vocabulary` needs a published shape | T005, T090, T130 | `lib/db/schema.ts` (comment only), `lib/server/archive/release.ts`, `lib/server/export/vocabulary.ts`, `lib/server/ontology/**` (reader contract only) | — | — | todo | **Created at T130's adversary round.** The column is `jsonb` with **no published shape**: the writer is `localVocabulary: input.vocabulary ?? null` over `vocabulary?: unknown` (`archive/release.ts:110`), and **both merged readers require a mapping** — `parseOntologyTerms` and T090's `storedVocabulary`. **Demonstrated rather than hypothetical**: T130's blind author guessed `readonly Record<string, unknown>[]` and stored a bare array, which neither reader accepts, producing three reds that looked like an implementation defect. `terms.ts`'s header had warned that *the column's interpretation is held by no type anywhere*. **Cost, measured by T130's adversary: a release stored in a refused shape makes every profile for that handle 500 forever**, and under D-130-10 as *Store failed* while the store was working |
 | T041 | D-40-L: `ToNumber` is `+`, not `Number()` | T040 | `lib/server/engine/limits.ts` | — | — | todo | **Created at T040's merge (`ad44537`), charged and measured by its round-7 adversary and NOT fixed there.** `limits.ts:468` reads `Number((container).length)` where `LengthOfArrayLike` is `ToLength` is `ToNumber`; `Number(v)` is `ToNumeric` then BigInt→Number, **so it accepts a BigInt where `ToNumber` refuses one and the walk ANSWERS where the ruled formula REFUSES.** Repair is one line — `+(...)` — **measured at 4 divergences closing, 6 controls holding, 10 of 10 agreeing, D-40-K's own halves untouched**, after which the walk throws the same bare `TypeError` the formula does and lands inside D-40-24's already-numbered class. **Barrel-only**, sixth in the transcription sequence. **Owes a witness BEFORE the fix**: coverage is zero in both suites and no cell reaches the `ToNumber` half |
 | T150 | Counters: stars and downloads | T050, T060, T080, T090 | `lib/server/counters/**`, `app/api/signals/**` | — | — | todo | — |
 | T160 | Community ballot and vote weighting | T050, T060, T080 | `lib/server/ballot/**`, `app/api/votes/**` | — | — | todo | — |
@@ -15442,6 +15506,21 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Standing:** T130's blind author asserted these cells against a reference that reads `card_version.owner_id` directly — **the route the ruling forbids** — and said so. **Those cells are not evidence about anything buildable until this task lands.**
 - **Log:**
 
+### T133, `release.local_vocabulary` needs a published shape
+
+- **State:** todo
+- **Depends on:** T005, T090, T130
+- **Blocks:** —
+- **Owns:** `lib/db/schema.ts` (comment only), `lib/server/archive/release.ts`, `lib/server/export/vocabulary.ts`, `lib/server/ontology/**` (reader contract only)
+- **Forbidden:** every other module's barrel; this task publishes a shape, it does not move a reader.
+- **Goal:** give the column one published shape, asserted at the writer, so two readers cannot disagree about it.
+- **Contract:** `release.local_vocabulary` is `jsonb` and **its interpretation is held by no type anywhere**. The writer is `localVocabulary: input.vocabulary ?? null` over `vocabulary?: unknown` (`lib/server/archive/release.ts:110`), so **any caller of `addRelease` can store any shape**. Both merged readers require a **mapping**: `parseOntologyTerms` rejects arrays outright, and T090's `storedVocabulary` (`lib/server/export/vocabulary.ts:36`) rejects them at the same check. `terms.ts`'s own header warned this in prose and nothing enforced it.
+- **Acceptance criteria:** (1) the column has one published shape and `addRelease` refuses anything else **at the write**, rather than the readers refusing it later; (2) both existing readers consume that shape rather than each re-deriving it; (3) a release already stored in a refused shape is detectable without reading every row — a migration or a reported query, stated either way; (4) the refusal at the write names the field and never the caller's value (D-13).
+- **Open:** whether existing rows can be in a refused shape, and what happens to them. **`export.scratch.test.ts:193` and `:202` store two DIFFERENT shapes into that column in one file** — a bare `terms` array and a `{ text, terms }` mapping — so at least the test corpus already disagrees with itself.
+- **Out of scope:** the ontology parser's grammar (T030), the export bundle's format (T090).
+- **Log:**
+  - 2026-08-20 orchestrator: **created at T130's adversary round, from a demonstrated instance rather than a warning.** T130's blind author independently guessed `readonly Record<string, unknown>[]` for this column and stored a bare array; neither merged reader accepts it, and the result was three reds that looked like a T130 implementation defect until its adversary traced them. **Two authors who could not see each other, one untyped column, two incompatible readings.** Cost, measured rather than estimated: **a release stored in a refused shape makes every profile for that handle 500 forever**, and under D-130-10 as *Store failed* while the store was working.
+
 ### T041, D-40-L: `ToNumber` is `+`, not `Number()`
 
 - **State:** todo
@@ -15810,6 +15889,20 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   `slug`, so `inArray(bundle.slug, slugs)` alone reaches another owner's identically-slugged bundle.
   Found by the adversary, verified at `schema.ts:159`. **Two ownership notions that coincidentally agree
   are a deletion waiting to happen.**
+- **D-130-15: the adversary's three non-residue reds are a BLIND-SUITE FIXTURE defect, not charged.**
+  `contract.ts:767` stores a bare array into `release.local_vocabulary` and **both merged readers require a
+  mapping**, so the module is correct and the fixture is wrong. **The untyped `jsonb` column is the real
+  defect — T133 created for it** — and T130 is its victim rather than its author. **The blind suite owes the
+  fixture correction.**
+- **D-130-16: drop the eight `counts.cards` cells in `visibility.test.ts` from the integration tree.** The
+  compiler forces it — 8 × TS2339 once `cards` leaves `Counts` — and they assert a member D-130-06 cut, so
+  they are residue already counted. **Keeping `cards` on `Counts` is refused**: the blind suite's `Counts`
+  is its model of the published type and modelling a cut member is a second contract. **Not deleted from
+  `test/t130-profiles`; they travel to T132**, as pins and follows travel to T131.
+- **D-130-17: rename the pre-cut cell TITLES.** *"carries exactly the seven published members"* now asserts
+  three; *"the three published counts"* asserts two. **A reader scanning green cell names would conclude the
+  seven-member contract passed.** The adversary correctly did not rename under a removal-only ruling; ruled
+  now.
 - **D-130-14: D-130-12 and D-130-10 are unimplemented contract, owed by T130's implementer at the
   adversary's verdict, before any merge.** Both landed after the round closed, so they are dated contract
   rather than defects — **the adversary must not spend a cell on either divergence.** `6ffdb17` emits
