@@ -26,7 +26,7 @@ import { describe, expect, it } from "vitest";
 import type { Db } from "@/lib/db";
 import { LONE_HIGH_SURROGATE, NUL, nulInside } from "@/tests/support/control-bytes";
 import { InvalidLabelError, NotKeyOwnerError } from "./errors";
-import { MAX_LABEL_LENGTH, issueKey, resolveKey, revokeKey } from "./keys";
+import { MAX_LABEL_LENGTH, issueKey, listKeys, resolveKey, revokeKey } from "./keys";
 import { SECRET_LENGTH, SECRET_PREFIX, hashSecret } from "./secret";
 
 const OWNER = {
@@ -84,7 +84,10 @@ function stubDb(rows: readonly unknown[] = []) {
         from: () => ({
           where: () => {
             calls.push("where");
-            return { limit: async () => rows };
+            /* Both chains, because `resolveKey` ends in `.limit()` and `listKeys` ends in
+               `.orderBy()`. A stub answering only the shape the test author was thinking of
+               is a stub that reports a missing call as a crash. */
+            return { limit: async () => rows, orderBy: async () => rows };
           },
         }),
       };
@@ -265,11 +268,20 @@ describe("the label bound REFUSES rather than truncating", () => {
 
     /* The absence half, asserted separately: equality with the published form already
        entails it, and asserting it in its own right is what fails LOUDLY on a wording that
-       starts interpolating rather than failing as a string mismatch nobody reads closely. */
-    const raised = await issueKey(db, OWNER, OWNER.accountId, nulInside(value)).catch(
-      (err: unknown) => err as Error,
+       starts interpolating rather than failing as a string mismatch nobody reads closely.
+
+       Two-armed `then` rather than `.catch`, and the arm that resolves is the point: a
+       `.catch` narrowing to `Error` types the resolved value as an error too, so a module
+       that ACCEPTED this label would reach the assertion below with a record in hand and
+       `undefined` for `.message` — which `not.toContain` passes. The resolve arm answering
+       `undefined` plus the `instanceof` is what makes the absence check reachable only
+       through an actual rejection. */
+    const raised = await issueKey(db, OWNER, OWNER.accountId, nulInside(value)).then(
+      () => undefined,
+      (err: unknown) => err,
     );
-    expect(raised.message).not.toContain(value);
+    expect(raised).toBeInstanceOf(InvalidLabelError);
+    expect((raised as Error).message).not.toContain(value);
   });
 });
 
@@ -376,5 +388,64 @@ describe("revokeKey", () => {
     await expect(revokeKey(db, { kind: "anonymous" }, KEY_ID)).rejects.toBeInstanceOf(
       NotKeyOwnerError,
     );
+  });
+});
+
+describe("listKeys", () => {
+  it("answers the account's records, and every one has the secret-free key set", async () => {
+    const { db } = stubDb([row(), row({ id: "33333333-3333-4333-8333-333333333333" })]);
+    const keys = await listKeys(db, OWNER, OWNER.accountId);
+    expect(keys).toHaveLength(2);
+    /* Asserted at THIS producer and not only at `issueKey`'s. `rowToRecord` is shared today,
+       so the two agree — and a shared helper with one witness reds identically to two
+       witnesses when the helper changes, which is exactly what per-site assertions separate.
+       The day somebody gives the reader its own projection, this is what notices. */
+    for (const key of keys) {
+      expect(Object.keys(key).sort()).toEqual([
+        "accountId",
+        "createdAt",
+        "keyId",
+        "label",
+        "revokedAt",
+      ]);
+    }
+  });
+
+  it("INCLUDES revoked keys, because that is AC4's only observable form", async () => {
+    /* Not a convenience. *A revoked key is refused immediately* had nothing a caller could
+       look at while this module published no reader and answered `DELETE` with a 204 — the
+       revoking request said nothing and no other request would say anything either.
+       `revokedAt` moving from `null` to an instant IS the observation, and filtering the row
+       out would take it away again while every other assertion here stayed green. */
+    const revokedAt = new Date("2026-08-20T10:00:00.000Z");
+    const { db } = stubDb([row({ revokedAt })]);
+    const [key] = await listKeys(db, OWNER, OWNER.accountId);
+    expect(key?.revokedAt).toEqual(revokedAt);
+  });
+
+  it("refuses a foreign account and reaches no database", async () => {
+    const { db, calls } = stubDb([row()]);
+    await expect(
+      listKeys(db, OWNER, "44444444-4444-4444-8444-444444444444"),
+    ).rejects.toBeInstanceOf(NotKeyOwnerError);
+    expect(calls()).toEqual([]);
+  });
+
+  it("refuses an anonymous actor", async () => {
+    const { db } = stubDb([row()]);
+    await expect(listKeys(db, { kind: "anonymous" }, OWNER.accountId)).rejects.toBeInstanceOf(
+      NotKeyOwnerError,
+    );
+  });
+
+  it("never lets a token hash reach a record, however the row grows", async () => {
+    /* The row here carries a column the record has no field for. A projection that spread the
+       row would carry it; one that names five fields cannot. This is the assertion that stays
+       true when the table gains a column, which is the failure the record's shape exists to
+       make impossible rather than to be reviewed for. */
+    const { db } = stubDb([row({ tokenHash: "SECRETHASHLITERAL", somethingNew: "ALSO-SECRET" })]);
+    const [key] = await listKeys(db, OWNER, OWNER.accountId);
+    expect(JSON.stringify(key)).not.toContain("SECRETHASHLITERAL");
+    expect(JSON.stringify(key)).not.toContain("ALSO-SECRET");
   });
 });

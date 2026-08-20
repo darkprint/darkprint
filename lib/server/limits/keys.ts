@@ -50,21 +50,13 @@
    "no such key". It is reported rather than designed around.
    ============================================================ */
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { schema, type Db } from "@/lib/db";
 import { can, type Actor } from "@/lib/server/policy";
 import { invalidLabelError, notKeyOwnerError } from "./errors";
+import type { ApiKeyRecord } from "./types";
 import { hashSecret, mintSecret, parseSecret } from "./secret";
 import { withStore } from "./store";
-
-/** The published record. No `tokenHash`, no `secret`, and no field that could hold one. */
-export interface ApiKeyRecord {
-  keyId: string;
-  accountId: string;
-  label: string;
-  createdAt: Date;
-  revokedAt: Date | null;
-}
 
 /**
  * The longest a label may be, and it REFUSES rather than truncates (D-05-09).
@@ -229,6 +221,35 @@ export async function revokeKey(db: Db, actor: Actor, keyId: string): Promise<vo
           isNull(schema.apiKey.revokedAt),
         ),
       );
+  });
+}
+
+/**
+ * Every key the actor's own account holds, newest first, revoked ones included.
+ *
+ * D-230-11's `GET`, and the reader AC4 needed. **Revoked rows are NOT filtered out**, and
+ * that is the criterion rather than a convenience: *a revoked key is refused immediately*
+ * had no HTTP-observable form while this module published no reader and answered `DELETE`
+ * with a 204, so nothing a caller could look at said the key had stopped working.
+ * `revokedAt` moving from `null` to an instant is that observation.
+ *
+ * Safe to serve by construction: `rowToRecord` names five fields and never spreads a row, so
+ * `token_hash` cannot arrive here however the table grows. **Not by a filter in this
+ * function** — a filter is a line somebody can delete, and the whole point of the record's
+ * shape is that it does not depend on one.
+ *
+ * `can` runs against the actor's own account for the same reason `revokeKey`'s does, and the
+ * `WHERE` is what ties the rows to it, so there is no window between checking and reading.
+ */
+export async function listKeys(db: Db, actor: Actor, accountId: string): Promise<ApiKeyRecord[]> {
+  return withStore("listKeys", async () => {
+    if (!can(actor, "read", { kind: "account", accountId })) throw notKeyOwnerError("listKeys");
+    const rows = await db
+      .select()
+      .from(schema.apiKey)
+      .where(eq(schema.apiKey.accountId, accountId))
+      .orderBy(desc(schema.apiKey.createdAt));
+    return rows.map(rowToRecord);
   });
 }
 

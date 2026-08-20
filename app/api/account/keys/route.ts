@@ -14,36 +14,66 @@
    is passed through its `init` — consumed rather than worked
    around, and `@/lib/server/http` is not edited here.
 
-   **No `GET`.** A settings UI wants to list an account's keys and
-   T230's published surface has no function that returns one — it
-   publishes `issueKey`, `revokeKey`, `resolveKey` and
-   `checkLimit`. Writing a list route would mean writing a reader
-   the contract does not publish, which is inventing a surface
-   rather than implementing one. Reported to the orchestrator as a
-   gap rather than filled.
+   **The `GET` is D-230-11 and was reported as a gap before it was
+   built.** This file shipped without one and said why: the
+   published surface had no function returning a key list, so
+   writing the route would have been inventing a surface rather
+   than implementing one. The gap was reported, ruled, and the
+   deciding reason was not the settings page — it was **AC4**,
+   which had no HTTP-observable form at all while the module
+   published no reader and answered `DELETE` with a 204.
 
    `withSession` before `withLimitsErrors`: an unauthenticated
    request must never reach the handler at all (T000's AC3), and
    the wrapper's job begins once there is a body to run.
 
-   **This route is NOT rate limited, and the reason is a
-   consequence of D-230-04 rather than an omission.** An
-   unconfigured bucket REFUSES, and `DEFAULT_LIMITS` is empty
-   because the ceilings are the owner's and still `TBD:`. So
-   calling `checkLimit` here today would 429 every request to a
-   route that has nothing to do with volume. The refusal is the
-   correct loud failure — a bucket with no ceiling must not read
-   as unlimited — and its consequence is that **no route can be
-   wired to this module until the numbers exist.** Reported rather
-   than worked around with a placeholder ceiling, which would be a
-   number a reader takes as decided.
+   **This route is not rate limited, and the reason CHANGED when
+   the ceilings landed — so the old one is struck rather than
+   quietly replaced.** It used to be that `DEFAULT_LIMITS` was
+   empty, every bucket refused, and wiring any route would have
+   429'd it. **That is no longer true**: the owner confirmed the
+   full matrix on 2026-08-20 and `read`, `write` and `upload` are
+   all sized.
+
+   The reason now is a partition one. **Every route that serves a
+   read is Forbidden to this task**, and these three serve key
+   management rather than registry volume — the buckets B-17 is
+   about are the ones a crawler hits. Wiring `write` to a route
+   whose whole purpose is issuing the credential that raises the
+   ceiling would also be the wrong bucket for it.
+
+   **So AC2 — *limits are enforced server-side regardless of any
+   client cap* — is still enforced on zero routes at this merge**,
+   and that is worth saying plainly rather than leaving a reader to
+   infer it from the table being full. What T230 ships is the
+   enforcement and the numbers; the wiring belongs to the tasks
+   that own the routes, and `enforceLimit` plus `rateLimited` is
+   the pair they call.
    ============================================================ */
 
 import { getSharedDbClient } from "@/lib/db";
 import { actorFrom } from "@/lib/server/accounts";
 import { withSession } from "@/lib/server/auth";
 import { badRequest, ok } from "@/lib/server/http";
-import { issueKey, readJsonObject, withLimitsErrors } from "@/lib/server/limits";
+import { issueKey, listKeys, readJsonObject, withLimitsErrors } from "@/lib/server/limits";
+
+/**
+ * D-230-11's reader. `200 KeyList | 401 500`.
+ *
+ * It exists because AC4 needed it, not because a settings page wants it. *A revoked key is
+ * refused immediately* had **no HTTP-observable form** while this task published no reader
+ * and answered `DELETE` with a bare 204 — nothing a caller could look at said a key had
+ * stopped working. `revokedAt` moving from `null` to an instant is that observation, which
+ * is why revoked rows are listed rather than filtered.
+ */
+export async function GET(request: Request): Promise<Response> {
+  return withSession(request, async (session) =>
+    withLimitsErrors(request, async () => {
+      const { db } = getSharedDbClient();
+      return ok({ keys: await listKeys(db, actorFrom(session), session.accountId) });
+    }),
+  );
+}
 
 export async function POST(request: Request): Promise<Response> {
   return withSession(request, async (session) =>

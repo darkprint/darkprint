@@ -29,6 +29,7 @@
 import { describe, expect, it } from "vitest";
 import type { Db } from "@/lib/db";
 import { checkLimit, enforceLimit } from "./check";
+import { DEFAULT_LIMITS, limitFor } from "./config";
 import type { LimitConfig } from "./config";
 import { createSlotCounter } from "./counter";
 import { RateLimitedError } from "./errors";
@@ -246,5 +247,73 @@ describe("enforceLimit refuses rather than reporting", () => {
     await expect(
       enforceLimit(db, ANON, "unconfigured", { config: CONFIG, counter }),
     ).rejects.toBeInstanceOf(RateLimitedError);
+  });
+});
+
+describe("the ruled ceilings, as shipped", () => {
+  const HOUR = 60 * 60 * 1000;
+
+  it("is the owner's matrix, cell for cell", () => {
+    /* Written out as LITERALS rather than derived from the table under test, which would
+       assert the table agrees with itself. Nine cells, because the reporting of this task was
+       that four ruled quantities fill three of nine — so the nine is the number that has to
+       be visible, and a tenth bucket or a fourth tier reds here. */
+    const cell = (bucket: string, tier: "anonymous" | "account" | "key") =>
+      limitFor(DEFAULT_LIMITS, bucket, tier);
+    expect(cell("read", "anonymous")).toEqual({ limit: 600, windowMs: HOUR });
+    expect(cell("read", "account")).toEqual({ limit: 600, windowMs: HOUR });
+    expect(cell("read", "key")).toEqual({ limit: 6_000, windowMs: HOUR });
+    expect(cell("write", "anonymous")).toEqual({ limit: 0, windowMs: HOUR });
+    expect(cell("write", "account")).toEqual({ limit: 120, windowMs: HOUR });
+    expect(cell("write", "key")).toEqual({ limit: 120, windowMs: HOUR });
+    expect(cell("upload", "anonymous")).toEqual({ limit: 0, windowMs: HOUR });
+    expect(cell("upload", "account")).toEqual({ limit: 30, windowMs: HOUR });
+    expect(cell("upload", "key")).toEqual({ limit: 30, windowMs: HOUR });
+    expect(Object.keys(DEFAULT_LIMITS).sort()).toEqual(["read", "upload", "write"]);
+  });
+
+  it("a refused cell actually refuses, rather than being a zero nobody reads", async () => {
+    /* `limit: 0` is only a refusal if the arithmetic makes it one. `allowed: count <= limit`
+       with the request already counted is what does it, and this is the measurement of that
+       rather than the claim — a cell written as `REFUSED` that admitted one request would
+       satisfy the matrix equality above perfectly, because that one asserts the VALUE and
+       this one asserts what the value does. */
+    const { counter } = fixedCounter();
+    const { db } = recordingDb();
+    const anon = { accountId: null, keyId: null, ip: "203.0.113.7" };
+    for (const bucket of ["write", "upload"]) {
+      const verdict = await checkLimit(db, anon, bucket, { counter });
+      expect(verdict.allowed, bucket).toBe(false);
+      expect(verdict.limit, bucket).toBe(0);
+      expect(verdict.remaining, bucket).toBe(0);
+    }
+  });
+
+  it("a key raises the read ceiling tenfold and changes nothing else", async () => {
+    /* AC3 made literal by the fill: the key's ENTIRE effect is reads. A middle ceiling for
+       signed-in callers was declined, so `account` and `anonymous` must agree on `read` and
+       `account` and `key` must agree on `write` and `upload`. Three equalities, and each is a
+       different way the fill could have been transcribed wrongly. */
+    const { counter } = fixedCounter();
+    const { db } = recordingDb();
+    const ip = "203.0.113.7";
+    const anon = await checkLimit(db, { accountId: null, keyId: null, ip }, "read", { counter });
+    const acct = await checkLimit(db, { accountId: "a", keyId: null, ip }, "read", { counter });
+    const keyed = await checkLimit(db, { accountId: "a", keyId: "k", ip }, "read", { counter });
+    expect(acct.limit).toBe(anon.limit);
+    expect(keyed.limit).toBe(anon.limit * 10);
+
+    const acctW = await checkLimit(db, { accountId: "a", keyId: null, ip }, "write", { counter });
+    const keyedW = await checkLimit(db, { accountId: "a", keyId: "k", ip }, "write", { counter });
+    expect(keyedW.limit).toBe(acctW.limit);
+  });
+
+  it("a bucket outside the table still refuses, so filling it changed nothing there", async () => {
+    /* D-230-04 survives the emptiness ending. That property was what made an empty table safe
+       and it is easy to lose in the edit that populates one. */
+    const { counter } = fixedCounter();
+    const { db } = recordingDb();
+    const anon = { accountId: null, keyId: null, ip: "203.0.113.7" };
+    expect((await checkLimit(db, anon, "search", { counter })).allowed).toBe(false);
   });
 });

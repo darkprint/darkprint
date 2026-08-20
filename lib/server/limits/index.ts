@@ -68,13 +68,12 @@ export {
 } from "./counter";
 
 /* --------------------- the verdict --------------------- */
-export type { LimitSubject, LimitVerdict } from "./types";
+export type { ApiKeyRecord, IssuedKey, KeyList, LimitSubject, LimitVerdict } from "./types";
 export type { CheckLimitOptions } from "./check";
 export { checkLimit, enforceLimit } from "./check";
 
 /* --------------------- keys --------------------- */
-export type { ApiKeyRecord } from "./keys";
-export { MAX_LABEL_LENGTH, issueKey, resolveKey, revokeKey } from "./keys";
+export { MAX_LABEL_LENGTH, issueKey, listKeys, resolveKey, revokeKey } from "./keys";
 export { SECRET_LENGTH, SECRET_PREFIX } from "./secret";
 
 /* --------------------- D-13's boundary --------------------- */

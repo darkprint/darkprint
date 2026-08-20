@@ -87,22 +87,73 @@ export const MAX_UPLOAD_KB = 512;
  */
 export const MAX_PARAM_DEPTH = 100;
 
+/** One hour, the window every ruled ceiling is measured over. */
+const HOUR = 60 * 60 * 1000;
+
 /**
- * TBD: the owner's, and the block says the task must not invent them.
+ * A cell that is refused rather than sized, written out rather than left absent.
  *
- * **The two transcribed numbers above are deliberately NOT in this table**, and the reason
- * is that they are different quantities rather than that nobody got round to it. One is a
- * byte size and one is a nesting depth; this table is requests per window. Putting either
- * here would be the adjacent-quantity substitution this run charges — a proxy quoted for the
- * claim it resembles — and it would let a reader conclude the owner had chosen a rate.
+ * The alternative was `Partial<Record<Tier, BucketLimit>>` with an ABSENT tier refusing,
+ * and it was declined for the reason this module already applies one level up: **an absent
+ * cell and a deliberately-refused cell would read identically at the type.** `limitFor`
+ * refusing an unconfigured BUCKET is what stops emptiness reading as permissive; the same
+ * argument says a tier nobody sized and a tier ruled unreachable must not look alike to a
+ * reader either. So the map stays TOTAL over `Tier` and this is what a closed cell says.
  *
- * Empty rather than populated with placeholders, and the emptiness is load-bearing: a
- * placeholder ceiling is a number somebody reads as decided, and `limitFor` refusing an
- * unconfigured bucket (D-230-04) means an empty table cannot be mistaken for a permissive
- * one. A caller wiring a route before the owner rules gets a refusal it has to notice, which
- * is the direction D-05-09 demands — loud rather than silent.
+ * `limit: 0` and not a flag: `checkLimit` answers `allowed: count <= limit`, and the first
+ * request already counts 1, so zero refuses every request through the ordinary path rather
+ * than through a branch that exists only for this. One arithmetic, no special case.
  */
-export const DEFAULT_LIMITS: LimitConfig = {};
+const REFUSED: BucketLimit = { limit: 0, windowMs: HOUR };
+
+/**
+ * The ceilings, CONFIRMED by the owner on 2026-08-20 and generous by design.
+ *
+ *                   anonymous     account         key
+ *     read            600 / h     600 / h     6 000 / h
+ *     write           refused     120 / h       120 / h
+ *     upload          refused      30 / h        30 / h
+ *
+ * **Nothing here was invented.** The owner ruled four quantities — anonymous read, keyed
+ * read, keyed write, and upload — and this task reported that four quantities fill three of
+ * nine cells rather than placing the other six itself. The full matrix came back from the
+ * party entitled to decide it.
+ *
+ * **`account` reads at the ANONYMOUS rate, and that makes AC3 literal.** *A valid API key
+ * raises the ceiling* becomes the key's entire effect — ten times on reads and nothing else.
+ * A middle ceiling for signed-in callers was put to the owner and declined: it would have
+ * been a number nobody ruled, and it weakens the only reason to register a key.
+ *
+ * **`anonymous` write and upload are refused BY CONSTRUCTION rather than set low.** Both
+ * need a session, so those cells cannot be reached at all; the value records a closed door
+ * and not a stingy allowance.
+ *
+ * **`upload` is `account` and above**, which is a decision rather than an inference. B-17's
+ * stated cost is precisely about not surprising an unkeyed client, so refusing every unkeyed
+ * upload was not something this task could read off the four ruled numbers — it flagged the
+ * 30/hour as a figure it knew and could not place, and the placing came from the owner.
+ *
+ * **`limitFor` still refuses every bucket outside this table** (D-230-04), so populating it
+ * does not make an unnamed bucket permissive. That property was the reason emptiness was
+ * safe and it survives the emptiness ending.
+ */
+export const DEFAULT_LIMITS: LimitConfig = {
+  read: {
+    anonymous: { limit: 600, windowMs: HOUR },
+    account: { limit: 600, windowMs: HOUR },
+    key: { limit: 6_000, windowMs: HOUR },
+  },
+  write: {
+    anonymous: REFUSED,
+    account: { limit: 120, windowMs: HOUR },
+    key: { limit: 120, windowMs: HOUR },
+  },
+  upload: {
+    anonymous: REFUSED,
+    account: { limit: 30, windowMs: HOUR },
+    key: { limit: 30, windowMs: HOUR },
+  },
+};
 
 /**
  * The ceiling for one bucket at one tier, or `undefined` when nobody configured it.

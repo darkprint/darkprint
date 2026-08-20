@@ -52,3 +52,49 @@ export interface LimitSubject {
   keyId: string | null;
   ip: string;
 }
+
+/**
+ * What `GET` and `DELETE` on `app/api/account/keys` answer (D-230-11).
+ *
+ * `ApiKeyRecord` carries `revokedAt` and has no field a secret could occupy, **so listing is
+ * safe by construction rather than by a filter somebody must remember not to drop.** That is
+ * the same argument the record's own shape makes: a rule nobody can forget beats a rule
+ * everybody is told.
+ *
+ * Revoked keys are INCLUDED rather than filtered. AC4 is *a revoked key is refused
+ * immediately*, and with a 204 `DELETE` and no reader that criterion had **no
+ * HTTP-observable form at all** — nothing a caller could look at said the key had stopped
+ * working. `revokedAt` moving from `null` to an instant is that observation, and hiding the
+ * row would take it away again.
+ */
+export interface KeyList {
+  keys: readonly ApiKeyRecord[];
+}
+
+/**
+ * What `POST` answers, exactly once (D-230-11).
+ *
+ * The only response in this module that ever carries a secret. `record` and `secret` are
+ * separate members rather than one merged object **because `ApiKeyRecord` must stay free of
+ * a secret-bearing field** — merging them would put the secret inside the very shape whose
+ * contract is that it cannot hold one.
+ */
+export interface IssuedKey {
+  record: ApiKeyRecord;
+  secret: string;
+}
+
+/**
+ * The published record. No `tokenHash`, no `secret`, and no field that could hold one.
+ *
+ * Here rather than in `keys.ts` since D-230-11 published two shapes built out of it: a type
+ * that three other types name is a shape, not an implementation detail of the file that
+ * happens to construct it.
+ */
+export interface ApiKeyRecord {
+  keyId: string;
+  accountId: string;
+  label: string;
+  createdAt: Date;
+  revokedAt: Date | null;
+}
