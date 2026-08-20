@@ -5702,7 +5702,17 @@ granted, never claimed, and never announced as free.**
 
 **And the rule change is its proposal, adopted: the contention stamp is required when TAKING the slot, not
 only when reporting a run.** *The ceremony said the slot was mine; `pgrep -fl vitest` said otherwise, and
-the second one is the fact.* **A naming is a claim about the host and costs one command to check.**
+the second one is the fact.*
+
+**SHARPENED, two minutes later, by the same session: the stamp is a VETO, not a PERMIT.** A busy host
+proves the slot is not free. **A quiet host proves nothing**, because `vitest` exiting measures a *phase*
+and a slot is a claim about a session's *whole round* — reproduction, integration, suite, mutations,
+`tsc`, census — **and no process signature corresponds to that.** Its own background waiter fired at 21:20
+between T140's adversary's reproduction and its integration; under *run ends, therefore my turn* that
+notification was a go signal. ***It had built the tool that would have fooled it, and the tool fired before
+it could take it down.***
+
+**So: granted by name, always. The stamp can only ever stop you.**
 
 **The reason it is worth a rule is the asymmetry it named**, and it is the sharpest statement of the
 failure this run has:
@@ -5735,6 +5745,25 @@ is what makes a stash manoeuvre reportable rather than merely done.*
 
 **And `psql` is not installed — exit 127, `command not found`, not a permission refusal.** So one of its
 three blockers was never a permission at all.
+
+## A detector that matches itself reports the thing it was built to detect, forever
+
+`pgrep -fl "darkprint-wt-t140"` returned a hit — **its own shell**, because the pattern string was in its
+own command line. It had filtered `grep -v pgrep` and **not itself.** *The same joke one level down*, its
+phrase, arriving inside the detector built to catch the first one.
+
+**The corrected reading was a clear host, and it declined to treat that as a reason to start** — which is
+the sharpened rule working before the rule was written.
+
+## A false alarm is most dangerous when it confirms something the reader already fears
+
+Its observation about the misleading merge message, and it is the half I supplied without noticing what it
+meant. **I would have believed *the blind half has landed on backend* — because I reset base off exactly
+that merge four hours earlier and would have read it as a recurrence.** *That one had a prepared audience.*
+
+**A false positive against a background of no expectation gets checked. A false positive that lands on a
+reader already primed for it gets acted on** — and the priming is invisible to the party reporting, who
+does not know what the reader has spent the evening resetting.
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
