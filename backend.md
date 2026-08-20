@@ -3641,6 +3641,45 @@ because the window and the verdict were two independent inputs and nothing could
 listing nine. **The assertion was right and the sentence was not, which is the half a passing run never
 shows.**
 
+## When the only stronger instrument is a worse one, state the gap
+
+**T230's implementer aimed a mutation at its own memory control and found it narrower than it reads.**
+`counter.test.ts` drives 100 000 distinct subjects and asserts `counter.bytes()` is unchanged — **and
+`bytes()` reads `byteLength` off the two typed arrays, so it cannot misreport them and would not see a
+THIRD structure added beside them.** An implementation keeping the slot arrays **and** growing a
+`Map<subject, …>` reports an unchanged figure while growing without bound — **exactly the design the
+file exists to refuse, and the cell is green over it.**
+
+**So the property measured is *these two allocations are fixed*, and the property wanted —
+*nothing here grows with the subject count* — is held by the code having nowhere else to put anything,
+which is a READING rather than a measurement.**
+
+**It considered closing the gap with a process-level heap figure and declined**: a host-dependent
+threshold, which this run has already paid for once, **trading a stated gap for a flaky number.** *The
+honest disposal is the caveat, not a worse instrument.* **Written into both the test and `bytes()`'s own
+docblock, because a caveat stated precisely is a hook somebody else can extend and one stated vaguely is
+a claim the next party has to re-derive.**
+
+**And the control had `bytes()` in both the subject and the instrument** — found only by mutating the
+control, which **nobody does, because a control is what you reach for WHEN you are worried about
+vacuity, so it arrives already feeling like the answer to that question.**
+
+## A dependency guard green for the declaration rather than for the consumption
+
+**T230's routes were minting `{ kind: "account", accountId, handle }` by hand and now call T050's
+published `actorFrom(session)` — and the three lines are not the reason.** **Turning a `SessionPayload`
+into an `Actor` is a decision with a ruling attached** (D-50-13: always `kind: "account"`, because the
+payload carries no `kind`, so **no route can mint an operator and `can`'s operator grant is unreachable
+through HTTP rather than merely untested**). **A second copy of that conversion is a second place for
+the ruling to stop holding, and nothing reds when the two disagree** — D-50-03's argument at a
+constant, arriving at a **conversion**.
+
+**`wave-dependencies` stays green, and it is green for the wrong half**: T050 is declared and tagged,
+**while the guard's other clause reads `@/lib/server/<name>` out of the section body and T230's section
+names no `accounts`.** **Green for the declaration rather than for the consumption — which is precisely
+the distinction *recompute the graph from what contracts CONSUME, not what they DECLARE* exists to
+catch, and the guard cannot make it.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
