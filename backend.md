@@ -3794,6 +3794,56 @@ the symlinked `node_modules` — seven of eight lines.** A path-matching sampler
 reds 8, **so index 0 genuinely does not resolve and K1's green is the discovery discovering rather than
 index 0 quietly succeeding.**
 
+## Both named candidate reds passed, and the two real ones were somewhere else
+
+**T230's implementer pre-registered two candidate reds — a cost-ratio cell it thought might be a flaky
+instrument, and a no-header cell. Both PASSED. The tree returned two reds and neither was one of them.**
+*The region with no prior defects is the region still holding them*, with the author having flagged in
+advance the two places it was already worried about.
+
+**And a count of 2 said nothing; the identity separated them into two different KINDS.**
+
+**Red 1 was a defect in the code, and its direction is the finding.** `isValidLabel` refused control
+characters and **a lone surrogate is not one** — well-formed UTF-16, code point outside every control
+range. **It fails in the OPPOSITE direction from a NUL, which is why the clause was missing: a NUL is
+refused loudly by the driver at 22021, and an unpaired surrogate is accepted QUIETLY, silently replaced
+with U+FFFD — so the write SUCCEEDS carrying bytes the caller never sent**, and the account is later
+shown a label it did not choose. **T010's D-12 at a slug, recorded in this file before that module
+existed.**
+
+**Red 2 was a defect in the test, and it is the shape this run charges most.** *Names the field and never
+the value* handed a **valid** label and expected a rejection — **so it reddened against correct code and
+would have gone GREEN against a module that refused everything.** *A refusal test whose input is
+accepted is testing nothing about the wording.*
+
+**A third red survived both fixes and the code was right: `trim()` removes U+2028 and U+2029 because
+they are LineTerminators rather than merely whitespace**, so a trailing one never reached the predicate
+— **the input carried no decision for the code to make**, the eighth reading of a zero arriving in its
+own fixture. **Measured rather than reasoned: U+009F is neither whitespace nor a LineTerminator and is
+refused at BOTH positions.** Two classes that look alike and `trim()` treats differently — **and the
+trailing case is kept as its own cell asserting the trim, because the boundary is worth stating rather
+than deleting.**
+
+## An 8 that is a 3 and a 5, and a mutation that broke the harness rather than reaching the property
+
+**`checkLimit` made to touch `db` reddened 8, and it reported 3 and 5.** Three cells observe the
+property; **the other five are in a file passing `null as unknown as Db`, so `null.select` throws a
+`TypeError`** — **the mutation broke the harness rather than reaching the subject.** *A mutation's red
+set reaching a subject it had no business touching*, **and a count of 8 would have read as thorough.**
+
+**Its cache mutation did not express its name — fourth session to ship that** — inserting a
+`RESOLVE_CACHE.get(...)` with **no map declared**, so every call was a `ReferenceError` and all three
+reds were the wrong reason. **Re-run with the map declared AND populated, because a cache that never
+fills is a no-op**, it reds the AC4 observer **plus the cross-test cell, because module state leaks
+between tests — which is the process-local-map hazard AC4 names rather than an artefact.**
+
+**And its collapse/saturation pair reds DIFFERENT cells**: *refuse anything in 0xD800..0xDFFF* is the
+plausible wrong fix and it also refuses every emoji, **so the ACCEPTANCE cell is the only thing that
+catches it** — without that mutation the refusal cells would have read as coverage.
+
+**Finally, it declined to call three guards green**: they were outside its scoped run, **so their green
+is still a prediction and it said so until a run covers them.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
