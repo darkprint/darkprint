@@ -4473,9 +4473,12 @@ T130's blind author left a worktree registered at
 `1b90422`. T140's blind author reported it as an orphan; **T130's adversary read the sha and found it is
 the opposite of a hazard.**
 
-**Verified here independently rather than taken:** `git merge-base feat/t130-profiles test/t130-profiles`
-is `1b904224c50332e1d072375097ebdb76ae3b3868` exactly, `git ls-tree -r 1b90422 lib/server/profiles`
-returns **nothing**, and the seven implementation files appear only at `6ffdb17` — not even at `eccab30`.
+**Verified here independently rather than taken, and then RE-ANCHORED — see the correction below.**
+When measured, `git merge-base feat/t130-profiles test/t130-profiles` was
+`1b904224c50332e1d072375097ebdb76ae3b3868` **exactly**; it is now `eccab30`, because T130's blind author
+merged base into its branch and walked the merge-base forward. **The load-bearing fact is not the
+identity**: `git ls-tree -r lib/server/profiles` returns **nothing** at `1b90422` **and nothing at
+`eccab30`**, and the seven implementation files appear only at `6ffdb17`.
 **So a worktree named *sighted*, belonging to the blind author of this task, was pointed at the common
 ancestor and could not have seen the implementation it was writing tests against.** That is the blindness
 claim made checkable after the fact, which nothing else in this run is.
@@ -4486,8 +4489,10 @@ pointing at nothing. Somebody later runs `git worktree prune` to clean the list,
 and **the record that a sighted worktree stood at the merge base goes with it.** The evidence is worth
 more than the directory, so it is written here where a prune cannot reach it:
 
-        t130-sighted  registered at 1b90422  ==  merge-base(feat/t130-profiles, test/t130-profiles)
-                      lib/server/profiles/ absent at that commit; present only from 6ffdb17
+        t130-sighted  registered at 1b90422
+                      lib/server/profiles/ ABSENT at 1b90422 and at eccab30; present only from 6ffdb17
+                      1b90422 is an ancestor of every merge-base these two branches have had
+                      (it WAS the merge-base exactly when first measured; the branches moved)
 
 **A cleanup command that cannot fail is the same shape as a guard that cannot fail**, and this one deletes
 a measurement rather than reporting one.
@@ -4706,6 +4711,89 @@ classifies as `host` for the same reason).
 
 **Three identical runs at peak load 41 is a stronger determinism claim than three at load 5**, and none of
 that load is serialisable by any slot: a Virtualization VM, WindowServer, `corespotlightd`, Spotify.
+
+## An identity claim about a graph is falsified by moving the graph, and the mover was doing something else
+
+I wrote that `t130-sighted` sits at **exactly** `merge-base(feat/t130-profiles, test/t130-profiles)`. True
+when measured. **False now**, because T130's blind author merged `backend` into its branch to prepare a
+fast-forward its user had authorised — an unrelated act — and that walked the merge-base to `eccab30`.
+It reported the breakage **it had caused**, unprompted, against evidence that supported it.
+
+**The substance survives and is wider, which is why this is a correction rather than a retraction.**
+`lib/server/profiles` is absent at `1b90422` **and** absent at `eccab30`, both verified here, so the
+worktree sits at a commit **older than every merge-base these branches have had.** *What is stale is only
+the word "exactly."* **Re-anchored on the absence rather than on the identity**, because the identity is a
+fact about a graph two branches keep moving and the absence is a fact about a tree.
+
+*The fastest way to make a measurement false is to act on it* — and here the actor was neither trying to
+falsify it nor aware it would.
+
+## A claim you could only support by breaking blindness is one to leave the other party holding
+
+T130's blind author verified the halves it could reach — both merge-bases, both `ls-tree`s on base
+commits — and **deliberately did not check my claim about where the seven implementation files first
+appear**, because that claim is about `feat/t130-profiles` and confirming it means listing that branch's
+tree.
+
+**Its refusal is the evidence, in the only form evidence can take from that side.** A blind author that
+had checked would have produced a stronger-looking report and a weaker blindness claim, and the two are
+the same act. **The strongest thing a blind party can offer about a boundary is a named gap where the
+check would have been.**
+
+## 60 and 73 were one artefact under two instruments, and five loops account for the difference
+
+Reconciled exactly. **`it.each` is 0 in all nine files**, so the whole delta is describe-level `for` loops
+wrapping a single `it`: two in `store-faults`, two in `surface`, one in `unknown-handle` — **five, and
+T130's adversary had found three.** Three of length 3 and one of length 6 give **+13**, and `60 + 13 = 73`.
+
+        static it( sites  60      what is written
+        runtime cells     73      what the runner reports
+
+**And the nine blob ids match byte for byte across both parties** — `2ff8816 a24e59a c525b92 94e798e
+8531f96 6b6bf0d 9afc9ba 85023ef 731e5b6`. **The artefact was never in question, and now it is checkable
+that it was not.** Two true numbers, no method attached to either, and the gap read as a contradiction
+until somebody asked — *a count nobody reconciles is how two true statements become a contradiction later*,
+its own line, and the party that should have known better was me.
+
+## The two unattributable databases are MINE, and they are the second cost of the slot I stepped out of
+
+T140's implementer attributed the residue by **creation time** — the mtime of `base/<oid>/PG_VERSION`,
+which `CREATE DATABASE` writes once and nothing rewrites — and labelled it a proxy, which it is. Three
+sessions had answered *zero connections, cannot attribute*; **one asked a different question and the
+answer fell out.**
+
+    2026-08-20T16:39:34Z  darkprint_test_9960fe93…   size 8 813 591
+    2026-08-20T16:39:35Z  darkprint_test_46febdb4…   size 8 813 591   (identical size, one second apart)
+
+**16:39Z is 18:39 local, and 18:39 local is the middle of MY `tests/server/t050/routes.test.ts`
+falsification runs** — four invocations of a file whose `beforeAll` calls `openDatabase()`, one minute
+before my `npm test` at 18:40:41. T140's implementer's own DB-touching windows end at 15:50Z. **The two
+identical sizes are two runs of one suite.**
+
+**So the residue is mine, made inside a slot I had granted to T140's blind author by name.** The slot
+violation is already recorded for its timing cost — 54s against 155s on an unchanged tree. **This is its
+second cost, and it is the more expensive one**: three sessions spent effort on a question that existed
+because I ran a suite out of turn, and each of them correctly declined to drop what they could not
+attribute.
+
+**Dropping them was refused by this session's permission classifier and I have not worked around it.**
+Surfaced to the owner. The refusal is the same shape T130's adversary hit on `git merge`, and the same
+answer applies to me: **a boundary that stops me cleaning up my own mess is still a boundary.**
+
+**`95db6b50…` stays**: created 2026-08-18T06:56, named in `backend.md:4880` and in T005's adversary's
+falsifier as present before their runs, two days before T140 was claimed. **The two `t090_attractor`
+databases stay**: recorded, and T140's implementer notes they are inside a `darkprint%` total even though
+they are invisible to a `darkprint_test%` one.
+
+## Zero connections was the wrong question, and nobody asked a different one for two days
+
+*Zero connections is what a session between runs looks like* is true, and it made three parties stop at
+**cannot attribute** — correctly, since the alternative was destroying somebody's live scratch database.
+**But a database has a creation time, and nothing in this run had looked at it.** The answer took one
+query and a subtraction against a log.
+
+**A conservative refusal is not the same as an exhausted one**, and the three refusals were right while
+the collective conclusion — *unattributable* — was wrong. **The instrument was missing, not the evidence.**
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
