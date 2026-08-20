@@ -3135,6 +3135,25 @@ Re-expressed to change only the **read**: 2 red, both about content.
 separates a mutation that mutated from one that did not*, in its second form: **not a patch that did too
 little, but one that did too much**, and a plausible-looking count is the disguise either way.
 
+## A blind reference inherits whatever the contract underspecifies
+
+**Second round running that T040's blind author's reference had to be corrected to a ruling rather than
+the ruling checked against it.** Round 5: its `normalise` read all four slots directly — the shape D-40-H
+charges. Round 6: its walk snapshotted `children` at enter — **the frozen-content shape D-40-I's control
+exists to catch** — and the content cells reddened it before any mutation ran.
+
+**Its framing is the entry and it is a pattern rather than an incident: a blind reference is written from
+the same contract the suite is, so it inherits whatever the contract UNDERSPECIFIES — and when the suite
+reds it, that is the suite working, not the reference failing.**
+
+**Which makes a red reference a measurement of the contract.** Both times the reference went wrong in
+exactly the direction my ruling was loose: D-40-H's four slots read as four reads, and D-40-I's *extent*
+read as *the whole container's shape*. **The suite catching its own reference is the cheapest signal
+available that a binding surface is ambiguous**, and it fires before any implementation is involved.
+
+**And the order is what makes it possible.** Suite first, then correct the reference until it passes. A
+reference-first round would have validated both defects and reported `n passed`.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -10585,6 +10604,13 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **The fifth axis was looked for and measures CLEAN, with a structural reason that turns D-40-I into a rule rather than a patch.** Its charger flagged array **content** as unchecked rather than letting the round read as exhaustive; its implementer measured it — element replaced mid-walk, replaced behind the cursor, replaced by a getter, and both object equivalents — **five cells, all agreeing.**
 
   **And not by luck.** `SerializeJSONArray` snapshots the **extent** (`LengthOfArrayLike`, once) and reads the **content** live (`Get(value, index)`, per iteration). `SerializeJSONObject` does the same — extent once via `EnumerableOwnPropertyNames`, content live. **So the rule is not *snapshot the length*. It is: snapshot exactly what the serialiser snapshots — the EXTENT — and read live exactly what it reads live — the CONTENT.**
+
+  **AMENDED: *extent* is a LENGTH for arrays and a KEY SET for objects, and those are not the same claim.** T040's blind author's `I03` re-read `Object.keys` per index while keeping the snapshotted length and **reddened nothing** — because on a **two-key** object a key added lands past the loop bound and a key deleted leaves index 1 answering `undefined` either way. **Both equivalent.** What separates them is **three keys with the MIDDLE one deleted and a new one added**:
+
+        serialiser              {"a":1,"c":"CCCC"}
+        re-reading the key set  {"a":1,"c":"CCCC","zzz":"ZZZZZZZZZZZZ"}
+
+  **My wording said *extent* and meant *length*, and for the object branch the extent IS the key set** — a distinction the two existing object cells could not tell apart. **It came from a mutation, not from re-reading the cells**, which is the whole argument for aiming mutations at a suite that already passes.
 
   **That is why the object branch was already right, and, more usefully, why an over-eager fix that ALSO snapshotted the elements would be a new defect.** The five content cells are the control against that repair, the way `[[BooleanData]]` is the control for D-40-H. **A fix ruled as *snapshot the length* invites the next charge; ruled as *match the serialiser's own snapshot boundary*, it does not.**
 
