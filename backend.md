@@ -10653,6 +10653,45 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     difference is the general form — **a control that asserts a property of the FIXTURE can be
     mutated and caught; one that is an inline two-factor assertion can only be deleted, and a
     suite cannot catch the deletion of its own assertion.**
+  - 2026-08-20 test author, **round 5: D-40-H and D-40-24, raised by the implementer as unheld for
+    the second round running.** 17 tests in `coercion.test.ts`; suite **190**. Targeted in this
+    worktree **182 failed | 8 passed | 0 skipped (190)**; `npx eslint .` **zero bytes**, exit 0,
+    read in full; `tsc --noEmit` 2, both the absent module. All 8 green are module-independent by
+    construction and named in the handback.
+  - 2026-08-20 test author: **how a byte count is observed at all, since it is on no published
+    return.** Every coercion cell is a PAIR driven at the `maxBytes` boundary — accepted at exactly
+    `Buffer.byteLength(JSON.stringify(input), "utf8")`, refused at one fewer — so **the oracle is
+    the serialiser itself and never a number I wrote down.** "The walk agrees with the ruled
+    formula" is a claim about the serialiser, and a test carrying its own arithmetic would be
+    checking my transcription of it instead.
+  - 2026-08-20 test author: **the three axes, and the second is the one nothing else separates.**
+    Channel and hint order: an overridden `valueOf` moves a boxed Number and an overridden
+    `toString` does **not** (hint `number` reaches `valueOf` first); an overridden `toString` moves
+    a boxed String and an overridden `valueOf` does **not**. Those two "does NOT consult" cells
+    fail **only** under a wrong hint order, which is the mis-fix cell the `@@toStringTag` cell was
+    the model for. What the channel returns: `ToNumber` is `+value`, and **measured** —
+    `Number(1n)` is `1`, `+1n` throws, and `JSON.stringify` of a boxed Number whose `valueOf`
+    returns a BigInt throws. The non-coercing slots as the control: `[[BooleanData]]` and
+    `[[BigIntData]]` unmoved under all three channels, quantified over the three rather than over
+    the one that would have been enough to notice.
+  - 2026-08-20 test author: **`assert the difference, do not arrange it` is applied to every cell.**
+    Each override's answer is measured against the plain boxed counterpart and required to differ,
+    and each "does NOT consult" cell **computes what the wrong hint would have measured** and
+    requires that to differ too — so `unchanged` has something to be unchanged *from*. That is the
+    check whose absence left one of the implementer's own agreeing cells unable to fail.
+  - 2026-08-20 test author: **11 mutations, 11 CAUGHT, 0 MISS, 0 GAP — and every prediction is
+    recorded with what ELSE saw it**, which is the diagnosis behind six MISSes across the previous
+    two sweeps. The result worth keeping: **`Number()` written for `+` reds exactly 2, and both are
+    BigInt-coercion cells — nothing on the channel axis sees it at all.** That is the claim *nothing
+    on the first axis separates the two implementations*, measured rather than repeated. Two of the
+    eleven are aimed at this round's own controls: a `submissionBytes` that stops consulting the
+    serialiser reds 15, a `withChannel` that installs nothing reds 12.
+  - 2026-08-20 test author: **and the reference needed D-40-H before it could be a reference.** Its
+    `normalise` read all four slots directly — the charged shape — so the suite was written first
+    and the reference corrected to match the ruling, not the other way round. `+v` for 4a, `String(v)`
+    for 4b, direct reads for 4c and 4d, and **no `catch` anywhere near a coercion**, which is what
+    D-40-24 requires: a caller's own throwing `toString` propagates untouched because
+    `JSON.stringify` propagates it too.
 
 ### T080, Registry read model and read API
 

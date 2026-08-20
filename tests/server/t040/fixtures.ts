@@ -521,3 +521,35 @@ export function extensionsCarrying(base: EngineInput, value: unknown): EngineInp
   const { manifest, dot, cardFiles } = base;
   return { manifest, dot, cardFiles, extensions: [{ planted: value }] as never };
 }
+
+/* --------------------- D-40-H: step 4's two coercions and two reads --------------------- */
+
+/**
+ * Install a channel on a boxed primitive without making it an own enumerable key.
+ *
+ * `JSON.stringify` unboxes a boxed primitive, so own properties never reach the output either
+ * way — but a non-enumerable definition keeps the fixture honest about what it is changing, which
+ * is the channel and not the object's shape.
+ */
+export function withChannel<T extends object>(
+  boxed: T,
+  channel: "valueOf" | "toString" | "toPrimitive",
+  fn: () => unknown,
+): T {
+  const key = channel === "toPrimitive" ? Symbol.toPrimitive : channel;
+  Object.defineProperty(boxed, key, { value: fn, configurable: true, writable: true });
+  return boxed;
+}
+
+/**
+ * `Buffer.byteLength(JSON.stringify(input), "utf8")` — D-40-17's literal, used here as the ORACLE
+ * for what a submission measures.
+ *
+ * The measured number is on no published return, so the only way to observe it is the `maxBytes`
+ * boundary: accepted at exactly this many bytes, refused at one fewer. Every coercion cell below
+ * is driven that way, and the oracle is the serialiser itself rather than any number written down
+ * by me — which is the whole of what "the walk agrees with the ruled formula" means.
+ */
+export function submissionBytes(input: EngineInput): number {
+  return Buffer.byteLength(JSON.stringify(input), "utf8");
+}
