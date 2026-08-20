@@ -3286,6 +3286,47 @@ hypothetical. **It also probed the delegated one anyway — 7 of 7 — and swept
 had named.** *Clean because delegated* is a claim; **7 of 7 is the measurement that makes it one worth
 believing.**
 
+## The narrow repair is an equivalent mutant, so the case for the wide one is about the READER
+
+**T040's implementer measured its own justification and withdrew half of it.** `typeof === "object" ||
+"function"` — the narrow repair for D-40-J — **passes all 286 cells.** It then went looking for a value
+separating the two predicates: **16 candidates — proxies over callables and over plain objects,
+cross-realm objects, `Object.create(null)`, boxed symbols and bigints, an `arguments` object —
+distinguish them ZERO times.** The only value that would is an `[[IsHTMLDDA]]` object, which Node cannot
+construct.
+
+**So the case for `Object(x) === x` is that it STATES THE CONDITION, and not that it catches a reachable
+input.** Its own commit message said the wide predicate *leaves the next reader a predicate that reads
+exactly as safe as this one did* — **that claim survives, because it is about the reader** — and it
+declined to make the stronger one.
+
+**A ruling can be right for a reason about legibility rather than behaviour, and saying which is
+load-bearing.** *The wide predicate catches more inputs* would have been unfalsifiable-in-practice and
+nobody would have checked it.
+
+## The candidate set, mutated rather than asserted
+
+**Seven operations DELEGATED — `QuoteJSONString`, `ToString`, `ToNumber`, the four slot predicates, the
+BigInt refusal, `EnumerableOwnPropertyNames`, `IsArray` — and eleven TRANSCRIBED, five of which are the
+five charges.** Written in `limits.ts` **beside the walk, where the next transcription would be
+written**, rather than in this file.
+
+**And it did not assert the other six transcriptions are covered — it mutated each.** Non-finite number
+width 3 red, boolean widths 7, `null` width 2, the comma 27, the colon 36, the array's `undefined →
+"null"` 5. **None at zero.** So the block's closing claim is a **measurement**: nothing in the delegated
+column can be a sixth charge, and nothing in the transcribed column is unobserved.
+
+**Its own falsifier is the sharpest limit on it**: an operation placed in the **delegated** column
+because a runtime primitive performs it **would move columns if that primitive is not the spec
+operation** — **which is exactly what `Number()` against `ToNumber` turned out to be in round 5, one
+column over.** The artefact's weakest column is the one it calls safe, and it says so.
+
+**And retirement by identity: 0 across sixteen mutations from rounds 4, 5 and 6.** One anchor moved
+because **its own D-40-K fix edited the line that mutation patched** — **an anchor being edited, not a
+probe retired.** Re-expressed against the new line, it reports 0 like the rest. **A moved anchor and a
+retired probe both show up as a mutation that stops applying, and only reading the diff separates
+them.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -6444,7 +6485,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind) | `feat/t040-engine`, `test/t040-engine` | reverted | **Round 6 at `70a4074`; blind at `f7d1407` (201 tests); adversary round 6 pending.** Nine charges closed across six rounds — D-40-A/B/C, D-40-D, D-40-F, D-40-G, D-40-H, D-40-I — plus D-40-23 (mine, ruled after a round closed). **Every charge but the first was introduced by the fix for the one before, until D-40-I was ruled as a boundary to break that.** Latest triple `1 failed, 5834 passed, 0 skipped` of 5835, reconciliation `5835 − 271 = 5564`. **Adversary round 6 FAIL at `456bfc6`: D-40-J** — `typeof === "object"` for *Type(value) is Object*, so a callable carrying `toJSON` is dropped; unbounded under-count, `maxBytes` bypass, barrel-only. **The Log is the history; this row is a summary and stops growing** |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind) | `feat/t040-engine`, `test/t040-engine` | impl-done | **Round 6 at `70a4074`; blind at `f7d1407` (201 tests); adversary round 6 pending.** Nine charges closed across six rounds — D-40-A/B/C, D-40-D, D-40-F, D-40-G, D-40-H, D-40-I — plus D-40-23 (mine, ruled after a round closed). **Every charge but the first was introduced by the fix for the one before, until D-40-I was ruled as a boundary to break that.** Latest triple `1 failed, 5834 passed, 0 skipped` of 5835, reconciliation `5835 − 271 = 5564`. **Round 7 at `ebb5e24`: D-40-J and D-40-K closed**, witness first, pre-registration exact; triple `1 failed, 5849 passed, 0 skipped` of 5850, `5850 − 286 = 5564`; sweep 5/5 HIT; **retirement 0 across 16 by identity**; **the delegated/transcribed candidate set shipped in `limits.ts` with all six uncharged transcriptions mutated, none at zero**. **Blind has seen neither D-40-J's callable cells nor D-40-K.** Adversary round 6 had FAILed at `456bfc6`: **D-40-J** — `typeof === "object"` for *Type(value) is Object*, so a callable carrying `toJSON` is dropped; unbounded under-count, `maxBytes` bypass, barrel-only. **The Log is the history; this row is a summary and stops growing** |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -10600,7 +10641,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
