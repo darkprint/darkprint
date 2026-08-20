@@ -29,13 +29,17 @@
    instrument that reaches it, `storedRowCount`, and the reach is
    confined to that helper.
 
-   ── one input class this file deliberately does not create ──
-   A save whose `refId` NEVER named anything. AC3 rules the deleted
-   case and not the never-existed one on the WRITE side, so driving
-   `saveTarget` at a target that does not exist would pin an
-   undecided refusal. The deleted case reaches the same read path
-   and the same observable, and it is created through the published
-   surface, so it is the case this file uses.
+   ── one input class this file could not create, and now can ──
+   A save whose `refId` NEVER named anything. While the write side
+   was undecided, driving `saveTarget` at a target that does not
+   exist would have pinned an undecided refusal, so this file used
+   the DELETED case instead — same read path, same observable,
+   created through the published surface. **D-140-07 rules it**:
+   `saveTarget` does not check that the target exists, because a
+   write-time existence check on a polymorphic target is the oracle
+   AC1 closes. So the cell is written now, at the bottom of this
+   file, and the deleted case stays because the two reach the read
+   filter with different histories.
 
    ── D-140-05: `visibleTo` takes the READING actor, so the operator
       and the owner correctly DISAGREE ──
@@ -60,6 +64,8 @@
    *exists*, and a suite that drove only the blueprint half would
    report AC3 as held while two thirds of it went unobserved.
    ============================================================ */
+
+import { randomUUID } from "node:crypto";
 
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -551,5 +557,76 @@ describe("D-140-03: a term asks EXISTENCE IN THE CURRENT ONTOLOGY VERSION", () =
         "satisfies the cell above completely and destroys the criterion",
     ).toEqual([key({ kind: "term", refId: current.termId })]);
     expect(await ownerCount(s, actor, account.id)).toBe(1);
+  });
+});
+
+/* ============================================================
+   D-140-07 — a target that never existed, from the module side
+
+   "A save of a target that does not exist is accepted and never
+   listed; the cost is that a client typo is silently accepted."
+   The ruling's own words, and this cell asserts both halves —
+   including the cost, because a criterion whose price is stated in
+   prose and observed nowhere is a price nobody is paying attention
+   to.
+
+   Distinct from the DELETED cell above rather than a second name
+   for it: that one reaches the read filter through a row that WAS
+   resolvable, this one through a row that never was. A read that
+   caches resolution, or one that only re-checks a target it has
+   seen before, separates them.
+   ============================================================ */
+
+describe("D-140-07: `saveTarget` accepts a target that does not exist", () => {
+  it("it resolves, the row is stored, and the listing omits it", async () => {
+    const s = await db();
+    const saveTarget = await bind("saveTarget");
+    const { account, actor } = await saver(s);
+
+    const ghost = { kind: "blueprint" as const, refId: `t140-ghost-${randomUUID()}` };
+
+    await expect(
+      saveTarget(s.db, actor, account.id, ghost),
+      "D-140-07: no write-time existence check. A refusal here would separate `no such target` " +
+        "from `a target you may not see`, which is the oracle AC1 exists to close — and it would " +
+        "do it on the write path, where AC3's read filter cannot help.",
+    ).resolves.toBeUndefined();
+
+    expect(
+      await storedRowCount(s, account.id),
+      "the row IS stored — `save.target_id` is deliberately not a foreign key, and that is what " +
+        "makes the silent acceptance possible in the first place",
+    ).toBe(1);
+    expect(
+      await visibleTargets(s, actor, account.id),
+      "and AC3 answers it at READ time: a target that cannot be resolved is omitted, exactly as " +
+        "a deleted one is",
+    ).toEqual([]);
+    expect(await ownerCount(s, actor, account.id)).toBe(0);
+  });
+
+  it("a stored ghost is invisible to the count as well as the listing", async () => {
+    /*
+     * The half a `listSaves`-only cell would miss. AC3's agreement clause is what ties them, and
+     * a count built from the stored rows answers 2 here while the listing answers 1 — which is
+     * the same defect M11 reddened, reached through an input class no other cell creates.
+     */
+    const s = await db();
+    const saveTarget = await bind("saveTarget");
+    const { account, actor } = await saver(s);
+    const publisher = await seedAccount(s, "pub");
+    const real = await seedBundle(s, { ownerId: publisher.id, visibility: "public" });
+
+    await saveTarget(s.db, actor, account.id, { kind: "blueprint", refId: real.id });
+    await saveTarget(s.db, actor, account.id, {
+      kind: "blueprint",
+      refId: `t140-ghost-${randomUUID()}`,
+    });
+
+    expect(await storedRowCount(s, account.id), "two rows stored").toBe(2);
+    expect(await visibleTargets(s, actor, account.id)).toEqual([
+      key({ kind: "blueprint", refId: real.id }),
+    ]);
+    expect(await ownerCount(s, actor, account.id), "one visible, and the count says one").toBe(1);
   });
 });

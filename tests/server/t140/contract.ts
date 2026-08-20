@@ -113,11 +113,12 @@
    now()` satisfies the contract's own gloss and a timestamp pin
    would fill a silence.
 
-   `saveTarget` against a `refId` naming nothing, on the WRITE side.
-   `target_id` is deliberately not a foreign key, so the row is
-   storable; AC3 rules the *deleted* case and not the
-   *never-existed* one. The READ side is asserted, being the same
-   code path and the same observable.
+   (The never-existed target was here as unasserted and is not any
+   more. D-140-07 rules the write side: `saveTarget` does not check
+   that the target exists, because a write-time existence check on a
+   polymorphic target is the oracle AC1 closes. It is now driven
+   from both ends — the module cell in `visibility.test.ts` and the
+   200 in `routes.test.ts`.)
 
    Whether `<operation>` in either message form is the published
    function's own name. It is READ that way — the convention
@@ -129,8 +130,12 @@
    ============================================================ */
 
 import { randomUUID } from "node:crypto";
+import { readdirSync, type Dirent } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { schema } from "@/lib/db";
+import { schema, type DbClient } from "@/lib/db";
+import { SESSION_COOKIE_NAME, encodeSession } from "@/lib/server/auth";
 import type { Actor } from "@/lib/server/policy";
 import { createTestDb, type TestDb } from "@/tests/support";
 
@@ -887,4 +892,429 @@ export function plantedToken(): string {
 /** A uuid nothing in the database is keyed by. Used as an account id that names no account. */
 export function absentUuid(): string {
   return randomUUID();
+}
+
+
+/* ============================================================
+   D-140-07 — the route surface, published after the 176 module
+   cells were written and read here from the block rather than
+   from the message that announced it
+
+   Four routes over ONE request shape, and that shape is
+   `saveTarget`'s own `target` parameter, so the route translates
+   nothing. `SEAM-61`/`SEAM-62`'s compound key space is WITHDRAWN
+   rather than mapped, and nothing in this suite has ever bound to
+   it.
+
+   ── what is FORBIDDEN to assert here, by the ruling ──
+   A 403. Every route passes `session.accountId`, so
+   `NotAccountOwnerError` compares an id against itself and cannot
+   arise. **AC1's non-owner denial is unreachable from HTTP in this
+   task, and its absence from the status lines is not evidence that
+   the denial is untested** — it is held by the 70 module pairs in
+   `privacy.test.ts`, and this sentence is here so a later reader
+   does not go looking for it in the wrong file.
+
+   A 404 on a write. `saveTarget` does not check that the target
+   exists, deliberately: 404 for a private blueprint against 200 for
+   a public one names which private slugs are real, which is the
+   oracle AC1 exists to close. A cell expecting 404 would be
+   asserting the leak.
+
+   ── and one clause that is UNOBSERVABLE through the transport ──
+   "`count` comes from `countSaves`, never from `saves.length`."
+   Against a correct module the two are equal in every state, so a
+   route computing `saves.length` is an EQUIVALENT MUTANT through
+   the wire and no cell here can separate them. What IS observable
+   is the agreement itself in a single response, which is what the
+   extra query is paid for, so that is what is asserted — and the
+   provenance clause is recorded as held by nothing rather than
+   left to look covered.
+   ============================================================ */
+
+export const PROBLEM_BASE = "https://darkprint.io/problems";
+
+export interface SavesRoute {
+  method: string;
+  path: string;
+  /** The published request body, or `undefined` where the route publishes none. */
+  body: (target: Target) => unknown;
+}
+
+export const ROUTES = {
+  list: { method: "GET", path: "/api/account/saves", body: () => undefined },
+  save: { method: "POST", path: "/api/account/saves", body: (t: Target) => ({ ...t }) },
+  unsave: { method: "DELETE", path: "/api/account/saves", body: (t: Target) => ({ ...t }) },
+  migrate: {
+    method: "POST",
+    path: "/api/account/saves/migrate",
+    body: (t: Target) => ({ targets: [{ ...t }] }),
+  },
+} as const satisfies Record<string, SavesRoute>;
+
+export type RouteName = keyof typeof ROUTES;
+export const ROUTE_NAMES = Object.keys(ROUTES) as RouteName[];
+/** The three that publish a body, derived from the table rather than listed beside it. */
+export const WRITE_ROUTE_NAMES = ROUTE_NAMES.filter(
+  (n) => ROUTES[n].body({ kind: "blueprint", refId: "x" }) !== undefined,
+);
+
+/** Exactly the keys `SavesView` publishes. */
+export const SAVES_VIEW_KEYS = ["count", "saves"] as const;
+
+const ROUTE_FILE = /^route\.(ts|tsx|js|mjs)$/;
+const SAVES_ROOT = fileURLToPath(new URL("../../../app/api/account/saves/", import.meta.url));
+
+interface DiscoveredRoute {
+  pattern: string;
+  file: string;
+}
+
+function walk(dir: string, segments: string[], out: DiscoveredRoute[]): void {
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return; // a tree the implementation has not created yet
+  }
+  for (const entry of entries) {
+    if (entry.isDirectory()) walk(join(dir, entry.name), [...segments, entry.name], out);
+    else if (ROUTE_FILE.test(entry.name)) {
+      const suffix = segments.length > 0 ? `/${segments.join("/")}` : "";
+      out.push({ pattern: `/api/account/saves${suffix}`, file: join(dir, entry.name) });
+    }
+  }
+}
+
+/**
+ * The route table, walked rather than guessed.
+ *
+ * The file layout is the implementation's and the URL is the contract's, so a red says "this
+ * URL is unserved" rather than "a file is missing from where I looked". Deliberately not
+ * memoised as an EMPTY result: an absent tree throws and a later call re-walks, so the first
+ * test's timing does not decide every later test's answer.
+ */
+let table: DiscoveredRoute[] | undefined;
+
+export function routeTable(): DiscoveredRoute[] {
+  if (table !== undefined && table.length > 0) return table;
+  const found: DiscoveredRoute[] = [];
+  walk(SAVES_ROOT, [], found);
+  if (found.length === 0) {
+    throw new Error(
+      `No route file exists under \`app/api/account/saves/\`.\n` +
+        `  D-140-07 publishes four: ${ROUTE_NAMES.map((n) => `${ROUTES[n].method} ${ROUTES[n].path}`).join(", ")}\n` +
+        `  The tree is walked, not guessed, so this is a failed acceptance criterion rather than ` +
+        `a test looking in the wrong place.`,
+    );
+  }
+  table = found;
+  return table;
+}
+
+export function servedPatterns(): string[] {
+  return [...new Set(routeTable().map((r) => r.pattern))].sort();
+}
+
+/** The session cookie a signed-in caller carries, minted with T000's own published encoder. */
+export function sessionCookie(accountId: string, handle: string | null = null): string {
+  return `${SESSION_COOKIE_NAME}=${encodeSession({ accountId, handle })}`;
+}
+
+export interface RouteAnswer {
+  status: number;
+  contentType: string | null;
+  body: string;
+  json: unknown;
+}
+
+export async function callRoute(
+  name: RouteName,
+  init: { cookie?: string; body?: unknown; rawBody?: string; method?: string } = {},
+): Promise<RouteAnswer> {
+  const spec = ROUTES[name];
+  const entry = routeTable().find((r) => r.pattern === spec.path);
+  if (entry === undefined) {
+    throw new Error(
+      `\`${spec.path}\` is unserved. Discovered: ${servedPatterns().join(", ")}\n` +
+        `  D-140-07 publishes \`${spec.method} ${spec.path}\`.`,
+    );
+  }
+  let mod: Namespace;
+  try {
+    mod = (await import(/* @vite-ignore */ pathToFileURL(entry.file).href)) as Namespace;
+  } catch (cause) {
+    throw new Error(`\`${spec.path}\` does not load.`, { cause });
+  }
+  const method = init.method ?? spec.method;
+  const handler = mod[method];
+  if (typeof handler !== "function") {
+    throw new Error(
+      `\`${spec.path}\` exports no \`${method}\` (it has: ` +
+        `${Object.keys(mod).sort().join(", ") || "(nothing)"}).\n` +
+        `  D-140-07 publishes \`${spec.method} ${spec.path}\`.`,
+    );
+  }
+
+  const headers: Record<string, string> = {};
+  if (init.cookie !== undefined) headers.cookie = init.cookie;
+  const payload =
+    init.rawBody !== undefined
+      ? init.rawBody
+      : init.body === undefined
+        ? undefined
+        : JSON.stringify(init.body);
+  if (payload !== undefined) headers["content-type"] = "application/json";
+
+  const request = new Request(`https://darkprint.test${spec.path}`, {
+    method,
+    headers,
+    ...(payload === undefined ? {} : { body: payload }),
+  });
+
+  const answered = await (handler as UnknownFn)(request, { params: Promise.resolve({}) });
+  if (!(answered instanceof Response)) {
+    throw new Error(
+      `\`${spec.method} ${spec.path}\` answered ${describe_(answered)}; a route handler returns ` +
+        `a Response.`,
+    );
+  }
+  const body = await answered.text();
+  let json: unknown;
+  try {
+    json = JSON.parse(body);
+  } catch {
+    json = undefined;
+  }
+  return { status: answered.status, contentType: answered.headers.get("content-type"), body, json };
+}
+
+/** RFC 9457's five members, all of them, at the status the contract names. */
+export function assertProblem(
+  answer: RouteAnswer,
+  expected: { status: number; instance: string },
+  where: string,
+): Record<string, unknown> {
+  if (answer.status !== expected.status) {
+    throw new Error(
+      `${where} answered ${answer.status}, expected ${expected.status}.\n` +
+        `  body: ${answer.body.slice(0, 400)}`,
+    );
+  }
+  if (
+    answer.contentType === null ||
+    answer.contentType.split(";")[0].trim() !== "application/problem+json"
+  ) {
+    throw new Error(
+      `${where} answered content-type ${JSON.stringify(answer.contentType)}; B-03 makes a ` +
+        `transport or auth failure \`application/problem+json\` (RFC 9457).`,
+    );
+  }
+  const body = answer.json as Record<string, unknown> | undefined;
+  if (typeof body !== "object" || body === null) {
+    throw new Error(`${where} answered a body that is not a JSON object: ${answer.body.slice(0, 200)}`);
+  }
+  for (const member of ["type", "title", "status", "detail", "instance"]) {
+    if (body[member] === undefined) {
+      throw new Error(
+        `${where}: RFC 9457 member \`${member}\` is absent. Present: ` +
+          `${Object.keys(body).sort().join(", ")}.\n  T000 paid for this one: a problem response ` +
+          `missing a member is not a smaller problem response, it is one a client cannot branch on.`,
+      );
+    }
+  }
+  if (body.status !== expected.status) {
+    throw new Error(
+      `${where}: \`status\` is ${JSON.stringify(body.status)} while the response is ` +
+        `${answer.status}; the two are one fact and a client may read either.`,
+    );
+  }
+  if (body.instance !== expected.instance) {
+    throw new Error(
+      `${where}: \`instance\` is ${JSON.stringify(body.instance)}, expected ${expected.instance}.`,
+    );
+  }
+  return body;
+}
+
+/** `SavesView`'s key set over the RENDERING, and `savedAt` as the ISO string it crosses as. */
+export function assertSavesView(answer: RouteAnswer, where: string): {
+  saves: Record<string, unknown>[];
+  count: unknown;
+} {
+  if (answer.status !== 200) {
+    throw new Error(`${where} answered ${answer.status}, expected 200.\n  body: ${answer.body.slice(0, 400)}`);
+  }
+  const view = answer.json;
+  if (typeof view !== "object" || view === null || Array.isArray(view)) {
+    throw new Error(`${where} answered ${describe_(view)}; \`SavesView\` is an object.`);
+  }
+  const keys = Object.keys(view).sort();
+  if (keys.length !== 2 || keys[0] !== "count" || keys[1] !== "saves") {
+    throw new Error(
+      `${where} does not render as \`SavesView\`.\n` +
+        `  published: ${[...SAVES_VIEW_KEYS].join(", ")}\n  rendered:  ${keys.join(", ")}`,
+    );
+  }
+  const { saves, count } = view as { saves: unknown; count: unknown };
+  if (!Array.isArray(saves)) {
+    throw new Error(`${where}: \`saves\` is ${describe_(saves)}; the block publishes an array.`);
+  }
+  for (const [i, record] of saves.entries()) {
+    assertSaveRecordKeys(record, `${where}.saves[${i}]`);
+    const savedAt = (record as { savedAt?: unknown }).savedAt;
+    if (typeof savedAt !== "string" || Number.isNaN(Date.parse(savedAt))) {
+      throw new Error(
+        `${where}.saves[${i}].savedAt is ${describe_(savedAt)}; D-140-07 publishes it as an ISO ` +
+          `STRING across the wire, \`ok\` being \`Response.json\` over a \`Date\`. This is the one ` +
+          `field where a route cell and a module cell assert different types.`,
+      );
+    }
+  }
+  return { saves: saves as Record<string, unknown>[], count };
+}
+
+/** `kind:refId` for each record in a `SavesView`, sorted. Ordering is unpublished. */
+export function viewTargetSet(answer: RouteAnswer, where: string): string[] {
+  return assertSavesView(answer, where)
+    .saves.map((r, i) => targetOf(r, `${where}.saves[${i}]`))
+    .sort();
+}
+
+/* --------------------- pointing the routes at a database --------------------- */
+
+const SHARED_CLIENT_KEY = Symbol.for("darkprint.db.sharedClient");
+type GlobalWithShared = typeof globalThis & { [SHARED_CLIENT_KEY]?: DbClient };
+
+/**
+ * Run `work` with the shared client every route reaches for pointed at `url`.
+ *
+ * `getSharedDbClient()` is lazy and cached on `globalThis` behind a well-known symbol
+ * (`lib/db/client.ts:50`), so `DATABASE_URL` has to be set AND the cache cleared before the
+ * first handler call, or the route silently keeps whatever pool a previous test opened. The
+ * slot is restored afterwards and the client this created is closed, because a pool left open
+ * outlives the last assertion and blocks the scratch database's `DROP`.
+ */
+export async function withRoutesPointedAt<T>(url: string, work: () => Promise<T>): Promise<T> {
+  const g = globalThis as GlobalWithShared;
+  const previousUrl = process.env.DATABASE_URL;
+  const previousClient = g[SHARED_CLIENT_KEY];
+  process.env.DATABASE_URL = url;
+  delete g[SHARED_CLIENT_KEY];
+  try {
+    return await work();
+  } finally {
+    const opened = g[SHARED_CLIENT_KEY];
+    if (opened !== undefined && opened !== previousClient) {
+      try {
+        await opened.close();
+      } catch {
+        /* Teardown is not under test. */
+      }
+    }
+    if (previousUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = previousUrl;
+    if (previousClient === undefined) delete g[SHARED_CLIENT_KEY];
+    else g[SHARED_CLIENT_KEY] = previousClient;
+  }
+}
+
+
+/* ============================================================
+   D-140-08 — the ruled order, as a comparator
+
+       ORDER BY saved_at DESC, target_kind ASC, ref_id ASC
+
+   Lifted here rather than left in one test file because BOTH
+   surfaces are ordered by it: `listSaves` produces the sequence and
+   `SavesView.saves` forwards it, so a route that re-sorted would
+   satisfy a module cell alone.
+
+   ── why "equals its own sort" is not circular, written down
+      because it LOOKS circular ──
+   Asserting that a returned list equals its own sort under a
+   comparator fails exactly when the list was not already in that
+   order — provided the comparator is TOTAL over the data. It is:
+   `save_account_target_key` is unique on
+   `(account_id, target_kind, target_id)`, so within one account no
+   two records can tie on all three keys, and `Array.prototype.sort`
+   is never asked to break a tie it cannot break.
+
+   **If the comparator were PARTIAL this check would pass vacuously
+   on every tied pair**, because a stable sort would leave those
+   pairs exactly where it found them and the comparison would be
+   against the input. That is the failure mode, it is real, and the
+   uniqueness constraint is what rules it out — so the argument
+   rests on the schema rather than on the comparator looking
+   thorough.
+   ============================================================ */
+
+export interface Seen {
+  targetKind: string;
+  refId: string;
+  /** Milliseconds, so a `Date` from the barrel and an ISO string from a route compare alike. */
+  at: number;
+}
+
+/** The published record, reduced to the three fields D-140-08 orders by. Nothing else is read. */
+export function seenOf(record: unknown, where: string): Seen {
+  const r = record as { targetKind?: unknown; refId?: unknown; savedAt?: unknown };
+  if (typeof r?.targetKind !== "string" || typeof r?.refId !== "string") {
+    throw new Error(`${where} is not a SaveRecord: ${describe_(record)}`);
+  }
+  const at = new Date(r.savedAt as string | number | Date).getTime();
+  if (Number.isNaN(at)) {
+    throw new Error(`${where}.savedAt is ${describe_(r.savedAt)}, which is not a time.`);
+  }
+  return { targetKind: r.targetKind, refId: r.refId, at };
+}
+
+/**
+ * D-140-08 as a comparator, applied to whatever came back.
+ *
+ * `saved_at DESC` first, then `target_kind ASC`, then `ref_id ASC`.
+ *
+ * **D-140-09 rules `target_kind ASC` LEXICOGRAPHIC**, so a plain string comparison over the
+ * published `targetKind` is the comparator and needs no caveat. That ruling exists because the
+ * obvious reading is wrong: `target_kind` is a pgEnum, and **Postgres orders an enum column by
+ * DECLARATION order, not alphabetically.** `["blueprint", "card", "term"]` happens to be both, so
+ * the two readings coincide and nothing in the data distinguishes them — which is precisely the
+ * shape that would have made this comparator right for a reason nobody was relying on.
+ *
+ * **D-140-10 then made it true BY CONSTRUCTION: the store sorts `target_kind::text`.** That
+ * matters to what this comparator rests on rather than to what it does. Before it, the safety of
+ * a JavaScript string sort depended on a premise about enum declaration order plus a guard in
+ * `tests/enum-declaration-order.test.ts` — a file this task cannot see and whose green is
+ * somebody else's. After it, the cast is in the query and the coincidence is not load-bearing at
+ * all; the guard is defence in depth. **Recorded because the comparator did not change and its
+ * reason did, and this docblock has already carried one wrong reason for exactly this field.**
+ *
+ * **My own first version of this comment gave the wrong reason and it is corrected here rather
+ * than quietly replaced.** It said the comparison is code-point because "SQL's `ASC` on `text`
+ * under this database's collation is a code-point ordering". That is true of `ref_id`, which IS
+ * `text`, and it is NOT true of `target_kind`, which is an enum and never consulted a collation
+ * at all. A true conclusion resting on the wrong mechanism propagates the mechanism — the next
+ * reader would have gone looking for a collation on a column that has none.
+ *
+ * `<`/`>` on the raw values rather than `localeCompare` for the `ref_id` half, since a
+ * locale-aware comparator disagrees with a code-point one on exactly the inputs nobody tests.
+ */
+export function ruledOrder(records: readonly Seen[]): Seen[] {
+  return [...records].sort((a, b) => {
+    if (a.at !== b.at) return b.at - a.at;
+    if (a.targetKind !== b.targetKind) return a.targetKind < b.targetKind ? -1 : 1;
+    if (a.refId !== b.refId) return a.refId < b.refId ? -1 : 1;
+    return 0;
+  });
+}
+
+export function asKeys(records: readonly Seen[]): string[] {
+  return records.map((r) => `${r.targetKind}:${r.refId}`);
+}
+
+/** How many adjacent pairs share a `savedAt`, so a report can say whether the tie-break ran. */
+export function tiedPairs(records: readonly Seen[]): number {
+  let ties = 0;
+  for (let i = 1; i < records.length; i += 1) if (records[i].at === records[i - 1].at) ties += 1;
+  return ties;
 }
