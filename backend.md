@@ -5191,6 +5191,66 @@ T140's implementer's line, on its own convergence with T130's adversary about
 had read the other**, so the agreement is about ES2022 rather than about either being careful. *What would
 have made it worth less is if either had read the other first.*
 
+## A DOMAIN CHECK reads like a lookup, so the stamp discipline never reached it
+
+T140's implementer refused *"your green stands"* on my word and turned the mutable-ref hazard on its own
+evidence. **Its run and its domain check were two separate commands, each dereferencing `backend`
+independently** — so *the walk reached `saves`* and *the walk was green* were claims about two
+dereferences it had no evidence agreed. **The anti-vacuity check it was pleased with rested on a ref that
+could have moved between the two.**
+
+It did not bite. `backend` sat at `67b077a` from `20:31:13` to `20:35:30` and the run was at `20:31:52`,
+1.15s. **But it reported the margin rather than rounding it to safe**: 39 seconds after the previous move,
+on a ref that had moved **five times in the preceding 45 minutes, twice by reset**. *The green stands by
+measurement; it does not stand because two commands near each other in time are obviously fine.*
+
+**The rule underneath: the stamp discipline is written for MEASUREMENTS, and a domain check reads like a
+LOOKUP.** So does a readiness check, a dry run, a `rev-parse` quoted into a report. **Cheapness is why
+they escape the discipline, not a reason they should** — and every one of them is an input somebody will
+reason from.
+
+**And it was checkable afterwards by luck about the instrument rather than by foresight.** `git reflog`
+happens to be durable and happens to survive a reset — both of this evening's resets are still in it.
+**Had the record been anything less durable, *did my two commands see the same tree* would have been
+unanswerable rather than merely unanswered**, which is precisely the state a stamp exists to prevent.
+*An answer you could only reconstruct because the tooling happened to keep a receipt is not a practice.*
+
+## D-140-08: `listSaves` is ordered, and the tie-break moves off a RANDOM uuid onto published fields
+
+T140's implementer raised `listSaves`' order **twice**, chose newest-first, wrote in `store.ts` that *the
+order is this module's choice and the block publishes none* — **and I never ruled it.** It raised it a
+third time only because **the exposure changed**, which is the part that makes this new rather than a
+repeat.
+
+**A module cell can assert a set; a route cell almost cannot.** Its own AC4 cell sorts before comparing,
+deliberately, so it pins distinguishability and not order. But `SavesView` crosses as
+`{ saves: [...], count }`, and **the natural assertion against a JSON array is a deep-equal against an
+array literal, which pins order implicitly and without anyone deciding to.** Three outcomes and one is
+good: the cells sort or assert membership and nothing happens; they deep-equal in the implementer's order
+and go **green for a reason nobody chose**, which is worse than a red because it makes an unpublished
+choice look like contract; or they deep-equal in a different order and red against code that violates
+nothing. ***A suite that fills a contract's silence becomes a second contract, and the next implementer
+meets two.***
+
+**Ruled, and reading the code to rule it found the tie-break is worse than unpublished — it is RANDOM.**
+`store.ts:86` is `orderBy(desc(save.createdAt), asc(save.id))` and `save.id` is
+`uuid().primaryKey().defaultRandom()`. **So two saves written in the same instant order by a random
+value**: unobservable from `SaveRecord`, which publishes only `{ targetKind, refId, savedAt }`, and
+*arbitrary* rather than merely hidden. **A blind author cannot predict it and neither can a second run.**
+
+        ORDER BY  saved_at DESC, target_kind ASC, ref_id ASC
+
+**Newest-first as built, and the tie-break on the two remaining PUBLISHED fields.** It is a **total** order
+because `save_account_target_key` is unique on `(account_id, target_kind, target_id)`, so within one
+account no two rows tie on all three — **and it is total in terms a blind author can compute from the
+records alone**, which the `id` tie-break never was. The implementer's stated reason for having a
+tie-break at all stands verbatim: *an unordered read would make every downstream assertion flaky.*
+
+**Its own framing is why this was cheap now and expensive later**: *cheap to close now and expensive to
+meet as a red.* And it proposed the disambiguating question rather than the answer — **ask the blind
+author whether its route cells assert `saves` by order, membership or length** — *which settles which of
+the three we are in without either of us seeing the other's work.*
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -14833,6 +14893,14 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         unsaveTarget(db: Db, actor: Actor, accountId: string, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<void>
         countSaves(db: Db, actor: Actor, accountId: string): Promise<number>
         migrateLocalSaves(db: Db, actor: Actor, accountId: string, targets: readonly { kind: "blueprint" | "card" | "term"; refId: string }[]): Promise<void>
+
+  **D-140-08: `listSaves` returns `saved_at DESC, target_kind ASC, ref_id ASC`**, newest-first with the
+  tie-break on **published** fields. Total within an account because `save_account_target_key` is unique
+  on `(account_id, target_kind, target_id)`. **The shipped `asc(save.id)` tie-break is withdrawn**: `id`
+  is `defaultRandom()`, so same-instant saves ordered by a random value — unobservable from `SaveRecord`
+  and arbitrary rather than merely hidden. Raised three times by the implementer and unruled until the
+  route cells changed the exposure: **a module cell can assert a set, a route cell deep-equalling a JSON
+  array pins order without anyone deciding to.**
 
   **The route surface, published by D-140-07 and owed to this task since D-140-04.** Four routes over
   **one** request shape, and that shape is `saveTarget`'s own `target` parameter rather than a third
