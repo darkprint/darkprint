@@ -12309,6 +12309,56 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     the other transcribed rows' counts (3, 7, 2, 27, 36, 5) are the implementer's and were
     re-derived by nobody this round.
 
+  - **2026-08-20 adversary round 7, CORRECTION to the entry above, raised by the orchestrator and
+    falsified by measurement. Two sentences are struck and they are quoted rather than deleted,
+    because a retraction with nothing to retract is not a record.** Struck: *"including three
+    cold-cache runs, two replays of the exact wide-then-narrow sequence, and six runs of the two
+    timing tests under a declared six-way burner"* as a statement about a **contrast**, and *"the
+    D-40-F cost ratio spreads 4.20 – 29.16 idle and 8.12 – 9.58 under a six-way burner ... the
+    min-of-7 estimator is steadier under load, which is why load did not reproduce it."*
+    **The word `idle` is false in both.**
+  - **The mechanism: my burners were backgrounded with `&` and outlived the loop that started
+    them, so `kill %1 %2 …` in a non-interactive `zsh` did not reach them.** Three groups, not the
+    two the orchestrator measured — `62717` (from the 4-way block), `67540` and `68110` (the two
+    6-way blocks) — six processes at 92–99% CPU for **five hours and forty-nine minutes**, killed
+    at the orchestrator's report with `kill -TERM -<pgid>`, and an activity-based sweep after it
+    shows nothing on the host above 36%. **A declared cost is a claim about INTENT and not a
+    measurement of duration**: I declared *under a minute each* about commands that had already
+    been backgrounded, so the declaration was true of what I meant and false of what ran.
+  - **What that does to the round's own numbers, reconstructed from the vitest `Start at` stamps
+    against the groups' elapsed times.** The first burner started at about **09:27**; the red is
+    at **09:24:56**. So:
+      - **The red was observed on a burner-free host.** Nothing I ran had loaded it yet.
+      - **Seven of the non-reproduction runs were also burner-free** — the 09:25:28 re-run and the
+        six-run loop after it. Those seven stand exactly as reported.
+      - **Everything after 09:27 carried two to eight saturated cores**, including the three
+        cold-cache runs, both sequence replays, both probe3 sweeps and the six timing-test runs.
+      - **So the contrast I reported was 2 cores against 8, not 0 against 6**, and the 4.20 – 29.16
+        spread labelled `idle` was measured with two cores already gone. **I never re-ran the
+        condition the red actually occurred in**, which is the one direction a non-reproduction
+        needed to cover.
+    **The honest statement is narrower**: seven clean non-reproductions, not twenty, and the
+    load axis is uncalibrated rather than measured. The red is more open than I left it, not less.
+  - **And the correction runs the other way for the gates, which is not a consolation but the same
+    fact.** `tsc`, `lint`, `build`, the ten root guards and every 306-test run were taken at
+    **09:32 and later, under six saturated cores nobody could see.** Green there is stronger than
+    green on a quiet host, exactly as it is for a determinism triple.
+  - **The finding that outlives this round is the orchestrator's and it is about the samplers.**
+    Every contention detector in this run matches on a **name** — a `vitest` process group, a
+    `darkprint` path — and these were `zsh` wrappers whose group is neither. **Six processes at
+    99% were the loudest things on the host and every name-matching detector looked straight past
+    them, while being correct about what it measured.** The instrument that would have caught it
+    exists and was not adopted: **filter on ACTIVITY — `%CPU` over every process on the host —
+    then attribute, rather than filtering on a name and never seeing what the name misses.**
+    `peers=0` from a name filter means *no peer process I can name*, which is not the quantity the
+    slot rule is about.
+  - **Nothing here touches D-40-L, and that is a claim about kind rather than a reassurance.**
+    The charge, its ten cells, the three controls, the 10-of-10 repair and the 0-newly-red
+    coverage measurement are **in-process differential comparisons against `JSON.stringify` in the
+    same process**, with no clock in any of them. The 306 is a count. A saturated host moves none
+    of those, and the two sentences struck above are the only ones in that entry that rest on a
+    duration.
+
 ### T080, Registry read model and read API
 
 - **State:** merged
