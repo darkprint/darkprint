@@ -6199,6 +6199,61 @@ adversary's integration and passed 215/215.**
 from a floor to do**: *a merge commit remains the only place it changes.* Raised to 22 in the merge commit,
 which is the orchestrator's edit and not the implementer's, as its implementer correctly refused to make.
 
+## D-130-21: the fixture correction and a witness for `MalformedStoredVocabularyError` land TOGETHER
+
+T130's implementer's gate found that **the three fixture reds are D-130-10's only live witness.** The
+`Caused by:` chain reads `Error: release.local_vocabulary is not a YAML mapping.` and **the trace passes
+through `withProfileStore` at `store.ts:61` — the pass-through arm.** So the amendment is not merely
+present, it is **observed end to end**: the class fires, the message carries the operation and nothing
+else, the parser's diagnostic stays on `cause`, and the wrapper declines to relabel. **Before the amendment
+those same three rendered `getProfile: the profile store failed.`, naming a store that had just answered.**
+*Said from a run rather than from an argument.*
+
+**And correcting the fixture makes all three green and leaves the class with no witness at all.**
+
+***A fix that closes a path closes every probe that used it***, and the question owed at every fix is
+**what did this stop being able to fail?** It is not arguing against the correction — the correction is
+right — **it is saying the class needs a cell of its own in the same change, or D-130-10 ships unobserved
+and reverting it reds nothing.**
+
+**Ruled: they land together.** The fixture correction and a dedicated `MalformedStoredVocabularyError` cell
+are one change, written by T130's blind author, which owns `tests/server/t130/**`. **The witness must drive
+the class through the published surface** — a stored vocabulary the parser refuses, `getProfile`, and an
+assertion on the **class and its `type`** rather than on the message text, since D-130-10's whole content is
+that this condition is distinguishable from a store fault.
+
+## A pre-registration that MISSES on identity while the count is right
+
+It predicted T090's red, `error-hygiene` green, and `cards`-member reds in `counts.test.ts` and
+`routes.test.ts` — **and did not predict the three `MalformedStoredVocabularyError` reds as their own
+family**, having assumed all seven `counts.test.ts` reds were `cards` residue when two are the vocabulary
+fixture.
+
+***The suite was right and the prediction was incomplete, which is the useful kind*** — **and the count
+would have hidden it: 25 was going to be 25 either way.** This is the argument for pre-registering by
+**identity and scope** rather than by total, made by a session whose total was correct.
+
+## An instrument that records a COUNT cannot comply with the rule to read the LINE
+
+Run 2's contention figure is **unusable and it declined to report it as a number.** It simplified the
+sampler between runs, **dropping the own-process-group filter**, so `foreign=10` is almost certainly its
+own vitest workers — **and it cannot prove that, because the simplified version recorded a count and not
+the matching lines.**
+
+***An instrument that records a count cannot comply with the rule to read the line*** — committed **one
+run after using the correct form.** Runs 1 and 3 used the filtered sampler: **peak foreign 0** in both, run
+3 keeping the lines and capturing none.
+
+**And it read its own detector's single match rather than counting it**: one `darkprint` line, **its own
+grep pipeline** — the self-matching detector caught the way this file says to catch it, by a session that
+had read the entry.
+
+## "Added none" reasoned from a record is not "added none" measured from a delta
+
+Its residue statement, and the precision is the point: **it did not take a before-stamp**, so *added none*
+is reasoned from **every name present being one the file already names**, not from a delta it measured.
+**Stated as the weaker claim it is**, rather than borrowed from the shape of the stronger one.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -16212,6 +16267,12 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   mapping**, so the module is correct and the fixture is wrong. **The untyped `jsonb` column is the real
   defect — T133 created for it** — and T130 is its victim rather than its author. **The blind suite owes the
   fixture correction.**
+- **D-130-21: the fixture correction and a `MalformedStoredVocabularyError` witness land TOGETHER**, both
+  the blind author's. The three fixture reds are the class's **only live witness** — the trace passes
+  through `withProfileStore`'s pass-through arm, so D-130-10 is observed end to end rather than merely
+  present — and **correcting the fixture retires it.** *A fix that closes a path closes every probe that
+  used it.* The witness drives the class through `getProfile` and asserts the **class and its `type`**, not
+  the message text.
 - **D-130-20: `error-hygiene` is 24 at T130's merge, not 23.** D-130-10 requires a **second** sealed
   class, so T130 contributes **+2** — verified: the barrel exports `MalformedStoredVocabularyError` and
   `ProfileStoreError`. **The ruling that created the second class and the count travelled in different
