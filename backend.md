@@ -3154,6 +3154,179 @@ available that a binding surface is ambiguous**, and it fires before any impleme
 **And the order is what makes it possible.** Suite first, then correct the reference until it passes. A
 reference-first round would have validated both defects and reported `n passed`.
 
+**Completed from inside it, by the author: it did not notice either defect by READING its reference.
+Both times the CELLS reddened it.** So the signal exists only if the suite is written from the ruling
+and the reference **independently** — **had it written the reference first and the cells to match, both
+defects would have been invisible and both rulings would still be loose.** The independence is the
+instrument; the order is only what preserves it.
+
+## A flag that does not fire, on evidence you hold, is a premise you no longer carry
+
+**T040's blind author filed that a total other than its prediction was LIKELIER this round**, because
+base's line had been reported as the same figure at three shas while base gained twelve commits. **It
+did not fire: base measured `1 failed | 5563 passed | 0 skipped` of 5564 at a fourth sha, eighteen
+commits on, so all eighteen added no test.**
+
+**Its own reading is the entry: *a flag that fires is a finding; a flag that does not fire, on evidence
+you hold, is a premise you no longer have to carry.*** The prediction was worth filing **although it
+turned out not to be needed**, because measuring base itself converted an assumption into a fact —
+**and an unfired flag on borrowed evidence converts nothing.**
+
+## A no-op patch reads as expressing the defect; only the execution does not
+
+**Four sessions have now shipped a mutation that did not do what its name said, and the tell is
+identical every time.** T040's blind author's statement of it: **the patch reads as expressing the
+defect while the execution does not.** *Rebuilding a snapshot per iteration reads exactly like
+snapshotting.*
+
+**The only thing that catches it is reading the patch as CODE rather than as a DESCRIPTION** — which is
+what *check the instrument, not the result* means when the instrument is a diff. **A diff is prose with
+a syntax**, and every reader of one is reading a claim about what it will do.
+
+
+
+## A conflicted row resolved toward base DELETES the branch's side, and no check here sees it
+
+**T040's adversary resolved the T040 index row toward base — correctly — and then measured what that
+cost.** Three claim-shaped strings existed on the implementer's branch and **nowhere in base**:
+`reads one make() three times`, `re-serialising differs`, `5 of 10 fixtures`. **All three lived on the
+row itself and nowhere else on that branch.**
+
+**The standing check is *every line present in base survives*. That direction measured 0, correctly, and
+it is structurally blind to this** — a conflicted row resolved toward base is a **deletion of the
+branch's side**, and the bidirectional half added earlier catches **duplication**, not this.
+
+**It chased it rather than banking the clean number**, and found nothing of consequence lost: the
+implementer's 28 round-6 Log entries merged intact and the substance survives in quantity. **Only the
+row's own phrasing went, and a row is a summary whose authoritative version is base's.**
+
+**Its proposed mechanisation, recorded rather than built: for a conflicted unique-key row, assert every
+claim-shaped substring on the losing side appears somewhere in the merged file.**
+
+**And the cause is mine.** The T040 row had reached **4 568 characters** — nine charges, six rounds,
+three blind re-opens, every triple. **A row that accumulates is an archive, and the Log is already the
+archive.** Compressed to a summary, and the rule is now in the row itself: **the Log is the history;
+the row is a summary and stops growing.** A row nobody can read is also a row nobody notices losing
+three claims.
+
+## Authority and recency coincided again, and the surface evidence pointed the wrong way
+
+**Base's row TAIL was older text than HEAD's** — it ended on round 4's sentence — **so a session applying
+*take base* on the strength of last round's inspection would have been reasoning from a fact that had
+reversed.**
+
+Read in full, base's was still right: **4 528 characters against 2 314, a strict superset on history.**
+**The old tail is the END of a row that accumulates, not evidence of staleness.**
+
+**Second round running that this adversary distinguished the rule's ground from the fact that happened to
+agree with it** — *take `backend`'s version* is about **authority**, not **recency** — and this time the
+recency signal pointed the wrong way. **A rule that has coincided with a heuristic twice is a rule
+nobody has tested.**
+
+## A finding is a measurement and goes stale the same way — this one inside its own round
+
+**A claim I put in T040's row — *the blind suite does not cover D-40-I; reverting it reds two colocated
+tests and nothing blind* — was true when measured and false by the time anyone read it.** T040's
+adversary re-ran it: **five reds, two colocated and three in `extent.test.ts`.**
+
+**The blind re-open at `f7d1407` overtook it, and the re-open happened BECAUSE of that finding.** So the
+measurement's own consequence invalidated it — **inside the same round, by the action it caused.**
+
+**This file already says a reconciliation is only valid against the base line it was computed from, and
+that a live task state is evidence about a branch rather than a session.** This is the same rule for a
+**finding**: *the blind suite does not cover X* is a measurement with a timestamp, **and the fastest way
+to make it false is to act on it.**
+
+## An agreeing cell that agrees by delegating to the oracle is not evidence
+
+**D-40-J's top-level cell agrees, 7 = 7 — and agrees by accident.** The walk falls through to
+`Buffer.byteLength(JSON.stringify(value) ?? "")` for a non-object, **and `JSON.stringify` applies its own
+holder wrapper, which calls `toJSON`.** **The walk agrees there by delegating to the very thing it is
+supposed to be independent of.**
+
+**Its charger named that rather than banking it**, and the consequence is precise: the divergence is
+exactly *callables nested inside a container*, and **the agreeing cell is not evidence the gate is
+right.**
+
+**The general form: in a differential test, an agreement produced by calling the oracle is not an
+agreement.** It is the strongest-looking cell in the set and the only one carrying no information —
+**and it sits beside three controls that agree for real reasons**, which is what makes it hard to see.
+
+## A model that separates axes more cleanly than the fixtures can
+
+**Its Q2 predicted the content controls and NOT the extent cells. It reds both.** The diagnosis, against
+itself and not against the suite: **the extent fixtures grow by mutating content, so freezing content
+necessarily disturbs them.**
+
+**Two axes that are separable in the ruling are not always separable in the artefacts that test them**,
+and a prediction written from the ruling will over-separate. **A MISS whose diagnosis is *the suite was
+right and I was wrong* — the fourth this run, and the only one where the cause is that the fixtures
+cannot be as clean as the rule.**
+
+## The audit that ends the sequence is *what does this code re-implement rather than delegate*
+
+**Five charges on one module share one mechanism: a transcription read as the thing transcribed.** A
+**list** for the serialiser's branches (D-40-G). **Four reads** for two coercions and two reads
+(D-40-H). A **length** for a key set (D-40-I). A **`typeof`** for a spec type predicate (D-40-J). And a
+**raw `.length`** for `ToLength` (D-40-K).
+
+**T040's implementer found the fifth by looking where round 6 had named as unwalked, and in doing so
+supplied the domain that ends the sequence rather than extending it: `QuoteJSONString` is clean, and it
+is clean BECAUSE IT IS DELEGATED.** The walk spends `Buffer.byteLength(JSON.stringify(value))` for
+strings and keys, **so the quoter is never read by anyone here and cannot be mis-transcribed.**
+
+**So the audit is not *which spec algorithms exist* but *which spec operations does this code
+re-implement rather than delegate*.** Delegated is safe **by construction**; transcribed is a
+**candidate**, and the candidate set is small, enumerable and written in the code itself. **Every one of
+the five charges is inside it and every clean probe is outside it.**
+
+**That is a constructed domain for a defect class that has produced five separate rounds**, and it
+arrived from the party being charged, by treating a stated gap as an invitation rather than as a
+hypothetical. **It also probed the delegated one anyway — 7 of 7 — and swept two transcriptions nobody
+had named.** *Clean because delegated* is a claim; **7 of 7 is the measurement that makes it one worth
+believing.**
+
+## The narrow repair is an equivalent mutant, so the case for the wide one is about the READER
+
+**T040's implementer measured its own justification and withdrew half of it.** `typeof === "object" ||
+"function"` — the narrow repair for D-40-J — **passes all 286 cells.** It then went looking for a value
+separating the two predicates: **16 candidates — proxies over callables and over plain objects,
+cross-realm objects, `Object.create(null)`, boxed symbols and bigints, an `arguments` object —
+distinguish them ZERO times.** The only value that would is an `[[IsHTMLDDA]]` object, which Node cannot
+construct.
+
+**So the case for `Object(x) === x` is that it STATES THE CONDITION, and not that it catches a reachable
+input.** Its own commit message said the wide predicate *leaves the next reader a predicate that reads
+exactly as safe as this one did* — **that claim survives, because it is about the reader** — and it
+declined to make the stronger one.
+
+**A ruling can be right for a reason about legibility rather than behaviour, and saying which is
+load-bearing.** *The wide predicate catches more inputs* would have been unfalsifiable-in-practice and
+nobody would have checked it.
+
+## The candidate set, mutated rather than asserted
+
+**Seven operations DELEGATED — `QuoteJSONString`, `ToString`, `ToNumber`, the four slot predicates, the
+BigInt refusal, `EnumerableOwnPropertyNames`, `IsArray` — and eleven TRANSCRIBED, five of which are the
+five charges.** Written in `limits.ts` **beside the walk, where the next transcription would be
+written**, rather than in this file.
+
+**And it did not assert the other six transcriptions are covered — it mutated each.** Non-finite number
+width 3 red, boolean widths 7, `null` width 2, the comma 27, the colon 36, the array's `undefined →
+"null"` 5. **None at zero.** So the block's closing claim is a **measurement**: nothing in the delegated
+column can be a sixth charge, and nothing in the transcribed column is unobserved.
+
+**Its own falsifier is the sharpest limit on it**: an operation placed in the **delegated** column
+because a runtime primitive performs it **would move columns if that primitive is not the spec
+operation** — **which is exactly what `Number()` against `ToNumber` turned out to be in round 5, one
+column over.** The artefact's weakest column is the one it calls safe, and it says so.
+
+**And retirement by identity: 0 across sixteen mutations from rounds 4, 5 and 6.** One anchor moved
+because **its own D-40-K fix edited the line that mutation patched** — **an anchor being edited, not a
+probe retired.** Re-expressed against the new line, it reports 0 like the rest. **A moved anchor and a
+retired probe both show up as a mutation that stops applying, and only reading the diff separates
+them.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -6312,7 +6485,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 4 at `dfc71e1`, 40 ahead. **D-40-F** closed with `node:util`'s slot predicates — 8 281 ms → 68 ms on a 1.2 MB submission — `Object.prototype.toString` dispatch rejected though faster, because it **invokes user code the old version did not**. **D-40-G** closed with the fourth slot; acceptance is the reverse mutation, 9 + 58. **S10 closed after three rounds by changing the INPUT**: `resolve.ts:191` is the mechanism, observable only on a bundle where two files claim one `id@version`. Gates 0 unfiltered; targeted 73/0/0 hitting the pre-registered 69→73; triple `1 failed, 5783 passed, 0 skipped` of 5784 identical; reconciliation measured both sides, `5784 − 220 = 5564` = base at `752721d`. 7 mutations, 4 HIT / 3 MISS / 0 newly green, **all three MISSes one diagnosis against itself**. **Round 6 at `70a4074`: D-40-I closed as the snapshot boundary** — extent at enter, content live in both branches. Witness before fix, pre-registration exact. Targeted 81/81, blind 190/190, triple `1 failed, 5834 passed, 0 skipped` of 5835 identical, reconciliation `5835 − 271 = 5564`. **Retirement measured by IDENTITY over twelve prior mutations: zero retired**, with every risen count accounted for as a blind cell. 5 mutations, 3 HIT / 2 MISS, no zeros. **Blind does not cover D-40-I** — `P1` reds two colocated and nothing blind. **Adversary round 5 FAIL at `2468c09`: D-40-I charged** — the array branch reads its extent LIVE where `SerializeJSONArray` snapshots it once, while the object branch already snapshots correctly; **5 of 5 array cells diverge, both object cells agree**, both directions, and growth **refuses a submission the ruled number accepts**. **Fourth axis: WHEN caller code runs relative to the walk's bookkeeping** — one channel is a plain getter, so not downstream of D-40-H. Not one cell in either corpus mutates the container it is inside. Triple `1 failed, 5830 passed, 0 skipped` of 5831 identical, `5831 − 190 − 77 = 5564`. 7 mutations, 5 HIT / 2 MISS; **R7 confirms the blind re-open shut its gap** — 13 reds split colocated AND blind. **Round 5 at `0bb7ef8`, 6 commits: D-40-H closed** — `ToNumber` as `+value` not `Number()`, a **third axis** nobody's cells varied and the only mutation redding it alone; **D-40-23 built with its propagation half normative** (D-40-24). Witness written **before** the fix, pre-registration exact twice. Targeted 77/77 (pre-registered 73→77), blind 173/173 with its nine reds cleared, triple `1 failed, 5813 passed, 0 skipped` of 5814 identical, reconciliation `5814 − 250 = 5564`. 8 mutations, 5 HIT / 3 MISS, no zeros, 0 newly green. **Adversary round 4 had FAILed at `ccd1dac`**: **D-40-H** charged — `unbox` reads a slot where `SerializeJSONProperty` steps 4a/4b **coerce**, so `[[String/Number]Data]` bypass `@@toPrimitive`/`toString`/`valueOf`; **7 of 15 channels diverge, under-count unbounded** (5 000 008 measured as 10), and at `maxBytes = 100` it **accepts** a submission the ruled number refuses. Barrel-only. Triple `10 failed, 5800 passed, 0 skipped` of 5810 identical, pre-registered on all four figures; base measured independently at `7db3b5e` = 5564; reconciliation `5810 − 173 − 73 = 5564`. 7 mutations, 5 HIT / 1 MISS, 0 newly green; **both rebuilt controls confirmed by reverse mutation**. Also measured: **D-40-23 unimplemented, 9 red, attributed to the orchestrator**. Blind round **re-opened and closed a second time** at `4c961d1`: **190 tests**, triple `183 failed, 5571 passed, 0 skipped` of 5754 identical, **pre-registration exact and conditional on a base line it measured itself**, 11 mutations 11 CAUGHT / 0 MISS / 0 GAP, every prediction naming what **else** saw it. Earlier blind round closed at `759881e`: **173 tests**, triple `166 failed, 5571 passed, 0 skipped` of 5737 identical, pre-registration exact on all four figures, D-40-23 pinned with the value-never-named clause held on **three** axes, 5 mutations on the new cells all CAUGHT. **Adversary round owed — all three of T040's earlier sessions are gone** |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind) | `feat/t040-engine`, `test/t040-engine` | impl-done | **Round 6 at `70a4074`; blind at `f7d1407` (201 tests); adversary round 6 pending.** Nine charges closed across six rounds — D-40-A/B/C, D-40-D, D-40-F, D-40-G, D-40-H, D-40-I — plus D-40-23 (mine, ruled after a round closed). **Every charge but the first was introduced by the fix for the one before, until D-40-I was ruled as a boundary to break that.** Latest triple `1 failed, 5834 passed, 0 skipped` of 5835, reconciliation `5835 − 271 = 5564`. **Round 7 at `ebb5e24`: D-40-J and D-40-K closed**, witness first, pre-registration exact; triple `1 failed, 5849 passed, 0 skipped` of 5850, `5850 − 286 = 5564`; sweep 5/5 HIT; **retirement 0 across 16 by identity**; **the delegated/transcribed candidate set shipped in `limits.ts` with all six uncharged transcriptions mutated, none at zero**. **Blind has seen neither D-40-J's callable cells nor D-40-K.** Adversary round 6 had FAILed at `456bfc6`: **D-40-J** — `typeof === "object"` for *Type(value) is Object*, so a callable carrying `toJSON` is dropped; unbounded under-count, `maxBytes` bypass, barrel-only. **The Log is the history; this row is a summary and stops growing** |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -10584,6 +10757,50 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         UnserializableValueError  "<operation>: the submission contains a value JSON cannot serialise."
 
   **The value is never named** — an unserialisable input's own content is the last thing a refusal about it should carry, which is the same clause the size refusal carries. **Barrel-only, and that is not a reason to leave it untyped**: D-40-C was barrel-only too, and T100/T263/T270 consume this barrel in-process. **Raised by the blind author rather than guessed at — which is exactly what the implementer did for the cycle at D-40-22, and the reason that ruling exists.**
+
+  **D-40-K, ruled (found by T040's implementer looking where round 6 named as unwalked): `LengthOfArrayLike` applies `ToLength`, and the walk stores `container.length` RAW.**
+
+  `Array.isArray` pierces a `Proxy` and so does the spec's `IsArray`, so a proxied array reaches `SerializeJSONArray`, where `len = ToLength(Get(value, "length"))` **clamps**.
+
+        length trap -> 1.5              formula 10   walk 13         DIVERGES
+        length trap -> 2.9              formula 13   walk 16         DIVERGES
+        length trap -> NaN              formula  8   walk REFUSES    DIVERGES
+        length trap -> -1               formula  8   walk  8         agrees   <- control
+        length trap -> "2"              formula 13   walk 13         agrees   <- control
+        length trap -> {valueOf:()=>2}  formula 13   walk 13         agrees   <- control
+
+  **The three agreeing cells isolate the cause and are the reason this is a ruling rather than a patch.** `-1` agrees because `index >= -1` is immediately true and `ToLength(-1)` is 0; `"2"` and `{valueOf:()=>2}` agree because `>=` coerces exactly as `ToNumber` would. **So it is not *any odd length*: it is precisely the two things `ToLength` does that `>=` does not — truncation toward zero, and NaN becoming 0.**
+
+  **The NaN cell is severe: `index >= NaN` is always false, so the loop does not terminate on the extent at all** and runs until the byte budget stops it. **A walk bounded only by `maxBytes` is D-40-B's clause a FIFTH time — in the branch the previous round fixed.**
+
+  **Ruled: apply `ToLength`. No design space — the spec names the operation.** And **the refusal-set change is published here rather than left in a Log entry, on D-40-D's precedent**: today `{k: proxyWithNaNLength}` is **refused** and after the clamp it is **accepted at 8 bytes**, which is what the ruled number says. **Every input that previously produced a number still produces the same one — the three agreeing cells are exactly that guarantee — and inputs that previously produced nothing now produce the ruled answer.** Same shape as `MAX_NESTING_DEPTH`.
+
+  **One residual, ruled as a stated divergence rather than closed: at `length -> 1e30` the formula throws `RangeError` building a 2^53-element string while the walk refuses with `LimitExceededError`. Both refuse; the kinds differ.** **Making the walk throw `RangeError` to match would reintroduce D-40-D**, so the walk refuses for the better reason and the difference is recorded rather than manufactured away.
+
+  **`QuoteJSONString` is CLEAN, and the reason is the useful half: it is DELEGATED, not transcribed.** The walk spends `Buffer.byteLength(JSON.stringify(value))` for a string **and** for a key, so the quoter is never read by anyone here. Probed anyway — lone surrogates, an astral pair, all seven Table-74 escapes, `U+0001`, `U+007F` which is deliberately not escaped, and an astral-plus-lone-surrogate **key**: **7 of 7 agree.** Two further transcriptions nobody had named were swept and agree: `String(n).length` for `Number::toString` (including `1e21`, `5e-324`, `-0`, `Number.MAX_VALUE`) and `Object.keys` against `EnumerableOwnPropertyNames` through a `Proxy` whose `ownKeys` adds an undescribed and a non-enumerable key.
+
+  **D-40-J, ruled (adversary round 6, charged and accepted). The binding surface owes the CONDITION, not the symptom, because its charger asked for that and gave the reason: a reader told *functions too* fixes the instance, and the next `typeof` transcription reads exactly as safe as this one did.**
+
+  **`SerializeJSONProperty` step 2 applies to every value whose *Type is Object* — which includes callables — and to BigInt.** The gate was `typeof resolved === "object" || typeof resolved === "bigint"`, **and the BigInt half being explicit and correct is the tell that step 2 was read**: what was transcribed is *Type(value) is Object* into `typeof === "object"`, and `typeof` answers `"function"` for a callable. **So a function carrying a `toJSON` is dropped by the walk and serialised by the serialiser.**
+
+        function with toJSON, object slot     formula 16   walk  2   DIVERGES
+        function with toJSON, ARRAY slot      formula 18   walk 12   DIVERGES
+        class / async / generator with toJSON formula 11   walk  2   DIVERGES
+        function whose toJSON returns undefined      2 =  2   agrees   <- control
+        plain function, no toJSON                    2 =  2   agrees   <- control
+        plain OBJECT with toJSON                    16 = 16   agrees   <- control
+
+  **Three controls agree and together they separate the cause**: the drop is right with no `toJSON`, right when `toJSON` returns a droppable, and the `toJSON` path works for non-callables. **Only the callable gate is wrong.** Under-count **unbounded** and a `maxBytes` bypass driven: a `toJSON` returning 1 000 000 characters is 1 000 008 by the ruled number and **2** by the walk, accepted at `maxBytes = 100`.
+
+  **The general repair is *Type(value) is Object*, i.e. `Object(x) === x`, not `typeof === "function"`** — the narrow one fixes the instance and leaves the condition mis-stated.
+
+  **One agreeing cell agrees BY ACCIDENT and must not be read as evidence.** At top level the two agree 7 = 7 **because the walk falls through to `Buffer.byteLength(JSON.stringify(value) ?? "")`, and `JSON.stringify` applies its own holder wrapper, which calls `toJSON`.** **The walk agrees there by delegating to the very thing it is supposed to be independent of.** The divergence is exactly *callables nested inside a container*.
+
+  **Barrel-only** — `JSON.parse` cannot produce a function — the same standing as D-40-E/G/H/I. **Neither corpus can see it: `droppable/function` is a bare function and `toJSON/function` is an object whose `toJSON` RETURNS a function, the opposite direction. Not one cell in the tree attaches `toJSON` to a callable.**
+
+  **Fourth in one sequence, and the sequence is the finding**: a **list** for the branches (D-40-G), **four reads** for two coercions and two reads (D-40-H), a **length** for a key set (D-40-I), and a **`typeof`** for a spec type predicate (D-40-J). **Not a snapshot but a DOMAIN CONDITION**, which is why neither the extent nor the content rule names it. **Every one is a transcription read as the thing transcribed.**
+
+  **Unwalked and named rather than left: `QuoteJSONString` and `LengthOfArrayLike`'s `ToLength` clamp.** The step-by-step covered the three serialise algorithms and neither of those, **so a fifth transcription could live in either.**
 
   **D-40-I, ruled (adversary round 5, charged and accepted): the array branch reads its extent LIVE where `SerializeJSONArray` snapshots it — and the object/array asymmetry is DELIBERATE and published here rather than in a Log entry.**
 
