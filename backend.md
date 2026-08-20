@@ -5434,6 +5434,36 @@ first. **And its cast is that guard's dependent moving away**, which it stated o
 leaving implicit: T140 no longer depends on the declaration order at all, so the rewrite that says the
 guard protects only a future consumer **is now true rather than aspirational.**
 
+## CONSOLIDATED: five wrong mechanisms under correct conclusions in one day, and why they survive
+
+Not five lapses. **One failure mode, and it is the most durable one this run has found**, because every
+instance passed review — the conclusion was right, so nobody looked at the reason.
+
+        mine    `instance` is unsettable because `ProblemInput` omits it
+                → FALSE: the index signature admits it. The SPREAD ORDER overwrites it.
+        mine    the bad merge was a watcher, found by reading the reflog carelessly
+                → FALSE: a fast-forward makes two refs share a sha; only a substring separates them.
+        mine    the guard's dependent is T140  (true when written, false one commit later)
+        theirs  a string sort is safe because of this database's COLLATION
+                → FALSE for `target_kind`: a `pgEnum` never consults one.
+        theirs  the two databases vanished because a session finished with them
+                → FALSE: I dropped them. The conclusion — refusing was right — survives; the evidence
+                  was manufactured out of the reading that flattered a decision already made.
+
+**T140's blind author's statement of the class is the one to keep:** ***a true conclusion resting on a
+false claim reads as confirmed, and the claim survives into the next reader's reasoning precisely because
+the conclusion was accepted.*** The acceptance is what carries the defect, not the error.
+
+**And it drew the containment line the rest of us had not.** It grepped all nine of its files for the bad
+inference — **because a wrong sentence in a message dies with the message, and a wrong sentence in a file
+is an instruction.** Nothing had reached a file. *That is the check that turns a correction into a closed
+one.*
+
+**The tell, in all five: the reason was never the thing being reviewed.** A conclusion gets checked because
+somebody disagrees with it; a mechanism gets checked only when somebody implements against it. So the cost
+is always deferred to a reader who is not in the conversation — **which is exactly why `it would have
+passed a type-level test and proved nothing` was the sharpest of the five.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
