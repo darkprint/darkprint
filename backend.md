@@ -5251,6 +5251,42 @@ meet as a red.* And it proposed the disambiguating question rather than the answ
 author whether its route cells assert `saves` by order, membership or length** — *which settles which of
 the three we are in without either of us seeing the other's work.*
 
+## D-140-08 published an order, so the order became contract HELD BY NOTHING within the hour
+
+T140's blind author answered the one-word question with the word **and the grep** — *a claim about my own
+file is a measurement like any other and I have been wrong recalling one before.* **Membership and length,
+never order**: every set comparison goes through `viewTargetSet`, which is `.saves.map(targetOf).sort()`,
+and a grep for a deep-equal against a raw `saves` array across seven files returns nothing.
+
+**So the ruling cost it nothing — and it immediately named what the ruling created.** D-140-08 publishes an
+order; **nothing holds it.** *The D-70-12 shape, arriving on a ruling made an hour ago.* It is writing the
+cell, at both surfaces, because `SavesView.saves` forwards whatever `listSaves` returns and **a route that
+re-sorted would satisfy a module cell alone.**
+
+**And its own cells were never flaky against the random `asc(save.id)` tie-break — but not by foresight**,
+which it says plainly: *order was unruled, and "assert only as far as the contract decides" pointed at a
+set.* **A discipline applied to one question paid off against a defect nobody had found yet.**
+
+## Three design choices in a cell that does not exist yet, published for review before measuring
+
+**The same-instant case is REACHED rather than manufactured.** `migrateLocalSaves` is the one published
+surface that produces rows sharing a transaction timestamp — **exactly the case the random tie-break was
+about**, through the barrel rather than through a fixture that arranges it. **And the premise is asserted
+from the returned records — `savedAt` equal within a batch — before anything is concluded from the
+order**, because *a fixture whose premise is wrong inverts the result built on it.*
+
+**A random tie-break AGREES with a ruled order by luck**, and a three-item cell cannot rule that out at
+1-in-6. So the batch is sized until accidental agreement is negligible **and the number gets reported
+rather than the word "unlikely"** — `1/n!` per batch, so 4 items is 1 in 24 and 5 is 1 in 120, and two
+independent batches multiply. **Two batches, so `savedAt DESC` is exercised across groups and the
+tie-break within them.**
+
+**The expected order is COMPUTED from the returned records under the ruled comparator, never written as a
+literal** — *a literal would be me transcribing the ruling*, which is the transcription-for-the-standard
+shape this run has charged five times. **And it is not circular**: asserting a list equals its own sort
+under a total comparator fails exactly when the list was not in that order, and the comparator is total
+because `save_account_target_key` forbids a tie on all three keys.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
