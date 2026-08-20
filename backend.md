@@ -2899,6 +2899,41 @@ it**, because it retires the objection without retiring the defect.
 *I would rather say I did not read it than print a number I did not read.* **An absent number with a
 reason is a measurement; a present one with a broken parser is not.**
 
+## A control must not depend on the mechanism it is controlling for
+
+**T040's implementer could have kept its `valueOf` witness alive after the D-40-H fix by swapping in a
+different boxed type. It declined, before writing anything, and the reason is the entry:** *that would
+make the control depend on which coercion path happens to call `valueOf`, which is the same defect one
+step along.*
+
+**This run has now paid for the two neighbouring versions of that.** A cost-ratio control comparing two
+numbers **computed from the loop bound**, so a declared count could not move with the thing it
+described. An anti-vacuity control comparing the cause **chain** where the axis needed the driver's own
+message. **Both were found after the fact; this one was caught before it was written.**
+
+Its replacement: **the two-factor call goes direct** — the shape `determinism.test.ts`'s clock probe
+already uses, `void Date.now()` inside its own window — **plus a second control asserting the walk
+returned the expected byte count.** **Two failure modes, two controls, and neither is the mechanism under
+test:** the first stops a zero coming from a dead probe, the second from a walk that measured nothing.
+
+## An agreeing cell with a stated reason is a discriminator against a specific wrong fix
+
+**Two of its fifteen D-40-H cells AGREE, and they agree for a reason worth keeping them for.** `String
+valueOf overridden` and `Number toString overridden` agree **because the hint order puts the other
+coercion first** — so **a fix that ran the wrong hint would red exactly there and nowhere else.**
+
+**Almost nothing in this run has a cell that fails only under a plausible mis-fix**, and two arrived in
+consecutive rounds: this pair, and T040's blind author's `@@toStringTag` **getter** cell, aimed at the
+alternative D-40-F **rejected** rather than the one it chose.
+
+**An agreeing cell with no stated reason is the first thing a later reader deletes as redundant.** The
+reason is what makes it a cell rather than padding.
+
+**And 6 of 15 against the adversary's 7 of 15, left unreconciled, is right:** different cell sets, same
+conclusion, **every divergence on a coercing slot and not one on a non-coercing slot**, with
+`[[BooleanData]]` agreeing under `valueOf`, `toString` and `@@toPrimitive`. **Reconciling the counts
+would be work in service of a number neither party needs.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
