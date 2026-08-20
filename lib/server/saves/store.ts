@@ -104,6 +104,23 @@ export async function withStore<T>(operation: string, work: () => Promise<T>): P
  * cannot see and may not write: **a dependency and its defence in different files, where
  * deleting the defence leaves the dependency unobserved and nothing reds.**
  *
+ * **`saved_at` is truncated to milliseconds before sorting, and that is D-140-11 — the same
+ * argument as the cast, one term over.** `save.created_at` is `timestamptz` and carries
+ * MICROSECONDS; `SaveRecord.savedAt` is a JS `Date` and carries milliseconds. So an uncast
+ * sort orders on precision the published record does not carry: two rows 100 microseconds
+ * apart are **tied for every caller and strictly ordered for the store**, and no caller can
+ * predict which comes first because the deciding digits never cross. Measured on this
+ * column: `2026-08-20 19:17:22.956849+00` reaches a caller as `...956Z`.
+ *
+ * Truncating makes the sort key exactly the value that crosses, so the tie-break below
+ * decides precisely the rows a caller sees as tied — which is what D-140-09's *computable
+ * from the published fields* means at the first term rather than the second.
+ *
+ * It is the same class of gap as the enum ordinal and it was found the same way: by asking
+ * what a caller holding only `SaveRecord` could compute. **Neither was reachable through any
+ * test that existed** — this one fired in none of the adversary's runs — which is why both
+ * are by-construction changes rather than fixes for observed defects.
+ *
  * Its own falsification is EMPTY and that is the signature of a by-construction change
  * rather than an objection to one: reverting the cast reds nothing until a member exists out
  * of alphabetical order AND is saved. Nothing here catches a reachable input, and it is not
@@ -118,7 +135,8 @@ export async function saveRowsFor(
     .from(schema.save)
     .where(eq(schema.save.accountId, accountId))
     .orderBy(
-      desc(schema.save.createdAt),
+      /* D-140-11: truncated to the millisecond `savedAt` actually carries. */
+      desc(sql`date_trunc('milliseconds', ${schema.save.createdAt})`),
       /* D-140-09: lexicographic on the string, never the enum ordinal. */
       asc(sql`${schema.save.targetKind}::text`),
       asc(schema.save.targetId),
