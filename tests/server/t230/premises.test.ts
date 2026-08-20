@@ -35,8 +35,9 @@ import { citedNumbers, sourceLine } from "./contract";
  * what this file measures.
  */
 const TRANSCRIBED = [
-  { value: 100, path: "lib/core/card/validate.ts", line: 108 },
+  /* In `citedNumbers()`'s own order, which is by path. */
   { value: 512, path: "components/upload/BundleDropzone.tsx", line: 91 },
+  { value: 100, path: "lib/core/card/validate.ts", line: 108 },
 ];
 
 describe("T230 the starting numbers the contract cites", () => {

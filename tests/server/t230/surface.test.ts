@@ -17,6 +17,7 @@ import {
   publishedArity,
   publishedBlock,
   publishedInterface,
+  publishedInterfaces,
   publishedProblem,
   publishedType,
   requiredFn,
@@ -44,7 +45,7 @@ describe("T230 the domain this suite quantifies over", () => {
     expect(block.functions.map((f) => f.name).sort(), stale).toEqual(
       [...TRANSCRIBED.functions].sort(),
     );
-    expect(block.interfaces.map((i) => i.name).sort(), stale).toEqual(
+    expect([...new Set(block.interfaces.map((i) => i.name))].sort(), stale).toEqual(
       Object.keys(TRANSCRIBED.interfaces).sort(),
     );
     expect(block.admissible.map((a) => a.name), stale).toEqual([...TRANSCRIBED.admissible]);
@@ -60,6 +61,38 @@ describe("T230 the domain this suite quantifies over", () => {
     expect(publishedType("Tier").literals, `${stale}\n  type Tier`).toEqual([
       ...TRANSCRIBED.tiers,
     ]);
+  });
+
+  /**
+   * The block declares `LimitVerdict` TWICE — once in the signature list and once inside
+   * D-230-10's own ruling — and two declarations of one shape in one document is two
+   * chances for one to drift.
+   *
+   * This nearly went unnoticed here in the way that matters: the canonical line now ends
+   * `}  // windowMs added by D-230-10`, so an `^interface ... \}$` match skipped it and
+   * bound to the RESTATEMENT instead. Same shape, wrong source, and nothing would have
+   * reddened the day the two disagreed.
+   *
+   * It is the peer's "two constructors for one document" charge one level up, at the
+   * contract rather than at the code.
+   */
+  it("every shape the block declares more than once agrees with itself", () => {
+    const byName = new Map<string, string[]>();
+    for (const declared of publishedBlock().interfaces) {
+      byName.set(declared.name, [...(byName.get(declared.name) ?? []), declared.fields.join(",")]);
+    }
+    for (const [name, spellings] of byName) {
+      expect(
+        [...new Set(spellings)].length,
+        `The block declares \`interface ${name}\` ${spellings.length} times and they do not ` +
+          `agree:\n` +
+          publishedInterfaces(name)
+            .map((i) => `    ${i.text}`)
+            .join("\n") +
+          `\n  A blind suite binds to whichever a parser matches first, so this cannot be ` +
+          `resolved by choosing one — the declarations have to be reconciled in the block.`,
+      ).toBe(1);
+    }
   });
 
   /**

@@ -48,6 +48,9 @@ export interface LimitVerdict {
   limit: number;
   remaining: number;
   resetAt: Date;
+  /** D-230-10: the window's LENGTH. `resetAt - now` is what is LEFT of it, and the form's
+   *  `<window>` slot is about the first. */
+  windowMs: number;
 }
 
 export interface ApiKeyRecord {
@@ -187,7 +190,13 @@ export async function checkLimit(
     : undefined;
 
   if (configured === undefined) {
-    return { allowed: false, limit: UNCONFIGURED.limit, remaining: 0, resetAt: new Date(Date.now() + UNCONFIGURED.windowMs) };
+    return {
+      allowed: false,
+      limit: UNCONFIGURED.limit,
+      remaining: 0,
+      resetAt: new Date(Date.now() + UNCONFIGURED.windowMs),
+      windowMs: UNCONFIGURED.windowMs,
+    };
   }
 
   /* D-230-05: anonymous, ZERO access. The tier is decided from the subject before any
@@ -211,7 +220,7 @@ export async function checkLimit(
   const window = windowFor(`${bucket}|${tier}|${subjectKey(subject)}`, windowMs, now);
 
   if (window.count >= limit) {
-    return { allowed: false, limit, remaining: 0, resetAt: new Date(window.resetAt) };
+    return { allowed: false, limit, remaining: 0, resetAt: new Date(window.resetAt), windowMs };
   }
   window.count += 1;
   return {
@@ -219,6 +228,7 @@ export async function checkLimit(
     limit,
     remaining: Math.max(0, limit - window.count),
     resetAt: new Date(window.resetAt),
+    windowMs,
   };
 }
 
@@ -227,16 +237,8 @@ export async function checkLimit(
 /** The window, rendered for `<window>`. Wording is unpublished; this is the reference's. */
 function windowLabel(windowMs: number): string {
   if (windowMs % HOUR === 0) return windowMs === HOUR ? "hour" : `${windowMs / HOUR} hours`;
+  if (windowMs % 60_000 === 0) return windowMs === 60_000 ? "minute" : `${windowMs / 60_000} minutes`;
   return `${Math.round(windowMs / 1000)} seconds`;
-}
-
-function windowOf(bucket: string, limit: number): number {
-  const configured = LIMITS[bucket];
-  if (configured === undefined) return UNCONFIGURED.windowMs;
-  for (const tier of ["anonymous", "account", "key"] as const) {
-    if (configured[tier].limit === limit) return configured[tier].windowMs;
-  }
-  return configured.anonymous.windowMs;
 }
 
 /**
@@ -254,7 +256,9 @@ export function rateLimited(request: Request, verdict: LimitVerdict, bucket: str
     title: "Too many requests",
     status: 429,
     detail:
-      `${bucket}: limit of ${verdict.limit} per ${windowLabel(windowOf(bucket, verdict.limit))} ` +
+      /* D-230-10: from the verdict's own `windowMs`, so `rateLimited` cannot be called
+         with a window that disagrees with the verdict it is rendering. */
+      `${bucket}: limit of ${verdict.limit} per ${windowLabel(verdict.windowMs)} ` +
       `reached; resets at ${verdict.resetAt.toISOString()}.`,
     limit: verdict.limit,
     remaining: verdict.remaining,

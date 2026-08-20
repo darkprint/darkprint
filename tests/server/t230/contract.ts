@@ -248,7 +248,11 @@ export function publishedBlock(): PublishedBlock {
       if (raw.trim() !== "") openProblem = undefined;
       continue;
     }
-    const line = raw.trim();
+    /* A trailing `// ...` note is annotation, not signature. Stripping it is what makes
+       the canonical `interface LimitVerdict { ... }  // windowMs added by D-230-10` line
+       parse at all — without it the only declaration this file matched was the RESTATEMENT
+       inside D-230-10's prose, which is the wrong one to bind to and looked identical. */
+    const line = raw.trim().replace(/\s*\/\/.*$/, "").trim();
 
     if (openProblem !== undefined && indent > 8) {
       /* `type, title, status, detail, instance          (RFC 9457's five)` */
@@ -360,15 +364,38 @@ export function publishedFunction(name: string): PublishedFunction {
   return found;
 }
 
+/**
+ * Every declaration of an interface in the block, in the order it writes them.
+ *
+ * There is more than one of some: D-230-10 restates `LimitVerdict` inside its own ruling
+ * as well as amending the signature list. Two declarations of one shape in one document
+ * is two chances for one to drift, and a parser that binds to whichever its regex happens
+ * to match first cannot see it — which is exactly what was happening here until the
+ * trailing-comment strip above.
+ */
+export function publishedInterfaces(name: string): PublishedInterface[] {
+  return publishedBlock().interfaces.filter((i) => i.name === name);
+}
+
 export function publishedInterface(name: string): PublishedInterface {
-  const found = publishedBlock().interfaces.find((i) => i.name === name);
-  if (found === undefined) {
+  const all = publishedInterfaces(name);
+  if (all.length === 0) {
     throw new Error(
       `The T230 Published signatures block declares no \`interface ${name}\`. It declares: ` +
-        `${publishedBlock().interfaces.map((i) => i.name).join(", ")}.`,
+        `${publishedBlock().interfaces.map((i) => i.name).join(", ") || "(nothing)"}.`,
     );
   }
-  return found;
+  const spellings = new Set(all.map((i) => i.fields.join(",")));
+  if (spellings.size > 1) {
+    throw new Error(
+      `The block declares \`interface ${name}\` ${all.length} times and they DISAGREE:\n` +
+        all.map((i) => `    ${i.text}`).join("\n") +
+        `\n  Binding to either would be binding to whichever this parser matched first. ` +
+        `The declarations have to be reconciled in the block before a blind suite can pin ` +
+        `the shape at all.`,
+    );
+  }
+  return all[0];
 }
 
 /**
@@ -383,7 +410,7 @@ export function publishedInterface(name: string): PublishedInterface {
 export const TRANSCRIBED = {
   functions: ["checkLimit", "issueKey", "revokeKey", "resolveKey", "rateLimited"],
   interfaces: {
-    LimitVerdict: ["allowed", "limit", "remaining", "resetAt"],
+    LimitVerdict: ["allowed", "limit", "remaining", "resetAt", "windowMs"],
     ApiKeyRecord: ["keyId", "accountId", "label", "createdAt", "revokedAt"],
     BucketLimit: ["limit", "windowMs"],
   },

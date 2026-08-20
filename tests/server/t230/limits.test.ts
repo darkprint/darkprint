@@ -33,6 +33,7 @@ import {
   type Scratch,
   type Subject,
   accountActor,
+  accountSubject,
   awaited,
   bucketNote,
   buckets,
@@ -65,6 +66,7 @@ interface Verdict {
   limit: number;
   remaining: number;
   resetAt: Date;
+  windowMs: number;
 }
 
 async function check(subject: Subject, bucket?: string, db = scratch.db): Promise<Verdict> {
@@ -127,6 +129,22 @@ describe("T230 the verdict, admitted rather than filtered", () => {
       `\`resetAt\` is not in the future, so the reset AC1 tells a caller to wait for has ` +
         `already passed and a client reading it retries immediately.`,
     ).toBeGreaterThan(Date.now());
+
+    /* D-230-10. `windowMs` exists because `resetAt - now` is the time REMAINING and the
+       form's `<window>` slot is about the window's LENGTH — an adjacent quantity inside an
+       exact-matched sentence. The two are related by this inequality and by nothing else:
+       the remainder can never exceed the length. */
+    expect(
+      Number.isInteger(verdict.windowMs),
+      `\`windowMs: number\` is ${describe_(verdict.windowMs)}`,
+    ).toBe(true);
+    expect(verdict.windowMs).toBeGreaterThan(0);
+    expect(
+      verdict.resetAt.getTime() - Date.now(),
+      `\`resetAt\` is further away than one whole window, so the reset and the window ` +
+        `length describe two different clocks and \`rateLimited\` renders a sentence whose ` +
+        `two halves disagree.`,
+    ).toBeLessThanOrEqual(verdict.windowMs);
   });
 });
 
@@ -149,6 +167,10 @@ describe("T230 the bound, driven against the ceiling the module publishes", () =
           `not say which. If this red is the test, the block owes the sentence.`,
       ).toBe(previous.remaining - 1);
       expect(next.limit, "`limit` is the ceiling and does not move within a window").toBe(first.limit);
+      expect(
+        next.windowMs,
+        "`windowMs` is the window's LENGTH and cannot move within one window",
+      ).toBe(first.windowMs);
       expect(
         next.resetAt.getTime(),
         `\`resetAt\` moved between calls inside one window, so every request pushes the reset ` +
@@ -493,7 +515,21 @@ describe("T230 AC2 and AC3 — the ceiling is the server's, and a key raises it"
     ).toBeGreaterThanOrEqual(anonymous.limit);
   });
 
-  it("a revoked key does not raise the ceiling", async () => {
+  /**
+   * THE CONTROL IN THIS CELL WAS WRONG AND THE REFERENCE CAUGHT IT.
+   *
+   * It first compared a revoked-key subject against an ANONYMOUS one and asserted the
+   * ceiling had not risen. But the subject a caller presents with a key also carries an
+   * `accountId`, and a signed-in account is entitled to the `account` tier whether or
+   * not it presents a key — so the cell reddened a correct reference for being correct,
+   * `expected 120 to be less than or equal to 60`.
+   *
+   * That is a control measuring an ADJACENT QUANTITY: "did the ceiling rise" needs the
+   * baseline to be the same subject WITHOUT the key, not a different subject entirely.
+   * The two agree only when the caller is anonymous, which is the one case a revoked key
+   * cannot arise in.
+   */
+  it("a revoked key leaves the ceiling where the same subject would have it anyway", async () => {
     const issueKey = await requiredFn("issueKey");
     const revokeKey = await requiredFn("revokeKey");
     const accountId = await freeAccount(scratch);
@@ -503,16 +539,19 @@ describe("T230 AC2 and AC3 — the ceiling is the server's, and a key raises it"
 
     await revokeKey(scratch.db, accountActor(accountId), issued.record.keyId);
 
-    const anonymous = await check(anonymousSubject());
-    const keyed = await check(keyedSubject(accountId, issued.record.keyId));
+    const withoutKey = await check(accountSubject(accountId));
+    const withRevoked = await check(keyedSubject(accountId, issued.record.keyId));
 
     expect(
-      keyed.limit,
-      `A revoked key still raises the ceiling. This is where AC3 and AC4 meet, and it is the ` +
-        `cell that separates "revocation stops resolveKey answering" from "revocation stops ` +
-        `the key doing anything" — a limiter that trusts the \`keyId\` on the subject without ` +
-        `re-checking revocation leaves a revoked key with its raised ceiling forever, and ` +
-        `every AC4 test that only drives resolveKey passes against it.`,
-    ).toBeLessThanOrEqual(anonymous.limit);
+      withRevoked.limit,
+      `A revoked key still raises the ceiling: ${withRevoked.limit} presenting it against ` +
+        `${withoutKey.limit} for the same subject without it.\n` +
+        `  This is where AC3 and AC4 meet, and it is the cell that separates "revocation ` +
+        `stops resolveKey answering" from "revocation stops the key doing anything". A ` +
+        `limiter that trusts the \`keyId\` on the subject without re-checking revocation ` +
+        `leaves a revoked key with its raised ceiling forever, and every AC4 test that only ` +
+        `drives resolveKey passes against it.\n` +
+        `  ${await note()}`,
+    ).toBeLessThanOrEqual(withoutKey.limit);
   });
 });

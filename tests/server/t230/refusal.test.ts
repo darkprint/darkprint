@@ -49,11 +49,14 @@ import {
 } from "./contract";
 
 /** A ceiling, a remainder and an instant that could have come from nowhere else. */
+const WINDOW_MS = 90 * 60 * 1000;
+
 const VERDICT = {
   allowed: false,
   limit: 7331,
   remaining: 0,
   resetAt: new Date("2031-03-07T09:41:17.503Z"),
+  windowMs: WINDOW_MS,
 };
 
 const BUCKET = "t230-probe-bucket";
@@ -66,9 +69,10 @@ function request(headers: Record<string, string> = {}): Request {
 async function render(
   headers: Record<string, string> = {},
   bucket = BUCKET,
+  verdict: typeof VERDICT = VERDICT,
 ): Promise<{ response: Response; body: Record<string, unknown>; text: string }> {
   const rateLimited = await requiredFn("rateLimited");
-  const response = await rateLimited(request(headers), VERDICT, bucket);
+  const response = await rateLimited(request(headers), verdict, bucket);
   if (!(response instanceof Response)) {
     throw new Error(
       `${BARREL}'s \`rateLimited\` answered ${describe_(response)}; D-230-01 publishes a ` +
@@ -223,6 +227,91 @@ describe("T230 AC1 — the 429 itself", () => {
     expect(typeof body.title, `\`title\` is ${describe_(body.title)}`).toBe("string");
     expect((body.title as string).length).toBeGreaterThan(0);
     expect(body.instance, `\`instance\` identifies this occurrence (D-02)`).toBe(PATH);
+  });
+});
+
+describe("T230 D-230-10 — `<window>` is the window's length, not what is left of it", () => {
+  /**
+   * The cell the ruling asks for, and it catches the derivation that is WRONG rather
+   * than missing.
+   *
+   * `rateLimited` has everything it needs to render `<window>` from `resetAt - now`, and
+   * that number is the time REMAINING. A caller refused thirty seconds into a
+   * sixty-second ceiling then reads "limit of 60 per 30 seconds" — an adjacent quantity
+   * substituted for the one the sentence is about, inside an exact-matched form, and it
+   * renders plausibly at every single point in the window.
+   *
+   * Driven at two points in ONE window: same `limit`, same `windowMs`, different
+   * `resetAt`. The `<window>` slot must be identical and the `<ISO instant>` slot must
+   * not be. Both halves are needed — identical windows alone passes against a renderer
+   * that hardcodes a string, and differing instants alone says nothing about the window.
+   *
+   * No clock is involved, which is why this works at all from outside: the two points in
+   * the window are two verdicts rather than two moments.
+   */
+  it("two refusals at different points of one window render the same window", async () => {
+    const early = { ...VERDICT, resetAt: new Date(VERDICT.resetAt.getTime()) };
+    const late = {
+      ...VERDICT,
+      /* Deeper into the same window: same length, far less of it left. */
+      resetAt: new Date(VERDICT.resetAt.getTime() - WINDOW_MS + 30_000),
+    };
+
+    const form = messageForm();
+    const slotsOf = (detail: unknown): { window: string; instant: string } => {
+      const matched = form.pattern.exec(String(detail));
+      if (matched === null) {
+        throw new Error(`\`detail\` does not match the admissible form: ${String(detail)}`);
+      }
+      return { window: matched[3], instant: matched[4] };
+    };
+
+    const first = slotsOf((await render({}, BUCKET, early)).body.detail);
+    const second = slotsOf((await render({}, BUCKET, late)).body.detail);
+
+    expect(
+      second.instant,
+      `The two verdicts carry different \`resetAt\` values and rendered the same instant, so ` +
+        `this cell is not driving what it thinks it is.`,
+    ).not.toBe(first.instant);
+
+    expect(
+      second.window,
+      `\`<window>\` changed between two refusals in the SAME window: ` +
+        `${JSON.stringify(first.window)} then ${JSON.stringify(second.window)}.\n` +
+        `  D-230-10: \`resetAt - now\` is the time REMAINING, not the window's LENGTH. A ` +
+        `caller refused thirty seconds into a sixty-second ceiling reads "limit of 60 per 30 ` +
+        `seconds", which is plausible at every point in the window and wrong at all of them.\n` +
+        `  \`LimitVerdict\` carries \`windowMs\` precisely so this slot has a source that is ` +
+        `not an adjacent quantity — one object, one source.`,
+    ).toBe(first.window);
+  });
+
+  /**
+   * The other half of D-230-10's reasoning, and it is about the ruling's own
+   * discriminator: `windowMs` went on the verdict rather than becoming a fourth parameter
+   * because "a fourth parameter admits a caller passing a window that disagrees with the
+   * verdict it is rendering".
+   *
+   * So the property that ruling BUYS is that the rendered window tracks the verdict.
+   * Asserted as a difference: change only `windowMs` and the slot must change with it.
+   * Nothing here pins the wording, which is unpublished.
+   */
+  it("changing only `windowMs` changes the rendered window", async () => {
+    const short = { ...VERDICT, windowMs: 60_000 };
+    const long = { ...VERDICT, windowMs: 24 * 60 * 60 * 1000 };
+    const form = messageForm();
+    const windowOf = async (verdict: typeof VERDICT): Promise<string> => {
+      const matched = form.pattern.exec(String((await render({}, BUCKET, verdict)).body.detail));
+      if (matched === null) throw new Error("`detail` does not match the admissible form");
+      return matched[3];
+    };
+
+    expect(
+      await windowOf(long),
+      `A minute and a day render the same \`<window>\`, so the slot is not derived from ` +
+        `\`windowMs\` at all — which is the one thing D-230-10 added the field for.`,
+    ).not.toBe(await windowOf(short));
   });
 });
 
