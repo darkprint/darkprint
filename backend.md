@@ -4464,6 +4464,45 @@ well-formed output from an instrument that never ran** — *No test files found*
 of `0`. **What caught this one was the `fatal:` lines interleaved above the numbers, not the numbers**,
 which is the same tell as the digest and is a channel a skim discards.
 
+## The scratch worktree is EVIDENCE the blindness held, and `git worktree prune` destroys it silently
+
+T130's blind author left a worktree registered at
+`/private/tmp/claude-501/…-t130-profiles-tests/76db55fb…/scratchpad/t130-sighted`, checked out at
+`1b90422`. T140's blind author reported it as an orphan; **T130's adversary read the sha and found it is
+the opposite of a hazard.**
+
+**Verified here independently rather than taken:** `git merge-base feat/t130-profiles test/t130-profiles`
+is `1b904224c50332e1d072375097ebdb76ae3b3868` exactly, `git ls-tree -r 1b90422 lib/server/profiles`
+returns **nothing**, and the seven implementation files appear only at `6ffdb17` — not even at `eccab30`.
+**So a worktree named *sighted*, belonging to the blind author of this task, was pointed at the common
+ancestor and could not have seen the implementation it was writing tests against.** That is the blindness
+claim made checkable after the fact, which nothing else in this run is.
+
+**And the hazard is not the loss — it is the tidying.** The directory is under `tmp`. When `tmp` is
+reaped the directory vanishes and the **registration remains**, so the repository carries an entry
+pointing at nothing. Somebody later runs `git worktree prune` to clean the list, **it succeeds silently**,
+and **the record that a sighted worktree stood at the merge base goes with it.** The evidence is worth
+more than the directory, so it is written here where a prune cannot reach it:
+
+        t130-sighted  registered at 1b90422  ==  merge-base(feat/t130-profiles, test/t130-profiles)
+                      lib/server/profiles/ absent at that commit; present only from 6ffdb17
+
+**A cleanup command that cannot fail is the same shape as a guard that cannot fail**, and this one deletes
+a measurement rather than reporting one.
+
+## A "before" reading taken during someone else's run is a stale base line wearing a fresh label
+
+T130's adversary declined to count `darkprint%` when asked, because T230's implementer holds the slot and
+a count taken now **measures its scratch databases mid-flight rather than a baseline.** Its own framing:
+*a number labelled "before" that was actually taken during someone else's run is the stale-base-line-in-
+present-tense mistake one table over.*
+
+**It is the same error I made, moved from time to ownership.** I carried a base line measured at an older
+sha into a dispatch and labelled it present tense; this would carry a number measured through another
+session's load and label it *mine, before*. **A measurement owes its sha, its tense AND the state of the
+host it was taken on** — and the third is the one this run keeps discovering, most recently in my own
+54s-versus-155s suite.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
