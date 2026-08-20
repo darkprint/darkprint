@@ -5334,6 +5334,43 @@ usually is worth having; reporting it as if it reds always is not.***
 unordered read makes downstream assertions flaky, and the column I reached for is an unordered read with
 extra steps* — both written in the same docblock, and neither of us said it out loud for eleven hours.
 
+## D-140-10: `ORDER BY target_kind::text` — the cast, ruled, on an argument about LOCALITY
+
+T140's implementer proposed one cast and **did not make the change**, which is why it got ruled rather
+than noticed later. Three consequences of D-140-09 as written that it named:
+
+**`store.ts` reads as lexicographic and is not.** A reader meeting `asc(schema.save.targetKind)` sees a
+string column sorted ascending; it is an **enum ordinal** sort that agrees for a reason nobody in that
+file states. ***A predicate that reads exactly as safe as the correct one*** — D-40-J's argument, here
+about the reader rather than a reachable input.
+
+**My own measurement makes the hazard likely rather than exotic.** Three of five enums already declare
+semantically, so **the house habit IS the failure mode**, and the person best placed to notice is the one
+editing `schema.ts` — **who is not T140 and whose task will not be T140.**
+
+**And the defence lived in a file its module cannot see and may not write.** If
+`tests/enum-declaration-order.test.ts` were ever deleted or narrowed, T140's conformance to D-140-09
+became unobserved and nothing red. ***Defence with no observer, one file over*** — the file holding the
+defence is not the file holding the dependency.
+
+**Ruled: the cast.** *Satisfied by construction beats satisfied by constraint* is D-05-02's own ruling and
+the same argument T140's `errors.ts` already makes about deferring AC2 to `save_account_target_key`. The
+declaration order stops being load-bearing for T140 entirely.
+
+**Its own honesty about the change is why I am ruling for it rather than despite it**: *its falsification
+is empty — reverting the cast reds nothing, now or after a member is added, because the values compare
+identically until such a member exists AND is saved. This is a legibility-and-locality change, not a
+behavioural one, and I am not going to dress it up as catching a reachable input.* **An empty
+falsification is the SIGNATURE of a by-construction change, not an objection to one** — D-05-02's absent
+column cannot be written and there is no test that proves it.
+
+**And the guard's dependent changed under it, so its header did too.** It was written when T140 depended
+on the coincidence and was the only thing holding it up; **after the cast its dependent is the NEXT
+consumer that sorts this column in SQL without one.** Left in place with that stated, plus an expiry
+condition: **if a year passes with no such consumer, delete it** — *a guard whose dependent moved away and
+whose replacement never arrived is a red with no consequence, and a red with no consequence teaches people
+to ignore reds.*
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -14976,6 +15013,12 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         unsaveTarget(db: Db, actor: Actor, accountId: string, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<void>
         countSaves(db: Db, actor: Actor, accountId: string): Promise<number>
         migrateLocalSaves(db: Db, actor: Actor, accountId: string, targets: readonly { kind: "blueprint" | "card" | "term"; refId: string }[]): Promise<void>
+
+  **D-140-10: the store sorts `target_kind::text`**, so D-140-09 is true by construction rather than by a
+  premise plus a guard in a file T140 cannot see. Proposed by its implementer, which did **not** make the
+  change and stated that its own falsification is empty — *a legibility-and-locality change, not a
+  behavioural one*. **An empty falsification is the signature of a by-construction change rather than an
+  objection to one.**
 
   **D-140-09: `target_kind ASC` is LEXICOGRAPHIC on the string**, which is what a caller can compute from
   `SaveRecord`. Postgres sorts an enum by **declaration** order and `["blueprint","card","term"]` happens
