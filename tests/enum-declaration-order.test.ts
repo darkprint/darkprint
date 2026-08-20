@@ -1,6 +1,6 @@
 /* ============================================================
-   `target_kind`'s declaration order is alphabetical, and
-   D-140-08's published order silently depends on it.
+   `target_kind`'s declaration order is alphabetical, and a
+   consumer sorting it in SQL will silently depend on that.
 
    ── the coincidence, and why it is not a convention ──
    Postgres orders an enum column by DECLARATION order, not
@@ -18,15 +18,28 @@
    added by somebody following the house style is the likely case,
    not the exotic one.
 
-   ── what breaks, and why nothing else would notice ──
-   D-140-08 publishes `listSaves` as `saved_at DESC, target_kind
-   ASC, ref_id ASC`, and a blind author computing the expected
-   order from `SaveRecord` alone has nothing but the strings, so
-   it will sort them lexicographically — and be right for a reason
-   it is not relying on. The day the two readings diverge, the
-   implementation's SQL and the contract's published order mean
-   different things, every cell that computes an expected order
-   flips, and the diff that caused it is one word in a DDL array.
+   ── whose dependency this is, and it CHANGED under this file ──
+   Written when `lib/server/saves/store.ts` sorted on the enum
+   column directly, so T140's published order depended on the
+   coincidence and this guard was the only thing holding it up.
+   **D-140-10 moved that dependency out**: the store now sorts
+   `target_kind::text`, which makes D-140-09's lexicographic
+   reading true by construction, and T140 no longer relies on any
+   property of the declaration.
+
+   So this file's dependent is no longer T140. It is the NEXT
+   consumer that sorts this column in SQL without a cast — and the
+   reason to expect one is that sorting an enum column directly is
+   the obvious thing to write, is what T140 wrote, and reads
+   exactly as safe as the correct version. This guard makes the
+   divergence visible at the moment of the DDL edit rather than in
+   whatever suite flips afterwards.
+
+   **If a year passes with no such consumer, delete this file
+   rather than maintaining it.** A guard whose dependent has moved
+   away and whose replacement never arrived is a red with no
+   consequence, and a red with no consequence teaches people to
+   ignore reds.
 
    Reported by T140's implementer while building D-140-08, as an
    agreement it had noticed and declined to spend: **flagged
@@ -69,7 +82,7 @@ function declaredMembers(enumName: string): readonly string[] | undefined {
   return [...match[1]!.matchAll(/"([^"]*)"/g)].map((m) => m[1]!);
 }
 
-describe("D-140-08's published order does not depend on an accident", () => {
+describe("no SQL sort on target_kind silently depends on an accident", () => {
   it("target_kind is declared in alphabetical order", () => {
     const members = declaredMembers("target_kind");
 
@@ -82,16 +95,15 @@ describe("D-140-08's published order does not depend on an accident", () => {
 
     expect(
       [...members!],
-      "`target_kind`'s declaration order is no longer alphabetical, and D-140-08's published " +
-        "order for `listSaves` depends on those being the same thing. Postgres sorts an enum " +
-        "column by DECLARATION order; a caller sorting `SaveRecord.targetKind` has only the " +
-        "strings and will sort them lexicographically. While the two coincide nobody notices. " +
-        "Now they do not: `ORDER BY target_kind ASC` and the published contract mean different " +
-        "sequences, and every cell that computes an expected order from the records flips. " +
-        "Either declare the new member alphabetically, or amend D-140-08 and make the store sort " +
-        "on something a caller can compute — a cast to text, or an explicit CASE. Note that three " +
-        "of the five enums here already declare semantically, so following the house style is how " +
-        "this breaks.",
+      "`target_kind`'s declaration order is no longer alphabetical. Postgres sorts an enum column " +
+        "by DECLARATION order; anything sorting `SaveRecord.targetKind` as a string sorts " +
+        "lexicographically. While the two coincide nobody notices, and they no longer coincide. " +
+        "T140 is NOT the caller at risk — D-140-10 made it sort `target_kind::text`, so its " +
+        "published order is lexicographic by construction. The caller at risk is any LATER one " +
+        "that sorts this column in SQL without a cast, which is the obvious thing to write and is " +
+        "what T140 wrote first. Either declare the new member alphabetically, or make every SQL " +
+        "sort on this column cast to text. Note that three of the five enums here already declare " +
+        "semantically, so following the house style is how this breaks.",
     ).toEqual([...members!].sort());
   });
 });
