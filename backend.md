@@ -4946,7 +4946,7 @@ the author rather than the process. And **I chose a guard subset by price and th
 property of the tree**, which is the same act as reading a suite's green as a property of code it does not
 reach.
 
-## I read one ref's reflog and attributed it to another, then built an accusation on it
+## A fast-forward makes two refs briefly indistinguishable BY SHA, and only a substring separates them
 
 **Corrected.** The two entries are one branch apart and three minutes apart, and they run in **opposite
 directions**:
@@ -4955,7 +4955,16 @@ directions**:
         backend@{19:41:03}              merge test/t130-profiles -> moves BASE, in this worktree.
 
 **I quoted the first and called it the second**, put `19:38:26` in the file and in a report to the owner,
-and named a **watcher** as the actor. **The watcher could not have done it**: its body is
+and named a **watcher** as the actor.
+
+**And *read the wrong ref's reflog* under-describes the mechanism, which its author corrected while
+verifying my correction — because a rule with the wrong mechanism propagates the wrong fix.** Both lines
+carry the **identical sha**, `685382a`, and they have to: a fast-forward means `backend` arrives **at**
+the other tip, so the merge that created the object and the merge that moved `backend` onto it **name the
+same object**. **The only discriminator left is which branch the message names** — a substring, in a line
+whose sha matches. *The tokenizer shape this file already charges, arriving at a reflog.* **The fix is not
+"be careful which log you read"; it is that a sha does not identify a ref, and after a fast-forward it
+identifies two.** **The watcher could not have done it**: its body is
 `git worktree list`, `grep`, `sleep`, `echo` — **no git write of any kind** — and its author offered that
 as a falsifier before making its case, along with the sharper one: *if any command I issued contains
 `git merge test/t130-profiles`, my account is wrong.* Its branch's reflog is nine entries and **every one
@@ -4979,6 +4988,19 @@ told you more than a party that hands you a proof.**
 somebody else's automation, and the evidence I reached for was **a reflog I had not checked belonged to
 the ref I was talking about.** *An attribution is a measurement.* It owes its instrument like any other,
 and mine was the wrong file.
+
+**Two corrections in a row is ONE entry, not two lapses**, and its author made that case rather than
+letting me file them separately. **Both were an artefact read for a nearby one**: a sha shared by two refs,
+then a subset of guards read for a property of the tree. ***The thing in front of you answers a narrower
+question than the claim you drew from it*** — the reflog answers *what happened to some ref*, the seven
+guards answer *does the index parse*, and I read both as *is the tree what I think it is*.
+
+**And it asked for its own clearing to stay CONDITIONAL rather than be granted**, which is the last thing
+a cleared party usually wants: *my account rests on the watcher's body being what my transcript says and
+on my having issued no other command — both are claims about my own record, which is the weakest kind of
+evidence when the conclusion flatters me. The reflogs are independent of me and they carry it. If anything
+ever contradicts them, the reflogs win.* **A clearing that names the evidence it would lose to is worth
+more than one that closes.**
 
 **And it verified the half that protects it rather than accepting it**: `685382a` is not an ancestor of
 `backend`, base carries 0 of its nine files, its tip is unchanged. **A reset it was told was safe, checked
