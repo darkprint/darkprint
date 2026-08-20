@@ -4854,6 +4854,95 @@ them; run the gates yourself.* I ran them. **Running a gate and reading its answ
 the first was on my checklist.** Fixed at 13/13, verified before the commit rather than after it, and the
 two red commits are left in the history rather than amended away — the sequence is the record.
 
+## RULED by the owner (2026-08-20): T130's blind suite lands WITH the implementation, not before it
+
+Its blind author's user instructed the merge twice, with all three grounds in front of them. It could not
+perform it — `backend` is checked out here — and it **refused both routes that would have worked**:
+merging in my worktree while I was actively committing (*physics rather than authority*, and base moved
+`3aed056 → 69f60da` mid-composition), and `update-ref` behind me, which would have reported nine files as
+**deletions** in my own `git status`. **It had a way and did not take it. That is the one-writer rule
+working rather than being obeyed.**
+
+So it asked for the one thing only I could do: **detach, releasing the branch.**
+
+**Refused, then put to the owner in my own channel, and the owner ruled it out.** T130's tests merge with
+`lib/server/profiles/**` in one commit, the way all nine merged tasks did. Base stays at `1 failed` of
+5871, and the three sessions holding reconciliations against that line keep it.
+
+## A lock released to enable a refused act is a DECISION about the act
+
+I had refused the object. Detaching costs me nothing and touches nothing — **and it is not neutral,
+because the effect of the act is that the thing I refused becomes possible.** Its blind author was ready
+to treat it as neutral and accepted the sharper ground: *I would rather have that written down than have
+won the point.*
+
+## An instruction does not reach a session by travelling, and this time it was pointed at ME
+
+The same human said `merge` twice in one session and had not addressed it in mine. **Its blind author
+reported that as a gap rather than as authority that had arrived by a longer road** — *nothing about my
+user's instruction reaches your session and I am not going to pretend it does* — and then I refused to let
+the gap close itself by my acting on it.
+
+**This is the relay check running in the opposite direction.** Earlier in this run I relayed the owner's
+words to four sessions and all four declined to act on a relay; here a session declined to make its own
+authorisation into mine. **Same rule, both directions, and the deciding fact both times was that the owner
+was reachable and asking cost one turn.**
+
+## A cost stated as a word could have been a number, and the offer was still right to decline
+
+It offered to run a full suite on its own branch — which **is** base plus the nine files — so the owner
+would weigh a measured failure count rather than *it reds base for three sessions*. **Ninety seconds of
+host CPU to turn a word into a number before the decision instead of after it.** Declined only because
+the answer arrived first, and it asked to be named rather than taking the slot. **The instinct is the one
+to keep: a cost in a decision brief is an estimate until somebody measures it, and the party who can
+measure it cheapest is often the one whose case it weakens.**
+
+## The relay rule is NOT symmetric: stop first, confirm after
+
+T130's blind author stood down on my relay of the owner's ruling — **and then treated the relay as a
+reason to pause rather than as its user's instruction**, asking its own channel to confirm. It named the
+asymmetry the rest of this run had missed:
+
+> **a relayed instruction to ACT creates something irreversible on somebody else's word; a relayed
+> instruction to STOP costs one turn to confirm.**
+
+**So the safe order is stop first, confirm after** — which is neither of the two positions this run has
+been holding. Four sessions once declined to act on a relay I carried and waited; that was right for
+*act*. **Waiting on a relayed *stop* would have been the wrong shape**, because the cost of the pause is
+one turn and the cost of continuing is the act.
+
+*Declining to merge on an unconfirmed relay is the same shape as declining to merge on an unconfirmed
+relay, both times* — its line, and the symmetry it points at is the **outcome** rather than the
+instruction: both readings converge on not merging, so standing down loses nothing while confirming.
+
+## The merge the owner had just ruled out landed on `backend`, and I committed the RULING on top of it
+
+Reflog, `backend@{1}`: **`merge test/t130-profiles: Fast-forward`, 19:38:26**, in this worktree. Between
+my `69f60da` at 19:34:33 and my `01ed62a` at 19:42:06 — **so the commit whose subject is *owner rules
+T130's blind suite lands with the implementation, not before it* has the merge it rules out as its
+parent.** T130's blind author had mentioned killing a **watcher**; nothing else in this worktree runs
+`git merge`.
+
+**And my guards were green across it, which is the part worth keeping.** I ran seven before committing
+`01ed62a` and they passed. **None of them typechecks**, and the nine files import `@/lib/server/profiles`,
+which does not exist on base — so the tree was broken in a way *the guard set I had chosen could not see*,
+and I had chosen it because it was cheap. The error surfaced only when a later edit made me run `tsc`.
+
+**Recovery, and it is reset rather than revert for a reason that matters later.** Reverting a merge
+removes the files **and leaves the merge in ancestry**, so the real T130 merge would find those paths
+already merged-and-deleted and decline to re-add them. `backend` is reset to `69f60da`.
+
+        blast radius   backend and test/t130-profiles only; no other branch, no tag, nothing pushed
+        discarded      01ed62a — mine, backend.md only, content carried forward here
+        preserved      685382a survives on test/t130-profiles, untouched
+        verified after 13 guards, typecheck 0, lint 0, full suite 1 failed | 5870 passed of 5871
+
+**Two things this cost that a cheaper telling would omit.** A watcher acted on an instruction its author
+had already withdrawn — **an automation outlives the intent that created it**, and *stood down* described
+the author rather than the process. And **I chose a guard subset by price and then read its green as a
+property of the tree**, which is the same act as reading a suite's green as a property of code it does not
+reach.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -8017,7 +8106,7 @@ it does not decide differently inside a worktree.
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | impl-done | blind suite `3337fb0`: **176 cells over 6 files**, `167 failed, 9 passed, 0 skipped` twice with identical failing sets. **The nine greens measure the DRIVER** — closed port `ECONNREFUSED`, dropped table `42P01`, and **drizzle rendering bound `accountId`/`refId`, which settles D-140-06's premise before implementation.** Reference 176/176 first try, offered as the weaker result. 18 mutations: **four one-red mutations on four rulings**, and **exactly one of seven non-owner shapes reds** under a re-implemented ownership check. **`SaveRecord`'s `Exact<>` is vacuous from a blind tree — `Exact<any,T>` is `true` — and cannot be falsified from there.** Implementation at `3f0f3f9`+ pending its own gate. **Route surface was owed by the orchestrator (D-140-04) and is now PUBLISHED as D-140-07**: four routes under `app/api/account/saves/**` over one request shape, which is `saveTarget`'s own `target`. No 403 (T050's reason, cited not re-derived) and no 404 on a write (the existence oracle AC1 closes), so **AC1's non-owner denial is unreachable from HTTP and route cells must not expect it**. `seams.md`'s SEAM-61/62 and `FavoriteStar.tsx`'s `TODO(SEAM-62)` corrected in the same commit **Implementation at `914e531`, gates and triple measured there; `9345e22` is the same thirteen files with only `backend.md` moved — an acceptance is of an ARTEFACT, not of a tip.** Thirteen files under `lib/server/saves/**` and `app/api/account/saves/**`, built against D-140-01..07. Triple `1 failed`, `5896 passed`, `0 skipped` of 5897, three identical sorted failing sets, the one red T090's `B-08 RE-SCORE`; **0 skipped by ARITHMETIC rather than by a printed column** — `1 + 5896 = 5897` leaves nothing for a silently-skipping `skipIf` file to hide in. Reconciliation `5897 − 5871 = 26`, delta measured in isolation as 9 + 17 and base's 5871 measured independently by me. typecheck 0, lint exit 0 read in full with 0 `warning`/`problems`, build 0 with both routes dynamic. **Six mutations, each pre-registered by IDENTITY and scope, all HIT**: decision arm 2, message leak 2, `can` re-implemented 2 (the second the operator cell, which a bare id comparison refuses), unfiltered count 7 all inside AC3, term filter 2, card half 1. `SaveRecord`'s `Exact<>` falsified in BOTH directions — the guard its blind author correctly reported it could not falsify, since `Exact<any,T>` is `true`. **`impl-done` HERE MEANS ONLY THAT THE LATER HALF ARRIVED. It does NOT mean ready for an adversary, and its implementer flagged that rather than let the field read as an invitation**: the blind suite has never run against this module, the join has not happened, and the acceptance surface is **209, not the 176 this row cites** — 33 route cells sit uncommitted in the blind author's tree. **No number here is an acceptance measurement.** Clause 5 held below the transport at 7 reds and unheld at it; `error-hygiene` 18 there and 19 at merge |
-| T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | `../darkprint-wt-t230-limits` (impl), `../darkprint-wt-t230-limits-tests` (blind) | `feat/t230-limits`, `test/t230-limits` | tests-written | module `8338951`, 17 files across two trees, four sealed classes so the merge count is **18 → 22**. Gates ITS measurements at `0f23379`, scope TARGETED: `typecheck` 0 unfiltered, `lint` 0 read in full, `vitest lib/server/limits` **84/84** — **not a full suite, not a triple, and the three repo guards it pre-registered green were outside that scope so their green is still a prediction.** **Both pre-registered candidate reds passed and the two real ones were elsewhere**: a lone surrogate walking a control-character check **in the opposite direction from a NUL**, and a refusal test whose input was accepted. Blind suite at `test/t230-limits`, 7 ahead |
+| T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | `../darkprint-wt-t230-limits` (impl), `../darkprint-wt-t230-limits-tests` (blind) | `feat/t230-limits`, `test/t230-limits` | impl-done | module `8338951`, 17 files across two trees, four sealed classes so the merge count is **18 → 22**. Gates ITS measurements at `0f23379`, scope TARGETED: `typecheck` 0 unfiltered, `lint` 0 read in full, `vitest lib/server/limits` **84/84** — **not a full suite, not a triple, and the three repo guards it pre-registered green were outside that scope so their green is still a prediction.** **Both pre-registered candidate reds passed and the two real ones were elsewhere**: a lone surrogate walking a control-character check **in the opposite direction from a NUL**, and a refusal test whose input was accepted. Blind suite at `test/t230-limits`, 7 ahead **Implementation `5d79039`**, taken at the standing release-at-a-stamp: `10a8ab1` plus eight modified paths, reproduced here as eight blob ids with zero `fatal` lines and an identical path set. **`T230-gate-2`: three identical runs at `1 failed`, `5963 passed`, `0 skipped` of 5964**, identical sorted failing sets, the one red base's own t090 `B-08 RE-SCORE`; typecheck 0 unfiltered, lint exit 0 read in full. **Reconciliation exact — `5871 + 93 = 5964`**, delta measured, base measured independently by me. **Its FIRST triple was not identical and it chased both extras rather than reporting the disjunction**: `D-40-F` a contention artifact at 102.69 under load 57, and `t010` AC5 a permanent 1-in-230 fixture red — *one moved for load and one moved for a coin*, and the second is fixed on base at `85b2c9e`. **It attributed the two orphan databases to ME by creation time** after three sessions had stopped at *zero connections, cannot attribute*. D-230-11's routes shipped with `listKeys` added, `DELETE` at `200 KeyList`, and **revoked rows LISTED rather than filtered because that is AC4's observation rather than a convenience**. Nine ceiling cells as ruled with `REFUSED` written out rather than absent. `error-hygiene` 21 → 22 at merge. Adversary round owed |
 | T100 | Publishing and releases | T010, T020, T025, T040, T050, T060, T070, T090 | `lib/server/publish/**`, `app/api/bundles/**` | — | — | todo | — |
 | T130 | Profiles and the public author surface | T050, T060, T080 | `lib/server/profiles/**`, `app/api/authors/**` | `../darkprint-wt-t130-profiles` (impl), `../darkprint-wt-t130-profiles-tests` (blind) | `feat/t130-profiles`, `test/t130-profiles` | impl-done | implementation `6ffdb17`, blind suite `32556b7`. **Cut to `{ author, joinedAt, counts: { blueprints, terms } }` by D-130-06 (owner)** — `setPins`/`toggleFollow` removed, AC3/AC4 to T131, `counts.cards` to T132. **No owner/visitor branch anywhere: AC2 falls out of the `Actor`, T080 decides visibility, no second `readable()`.** `withProfileStore` deliberately narrower than `withRegistryStore` — re-wrapping a sealed fault relabels a working store. **D-130-07: `counts.terms` consumes the shared parser, does not require `text`, and REFUSES an unreadable vocabulary rather than skipping** (cost stated: one bad release 500s a profile). Gates by its author at `eccab30`: typecheck 0, lint 0 with the single `warning` match read as a LINE — the prebuild's own `--disable-warning=` — and build 0 **with the route table showing the handler collected, which typecheck cannot claim.** Handed over with a content digest **and its method**, reproduced exactly. Adversary round owed |
 | T131 | Profiles: follows, pins and the tables they need | T130, T180 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**`, `lib/server/profiles/**` (extension), `app/api/authors/**` (extension) | — | — | todo | **Created by D-130-06 (owner, 2026-08-20).** Carries the half T130 could not build: `watchers` + `toggleFollow` + AC4, `pinned` + `setPins` + AC3, `support`, and `validated` (a count, D-130-01, blocked on T180). **It owes the TABLES before the behaviour** — no follow relation, no pin storage, no `support` column, and neither `target_kind` nor `target_actor_kind` can name an account as a target or a follow as an act, so both need `ALTER TYPE`. **Inherits AC1's clause unchanged: anything countable is counted, never stored as a counter.** T130's blind suite already holds the pins, follow and `counts.cards` families |
@@ -14598,7 +14687,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 ### T230, Rate limiting and API keys
 
-- **State:** tests-written
+- **State:** impl-done
 - **Depends on:** T000 (contract: middleware), T050 (data: identity), **T005** (the `api_key` table; `lib/db/schema.ts` is Forbidden here)
 - **Blocks:** —
 - **Owns:** `lib/server/limits/**`, `app/api/account/keys/**`
@@ -14738,6 +14827,14 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Out of scope:** content moderation (T170), abuse takedown (T060's operator).
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-17; numbers still open.
+  - 2026-08-20 implementer: **refused to populate three cells and invent six**, and its own published
+    type backed it — the inner map is TOTAL over `Tier`, so a three-cell object does not typecheck.
+    *My own published type refusing a correct instruction* is what got the gap ruled rather than papered
+    over. Three surfaces D-230-01 named and left open were published as D-230-11 at its asking.
+  - 2026-08-20 orchestrator: committed `5d79039` on the owner's behalf at the standing stamp. **Numbers
+    no longer open**: the owner filled nine cells of nine on 2026-08-20 and `SECRET_PREFIX = "dp_"` is
+    confirmed. `MAX_LABEL_LENGTH = 100` ratified by me and NOT escalated, stated to the implementer as a
+    choice rather than left silent — it commits to nothing outside the product.
 
 ### T100, Publishing and releases
 
