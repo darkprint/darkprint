@@ -906,8 +906,23 @@ describe("D-40-I — the walk snapshots what the serialiser snapshots, and no mo
     const ruled = Buffer.byteLength(JSON.stringify(first.value), "utf8");
     expect(first.fired(), "the fixture's own code must run").toBeGreaterThan(0);
 
-    /* The control: the two readings really are far apart, so the bound below is not being
-       driven between two numbers that were already the same. */
+    /**
+     * **The control, and the sweep is what found the first one measuring an adjacent quantity.**
+     * It asserted only that the ruled number is under the bound — which stays true of a fixture
+     * that grows by **nothing at all**, so a mutation reducing the growth to zero left the cell
+     * carrying no decision and reddened nothing.
+     *
+     * The quantity this cell is about is the size the array reaches **after** the caller's code
+     * has run, because that is what a live extent read would have charged against the bound. So
+     * both sides are required: the ruled number under it, and the grown size over it.
+     */
+    const grown = build();
+    JSON.stringify(grown.value);
+    const afterGrowth = Buffer.byteLength(JSON.stringify(grown.value), "utf8");
+    expect(
+      afterGrowth,
+      "what a live extent read would have charged must exceed the bound, or this cell decides nothing",
+    ).toBeGreaterThan(200);
     expect(ruled).toBeLessThan(200);
 
     const second = build();
