@@ -353,9 +353,16 @@ describe("a caller who may not see the set gets the answer an empty owner gets",
         },
       ) as Db;
 
-      const list = await listSaves(spy, actor, ACCOUNT);
-      const count = await countSaves(spy, actor, ACCOUNT);
+      /* The calls are allowed to REJECT rather than answer, and `touched` is asserted
+         either way. A denied caller that wrongly proceeds reaches the spy, whose every
+         property is `undefined`, so the module throws before an assertion on the return
+         value could run — and the red a reader would meet is then a stack trace into
+         `store.ts` rather than the sentence naming which actor shape got through. The
+         instrument has to be the assertion that fires, not one the failure jumps over. */
+      const list = await listSaves(spy, actor, ACCOUNT).catch(() => "REJECTED" as const);
+      const count = await countSaves(spy, actor, ACCOUNT).catch(() => "REJECTED" as const);
 
+      expect(touched, `${label} reached the database for a set it may not see`).toBe(false);
       expect(list, `${label} was given a listing`).toEqual([]);
       expect(count, `${label} was given a count`).toBe(0);
       /* D-140-01: `0` rather than `undefined`, and the criterion is that this is the SAME
