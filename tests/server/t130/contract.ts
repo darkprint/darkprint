@@ -763,8 +763,21 @@ export async function insertBundle(
     slug: string;
     visibility?: "public" | "private";
     cards?: readonly CardFixture[];
-    /** Namespaced `OntologyTerm[]` this release declares, for `release.local_vocabulary`. */
+    /**
+     * Namespaced `OntologyTerm[]` this release declares. Stored through `storedVocabulary`
+     * as `{ text, terms }` — the column's shape since D-90-03 — never as the bare array this
+     * fixture used to write, which both merged readers refuse.
+     */
     localVocabulary?: readonly Record<string, unknown>[];
+    /**
+     * A vocabulary written to the column VERBATIM, bypassing `storedVocabulary`.
+     *
+     * Exists for one caller: D-130-21's witness, which needs a release the parser refuses in
+     * order to observe `MalformedStoredVocabularyError` at all. Separate from
+     * `localVocabulary` on purpose — a single option that sometimes wrapped and sometimes did
+     * not is how the wrong shape got written the first time.
+     */
+    rawLocalVocabulary?: unknown;
     version?: string;
   },
 ): Promise<BundleFixture> {
@@ -795,7 +808,11 @@ export async function insertBundle(
       JSON.stringify(manifest(o.slug, o.owner.handle)),
       cardRefs,
       cardDigests,
-      o.localVocabulary === undefined ? null : JSON.stringify(o.localVocabulary),
+      o.rawLocalVocabulary !== undefined
+        ? JSON.stringify(o.rawLocalVocabulary)
+        : o.localVocabulary === undefined
+          ? null
+          : JSON.stringify(storedVocabulary(o.localVocabulary)),
     ],
   );
   const releaseId = releaseRow?.id;
@@ -830,14 +847,47 @@ export async function insertOntologyVersion(s: Scratch, version: string): Promis
   return { id, version };
 }
 
-/** The `OntologyTerm` body a namespaced term carries, in both of the stores below. */
+/**
+ * The `OntologyTerm` body a namespaced term carries, in both of the stores below.
+ *
+ * **This was wrong and the correction is the interesting half.** It carried
+ * `{ id, kind, label, definition }` — no `description`, no `since`, and `definition` is not a
+ * field of anything. `lib/content/ontology-file.ts`'s `toTerm` requires `id`, `kind`, `label`,
+ * `description` and `since` as non-empty strings and `kind` from the five `TermKind`s, and it
+ * is the ONE reader of this shape by design: "the same document is read in three places and a
+ * second reader would be a second opinion about what a term is". I wrote the second opinion
+ * anyway, in a fixture, without having read the first.
+ */
 export function namespacedTerm(termId: string): Record<string, unknown> {
   return {
     id: termId,
     kind: "phase",
     label: `Fixture term ${termId}`,
-    definition: "A namespaced term minted by the T130 fixtures.",
+    description: "A namespaced term minted by the T130 fixtures.",
+    since: "0.1.0",
   };
+}
+
+/**
+ * The stored shape of `release.local_vocabulary`: `{ text, terms }` since **D-90-03**, the
+ * file's own bytes beside the parsed terms.
+ *
+ * **The fixture stored a BARE ARRAY and that was the defect T130's adversary traced.** Both
+ * merged readers refuse an array — `parseOntologyTerms` throws *"is not a YAML mapping"* and
+ * T090's `storedVocabulary` throws before it even gets there — so `getProfile` answered a
+ * sealed `ProfileStoreError` for every profile whose handle owned such a release, and the
+ * module was behaving correctly the whole time.
+ *
+ * **`text` is not decoration.** D-90-03 keeps the bytes because `exportBundle` writes them
+ * into the folder unaltered, and a copy reconstructed from the terms would define the
+ * reader's vocabulary slightly differently from the one the site scored. A fixture that
+ * omitted it would store a shape no writer produces.
+ */
+export function storedVocabulary(
+  terms: readonly Record<string, unknown>[],
+): Record<string, unknown> {
+  const text = ["terms:", ...terms.map((t) => `  - id: ${String(t.id)}`)].join("\n") + "\n";
+  return { text, terms: [...terms] };
 }
 
 /**
@@ -869,11 +919,16 @@ export async function insertNamespacedTerm(
   const [row] = await s.query("select local_vocabulary from release where id = $1", [
     o.bundle.releaseId,
   ]);
-  const existing = Array.isArray(row?.local_vocabulary)
-    ? (row.local_vocabulary as Record<string, unknown>[])
-    : [];
+  /* Read back through the stored shape rather than assuming the column holds a list: the
+     column is `{ text, terms }` and the terms live under a key. Reading it as an array is
+     what put a bare array there in the first place. */
+  const stored = row?.local_vocabulary;
+  const existing =
+    stored !== null && typeof stored === "object" && !Array.isArray(stored)
+      ? ((stored as { terms?: unknown }).terms as Record<string, unknown>[] | undefined) ?? []
+      : [];
   await s.query("update release set local_vocabulary = $1 where id = $2", [
-    JSON.stringify([...existing, namespacedTerm(o.termId)]),
+    JSON.stringify(storedVocabulary([...existing, namespacedTerm(o.termId)])),
     o.bundle.releaseId,
   ]);
   return o.termId;
