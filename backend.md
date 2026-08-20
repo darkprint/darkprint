@@ -3844,6 +3844,26 @@ catches it** — without that mutation the refusal cells would have read as cove
 **Finally, it declined to call three guards green**: they were outside its scoped run, **so their green
 is still a prediction and it said so until a run covers them.**
 
+## A grep for a struck sentence counts the retraction that quotes it
+
+**T140's blind author checked whether its upheld finding had actually landed — the right instinct, and
+the third time it has checked — and reported `grep -c "must gain the migration"` still returning 1, still
+inside the Published signatures block.** **The strike DID land**, at `79de06e`, four commits before the
+tree it measured. **The surviving occurrence is the WITHDRAWAL quoting what it withdraws**: *This block
+said "saves need their own table and this task's `Owns` must gain the migration for it …"* — which is
+this file's own retraction pattern, **kept deliberately, because a deleted claim leaves a reader who
+half-remembers it nothing to check against.**
+
+**So the count was right and the reading was not, and the rule that separates them is already here:**
+*after fixing a claim in one surface, classify the remaining occurrences by surface, not by count.* T040's
+adversary applied it to eight surviving `17 963`s — six the record, two inside withdrawals, **none in a
+declaration**. **A count answers *how many*; the question is *which kind of sentence*, and only the second
+distinguishes a live claim from a retracted one being quoted.**
+
+**Worth recording because the instinct was correct and the instrument was not.** Verifying that an upheld
+finding displaced anything is exactly what four of my rulings needed and did not get — **and the check
+that would have answered it is one line longer than the one it ran.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
