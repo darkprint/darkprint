@@ -4098,6 +4098,60 @@ would 403 exactly the account AC5 is about.**
 `Response.json`. Stated because it is the one field where a blind route cell and a blind module cell
 assert different types for the same name.
 
+## `git status` is a WRITE, and a session that holds nothing cannot report a tree
+
+**T130's unbriefed duplicate declined an instruction of mine and was right twice over.** I asked it for
+`git status --porcelain --untracked-files=all` in a worktree it does not hold. It refused, giving two
+reasons I had not weighed:
+
+**First, `git status` is not read-only.** It refreshes and rewrites `.git/index`. So a non-holder running
+it *writes into a tree it does not hold* — **the exact failure the one-writer rule exists to prevent, and
+I asked for it inside the message enforcing that rule.**
+
+**Second, and this is the part I would not have found**: whatever it printed would have been **my**
+working state or the implementer's, and handing it back as its answer would **attribute someone else's
+uncommitted work to a session that has written nothing**. *Worse than no data* is its phrase and it is
+right: a clean porcelain from a non-holder reads as evidence about the reporter and is evidence about the
+holder.
+
+The protocol already said the receiving agent needs the sha **and** confirmation that porcelain is empty
+at it. **It never said who produces that confirmation, and the answer is the HOLDER** — always, and now
+for a mechanical reason on top of the attribution one. Stamped here: `feat/t130-profiles` at `6ffdb17`,
+porcelain empty, measured by me in the tree I hold.
+
+It gave what it *could* give without touching anything: its harness's start-of-session snapshot, `dae638e`
+clean, **labelled a timestamped snapshot rather than current state**. That is the shape of a measurement
+whose tense is stated, and it is the rule I broke earlier in this run when I carried a stale base line
+into a dispatch and called it present tense.
+
+## D-130-08: seventeen blind cells outlive their criteria, and they travel rather than die
+
+D-130-06 cut `setPins` and `toggleFollow` to T131 **after** the blind suite was committed at `4dce692`,
+so `tests/server/t130/pins.test.ts` (10 cells) and `follow.test.ts` (7) drive functions the contract no
+longer has. **T130's adversary round is 43 cells of 60, and the drop is stated here rather than left to
+look like a suite that passed.**
+
+**They do not merge with T130 and they are not deleted.** They stay on `test/t130-profiles` at
+`32556b7`, named in T131's section as where they live. **`describe.skip` is refused**: a skipped file is
+the `SILENT GREEN` this run has a rule against, and it would sit on `backend` reading as coverage.
+
+**And T131 inherits them as EVIDENCE, not as cells**, which is the whole of this ruling. Each header
+names a hole its own author could not close:
+
+* `pins.test.ts` — **the spelling of a pin is unpublished.** `setPins(..., pins: readonly string[])`
+  against SEAM-55's `PinnedRef[]` tagged objects, with nothing saying whether a blueprint pin carries its
+  owner or a card pin its version. **Its author states the direction that makes guessing worse than
+  usual: AC3 makes an unresolvable pin ABSENT, so a wrong guess yields `pinned: []` and every cell below
+  passes over an empty array. A wrong guess reds nothing — it goes quietly green.**
+* `follow.test.ts` — **no table holds a follow.** `grep -in "follow\|watcher" lib/db/schema.ts` is empty
+  and `target_actor_kind` is `["star","note_vote"]`, so nothing can write a follow behind the module's
+  back and **an incremented counter is indistinguishable from a derived count from outside.**
+
+**So T131 must rule the pin spelling BEFORE its blind author writes**, and must ship the follow table
+before AC4 is observable at all. Re-using these cells against an unsettled contract would inherit a guess
+that **cannot red** — which is the strongest sentence in either file and is an argument for settling the
+contract first, not for reusing the cells.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -13681,6 +13735,17 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 
 ### T131, Profiles: follows, pins and the tables they need
+- **Inherited evidence, not inherited cells (D-130-08).** T130's blind author wrote 17 cells against
+  `setPins` and `toggleFollow` before D-130-06 cut them here: `tests/server/t130/{pins,follow}.test.ts`
+  on `test/t130-profiles` at `32556b7`. **Read the headers before the cells.** They name two holes this
+  task must close first:
+  **(a) the spelling of a pin is unpublished** — `readonly string[]` against SEAM-55's `PinnedRef[]`, and
+  because AC3 makes an unresolvable pin ABSENT, **a wrong guess yields `pinned: []` and goes quietly
+  green rather than red**; so T131 rules the spelling before its blind author writes.
+  **(b) no table holds a follow** — `target_actor_kind` is `["star","note_vote"]`, so until this task
+  ships the table nothing can seed a follow behind the module and a stored counter is indistinguishable
+  from a derived count. **AC4 is unobservable before the table exists**, which is why the table is
+  `Owns` here and not an afterthought.
 
 - **State:** todo
 - **Depends on:** T130, T180
@@ -13962,6 +14027,12 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T130, Profiles and the public author surface
 
 - **State:** impl-done
+- **Adversary round scope (D-130-08): 43 of the blind suite's 60 cells.** `pins.test.ts` (10) and
+  `follow.test.ts` (7) drive `setPins` and `toggleFollow`, which **D-130-06 cut to T131 after the blind
+  suite was committed**. They do not merge, they are not deleted and they are not skipped; they stay on
+  `test/t130-profiles` at `32556b7`. **Reported as 43 so the drop is arithmetic rather than a suite that
+  looks like it passed.** Tree stamped by its holder: `feat/t130-profiles` at `6ffdb17`, porcelain empty,
+  `merge-tree` against `test/t130-profiles` clean.
 - **Depends on:** T050, T060, T080
 - **Blocks:** T250, T262
 - **Owns:** `lib/server/profiles/**`, `app/api/authors/**`
