@@ -4022,6 +4022,82 @@ under an authorisation you hold. That needs nothing from me except the tree and 
 to act on it at all.** *Releasing a tree costs no authority*, and the whole standoff was about an act
 that had a second party who did not need one.
 
+## A superseded document is only superseded where the READER lands
+
+**D-140-04 ruled `seams.md`'s T140 rows superseded eight days ago and left the rows standing.** They are
+still there, still publishing `DELETE /api/account/saves/{key}` and `{ target: string }`, and so is
+`components/ui/FavoriteStar.tsx:28`, which carries that same dead route **in the code**.
+
+**The charge D-140-04 itself made is the one it left open**: *silence makes an author ask; a
+contradiction lets them proceed.* A ruling recorded in `backend.md` and not landed in the document
+**converts silence into contradiction** — before the ruling a reader of `seams.md` had one wrong
+surface, after it they have two surfaces and no way to know which is live. **Fourth instance this run of
+a superseded sentence left standing**, and the first where the standing copy is a `TODO` in a source
+file rather than a line in a document.
+
+## `rulings-bind` could not see a single ruling from any task in flight
+
+Its domain regex was `\bD-(\d{2})-`, which **cannot match `D-130-06`**: after `D-` it takes `13`, then
+wants a `-` and finds `0`. **Every `D-130-*`, `D-140-*` and `D-230-*` — the entire id space of the three
+tasks now open — was outside the guard**, and it was green because nothing had yet arrived in the region
+it was blind to.
+
+**Same shape as `error-hygiene`'s absent class**: a domain built to a pattern rather than to the
+document, excluding exactly what was in use. **And it was falsifiable only by first creating the thing it
+could not see** — widened to `\d{2,3}`, then `## D-140-07` added to the preamble with no citation in
+T140's section, which red with `D-140-07: argued in the preamble, absent from T140`; the citation made it
+green. **A widening that stays green proves the widening, not the guard.**
+
+## D-140-07: `app/api/account/saves/**` is four routes over ONE request shape
+
+D-140-04 charged two published request shapes for one route and left the surface owed by me. Ruled, and
+the shape is **not a choice between the two** — it is the barrel's own parameter, so the route translates
+nothing and there is nothing for an implementer to invent or a blind author to guess.
+
+        GET    /api/account/saves          —                               200 SavesView | 401 500
+        POST   /api/account/saves          { kind, refId }                 200 SavesView | 400 401 500
+        DELETE /api/account/saves          { kind, refId }                 200 SavesView | 400 401 500
+        POST   /api/account/saves/migrate  { targets: { kind, refId }[] }  200 SavesView | 400 401 500
+
+**SEAM-62's key space is WITHDRAWN, not mapped.** `blueprint:<slug>` cannot resolve under B-09's
+per-owner uniqueness, `node:<id>@<version>` carries the version grain B-10 forbids, `bundle:` is not a
+member of the enum and `term` is missing from the keys — **a translation would have to invent three
+things the contract does not state.** Whatever mapping the browser-local set needs is **T262's**, which
+owns the `localStorage` key and is the only thing that knows what is in it.
+
+**`DELETE` carries a body because `refId`'s lexical shape per kind is unpublished.** A
+`/{kind}/{refId}` segment has to know whether a blueprint's ref contains a `/`, and a catch-all makes the
+split ambiguous. **Cost stated: a body on `DELETE` is awkward for proxies and caches**, neither of which
+touches a private authenticated surface.
+
+**No 403, and the reason is T050's rather than a fresh derivation.** `lib/server/accounts/http.ts` ships
+it: every route passes `session.accountId`, so `NotAccountOwnerError` compares an id against itself.
+**Consequence, and it binds the blind author: AC1's non-owner denial is UNREACHABLE from HTTP in this
+task** — module cells drive it, route cells must not expect a 403, and **its absence is not evidence the
+denial is untested.**
+
+**No 404 on a write, deliberately.** A write-time existence check on a polymorphic target is exactly the
+oracle AC1 closes — 404 for a private blueprint and 200 for a public one tells a stranger which private
+slugs are real. AC3 already answers it at read time. **Cost: a client typo is accepted silently.**
+
+**The read returns both published functions' answers.** AC3 requires `listSaves` and `countSaves` to
+agree by construction; **a route deriving `count` from `saves.length` would satisfy that agreement by
+making it unobservable.** One payload, both values, one extra query per read.
+
+**The writes answer the resulting `SavesView` rather than 204**, because `lib/server/http` publishes `ok`
+and no `noContent` and is not in T140's `Owns` — a 204 would be a raw `Response` beside the envelope
+every other status uses. It is also the shipped convention (`200 AccountRecord` after every account
+`PATCH`), and it makes **AC2's idempotence drivable in two requests instead of three.**
+
+**No handle is required.** A save is private and is never rendered under a public identity. **The
+deciding case is AC5's own**: the browser-local set migrates *on first sign-in*, and an account on its
+first sign-in has `handle: null` until it reaches `PATCH /api/account/handle` — **requiring a handle
+would 403 exactly the account AC5 is about.**
+
+**`savedAt` crosses as an ISO string**, since `SaveRecord.savedAt` is a `Date` and `ok` is
+`Response.json`. Stated because it is the one field where a blind route cell and a blind module cell
+assert different types for the same name.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -7184,7 +7260,7 @@ it does not decide differently inside a worktree.
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
-| T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | tests-written | blind suite `3337fb0`: **176 cells over 6 files**, `167 failed, 9 passed, 0 skipped` twice with identical failing sets. **The nine greens measure the DRIVER** — closed port `ECONNREFUSED`, dropped table `42P01`, and **drizzle rendering bound `accountId`/`refId`, which settles D-140-06's premise before implementation.** Reference 176/176 first try, offered as the weaker result. 18 mutations: **four one-red mutations on four rulings**, and **exactly one of seven non-owner shapes reds** under a re-implemented ownership check. **`SaveRecord`'s `Exact<>` is vacuous from a blind tree — `Exact<any,T>` is `true` — and cannot be falsified from there.** Implementation at `3f0f3f9`+ pending its own gate. **Route surface owed by the orchestrator (D-140-04)** |
+| T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | tests-written | blind suite `3337fb0`: **176 cells over 6 files**, `167 failed, 9 passed, 0 skipped` twice with identical failing sets. **The nine greens measure the DRIVER** — closed port `ECONNREFUSED`, dropped table `42P01`, and **drizzle rendering bound `accountId`/`refId`, which settles D-140-06's premise before implementation.** Reference 176/176 first try, offered as the weaker result. 18 mutations: **four one-red mutations on four rulings**, and **exactly one of seven non-owner shapes reds** under a re-implemented ownership check. **`SaveRecord`'s `Exact<>` is vacuous from a blind tree — `Exact<any,T>` is `true` — and cannot be falsified from there.** Implementation at `3f0f3f9`+ pending its own gate. **Route surface was owed by the orchestrator (D-140-04) and is now PUBLISHED as D-140-07**: four routes under `app/api/account/saves/**` over one request shape, which is `saveTarget`'s own `target`. No 403 (T050's reason, cited not re-derived) and no 404 on a write (the existence oracle AC1 closes), so **AC1's non-owner denial is unreachable from HTTP and route cells must not expect it**. `seams.md`'s SEAM-61/62 and `FavoriteStar.tsx`'s `TODO(SEAM-62)` corrected in the same commit |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | `../darkprint-wt-t230-limits` (impl), `../darkprint-wt-t230-limits-tests` (blind) | `feat/t230-limits`, `test/t230-limits` | tests-written | module `8338951`, 17 files across two trees, four sealed classes so the merge count is **18 → 22**. Gates ITS measurements at `0f23379`, scope TARGETED: `typecheck` 0 unfiltered, `lint` 0 read in full, `vitest lib/server/limits` **84/84** — **not a full suite, not a triple, and the three repo guards it pre-registered green were outside that scope so their green is still a prediction.** **Both pre-registered candidate reds passed and the two real ones were elsewhere**: a lone surrogate walking a control-character check **in the opposite direction from a NUL**, and a refusal test whose input was accepted. Blind suite at `test/t230-limits`, 7 ahead |
 | T100 | Publishing and releases | T010, T020, T025, T040, T050, T060, T070, T090 | `lib/server/publish/**`, `app/api/bundles/**` | — | — | todo | — |
 | T130 | Profiles and the public author surface | T050, T060, T080 | `lib/server/profiles/**`, `app/api/authors/**` | `../darkprint-wt-t130-profiles` (impl), `../darkprint-wt-t130-profiles-tests` (blind) | `feat/t130-profiles`, `test/t130-profiles` | impl-done | implementation `6ffdb17`, blind suite `32556b7`. **Cut to `{ author, joinedAt, counts: { blueprints, terms } }` by D-130-06 (owner)** — `setPins`/`toggleFollow` removed, AC3/AC4 to T131, `counts.cards` to T132. **No owner/visitor branch anywhere: AC2 falls out of the `Actor`, T080 decides visibility, no second `readable()`.** `withProfileStore` deliberately narrower than `withRegistryStore` — re-wrapping a sealed fault relabels a working store. **D-130-07: `counts.terms` consumes the shared parser, does not require `text`, and REFUSES an unreadable vocabulary rather than skipping** (cost stated: one bad release 500s a profile). Gates by its author at `eccab30`: typecheck 0, lint 0 with the single `warning` match read as a LINE — the prebuild's own `--disable-warning=` — and build 0 **with the route table showing the handler collected, which typecheck cannot claim.** Handed over with a content digest **and its method**, reproduced exactly. Adversary round owed |
@@ -13653,6 +13729,46 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         unsaveTarget(db: Db, actor: Actor, accountId: string, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<void>
         countSaves(db: Db, actor: Actor, accountId: string): Promise<number>
         migrateLocalSaves(db: Db, actor: Actor, accountId: string, targets: readonly { kind: "blueprint" | "card" | "term"; refId: string }[]): Promise<void>
+
+  **The route surface, published by D-140-07 and owed to this task since D-140-04.** Four routes over
+  **one** request shape, and that shape is `saveTarget`'s own `target` parameter rather than a third
+  naming of the three kinds — **so the route translates nothing.** `SEAM-61`/`SEAM-62`'s key space is
+  **withdrawn**, not mapped, and the browser-local mapping is T262's.
+
+        interface SavesView { saves: readonly SaveRecord[]; count: number }
+
+        withSaveErrors(request: Request, handler: () => Promise<Response>): Promise<Response>
+
+        GET    /api/account/saves          —                               200 SavesView | 401 500
+        POST   /api/account/saves          { kind, refId }                 200 SavesView | 400 401 500
+        DELETE /api/account/saves          { kind, refId }                 200 SavesView | 400 401 500
+        POST   /api/account/saves/migrate  { targets: { kind, refId }[] }  200 SavesView | 400 401 500
+
+  **`withSaveErrors` maps `SaveStoreError` to a 500 `problem+json` carrying the published message
+  unaltered** (D-140-02's form, D-13's clause, D-50-18's mapping) **and re-throws everything else**, so
+  that arm keeps meaning *unrecognised*. `actorFrom` is imported from `@/lib/server/accounts`, which is
+  Forbidden to WRITE here and already exports it.
+
+  **There is no 403 in any status line, and the reason is structural rather than an omission**: every
+  route passes `session.accountId`, so `NotAccountOwnerError` compares an id against itself —
+  `lib/server/accounts/http.ts` rules this and ships it. **Binding on the blind author: AC1's non-owner
+  denial is unreachable from HTTP in this task.** Drive it from module cells; do not write a route cell
+  expecting a 403, and **do not read its absence as the denial being untested.**
+
+  **There is no 404 on a write either.** A write-time existence check on a polymorphic target is the
+  oracle AC1 closes — 404 for a private blueprint against 200 for a public one names which private slugs
+  are real — and AC3 already answers the case at read time. **A save of a target that does not exist is
+  accepted and never listed; the cost is that a client typo is silently accepted.**
+
+  **`count` comes from `countSaves`, never from `saves.length`.** AC3's *agree by construction* would
+  otherwise be satisfied by making the agreement unobservable. One extra query per read, paid so AC3 has
+  a cell that goes through the transport. **The three writes answer the resulting `SavesView`** rather
+  than a 204 that `lib/server/http` does not publish and this task may not add — which is the shipped
+  `200 AccountRecord` convention and makes **AC2 drivable in two requests instead of three**.
+
+  **No handle is required**, and AC5 is the deciding case: the browser-local set migrates *on first
+  sign-in*, when the account still has `handle: null`. **`savedAt` crosses as an ISO string**, `ok` being
+  `Response.json` over a `Date`.
 
   **AC1 covers the count as well as the list, and the count is the one that leaks.** "A save is invisible to every caller but its owner and the operator, **including its count**" — so `countSaves` takes an `Actor` and is not a cheap public aggregate. **WITHDRAWN by D-140-01 and displaced here on the FOURTH charge against this section for the same defect.** It read *a visitor gets `undefined`-equivalent behaviour, not zero: zero is an answer, and answering zero for a set you may not see tells the caller the set exists* — **and that reason is false: an owner with no saves also gets `0`, so zero was never the discriminator.** What leaks is answering a non-owner the **TRUE** count, which both readings refuse. **Ruled: `countSaves` stays `Promise<number>` and a denied caller gets `0`**.
 
