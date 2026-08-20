@@ -4604,6 +4604,44 @@ foreign faults, which is the case it was thinking about.** A distinction written
 instance that provoked it looks handled, and the second instance never gets asked. **Not a lapse of
 attention; a property of having done the work well once.**
 
+## Two candidates hunted and both dead, and the second died because the author had priced it out loud
+
+I handed T130's adversary a hunting pattern — *a careful argument in one file not carried to the file
+beside it* — and it came back with **two candidates, both dead, reported as dead.** *I would rather hand
+you that than a third candidate padded to look like a yield.*
+
+**Candidate 1, release-level visibility.** `terms.ts` argues about *bundle* visibility and then queries
+`release` joined to `bundle` with no visibility predicate on releases — **the exact shape.** Dead on the
+schema, and verified here rather than taken: `visibility` appears at `schema.ts:81` (an account default),
+`:152` (`bundle`) and `:209` (`card_version`), and `release` begins at `:174` carrying none. **There is no
+release-level visibility to fail to carry**, so counting every release of a visible bundle is right, and
+the header's *every visible release* is loose wording rather than an unexamined inheritance.
+
+**Candidate 2, the fourth barrel reaching the route, and this is the instructive one.** `http.ts` closes
+its recognised set over *the barrels `getProfile` calls*, while `route.ts` beside it calls
+`getSharedDbClient()` and `actorFrom()` — neither raising a recognised class, so both land on the rethrow
+arm and answer Next's generic 500 outside the B-03 envelope, **which is the precise defect `http.ts` says
+survived a merge and a tag on eleven registry routes.** Dead because **the rethrow arm names both by
+name**: *reached by a misconfigured host — `getSharedDbClient()` with `DATABASE_URL` unset, `actorFrom`
+with `SESSION_SECRET` unset and a session cookie present.*
+
+**Charging it would have been charging a cost the author priced out loud** — its phrase, and it is the
+cleanest statement this run has of the difference between an undisclosed gap and a disclosed one. **A
+hunting pattern that finds a disclosed cost has found the author already there.**
+
+## A filter that looks like duplication and is carrying the weight
+
+Not a charge, and it is the observation most likely to be destroyed by someone tidying. `read.ts` selects
+owned bundles in JS by `b.ownerHandle === handle`; `terms.ts` re-scopes in SQL by
+`bundle.ownerId = accountId`. **They agree only because both descend from one validated handle** — and the
+SQL filter is **load-bearing rather than redundant**, because `bundle_owner_slug_key` is unique on
+`(ownerId, slug)` and **not** on `slug`, so `inArray(bundle.slug, slugs)` alone would reach **another
+owner's identically-slugged bundle.** Verified at `schema.ts:159` and B-06's own line.
+
+**Two ownership notions that coincidentally agree are a deletion waiting to happen**, and a message is not
+where that survives. **Owed as a comment in `terms.ts`, by T130's implementer, at the same moment as
+D-130-14's two amendments** — which is a holder and a moment, applied to the rule that produced them.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -14529,6 +14567,12 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T130, Profiles and the public author surface
 
 - **State:** impl-done
+- **Owed with D-130-14, same holder and moment: a comment in `terms.ts` saying its
+  `bundle.ownerId = accountId` filter is LOAD-BEARING.** It looks redundant beside `read.ts`'s JS
+  `ownerHandle` filter and is not: `bundle_owner_slug_key` is unique on `(ownerId, slug)` and not on
+  `slug`, so `inArray(bundle.slug, slugs)` alone reaches another owner's identically-slugged bundle.
+  Found by the adversary, verified at `schema.ts:159`. **Two ownership notions that coincidentally agree
+  are a deletion waiting to happen.**
 - **D-130-14: D-130-12 and D-130-10 are unimplemented contract, owed by T130's implementer at the
   adversary's verdict, before any merge.** Both landed after the round closed, so they are dated contract
   rather than defects — **the adversary must not spend a cell on either divergence.** `6ffdb17` emits
