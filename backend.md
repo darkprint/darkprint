@@ -3466,6 +3466,36 @@ more attention than a measured defect, and it said so.**
 that two of the ten root guards parse that file and are green WITHOUT those lines rather than with
 them.** *State that when you quote me.*
 
+## A docblock explaining why an instrument works, describing an instrument that was not built
+
+**T140's blind author's `assertNoConnectionValue` docblock said a random password and database name
+minted into the connection string *cannot appear in any admissible message*. They do not appear in the
+RAW error either** — pg reports a refused connection as `connect ECONNREFUSED 127.0.0.1:1` and carries
+neither — **so the check was a guard that cannot fail, described in a docblock whose whole job was to
+say why it works.**
+
+**Caught by the lexical sweep before it ran, and not by re-reading.** Its own count: 31 occurrences of
+the claim words across six files, **16 load-bearing, one false.** Replaced with what is true — **one
+supplied token works and it is the ROLE NAME**, which appears in no statement and no bound parameter,
+**the `sqlstate` shape a statement-derived deny set structurally cannot see.**
+
+**And the sweep caught the run's most-charged shape in its own file**: a standalone cell asserting
+`expect(saveRecordIsExact).toBe(true)`, where that constant is `true` **whatever the type turns out to
+be** — a cell that cannot fail carried under a name that reads as coverage. **Deleted, with the
+declaration kept and referenced from a cell whose other assertions can fail**, so the check it carries
+is `tsc`'s to report as a TS2322.
+
+**Third: it had written that `error-hygiene`'s domain is *every exported error class, so T140's is
+empty because it publishes none*. True conclusion, wrong mechanism** — the domain is shipped
+**directories**, so it stays empty however many classes T140 publishes, right up to the merge. **A
+wrong mechanism propagates even when the conclusion holds**, which is why it struck it rather than
+leaving a sentence that happened to reach the right answer.
+
+**And the mutation it proposes that nobody asked for is the whole of D-140-01**: swap the reference's
+`countSaves` from `0` to `undefined` for a non-owner **and require the suite to stay GREEN.** **If it
+reds, it picked a reading without noticing and the finding is gone.** *A test that the suite has not
+resolved an ambiguity* is an instrument this run has not had before.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -11593,6 +11623,12 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **So AC5's translation from that key space to `(target_kind, target_id)` is lossy one way and needs a lookup the other, and `migrateLocalSaves` is published taking values ALREADY translated — which means the translation lives in a route nobody published.** Its implementer declined to invent one, correctly: **a route surface invented here is the contract following the code, and a blind author cannot pin what an implementer invents.**
 
   **Also superseded: `seams.md:299-301` still asks whether the browser-local set is migrated or discarded — a question T140's Contract line and AC5 already answer.** A binding document holding an open question the contract closed.
+
+  **D-140-05, ruled on D-140-f: AC3's `visibleTo` is given the READING actor, not the save's owner.** The two readings differ for exactly one caller — **the operator reading somebody else's list containing a save of a private target** — and the reading actor is what `visibleTo(actor, ownerId)` means everywhere else in the tree. **An operator seeing a bookmark its owner cannot is operator authority working, not a leak**, and the alternative would make T140 the one module where `visibleTo`'s first argument is somebody other than the caller.
+
+  **And the way its blind author scoped around the ambiguity is the part to keep**: the two readings **coincide** for an owner reading their own list, so that is the only case any AC3 cell drives, **and the operator cells use a fixture whose targets belong to a third account and are public to both — deliberately, with the coincidence ARRANGED and stated in the fixture rather than left as an accident of ownership.**
+
+  **D-140-06, ruled on D-140-g: T140's rejection whitelist admits the operation and the caller's own FIELD NAME, and never the caller's own VALUE.** Two shipped conventions disagree — T050 admits the field name only, T070 admits the value (`allocateHandle: the handle \`<handle>\` is not available.`, merged and adversary-passed) — **so a value check would have redded one of them and the blind author correctly asserted only what both forbid.** Ruled toward T050's for a reason specific to this task: **a `refId` echoed back to a non-owner is an existence oracle**, which is the thing AC1 exists to close, so the looser convention would reopen it through the error surface.
 
   **D-140-01: `countSaves` stays `Promise<number>` and a denied caller gets `0`; the prose is amended.** The block published `Promise<number>` beside prose saying *a visitor gets `undefined`-equivalent behaviour, not zero*, four lines apart and both imperative. **Its analysis is the ruling: under `Promise<number>`, *not yours*, *no such account* and *yours and empty* all answer 0 — indistinguishable, which is B-03 satisfied rather than violated.** The leak AC1 is actually about is **answering a non-owner the TRUE count**, and both readings refuse that, so **the prose's stated reason was never the discriminator.** *Zero is an answer, and answering zero for a set you may not see tells the caller the set exists* is **withdrawn** — an owner with no saves also gets 0.
 
