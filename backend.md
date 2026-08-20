@@ -6057,7 +6057,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | round 4 at `dfc71e1`, 40 ahead. **D-40-F** closed with `node:util`'s slot predicates — 8 281 ms → 68 ms on a 1.2 MB submission — `Object.prototype.toString` dispatch rejected though faster, because it **invokes user code the old version did not**. **D-40-G** closed with the fourth slot; acceptance is the reverse mutation, 9 + 58. **S10 closed after three rounds by changing the INPUT**: `resolve.ts:191` is the mechanism, observable only on a bundle where two files claim one `id@version`. Gates 0 unfiltered; targeted 73/0/0 hitting the pre-registered 69→73; triple `1 failed, 5783 passed, 0 skipped` of 5784 identical; reconciliation measured both sides, `5784 − 220 = 5564` = base at `752721d`. 7 mutations, 4 HIT / 3 MISS / 0 newly green, **all three MISSes one diagnosis against itself**. **Adversary round 4 FAIL at `ccd1dac`**: **D-40-H** charged — `unbox` reads a slot where `SerializeJSONProperty` steps 4a/4b **coerce**, so `[[String/Number]Data]` bypass `@@toPrimitive`/`toString`/`valueOf`; **7 of 15 channels diverge, under-count unbounded** (5 000 008 measured as 10), and at `maxBytes = 100` it **accepts** a submission the ruled number refuses. Barrel-only. Triple `10 failed, 5800 passed, 0 skipped` of 5810 identical, pre-registered on all four figures; base measured independently at `7db3b5e` = 5564; reconciliation `5810 − 173 − 73 = 5564`. 7 mutations, 5 HIT / 1 MISS, 0 newly green; **both rebuilt controls confirmed by reverse mutation**. Also measured: **D-40-23 unimplemented, 9 red, attributed to the orchestrator**. Blind round closed at `759881e`: **173 tests**, triple `166 failed, 5571 passed, 0 skipped` of 5737 identical, pre-registration exact on all four figures, D-40-23 pinned with the value-never-named clause held on **three** axes, 5 mutations on the new cells all CAUGHT. **Adversary round owed — all three of T040's earlier sessions are gone** |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 5 at HEAD, on the gate slot granted by name. **D-40-H** closed: steps 4a and 4b **coerce** and only 4c and 4d read a slot, so `[[NumberData]]` is `ToNumber` and `[[StringData]]` is `ToString`. **`ToNumber` is `+value` and NOT `Number(value)`** — different functions, since `Number()` converts a BigInt where `ToNumber` refuses one, which is a **third axis** (what the coercion RETURNS) that neither the channel axis nor the slot axis separates. Reproduced first on my own cell set: **6 of 15 diverge, every one on a coercing slot and not one on a non-coercing slot**, and a `toString` returning 100 000 characters measures 100 008 by the formula and 10 by the walk, so at `maxBytes = 100` the walk **accepts** what the ruled number refuses. **The witness came first and was measured red against the unfixed module**, pre-registration exact twice; every boxed cell in the corpus had been a **virgin box**, where a slot read and a coercion agree. **D-40-23** built: `UnserializableValueError`, sealed, exported, message as published, value never named — **and its scope controlled**, since a caller's own throwing `toString` propagates rather than being relabelled. Two assertions comparing the formula's error CLASS corrected rather than deleted, because D-40-23 makes the walk's class differ on purpose: 117 composed divergences, **zero of them numbers**. The D-40-F two-factor control **re-aimed rather than kept alive** by picking a box whose coercion still calls `valueOf`, which would have made the control depend on the mechanism it controls for. Gates `tsc` **0 unfiltered**, `lint` **0 errors 0 warnings read in full**, `build` 0 with clean porcelain, engine+routes **77 of 77** (pre-registered 73 → 77), blind suite **173 of 173** with its nine D-40-23 reds cleared. **Triple identical: 1 failed, 5813 passed, 0 skipped of 5814**, pre-registered exactly, the one red T090's known AC6; reconciliation measured both sides, **5814 − 250 = 5564**. Residue 0, foreign darkprint processes 0 across three runs. Sweep **8 mutations, 5 HIT 3 MISS, no zeros, 0 newly green**, and it found **a cell of mine that could not fail** plus a harness that could not express a wrapping mutation. **Open and reported, not decided: two engine-raised coercion refusals still escape as bare `TypeError`s** |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -10213,7 +10213,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
@@ -11206,6 +11206,143 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     round measured the tree it holds: **the blind suite has seen none of round 4**, so `D-40-F`,
     `D-40-G` and the S10 witness are held by colocated tests alone, which is D-70-12's shape and
     the first thing a fresh adversary should weigh.
+  - 2026-08-20 implementer, **round 5, and the merge went first because this file says so.**
+    `ccd1dac` + `backend` at `9fd9e84` → **`1b54406`**, no conflicts, porcelain empty, and **0
+    base lines missing** — the one deliberate exception the last three merges carried is gone,
+    because base now holds this task's row. Both rulings read from the binding surfaces rather
+    than from the dispatch that carried them.
+  - 2026-08-20 implementer, **D-40-H reproduced on my own cell set before anything was touched.**
+    15 channels, **6 diverge**, against the adversary's 7 of 15 — **different cell sets, same
+    conclusion, and neither count reconciled into the other.** What carries the finding is the
+    asymmetry rather than the number: **every divergence sits on a coercing slot and not one sits
+    on a non-coercing slot**, with `[[BooleanData]]` agreeing under `valueOf`, `toString` **and**
+    `@@toPrimitive`, and `[[BigIntData]]` refusing on both sides. And the bypass driven at a
+    bound: a `toString` returning 100 000 characters measures **100 008** by the formula and
+    **10** by the walk, so at `maxBytes = 100` `measureSubmission` **returns 10 and accepts** a
+    submission the ruled number refuses. 100 000 rather than the charge's 5 000 000, because a
+    test that allocates five megabytes to prove a bound is a shape this task has been charged for.
+  - 2026-08-20 implementer, **the fix, and the half of it I would not have found from the charge.**
+    `[[NumberData]]` becomes `ToNumber` and `[[StringData]]` becomes `ToString`; 4c and 4d stay
+    reads. **`ToNumber` is `+value` and NOT `Number(value)`** — measured: a `valueOf` returning
+    `7n` gives **7** under `Number()`, **throws** under `+`, and the serialiser **throws**. They
+    are different functions and the charge does not say which to use.
+    **That is a THIRD axis and finding it is D-40-H's own lesson repeated.** The charge's cells and
+    mine vary **which channel** the coercion consults; this varies **what the channel returns**,
+    and nothing on the other two axes separates `Number()` from `ToNumber`. Seven cells added on
+    it — `valueOf` returning a bigint, a symbol, no primitive at all, in both slots — and the
+    sweep confirms the axis is load-bearing rather than decorative: **N2 is the only mutation in
+    the round that reds it and nothing else.**
+  - 2026-08-20 implementer, **the witness came first, and the acceptance number is why.** The
+    adversary's own measurement was **0 newly red on the number under a spec-correct `unbox`, in
+    any suite** — because **every boxed cell in the 486-cell corpus was a virgin box**, where a
+    slot read and a coercion agree by construction. So the corpus gained the coercion channel
+    tampered with, **foreign-prototype boxes that need no tampering at all**
+    (`Reflect.construct(String, ["xy"], Alien)`), the coercion-result axis, and the two
+    non-coercing slots under the identical tampering as the **built-in control**. Measured against
+    the **unfixed** module before a line of the fix existed, twice, with the reds named in
+    advance: **4 red / 2 pass**, then **6 red / 4 pass** once D-40-23's witness was in, and the
+    pre-registration was exact both times.
+  - 2026-08-20 implementer, **the two cells that AGREE are the sharpest thing here and the file
+    now says why.** `ToString` runs the string hint, which tries `toString` then `valueOf`;
+    `ToNumber` runs the number hint, which tries `valueOf` then `toString`. So overriding the
+    *second* method of each pair changes nothing, and those two cells red **only** for a fix that
+    ran the wrong hint — a mis-repair no other assertion here would catch. **An agreeing cell with
+    no stated reason is the first thing a later reader deletes as redundant.**
+  - 2026-08-20 implementer, **and the sweep found that one of those two cells COULD NOT FAIL.**
+    It asserted a **number** while its override serialised to the same length as the slot's own
+    value — `"VO"` against `"xy"`, two characters each — so a deliberately wrong-hinted `unbox`
+    reddened every other assertion in the file and left exactly these green. **A discriminator
+    designed out of reach by its own fixture, found by the mutation written to prove it works.**
+    The override is length-distinguishable now, and the property is **asserted rather than
+    arranged**: the wrong hint's answer is computed and required to differ, so the next person to
+    edit one of these strings finds out here. Acceptance number is the re-run: N3 goes **6 → 7**
+    and the seventh is that witness.
+  - 2026-08-20 implementer, **D-40-23 built, and its scope is controlled rather than stated.**
+    `UnserializableValueError`, sealed, exported, message exactly as published, value never named.
+    The narrow half is the ruling; **the other half is what stops the widest reading**, and it is
+    a criterion in two parts because an implementation satisfying either alone is wrong in a
+    different direction: a caller's **own** throwing `toString` **propagates untouched**, because
+    `JSON.stringify` propagates it too and relabelling it would name a refusal this module never
+    made. Without that half, *wrap everything that throws* satisfies the first half completely —
+    and N6b is the mutation that does exactly that and reds **one** test, on
+    `expected error to be instance of RangeError`.
+  - 2026-08-20 implementer, **two assertions comparing the formula's error CLASS were corrected
+    rather than deleted.** D-40-23 makes the walk's class differ from the formula's **on purpose**,
+    so a name comparison reds on the ruling being implemented: **117 divergences among the composed
+    values, and zero of them numbers.** The universal property is that neither side invents a
+    number; the classes are pinned per kind in a witness that can state the difference between a
+    refusal this module makes and one it passes on. Deleting them would have removed the check that
+    the walk does not answer where the formula refuses, which is the `maxBytes` half.
+  - 2026-08-20 implementer, **the D-40-F two-factor control was re-aimed rather than kept alive.**
+    A spec-correct `unbox` unwraps a boxed string through `ToString`, whose string hint never
+    reaches `valueOf`, so a counter on the four prototypes' `valueOf` stopped registering and the
+    control **reported itself dead against a correct module**. Swapping in a boxed type whose
+    coercion still happens to call `valueOf` would have kept it green and made **the control
+    depend on the mechanism it is controlling for**. The call goes direct now, inside the same
+    installation, the way `determinism.test.ts` does `void Date.now()` in its own window — and a
+    **second** control asserts the walk returned the expected byte count, so the zero cannot come
+    from a walk that measured nothing. **Two failure modes, two controls, neither of them the
+    mechanism under test.**
+  - 2026-08-20 implementer, **gates, at `9c22183`.** `ls .next/types` present; `npx tsc --noEmit`
+    to a file, read **unfiltered, 0 lines, exit 0**; `npm run lint` read in **full**, four lines
+    all npm banner, **`warning` 0, `problems` 0, `error` 0**; `npm run build` exit 0
+    `Compiled successfully` with porcelain clean. Targeted **engine + routes 77 of 77**
+    (pre-registered 73 → 77, `measure.test.ts` 21 → 25 `it()`), **blind suite 173 of 173 with its
+    nine D-40-23 reds cleared**, whole T040 surface **250**.
+  - 2026-08-20 implementer, **the triple, pre-registered on all four figures and exact.** Three
+    consecutive full suites, stamps identical and porcelain empty at both ends of each:
+    **`1 failed | 5813 passed | 0 skipped (5814)`**, **identical sorted failing sets**, the one red
+    T090's known AC6. Reconciliation measured on both sides: T040's surface alone **250**, and
+    **5814 − 250 = 5564**, base's line. Residue **0** — `darkprint%` 4 databases and 1 connection
+    before and after. **Zero foreign darkprint-named processes across all three**, peak loads 22,
+    21 and 17.
+  - 2026-08-20 implementer, **the sweep: 8 mutations from one tree, 5 HIT and 3 MISS, no zeros
+    and 0 newly green anywhere.**
+
+        N1  all four steps read the slot again      6 red   MISS  the four predicted, plus the refusal partition and D-40-23's witness
+        N2  ToNumber written as Number()            2 red   HIT   the coercion-RESULT axis alone, which is what makes it load-bearing
+        N3  the string slot runs the number hint    7 red   MISS  the six predicted, plus the hint-order witness once its cell could fail
+        N4  the boolean slot coerced too            3 red   HIT   the built-in control fires
+        N5  the serialiser throws naturally again  11 red   HIT   2 of mine and the blind suite's 9
+        N6b the caller's own error relabelled       1 red   HIT   propagation half, `expected error to be instance of RangeError`
+        N7  the refusal names the value            10 red   MISS  the blind suite pins the message literal on all eight of its cells
+        N8  tampering that reaches nothing          1 red   HIT   aimed at the control, and the control alone
+
+  - 2026-08-20 implementer, **the three MISSes are one diagnosis and it is the same one as round
+    4's.** Every one is a prediction that named **the assertion which identifies the defect** and
+    omitted **the broader assertions that also see it** — the refusal partition, the composed
+    values, the blind suite's per-cell message pins. Round 4's version of this was three MISSes on
+    the composed half alone; generalised, it is that I predict the narrow witness and forget the
+    wide ones, and it has now happened six times across two rounds. **A MISS whose diagnosis is
+    *the suite was right and I was wrong* is still a MISS**, and I am recording the pattern rather
+    than the instances.
+  - 2026-08-20 implementer, **a mutation that did not do what its name said, and the harness that
+    could not express one.** N6's first version wrapped `enter(normalise(root, ""))` — the **root**
+    value only — while the propagation fixture sits on a **child**, so it reddened **0** and the
+    zero meant nothing about the wide reading. Caught by reading the patch, not the count.
+    And N6 and N7 were both **refused** by the harness as `PATCH-NOT-TAKEN`, correctly by its own
+    rule and wrongly in fact: it required the anchor to be **absent** after the write, which
+    refuses any **wrapping** mutation, whose replacement contains its own anchor. It compares the
+    re-read against the intended text now, which is the check that was meant and is right for
+    every shape rather than for the shapes tried first. **Refusing is the good direction**: a
+    strict instrument reported that it could not measure, where a lenient one would have reported
+    two more zeros.
+  - **2026-08-20 implementer, OPEN and reported rather than decided: two engine-raised coercion
+    refusals still escape as bare `TypeError`s.** Measured through the barrel at `9c22183`:
+
+        {k: Number box whose valueOf returns a Symbol}  formula TypeError  walk TypeError  "Cannot convert a Symbol value to a number"
+        {k: String box with no primitive available}     formula TypeError  walk TypeError  "Cannot convert object to primitive value"
+        {k: String box whose toString throws}           formula RangeError walk RangeError "caller's own"   <- must stay bare
+
+    The first two are **the engine refusing**, which is what D-40-23 exists to type; the third is
+    **the caller's own error propagating**, which it must not touch. Both readings of the ruling
+    are defensible — its evidence names `limits.ts:263` and a bigint, and the blind suite pins
+    bigints, which is what I built; the wider reading is *a value JSON cannot serialise* as a
+    property over the output, and a box with no primitive is one. **What makes it a decision rather
+    than an omission is the cost of the wide reading**: separating "the engine refused" from "the
+    caller threw" needs `ToPrimitive` reimplemented so the caller's channels are ours to call and
+    only the final conversion is wrapped — a transcription of the very step D-40-H was charged for
+    transcribing wrongly. **I am not taking that decision inside a fix round.**
 
 ### T080, Registry read model and read API
 
