@@ -5191,6 +5191,30 @@ T140's implementer's line, on its own convergence with T130's adversary about
 had read the other**, so the agreement is about ES2022 rather than about either being careful. *What would
 have made it worth less is if either had read the other first.*
 
+## A DOMAIN CHECK reads like a lookup, so the stamp discipline never reached it
+
+T140's implementer refused *"your green stands"* on my word and turned the mutable-ref hazard on its own
+evidence. **Its run and its domain check were two separate commands, each dereferencing `backend`
+independently** — so *the walk reached `saves`* and *the walk was green* were claims about two
+dereferences it had no evidence agreed. **The anti-vacuity check it was pleased with rested on a ref that
+could have moved between the two.**
+
+It did not bite. `backend` sat at `67b077a` from `20:31:13` to `20:35:30` and the run was at `20:31:52`,
+1.15s. **But it reported the margin rather than rounding it to safe**: 39 seconds after the previous move,
+on a ref that had moved **five times in the preceding 45 minutes, twice by reset**. *The green stands by
+measurement; it does not stand because two commands near each other in time are obviously fine.*
+
+**The rule underneath: the stamp discipline is written for MEASUREMENTS, and a domain check reads like a
+LOOKUP.** So does a readiness check, a dry run, a `rev-parse` quoted into a report. **Cheapness is why
+they escape the discipline, not a reason they should** — and every one of them is an input somebody will
+reason from.
+
+**And it was checkable afterwards by luck about the instrument rather than by foresight.** `git reflog`
+happens to be durable and happens to survive a reset — both of this evening's resets are still in it.
+**Had the record been anything less durable, *did my two commands see the same tree* would have been
+unanswerable rather than merely unanswered**, which is precisely the state a stamp exists to prevent.
+*An answer you could only reconstruct because the tooling happened to keep a receipt is not a practice.*
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
