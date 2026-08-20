@@ -3327,6 +3327,36 @@ probe retired.** Re-expressed against the new line, it reports 0 like the rest. 
 retired probe both show up as a mutation that stops applying, and only reading the diff separates
 them.**
 
+## `error-hygiene`'s domain is shipped DIRECTORIES, so a new module's class moves the number at the merge
+
+**I told three sessions: *the day you publish an error class it reds and the number moves in the same
+commit as the class*. That is false for a NEW module directory, and T230's implementer measured it
+rather than taking it.**
+
+**The guard's domain is `git ls-tree -d --name-only backend lib/server/` — eleven shipped directories —
+and `readdirSync` is only a presence check that throws when a shipped module is missing locally.**
+`lib/server/limits` is in neither list, **so it is never in `barrels`, so it is never imported, so its
+classes are never discovered.** Publishing `RateLimitedError` there **does not move 18 in the
+worktree. It moves it in the merge commit**, when the directory becomes shipped.
+
+**T081 was different, and that is exactly why the sentence fitted then**: it added a class to
+`lib/server/registry`, **a directory already on `backend`**, so the working-tree import of an
+already-shipped barrel found it immediately.
+
+**The axis is shipped-DIRECTORY versus shipped-CLASS and my briefing treated them as one** — which is
+this file's own entry *I predicted two guards would fire and they differ in exactly the axis I had just
+written about*, **arriving on the fix for that same file rather than on the file.** Third time on this
+guard.
+
+**And it declined to ask me for the change that would have caused the damage.** Moving 18 → 19 now would
+red `error-hygiene` **on base and in every other worktree**, none of which has `lib/server/limits`
+shipped — *a guard must not demand what its own reader is forbidden to write*. **It saw that the ask
+itself was the defect and refused to make it.**
+
+**Standing correction, sent to every session that got the wrong version: for a NEW module directory the
+number moves in the merge commit and the implementer reports the count to write. For a class added to an
+already-shipped directory it moves with the class.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
