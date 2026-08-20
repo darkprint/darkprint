@@ -5545,6 +5545,45 @@ after the merge makes a member optional and requires TS2322, rather than reading
 
 *An obligation named with its discharge condition survives the party that owed it.*
 
+## A total over a PARTIAL base, and I published the ratio one message after charging the count
+
+I told T140's adversary *55 static `it(` sites expanding to 215 runtime cells*, about 4×. **Wrong base,
+and its blind author caught it by counting rather than accepting the correction I had just given it.**
+
+        55   ^\s*it\(                  plain cells only — EXCLUDES every `.each` site
+        19   ^\s*it\.each              the sites doing the expanding
+        74   declaration sites          the base the ratio is actually about
+       215   runtime cells
+
+**My regex required `(` immediately after `it`, so `it.each(` never matched it** — and the nineteen sites
+it omits are *the entire construct the ratio was about.* 55 plain cells contribute one each, so **160
+runtime cells come from 19 `.each` sites: 8.4× per site, not 4×.** The 3.9 is a real ratio between two
+published numbers and **is the expansion rate of nothing.**
+
+**Its rule, and it is the general form**: ***write the question the measurement answers into the same
+sentence as the claim.*** *"215 runtime cells from 74 declaration sites"* is one sentence. *"215 from 55,
+so about 4× expansion"* is two — **and the tell fires on the second**, because the ratio and its base
+arrived separately and nothing forced them to be about the same thing.
+
+**And it declined to score it**: *I would have written the same 4× if I had reached for the ratio first.*
+
+**The line for whoever reports next carries all three or names which**: ten files, **eight of which measure
+anything** — `contract.ts` and `fixtures.ts` are 0 — **74 declaration sites, 215 runtime cells.** *A file
+count is not a cell count and a declaration count is not a runtime count*, and the three disagree for
+reasons that are all correct.
+
+## A count maintained by hand beside an artefact that is not, is a floor nobody raises
+
+Its diagnosis of its own *nine files*: **true at eight, bumped to nine when `routes.test.ts` landed, never
+bumped when `order.test.ts` landed the next turn.** ***The same thing as a floor nobody raises, one
+altitude up, in a report instead of a guard.***
+
+`error-hygiene`'s floor sat at 8 across three merges detecting none of them, and the fix was an equality
+that reds in both directions. **A number in a report has no equivalent** — nothing reds when it drifts, and
+the artefact beside it stays correct, which is why it survives review. **Its containment check found it had
+reached no file**; the one place it became an instruction was my brief to the adversary, and that is
+displaced.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
