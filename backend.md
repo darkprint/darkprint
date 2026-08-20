@@ -5287,6 +5287,53 @@ shape this run has charged five times. **And it is not circular**: asserting a l
 under a total comparator fails exactly when the list was not in that order, and the comparator is total
 because `save_account_target_key` forbids a tie on all three keys.
 
+## D-140-09: `target_kind ASC` is LEXICOGRAPHIC, and the enum's declaration order agreeing is an accident
+
+T140's implementer noticed while building D-140-08 that **Postgres orders an enum column by DECLARATION
+order, not alphabetically** — and that `target_kind` is declared `["blueprint", "card", "term"]`, which is
+**both**. It flagged it rather than spending it: *a blind author computing the expected order from
+`SaveRecord` will assume alphabetical, and will be right for a reason that is not the one they are relying
+on.*
+
+**Measured here, and the coincidence is thinner than it said. Three of the five `pgEnum`s in
+`lib/db/schema.ts` ALREADY declare out of alphabetical order** — `visibility` is `[public, private]`,
+`target_actor_kind` is `[star, note_vote]`, `actor_kind` is `[owner, operator, system]`. **The house habit
+is semantic order and `target_kind` is one of two exceptions.** So a fourth member added by somebody
+following the local style is the LIKELY case, not the exotic one.
+
+**Ruled: D-140-08's `target_kind ASC` means lexicographic on the string**, because that is what a caller
+can compute from `SaveRecord`, which publishes the three fields and no ordinal. **The SQL agreeing today is
+a premise, not the definition** — and if a member ever lands out of alphabetical order the store owes a
+cast or an explicit `CASE`, not a re-reading of the contract.
+
+**Pinned by `tests/enum-declaration-order.test.ts`**, scoped to `target_kind` alone — asserting alphabetical
+order across all five would be **inventing a convention this repository does not have and does not need**.
+It reads the **working tree**, unlike its neighbours, and deliberately: *the failure it catches is a member
+being ADDED, and the moment worth catching it is while the person adding it is still looking at the diff.*
+Falsified three ways: base green; the enum reordered reds naming the sequence; the enum renamed **errors
+on the missing parse rather than passing over an empty match.**
+
+## A suite that could not see a defect cannot see its fix
+
+T140's implementer grepped its own 26 cells rather than predicting from memory: **every array assertion is
+empty, single-element, or `.sort()`ed before comparison.** So the ordering fix moves nothing in either
+direction — **and it reported that as the reason for zero movement rather than as a prediction that
+happened to be right.**
+
+**So a witness ships WITH the fix**: four rows, three sharing one `created_at`, asserted in the ruled
+sequence and asserted **equal across two reads**. The `blueprint` row is deliberately older so it sorts
+**last despite being first in the enum**, which exercises the whole `ORDER BY` rather than its second and
+third terms.
+
+**And it registered the falsification as PROBABILISTIC before running it**, not after: reverting to
+`asc(save.id)` matches a fixed expectation **1 time in 6** for three tied rows, so a single red is not a
+clean `0 → 1`. It will run the mutant repeatedly and report the **rate**. ***A witness whose mutant reds
+usually is worth having; reporting it as if it reds always is not.***
+
+**And it owned the defect without softening it**: *my stated reason for having a tie-break was that an
+unordered read makes downstream assertions flaky, and the column I reached for is an unordered read with
+extra steps* — both written in the same docblock, and neither of us said it out loud for eleven hours.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -14929,6 +14976,12 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         unsaveTarget(db: Db, actor: Actor, accountId: string, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<void>
         countSaves(db: Db, actor: Actor, accountId: string): Promise<number>
         migrateLocalSaves(db: Db, actor: Actor, accountId: string, targets: readonly { kind: "blueprint" | "card" | "term"; refId: string }[]): Promise<void>
+
+  **D-140-09: `target_kind ASC` is LEXICOGRAPHIC on the string**, which is what a caller can compute from
+  `SaveRecord`. Postgres sorts an enum by **declaration** order and `["blueprint","card","term"]` happens
+  to be both — **an accident, not a convention: three of the five enums in `schema.ts` already declare
+  semantically.** Pinned by `tests/enum-declaration-order.test.ts`, scoped to this enum alone. If a member
+  ever lands out of alphabetical order the store owes a cast or a `CASE`, not a re-reading of the contract.
 
   **D-140-08: `listSaves` returns `saved_at DESC, target_kind ASC, ref_id ASC`**, newest-first with the
   tie-break on **published** fields. Total within an account because `save_account_target_key` is unique
