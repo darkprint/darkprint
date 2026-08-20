@@ -278,6 +278,68 @@ type Frame =
       written: number;
     };
 
+/* ============================================================
+   WHICH SPEC OPERATIONS THIS WALK RE-IMPLEMENTS, AND WHICH IT
+   DELEGATES.
+
+   Five charges against this module share one mechanism: a list
+   for the serialiser's branches (D-40-E, D-40-G), four slot reads
+   for two coercions and two reads (D-40-H), a live length for a
+   snapshotted extent (D-40-I), a `typeof` for a spec type
+   predicate (D-40-J), and a raw `.length` for `ToLength`
+   (D-40-K). Every one is **a transcription read as the thing
+   transcribed**.
+
+   So the useful audit is not *which spec algorithms exist* but
+   **which spec operations does this code re-implement rather than
+   delegate**. Delegated is safe by construction: there is nothing
+   to get wrong. Transcribed is a candidate. The candidate set is
+   small, enumerable, and written in this file.
+
+   DELEGATED — the runtime performs the operation, so no
+   transcription exists to be wrong:
+
+     QuoteJSONString            `JSON.stringify(value)` for a
+                                string, and for a key. Never read
+                                by anyone here. Probed anyway,
+                                7 of 7: lone high and low
+                                surrogates, an astral pair, all
+                                seven Table-74 escapes, U+0001,
+                                U+007F which is deliberately NOT
+                                escaped, and an astral-plus-lone-
+                                surrogate KEY.
+     ToString  (step 4b)        `String(value)`
+     ToNumber  (step 4a)        `+value`
+     the four slot predicates   `util.types.is*Object`
+     the BigInt refusal         `JSON.stringify` throwing
+     EnumerableOwnPropertyNames `Object.keys`
+     IsArray                    `Array.isArray`, which pierces a
+                                Proxy exactly as IsArray does
+
+   TRANSCRIBED — every one is a candidate, and every one is either
+   charged-and-fixed or covered-and-demonstrated. The second
+   column is a mutation and its newly-red count, so "covered" is a
+   measurement rather than a claim:
+
+     step 2's type condition       D-40-J   `Object(x) === x`
+     step 4's slot set + ops       D-40-G, D-40-H
+     step 10 droppability + order  D-40-E
+     SerializeJSONArray's shape    D-40-I   extent once, content live
+     LengthOfArrayLike's ToLength  D-40-K
+     Number::toString's width      3 red    non-finite width
+     boolean literal widths        7 red
+     null literal width            2 red
+     the comma                    27 red
+     the colon                    36 red
+     array undefined -> "null"     5 red
+
+   **Nothing in the delegated column can be a sixth charge, and
+   nothing in the transcribed column is unobserved.** That is the
+   statement a reader needs before adding a line here: if what you
+   are about to write performs a spec operation yourself, it joins
+   the second column and owes a cell.
+   ============================================================ */
+
 /**
  * `JSON.stringify`'s byte accounting, one value at a time, over an explicit stack.
  *
