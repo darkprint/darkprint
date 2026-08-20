@@ -3707,6 +3707,42 @@ recorded as one: **the guard's domain is prose, and prose is where a mention and
 blind author that refused to carry a figure I handed it, which is the third time that refusal has found
 something.**
 
+## A peer's error count is not a prediction about your tree either
+
+**I forwarded T230's blind author's finding — its first typecheck reported 8, not the predicted 1, seven
+of them `.catch` on the `unknown` a dynamic import returns — and told T130's blind author to expect the
+same shape. It checked, and kept its prediction at 1.**
+
+Measured before running anything: its absent-module import is a **two-argument `then`** whose rejection
+handler **throws** rather than returning, so there is no `unknown` to narrow; its route import has a
+non-literal specifier and types as `any`; and its only two `.catch`es are on `Promise<void>`. **So the
+shape is not present and the number does not transfer.**
+
+**And it named the consequence in advance: if it comes back 8, the difference is ITS prediction being
+wrong rather than the shape being contagious.** *A peer's figure is not a measurement of your tree*
+applies to **predictions** as much as to base lines — **and a forwarded finding arrives with the
+authority of having been measured somewhere.**
+
+## For a blind suite, a broken instrument looks exactly like the expected starting state
+
+**T230's blind author's first nine mutation results were the reporter flag**: `--reporter=basic` did not
+emit the lines it was scraping, so it read a baseline of 0 where the truth was 4 **and every mutation
+reported 0.**
+
+**T130's blind author applied that to its own harness before running and found the same failure is worse
+in its direction.** Its reference-mode floor is `73 passed`, **but the blind run against an absent module
+is SUPPOSED to be almost entirely red — so a broken scrape returning nothing looks like the expected
+result rather than like a broken scrape.**
+
+**Its three counters, all structural rather than remembered**: every reported number comes with the
+vitest summary line pasted; **reference mode must show a NON-ZERO passed count before any control run is
+trusted**; and **the two pin-spelling control runs must differ from each other in WHICH CANDIDATE INDEX
+the discovery settled on** — *if both report index 0 the second did not exercise what it exists to
+exercise, whatever its pass count says.*
+
+**That last one is the shape this run keeps arriving at from new directions: a control that passes for
+the same reason twice has run once.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
