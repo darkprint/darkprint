@@ -6085,6 +6085,81 @@ a comment, asserts the rejection, and restores the mapping. **One test exercisin
 keep it*** — its words, about the only sentence in my message that reduced its share of the fault.
 **T133 stands on the untyped-column ground alone, which was always enough.**
 
+## A mutation sweep is invalidated by the oracle sharing the defect, and the numbers stay in the record
+
+T130's blind author volunteered the consequence nobody had drawn: **its sweep's `counts.terms` results were
+taken against a reference that could not read the column.** So every one of those numbers **measures two
+artefacts sharing a premise** rather than measuring the criterion — *and some may have been green for the
+wrong reason.*
+
+***It would rather find that than let the 20/26 stand unqualified***, and it offered the re-run without
+being asked.
+
+**The general form, and it is the half a sweep never reports about itself: a mutation score is a claim
+about the CELLS, computed against an ORACLE, and it inherits every defect the oracle has.** A green mutation
+means *the cells did not distinguish the mutant from the reference* — **which is a fact about the cells only
+if the reference was right.** Nothing in a sweep's output carries that condition, so **the numbers survive
+the discovery that invalidates them** unless somebody goes back for them.
+
+**Both-wrong-agreeing and both-right-agreeing are identical in a pass count**, its phrase, and that is why
+it will report **which cells moved and in which direction** rather than a total.
+
+## The port is an APPLY, not a re-derivation — checked rather than assumed
+
+It asked whether the four anchors survive in the repaired copy, so its patch could be applied rather than
+re-expressed from a description. **Measured:** the repaired `contract.ts` differs from the archived one only
+at the D-130-09/17/18 regions — the key sets, the record interfaces, `asProfileRecord`'s arms and the pin
+machinery — **and every fixture anchor is untouched**: `insertBundle` 1/1, `insertOntologyVersion` 1/1,
+`namespacedTerm` 3/3, `insertNamespacedTerm` 1/1, `localVocabulary` 2/2, `local_vocabulary` 7/7.
+
+**Asking which of two operations you are performing, before performing either, is the cheap version of a
+question that is expensive after** — a re-derivation presented as an apply is a rewrite nobody reviewed.
+
+## D-130-20: `error-hygiene` is 24 at T130's merge — the RULING that moved the count travelled separately
+
+T130's implementer corrected the sixth number on that line, and **the mechanism is new**: not a stale tree
+this time, but **a ruling whose consequence for a count was never propagated.** D-130-10 requires the
+vocabulary refusal to get *its own sealed class* — **so T130 contributes +2, not +1.** Verified here: the
+barrel exports **`MalformedStoredVocabularyError` and `ProfileStoreError`**.
+
+        base today   21        T140 merges   22        T130 merges   24
+
+***The ruling that created the second class and the count travelled in different messages, which is how the
+23 stayed correct-looking.*** **A count derived from a contract goes stale when the contract moves, and
+nothing connects them** — I wrote D-130-10 and then wrote *22 → 23* in a later message without noticing that
+the first had changed the second.
+
+**And it labelled the figure arithmetic rather than measurement, because it could not run the guard** — the
+slot was T140's — **so it has not seen the domain sha and refused to quote one.** *If it prints 23 the delta
+is wrong and that is a finding about my barrel, not about your count.*
+
+## Grepping your own claims after editing found five sentences the same commit had falsified
+
+**Every one sat in a docblock that reads as settled**, and every one was made false by an edit in the commit
+that carried it: `errors.ts` opening *"One class, and the count is MEASURED"* and closing *"there is no
+decision to recognise, no arm to pass one through"*; `index.ts` repeating *"One class, because this module
+authors no refusal of its own"*; `http.ts`'s header asking *"Why THREE classes and not one"*; and `terms.ts`
+still saying the refusal *"runs inside `withProfileStore` for exactly that."*
+
+***The check is the one this section has been charged five times for skipping, and it took one grep.***
+`grep -rn "One class\|no decision to recognise\|THREE classes\|authors no refusal of its own"` now returns
+nothing.
+
+**And it kept the precision rather than collapsing it**, which is the harder half: *no published function of
+this module refuses anything a caller can send* is **still true and still the measured claim** — the new
+class refuses **the archive's own content**. **Two classes, and the line between them is whose fault the
+condition is, not how it is raised.**
+
+## An arm order that is load-bearing, said in the file rather than in a ruling
+
+`withProfileErrors` places the new class's arm **before** the store-fault chain, **with a comment saying the
+ordering is load-bearing** — because an arm order reaching `store-failed` first **restores exactly the
+relabelling D-130-10 removed**, and *nothing else in the file would say so.*
+
+**A ruling that can be undone by a reordering nobody would read as a change needs its own sentence at the
+line that would do it.** Same shape as the `bundle.ownerId` filter comment placed at the `where` clause
+rather than in the header — *because that is the line somebody deletes.*
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -16098,6 +16173,11 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   mapping**, so the module is correct and the fixture is wrong. **The untyped `jsonb` column is the real
   defect — T133 created for it** — and T130 is its victim rather than its author. **The blind suite owes the
   fixture correction.**
+- **D-130-20: `error-hygiene` is 24 at T130's merge, not 23.** D-130-10 requires a **second** sealed
+  class, so T130 contributes **+2** — verified: the barrel exports `MalformedStoredVocabularyError` and
+  `ProfileStoreError`. **The ruling that created the second class and the count travelled in different
+  messages**, which is how the 23 stayed correct-looking. Sixth number on that line, and the first whose
+  staleness came from a contract moving rather than a tree.
 - **D-130-19: applying D-130-18 to the TRUE compiler error set is COMPLETING it, not widening it.** Its
   `8 × TS2339` came from `typecheck | tail -8`; there were **eleven**, and three were outside
   `visibility` — so **its objection's point 2 was false**, having been grepped with `head -14`. **Two
