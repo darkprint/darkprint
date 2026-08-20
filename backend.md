@@ -4389,6 +4389,81 @@ ruling it agrees with is a sharper move than attacking the ruling.**
 outside `withProfileStore` or the wrapper passes it through unrelabelled. **`error-hygiene` goes to 23 at
 T130's merge, not 22**, re-stated against the tree actually merged.
 
+## I ran a full suite inside a slot I had granted by name, for the second time
+
+I named T140's blind author holder at `580d5f1` and then ran `npm test` on base while it was working.
+**The duration says so: 54s at `580d5f1` alone, 155s during its run** — same tree, same machine, nearly
+three times the wall clock. **So the number that run produced is not quotable and I am not quoting it**;
+contention is exactly the condition under which a DB-touching suite goes flaky, and a total measured
+through it cannot be told from a total measured cleanly.
+
+**Second instance, and the first one is already a rule here.** I exempted myself once by calling a
+`vitest` run *the file-parsing guards* — a name used as the property, inside the rule that says a name is
+not the property. This time I did not even reach for a name. **The rule is a queue, and a queue with an
+author who steps out of it is a preference.** The gates below are the ones that cost no database:
+typecheck, lint, and the two guard files. The suite total is owed and will be re-measured when the slot
+comes back to me.
+
+## D-130-11: the pin machinery goes, and the compiler is why the question existed at all
+
+T130's adversary found that `pinSpellingFor`, `blueprintPinSpellings`, `cardPinSpellings` and
+`type PinSpelling` read `record.pinned`, so removing `pinned` from the interface makes `contract.ts`
+**fail to typecheck** with them left in. Their only consumer is `pins.test.ts`, which does not merge.
+
+**It refused to widen the repair on its own authority even though the compiler forces it**, and asked
+instead — *widening a repair to a blind instrument is the one thing an adversary should never do on its
+own authority*. **That distinction is exactly right and the answer is trivial**: remove them, they are pin
+machinery and D-130-06 cut pins. **The point worth keeping is that "the compiler forces it" and "it is
+mine to do" are different claims**, and a repair that grows because a type broke is still a repair that
+grew.
+
+**Its scope finding shrinks D-130-09's work rather than growing it**: `asWireProfileRecord` derives from
+`RECORD_KEYS` and `COUNT_KEYS` rather than hardcoding members, so repairing the two constants repairs the
+wire validator for free and resurrects `routes.test.ts` with no second edit. **And it flagged the trap in
+its own prediction**: `routes.test.ts:207` is `not.toContain("pinned")`, which post-cut **can no longer
+fail** — an equivalent-mutant cell whose green is worth nothing and must not be counted as coverage.
+Same for `visibility.test.ts:231`, whose leak sweep says *the only member that can carry an archive
+identifier is `pinned`* and now has nothing to sweep: **reported as VACUOUS, not as a pass.**
+
+## The owner's four ceilings fill three of nine cells, and the type refuses to let the gap be quiet
+
+T230's implementer transcribed the ruling into `Readonly<Record<string, Readonly<Record<Tier,
+BucketLimit>>>>` and found it does not fit. **Three buckets × three tiers is nine cells; the ruling names
+four quantities and one of them names no tier at all** — `upload 30/hour` is *a number I know and cannot
+place*, its words. `anonymous read`, `keyed read` and `write (keyed)` determine three cells; six are
+undetermined.
+
+**It did not populate three and invent six, and the type would not have let it do so quietly**: the inner
+map is TOTAL over `Tier`, so a three-cell object does not typecheck. **Its own published type refusing a
+correct instruction is the useful part** — the gap could not be papered over even by an author willing to.
+
+**Two structural questions it declined to answer**, both real:
+**(a) does an ABSENT tier refuse, as an absent bucket does?** `limitFor` already reads through
+`Object.hasOwn` at both levels, so relaxing to `Partial<Record<Tier, BucketLimit>>` transcribes the ruling
+**inventing nothing** — and `write.anonymous` and `upload.anonymous` become absent-and-refused, which is
+correct by construction since an anonymous caller has no session. **But `read.account` absent-and-refused
+would refuse every signed-in reader**, so omission cannot be the universal rule.
+**(b) is `account` a tier the owner intends at all?** The ruling's words are *anonymous read*, *keyed
+read*, *write (keyed)*, *upload* — **two axes, not three** — which reads as *for rate purposes an account
+without a key IS anonymous*. **That would be a change to D-230-03's `Tier`, not to the numbers.**
+
+**Put to the owner rather than resolved here.** Its own recommendation — `account` falls back to
+`anonymous` unless a higher ceiling is named — needs zero new numbers and matches the two-axis phrasing,
+**and it says plainly that it is a rule it would be inventing, which is why it is a proposal.**
+
+## A zsh modifier turned a comparison into zeros that looked like answers
+
+`git show "$ref:tests/..."` — **zsh reads `:t` as its own tail modifier**, so the argument became
+`backendests/server/...`, every `git show` failed, and `grep -c` over the empty result printed a clean `0`
+for every count. **Sixth zsh instance in this run** (its own count said fifth; it had not been told about
+T130's implementer's digest, which was the fifth).
+
+**And the family is now unmistakable**: `SCOPE="a b c"` reaching one argument, eight newline-joined paths
+reaching one argument, and now a parameter eating its own suffix as a modifier. **All three produced
+well-formed output from an instrument that never ran** — *No test files found*, a valid sha256, a column
+of `0`. **What caught this one was the `fatal:` lines interleaved above the numbers, not the numbers**,
+which is the same tell as the digest and is a channel a skim discards.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -14301,6 +14376,15 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T130, Profiles and the public author surface
 
 - **State:** impl-done
+- **D-130-11: remove `pinSpellingFor`, `blueprintPinSpellings`, `cardPinSpellings` and
+  `type PinSpelling` with the rest.** They read `record.pinned`, so `contract.ts` will not typecheck
+  without them going, and their only consumer is `pins.test.ts`, which does not merge. **The adversary
+  asked rather than widening a blind instrument on its own authority, and that was right even though the
+  compiler forced the answer** — *the compiler forces it* and *it is mine to do* are different claims.
+  The counts error message quoting `cards` is prose rather than an arm: trim it in the same edit.
+  **Two cells go VACUOUS rather than green and are reported that way**: `routes.test.ts:207`
+  (`not.toContain("pinned")`) can no longer fail, and `visibility.test.ts:231`'s leak sweep has nothing
+  left to sweep.
 - **D-130-09 supersedes the denominator below: it is an OUTPUT of the round, not an input.** Its
   adversary measured three faults in the 43 before touching the tree — 60 counted static `it(` sites and
   three loops emit 9 cells so runtime is ~66; the cut bleeds ~10 more stale cells into `surface`,
