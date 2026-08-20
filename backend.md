@@ -3743,6 +3743,57 @@ exercise, whatever its pass count says.*
 **That last one is the shape this run keeps arriving at from new directions: a control that passes for
 the same reason twice has run once.**
 
+## A reference that goes green first try is the WEAKER result
+
+**T130's blind author's reference passed 73/73 on the first run, no correction round — and it refused to
+offer that as the strong result.** *T040's blind author's reference had to be corrected to a ruling
+twice, and both times the cells caught it; a red reference is a measurement of the contract.* **A green
+one says the two artefacts agree and does NOT say the contract is unambiguous, because one author wrote
+both.**
+
+**So what the green is worth is entirely what the mutations did to it** — and it said so rather than
+letting `73/73` stand as evidence about T130's contract. **Every other party in this run has reported a
+red reference as a cost; this is the first to report a green one as a limit.**
+
+**And it named its own weakest column**: `counts.cards`'s cells pass against a reference that reads
+`card_version.owner_id` directly — **the very thing D-130-04 forbids the implementer from doing.** *That
+column measures a reference taking a route the implementation may not take.*
+
+## A deliberate zero and an accidental one are the same number
+
+**Two of its twenty-four mutations did not mutate** — one added a memo read and **never wrote the map**,
+one computed a value and **never used it** — both reddening 0, both found by **reading them as code**.
+Re-expressed, they red 2 and 1 exactly as predicted.
+
+**And the shape it names is the one nobody has stated: M9 was a DELIBERATE no-op probe that predicted 0,
+got 0, and scored HIT.** **A deliberate zero and an accidental one are the same number, and only reading
+the diff separates them** — fourth session in this run to arrive there, first to notice its own harness
+scores both identically.
+
+**Its harness defect produced two contradictory classifications from one event**: the substring matcher
+is exact and the test name carries backticks, **so the same red counted as *missed* and as *unexpected*
+simultaneously.** Recomputed against the recorded failing sets, one MISS becomes a HIT. **A classifier
+that can call one observation two things is not measuring the observation.**
+
+**Five MISSes are one systematic error and it recorded the pattern**: *I predict the assertion that
+IDENTIFIES a defect and omit the broader ones that also see it.* **Sixth session, same diagnosis.**
+
+## It corrected a sentence of mine that I had already quoted back
+
+**I quoted its claim that without the floor cells, *"all ten AC3 cells green" and "no pin was ever
+recognised" are the same run*. It is EIGHT, not ten** — two cells pass when nothing resolves at all,
+**because their expected value IS the empty array.** Measured as the exact difference between K3's 8 and
+the file's 10.
+
+**And its `ps` capture settles the invisibility claim it retracted earlier: doubly wrong.** The
+scratchpad path carries the worktree string, **and every worker names the real worktree directly through
+the symlinked `node_modules` — seven of eight lines.** A path-matching sampler attributes them correctly,
+**which is the opposite of what its sentence told the next reader.**
+
+**K2 is what makes K1 mean anything**: the same reference with the candidate list truncated to index 0
+reds 8, **so index 0 genuinely does not resolve and K1's green is the discovery discovering rather than
+index 0 quietly succeeding.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
