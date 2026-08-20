@@ -4642,6 +4642,71 @@ owner's identically-slugged bundle.** Verified at `schema.ts:159` and B-06's own
 where that survives. **Owed as a comment in `terms.ts`, by T130's implementer, at the same moment as
 D-130-14's two amendments** — which is a holder and a moment, applied to the rule that produced them.
 
+## A permanent 1-in-230 red sat in a merged suite, and its own comment claimed the property it lacked
+
+`tests/server/t010/integrity.test.ts > AC5` minted `first` once and then re-minted **only** `second` up to
+199 times, so a run where `first` drew the smallest of the candidates **cannot** satisfy its own
+precondition. `marker()` carries `Math.random()`, so the draw is fresh per run. **Analytically `1/199` =
+0.503%; T230's implementer measured 87 in 20 000 markers, 0.435%; I simulated both logics over 200 000
+draws and got 1 035 old-logic failures (0.517%) against 0 for the fix.**
+
+**The comment above the loop said *the digests are minted until they land on the required order rather
+than assumed into it*, and the minting is one-sided, so they are assumed after all.** A comment asserting
+the property its code lacks is worse than no comment: it is the sentence a reader checks the loop
+against and stops.
+
+**What identified it was separating it from a genuine artifact in the same triple.** T230's implementer
+got three non-identical failing sets at an identical total, and rather than report the disjunction it
+chased both: **one moved for load and one moved for a coin.** *A defect is stable and an artifact moves* —
+and a report of `2 failed` twice would have read as one phenomenon.
+
+Fixed to two digests and a swap, O(1) and unfailable, with an added assertion that the two mints differ,
+**because `>` and `>=` differ for exactly the collision case and a non-strict order makes the criterion
+vacuous.**
+
+## `.catch(err => err as Error)` types the RESOLVED value as an error too
+
+T230's implementer's own typecheck error before its triple, and it is another guard that could not fail:
+a module that **accepted** the label would have reached the absence assertion carrying a record whose
+`.message` is `undefined`, **which `not.toContain` passes.** In the cell written to check a message.
+Fixed to a two-armed `then` whose resolve arm answers `undefined` plus an `instanceof`, so the absence
+check is reachable only through an actual rejection.
+
+## `D-40-F` is a ratio of ratios and it still crossed, because the two windows differ
+
+`overhead(dense) / overhead(flat) < 100` where each `overhead` is `fastest(measure) / fastest(stringify)`.
+**The ratio is the correct instrument** — *a millisecond bound is host-dependent; a ratio cancels the
+host* — **but a ratio whose numerator and denominator are timed in DIFFERENT windows does not cancel a
+host whose load changes between them.** `fastest` takes a min over repeats, which resists noise and not
+drift. Measured at 102.69 against a bound of 100 at peak load 57; five isolated runs at load 12–22 all
+passed. **Not charged, reported, and it is T040's merged code.**
+
+## Two scratch databases are invisible to every session's residue check, and they are still there
+
+`darkprint_t090_attractor_33059` and `darkprint_t090_attractor_broken_33059` match no `darkprint_test%`
+grep. **Six sessions counting that prefix would all report clean over them.** Confirmed still present by
+T230's implementer, which also counted with the repo's own `pg` client rather than `psql` — **`psql` is
+not on this host's PATH, which the residue rule assumes.**
+
+**And the three `darkprint_test_*` orphans sat unchanged across six full suites with zero connections
+throughout.** That is the evidence I said I would rule on, and **I am ruling: still not dropped.** Its own
+reading is why — *evidence of unattributable, not of unused; zero connections is what a session between
+runs looks like too.* **The untried step is attribution rather than inference**, so the question goes to
+the sessions by name before anything is dropped.
+
+## `peers=0` must not read as `nobody was working`, and both directions of the bias were stated
+
+T230's implementer's sampler filters on **activity** (`%CPU >= 5`) and ownership by **pgid**, so its own
+shell, npm shim and workers are excluded as a group before any label is read — **the name is only a
+label** — and it falsified the sampler against a decoy in another process group before using it. Then it
+stated **both** biases: it over-reports peers (anything whose args contain `darkprint`, including an
+editor) and **under-reports** them (a peer running from a scratch worktree names no darkprint path and
+lands in `host` — and this run builds throwaway trees, so the hole is real; its own `claude` process
+classifies as `host` for the same reason).
+
+**Three identical runs at peak load 41 is a stronger determinism claim than three at load 5**, and none of
+that load is serialisable by any slot: a Virtualization VM, WindowServer, `corespotlightd`, Spotify.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
