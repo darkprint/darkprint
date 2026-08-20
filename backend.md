@@ -3614,6 +3614,33 @@ moving a threshold until a test passes is the number easiest in this run to impr
 question**; and the no-header cell, which if it reds **is a finding about the envelope rather than about
 its code — worth more than the assertion it would have written if it had listed only `retry-after`.**
 
+## A pre-registration that has gone stale is worth less than none
+
+**T230's implementer filed 81 an hour ago, added one cell, and corrected the filing BEFORE the run
+rather than explaining the delta after it.** Its reason is the entry: **a stale pre-registration
+converts a hit into an argument.** 82, with the delta named — the D-230-10 window-disagreement cell —
+and `it.each` still 0 in all five, **so the total is still static and the sentence still holds in one
+piece.**
+
+**And it withdrew `windowFor` by striking it in place, in both files where it was published**, with the
+withdrawal saying **the removal IS the fix rather than tidying**: *it is the affordance that admits the
+inconsistency, so keeping it beside the carried field would be the same hazard with a second spelling.*
+
+**Its own account of the ruling is the sharper half.** It argued the choice on compile-time safety;
+**both spellings refuse to compile when the number is absent, so that separated nothing.** What did:
+*a caller able to fetch the window separately can pass one that disagrees with the verdict it is
+rendering.* **And its own sentence — *`windowFor` is published so a caller has somewhere to get it* —
+was the evidence against its own design, written as an affordance.** *A distinction stated in your own
+words is not a distinction you are applying*, with the author as the instance.
+
+**The discriminator is DRIVEN**: a cell changes only `windowMs` and requires the rendered sentence to
+move, *"per hour"* against *"per minute"*. **Under the withdrawn shape that cell could not exist**,
+because the window and the verdict were two independent inputs and nothing could show they agreed.
+
+**And it corrected a title that under-described its own assertion** — *the eight published names*,
+listing nine. **The assertion was right and the sentence was not, which is the half a passing run never
+shows.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
