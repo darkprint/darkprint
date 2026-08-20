@@ -5051,6 +5051,54 @@ the repair*, which can only be read on the unrepaired tree, so applying the remo
 destroyed the ordering the ruling asks for. **Seven adds in the porcelain and `contract.ts` untouched —
 refusing to look productive while blocked.**
 
+## `error-hygiene` was blind in exactly ONE direction, and it was the in-flight direction
+
+T130's adversary derived its own expected value instead of taking either number I gave it, **and the
+right answer was a third one: 21.** The walk's domain is `git ls-tree -d --name-only backend
+lib/server/` — **the branch ref** — which enumerates twelve barrels, and `lib/server/profiles` is not
+among them because T130 has not merged. **The module is in its tree and invisible to the walk**, so
+`ProfileStoreError` is not counted and 21 is correct there.
+
+**My *22 if T130 merges as it stands* was true about the merge to `backend` and was not a property of its
+measurement at all.** Had it taken 22 it would have called a passing cell a red. **The 23→22 correction
+was still not its number.** *Deriving it was not pedantry — taking either number I offered would have
+produced a false red.*
+
+**The structural half is bigger than its round.** `absent = shipped.filter(name => !present.has(name))`
+reds on shipped-but-missing; **present-but-unshipped was silently uncounted.** So D-13's four-part clause
+was unenforced on **every error class of every task in flight** — the code most likely to have got it
+wrong and the only code anybody is actively writing. **Same shape as `rulings-bind`'s `\d{2}`: green over
+a region because the region is outside the domain.**
+
+**Fixed by splitting the two questions rather than by widening one domain.** The **count** stays an
+equality against `backend`, because it is a claim about what has shipped and a merge commit must remain
+the only place it changes — widening it would demand a number only the merge may set, from a session that
+may not set it, which is the defect `architecture-current` and `store-modules-seal-their-faults` both had
+to have fixed. **Hygiene now runs over shipped ∪ present**, so an unmerged class cannot move the number
+and cannot escape the clause. Both messages name the unmerged barrels covered.
+
+**Falsified on four axes**: base 21 green; an unshipped **clean** class leaves the count at 21 and stays
+green; an unshipped class with an enumerable own property reds the hygiene assertion **naming it**, with
+the count silent; an unshipped class that drops its `stack` reds the fourth clause. **`unshipped` being
+empty is the normal state on base and is deliberately NOT an error**, unlike every other empty domain in
+that file — it is non-empty exactly in the worktrees that need it.
+
+## A test whose domain is a moving REF is not reproducible from a sha
+
+Its second point, and it extends a rule I wrote three times today. **`backend` was already one commit
+ahead of the base it had merged** — `2cefcaf`, whose subject is its own skip finding, **so its own report
+is what moved the ref its guard reads.** The same working tree yields different `error-hygiene` results at
+different times depending on where `backend` points when the test runs.
+
+**A measurement owes its sha, its tense, the state of the host — and the REF ITS DOMAIN IS DERIVED FROM.**
+It will stamp `backend`'s sha beside its own whenever it reports a hygiene number, *because mine alone
+does not identify what was measured.*
+
+**And its pre-registration names the discriminator rather than the outcome**: 21 on its tree, **still 21
+if D-130-10 were implemented tomorrow**, because the class that ruling adds is in a barrel the walk cannot
+see; 22 at T130's merge, 23 at D-130-10's, **both events on `backend` and neither on it.** *If I measure
+anything other than 21, the interesting question is which ref moved, not which class changed.*
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it

@@ -56,6 +56,8 @@ interface Published {
   barrel: string;
   name: string;
   ctor: new (...args: never[]) => Error;
+  /** On `backend`, so it counts. Absent means present locally and not yet merged: hygiene only. */
+  shipped: boolean;
 }
 
 async function publishedErrorClasses(): Promise<readonly Published[]> {
@@ -107,7 +109,30 @@ async function publishedErrorClasses(): Promise<readonly Published[]> {
         `Merge \`backend\` and re-run.`,
     );
   }
-  const barrels = shipped;
+  /*
+   * The domain for the COUNT stays `shipped`. The domain for the HYGIENE does not, and that gap was
+   * the guard's blind direction.
+   *
+   * `absent` above catches shipped-but-missing. **Present-but-unshipped was silently uncounted** —
+   * a module sitting in an implementer's worktree and not yet on `backend` never entered `barrels`,
+   * so its classes were never constructed and D-13's four-part clause was never checked against
+   * them. That is unenforced on **exactly the code somebody is actively writing**, which is the code
+   * most likely to have got it wrong. Same shape as `rulings-bind`'s `\d{2}`: green over a region
+   * because the region is outside the domain.
+   *
+   * Found by T130's adversary while deriving its own expected value: `lib/server/profiles` is in its
+   * tree, is not on `backend`, and `ProfileStoreError` had therefore never been checked by this file
+   * and would not be until merge.
+   *
+   * So the two questions are separated. The count is a claim about what has SHIPPED and stays an
+   * equality against `backend`, reproducible at a merge. Hygiene is a claim about what EXISTS and
+   * runs over both sets. An unshipped barrel cannot move the number and cannot escape the clause.
+   *
+   * `unshipped` being empty is the NORMAL state on base and is not an error — unlike every other
+   * empty domain in this file. It is non-empty exactly in the worktrees that need it.
+   */
+  const unshipped = [...present].filter((name) => !shipped.includes(name)).sort();
+  const barrels = [...shipped, ...unshipped];
 
   const found: Published[] = [];
   for (const barrel of barrels) {
@@ -124,7 +149,8 @@ async function publishedErrorClasses(): Promise<readonly Published[]> {
       );
     }
     for (const [name, value] of Object.entries(namespace)) {
-      if (isErrorClass(value)) found.push({ barrel, name, ctor: value });
+      if (isErrorClass(value))
+        found.push({ barrel, name, ctor: value, shipped: shipped.includes(barrel) });
     }
   }
   return found;
@@ -162,13 +188,25 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
      * immediately rather than being absorbed. The maintenance cost is identical — one number —
      * and the difference is that skipping it is now impossible instead of invisible.
      */
+    /*
+     * `.filter(shipped)`, because the count is a claim about `backend` and the hygiene loop below is
+     * not. Without this an implementer's unmerged class would red the equality in its own worktree —
+     * demanding a number that only the merge commit may set, from a session that may not set it,
+     * which is the defect `architecture-current` and `store-modules-seal-their-faults` both had to
+     * have fixed. The two domains are now different on purpose and each says which it is.
+     */
+    const shippedClasses = classes.filter((c) => c.shipped);
+
     expect(
-      classes.length,
+      shippedClasses.length,
       "The number of published error classes changed. This is an EQUALITY rather than a floor, " +
         "deliberately: a floor absorbs additions silently and then stops detecting removals, " +
         "which is what happened here across three merges. If a class was added, raise this number " +
         "in the same commit and say which. If one was removed, lower it and say why — a class " +
-        "that stopped being exported is exactly what this walk exists to notice.",
+        "that stopped being exported is exactly what this walk exists to notice. This counts only " +
+        "barrels on `backend`: a module in your worktree that has not merged is checked for HYGIENE " +
+        "below and deliberately does not move this number, so a merge commit remains the only place " +
+        "it changes.",
     ).toBe(21);
 
     const rendered: string[] = [];
@@ -215,9 +253,17 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
       }
     }
 
+    /* Named in both messages below, because a reader has to know which classes were covered — and
+       an unshipped barrel appearing here is a class nobody else's gate can see yet. */
+    const covered =
+      `Checked ${classes.length} class(es) across ${new Set(classes.map((c) => c.barrel)).size} ` +
+      `barrel(s); unmerged barrels covered for hygiene only: ` +
+      `${classes.filter((c) => !c.shipped).map((c) => `${c.barrel}/${c.name}`).join(", ") || "(none)"}. `;
+
     expect(
       rendered,
-      "A published error class has an enumerable own property, so anything that renders it — a " +
+      covered +
+        "A published error class has an enumerable own property, so anything that renders it — a " +
         "log line, a JSON body, a spread into a response — carries that property with it. Assign " +
         "on the prototype (`X.prototype.name = ...`) or with `Object.defineProperty(this, ..., " +
         "{ enumerable: false })`; a plain `this.x =` in a constructor is always enumerable. The " +
