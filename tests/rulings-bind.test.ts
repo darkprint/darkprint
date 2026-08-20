@@ -53,8 +53,20 @@ import { fileURLToPath } from "node:url";
 
 const BACKEND_MD = fileURLToPath(new URL("../backend.md", import.meta.url));
 
-/** `D-70-22`, `D-70-14a`, `D-90-A` — the id space this run actually uses. */
-const RULING = /\bD-(\d{2})-([0-9A-Za-z]+)\b/g;
+/**
+ * `D-70-22`, `D-70-14a`, `D-90-A`, `D-140-07` — the id space this run actually uses.
+ *
+ * `\d{2,3}`, and the third digit is not cosmetic. This read `\d{2}` until now, which cannot match
+ * `D-130-06` at all: after `D-` it takes `13`, then requires a `-` and finds `0`. So EVERY ruling
+ * belonging to a three-digit task — every `D-130-*`, `D-140-*` and `D-230-*` in the document — was
+ * outside this guard's domain, and the guard was green over them because it could not see them.
+ *
+ * Same shape as `error-hygiene`'s absent class: the domain was built to a pattern rather than to the
+ * document, and the ids in flight were the ones the pattern excluded. It went unnoticed because no
+ * preamble heading had opened with a three-digit id yet, so the excluded region was also empty —
+ * a guard blind to a region only fails once something arrives there.
+ */
+const RULING = /\bD-(\d{2,3})-([0-9A-Za-z]+)\b/g;
 
 interface Ruling { id: string; task: string; process: boolean }
 
@@ -68,7 +80,7 @@ function ruledInPreamble(md: string): readonly Ruling[] {
        telling only the implementer manufactures D-70-12" does. Triggering on any mention made that
        second kind demand a citation for a ruling it was only using as an example. Opening position
        is the document's own convention for "this heading is about this ruling". */
-    if (!/^## D-\d{2}-/.test(line)) continue;
+    if (!/^## D-\d{2,3}-/.test(line)) continue;
     for (const match of line.matchAll(RULING)) {
       const id = match[0];
       /* `(process)` must follow the id it exempts, not merely appear in the heading — otherwise one
@@ -77,7 +89,9 @@ function ruledInPreamble(md: string): readonly Ruling[] {
       const after = line.slice(match.index + id.length);
       out.push({
         id,
-        task: `T0${match[1]}`,
+        /* `40` → `T040`, `130` → `T130`. Left-padding rather than a literal `T0` prefix, which
+           was only correct while every task id had a leading zero to spare. */
+        task: `T${match[1]!.padStart(3, "0")}`,
         process: /^\s*\(process\)/.test(after),
       });
     }
