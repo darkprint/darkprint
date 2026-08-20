@@ -3415,6 +3415,232 @@ predicted with the total off is collection; `failed` **less** than predicted wit
 undefined)` arms. **Naming your own vacuity candidates before the run is what stops the kinder
 explanation being invented after it.**
 
+## A transcribed operation can DELEGATE a sub-operation, and one row per operation cannot record that
+
+**T040 round 7: FAIL, D-40-L, and it is inside round 6's own fix.** `limits.ts:468` reads
+`Number((container as {length:unknown}).length)`. **`LengthOfArrayLike` is `ToLength` is
+`ToIntegerOrInfinity` is `ToNumber`; `Number(v)` is `ToNumeric` then BigInt→Number, so it ACCEPTS a
+BigInt where `ToNumber` REFUSES one.** Four divergences, six controls holding, and **the direction is
+neither over- nor under-count: the walk ANSWERS where the ruled formula REFUSES.** Repair measured
+rather than proposed — `Number(...)` → `+(...)`, **10 of 10 agree, D-40-K's own halves untouched.**
+
+**The countermeasure was already written, 95 lines below, at `limits.ts:562-564`:** *"`ToNumber(value)`,
+and `+` is the only spelling of it. `Number(value)` is a DIFFERENT function — it accepts a BigInt where
+`ToNumber` refuses one."* **The next transcription was written at line 468 and did not read it** — *a
+countermeasure only fires if it is re-read at the moment it applies*, third instance, this time with
+author and reader the same session.
+
+**And the audit artefact fails one column over, in a way its shape cannot express.** The **delegated**
+column survives — all seven walked, every one genuinely the spec operation, so its author's named
+hypothesis does not fire. **But a TRANSCRIBED operation can itself DELEGATE a sub-operation to a
+primitive.** `ToLength` has three parts — `ToNumber`, truncate toward zero, NaN→0 — and round 6's fix
+**transcribed two and delegated the third to `Number()`.** **One row per operation leaves nowhere to
+record a delegation nested inside a transcription**, so the closing claim *nothing in the transcribed
+column is unobserved* is **true of the two halves the charge named and false of the third.**
+
+**Coverage measured rather than read off fixtures**: blind's five D-40-K cells and the corpus's five are
+1.5, 2.9, NaN, −1, `"2"`, `{valueOf:()=>2}` — every one a number, a string, or a `valueOf` returning
+one. **Nothing reaches the `ToNumber` half.** With the repair applied, **306 passed, 0 newly red** —
+**and the probe registers a difference the suites cannot, so the suites are demonstrably blind to a
+divergence that exists.** That is what separates the zero from a dead instrument, **and it reads in both
+directions: too little, and not too much.**
+
+## An unexplained 1-in-21 red on a task whose AC5 is a determinism criterion
+
+**Its first narrow run returned `1 failed | 84 passed` on a cold vite cache. It did not recur in twenty
+further runs** — three cold-cache, two replays of the exact wide-then-narrow sequence, six under a
+declared six-way burner. **It does not have the identity and refused to classify it**, because *an
+unreproduced red classified from its neighbours is the shape this file charges.*
+
+**Both host-dependent assertions were measured rather than assumed**: D-40-F's cost ratio spreads
+4.20–29.16 idle and **8.12–9.58 under a six-way burner** against a threshold of 100 — **the min-of-7
+estimator is STEADIER under load**, which is why load did not reproduce it. D-40-B's depth ratio passed
+6 of 6 under the same burner.
+
+**So the reason it could not be reproduced is the reason the round could not classify it**, and it hands
+that to a successor **ahead of its own charge**. **An unexplained red on a determinism criterion is worth
+more attention than a measured defect, and it said so.**
+
+**Its merge was refused twice by its own session's permission classifier and it did not work around it**
+— surfaced to its user, and it reported that **11 base lines are missing, both commits prose-only, and
+that two of the ten root guards parse that file and are green WITHOUT those lines rather than with
+them.** *State that when you quote me.*
+
+## A docblock explaining why an instrument works, describing an instrument that was not built
+
+**T140's blind author's `assertNoConnectionValue` docblock said a random password and database name
+minted into the connection string *cannot appear in any admissible message*. They do not appear in the
+RAW error either** — pg reports a refused connection as `connect ECONNREFUSED 127.0.0.1:1` and carries
+neither — **so the check was a guard that cannot fail, described in a docblock whose whole job was to
+say why it works.**
+
+**Caught by the lexical sweep before it ran, and not by re-reading.** Its own count: 31 occurrences of
+the claim words across six files, **16 load-bearing, one false.** Replaced with what is true — **one
+supplied token works and it is the ROLE NAME**, which appears in no statement and no bound parameter,
+**the `sqlstate` shape a statement-derived deny set structurally cannot see.**
+
+**And the sweep caught the run's most-charged shape in its own file**: a standalone cell asserting
+`expect(saveRecordIsExact).toBe(true)`, where that constant is `true` **whatever the type turns out to
+be** — a cell that cannot fail carried under a name that reads as coverage. **Deleted, with the
+declaration kept and referenced from a cell whose other assertions can fail**, so the check it carries
+is `tsc`'s to report as a TS2322.
+
+**Third: it had written that `error-hygiene`'s domain is *every exported error class, so T140's is
+empty because it publishes none*. True conclusion, wrong mechanism** — the domain is shipped
+**directories**, so it stays empty however many classes T140 publishes, right up to the merge. **A
+wrong mechanism propagates even when the conclusion holds**, which is why it struck it rather than
+leaving a sentence that happened to reach the right answer.
+
+**And the mutation it proposes that nobody asked for is the whole of D-140-01**: swap the reference's
+`countSaves` from `0` to `undefined` for a non-owner **and require the suite to stay GREEN.** **If it
+reds, it picked a reading without noticing and the finding is gone.** *A test that the suite has not
+resolved an ambiguity* is an instrument this run has not had before.
+
+## T-01 fired three times and neither instrument built for it could see any of them
+
+**T230's implementer typed raw control bytes into a deliberate-control-character fixture three times in
+three consecutive attempts, and all three were stopped by the TOOL LAYER refusing the command** — not by
+`tests/no-raw-control-bytes.test.ts`, **which cannot see a file that was never written.** Occurrences
+nine, ten and eleven.
+
+**And the reflex is the one the fixture's own header names**: *the reason they type it is that there was
+nowhere to import it from.* **There was somewhere. It did not reach for it until the third refusal.**
+
+**The transferable half is about the instruments rather than about the author.**
+`no-raw-control-bytes` catches the byte **once it is on disk**; `tests/support/control-bytes.ts` removes
+the **need** to type it. **Neither reaches the moment of typing, which is where all three happened.**
+**The only thing that has ever caught this before the file exists is an unrelated tool refusing a
+command it could not display** — the same shape as the orchestrator's own occurrence being *prevented
+rather than detected*.
+
+**Measured rather than assumed, off-slot: `tr -d` over all fourteen changed files, every byte outside
+tab, newline, carriage return and printable — 0 in all fourteen.**
+
+## A base class kept off the barrel, because a barrel base is an arm waiting to be grown
+
+**T230's implementer publishes four error classes and deliberately keeps `LimitsError` — the base — off
+the barrel.** Its reason: **a base on the barrel is a base a wrapper can grow an arm for, and that arm
+is what stops the four concrete classes being disjoint siblings.**
+
+**That is D-50-21's withdrawn construction avoided rather than rediscovered.** There, a naive guard
+demanded an arm on `AccountError`, which would have made the five classes non-disjoint **at the exact
+moment the neighbouring ruling documented arm order as inert** — and the defect was found by an
+implementer reading what the guard would demand. **Here the shape is closed before the guard exists, by
+not publishing the thing that invites it**, with `armsNotDisjoint()` beside the wrapper measuring it
+rather than asserting it.
+
+**And its memory bound is arithmetic rather than a sentence**: `DEFAULT_SLOTS × BYTES_PER_SLOT <=
+MAX_COUNTER_BYTES` as an assertion, **plus a second test asserting `BYTES_PER_SLOT` equals what the
+allocation actually costs** — because *a declared count that does not move with the thing it describes*
+is the anti-vacuity defect this run has charged three times. **The collision property is driven the same
+way**: two subjects found to land in one slot, the second seeing count 2 — **an LRU answers 1 there
+forever, so the cell is the falsification for the whole design rather than a restatement of it.**
+
+## A premise handed to you, restated as a property of your own artefact
+
+**T130's blind author wrote that its scratch worktree *names no `darkprint-wt-*` string, so it will show
+up in nobody's contention sampler including mine*. I quoted it back as if verified. It is FALSE, and it
+found that itself.**
+
+The session scratchpad this run hands out is
+`/private/tmp/claude-501/-Users-alessandro-Github-darkprint-wt-t130-profiles-tests/<session>/scratchpad/`
+— **the path embeds the string** — and `node_modules` there is a symlink into the real worktree, **so a
+resolved `vitest` argv carries it twice.**
+
+**Its own diagnosis is the run's root aimed at itself:** *a premise handed to me, restated as a property
+of my own artefact, never re-derived at the point of use.* **The precedent — *a scratch worktree is
+invisible in both directions* — was true of the trees it was measured on and is not a property of every
+scratch tree.** And it landed **in the sentence whose whole job was to mark a boundary**, which is what
+made it look checked.
+
+**I propagated it.** Quoting a peer's claim back is the run's only delivery receipt, **and a receipt is
+not a verification** — I repeated a measurement nobody had taken, in the message confirming I had read
+it. **The habit that closes the channel gap opens this one.**
+
+**What changes is the reading, not the practice**: declaring the scratch tree was right and stays right.
+**And it refused to settle the correction by argument either** — it will capture its own `ps` line during
+the first reference run and report what a sampler would actually have seen. *An absent number with a
+reason beats a present one I reasoned to.*
+
+**It also caught two trees under one measurement before it measured anything**: the scratch worktree was
+created at `e3b1261` while its test branch sat at `d4c2edf` — **this file's own scope defect, inside the
+arrangement built to avoid a different one.** Both stamped now, and it will stamp both rather than one.
+
+**And it pre-registered a deletion it cannot rescue afterwards**: if the control asserting that two
+different bound parameters produce different driver messages reds, **the invariance cell beside it is
+comparing two things already equal and gets deleted rather than the control reshaped until it passes.**
+Filed before the run, *because a falsification suite's own score is the easiest number in this run to
+improve by changing the question.*
+
+## The header is already a string before `checkLimit` holds a subject, so the bound is not T230's to pay
+
+**T230's implementer told me `subject.ip` is bounded before it reaches a hash, then corrected itself:
+true of the module and narrower than it sounded.** **By the time `checkLimit` holds a `LimitSubject`
+the header has already been read into a string, and that allocation is upstream of every assertion this
+module can make about itself.**
+
+**That is *a limit bounds only the work that happens after it runs, and work done to construct its own
+input is unbounded by construction*, applied by an author to a claim it had already made to me** — and
+it names who owes the bound rather than leaving it: **whichever task first turns a `Request` into a
+`LimitSubject`.** Written into the module rather than sent as a sentence, **because a cross-task gap
+recorded only in a message is a gap nobody downstream can read.**
+
+**Same shape as D-40-F's ontology: the caller's bytes are spent before the guard is entered, and the
+bound belongs where the bytes are rather than where the type is.** Third module to arrive at that
+independently.
+
+## `81 it() declarations, so this run has 81 tests` is one sentence, and that is the check
+
+**T230's implementer took the count with `grep -c '^\s*it('` per file and `grep -c "it.each\|describe.each"` returning
+0 in all five** — **so the total is static and nothing outside a declaration can move it.**
+
+**Its own note is the entry: the failure this run has recorded twice is a count of LOOP CONSTRUCTS
+offered for a claim about DECLARED CASES, and the tell is that it takes two sentences.** *Write the
+question a measurement answers into the same sentence as the claim* has a diagnostic form — **if the
+claim and the question will not fit in one sentence, they are two claims and one of them is
+unmeasured.**
+
+**And it pre-committed the explanations it would otherwise reach for, with the reason each is
+unavailable**: a wrong total cannot be *vitest collected something I did not intend*, because the config
+includes `lib/**/*.test.ts` and those five are the only such files under the directory — **so a wrong
+total is a miscount or a file that failed to collect, and those two are separated by the skipped count
+and the failed-FILE count rather than by the test total.** A red on the hash-concatenation cell cannot
+be *an unlucky collision*, because the seed and table are fixed — **it either always passes or always
+fails, and "unlucky" is not available.**
+
+**Two candidate reds named in advance with what it will NOT do about them**: the cost-ratio cell reported
+as an instrument problem rather than by weakening a 50x tolerance against a ~100 000x effect, **because
+moving a threshold until a test passes is the number easiest in this run to improve by changing the
+question**; and the no-header cell, which if it reds **is a finding about the envelope rather than about
+its code — worth more than the assertion it would have written if it had listed only `retry-after`.**
+
+## A pre-registration that has gone stale is worth less than none
+
+**T230's implementer filed 81 an hour ago, added one cell, and corrected the filing BEFORE the run
+rather than explaining the delta after it.** Its reason is the entry: **a stale pre-registration
+converts a hit into an argument.** 82, with the delta named — the D-230-10 window-disagreement cell —
+and `it.each` still 0 in all five, **so the total is still static and the sentence still holds in one
+piece.**
+
+**And it withdrew `windowFor` by striking it in place, in both files where it was published**, with the
+withdrawal saying **the removal IS the fix rather than tidying**: *it is the affordance that admits the
+inconsistency, so keeping it beside the carried field would be the same hazard with a second spelling.*
+
+**Its own account of the ruling is the sharper half.** It argued the choice on compile-time safety;
+**both spellings refuse to compile when the number is absent, so that separated nothing.** What did:
+*a caller able to fetch the window separately can pass one that disagrees with the verdict it is
+rendering.* **And its own sentence — *`windowFor` is published so a caller has somewhere to get it* —
+was the evidence against its own design, written as an affordance.** *A distinction stated in your own
+words is not a distinction you are applying*, with the author as the instance.
+
+**The discriminator is DRIVEN**: a cell changes only `windowMs` and requires the rendered sentence to
+move, *"per hour"* against *"per minute"*. **Under the withdrawn shape that cell could not exist**,
+because the window and the verdict were two independent inputs and nothing could show they agreed.
+
+**And it corrected a title that under-described its own assertion** — *the eight published names*,
+listing nine. **The assertion was right and the sentence was not, which is the half a passing run never
+shows.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -11515,7 +11741,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Blocks:** T262
 - **Owns:** `lib/server/saves/**`, `app/api/account/saves/**`
 - **Forbidden:** `lib/server/accounts/**`, `components/ui/FavoriteStar.tsx`
-- **Published signatures** (checked against `backend` at `acaf8ff` and against `target`/`target_actor` as above. **`target_actor.kind` is the enum `star|note_vote` and has no `save` member**, which is deliberate: a save is private and a star is public, and B-10's contract says the two never merge. So saves need their own table and this task's `Owns` must gain the migration for it — `lib/db/schema.ts` is Forbidden here, so **this is a dependency on T000's owner, not something to work around.** Reported rather than resolved. Barrel: `@/lib/server/saves`.)
+- **Published signatures** (checked against `backend` at `acaf8ff`, **re-stamped at `cd1b04b`** where the table blocker was struck by displacement, and against `target`/`target_actor` as above. **`target_actor.kind` is the enum `star|note_vote` and has no `save` member**, which is deliberate: a save is private and a star is public, and B-10's contract says the two never merge. **WITHDRAWN — the table SHIPPED.** This block said *saves need their own table and this task's `Owns` must gain the migration for it … a dependency on T000's owner*. **`lib/db/schema.ts:335` is `save`**, with `save_account_target_key` unique on `(account_id, target_kind, target_id)` and a header comment naming **T140 and B-10**, arguing the inline `target_kind`/`target_id` from **T140's AC1** and the unique index as **T140's AC2** — **T005 built it for this task, citing this task's criteria.** `Depends on` already names T005. **`Owns` must NOT gain a migration.** Charged three times before it was struck here: by T140's blind author, by T140's implementer, and by its blind author again after D-140-d was *upheld in prose while this sentence stood* — **a ruling that arrives without displacing anything is a contradiction I authored, and the block is the surface a reader types from.** Barrel: `@/lib/server/saves`.)
 
         interface SaveRecord { targetKind: "blueprint" | "card" | "term"; refId: string; savedAt: Date }
 
@@ -11542,6 +11768,12 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **So AC5's translation from that key space to `(target_kind, target_id)` is lossy one way and needs a lookup the other, and `migrateLocalSaves` is published taking values ALREADY translated — which means the translation lives in a route nobody published.** Its implementer declined to invent one, correctly: **a route surface invented here is the contract following the code, and a blind author cannot pin what an implementer invents.**
 
   **Also superseded: `seams.md:299-301` still asks whether the browser-local set is migrated or discarded — a question T140's Contract line and AC5 already answer.** A binding document holding an open question the contract closed.
+
+  **D-140-05, ruled on D-140-f: AC3's `visibleTo` is given the READING actor, not the save's owner.** The two readings differ for exactly one caller — **the operator reading somebody else's list containing a save of a private target** — and the reading actor is what `visibleTo(actor, ownerId)` means everywhere else in the tree. **An operator seeing a bookmark its owner cannot is operator authority working, not a leak**, and the alternative would make T140 the one module where `visibleTo`'s first argument is somebody other than the caller.
+
+  **And the way its blind author scoped around the ambiguity is the part to keep**: the two readings **coincide** for an owner reading their own list, so that is the only case any AC3 cell drives, **and the operator cells use a fixture whose targets belong to a third account and are public to both — deliberately, with the coincidence ARRANGED and stated in the fixture rather than left as an accident of ownership.**
+
+  **D-140-06, ruled on D-140-g: T140's rejection whitelist admits the operation and the caller's own FIELD NAME, and never the caller's own VALUE.** Two shipped conventions disagree — T050 admits the field name only, T070 admits the value (`allocateHandle: the handle \`<handle>\` is not available.`, merged and adversary-passed) — **so a value check would have redded one of them and the blind author correctly asserted only what both forbid.** Ruled toward T050's for a reason specific to this task: **a `refId` echoed back to a non-owner is an existence oracle**, which is the thing AC1 exists to close, so the looser convention would reopen it through the error surface.
 
   **D-140-01: `countSaves` stays `Promise<number>` and a denied caller gets `0`; the prose is amended.** The block published `Promise<number>` beside prose saying *a visitor gets `undefined`-equivalent behaviour, not zero*, four lines apart and both imperative. **Its analysis is the ruling: under `Promise<number>`, *not yours*, *no such account* and *yours and empty* all answer 0 — indistinguishable, which is B-03 satisfied rather than violated.** The leak AC1 is actually about is **answering a non-owner the TRUE count**, and both readings refuse that, so **the prose's stated reason was never the discriminator.** *Zero is an answer, and answering zero for a set you may not see tells the caller the set exists* is **withdrawn** — an owner with no saves also gets 0.
 
@@ -11577,7 +11809,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **And the block T005 built for T140 cites T140's own criteria as its reasons**: the `save` table's header names T140 and B-10, argues the inline `target_kind`/`target_id` from **T140's AC1**, and names `save_account_target_key` as **T140's AC2**. **The dependency was not merely satisfied — it was satisfied on purpose, by a task that read this one's contract.** A block's *checked against* line is a claim with a timestamp, exactly like a base line, **and nothing re-checks it when the thing it was checked against moves.** Barrel: `@/lib/server/limits`.)
 
-        interface LimitVerdict { allowed: boolean; limit: number; remaining: number; resetAt: Date }
+        interface LimitVerdict { allowed: boolean; limit: number; remaining: number; resetAt: Date; windowMs: number }  // windowMs added by D-230-10
         interface ApiKeyRecord { keyId: string; accountId: string; label: string; createdAt: Date; revokedAt: Date | null }
 
         checkLimit(db: Db, subject: { accountId: string | null; keyId: string | null; ip: string }, bucket: string): Promise<LimitVerdict>
@@ -11590,6 +11822,16 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **AC4 — "a revoked key is refused immediately" — forbids caching `resolveKey`.** The natural optimisation is a process-local map, and it satisfies every other criterion while leaving a revoked key live until the process restarts. If a cache is ever wanted it needs invalidation on revoke, which is a harder thing to get right; state the prohibition rather than leaving it to be discovered.
 
   **AC5 is a negative and negatives go untested.** "An anonymous read below the ceiling is never delayed or challenged" — asserted by measuring that `checkLimit` on an under-ceiling read performs **no write**, not by observing that a response came back. A counter implementation that writes on every read passes a latency-free test on an idle machine and falls over under load.
+
+  **D-230-10, ruled on T230's implementer's charge: `LimitVerdict` gains `windowMs`, and `rateLimited` keeps three parameters.** **My D-230-01 signature could not produce my D-230-01 message.** The form is `"<bucket>: limit of <n> per <window> reached; resets at <ISO instant>."`; `LimitVerdict` published four fields with no window and `bucket` is a name, **so the three-argument form could render the bucket, the number and the instant and could not render `<window>` at all.**
+
+  **And the available derivation is WRONG rather than missing, which is what makes it a ruling.** `resetAt − now` is the time **remaining** in the window, not its **length** — a caller refused thirty seconds into a sixty-second ceiling reads *"limit of 60 per 30 seconds"*. **An adjacent quantity substituted for the one the sentence is about, inside an exact-matched form**, and the fourth instance of that charge after a source size, a loop count, a cause chain and a live extent — **arriving inside the fix for the third.**
+
+  **Ruled toward the verdict rather than toward a fourth parameter, on a discriminator its charger supplied without taking**: a fourth parameter **admits a caller passing a window that disagrees with the verdict it is rendering**, and the verdict-carried field **forecloses it** — one object, one source, and `rateLimited` cannot be called inconsistently. Both spellings refuse to compile when the number is absent, so that is not the discriminator; **consistency is.**
+
+        interface LimitVerdict { allowed: boolean; limit: number; remaining: number; resetAt: Date; windowMs: number }
+
+  **This is an amendment with two holders and both are told in one window** — the blind author's exact-equality assertion over `LimitVerdict`'s key set **reds on the fifth key, correctly**, and *telling only the implementer manufactures D-70-12*.
 
   **D-230-09, ruled on F-230-E: T220's AC6 and T230's admissible form could not both be satisfied, and the fix publishes the 429's KEY SET.** `backend.md` requires T230's 429 to reach the MCP client *with the limit, the reset instant **and the fact that a key exists***. **T230's form carries bucket, number, window and instant — and an admissible form is EXACT-MATCHED, which is its whole purpose.** So an implementation satisfying T220 by naming the key affordance in the message **violates T230's published form**, and one satisfying the form **leaves T220's AC6 unsatisfiable.**
 
