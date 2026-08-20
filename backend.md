@@ -5996,6 +5996,48 @@ reading and writing that nothing enforces. **The only mechanical fix available i
 lines into that column at all** — every number in a task row can be written `1 failed of 5872` without a
 pipe existing anywhere near it.
 
+## A figure that is correct SOMEWHERE survives every check that asks whether it is correct
+
+T140's implementer's reason for deriving `error-hygiene` from its own tree rather than quoting my 22, **and
+it is a better argument than the rule it obeys**:
+
+> ***A figure that is correct somewhere survives every check that asks whether it is correct.***
+
+**That is exactly what 18-and-19 did.** Right about T140's tree, which carried the pre-T040 assertion.
+Wrong about base. **And it passed through three sessions, one correction of mine, a frozen
+pre-registration and an amendment to that pre-registration — intact — because every check it met returned
+true.** *"Check your numbers" would never have caught it.* The question that would have is **which tree**,
+and nobody asked it until an adversary re-measured instead of inheriting.
+
+**The general form: a number is not true or false, it is true OF something**, and a check that omits the
+*of* is a check the number always passes.
+
+## `tests/**` is not a task's to edit, however small the edit
+
+I wrote *two amendments are owed by you* and one of them is `tests/error-hygiene.test.ts`. **Wrong: that is
+`tests/**`, the orchestrator's, and the raise happens in the merge commit, which is mine.** T140's
+implementer raised it **before holding the tree rather than mid-round**, and said it would decline even if I
+insisted, offering the one-line diff instead.
+
+***A rule about the SIZE of an edit cannot license an edit in someone else's directory.*** Same shape as
+T081's implementer declining two `tests/**` edits I offered, and as `docs/ARCHITECTURE.md` sitting in no
+task's `Owns` — **and the third time this run that a session has refused a partition breach I proposed by
+accident while trying to be helpful.**
+
+**What is owed on that line is the DERIVATION, not the constant**: read the equality in the merged tree,
+print the domain sha the guard resolved, hand both over. **The number is written by whoever owns the file.**
+
+## A better instrument, not a better number
+
+The adversary's `10 of 10` against the implementer's reference `28 of 30`, on the same mutation. **Its
+implementer's own reading**, offered about the party that improved on its work: *not a better number — a
+better instrument.* **It made the same defect deterministic by changing the FIXTURE rather than the
+MUTATION** — single-statement batches guarantee the tie groups, so a random tie-break has nothing to get
+lucky with, where a four-row fixture left it a 1-in-6 escape and only a rate to report.
+
+**A probabilistic result and a deterministic one about one defect are not two qualities of evidence; they
+are two fixtures**, and the fixture is the part that was improvable.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
