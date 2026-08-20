@@ -5852,21 +5852,32 @@ makes **every profile for that handle 500 forever** — and under D-130-10, 500 
 store was working. **The cost I estimated as *one bad release 500s a profile* is a permanent condition, not
 an incident.**
 
-## D-130-16: the compiler forced a THIRD widening, and the cells travel rather than die
+## ~~D-130-16~~ WITHDRAWN — I ruled a deletion without reading the file, and it would have overturned D-130-08
 
 `npm run typecheck` is red on the adversary's tree — **8 × TS2339 `Property 'cards' does not exist on type
 'Counts'`**, all in `visibility.test.ts`, because the ruled removal of `cards` from `COUNT_KEYS`/`Counts`
 breaks eight readers. **Third time a removal-only repair has been widened by the compiler** (D-130-11 was
 the pin machinery), and **third time the adversary refused to widen it on its own authority.**
 
-**Ruled: drop the eight cells from the integration tree.** They assert `counts.cards`, which D-130-06 cut,
-so they are the residue already counted in the 11 — **removing a cell that asserts a cut member cannot make
-anything assert more, which is the same safety property as the constant removal.** Keeping `cards` on
-`Counts` is refused: **the blind suite's `Counts` is its model of the published type, and modelling a member
-the contract does not have is the suite carrying a second contract.**
+~~Ruled: drop the eight cells from the integration tree.~~ **WITHDRAWN and replaced by D-130-18**, on its
+adversary's objection, which is the blind author's rather than its own. **Three faults, and the third is
+disqualifying.**
 
-**They are not deleted from `test/t130-profiles`.** That branch keeps all ten files; the eight cells travel
-to **T132**, which owes `counts.cards`, exactly as `pins`/`follow` travel to T131 under D-130-08.
+**My "eight cells" was eight compiler DIAGNOSTICS spanning five cells.** The cells asserting `counts.cards`
+are **eleven** — `counts` 4, `routes` 2, `visibility` 5. **There is no natural eight**, and it declined to
+pick one silently.
+
+**Only `visibility` breaks the compiler.** It reads `.cards` off the typed `Counts`; **`routes` reads it off
+the WIRE record, `Record<string, unknown>`, and compiles today**; `counts` never accesses `.cards` at all and
+asserts `toEqual({ blueprints, cards, terms })` structurally. **So *the compiler forces it* is true of five
+cells and deleting the other six would have been a choice dressed as a consequence.**
+
+**And the reds are DELIBERATE, documented at `counts.test.ts:36-58`, and I never read it before ruling:**
+*`counts.cards` IS BLOCKED, and these cells red until it is not — which is the point of leaving them… A
+criterion known to be unbuildable today is more informative failing than passing, and a red that names its
+reason beats a green that cannot tell its own causes apart.* **Deleting them converts a documented,
+self-naming block marker into silence — which is D-130-08's own argument for refusing `describe.skip`, and I
+would have overturned it four rulings later without noticing.**
 
 ## D-130-17: a green named after a contract that no longer exists
 
@@ -5889,6 +5900,39 @@ further loops multiply — `surface.test.ts:175` over `contexts` and `unknown-ha
 ***Same class of error as the one it charged D-130-08 with***, its words. **A session that has just been
 right about somebody else's miscount is not thereby protected from its own**, and the tell is identical:
 an enumeration made in one place and a total computed in another.
+
+## D-130-18: the wire path, and the blocked cells travel rather than merge
+
+**Ruled, adopting its proposal**: `visibility.test.ts` reads `.cards` **the way `routes.test.ts` already
+does** — through the untyped wire record rather than off `Counts`. **All eight diagnostics clear, every
+assertion survives, nothing is deleted**, and my stated objection to keeping `cards` on `Counts` is
+sidestepped entirely because **the wire validator derives from `COUNT_KEYS` and already carries no
+`cards`.**
+
+**It is an edit beyond removal so it did not do it — the fourth time, and the same reason as the first
+three.** *That refusal is why all four got ruled instead of noticed later.*
+
+**And the merge disposition, which its objection forces and nobody had stated**: the eleven `counts.cards`
+cells are correct to be red in a worktree **and would red `backend` at T130's merge.** So **they do not
+merge.** They stay on `test/t130-profiles` and travel to **T132**, which owes `counts.cards` — exactly as
+`pins` and `follow` travel to T131 under D-130-08. **The block marker survives where its author put it; base
+stays green; and T132 inherits a red that names its own reason rather than a note saying one existed.**
+
+## I ruled a deletion on a number I had not checked, against a file I had not read
+
+**Three faults in one ruling.** The number was diagnostics, not cells. *The compiler forces it* covered five
+of the eleven I applied it to. And the file I was deleting from **states, in eighteen lines, why the reds are
+the deliverable** — and cites the ruling of mine those lines rest on.
+
+**The tell I should have caught: I was told *8 × TS2339* and wrote *the eight cells*.** A diagnostic count
+and a cell count are different instruments, **which is the same static-versus-runtime, plain-versus-`.each`,
+files-versus-cells distinction this run has now made four times in one day** — and I made it while
+correcting somebody else's version of it.
+
+**And its recommendation if I had insisted on deleting is the one that shows it understood the ruling better
+than I did**: *visibility's 5 only, leaving `counts`' 4 and `routes`' 2 red and self-explaining, because
+those two files compile fine and their reds carry their own reasons.* **A minimal version of a ruling I had
+made maximally, offered by the party that had argued against all of it.**
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
@@ -15894,11 +15938,17 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   mapping**, so the module is correct and the fixture is wrong. **The untyped `jsonb` column is the real
   defect — T133 created for it** — and T130 is its victim rather than its author. **The blind suite owes the
   fixture correction.**
-- **D-130-16: drop the eight `counts.cards` cells in `visibility.test.ts` from the integration tree.** The
-  compiler forces it — 8 × TS2339 once `cards` leaves `Counts` — and they assert a member D-130-06 cut, so
-  they are residue already counted. **Keeping `cards` on `Counts` is refused**: the blind suite's `Counts`
-  is its model of the published type and modelling a cut member is a second contract. **Not deleted from
-  `test/t130-profiles`; they travel to T132**, as pins and follows travel to T131.
+- **~~D-130-16~~ WITHDRAWN, replaced by D-130-18: `visibility.test.ts` reads `.cards` through the untyped
+  wire record, as `routes.test.ts` already does.** All eight diagnostics clear, **nothing is deleted**, and
+  the `Counts`-models-a-cut-member objection is sidestepped because the wire validator derives from
+  `COUNT_KEYS`. **My "eight cells" was eight DIAGNOSTICS spanning five cells; the `counts.cards` cells are
+  eleven, and only five break the compiler.** The reds are **deliberate and documented** at
+  `counts.test.ts:36-58` — *a criterion known to be unbuildable today is more informative failing than
+  passing* — so deleting them would have converted a self-naming block marker into silence, which is
+  D-130-08's own argument.
+- **The eleven `counts.cards` cells do NOT merge.** They would red `backend`. They stay on
+  `test/t130-profiles` and travel to **T132**, as pins and follows travel to T131.
+
 - **D-130-17: rename the pre-cut cell TITLES.** *"carries exactly the seven published members"* now asserts
   three; *"the three published counts"* asserts two. **A reader scanning green cell names would conclude the
   seven-member contract passed.** The adversary correctly did not rename under a removal-only ruling; ruled
