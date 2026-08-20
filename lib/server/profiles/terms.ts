@@ -59,15 +59,23 @@
    which is the behaviour D-90-03 already ruled for this column.
    Skipping would make the count silently wrong, and a count that
    is quietly short is the failure AC1 exists to prevent, arriving
-   through a parse rather than through a column. The parser's own
-   message quotes the offending entry's index and `kind` — stored
-   content — so it must never reach a caller unsealed, and the
-   caller runs this inside `withProfileStore` for exactly that.
+   through a parse rather than through a column.
+
+   **It refuses with its OWN class (D-130-10), not as a store
+   fault.** The shipped version sealed it through `withProfileStore`
+   and rendered `the profile store failed.` — false about a store
+   that had just answered, and the same relabelling `http.ts`
+   refuses to do to foreign faults, committed one layer in by the
+   file arguing against it. The parser's own message still must not
+   travel: it quotes the offending entry's index and `kind`, which
+   is stored content, so it lives on `cause` and nowhere else.
    ============================================================ */
 
 import { and, eq, inArray } from "drizzle-orm";
 import { parseOntologyTerms } from "@/lib/content/ontology-file";
 import { schema, type Db } from "@/lib/db";
+
+import { MalformedStoredVocabularyError } from "./errors";
 
 /** The name the parser's diagnostics quote. A column, since that is where the bytes are. */
 const STORED_VOCABULARY = "release.local_vocabulary";
@@ -88,6 +96,12 @@ export async function countNamespacedTerms(
 ): Promise<number> {
   if (slugs.length === 0) return 0;
 
+  /* `eq(bundle.ownerId, accountId)` is LOAD-BEARING, not redundant beside the slug list.
+     `bundle_owner_slug_key` is unique on `(ownerId, slug)` and NOT on `slug` — B-09 makes
+     slugs unique **per owner** — so `inArray(bundle.slug, slugs)` alone reaches another
+     owner's identically-slugged bundle and counts their vocabulary under this handle.
+     Written here rather than in a thread because the person who would delete it as
+     duplication is reading this line, not the thread. */
   const rows = await db
     .select({ vocabulary: schema.release.localVocabulary })
     .from(schema.release)
@@ -100,7 +114,22 @@ export async function countNamespacedTerms(
   const prefix = `${handle}/`;
   const ids = new Set<string>();
   for (const row of rows) {
-    for (const term of parseOntologyTerms(row.vocabulary, STORED_VOCABULARY)) {
+    /* D-130-10. The parser's own `Error` must not travel: its message quotes the offending
+       entry's index and `kind`, which is stored content. Sealing it as a store fault was
+       the shipped shape and it was wrong — the store answered, so naming it as failing is
+       false about a component that was working, which is `http.ts`'s own argument about
+       foreign faults arriving one layer in. Its own class, its own `type`. */
+    let terms;
+    try {
+      terms = parseOntologyTerms(row.vocabulary, STORED_VOCABULARY);
+    } catch (cause) {
+      /* `getProfile`, not `countNamespacedTerms`: `operation` is the PUBLISHED reader
+         throughout this module, and the ruling that the two wrapped statements share one
+         name still holds. What distinguishes this condition from a store fault is the
+         CLASS and its `type`, which is D-130-10's whole point — not the operation. */
+      throw new MalformedStoredVocabularyError("getProfile", cause);
+    }
+    for (const term of terms) {
       if (term.id.startsWith(prefix)) ids.add(term.id);
     }
   }

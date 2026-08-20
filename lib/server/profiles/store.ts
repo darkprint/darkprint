@@ -40,7 +40,7 @@
    what it guarantees.
    ============================================================ */
 
-import { ProfileStoreError } from "./errors";
+import { MalformedStoredVocabularyError, ProfileStoreError } from "./errors";
 
 /**
  * Run one of this module's own statements and seal whatever it rejects with.
@@ -60,6 +60,12 @@ export async function withProfileStore<T>(operation: string, work: () => Promise
   try {
     return await work();
   } catch (cause) {
+    /* D-130-10. This module's ONE decision, passed through unrelabelled. Sealing it here
+       would render `the profile store failed.` for a store that answered — the relabelling
+       this file's own header refuses to do to another module's faults, which is exactly how
+       it got shipped: the argument was written about FOREIGN faults and the local one is a
+       different sentence. `withProfileErrors` gives it its own `type`. */
+    if (cause instanceof MalformedStoredVocabularyError) throw cause;
     if (cause instanceof ProfileStoreError) throw cause;
     throw new ProfileStoreError(operation, cause);
   }

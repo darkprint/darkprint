@@ -30,6 +30,20 @@ import { notFound, ok } from "@/lib/server/http";
 import { getProfile, withProfileErrors } from "@/lib/server/profiles";
 import { actorFrom } from "@/lib/server/registry";
 
+/**
+ * D-130-12. The shape is `<resource>: no such <thing>.`, which three merged routes already
+ * agreed on — `blueprint: no such bundle.`, `card: no such card.`, `account: no such
+ * account.` — and which nothing had ever written down, so this task shipped a fifth
+ * spelling (`No such handle.`) in good faith. **An unwritten convention is one every new
+ * author re-derives, and three of four agreeing is what makes it a convention rather than
+ * an open question.**
+ *
+ * A named constant rather than a literal at the call site, matching `NO_SUCH_BUNDLE`: the
+ * one string is used for every cause, so having one place it comes from is what makes
+ * "one detail for all three" checkable by reading rather than by comparing call sites.
+ */
+const NO_SUCH_HANDLE = "author: no such handle.";
+
 export async function GET(
   request: Request,
   context: { params: Promise<{ handle: string }> },
@@ -38,6 +52,6 @@ export async function GET(
     const { handle } = await context.params;
     const { db } = getSharedDbClient();
     const profile = await getProfile(db, actorFrom(request), handle);
-    return profile === undefined ? notFound(request, "No such handle.") : ok(profile);
+    return profile === undefined ? notFound(request, NO_SUCH_HANDLE) : ok(profile);
   });
 }

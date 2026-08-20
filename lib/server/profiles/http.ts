@@ -14,7 +14,7 @@
    recognise, because a bug dressed up as a known condition is how
    one stops being noticed.
 
-   ── Why THREE classes and not one ──
+   ── Why FOUR arms: three foreign stores, and one of our own ──
    D-50-21, and it is the reason `withProfileStore` deliberately
    does not wrap this module's calls into other barrels. A fault
    raised inside `getPublicAuthor` leaves as `AccountStoreError`
@@ -33,13 +33,17 @@
    barrel called later without an arm added here answers Next's
    generic 500 instead of `problem+json`, and nothing reds when it
    does, because the failure is an absence.
+
+   The fourth arm is `MalformedStoredVocabularyError`, which is not
+   a store fault at all and is why D-130-10 exists: it gets its own
+   `type` rather than being folded into `store-failed`.
    ============================================================ */
 
 import { AccountStoreError } from "@/lib/server/accounts";
 import { PROBLEM_TYPE_BASE, problem } from "@/lib/server/http";
 import { RegistryStoreError } from "@/lib/server/registry";
 
-import { ProfileStoreError } from "./errors";
+import { MalformedStoredVocabularyError, ProfileStoreError } from "./errors";
 
 /**
  * The one refusal body this route answers a store failure with.
@@ -75,6 +79,30 @@ function storeFailed(request: Request, err: Error): Response {
 }
 
 /**
+ * The archive's stored vocabulary could not be read (D-130-10).
+ *
+ * **A distinct `type`, and that is the whole of the ruling.** `store-failed` says a
+ * component was unable to answer; here it answered and what it holds is unreadable, so
+ * reusing that type tells a caller something false about a working store. The class alone
+ * would not fix it — a class name reaches no caller — so the distinction has to be at the
+ * transport or it does not exist.
+ *
+ * 500 rather than a 4xx because the caller did nothing wrong and can change nothing. The
+ * price, measured rather than estimated: **one release in a refused shape answers 500 for
+ * that handle's profile forever.** `detail` is the instance's own `message` byte for byte,
+ * as for every other arm here, and the parser's diagnostic — which quotes stored content —
+ * stays on `cause`.
+ */
+function malformedStoredVocabulary(request: Request, err: MalformedStoredVocabularyError): Response {
+  return problem(request, {
+    type: `${PROBLEM_TYPE_BASE}/malformed-stored-vocabulary`,
+    title: "Malformed stored vocabulary",
+    status: 500,
+    detail: err.message,
+  });
+}
+
+/**
  * Run the profile route's handler and turn a sealed store fault into B-03's envelope.
  *
  * Everything the handler does goes inside `work` — `await params`, `getSharedDbClient()`
@@ -90,6 +118,11 @@ export async function withProfileErrors(
   try {
     return await work();
   } catch (err) {
+    /* Before the store-fault arm, because it is the more specific condition and the two
+       must not collapse: an arm order that answered `store-failed` here would restore the
+       exact relabelling D-130-10 removed. Ordering is load-bearing and this comment is the
+       only thing saying so. */
+    if (err instanceof MalformedStoredVocabularyError) return malformedStoredVocabulary(request, err);
     /* Written out rather than as a list the `some` of an array walks: the explicit chain is
        what narrows `err` to `Error` for the call below, so the alternative needs an `as`
        cast, and a cast is the thing that would still compile the day one of these stops
