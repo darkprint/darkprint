@@ -56,9 +56,11 @@ interface Published {
   barrel: string;
   name: string;
   ctor: new (...args: never[]) => Error;
+  /** On `backend`, so it counts. Absent means present locally and not yet merged: hygiene only. */
+  shipped: boolean;
 }
 
-async function publishedErrorClasses(): Promise<readonly Published[]> {
+async function publishedErrorClasses(): Promise<{ classes: readonly Published[]; domainSha: string }> {
   /*
    * The domain is what has SHIPPED, not what is in this checkout, and the count below is a property
    * of the shipped tree — so reading `readdirSync` here made the two describe different sets by
@@ -83,8 +85,33 @@ async function publishedErrorClasses(): Promise<readonly Published[]> {
    * is why the missing case below is an error rather than a skip: a worktree behind base gets a
    * message naming the merge, not an ENOENT.
    */
-  const shipped = execFileSync("git", ["ls-tree", "-d", "--name-only", "backend", "lib/server/"], {
-    cwd: fileURLToPath(new URL("..", import.meta.url)),
+  /*
+   * `backend` is resolved ONCE, to a sha, and the walk enumerates against that sha rather than
+   * against the name.
+   *
+   * Every worktree in this run shares one `.git` — one object store, one ref namespace — so
+   * `backend` is not a per-worktree fact. It is a **mutable global that this guard dereferences at
+   * run time**. Any session committing to base **changes this guard's domain in every worktree at
+   * once, including one mid-run**, and nothing in the output would say so: a green would be against
+   * a domain that no longer exists, and two sessions running this file simultaneously would be
+   * measuring the same moving target rather than their own trees.
+   *
+   * Resolving once makes a single run internally consistent whatever the ref does under it, and
+   * reporting the sha makes a disagreement between two runs legible as *the ref moved* instead of
+   * invisible. **A stamp rather than a lock** — locking a ref across worktrees would serialise
+   * committing on running, which is a far larger cost than the ambiguity it removes.
+   *
+   * Reported by T130's adversary, from a worktree three commits behind base, immediately after
+   * quoting a minutes-old ref as a stamp in its own report and being corrected for it.
+   */
+  const repoRoot = fileURLToPath(new URL("..", import.meta.url));
+  const domainSha = execFileSync("git", ["rev-parse", "backend"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+  }).trim();
+
+  const shipped = execFileSync("git", ["ls-tree", "-d", "--name-only", domainSha, "lib/server/"], {
+    cwd: repoRoot,
     encoding: "utf8",
   })
     .split("\n")
@@ -107,7 +134,30 @@ async function publishedErrorClasses(): Promise<readonly Published[]> {
         `Merge \`backend\` and re-run.`,
     );
   }
-  const barrels = shipped;
+  /*
+   * The domain for the COUNT stays `shipped`. The domain for the HYGIENE does not, and that gap was
+   * the guard's blind direction.
+   *
+   * `absent` above catches shipped-but-missing. **Present-but-unshipped was silently uncounted** —
+   * a module sitting in an implementer's worktree and not yet on `backend` never entered `barrels`,
+   * so its classes were never constructed and D-13's four-part clause was never checked against
+   * them. That is unenforced on **exactly the code somebody is actively writing**, which is the code
+   * most likely to have got it wrong. Same shape as `rulings-bind`'s `\d{2}`: green over a region
+   * because the region is outside the domain.
+   *
+   * Found by T130's adversary while deriving its own expected value: `lib/server/profiles` is in its
+   * tree, is not on `backend`, and `ProfileStoreError` had therefore never been checked by this file
+   * and would not be until merge.
+   *
+   * So the two questions are separated. The count is a claim about what has SHIPPED and stays an
+   * equality against `backend`, reproducible at a merge. Hygiene is a claim about what EXISTS and
+   * runs over both sets. An unshipped barrel cannot move the number and cannot escape the clause.
+   *
+   * `unshipped` being empty is the NORMAL state on base and is not an error — unlike every other
+   * empty domain in this file. It is non-empty exactly in the worktrees that need it.
+   */
+  const unshipped = [...present].filter((name) => !shipped.includes(name)).sort();
+  const barrels = [...shipped, ...unshipped];
 
   const found: Published[] = [];
   for (const barrel of barrels) {
@@ -124,10 +174,11 @@ async function publishedErrorClasses(): Promise<readonly Published[]> {
       );
     }
     for (const [name, value] of Object.entries(namespace)) {
-      if (isErrorClass(value)) found.push({ barrel, name, ctor: value });
+      if (isErrorClass(value))
+        found.push({ barrel, name, ctor: value, shipped: shipped.includes(barrel) });
     }
   }
-  return found;
+  return { classes: found, domainSha };
 }
 
 /**
@@ -142,7 +193,7 @@ const SHAPES: readonly (readonly unknown[])[] = [
 
 describe("every published error class satisfies D-13's four-part hygiene clause", () => {
   it("each renders as {} and keeps its stack, at every arity", async () => {
-    const classes = await publishedErrorClasses();
+    const { classes, domainSha } = await publishedErrorClasses();
 
     /* A zero here has three causes and only one of them is good news. This rules out the two bad
        ones: if the walk found nothing, the assertions below would all pass over an empty set. */
@@ -162,13 +213,27 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
      * immediately rather than being absorbed. The maintenance cost is identical — one number —
      * and the difference is that skipping it is now impossible instead of invisible.
      */
+    /*
+     * `.filter(shipped)`, because the count is a claim about `backend` and the hygiene loop below is
+     * not. Without this an implementer's unmerged class would red the equality in its own worktree —
+     * demanding a number that only the merge commit may set, from a session that may not set it,
+     * which is the defect `architecture-current` and `store-modules-seal-their-faults` both had to
+     * have fixed. The two domains are now different on purpose and each says which it is.
+     */
+    const shippedClasses = classes.filter((c) => c.shipped);
+
     expect(
-      classes.length,
+      shippedClasses.length,
       "The number of published error classes changed. This is an EQUALITY rather than a floor, " +
         "deliberately: a floor absorbs additions silently and then stops detecting removals, " +
         "which is what happened here across three merges. If a class was added, raise this number " +
         "in the same commit and say which. If one was removed, lower it and say why — a class " +
-        "that stopped being exported is exactly what this walk exists to notice.",
+        "that stopped being exported is exactly what this walk exists to notice. This counts only " +
+        "barrels on `backend`: a module in your worktree that has not merged is checked for HYGIENE " +
+        "below and deliberately does not move this number, so a merge commit remains the only place " +
+        "it changes. Domain resolved from `backend` at " +
+        `${domainSha} — if this number disagrees with another run's, compare that sha first: the ` +
+        "ref is shared by every worktree and moves under a running suite.",
     ).toBe(21);
 
     const rendered: string[] = [];
@@ -215,9 +280,18 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
       }
     }
 
+    /* Named in both messages below, because a reader has to know which classes were covered — and
+       an unshipped barrel appearing here is a class nobody else's gate can see yet. */
+    const covered =
+      `Domain from \`backend\` at ${domainSha}. ` +
+      `Checked ${classes.length} class(es) across ${new Set(classes.map((c) => c.barrel)).size} ` +
+      `barrel(s); unmerged barrels covered for hygiene only: ` +
+      `${classes.filter((c) => !c.shipped).map((c) => `${c.barrel}/${c.name}`).join(", ") || "(none)"}. `;
+
     expect(
       rendered,
-      "A published error class has an enumerable own property, so anything that renders it — a " +
+      covered +
+        "A published error class has an enumerable own property, so anything that renders it — a " +
         "log line, a JSON body, a spread into a response — carries that property with it. Assign " +
         "on the prototype (`X.prototype.name = ...`) or with `Object.defineProperty(this, ..., " +
         "{ enumerable: false })`; a plain `this.x =` in a constructor is always enumerable. The " +

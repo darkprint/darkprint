@@ -4854,6 +4854,1148 @@ them; run the gates yourself.* I ran them. **Running a gate and reading its answ
 the first was on my checklist.** Fixed at 13/13, verified before the commit rather than after it, and the
 two red commits are left in the history rather than amended away — the sequence is the record.
 
+## RULED by the owner (2026-08-20): T130's blind suite lands WITH the implementation, not before it
+
+Its blind author's user instructed the merge twice, with all three grounds in front of them. It could not
+perform it — `backend` is checked out here — and it **refused both routes that would have worked**:
+merging in my worktree while I was actively committing (*physics rather than authority*, and base moved
+`3aed056 → 69f60da` mid-composition), and `update-ref` behind me, which would have reported nine files as
+**deletions** in my own `git status`. **It had a way and did not take it. That is the one-writer rule
+working rather than being obeyed.**
+
+So it asked for the one thing only I could do: **detach, releasing the branch.**
+
+**Refused, then put to the owner in my own channel, and the owner ruled it out.** T130's tests merge with
+`lib/server/profiles/**` in one commit, the way all nine merged tasks did. Base stays at `1 failed` of
+5871, and the three sessions holding reconciliations against that line keep it.
+
+## A lock released to enable a refused act is a DECISION about the act
+
+I had refused the object. Detaching costs me nothing and touches nothing — **and it is not neutral,
+because the effect of the act is that the thing I refused becomes possible.** Its blind author was ready
+to treat it as neutral and accepted the sharper ground: *I would rather have that written down than have
+won the point.*
+
+## An instruction does not reach a session by travelling, and this time it was pointed at ME
+
+The same human said `merge` twice in one session and had not addressed it in mine. **Its blind author
+reported that as a gap rather than as authority that had arrived by a longer road** — *nothing about my
+user's instruction reaches your session and I am not going to pretend it does* — and then I refused to let
+the gap close itself by my acting on it.
+
+**This is the relay check running in the opposite direction.** Earlier in this run I relayed the owner's
+words to four sessions and all four declined to act on a relay; here a session declined to make its own
+authorisation into mine. **Same rule, both directions, and the deciding fact both times was that the owner
+was reachable and asking cost one turn.**
+
+## A cost stated as a word could have been a number, and the offer was still right to decline
+
+It offered to run a full suite on its own branch — which **is** base plus the nine files — so the owner
+would weigh a measured failure count rather than *it reds base for three sessions*. **Ninety seconds of
+host CPU to turn a word into a number before the decision instead of after it.** Declined only because
+the answer arrived first, and it asked to be named rather than taking the slot. **The instinct is the one
+to keep: a cost in a decision brief is an estimate until somebody measures it, and the party who can
+measure it cheapest is often the one whose case it weakens.**
+
+## The relay rule is NOT symmetric: stop first, confirm after
+
+T130's blind author stood down on my relay of the owner's ruling — **and then treated the relay as a
+reason to pause rather than as its user's instruction**, asking its own channel to confirm. It named the
+asymmetry the rest of this run had missed:
+
+> **a relayed instruction to ACT creates something irreversible on somebody else's word; a relayed
+> instruction to STOP costs one turn to confirm.**
+
+**So the safe order is stop first, confirm after** — which is neither of the two positions this run has
+been holding. Four sessions once declined to act on a relay I carried and waited; that was right for
+*act*. **Waiting on a relayed *stop* would have been the wrong shape**, because the cost of the pause is
+one turn and the cost of continuing is the act.
+
+*Declining to merge on an unconfirmed relay is the same shape as declining to merge on an unconfirmed
+relay, both times* — its line, and the symmetry it points at is the **outcome** rather than the
+instruction: both readings converge on not merging, so standing down loses nothing while confirming.
+
+## The merge the owner had just ruled out landed on `backend`, and I committed the RULING on top of it
+
+Reflog: **`backend@{19:41:03}: merge test/t130-profiles: Fast-forward`**, in this worktree, **63 seconds
+before my `01ed62a` at 19:42:06** — so the commit whose subject is *owner rules T130's blind suite lands
+with the implementation, not before it* has the merge it rules out as its parent.
+
+~~T130's blind author had mentioned killing a watcher; nothing else in this worktree runs `git merge`.~~
+**WITHDRAWN — wrong on both halves, and see the correction two entries below.** I quoted **19:38:26**,
+which is `test/t130-profiles@{…}: merge backend`, **the other branch's reflog and the opposite
+direction.** I read one ref's log and attributed it to another.
+
+**And my guards were green across it, which is the part worth keeping.** I ran seven before committing
+`01ed62a` and they passed. **None of them typechecks**, and the nine files import `@/lib/server/profiles`,
+which does not exist on base — so the tree was broken in a way *the guard set I had chosen could not see*,
+and I had chosen it because it was cheap. The error surfaced only when a later edit made me run `tsc`.
+
+**Recovery, and it is reset rather than revert for a reason that matters later.** Reverting a merge
+removes the files **and leaves the merge in ancestry**, so the real T130 merge would find those paths
+already merged-and-deleted and decline to re-add them. `backend` is reset to `69f60da`.
+
+        blast radius   backend and test/t130-profiles only; no other branch, no tag, nothing pushed
+        discarded      01ed62a — mine, backend.md only, content carried forward here
+        preserved      685382a survives on test/t130-profiles, untouched
+        verified after 13 guards, typecheck 0, lint 0, full suite 1 failed | 5870 passed of 5871
+
+**Two things this cost that a cheaper telling would omit.** A watcher acted on an instruction its author
+had already withdrawn — **an automation outlives the intent that created it**, and *stood down* described
+the author rather than the process. And **I chose a guard subset by price and then read its green as a
+property of the tree**, which is the same act as reading a suite's green as a property of code it does not
+reach.
+
+## A fast-forward makes two refs briefly indistinguishable BY SHA, and only a substring separates them
+
+**Corrected.** The two entries are one branch apart and three minutes apart, and they run in **opposite
+directions**:
+
+        test/t130-profiles@{19:38:26}   merge backend            -> moves the BLIND branch. Its act.
+        backend@{19:41:03}              merge test/t130-profiles -> moves BASE, in this worktree.
+
+**I quoted the first and called it the second**, put `19:38:26` in the file and in a report to the owner,
+and named a **watcher** as the actor.
+
+**And *read the wrong ref's reflog* under-describes the mechanism, which its author corrected while
+verifying my correction — because a rule with the wrong mechanism propagates the wrong fix.** Both lines
+carry the **identical sha**, `685382a`, and they have to: a fast-forward means `backend` arrives **at**
+the other tip, so the merge that created the object and the merge that moved `backend` onto it **name the
+same object**. **The only discriminator left is which branch the message names** — a substring, in a line
+whose sha matches. *The tokenizer shape this file already charges, arriving at a reflog.* **The fix is not
+"be careful which log you read"; it is that a sha does not identify a ref, and after a fast-forward it
+identifies two.** **The watcher could not have done it**: its body is
+`git worktree list`, `grep`, `sleep`, `echo` — **no git write of any kind** — and its author offered that
+as a falsifier before making its case, along with the sharper one: *if any command I issued contains
+`git merge test/t130-profiles`, my account is wrong.* Its branch's reflog is nine entries and **every one
+is `merge backend` into itself.**
+
+**Its own hypothesis is likelier than either of mine, and it is the one that indicts it rather than
+exonerates it**: it put `cd ~/Github/darkprint && git merge --ff-only test/t130-profiles` in front of its
+user **twice**, and the reflog line at `19:41:03` is exactly what that string produces with `backend`
+checked out. **63 seconds before my commit, inside the window the owner was answering me in.** It states
+it cannot see their terminal and does not claim to — **and keeps the half that is its own regardless of
+who ran it: *putting a loaded command into a decision brief is mine.***
+
+## Misattribution in the PLEASANT direction is the one nobody corrects
+
+Its framing, and it is why its report is trustworthy in a way a conclusion never is. **The comfortable
+answer for it was *not me*, so it led with the falsifier** — the exact string that would prove its account
+wrong — before offering any evidence for itself. **A party that hands you the test that would sink it has
+told you more than a party that hands you a proof.**
+
+**The general form, and it binds me twice over here**: I reached for the reading in which the failure was
+somebody else's automation, and the evidence I reached for was **a reflog I had not checked belonged to
+the ref I was talking about.** *An attribution is a measurement.* It owes its instrument like any other,
+and mine was the wrong file.
+
+**Two corrections in a row is ONE entry, not two lapses**, and its author made that case rather than
+letting me file them separately. **Both were an artefact read for a nearby one**: a sha shared by two refs,
+then a subset of guards read for a property of the tree. ***The thing in front of you answers a narrower
+question than the claim you drew from it*** — the reflog answers *what happened to some ref*, the seven
+guards answer *does the index parse*, and I read both as *is the tree what I think it is*.
+
+**And it asked for its own clearing to stay CONDITIONAL rather than be granted**, which is the last thing
+a cleared party usually wants: *my account rests on the watcher's body being what my transcript says and
+on my having issued no other command — both are claims about my own record, which is the weakest kind of
+evidence when the conclusion flatters me. The reflogs are independent of me and they carry it. If anything
+ever contradicts them, the reflogs win.* **A clearing that names the evidence it would lose to is worth
+more than one that closes.**
+
+**And it verified the half that protects it rather than accepting it**: `685382a` is not an ancestor of
+`backend`, base carries 0 of its nine files, its tip is unchanged. **A reset it was told was safe, checked
+by the party it would have cost.**
+
+## A missing `DATABASE_URL` makes a suite SKIP, not fail, and skipped cells add nothing to the failed column
+
+T130's adversary is refused permission to source `.env.example` in its own session, and rather than run
+anyway it traced what a run would have produced. **`tests/support/env.ts:38` `requiredEnv` THROWS when
+`DATABASE_URL` is unset; the throw lands in `beforeAll`; and vitest reports a file whose `beforeAll` threw
+as SKIPPED rather than failed.** The recorded instance, quoted in `pins.test.ts`'s own header, is
+`75 failed | 3 passed | 7 skipped`.
+
+**So a gate run without the five env vars exported returns a number that reads as a result and is a
+stand-down.** Nothing is red. The failed column is untouched by every cell that never ran.
+
+**It refused to produce the number, which is the harder half** — a skipped run is cheap and would have
+looked like progress against a task it has been blocked on for hours. **And it confirmed the mechanism
+rather than asserting it**, which is why this is in the file as a property of the harness rather than as
+one session's guess.
+
+**The defence already exists and is T140's implementer's**: derive `0 skipped` by **arithmetic** rather
+than by reading the printed column — `1 + 5896 = 5897` leaves nothing for a silent skip to hide in.
+**Two sessions arrived at the two halves of one hazard independently**, one from the mechanism and one
+from the arithmetic, and neither had seen the other's.
+
+## Path checkout makes no ancestry claim, and that is the reset-versus-revert lesson on a different tool
+
+D-130-08 keeps `pins.test.ts` and `follow.test.ts` off T130's merge. Its adversary needed the other seven
+blind files in its tree and used **`git checkout 32556b7 -- <7 paths>` rather than a merge**, deliberately:
+**a merge commit that dropped the two would record them as DELETED in this branch's ancestry**, and they
+would then arrive at T130's real merge as a **no-op** — the exact failure `a2e7e23`'s reset avoided one
+table over. **A path checkout makes no ancestry claim, so D-130-08 stays reversible.**
+
+**It had only read the reset-versus-revert reasoning in a message and applied it to a tool it was not
+about.** *An ancestry claim is a side effect of the tool, not of the intent*, and the two tools that look
+interchangeable — merge-then-delete, and checkout-those-paths — differ only in what they assert about
+history.
+
+## An idle slot behind a blocked session is worse than a queue
+
+It held the gate slot, found its session refused the credentials the measurement needs, and **asked to be
+taken out of the queue entirely rather than kept warm.** *I would rather re-queue than have the host idle
+on my account.*
+
+**And it left its tree deliberately UNREPAIRED while blocked.** D-130-09 asks for *cells that ran before
+the repair*, which can only be read on the unrepaired tree, so applying the removals early would have
+destroyed the ordering the ruling asks for. **Seven adds in the porcelain and `contract.ts` untouched —
+refusing to look productive while blocked.**
+
+## `error-hygiene` was blind in exactly ONE direction, and it was the in-flight direction
+
+T130's adversary derived its own expected value instead of taking either number I gave it, **and the
+right answer was a third one: 21.** The walk's domain is `git ls-tree -d --name-only backend
+lib/server/` — **the branch ref** — which enumerates twelve barrels, and `lib/server/profiles` is not
+among them because T130 has not merged. **The module is in its tree and invisible to the walk**, so
+`ProfileStoreError` is not counted and 21 is correct there.
+
+**My *22 if T130 merges as it stands* was true about the merge to `backend` and was not a property of its
+measurement at all.** Had it taken 22 it would have called a passing cell a red. **The 23→22 correction
+was still not its number.** *Deriving it was not pedantry — taking either number I offered would have
+produced a false red.*
+
+**The structural half is bigger than its round.** `absent = shipped.filter(name => !present.has(name))`
+reds on shipped-but-missing; **present-but-unshipped was silently uncounted.** So D-13's four-part clause
+was unenforced on **every error class of every task in flight** — the code most likely to have got it
+wrong and the only code anybody is actively writing. **Same shape as `rulings-bind`'s `\d{2}`: green over
+a region because the region is outside the domain.**
+
+**Fixed by splitting the two questions rather than by widening one domain.** The **count** stays an
+equality against `backend`, because it is a claim about what has shipped and a merge commit must remain
+the only place it changes — widening it would demand a number only the merge may set, from a session that
+may not set it, which is the defect `architecture-current` and `store-modules-seal-their-faults` both had
+to have fixed. **Hygiene now runs over shipped ∪ present**, so an unmerged class cannot move the number
+and cannot escape the clause. Both messages name the unmerged barrels covered.
+
+**Falsified on four axes**: base 21 green; an unshipped **clean** class leaves the count at 21 and stays
+green; an unshipped class with an enumerable own property reds the hygiene assertion **naming it**, with
+the count silent; an unshipped class that drops its `stack` reds the fourth clause. **`unshipped` being
+empty is the normal state on base and is deliberately NOT an error**, unlike every other empty domain in
+that file — it is non-empty exactly in the worktrees that need it.
+
+## A test whose domain is a moving REF is not reproducible from a sha
+
+Its second point, and it extends a rule I wrote three times today. **`backend` was already one commit
+ahead of the base it had merged** — `2cefcaf`, whose subject is its own skip finding, **so its own report
+is what moved the ref its guard reads.** The same working tree yields different `error-hygiene` results at
+different times depending on where `backend` points when the test runs.
+
+**A measurement owes its sha, its tense, the state of the host — and the REF ITS DOMAIN IS DERIVED FROM.**
+It will stamp `backend`'s sha beside its own whenever it reports a hygiene number, *because mine alone
+does not identify what was measured.*
+
+**And its pre-registration names the discriminator rather than the outcome**: 21 on its tree, **still 21
+if D-130-10 were implemented tomorrow**, because the class that ruling adds is in a barrel the walk cannot
+see; 22 at T130's merge, 23 at D-130-10's, **both events on `backend` and neither on it.** *If I measure
+anything other than 21, the interesting question is which ref moved, not which class changed.*
+
+## A base gate cannot exercise the region the hygiene fix was FOR
+
+T140's implementer caught the scoping consequence I had not stated: **the loop is `shipped ∪ present`, and
+`lib/server/saves` is present only in its worktree.** So `SaveStoreError` entering that domain **happens
+in its tree and nowhere else until merge** — which is the whole point of the fix, and also means my green
+on base says nothing about it. *"If it reds, it is real and it is yours" can only be settled by me, on the
+slot.* **Flagged because I was mid-gate and it would have been easy to read a base run as covering it.**
+
+**The general form: a guard whose domain is the union of a fixed set and a local one produces a different
+claim in every tree**, and the party who can settle it is the one holding the tree, never the one holding
+base.
+
+## Both sessions predicted GREEN with a mechanism, and the ES2022 detail is real
+
+T130's adversary and T140's implementer independently traced the same spec detail rather than assuming a
+sealed-looking class is sealed: **`super(msg, { cause })` installs `cause` NON-ENUMERABLY even at arity 1**,
+because `{ cause: undefined }` still satisfies `HasProperty(options, "cause")`. **So the one-argument shape
+is not a hole and both arities render identically.** Verified here rather than filed — at both arities:
+`Object.keys []`, `JSON.stringify "{}"`, `hasOwn(cause) true`, `enumerable false`, `stack` non-empty.
+
+**Both said *predicted green* plainly rather than hedging.** T130's adversary: *I would rather say that
+plainly than hedge it into something that reads like a finding if it reds* — **and it named the two
+candidates to look at first if it does**, `stack` and the `super()` chain, **explicitly not enumerability,
+because the author was visibly already there.** The `defineProperty` comment quotes the clause at the
+point of the decision — *a `readonly name = "..."` class field is itself an own enumerable property* —
+which is the same *author already there* signal as `http.ts`'s rethrow arm.
+
+**T140's implementer derived its green from a SUPERSET assertion it had actually measured**:
+`fault-path.test.ts` constructs `SaveStoreError` at the same two arities and asserts the same three checks
+plus three more, green in all three runs of its triple. **It labelled that a derivation from a measurement
+rather than a measurement**, and asked to be named for one targeted run to convert it.
+
+## The hygiene fix gave an existing decision a second consequence nobody was aiming at
+
+`NotAccountOwnerError` is deliberately **not** re-exported from `lib/server/saves`' barrel — D-140-02, and
+the accounts barrel's own rule about publishing another module's rejection under your name. **Until
+`bdaf760` that was a choice about naming.** Now it is also the difference between the walk finding **one**
+class in that barrel and finding **two**: a re-export would be counted twice at merge and **would move the
+equality by two for one new class.**
+
+**A change to a guard's domain silently re-prices every barrel decision already taken**, and the party who
+noticed was the one whose reasoning was already in the file for an unrelated reason.
+
+## `backend` is a MUTABLE GLOBAL that `error-hygiene` dereferenced at run time
+
+Every worktree in this run shares one `.git` — one object store, one ref namespace — so **`backend` is
+not a per-worktree fact.** T130's adversary drew the consequences, one message after being corrected for
+quoting a minutes-old ref as a stamp:
+
+* **any session committing to base changes that guard's domain in every worktree at once, including one
+  mid-run**, and nothing in the output would say so;
+* **T140's implementer was running that exact file as it wrote** — a green against a domain that no longer
+  exists is indistinguishable from a green;
+* two sessions running it simultaneously measure **the same moving target**, so their results are
+  comparable only if the ref held still between them.
+
+**Fixed as a stamp rather than a lock.** The walk resolves `backend` **once**, enumerates against the
+**sha**, and reports that sha in the count message and in the coverage line. A single run is then
+internally consistent whatever the ref does under it, and a disagreement between two runs is legible as
+*the ref moved* instead of invisible. **Locking a ref across worktrees would serialise committing on
+running, which costs far more than the ambiguity it removes.**
+
+**And my first falsification did not falsify.** I pointed the domain at `11ed5a5` and the test stayed
+green — because that commit has **the same twelve barrels**, so the mutation moved a sha and not a domain.
+*A mutation that did not do what its name said*, caught only because the green was the wrong answer to a
+question I thought I had asked. Re-run against `752721d`, which has **eleven**: `expected 18 to be 21`,
+with the sha named in the message. **The second attempt is the falsification; the first is the reason to
+check that a mutation mutated.**
+
+## `Tests 1 passed (1)` is equally consistent with "the clause holds" and "your class was never built"
+
+T140's implementer got a green from my widened guard **and refused to bank it until it knew the walk had
+reached its class.** It measured the set difference by reading, at no cost: `shipped` 12 directories with
+no `saves`, `present` 13 with it, `unshipped = ["saves"]` — **exactly one element and it is mine** — so
+`barrels` was 13 and `SaveStoreError` was constructed. And it checked the `1` was the whole file rather
+than a truncated run: `grep -cE '^\s*it\('` returns 1.
+
+**Without that the green is *a probe whose input carries no decision*** — the reading this run has paid
+for more than once, **and the one a passing exit code hides best.**
+
+**A second result inside the same green, which it had predicted separately**: the equality `toBe(18)`
+passed **in a worktree carrying a nineteenth class.** `shippedClasses` filtering on `shipped` kept the
+unmerged class out of the count while the hygiene loop constructed it — **hygiene over 13 barrels and the
+count over 12, both domains exercised by one run.**
+
+## Agreement between two readers is corroboration only when they could have disagreed
+
+T140's implementer's line, on its own convergence with T130's adversary about
+`HasProperty(options, "cause")`. **Both traced a spec clause rather than stating a preference, and neither
+had read the other**, so the agreement is about ES2022 rather than about either being careful. *What would
+have made it worth less is if either had read the other first.*
+
+## A DOMAIN CHECK reads like a lookup, so the stamp discipline never reached it
+
+T140's implementer refused *"your green stands"* on my word and turned the mutable-ref hazard on its own
+evidence. **Its run and its domain check were two separate commands, each dereferencing `backend`
+independently** — so *the walk reached `saves`* and *the walk was green* were claims about two
+dereferences it had no evidence agreed. **The anti-vacuity check it was pleased with rested on a ref that
+could have moved between the two.**
+
+It did not bite. `backend` sat at `67b077a` from `20:31:13` to `20:35:30` and the run was at `20:31:52`,
+1.15s. **But it reported the margin rather than rounding it to safe**: 39 seconds after the previous move,
+on a ref that had moved **five times in the preceding 45 minutes, twice by reset**. *The green stands by
+measurement; it does not stand because two commands near each other in time are obviously fine.*
+
+**The rule underneath: the stamp discipline is written for MEASUREMENTS, and a domain check reads like a
+LOOKUP.** So does a readiness check, a dry run, a `rev-parse` quoted into a report. **Cheapness is why
+they escape the discipline, not a reason they should** — and every one of them is an input somebody will
+reason from.
+
+**And it was checkable afterwards by luck about the instrument rather than by foresight.** `git reflog`
+happens to be durable and happens to survive a reset — both of this evening's resets are still in it.
+**Had the record been anything less durable, *did my two commands see the same tree* would have been
+unanswerable rather than merely unanswered**, which is precisely the state a stamp exists to prevent.
+*An answer you could only reconstruct because the tooling happened to keep a receipt is not a practice.*
+
+## D-140-08: `listSaves` is ordered, and the tie-break moves off a RANDOM uuid onto published fields
+
+T140's implementer raised `listSaves`' order **twice**, chose newest-first, wrote in `store.ts` that *the
+order is this module's choice and the block publishes none* — **and I never ruled it.** It raised it a
+third time only because **the exposure changed**, which is the part that makes this new rather than a
+repeat.
+
+**A module cell can assert a set; a route cell almost cannot.** Its own AC4 cell sorts before comparing,
+deliberately, so it pins distinguishability and not order. But `SavesView` crosses as
+`{ saves: [...], count }`, and **the natural assertion against a JSON array is a deep-equal against an
+array literal, which pins order implicitly and without anyone deciding to.** Three outcomes and one is
+good: the cells sort or assert membership and nothing happens; they deep-equal in the implementer's order
+and go **green for a reason nobody chose**, which is worse than a red because it makes an unpublished
+choice look like contract; or they deep-equal in a different order and red against code that violates
+nothing. ***A suite that fills a contract's silence becomes a second contract, and the next implementer
+meets two.***
+
+**Ruled, and reading the code to rule it found the tie-break is worse than unpublished — it is RANDOM.**
+`store.ts:86` is `orderBy(desc(save.createdAt), asc(save.id))` and `save.id` is
+`uuid().primaryKey().defaultRandom()`. **So two saves written in the same instant order by a random
+value**: unobservable from `SaveRecord`, which publishes only `{ targetKind, refId, savedAt }`, and
+*arbitrary* rather than merely hidden. **A blind author cannot predict it and neither can a second run.**
+
+        ORDER BY  saved_at DESC, target_kind ASC, ref_id ASC
+
+**Newest-first as built, and the tie-break on the two remaining PUBLISHED fields.** It is a **total** order
+because `save_account_target_key` is unique on `(account_id, target_kind, target_id)`, so within one
+account no two rows tie on all three — **and it is total in terms a blind author can compute from the
+records alone**, which the `id` tie-break never was. The implementer's stated reason for having a
+tie-break at all stands verbatim: *an unordered read would make every downstream assertion flaky.*
+
+**Its own framing is why this was cheap now and expensive later**: *cheap to close now and expensive to
+meet as a red.* And it proposed the disambiguating question rather than the answer — **ask the blind
+author whether its route cells assert `saves` by order, membership or length** — *which settles which of
+the three we are in without either of us seeing the other's work.*
+
+## D-140-08 published an order, so the order became contract HELD BY NOTHING within the hour
+
+T140's blind author answered the one-word question with the word **and the grep** — *a claim about my own
+file is a measurement like any other and I have been wrong recalling one before.* **Membership and length,
+never order**: every set comparison goes through `viewTargetSet`, which is `.saves.map(targetOf).sort()`,
+and a grep for a deep-equal against a raw `saves` array across seven files returns nothing.
+
+**So the ruling cost it nothing — and it immediately named what the ruling created.** D-140-08 publishes an
+order; **nothing holds it.** *The D-70-12 shape, arriving on a ruling made an hour ago.* It is writing the
+cell, at both surfaces, because `SavesView.saves` forwards whatever `listSaves` returns and **a route that
+re-sorted would satisfy a module cell alone.**
+
+**And its own cells were never flaky against the random `asc(save.id)` tie-break — but not by foresight**,
+which it says plainly: *order was unruled, and "assert only as far as the contract decides" pointed at a
+set.* **A discipline applied to one question paid off against a defect nobody had found yet.**
+
+## Three design choices in a cell that does not exist yet, published for review before measuring
+
+**The same-instant case is REACHED rather than manufactured.** `migrateLocalSaves` is the one published
+surface that produces rows sharing a transaction timestamp — **exactly the case the random tie-break was
+about**, through the barrel rather than through a fixture that arranges it. **And the premise is asserted
+from the returned records — `savedAt` equal within a batch — before anything is concluded from the
+order**, because *a fixture whose premise is wrong inverts the result built on it.*
+
+**A random tie-break AGREES with a ruled order by luck**, and a three-item cell cannot rule that out at
+1-in-6. So the batch is sized until accidental agreement is negligible **and the number gets reported
+rather than the word "unlikely"** — `1/n!` per batch, so 4 items is 1 in 24 and 5 is 1 in 120, and two
+independent batches multiply. **Two batches, so `savedAt DESC` is exercised across groups and the
+tie-break within them.**
+
+**The expected order is COMPUTED from the returned records under the ruled comparator, never written as a
+literal** — *a literal would be me transcribing the ruling*, which is the transcription-for-the-standard
+shape this run has charged five times. **And it is not circular**: asserting a list equals its own sort
+under a total comparator fails exactly when the list was not in that order, and the comparator is total
+because `save_account_target_key` forbids a tie on all three keys.
+
+## D-140-09: `target_kind ASC` is LEXICOGRAPHIC, and the enum's declaration order agreeing is an accident
+
+T140's implementer noticed while building D-140-08 that **Postgres orders an enum column by DECLARATION
+order, not alphabetically** — and that `target_kind` is declared `["blueprint", "card", "term"]`, which is
+**both**. It flagged it rather than spending it: *a blind author computing the expected order from
+`SaveRecord` will assume alphabetical, and will be right for a reason that is not the one they are relying
+on.*
+
+**Measured here, and the coincidence is thinner than it said. Three of the five `pgEnum`s in
+`lib/db/schema.ts` ALREADY declare out of alphabetical order** — `visibility` is `[public, private]`,
+`target_actor_kind` is `[star, note_vote]`, `actor_kind` is `[owner, operator, system]`. **The house habit
+is semantic order and `target_kind` is one of two exceptions.** So a fourth member added by somebody
+following the local style is the LIKELY case, not the exotic one.
+
+**Ruled: D-140-08's `target_kind ASC` means lexicographic on the string**, because that is what a caller
+can compute from `SaveRecord`, which publishes the three fields and no ordinal. **The SQL agreeing today is
+a premise, not the definition** — and if a member ever lands out of alphabetical order the store owes a
+cast or an explicit `CASE`, not a re-reading of the contract.
+
+**Pinned by `tests/enum-declaration-order.test.ts`**, scoped to `target_kind` alone — asserting alphabetical
+order across all five would be **inventing a convention this repository does not have and does not need**.
+It reads the **working tree**, unlike its neighbours, and deliberately: *the failure it catches is a member
+being ADDED, and the moment worth catching it is while the person adding it is still looking at the diff.*
+Falsified three ways: base green; the enum reordered reds naming the sequence; the enum renamed **errors
+on the missing parse rather than passing over an empty match.**
+
+## A suite that could not see a defect cannot see its fix
+
+T140's implementer grepped its own 26 cells rather than predicting from memory: **every array assertion is
+empty, single-element, or `.sort()`ed before comparison.** So the ordering fix moves nothing in either
+direction — **and it reported that as the reason for zero movement rather than as a prediction that
+happened to be right.**
+
+**So a witness ships WITH the fix**: four rows, three sharing one `created_at`, asserted in the ruled
+sequence and asserted **equal across two reads**. The `blueprint` row is deliberately older so it sorts
+**last despite being first in the enum**, which exercises the whole `ORDER BY` rather than its second and
+third terms.
+
+**And it registered the falsification as PROBABILISTIC before running it**, not after: reverting to
+`asc(save.id)` matches a fixed expectation **1 time in 6** for three tied rows, so a single red is not a
+clean `0 → 1`. It will run the mutant repeatedly and report the **rate**. ***A witness whose mutant reds
+usually is worth having; reporting it as if it reds always is not.***
+
+**And it owned the defect without softening it**: *my stated reason for having a tie-break was that an
+unordered read makes downstream assertions flaky, and the column I reached for is an unordered read with
+extra steps* — both written in the same docblock, and neither of us said it out loud for eleven hours.
+
+## D-140-10: `ORDER BY target_kind::text` — the cast, ruled, on an argument about LOCALITY
+
+T140's implementer proposed one cast and **did not make the change**, which is why it got ruled rather
+than noticed later. Three consequences of D-140-09 as written that it named:
+
+**`store.ts` reads as lexicographic and is not.** A reader meeting `asc(schema.save.targetKind)` sees a
+string column sorted ascending; it is an **enum ordinal** sort that agrees for a reason nobody in that
+file states. ***A predicate that reads exactly as safe as the correct one*** — D-40-J's argument, here
+about the reader rather than a reachable input.
+
+**My own measurement makes the hazard likely rather than exotic.** Three of five enums already declare
+semantically, so **the house habit IS the failure mode**, and the person best placed to notice is the one
+editing `schema.ts` — **who is not T140 and whose task will not be T140.**
+
+**And the defence lived in a file its module cannot see and may not write.** If
+`tests/enum-declaration-order.test.ts` were ever deleted or narrowed, T140's conformance to D-140-09
+became unobserved and nothing red. ***Defence with no observer, one file over*** — the file holding the
+defence is not the file holding the dependency.
+
+**Ruled: the cast.** *Satisfied by construction beats satisfied by constraint* is D-05-02's own ruling and
+the same argument T140's `errors.ts` already makes about deferring AC2 to `save_account_target_key`. The
+declaration order stops being load-bearing for T140 entirely.
+
+**Its own honesty about the change is why I am ruling for it rather than despite it**: *its falsification
+is empty — reverting the cast reds nothing, now or after a member is added, because the values compare
+identically until such a member exists AND is saved. This is a legibility-and-locality change, not a
+behavioural one, and I am not going to dress it up as catching a reachable input.* **An empty
+falsification is the SIGNATURE of a by-construction change, not an objection to one** — D-05-02's absent
+column cannot be written and there is no test that proves it.
+
+**And the guard's dependent changed under it, so its header did too.** It was written when T140 depended
+on the coincidence and was the only thing holding it up; **after the cast its dependent is the NEXT
+consumer that sorts this column in SQL without one.** Left in place with that stated, plus an expiry
+condition: **if a year passes with no such consumer, delete it** — *a guard whose dependent moved away and
+whose replacement never arrived is a red with no consequence, and a red with no consequence teaches people
+to ignore reds.*
+
+## A MUTATION answers the question a printed number only gestures at
+
+T140's blind author was going to report *6 tied `savedAt` pairs of 7 adjacent* as evidence its tie-break
+was exercised. **It then noticed the number appears only in a failure message — so on a green nobody sees
+it, and the measurement would have been invisible exactly when it mattered.**
+
+**So it removed the tie-break instead: O2 reds 2.** *A zero there would have meant the fixture produced no
+ties and the tie-break half was unobserved; a 2 means it is observed.* **The mutation answers the question
+the printed number was only going to gesture at**, and it answers it on a green run rather than on a red
+one.
+
+**O3 is the shipped defect reproduced against the suite.** `asc(save.id)` over a random uuid — the tie-break
+I found by reading `store.ts:86` to rule something else — reds **1**. Not a hypothetical.
+**O4 is the both-surfaces argument measured rather than argued**: a route that re-sorts satisfies every
+module cell, keeps `count` agreeing, passes every membership cell in the file, and reds **exactly one — the
+transport cell.** *Without it that defect ships.*
+
+## Its reference RED, for the first time, and in the right order
+
+Run deliberately **without** D-140-08's ordering: **`4 failed | 211 passed (215)`**, all four the new order
+cells and nothing else. Corrected to the ruling: **215/215.**
+
+**The cells were written from the ruling and the reference was corrected until it passed, never the
+reverse.** Both of T040's blind rounds found their reference carrying the exact defect their ruling was
+loose about, and only the cells caught it. **A reference that goes green first try is the weaker result**
+has been this run's refrain; this is the first time the stronger one has landed, on a ruling two hours old.
+
+## A true conclusion resting on a collation that does not exist
+
+Its comparator's docblock said the string comparison is code-point *"because SQL's `ASC` on `text` under
+this database's collation is a code-point ordering"*. **True of `ref_id`. False of `target_kind`, which is
+a `pgEnum` and never consults a collation at all.** The comparator was right, the stated reason was wrong,
+**and nothing in the data would ever have told it** — the next reader goes looking for a collation on a
+column that has none.
+
+**Corrected in place with the old reason quoted inside the correction**, not quietly replaced. **Third
+instance today of the correction being the mechanism rather than the finding, and this one is a session
+catching its own.**
+
+## `npm run lint | tail -1` hid a warning again, and reading in full is what caught it
+
+`'Seen' is defined but never used` — **exit 0, one problem, zero errors**, and `tail -1` prints a blank
+line. **The stanza I ran for about twenty commits before this run's rule was written.** Its instance is the
+live proof the rule earns its cost: the warning appeared only because the whole output was read.
+
+## The `describe` TITLE is a fourth surface, not another instance of the third
+
+T140's implementer's classification of my own defect, and it is right to separate them. This run already
+had three: **the criteria versus the published block; prose versus both; a stale claim in the message a
+reader meets while failing.** Its addition: ***the name the RUNNER prints*** — *not a surface anybody edits,
+read by everyone who sees the output, and invisible in the region of the diff where the fix happens.*
+
+**A file's opening lines and its test names are both read far more often than its body, and are the two
+places nobody looks when editing its middle.**
+
+## An expiry is the missing half of every rule this file has about guards
+
+Its observation: **they all say how to build one and none says when to stop maintaining one.** The clause
+on `tests/enum-declaration-order.test.ts` — *if a year passes with no such consumer, delete it* — is the
+first. **And its cast is that guard's dependent moving away**, which it stated out loud rather than
+leaving implicit: T140 no longer depends on the declaration order at all, so the rewrite that says the
+guard protects only a future consumer **is now true rather than aspirational.**
+
+## CONSOLIDATED: five wrong mechanisms under correct conclusions in one day, and why they survive
+
+Not five lapses. **One failure mode, and it is the most durable one this run has found**, because every
+instance passed review — the conclusion was right, so nobody looked at the reason.
+
+        mine    `instance` is unsettable because `ProblemInput` omits it
+                → FALSE: the index signature admits it. The SPREAD ORDER overwrites it.
+        mine    the bad merge was a watcher, found by reading the reflog carelessly
+                → FALSE: a fast-forward makes two refs share a sha; only a substring separates them.
+        mine    the guard's dependent is T140  (true when written, false one commit later)
+        theirs  a string sort is safe because of this database's COLLATION
+                → FALSE for `target_kind`: a `pgEnum` never consults one.
+        theirs  the two databases vanished because a session finished with them
+                → FALSE: I dropped them. The conclusion — refusing was right — survives; the evidence
+                  was manufactured out of the reading that flattered a decision already made.
+
+**T140's blind author's statement of the class is the one to keep:** ***a true conclusion resting on a
+false claim reads as confirmed, and the claim survives into the next reader's reasoning precisely because
+the conclusion was accepted.*** The acceptance is what carries the defect, not the error.
+
+**And it drew the containment line the rest of us had not.** It grepped all nine of its files for the bad
+inference — **because a wrong sentence in a message dies with the message, and a wrong sentence in a file
+is an instruction.** Nothing had reached a file. *That is the check that turns a correction into a closed
+one.*
+
+**The tell, in all five: the reason was never the thing being reviewed.** A conclusion gets checked because
+somebody disagrees with it; a mechanism gets checked only when somebody implements against it. So the cost
+is always deferred to a reader who is not in the conversation — **which is exactly why `it would have
+passed a type-level test and proved nothing` was the sharpest of the five.**
+
+## A rate consistent with the prediction is not evidence the patch took
+
+T140's implementer's `sed` to read its patched region back **errored** — unbalanced parens in its own
+regex — **so the defence it had described one message earlier did not run**, and `red=28` printed
+underneath the error looking like a completed procedure.
+
+**Sixth instance of the shell family in this run and the sharpest**, because the output was not a zero, not
+a *No test files found*, not even a plausible digest: **a statistically consistent result.** 28 of 30
+against a predicted 25 on `Binomial(30, 5/6)` is 1.5σ, which is exactly what a working mutation looks
+like. Its own reading is precise: **a red rate proves that SOMETHING changed, not that the intended
+change landed** — the patch could have broken the ordering in a different way and produced the same rate.
+
+Read back properly afterwards: `::text` at 0 occurrences, `asc(schema.save.id)` present, `ORDER BY
+created_at DESC, id ASC` — **the shipped defect reproduced exactly, which is what makes the 28 mean
+anything.** Restored to `::text` at 1, porcelain clean, 27 green.
+
+**And it named the line it doubted before running, then reported that the line was fine** — *worth saying
+because naming it was only useful if I reported the outcome either way.* A pre-registration that only gets
+mentioned when it hits is a filter, not a prediction.
+
+**O4 checked rather than recalled**: it grepped its own three transport files for `.sort(`, `orderBy` and
+`reverse(` before spending anything, so *the cast must not be accompanied by any sort in the route* holds
+by measurement rather than by its memory of what it wrote.
+
+## Two suites written without sight of each other caught one defect from both sides on the same day
+
+`O3` reproduced the shipped `asc(save.id)` against the blind suite and caught it at 1 red; the implementer
+reproduced it against its own and caught it at 28/30. **The random tie-break stopped being hypothetical
+from either direction within hours of my finding it by reading `store.ts:86` to rule something else.**
+
+**And `O4` is the both-surfaces argument measured rather than argued, from the side that would have paid
+for it being wrong**: every module cell green, every membership cell green, `count` still agreeing, and
+**exactly one red at the transport.** *That is the discriminator a module-only suite cannot contain.*
+
+## A defence that REPORTS rather than STOPS, found by pointing my warning at its own tooling
+
+T140's blind author audited all five of its sweep scripts rather than asserting it was clear, **and the
+audit is the finding.**
+
+**`sweep.py`, the first module sweep, 15 mutations, used a NON-RAISING flag for patch-took.** It recorded
+`PATCH-NOT-TAKEN` in its results **and carried on and produced a number** — the exact shape of the warning
+it had just been sent, in its own harness, from the round before. **No number it reported is affected**,
+because every mutation came back `applied` or `PATTERN-NOT-FOUND` and none came back not-taken. **But the
+defence was weaker than the way it had described it, and it had described it as if it stopped.**
+
+**`sweep5.py`, the order sweep, had NO restore verification at all** — it wrote the original back in a
+`finally` and never checked — **and the worktree is deleted, so it can never be checked directly.**
+
+**What closes it is INCIDENTAL and it labelled it that way.** O1, O2 and O3 patch the same `ORDER BY`
+block and each reads `orig` fresh at the top of its own iteration, **so if O1's restore had failed, O2's
+search pattern — the unmutated block — would not have matched and would have returned
+`PATTERN-NOT-FOUND`. It returned `applied`. So did O3's.** *The restores are proven by the next iteration
+finding its pattern* — **evidence it did not build, would not have had if the three mutations had targeted
+different regions, and O4 corroborates nothing because it patched a different file.**
+
+***The numbers stand and the harness did not deserve to be trusted for the reason it was trusted.***
+
+**And it found both by reading my warning as being about its own tooling rather than about somebody
+else's.** That is the move: a warning arrives attached to another party's failure and the cheap reading is
+that it describes them.
+
+## Two digests, because "what you commit" and "what the adversary runs" are different questions
+
+Its handover carried **both** a four-path digest over the files this commit contains **and** a nine-file
+digest over the whole suite. **The second covers the five files the commit does not touch — the half a
+commit-scoped check cannot see**, and the adversary runs all nine. Reproduced here exactly: four per-file
+digests, both combined digests, 5 077 lines, 221 603 bytes, zero discrepancies.
+
+**And it listed the paths itself rather than letting me recall them**, with `-uall`, *so nothing is hiding
+inside a collapsed directory the way `?? tests/server/t140/` hid eight files last time.*
+
+## An obligation that cannot be discharged from the side that owes it
+
+The `SaveRecord` `Exact<>` falsification has been owed since T140's first round and **is impossible from a
+blind tree**: `tsc` resolves the specifier to the worktree and never to a scratchpad, so `Exact<any, T>` is
+`true` and the pin is vacuous from there. **Its author states the obligation is ITS OWN and that it cannot
+discharge it**, and hands over the discharge condition rather than the claim: **whoever holds the tree
+after the merge makes a member optional and requires TS2322, rather than reading the pin as covered.**
+
+*An obligation named with its discharge condition survives the party that owed it.*
+
+## A total over a PARTIAL base, and I published the ratio one message after charging the count
+
+I told T140's adversary *55 static `it(` sites expanding to 215 runtime cells*, about 4×. **Wrong base,
+and its blind author caught it by counting rather than accepting the correction I had just given it.**
+
+        55   ^\s*it\(                  plain cells only — EXCLUDES every `.each` site
+        19   ^\s*it\.each              the sites doing the expanding
+        74   declaration sites          the base the ratio is actually about
+       215   runtime cells
+
+**My regex required `(` immediately after `it`, so `it.each(` never matched it** — and the nineteen sites
+it omits are *the entire construct the ratio was about.* 55 plain cells contribute one each, so **160
+runtime cells come from 19 `.each` sites: 8.4× per site, not 4×.** The 3.9 is a real ratio between two
+published numbers and **is the expansion rate of nothing.**
+
+**Its rule, and it is the general form**: ***write the question the measurement answers into the same
+sentence as the claim.*** *"215 runtime cells from 74 declaration sites"* is one sentence. *"215 from 55,
+so about 4× expansion"* is two — **and the tell fires on the second**, because the ratio and its base
+arrived separately and nothing forced them to be about the same thing.
+
+**And it declined to score it**: *I would have written the same 4× if I had reached for the ratio first.*
+
+**The line for whoever reports next carries all three or names which**: ten files, **eight of which measure
+anything** — `contract.ts` and `fixtures.ts` are 0 — **74 declaration sites, 215 runtime cells.** *A file
+count is not a cell count and a declaration count is not a runtime count*, and the three disagree for
+reasons that are all correct.
+
+## A count maintained by hand beside an artefact that is not, is a floor nobody raises
+
+Its diagnosis of its own *nine files*: **true at eight, bumped to nine when `routes.test.ts` landed, never
+bumped when `order.test.ts` landed the next turn.** ***The same thing as a floor nobody raises, one
+altitude up, in a report instead of a guard.***
+
+`error-hygiene`'s floor sat at 8 across three merges detecting none of them, and the fix was an equality
+that reds in both directions. **A number in a report has no equivalent** — nothing reds when it drifts, and
+the artefact beside it stays correct, which is why it survives review. **Its containment check found it had
+reached no file**; the one place it became an instruction was my brief to the adversary, and that is
+displaced.
+
+## A misattribution that hands credit OVER has nobody with an incentive to fix it
+
+I told T140's adversary the ground for expecting a green was its blind author's **demonstrated ability to
+red on that module's exact defects** — reference at 4 of 215, `O3` at 1, `O4` at 1. **Its blind author
+raised that the sentence is one qualifier too wide, and wide in its own favour.**
+
+**All three were measured against ITS OWN REFERENCE**, the one it wrote from the contract in a scratchpad —
+not against the module the adversary is about to run. `O3` reddened when *its reference* used
+`asc(save.id)`; `O4` when *its route file* re-sorted; the 4-of-215 was its reference before it had an
+`ORDER BY` at all.
+
+**What that demonstrates: its cells discriminate those defects in a contract-built implementation.** What
+it does not: that they discriminate them in **that** implementation. *A cell reaches a behaviour through a
+published surface, and whether some structural difference in the built module puts one out of reach is
+precisely the question the blind-axis measurement exists to answer.* ***If it could already answer it,
+that measurement would have nothing to do.***
+
+**The honest form is one qualifier longer**: *demonstrated ability to red on those defects **in a
+contract-built reference***. Still the strongest ground available, still better than the one it replaced —
+the implementer's mutations hitting says nothing about whether the blind suite can red against its module
+— **but it says it about a different module, and the two are not the same claim.**
+
+**And the asymmetry it named is why this class survives while the others get caught:**
+
+> ***A misattribution that takes credit away gets corrected by the person it robs; one that hands credit
+> over has no one with an incentive to fix it.***
+
+Two of my labels were wrong beside correct artefacts today and both were caught by the party they
+inconvenienced. **This one inconvenienced nobody**, and the only session that would ever have flagged it is
+the one it flattered. **It changes nothing operationally — the blind axis gets measured first either way
+and neither half offers a prediction. It changes what a green MEANS when one arrives.**
+
+## An agent introspecting itself with `$$` and `tty` measures its TOOL CALL, not its session
+
+I asked both T130 sessions to print a banner identifying their pane, with `printf … "$(tty)" "$$"`.
+**Both refused the command as given and both found a different reason it does not work.**
+
+**T130's adversary: `$$` and `tty` are the tool call's.** Run literally they give `not a tty` and a pid that
+changes every command — `45547`, `44710` one call earlier. **A Bash tool call is a short-lived `zsh` with
+no controlling terminal, born and dead inside one tool use.** The banner would have named a pid that had
+already exited and printed the string `not a tty` into the field meant to identify the pane. It walked the
+parent chain instead — `ps -o ppid= -p $$`, then `ps -o tty= -p <that>` — and arrived at `99371` /
+`ttys021`, **which are its parent's rather than its own.** Confirmed identically from my own tool call:
+`tty` → `not a tty`, and my session is two levels up.
+
+**T130's implementer: tool stdout does not reach the pane at all.** `[ -t 1 ]` is false; **the harness
+captures stdout and renders it into the transcript, which is a different surface from the terminal.** So a
+`printf` banner goes where the owner is not looking. It put the banner in its **own assistant text**, which
+is what the pane renders. *The adversary's redirect to `/dev/$TTY` reaches the device directly and is the
+other correct answer* — two sessions, two working methods, from one broken instruction.
+
+**The general shape, in the implementer's words**: *the banner was a countermeasure whose PREMISE was that
+the process printing it owns a terminal — true for a shell, false for an agent's tool call.* **And the
+failure is silent in the dangerous direction: `printf` exits 0 and prints something**, so nothing anywhere
+says the pane never got it. ***`tty` exiting 1 is the check and it costs one line.***
+
+**Its second-order warning is the one I acted on**: if both panes had run my command as written, the owner
+would have seen **no banner in either**, which reads as *neither is the one* rather than as *the instrument
+did not fire.* **A silent countermeasure produces evidence of the opposite of what happened.**
+
+**And both derived the tty independently rather than confirming mine.** The adversary: *your values are
+correct and the method you gave would not have produced them.* The implementer: *agreement, and it is
+worth something only because neither side derived it from the other.* **Same shape as reading a ref at
+measurement time rather than quoting one from a message** — the shell equivalent of it, in the same day.
+
+## D-140-11: `saved_at` orders at MICROSECOND grain and crosses at MILLISECOND, so the published order is not computable
+
+T140's adversary pre-registered, **before measuring anything**, a *known false-red mechanism*: its
+comparator ties `savedAt` at millisecond grain while Postgres orders at microsecond grain, so two writes
+inside one millisecond would red a conforming module. It rated the probability negligible and undertook to
+attribute it correctly if it fired.
+
+**It is not a false red. It is a gap in D-140-08, and measuring it took one query.**
+
+        pg text            2026-08-20 19:17:22.956849+00        microsecond precision
+        as a JS Date       2026-08-20T19:17:22.956Z             milliseconds — 849µs discarded
+        two values 100µs apart      equal in `SaveRecord.savedAt`, strictly ordered in SQL
+
+**`save.created_at` is `timestamptz`, so SQL sorts on a value the published record does not carry.** A
+caller sorting `SaveRecord` applies `target_kind, ref_id` to a pair SQL considered strictly ordered — so
+**the two orders can differ, and D-140-09's whole point was that the published order be computable from the
+published fields.** D-140-10 made the *enum* term true by construction and left the *timestamp* term
+resting on a grain nobody had checked.
+
+**Ruled: `ORDER BY date_trunc('milliseconds', saved_at) DESC, target_kind::text ASC, ref_id ASC`**, so the
+SQL sort key is **exactly the value that crosses in `SaveRecord`** and the tie-break engages precisely when
+a caller would apply it. Same argument as D-140-10, one term over. Cost: a truncation in the sort key, over
+one person's bookmarks, on a column no index orders either way. **The alternative — a `timestamp(3)`
+column — is T005's merged schema and far more expensive than the defect.**
+
+**Holder and moment, per D-140-14: T140's implementer, at the adversary's verdict, NOT now.** The
+adversary's pre-registration is frozen and it measures the current artefact; **changing the artefact
+mid-round would invalidate a registration made correctly.** It must not charge the divergence — **it
+already classified it correctly as a mechanism rather than a defect, which is what surfaced it.**
+
+***A pre-registered false-red that turns out to be a real gap is the strongest thing a pre-registration can
+produce***, because the alternative was meeting it as a red with no prior claim and arguing about which
+half was wrong.
+
+## A NAMING is a claim about the host, and the host is measurable — the stamp moves to TAKING the slot
+
+T130's adversary was told its owner had ruled, claimed the slot on my stated condition, **and took a
+contention stamp before starting because the rule's substance is checkable.**
+
+        load averages     10.45  8.70  9.51
+        vitest            running in ../darkprint-wt-t140-saves, 9 worker forks, one at 88.7% CPU
+        postgres          12 connections to darkprint%, 5 ACTIVE
+
+**The slot was not free when I said it was.** T140's adversary was mid-run. It retracted before my stop
+message reached it — **and it retracted on the instrument rather than on my word.**
+
+**My condition was badly worded and invited it**: *tell me when your owner rules and I will name you*
+reads as the naming being a formality. **It is not — it is the serialisation point**, and the value of the
+rule is that the holder is known to everyone rather than inferred by whoever is ready. **The slot is
+granted, never claimed, and never announced as free.**
+
+**And the rule change is its proposal, adopted: the contention stamp is required when TAKING the slot, not
+only when reporting a run.** *The ceremony said the slot was mine; `pgrep -fl vitest` said otherwise, and
+the second one is the fact.*
+
+**SHARPENED, two minutes later, by the same session: the stamp is a VETO, not a PERMIT.** A busy host
+proves the slot is not free. **A quiet host proves nothing**, because `vitest` exiting measures a *phase*
+and a slot is a claim about a session's *whole round* — reproduction, integration, suite, mutations,
+`tsc`, census — **and no process signature corresponds to that.** Its own background waiter fired at 21:20
+between T140's adversary's reproduction and its integration; under *run ends, therefore my turn* that
+notification was a go signal. ***It had built the tool that would have fooled it, and the tool fired before
+it could take it down.***
+
+**So: granted by name, always. The stamp can only ever stop you.**
+
+**The reason it is worth a rule is the asymmetry it named**, and it is the sharpest statement of the
+failure this run has:
+
+> ***A contention collision does not red — it inflates, and then it disappears.***
+
+Neither run would have failed. Both would have completed, both green, both slower **in a way nobody would
+attribute to the other**, and the evidence would be gone from both result sets. **Same silent-green family
+as the `beforeAll` skip: no failure, no signal, and a number that reads as a result.** My own 54s→155s
+instance is the same event caught only because I happened to compare two durations on an unchanged tree.
+
+**It also offered to wait past all three runs** rather than slot into the gaps: *a triple with one clean
+run and two contended ones is worth less than a delay.* **Accepted** — a determinism claim built from runs
+under different host conditions measures the host.
+
+## The most misleading git message of the run, and it nearly became a false alarm about a real event
+
+Merging base, git said ***"Your local changes to the following files would be overwritten by merge"***,
+naming all seven staged `tests/server/t130/*` files. **That reads as *backend contains these and they
+conflict*.** It does not: `git ls-tree -r fbf17eb -- tests/server/t130` is **empty**. **The real cause is
+git's index-must-match-HEAD rule, violated by seven staged adds.**
+
+**It nearly filed *the blind half has landed on backend*** — and **I would have believed it**, because I
+reset base off exactly that merge four hours ago and would have read it as a recurrence. **A plausible
+reading of an error message, pointing at an event that had actually happened once already.**
+
+Handled without a commit, since committing is its owner's call: stash, merge, pop, **and all seven blobs
+verified byte-identical across the manoeuvre by diffing `git ls-files -s` either side.** *That verification
+is what makes a stash manoeuvre reportable rather than merely done.*
+
+**And `psql` is not installed — exit 127, `command not found`, not a permission refusal.** So one of its
+three blockers was never a permission at all.
+
+## A detector that matches itself reports the thing it was built to detect, forever
+
+`pgrep -fl "darkprint-wt-t140"` returned a hit — **its own shell**, because the pattern string was in its
+own command line. It had filtered `grep -v pgrep` and **not itself.** *The same joke one level down*, its
+phrase, arriving inside the detector built to catch the first one.
+
+**The corrected reading was a clear host, and it declined to treat that as a reason to start** — which is
+the sharpened rule working before the rule was written.
+
+## A false alarm is most dangerous when it confirms something the reader already fears
+
+Its observation about the misleading merge message, and it is the half I supplied without noticing what it
+meant. **I would have believed *the blind half has landed on backend* — because I reset base off exactly
+that merge four hours earlier and would have read it as a recurrence.** *That one had a prepared audience.*
+
+**A false positive against a background of no expectation gets checked. A false positive that lands on a
+reader already primed for it gets acted on** — and the priming is invisible to the party reporting, who
+does not know what the reader has spent the evening resetting.
+
+## D-140-12: `error-hygiene` is 21 and the merge raise is 21 → 22 — BOTH prior figures were stale
+
+T140's adversary re-measured rather than inheriting, **and found the number every party in this task had
+been carrying was two merges out of date.** The guard's equality is **21**; its own comment trail dates
+**18** to T081's merge and the raise to **21** at T040's, which added three `engine` classes.
+
+**T140's implementer pre-registered 18 and read 18 — correctly, because its tree carried the pre-T040
+assertion.** I repeated *18 there and 19 at merge* to three sessions from a brief written before that
+merge, **and the adversary amended its own frozen item 6 to 18 on the strength of my repetition** — so a
+stale figure survived a correction, a freeze and an amendment by being right about the wrong tree.
+
+**Ruled: the merge raise is 21 → 22, and it is the implementer's to make in the merge commit.** Measured
+on the adversary's tree: green at 21, `SaveStoreError` constructed at both arities under the shipped ∪
+present hygiene loop **as a present-but-unshipped barrel, moving nothing** — which is the split working
+exactly as designed.
+
+**And it reported the correction rather than absorbing it**: *the amendment's mechanism stands and its
+absolute number was wrong.* **The mechanism was mine to give and the number was mine to get wrong**, and
+separating them is what makes this a correction rather than a retraction of the whole item.
+
+## The suite's reach, converted from an inherited claim into a measurement on the real module
+
+The blind author's `O3` and `O4` were measured against **its own reference**; I passed that on as evidence
+about the module and was corrected for it. **The adversary closed the gap by mutating the real thing.**
+
+        asc(save.id) on the real store   reds EXACTLY order cells 1 and 2, cell 3 and transport green
+                                         10 of 10 runs, DETERMINISTIC — where the reference gave 28/30
+        reverse() on the real route      reds EXACTLY ONE of 215: the transport order cell
+                                         count still agreeing, every membership cell green
+
+**The determinism is the interesting half.** The reference measured 28 of 30 because a random tie-break
+matches a ruled order by luck at 1/n!; **against the real module it is 10 of 10, because the suite's
+single-statement batches guarantee the tie groups the tie-break must order.** *The same mutation is
+probabilistic against one implementation and deterministic against another, and only the second is
+evidence about the module under test.*
+
+**And the `Exact<>` pin was falsified SIGHTED in both directions** — `refId` made optional yields TS2322 at
+the blind suite's own declaration **and** at the implementer's colocated pin, restored to 0. **An
+obligation that could not be discharged from either half was discharged by the party that holds both.**
+
+## Third time I have committed on a red I had measured, and this one had a script that could have set both
+
+`99fd7be` landed with `task-state-agreement` failing. **I set T140's State in the section and not in the
+index row** — my edit script touched `f[8]`, the Evidence cell, and never `f[7]`. I ran eight guards, the
+output said `1 failed | 7 passed`, and I committed in the same breath.
+
+**Third instance in one day, and the previous two are already a rule in this file**: *running a gate and
+reading its answer are two acts and only the first was on my checklist.* **Writing that down has not fixed
+it.** The two before were the same pipe-splitting row and I fixed the wrong half twice; this one is a
+different field of the same row.
+
+**And the shape of the defect is the guard's own argument turned on me.** Its message: *the two are 2 300
+lines apart in one file, so an edit-time rule does not survive a rebase — git resolves them
+independently... there is no local tiebreak between two places holding one fact.* **I have a script that
+opens that row, splits it on `|`, and could set both cells in one statement.** It set one. **A tool that
+could enforce the invariant, used in a way that does not.**
+
+**What would actually fix it is not another rule.** The three instances share one mechanic: **the commit
+command and the gate command are in the same tool call, so the exit status I read is the last one's.**
+Separating them costs one round trip and removes the failure entirely — which is what I did here and what
+I did not do the three times it bit.
+
+## D-130-15: the three non-residue reds are a FIXTURE defect, and the untyped `jsonb` column is the real one
+
+T130's adversary's three unexplained reds are `ProfileStoreError: getProfile: the profile store failed`,
+caused by `release.local_vocabulary is not a YAML mapping`. **It adjudicated them as a blind-suite fixture
+defect rather than an implementation defect and declined to charge them. Upheld.** `contract.ts:767`
+declares `localVocabulary?: readonly Record<string, unknown>[]` and stores a **bare array**; **both merged
+readers of that column require a mapping** — `parseOntologyTerms` rejects arrays outright and T090's
+`storedVocabulary` rejects them at the same check. **The fixture's shape is accepted by neither, so the
+module is behaving correctly.**
+
+**The reason it happened is worth more than the verdict, and it is a demonstrated hazard rather than a
+warned one.** `terms.ts`'s own header says *the column's interpretation is held by no type anywhere and any
+caller of `addRelease` can store any shape* — and the writer is literally
+`localVocabulary: input.vocabulary ?? null` over `vocabulary?: unknown` (`archive/release.ts:110`).
+**A blind author then independently guessed a different shape for that same column.** Two authors who could
+not see each other, one untyped `jsonb`, two incompatible readings. ***The untyped column is the defect and
+T130 is its victim rather than its author.***
+
+**T133 created**: give `release.local_vocabulary` a published shape, at the writer and at both readers.
+
+**And it prices D-130-07 empirically, which nobody had.** A release stored in a shape the parser refuses
+makes **every profile for that handle 500 forever** — and under D-130-10, 500 as *"Store failed"* while the
+store was working. **The cost I estimated as *one bad release 500s a profile* is a permanent condition, not
+an incident.**
+
+## ~~D-130-16~~ WITHDRAWN — I ruled a deletion without reading the file, and it would have overturned D-130-08
+
+`npm run typecheck` is red on the adversary's tree — **8 × TS2339 `Property 'cards' does not exist on type
+'Counts'`**, all in `visibility.test.ts`, because the ruled removal of `cards` from `COUNT_KEYS`/`Counts`
+breaks eight readers. **Third time a removal-only repair has been widened by the compiler** (D-130-11 was
+the pin machinery), and **third time the adversary refused to widen it on its own authority.**
+
+~~Ruled: drop the eight cells from the integration tree.~~ **WITHDRAWN and replaced by D-130-18**, on its
+adversary's objection, which is the blind author's rather than its own. **Three faults, and the third is
+disqualifying.**
+
+**My "eight cells" was eight compiler DIAGNOSTICS spanning five cells.** The cells asserting `counts.cards`
+are **eleven** — `counts` 4, `routes` 2, `visibility` 5. **There is no natural eight**, and it declined to
+pick one silently.
+
+**Only `visibility` breaks the compiler.** It reads `.cards` off the typed `Counts`; **`routes` reads it off
+the WIRE record, `Record<string, unknown>`, and compiles today**; `counts` never accesses `.cards` at all and
+asserts `toEqual({ blueprints, cards, terms })` structurally. **So *the compiler forces it* is true of five
+cells and deleting the other six would have been a choice dressed as a consequence.**
+
+**And the reds are DELIBERATE, documented at `counts.test.ts:36-58`, and I never read it before ruling:**
+*`counts.cards` IS BLOCKED, and these cells red until it is not — which is the point of leaving them… A
+criterion known to be unbuildable today is more informative failing than passing, and a red that names its
+reason beats a green that cannot tell its own causes apart.* **Deleting them converts a documented,
+self-naming block marker into silence — which is D-130-08's own argument for refusing `describe.skip`, and I
+would have overturned it four rulings later without noticing.**
+
+## D-130-17: a green named after a contract that no longer exists
+
+The adversary's repair left the pre-cut **titles** standing: *"carries exactly the seven published
+members"* now asserts three; *"the three published counts"* asserts two; routes' *"answers the record's
+seven members"* asserts three. **A reader scanning green cell names would conclude the seven-member
+contract passed.**
+
+**It did not rename, because renaming is not removal and D-130-09 said removal only. Correct, and now
+ruled: rename them.** This is the **fourth surface** T140's implementer classified hours ago — *the name
+the runner prints, read by everyone who sees the output, edited by nobody* — arriving in a different task
+on the same day, and found by a session that had not seen that classification.
+
+## Its own arithmetic was wrong and it reported it before I found it
+
+It pre-registered ~49 runtime cells and the real number is **56**: it under-counted by 7 because **two
+further loops multiply — `surface.test.ts:175` over `contexts` and `unknown-handle.test.ts:100` over
+`absent` — which it had SEEN AND LISTED earlier and then failed to carry into the arithmetic.**
+
+***Same class of error as the one it charged D-130-08 with***, its words. **A session that has just been
+right about somebody else's miscount is not thereby protected from its own**, and the tell is identical:
+an enumeration made in one place and a total computed in another.
+
+## D-130-18: the wire path, and the blocked cells travel rather than merge
+
+**Ruled, adopting its proposal**: `visibility.test.ts` reads `.cards` **the way `routes.test.ts` already
+does** — through the untyped wire record rather than off `Counts`. **All eight diagnostics clear, every
+assertion survives, nothing is deleted**, and my stated objection to keeping `cards` on `Counts` is
+sidestepped entirely because **the wire validator derives from `COUNT_KEYS` and already carries no
+`cards`.**
+
+**It is an edit beyond removal so it did not do it — the fourth time, and the same reason as the first
+three.** *That refusal is why all four got ruled instead of noticed later.*
+
+**And the merge disposition, which its objection forces and nobody had stated**: the eleven `counts.cards`
+cells are correct to be red in a worktree **and would red `backend` at T130's merge.** So **they do not
+merge.** They stay on `test/t130-profiles` and travel to **T132**, which owes `counts.cards` — exactly as
+`pins` and `follow` travel to T131 under D-130-08. **The block marker survives where its author put it; base
+stays green; and T132 inherits a red that names its own reason rather than a note saying one existed.**
+
+## I ruled a deletion on a number I had not checked, against a file I had not read
+
+**Three faults in one ruling.** The number was diagnostics, not cells. *The compiler forces it* covered five
+of the eleven I applied it to. And the file I was deleting from **states, in eighteen lines, why the reds are
+the deliverable** — and cites the ruling of mine those lines rest on.
+
+**The tell I should have caught: I was told *8 × TS2339* and wrote *the eight cells*.** A diagnostic count
+and a cell count are different instruments, **which is the same static-versus-runtime, plain-versus-`.each`,
+files-versus-cells distinction this run has now made four times in one day** — and I made it while
+correcting somebody else's version of it.
+
+**And its recommendation if I had insisted on deleting is the one that shows it understood the ruling better
+than I did**: *visibility's 5 only, leaving `counts`' 4 and `routes`' 2 red and self-explaining, because
+those two files compile fine and their reds carry their own reasons.* **A minimal version of a ruling I had
+made maximally, offered by the party that had argued against all of it.**
+
+## It piped a gate through `tail -8` and reported the truncation as the gate result
+
+**T130's adversary's *8 × TS2339, all in `visibility.test.ts`* came from `npm run typecheck 2>&1 | tail -8`.
+There were ELEVEN errors and they were not all in `visibility`** — three it never saw, at
+`counts.test.ts:216,220` and `unknown-handle.test.ts:177`.
+
+**So its own objection's point 2 was false.** It wrote *`counts.test.ts` never accesses `.cards` at all* —
+it does, at 216 and 220 — **because it had grepped with `head -14` and stopped before them.** ***Two
+filtered reads, in the same argument, in opposite directions.***
+
+**And it is the rule it had been quoting at other sessions all evening**: *a number retyped from a filtered
+read is not the gate result.* **Fifth instance in this run, and the first where the filtered read was the
+evidence for a charge rather than for a result** — I confused diagnostics for cells, which was true, and
+**the count I was handed was independently wrong in a second way neither of us had checked.**
+
+**Points 1 and 3 of its objection stand on their own evidence and D-130-16 is still withdrawn**: the
+deliberate, documented reds are the disqualifying half and nothing about the truncation touches them.
+
+## D-130-19: a ruling scoped by a MEASUREMENT is scoped by the true measurement, not the reported one
+
+It applied D-130-18 to the **real** error set — `visibility` as ruled, plus `counts`'s `readCounts` helper
+and `unknown-handle`'s one `pinned` read — and asked whether that is completing the ruling or widening it,
+**rather than assuming the answer for the fifth time.**
+
+**Ruled: completing.** D-130-18's scope was *wherever the typed path breaks the compiler*, and **the
+compiler defines that set** — I was quoting a filtered view of it. **A ruling whose extent is set by an
+instrument extends to what the instrument actually says**, and a session correcting the under-report is
+restoring the ruling rather than enlarging it. *The distinction it drew — that the under-scoping was its
+own artifact — is exactly what makes this different from D-130-11 and D-130-16, where the compiler forced
+work genuinely outside what was ruled.*
+
+## Identical numbers either side of a type-only change is the result, not a coincidence
+
+`25 failed | 5903 passed | 0 skipped` of 5928 **before and after D-130-18**, per-file counts matching cell
+for cell. **The edits changed types and nothing else, so every red survived the type** — which is precisely
+what a wire-path substitution is supposed to do and would have been invisible without the before-run to
+compare against. **A change that is meant to move no number is verified by a number that does not move,
+and only if you took it twice.**
+
+## Fourth pipe-split on the same row, and the guard's message has told me the fix each time
+
+Writing T130's verdict into its Evidence cell I pasted `25 failed | 5903 passed | 0 skipped` and
+`33 failed | 23 passed`, splitting the row to **fourteen** fields. **`task-state-agreement` then reported a
+FALSE disagreement about T130's State** — its parser takes the second-to-last cell, which on a shifted row
+is a fragment of prose. **That is the exact consequence `task-rows-have-every-field`'s message names**, and
+it is why the two reds arrive together.
+
+**Fourth instance, and the guard has printed the remedy every time**: *rewrite the pasted text with commas
+— `1 failed, 5361 passed, 0 skipped`. Do not escape it as `\|`.* **It even records that a pasted vitest
+count is how this has happened both times**, written when it was twice.
+
+**And my first repair only fixed the instances matching ` | ` with spaces**, leaving one and taking the row
+from 14 fields to 11 — **a partial fix that reads as a fix because the number moved.** The count going
+14 → 11 → 10 is three attempts at one line, all verified before committing, which is the only part of this
+that improved.
+
+***A guard whose message contains the fix, hit four times, is not an information problem.*** The pasted
+count comes from a report I am reading in another window; the transformation to commas is a step between
+reading and writing that nothing enforces. **The only mechanical fix available is to stop pasting suite
+lines into that column at all** — every number in a task row can be written `1 failed of 5872` without a
+pipe existing anywhere near it.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -8016,12 +9158,13 @@ it does not decide differently inside a worktree.
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
-| T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | impl-done | blind suite `3337fb0`: **176 cells over 6 files**, `167 failed, 9 passed, 0 skipped` twice with identical failing sets. **The nine greens measure the DRIVER** — closed port `ECONNREFUSED`, dropped table `42P01`, and **drizzle rendering bound `accountId`/`refId`, which settles D-140-06's premise before implementation.** Reference 176/176 first try, offered as the weaker result. 18 mutations: **four one-red mutations on four rulings**, and **exactly one of seven non-owner shapes reds** under a re-implemented ownership check. **`SaveRecord`'s `Exact<>` is vacuous from a blind tree — `Exact<any,T>` is `true` — and cannot be falsified from there.** Implementation at `3f0f3f9`+ pending its own gate. **Route surface was owed by the orchestrator (D-140-04) and is now PUBLISHED as D-140-07**: four routes under `app/api/account/saves/**` over one request shape, which is `saveTarget`'s own `target`. No 403 (T050's reason, cited not re-derived) and no 404 on a write (the existence oracle AC1 closes), so **AC1's non-owner denial is unreachable from HTTP and route cells must not expect it**. `seams.md`'s SEAM-61/62 and `FavoriteStar.tsx`'s `TODO(SEAM-62)` corrected in the same commit **Implementation at `914e531`, gates and triple measured there; `9345e22` is the same thirteen files with only `backend.md` moved — an acceptance is of an ARTEFACT, not of a tip.** Thirteen files under `lib/server/saves/**` and `app/api/account/saves/**`, built against D-140-01..07. Triple `1 failed`, `5896 passed`, `0 skipped` of 5897, three identical sorted failing sets, the one red T090's `B-08 RE-SCORE`; **0 skipped by ARITHMETIC rather than by a printed column** — `1 + 5896 = 5897` leaves nothing for a silently-skipping `skipIf` file to hide in. Reconciliation `5897 − 5871 = 26`, delta measured in isolation as 9 + 17 and base's 5871 measured independently by me. typecheck 0, lint exit 0 read in full with 0 `warning`/`problems`, build 0 with both routes dynamic. **Six mutations, each pre-registered by IDENTITY and scope, all HIT**: decision arm 2, message leak 2, `can` re-implemented 2 (the second the operator cell, which a bare id comparison refuses), unfiltered count 7 all inside AC3, term filter 2, card half 1. `SaveRecord`'s `Exact<>` falsified in BOTH directions — the guard its blind author correctly reported it could not falsify, since `Exact<any,T>` is `true`. **`impl-done` HERE MEANS ONLY THAT THE LATER HALF ARRIVED. It does NOT mean ready for an adversary, and its implementer flagged that rather than let the field read as an invitation**: the blind suite has never run against this module, the join has not happened, and the acceptance surface is **209, not the 176 this row cites** — 33 route cells sit uncommitted in the blind author's tree. **No number here is an acceptance measurement.** Clause 5 held below the transport at 7 reds and unheld at it; `error-hygiene` 18 there and 19 at merge |
-| T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | `../darkprint-wt-t230-limits` (impl), `../darkprint-wt-t230-limits-tests` (blind) | `feat/t230-limits`, `test/t230-limits` | tests-written | module `8338951`, 17 files across two trees, four sealed classes so the merge count is **18 → 22**. Gates ITS measurements at `0f23379`, scope TARGETED: `typecheck` 0 unfiltered, `lint` 0 read in full, `vitest lib/server/limits` **84/84** — **not a full suite, not a triple, and the three repo guards it pre-registered green were outside that scope so their green is still a prediction.** **Both pre-registered candidate reds passed and the two real ones were elsewhere**: a lone surrogate walking a control-character check **in the opposite direction from a NUL**, and a refusal test whose input was accepted. Blind suite at `test/t230-limits`, 7 ahead |
+| T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | adversarial-pass | blind suite `3337fb0`: **176 cells over 6 files**, `167 failed, 9 passed, 0 skipped` twice with identical failing sets. **The nine greens measure the DRIVER** — closed port `ECONNREFUSED`, dropped table `42P01`, and **drizzle rendering bound `accountId`/`refId`, which settles D-140-06's premise before implementation.** Reference 176/176 first try, offered as the weaker result. 18 mutations: **four one-red mutations on four rulings**, and **exactly one of seven non-owner shapes reds** under a re-implemented ownership check. **`SaveRecord`'s `Exact<>` is vacuous from a blind tree — `Exact<any,T>` is `true` — and cannot be falsified from there.** Implementation at `3f0f3f9`+ pending its own gate. **Route surface was owed by the orchestrator (D-140-04) and is now PUBLISHED as D-140-07**: four routes under `app/api/account/saves/**` over one request shape, which is `saveTarget`'s own `target`. No 403 (T050's reason, cited not re-derived) and no 404 on a write (the existence oracle AC1 closes), so **AC1's non-owner denial is unreachable from HTTP and route cells must not expect it**. `seams.md`'s SEAM-61/62 and `FavoriteStar.tsx`'s `TODO(SEAM-62)` corrected in the same commit **Implementation at `914e531`, gates and triple measured there; `9345e22` is the same thirteen files with only `backend.md` moved — an acceptance is of an ARTEFACT, not of a tip.** Thirteen files under `lib/server/saves/**` and `app/api/account/saves/**`, built against D-140-01..07. Triple `1 failed`, `5896 passed`, `0 skipped` of 5897, three identical sorted failing sets, the one red T090's `B-08 RE-SCORE`; **0 skipped by ARITHMETIC rather than by a printed column** — `1 + 5896 = 5897` leaves nothing for a silently-skipping `skipIf` file to hide in. Reconciliation `5897 − 5871 = 26`, delta measured in isolation as 9 + 17 and base's 5871 measured independently by me. typecheck 0, lint exit 0 read in full with 0 `warning`/`problems`, build 0 with both routes dynamic. **Six mutations, each pre-registered by IDENTITY and scope, all HIT**: decision arm 2, message leak 2, `can` re-implemented 2 (the second the operator cell, which a bare id comparison refuses), unfiltered count 7 all inside AC3, term filter 2, card half 1. `SaveRecord`'s `Exact<>` falsified in BOTH directions — the guard its blind author correctly reported it could not falsify, since `Exact<any,T>` is `true`. **`impl-done` HERE MEANS ONLY THAT THE LATER HALF ARRIVED. It does NOT mean ready for an adversary, and its implementer flagged that rather than let the field read as an invitation**: the blind suite has never run against this module, the join has not happened, and the acceptance surface is **209, not the 176 this row cites** — 33 route cells sit uncommitted in the blind author's tree. **No number here is an acceptance measurement.** Clause 5 held below the transport at 7 reds and unheld at it; ~~`error-hygiene` 18/19~~ **STALE — the equality is 21 and the merge raise is 21 → 22** (D-140-12) **Verified at `e1a5a60` after D-140-08/09/10: triple `1 failed`, `5898 passed`, `0 skipped` of 5899, three identical sorted failing sets, reconciliation `5899 − 5872 = 27` with base measured independently by me. typecheck 0, lint read in full 0. **All four registered predictions hit**, including the probabilistic one: reverting to `asc(save.id)` reds the witness **28 of 30 runs**, against a predicted 25 on `Binomial(30, 5/6)` — reported as a rate with its n rather than as a red. **Its read-back `sed` errored and it caught that the 28 was printed under a failed check**: a rate consistent with the prediction proves something changed, not that the intended change landed. **Blind suite complete at `b623332`: 215 cells over 9 files**, taken at a release-at-a-stamp reproduced exactly — four per-file digests, a four-path combined digest, a **nine-file suite digest for what the adversary runs**, 5 077 lines, 221 603 bytes, zero discrepancies. **Route half 33 cells asserting membership and length and never order** (verified by grep before D-140-08 was ruled, so the ruling cost it nothing); order cells 4, **and its reference RED for the first time in this run** — 4 of 215 without the ordering, then 215/215 corrected. **JOIN AND ADVERSARY ROUND NOW UNBLOCKED.** **ADVERSARY VERDICT: PASS** at `d2578544`, integration of `e1a5a60` + base + `b623332`, `feat/t140-saves` untouched. **215 of 215 on the first meeting of the halves**, per-file runtime counts equal to its pre-registered expansion arithmetic exactly; full tree `1 failed`, `6113 passed` of 6114, 0 skipped by arithmetic. **`Exact<>` DISCHARGED in both directions** — `refId` optional yields TS2322 at the `saveRecordIsExact` declaration **and** at the implementer's own colocated pin, restored to 0. **Suite reach converted from an inherited claim to a measurement on THIS module**: `asc(save.id)` reds exactly order cells 1 and 2, **10 of 10 deterministically where the reference measured 28 of 30**, because single-statement batches guarantee the tie groups; a `reverse()`ing route reds **exactly one** cell, the transport one. **D-140-11 ruled-and-unobserved** across every run. Census 4 before, 4 after. |
+| T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | `../darkprint-wt-t230-limits` (impl), `../darkprint-wt-t230-limits-tests` (blind) | `feat/t230-limits`, `test/t230-limits` | impl-done | module `8338951`, 17 files across two trees, four sealed classes so the merge count is **18 → 22**. Gates ITS measurements at `0f23379`, scope TARGETED: `typecheck` 0 unfiltered, `lint` 0 read in full, `vitest lib/server/limits` **84/84** — **not a full suite, not a triple, and the three repo guards it pre-registered green were outside that scope so their green is still a prediction.** **Both pre-registered candidate reds passed and the two real ones were elsewhere**: a lone surrogate walking a control-character check **in the opposite direction from a NUL**, and a refusal test whose input was accepted. Blind suite at `test/t230-limits`, 7 ahead **Implementation `5d79039`**, taken at the standing release-at-a-stamp: `10a8ab1` plus eight modified paths, reproduced here as eight blob ids with zero `fatal` lines and an identical path set. **`T230-gate-2`: three identical runs at `1 failed`, `5963 passed`, `0 skipped` of 5964**, identical sorted failing sets, the one red base's own t090 `B-08 RE-SCORE`; typecheck 0 unfiltered, lint exit 0 read in full. **Reconciliation exact — `5871 + 93 = 5964`**, delta measured, base measured independently by me. **Its FIRST triple was not identical and it chased both extras rather than reporting the disjunction**: `D-40-F` a contention artifact at 102.69 under load 57, and `t010` AC5 a permanent 1-in-230 fixture red — *one moved for load and one moved for a coin*, and the second is fixed on base at `85b2c9e`. **It attributed the two orphan databases to ME by creation time** after three sessions had stopped at *zero connections, cannot attribute*. D-230-11's routes shipped with `listKeys` added, `DELETE` at `200 KeyList`, and **revoked rows LISTED rather than filtered because that is AC4's observation rather than a convenience**. Nine ceiling cells as ruled with `REFUSED` written out rather than absent. `error-hygiene` 21 → 22 at merge. Adversary round owed |
 | T100 | Publishing and releases | T010, T020, T025, T040, T050, T060, T070, T090 | `lib/server/publish/**`, `app/api/bundles/**` | — | — | todo | — |
-| T130 | Profiles and the public author surface | T050, T060, T080 | `lib/server/profiles/**`, `app/api/authors/**` | `../darkprint-wt-t130-profiles` (impl), `../darkprint-wt-t130-profiles-tests` (blind) | `feat/t130-profiles`, `test/t130-profiles` | impl-done | implementation `6ffdb17`, blind suite `32556b7`. **Cut to `{ author, joinedAt, counts: { blueprints, terms } }` by D-130-06 (owner)** — `setPins`/`toggleFollow` removed, AC3/AC4 to T131, `counts.cards` to T132. **No owner/visitor branch anywhere: AC2 falls out of the `Actor`, T080 decides visibility, no second `readable()`.** `withProfileStore` deliberately narrower than `withRegistryStore` — re-wrapping a sealed fault relabels a working store. **D-130-07: `counts.terms` consumes the shared parser, does not require `text`, and REFUSES an unreadable vocabulary rather than skipping** (cost stated: one bad release 500s a profile). Gates by its author at `eccab30`: typecheck 0, lint 0 with the single `warning` match read as a LINE — the prebuild's own `--disable-warning=` — and build 0 **with the route table showing the handler collected, which typecheck cannot claim.** Handed over with a content digest **and its method**, reproduced exactly. Adversary round owed |
+| T130 | Profiles and the public author surface | T050, T060, T080 | `lib/server/profiles/**`, `app/api/authors/**` | `../darkprint-wt-t130-profiles` (impl), `../darkprint-wt-t130-profiles-tests` (blind) | `feat/t130-profiles`, `test/t130-profiles` | adversarial-pass | implementation `6ffdb17`, blind suite `32556b7`. **Cut to `{ author, joinedAt, counts: { blueprints, terms } }` by D-130-06 (owner)** — `setPins`/`toggleFollow` removed, AC3/AC4 to T131, `counts.cards` to T132. **No owner/visitor branch anywhere: AC2 falls out of the `Actor`, T080 decides visibility, no second `readable()`.** `withProfileStore` deliberately narrower than `withRegistryStore` — re-wrapping a sealed fault relabels a working store. **D-130-07: `counts.terms` consumes the shared parser, does not require `text`, and REFUSES an unreadable vocabulary rather than skipping** (cost stated: one bad release 500s a profile). Gates by its author at `eccab30`: typecheck 0, lint 0 with the single `warning` match read as a LINE — the prebuild's own `--disable-warning=` — and build 0 **with the route table showing the handler collected, which typecheck cannot claim.** Handed over with a content digest **and its method**, reproduced exactly. Adversary round owed **ADVERSARY VERDICT: PASS at `d9b5dcb`. No implementation defect in `lib/server/profiles/**` or the route.** D-130-09's three numbers: **BEFORE 33 failed, 23 passed of 56, AFTER 24, 32, 9 RESURRECTED, ZERO newly red** — the removal-only safety property holding empirically. 32 passed reads as **30 meaningful + 2 vacuous**. Full suite `25 failed, 5903 passed, 0 skipped` of 5928, **every red classified**: 10 cut-function residue, 11 `counts.cards` residue (deliberate, documented, travelling to T132), 3 blind-fixture reds from the untyped `local_vocabulary` column (T133), 1 base's own. **Identical numbers either side of D-130-18** — a type-only change verified by a number that did not move. `error-hygiene` derived 21 shipped / 22 hygiene; `ProfileStoreError` confirmed reached and clean at both arities. **Owed at merge: D-130-12's named constant, D-130-10's sealed class, the `terms.ts` load-bearing-filter comment, the blind fixture correction, and `error-hygiene` 21 → 22.** |
 | T131 | Profiles: follows, pins and the tables they need | T130, T180 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**`, `lib/server/profiles/**` (extension), `app/api/authors/**` (extension) | — | — | todo | **Created by D-130-06 (owner, 2026-08-20).** Carries the half T130 could not build: `watchers` + `toggleFollow` + AC4, `pinned` + `setPins` + AC3, `support`, and `validated` (a count, D-130-01, blocked on T180). **It owes the TABLES before the behaviour** — no follow relation, no pin storage, no `support` column, and neither `target_kind` nor `target_actor_kind` can name an account as a target or a follow as an act, so both need `ALTER TYPE`. **Inherits AC1's clause unchanged: anything countable is counted, never stored as a counter.** T130's blind suite already holds the pins, follow and `counts.cards` families |
 | T132 | Amendments to merged published records that T130 needs | T080, T130 | `lib/server/registry/types.ts`, `lib/server/registry/**` (extension), `lib/server/profiles/**` (extension) | — | — | todo | **Created by D-130-06.** `CardSummary` carries no owner and `card.author` is `author?: string` — optional, and content the uploader wrote rather than the row's ownership — while `card_version.owner_id` is `NOT NULL`, authoritative and unpublished. **D-130-04 forbids re-implementing T080's visibility filter against `card_version`**, so this is an amendment to a MERGED task's published record and therefore not T130's to take |
+| T133 | `release.local_vocabulary` needs a published shape | T005, T090, T130 | `lib/db/schema.ts` (comment only), `lib/server/archive/release.ts`, `lib/server/export/vocabulary.ts`, `lib/server/ontology/**` (reader contract only) | — | — | todo | **Created at T130's adversary round.** The column is `jsonb` with **no published shape**: the writer is `localVocabulary: input.vocabulary ?? null` over `vocabulary?: unknown` (`archive/release.ts:110`), and **both merged readers require a mapping** — `parseOntologyTerms` and T090's `storedVocabulary`. **Demonstrated rather than hypothetical**: T130's blind author guessed `readonly Record<string, unknown>[]` and stored a bare array, which neither reader accepts, producing three reds that looked like an implementation defect. `terms.ts`'s header had warned that *the column's interpretation is held by no type anywhere*. **Cost, measured by T130's adversary: a release stored in a refused shape makes every profile for that handle 500 forever**, and under D-130-10 as *Store failed* while the store was working |
 | T041 | D-40-L: `ToNumber` is `+`, not `Number()` | T040 | `lib/server/engine/limits.ts` | — | — | todo | **Created at T040's merge (`ad44537`), charged and measured by its round-7 adversary and NOT fixed there.** `limits.ts:468` reads `Number((container).length)` where `LengthOfArrayLike` is `ToLength` is `ToNumber`; `Number(v)` is `ToNumeric` then BigInt→Number, **so it accepts a BigInt where `ToNumber` refuses one and the walk ANSWERS where the ruled formula REFUSES.** Repair is one line — `+(...)` — **measured at 4 divergences closing, 6 controls holding, 10 of 10 agreeing, D-40-K's own halves untouched**, after which the walk throws the same bare `TypeError` the formula does and lands inside D-40-24's already-numbered class. **Barrel-only**, sixth in the transcription sequence. **Owes a witness BEFORE the fix**: coverage is zero in both suites and no cell reaches the `ToNumber` half |
 | T150 | Counters: stars and downloads | T050, T060, T080, T090 | `lib/server/counters/**`, `app/api/signals/**` | — | — | todo | — |
 | T160 | Community ballot and vote weighting | T050, T060, T080 | `lib/server/ballot/**`, `app/api/votes/**` | — | — | todo | — |
@@ -14469,6 +15612,21 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Standing:** T130's blind author asserted these cells against a reference that reads `card_version.owner_id` directly — **the route the ruling forbids** — and said so. **Those cells are not evidence about anything buildable until this task lands.**
 - **Log:**
 
+### T133, `release.local_vocabulary` needs a published shape
+
+- **State:** todo
+- **Depends on:** T005, T090, T130
+- **Blocks:** —
+- **Owns:** `lib/db/schema.ts` (comment only), `lib/server/archive/release.ts`, `lib/server/export/vocabulary.ts`, `lib/server/ontology/**` (reader contract only)
+- **Forbidden:** every other module's barrel; this task publishes a shape, it does not move a reader.
+- **Goal:** give the column one published shape, asserted at the writer, so two readers cannot disagree about it.
+- **Contract:** `release.local_vocabulary` is `jsonb` and **its interpretation is held by no type anywhere**. The writer is `localVocabulary: input.vocabulary ?? null` over `vocabulary?: unknown` (`lib/server/archive/release.ts:110`), so **any caller of `addRelease` can store any shape**. Both merged readers require a **mapping**: `parseOntologyTerms` rejects arrays outright, and T090's `storedVocabulary` (`lib/server/export/vocabulary.ts:36`) rejects them at the same check. `terms.ts`'s own header warned this in prose and nothing enforced it.
+- **Acceptance criteria:** (1) the column has one published shape and `addRelease` refuses anything else **at the write**, rather than the readers refusing it later; (2) both existing readers consume that shape rather than each re-deriving it; (3) a release already stored in a refused shape is detectable without reading every row — a migration or a reported query, stated either way; (4) the refusal at the write names the field and never the caller's value (D-13).
+- **Open:** whether existing rows can be in a refused shape, and what happens to them. **`export.scratch.test.ts:193` and `:202` store two DIFFERENT shapes into that column in one file** — a bare `terms` array and a `{ text, terms }` mapping — so at least the test corpus already disagrees with itself.
+- **Out of scope:** the ontology parser's grammar (T030), the export bundle's format (T090).
+- **Log:**
+  - 2026-08-20 orchestrator: **created at T130's adversary round, from a demonstrated instance rather than a warning.** T130's blind author independently guessed `readonly Record<string, unknown>[]` for this column and stored a bare array; neither merged reader accepts it, and the result was three reds that looked like a T130 implementation defect until its adversary traced them. **Two authors who could not see each other, one untyped column, two incompatible readings.** Cost, measured rather than estimated: **a release stored in a refused shape makes every profile for that handle 500 forever**, and under D-130-10 as *Store failed* while the store was working.
+
 ### T041, D-40-L: `ToNumber` is `+`, not `Number()`
 
 - **State:** todo
@@ -14482,7 +15640,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Log:**
 ### T140, Saves (private bookmarks)
 
-- **State:** impl-done
+- **State:** adversarial-pass
 - **Depends on:** T050, T060, **T005** (the `save` table; `lib/db/schema.ts` is Forbidden here)
 - **Blocks:** T262
 - **Owns:** `lib/server/saves/**`, `app/api/account/saves/**`
@@ -14496,6 +15654,37 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         unsaveTarget(db: Db, actor: Actor, accountId: string, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<void>
         countSaves(db: Db, actor: Actor, accountId: string): Promise<number>
         migrateLocalSaves(db: Db, actor: Actor, accountId: string, targets: readonly { kind: "blueprint" | "card" | "term"; refId: string }[]): Promise<void>
+
+  **D-140-12: `error-hygiene` goes 21 → 22 at T140's merge, not 18 → 19.** Both prior figures were
+  stale — 18 dates to T081's merge and the equality was raised to 21 at T040's. **Owed by the implementer
+  in the merge commit**, alongside D-140-11.
+
+  **D-140-11: `ORDER BY date_trunc('milliseconds', saved_at) DESC, …`.** `save.created_at` is
+  `timestamptz` (microseconds) and `SaveRecord.savedAt` is a JS `Date` (milliseconds), so **SQL sorts on a
+  value the published record does not carry** and two rows 100µs apart are tied for a caller and strictly
+  ordered for the store. Truncating the sort key makes it exactly the value that crosses. **Owed by T140's
+  implementer at the adversary's verdict, not before** — its pre-registration is frozen and classified this
+  correctly as a mechanism, which is what surfaced it.
+
+  **D-140-10: the store sorts `target_kind::text`**, so D-140-09 is true by construction rather than by a
+  premise plus a guard in a file T140 cannot see. Proposed by its implementer, which did **not** make the
+  change and stated that its own falsification is empty — *a legibility-and-locality change, not a
+  behavioural one*. **An empty falsification is the signature of a by-construction change rather than an
+  objection to one.**
+
+  **D-140-09: `target_kind ASC` is LEXICOGRAPHIC on the string**, which is what a caller can compute from
+  `SaveRecord`. Postgres sorts an enum by **declaration** order and `["blueprint","card","term"]` happens
+  to be both — **an accident, not a convention: three of the five enums in `schema.ts` already declare
+  semantically.** Pinned by `tests/enum-declaration-order.test.ts`, scoped to this enum alone. If a member
+  ever lands out of alphabetical order the store owes a cast or a `CASE`, not a re-reading of the contract.
+
+  **D-140-08: `listSaves` returns `saved_at DESC, target_kind ASC, ref_id ASC`**, newest-first with the
+  tie-break on **published** fields. Total within an account because `save_account_target_key` is unique
+  on `(account_id, target_kind, target_id)`. **The shipped `asc(save.id)` tie-break is withdrawn**: `id`
+  is `defaultRandom()`, so same-instant saves ordered by a random value — unobservable from `SaveRecord`
+  and arbitrary rather than merely hidden. Raised three times by the implementer and unruled until the
+  route cells changed the exposure: **a module cell can assert a set, a route cell deep-equalling a JSON
+  array pins order without anyone deciding to.**
 
   **The route surface, published by D-140-07 and owed to this task since D-140-04.** Four routes over
   **one** request shape, and that shape is `saveTarget`'s own `target` parameter rather than a third
@@ -14598,7 +15787,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 ### T230, Rate limiting and API keys
 
-- **State:** tests-written
+- **State:** impl-done
 - **Depends on:** T000 (contract: middleware), T050 (data: identity), **T005** (the `api_key` table; `lib/db/schema.ts` is Forbidden here)
 - **Blocks:** —
 - **Owns:** `lib/server/limits/**`, `app/api/account/keys/**`
@@ -14738,6 +15927,14 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Out of scope:** content moderation (T170), abuse takedown (T060's operator).
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-17; numbers still open.
+  - 2026-08-20 implementer: **refused to populate three cells and invent six**, and its own published
+    type backed it — the inner map is TOTAL over `Tier`, so a three-cell object does not typecheck.
+    *My own published type refusing a correct instruction* is what got the gap ruled rather than papered
+    over. Three surfaces D-230-01 named and left open were published as D-230-11 at its asking.
+  - 2026-08-20 orchestrator: committed `5d79039` on the owner's behalf at the standing stamp. **Numbers
+    no longer open**: the owner filled nine cells of nine on 2026-08-20 and `SECRET_PREFIX = "dp_"` is
+    confirmed. `MAX_LABEL_LENGTH = 100` ratified by me and NOT escalated, stated to the implementer as a
+    choice rather than left silent — it commits to nothing outside the product.
 
 ### T100, Publishing and releases
 
@@ -14791,13 +15988,38 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 ### T130, Profiles and the public author surface
 
-- **State:** impl-done
+- **State:** adversarial-pass
 - **Owed with D-130-14, same holder and moment: a comment in `terms.ts` saying its
   `bundle.ownerId = accountId` filter is LOAD-BEARING.** It looks redundant beside `read.ts`'s JS
   `ownerHandle` filter and is not: `bundle_owner_slug_key` is unique on `(ownerId, slug)` and not on
   `slug`, so `inArray(bundle.slug, slugs)` alone reaches another owner's identically-slugged bundle.
   Found by the adversary, verified at `schema.ts:159`. **Two ownership notions that coincidentally agree
   are a deletion waiting to happen.**
+- **D-130-15: the adversary's three non-residue reds are a BLIND-SUITE FIXTURE defect, not charged.**
+  `contract.ts:767` stores a bare array into `release.local_vocabulary` and **both merged readers require a
+  mapping**, so the module is correct and the fixture is wrong. **The untyped `jsonb` column is the real
+  defect — T133 created for it** — and T130 is its victim rather than its author. **The blind suite owes the
+  fixture correction.**
+- **D-130-19: applying D-130-18 to the TRUE compiler error set is COMPLETING it, not widening it.** Its
+  `8 × TS2339` came from `typecheck | tail -8`; there were **eleven**, and three were outside
+  `visibility` — so **its objection's point 2 was false**, having been grepped with `head -14`. **Two
+  filtered reads in one argument, in opposite directions**, and the rule it had been quoting all evening.
+  Points 1 and 3 stand; D-130-16 stays withdrawn.
+- **~~D-130-16~~ WITHDRAWN, replaced by D-130-18: `visibility.test.ts` reads `.cards` through the untyped
+  wire record, as `routes.test.ts` already does.** All eight diagnostics clear, **nothing is deleted**, and
+  the `Counts`-models-a-cut-member objection is sidestepped because the wire validator derives from
+  `COUNT_KEYS`. **My "eight cells" was eight DIAGNOSTICS spanning five cells; the `counts.cards` cells are
+  eleven, and only five break the compiler.** The reds are **deliberate and documented** at
+  `counts.test.ts:36-58` — *a criterion known to be unbuildable today is more informative failing than
+  passing* — so deleting them would have converted a self-naming block marker into silence, which is
+  D-130-08's own argument.
+- **The eleven `counts.cards` cells do NOT merge.** They would red `backend`. They stay on
+  `test/t130-profiles` and travel to **T132**, as pins and follows travel to T131.
+
+- **D-130-17: rename the pre-cut cell TITLES.** *"carries exactly the seven published members"* now asserts
+  three; *"the three published counts"* asserts two. **A reader scanning green cell names would conclude the
+  seven-member contract passed.** The adversary correctly did not rename under a removal-only ruling; ruled
+  now.
 - **D-130-14: D-130-12 and D-130-10 are unimplemented contract, owed by T130's implementer at the
   adversary's verdict, before any merge.** Both landed after the round closed, so they are dated contract
   rather than defects — **the adversary must not spend a cell on either divergence.** `6ffdb17` emits
