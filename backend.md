@@ -2934,6 +2934,53 @@ conclusion, **every divergence on a coercing slot and not one on a non-coercing 
 `[[BooleanData]]` agreeing under `valueOf`, `toString` and `@@toPrimitive`. **Reconciling the counts
 would be work in service of a number neither party needs.**
 
+## `ToNumber` is `+value`, not `Number(value)` — a third axis nobody's cells varied
+
+**T040's implementer found the half of D-40-H that the charge did not decide.** `Number()` converts a
+BigInt where `ToNumber` refuses one, so **a `valueOf` returning `7n` measures 7 under `Number()` and
+throws under both `+` and the serialiser.**
+
+**And finding it is D-40-H's own lesson repeated on the people who learned it.** The adversary's fifteen
+cells and the implementer's fifteen both vary **which channel** the coercion consults — `toString`,
+`valueOf`, `@@toPrimitive`, a foreign prototype. **This one varies what the channel RETURNS, and nothing
+on the other two axes separates the two implementations.**
+
+**The sweep says the axis is load-bearing rather than decorative: the mutation writing `Number()` for `+`
+is the only one in the round that reds it and nothing else** — cross-product green, asymmetry witness
+green, two reds on the result axis alone.
+
+## An agreeing cell can be a discriminator designed out of reach by its own fixture
+
+**I told it to keep its two agreeing cells and say why. Its own sweep then found one of them could not
+fail.** The cell asserts a **number**, and its override serialised to **the same length as the slot's own
+value** — `"VO"` against `"xy"`. **A deliberately wrong-hinted `unbox` reddened every other assertion in
+the file and left exactly those two green.**
+
+**Fixed by asserting the property rather than arranging it**: the wrong hint's answer is **computed** and
+required to differ, **so whoever next edits the string finds out there.** Acceptance is the re-run — the
+wrong-hint mutation goes 6 → 7 and the seventh is that witness.
+
+**The general form: a discriminator whose two branches happen to agree numerically is indistinguishable
+from one that works, and the fixture is where the coincidence lives.** *Assert the difference, do not
+arrange it.*
+
+## Six MISSes across two rounds, one diagnosis, recorded as the pattern
+
+**Every one named the assertion that IDENTIFIES the defect and omitted the broader ones that also see
+it.** Round 4: three, all the composed-values half. Round 5: three, the same shape one layer out.
+
+**Its own handling is the entry — *I am recording the pattern rather than the instances*.** Six
+instances of one prediction error is not six lapses; it is **a systematic under-prediction of how wide an
+instrument reaches**, and the fix is to ask, of every mutation, *what else sees this* before writing the
+number down.
+
+**And two instrument findings from the same sweep.** One mutation wrapped only the **root's** `normalise`
+while its fixture sat on a **child** — 0 red, a mutation that did not do what its name said, caught by
+reading the patch. And two were **refused** as `PATCH-NOT-TAKEN`, correctly by the harness's rule and
+wrongly in fact: it required the anchor to be absent after the write, **which refuses any wrapping
+mutation**. **Refusing was the good direction — a strict instrument said it could not measure, where a
+lenient one would have handed back two more zeros.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -6092,7 +6139,7 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | reverted | round 4 at `dfc71e1`, 40 ahead. **D-40-F** closed with `node:util`'s slot predicates — 8 281 ms → 68 ms on a 1.2 MB submission — `Object.prototype.toString` dispatch rejected though faster, because it **invokes user code the old version did not**. **D-40-G** closed with the fourth slot; acceptance is the reverse mutation, 9 + 58. **S10 closed after three rounds by changing the INPUT**: `resolve.ts:191` is the mechanism, observable only on a bundle where two files claim one `id@version`. Gates 0 unfiltered; targeted 73/0/0 hitting the pre-registered 69→73; triple `1 failed, 5783 passed, 0 skipped` of 5784 identical; reconciliation measured both sides, `5784 − 220 = 5564` = base at `752721d`. 7 mutations, 4 HIT / 3 MISS / 0 newly green, **all three MISSes one diagnosis against itself**. **Adversary round 4 FAIL at `ccd1dac`**: **D-40-H** charged — `unbox` reads a slot where `SerializeJSONProperty` steps 4a/4b **coerce**, so `[[String/Number]Data]` bypass `@@toPrimitive`/`toString`/`valueOf`; **7 of 15 channels diverge, under-count unbounded** (5 000 008 measured as 10), and at `maxBytes = 100` it **accepts** a submission the ruled number refuses. Barrel-only. Triple `10 failed, 5800 passed, 0 skipped` of 5810 identical, pre-registered on all four figures; base measured independently at `7db3b5e` = 5564; reconciliation `5810 − 173 − 73 = 5564`. 7 mutations, 5 HIT / 1 MISS, 0 newly green; **both rebuilt controls confirmed by reverse mutation**. Also measured: **D-40-23 unimplemented, 9 red, attributed to the orchestrator**. Blind round closed at `759881e`: **173 tests**, triple `166 failed, 5571 passed, 0 skipped` of 5737 identical, pre-registration exact on all four figures, D-40-23 pinned with the value-never-named clause held on **three** axes, 5 mutations on the new cells all CAUGHT. **Adversary round owed — all three of T040's earlier sessions are gone** |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` | `feat/t040-engine` | impl-done | round 4 at `dfc71e1`, 40 ahead. **D-40-F** closed with `node:util`'s slot predicates — 8 281 ms → 68 ms on a 1.2 MB submission — `Object.prototype.toString` dispatch rejected though faster, because it **invokes user code the old version did not**. **D-40-G** closed with the fourth slot; acceptance is the reverse mutation, 9 + 58. **S10 closed after three rounds by changing the INPUT**: `resolve.ts:191` is the mechanism, observable only on a bundle where two files claim one `id@version`. Gates 0 unfiltered; targeted 73/0/0 hitting the pre-registered 69→73; triple `1 failed, 5783 passed, 0 skipped` of 5784 identical; reconciliation measured both sides, `5784 − 220 = 5564` = base at `752721d`. 7 mutations, 4 HIT / 3 MISS / 0 newly green, **all three MISSes one diagnosis against itself**. **Round 5 at `0bb7ef8`, 6 commits: D-40-H closed** — `ToNumber` as `+value` not `Number()`, a **third axis** nobody's cells varied and the only mutation redding it alone; **D-40-23 built with its propagation half normative** (D-40-24). Witness written **before** the fix, pre-registration exact twice. Targeted 77/77 (pre-registered 73→77), blind 173/173 with its nine reds cleared, triple `1 failed, 5813 passed, 0 skipped` of 5814 identical, reconciliation `5814 − 250 = 5564`. 8 mutations, 5 HIT / 3 MISS, no zeros, 0 newly green. **Adversary round 4 had FAILed at `ccd1dac`**: **D-40-H** charged — `unbox` reads a slot where `SerializeJSONProperty` steps 4a/4b **coerce**, so `[[String/Number]Data]` bypass `@@toPrimitive`/`toString`/`valueOf`; **7 of 15 channels diverge, under-count unbounded** (5 000 008 measured as 10), and at `maxBytes = 100` it **accepts** a submission the ruled number refuses. Barrel-only. Triple `10 failed, 5800 passed, 0 skipped` of 5810 identical, pre-registered on all four figures; base measured independently at `7db3b5e` = 5564; reconciliation `5810 − 173 − 73 = 5564`. 7 mutations, 5 HIT / 1 MISS, 0 newly green; **both rebuilt controls confirmed by reverse mutation**. Also measured: **D-40-23 unimplemented, 9 red, attributed to the orchestrator**. Blind round closed at `759881e`: **173 tests**, triple `166 failed, 5571 passed, 0 skipped` of 5737 identical, pre-registration exact on all four figures, D-40-23 pinned with the value-never-named clause held on **three** axes, 5 mutations on the new cells all CAUGHT. **Adversary round owed — all three of T040's earlier sessions are gone** |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
@@ -10248,7 +10295,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** reverted
+- **State:** impl-done
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
@@ -10364,6 +10411,10 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
         UnserializableValueError  "<operation>: the submission contains a value JSON cannot serialise."
 
   **The value is never named** — an unserialisable input's own content is the last thing a refusal about it should carry, which is the same clause the size refusal carries. **Barrel-only, and that is not a reason to leave it untyped**: D-40-C was barrel-only too, and T100/T263/T270 consume this barrel in-process. **Raised by the blind author rather than guessed at — which is exactly what the implementer did for the cycle at D-40-22, and the reason that ruling exists.**
+
+  **D-40-24, ruled on round 5's open item: D-40-23 is the NARROW reading, and the propagation half is normative.** `UnserializableValueError` types **the engine's own refusal to serialise**; a caller's own throwing `toString` **propagates untouched**, because `JSON.stringify` propagates it too and relabelling it names a refusal this module never made. **Without that half the ruling is satisfiable by *wrap everything that throws***, which is why it is normative rather than an implementation note — measured, the mutation that relabels a caller's error reds exactly one test.
+
+  **The wider reading — every engine-raised coercion refusal typed, including `Cannot convert a Symbol value to a number` and `Cannot convert object to primitive value` — is a numbered follow-up and NOT this task's.** Its implementer reported both escaping as bare `TypeError`s rather than leaving them, and its argument for deferring is the one I am ruling on: **separating them needs `ToPrimitive` reimplemented so the caller's channels are the module's to call and only the final conversion is wrapped — a transcription of the exact step D-40-H was charged for transcribing wrongly.** Taking that inside a fix round would be the fourth instance of a fix introducing the next charge, **written knowingly.**
 
   **D-40-H, ruled (adversary round 4, charged and accepted): `unbox` reads a slot where the serialiser performs a COERCION, and two of the four slots coerce.** `SerializeJSONProperty` step 4 is not four slot reads:
 
