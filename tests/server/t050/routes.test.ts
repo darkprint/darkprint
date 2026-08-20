@@ -39,6 +39,8 @@
    ============================================================ */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 import { getSharedDbClient } from "@/lib/db";
 
@@ -65,6 +67,8 @@ import {
   signIn,
   withHandle,
 } from "./fixtures";
+
+const BACKEND_MD = fileURLToPath(new URL("../../../backend.md", import.meta.url));
 
 let t: Scratch;
 let originalDatabaseUrl: string | undefined;
@@ -100,17 +104,81 @@ describe("the five published URLs are served", () => {
     });
   }
 
-  it("serves no route the contract does not publish", () => {
-    /* `Forbidden` names `app/api/account/{notifications,saves,delete,keys}/**` — T190's, T140's,
-       T120's and T230's. A route appearing there is a partition breach, and it is cheaper to
-       catch here than at whichever task's merge discovers its own path already taken.
-       `DELETE /api/account` is specifically not T050's, whatever seams.md's SEAM-50 said. */
-    const published = new Set<string>(ROUTE_NAMES.map((n) => ROUTES[n].path));
-    const extra = servedPatterns().filter((p) => !published.has(p));
+  it("serves no route under app/api/account/ that no task claims", () => {
+    /*
+     * This asked the wrong question until T140's implementer measured it against real routes.
+     *
+     * It compared every served pattern under `app/api/account/` against T050's five and called
+     * the difference "a partition breach". But `Forbidden` in T050's section means *forbidden to
+     * T050* — `app/api/account/{notifications,saves,delete,keys}/**` are T190's, T140's, T120's
+     * and T230's `Owns`. **Treating "not mine" as "must not exist" is a different claim**, and
+     * under it the guard reds for each of those four tasks the moment its own granted route
+     * lands: T140's `/api/account/saves` and `/api/account/saves/migrate` reded it at `ecd6b29`,
+     * and T230's `app/api/account/keys/**` is the next one queued.
+     *
+     * That is `## A guard must not demand what its own reader is forbidden to write` — the
+     * reader here would have met a red in a merged blind suite, naming a partition breach, in a
+     * file it may not edit, against a path its own `Owns` grants. The cheap reading is *my route
+     * is in the wrong place* and the cheap fix is to move a route the contract publishes.
+     *
+     * So the criterion is now what it always meant: **a served route under this tree belongs to
+     * SOME task**. T050's five, or a path some section's `Owns` line claims. The domain is
+     * derived from `backend.md` rather than from a list here, so the next task granted a subtree
+     * is covered the day its row says so and this file is not edited again.
+     *
+     * Fails CLOSED: if no `app/api/account/` claim is found anywhere in the document, the parse
+     * broke and that is an error, not an empty exemption set.
+     */
+    const md = readFileSync(BACKEND_MD, "utf8");
+    const claimed = md
+      .split(/^### /m)
+      .slice(1)
+      .flatMap((section) => {
+        if (!/^T\d{3},/.test(section)) return [];
+        /* Contract only, never the Log — a Log entry quoting a path is a record of what happened,
+           not a declaration of what the task owns. Same rule as `wave-dependencies`. */
+        const owns = /- \*\*Owns:\*\* (.*)$/m.exec(section.split("- **Log:**")[0] ?? "")?.[1] ?? "";
+        return [...owns.matchAll(/`(app\/api\/account\/[^`]*)`/g)].map((m) => m[1]!);
+      })
+      /*
+       * A subtree claim and a single-file claim are NOT the same shape, and collapsing them
+       * into one string is a bug this guard was written with and caught in its own falsification.
+       *
+       * `app/api/account/saves/**` claims `/api/account/saves` **and everything under it**.
+       * `app/api/account/route.ts` claims `/api/account` **and nothing under it** — T050's `Owns`
+       * enumerates five exact route FILES rather than a subtree (`lib/server/accounts/http.ts`
+       * says so and explains why). Normalising both to a bare string and prefix-matching made
+       * `/api/account` swallow the whole tree, so an unclaimed `/api/account/zzz` went green.
+       * **The narrowest claim in the document subsumed every other**, and the falsification that
+       * had red a moment earlier stopped redding — which is the only reason it was noticed.
+       */
+      .map((glob) => {
+        const withoutApp = glob.replace(/^app/, "");
+        return withoutApp.endsWith("/route.ts")
+          ? { pattern: withoutApp.replace(/\/route\.ts$/, ""), subtree: false }
+          : { pattern: withoutApp.replace(/\/\*+$/, "").replace(/\/$/, ""), subtree: true };
+      });
+
     expect(
-      extra,
-      `these URLs are served and unpublished. \`Forbidden\`: ` +
-        `app/api/account/{notifications,saves,delete,keys}/**`,
+      claimed.length,
+      "No `app/api/account/...` path was found in any task's Owns line in backend.md. Either the " +
+        "Owns format moved or the section split did — both make the assertion below vacuous, and " +
+        "a vacuous version of this check passes every unclaimed route.",
+    ).toBeGreaterThan(0);
+
+    const published = new Set<string>(ROUTE_NAMES.map((n) => ROUTES[n].path));
+    const unclaimed = servedPatterns().filter(
+      (p) =>
+        !published.has(p) &&
+        !claimed.some((c) => p === c.pattern || (c.subtree && p.startsWith(`${c.pattern}/`))),
+    );
+    expect(
+      unclaimed,
+      "A route is served under app/api/account/ and no task's Owns line claims it. This is not " +
+        "about T050: a path that belongs to nobody is a route whose contract, error surface and " +
+        "auth rule have no author. Add it to the owning task's Owns in backend.md, or move it " +
+        "under a tree that is claimed. Claimed today: " +
+        claimed.map((c) => (c.subtree ? `${c.pattern}/**` : c.pattern)).join(", "),
     ).toEqual([]);
   });
 });
