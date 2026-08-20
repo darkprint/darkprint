@@ -11155,6 +11155,51 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
     `Object.keys` for an object) and read the CONTENT live at each index, which is
     `Get(value, index)`. Second round running that a blind reference has had to be corrected to a
     ruling rather than the ruling checked against it.
+  - 2026-08-20 test author, **round 7: D-40-J and D-40-K.** 20 tests in `domain.test.ts`; suite
+    **221**. Targeted **212 failed | 9 passed | 0 skipped (221)**; `npx eslint .` **zero bytes**,
+    exit 0, read in full; `tsc --noEmit` 2, both the absent module.
+    **The ninth green is new and it is not coverage**: the D-40-J equivalence cell measures a
+    property of JavaScript, not of the module, so no implementation can break it. It is named here
+    rather than left to raise the count quietly — and it is not vacuous, because its own control
+    (the domain shrinking to nothing) reds.
+  - 2026-08-20 test author: **the cells the block told me NOT to write are absent, and that is the
+    substance of D-40-J's half.** No cell claims `Object(x) === x` catches more than
+    `typeof === "object" || "function"`: measured over a domain built by construction — one witness
+    per `typeof` result, the boxed primitives, a proxy over each — **zero disagreements over 19
+    values.** The ruling is about the READER, and a cell asserting a behavioural difference would
+    be asserting something false. **And the top-level cell is written down LABELLED as agreeing by
+    delegation** — the walk falls through to `JSON.stringify`, which applies its own holder wrapper
+    and calls `toJSON`, so it agrees with the thing it is supposed to be an independent route to.
+    Omitting it would leave the next reader to add it and read its green as coverage.
+  - 2026-08-20 test author: **each half of `ToLength` is held by its own instrument, measured
+    rather than claimed.** Removing the truncation half reds exactly the two truncation cells;
+    removing the NaN half reds exactly the two NaN cells; **zero overlap.** The three agreeing
+    controls (`-1`, `"2"`, `{valueOf:()=>2}`) are what make that a ruling rather than a patch —
+    `-1` because the loop bound is immediately satisfied and `ToLength(-1)` is 0, the other two
+    because `>=` coerces exactly as `ToNumber` does. **And the refusal-set change is bound**: a
+    proxied array with a NaN length is refused today and accepted at the ruled number after.
+  - 2026-08-20 test author: **11 CAUGHT, 0 MISS, 4 GAP — and all four GAPs were predicted in
+    advance**, which is the only kind of zero worth reporting. Two are the equivalence claim above
+    (the narrow repair, and dropping step 2's BigInt half); two are `ToLength` clauses the loop
+    bound or the byte budget already subsumes (the negative clamp, the 2^53-1 cap). Four
+    mutations were aimed at this round's own controls and all four red.
+  - 2026-08-20 test author, **and one mutation is UNRUNNABLE, which is a finding rather than a
+    gap.** *The walk stops short-circuiting* cannot be run: with the bound checked only at the end,
+    a `1e30` length trap clamps to 2^53 - 1 and the measure becomes a **synchronous
+    non-terminating loop**. `testTimeout` fires between async ticks and a synchronous loop never
+    yields, so the absence of the short-circuit is a **HANG, not a red**. Measured, not predicted —
+    it stalled a sweep for twenty-one minutes and had to be killed by process group, leaving four
+    orphaned workers behind. **So D-40-20's short-circuit is not an optimisation: it is what makes
+    the refusal reachable at all, and no test can demonstrate its absence.** Same class as round
+    4's fourth control mutation.
+  - 2026-08-20 test author, **three instrument defects in one round, each caught by checking the
+    instrument rather than the result.** A `grep` pipe block-buffered the sweep's output, so a
+    finished run looked like a stalled one; `python3` then block-buffered it again until `-u`;
+    and a restart raced a still-live sweep, which left **the reference mid-patch** — so any number
+    read off either run would have been measured against a module that was neither the reference
+    nor a stated mutation. **The reference was diffed against its canonical copy before any result
+    was believed**, restored, and the baseline re-verified at 221/221 before the sweep was re-run
+    in foreground batches. *Check the instrument, not the result* three layers deep in one sitting.
 
 ### T080, Registry read model and read API
 
