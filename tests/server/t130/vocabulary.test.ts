@@ -79,6 +79,42 @@ async function classFrom(name: string): Promise<new (...a: never[]) => Error> {
   return value as new (...a: never[]) => Error;
 }
 
+/**
+ * The published renderer. `backend.md`: "`withProfileStore` is published and no caller needs
+ * it — the route uses `withProfileErrors` only", and D-130-13 takes the former off the barrel.
+ * Bound by name so its absence quotes the clause rather than merely failing.
+ */
+async function renderer(): Promise<(r: Request, h: () => Promise<Response>) => Promise<Response>> {
+  const mod = await loadProfiles();
+  const value = mod.withProfileErrors;
+  if (typeof value !== "function") {
+    throw new Error(
+      `@/lib/server/profiles exports no \`withProfileErrors\`.\n` +
+        `  It is the route's error boundary and the only place a caller sees a problem \`type\`.\n` +
+        `  found: ${Object.keys(mod).sort().join(", ") || "(nothing)"}`,
+    );
+  }
+  return value as (r: Request, h: () => Promise<Response>) => Promise<Response>;
+}
+
+/** The `type` member of the problem document this error renders as. */
+async function renderedType(
+  withProfileErrors: (r: Request, h: () => Promise<Response>) => Promise<Response>,
+  error: unknown,
+  what: string,
+): Promise<unknown> {
+  const request = new Request("https://darkprint.test/api/authors/someone");
+  const answered = await withProfileErrors(request, () => Promise.reject(error));
+  if (!(answered instanceof Response)) {
+    throw new Error(`withProfileErrors answered no Response for ${what}.`);
+  }
+  const body: unknown = await answered.json();
+  if (body === null || typeof body !== "object") {
+    throw new Error(`withProfileErrors rendered ${what} as a non-object body.`);
+  }
+  return (body as { type?: unknown }).type;
+}
+
 /** Whatever `getProfile` rejected with, or a thrown marker if it did not reject. */
 async function refusalFrom(db: unknown, handle: string): Promise<unknown> {
   const getProfile = await bind("getProfile");
@@ -136,41 +172,85 @@ describe("D-130-10: a refused vocabulary and a dead store are different conditio
     ).toBe(false);
   });
 
-  it("a store that genuinely cannot answer still raises the store class", async () => {
-    /* The other half of the 2x2, and without it the cell above is satisfied by a module that
-       raises `MalformedStoredVocabularyError` for everything. A distinction needs both sides. */
+  it("a store that genuinely cannot answer does NOT raise the vocabulary class", async () => {
+    /* The saturation half. Without it the cell above is satisfied by a module that raises
+       `MalformedStoredVocabularyError` for everything, and a split is only held by a suite
+       that reds when it is erased in EITHER direction.
+
+       ── this cell used to name `ProfileStoreError` and that was a defect of mine ──
+       It asserted which class a dead store raises, and the answer depends on WHERE the first
+       store call sits — which the contract settles and my reference happened to settle
+       differently. Line 117 of T130's section: `withProfileStore` wraps only this module's own
+       statements "because `getPublicAuthor` and `blueprints` seal their own, and pulling their
+       faults into this wrapper would re-wrap them — a sanitizer applied twice does not
+       sanitize twice, it relabels". So a dead store rejects with whatever the FIRST call's
+       module seals, and that is correct rather than incidental. The cell was asserting my
+       oracle's layering against a published ruling.
+
+       What D-130-10 actually protects is the SPLIT, and the split is layering-independent:
+       whatever a dead store raises, it is not the vocabulary class.
+
+       ── the caveat, stated precisely so somebody else can extend it ──
+       Under the published layering the first call is `getPublicAuthor`, which is outside the
+       wrapper, so **this module's OWN store fault is not reachable through a closed port at
+       all**. This cell therefore exercises the first call's seal, not this module's. Reaching
+       the module's own store fault needs the store UP and one of its own statements failing,
+       which a closed port cannot produce. Reported as owed rather than faked here. */
     const Malformed = await classFrom("MalformedStoredVocabularyError");
-    const StoreError = await classFrom("ProfileStoreError");
 
     const fault = await refusalFrom(
       (closed as unknown as { db: unknown }).db,
       "t130-vocab-no-such-handle",
     );
 
-    expect(fault).toBeInstanceOf(StoreError);
-    expect(fault instanceof Malformed).toBe(false);
+    expect(
+      fault,
+      "a dead store is a store fault, whichever module seals it; it is not a statement about " +
+        "the CONTENT of a release that was never read",
+    ).toBeInstanceOf(Error);
+    expect(
+      fault instanceof Malformed,
+      "D-130-10 in the erasing direction: if a dead store also raised the vocabulary class, " +
+        "the distinction would be present and dead — the value appearing everywhere loses it " +
+        "as completely as the value never appearing.",
+    ).toBe(false);
   });
 
-  it("the two conditions answer different problem `type`s", async () => {
-    /* Neither string is published, so neither is written here. Both are read off errors the
-       MODULE produced and required to differ — which is the whole of D-130-10 and is the only
-       form of it that cannot be satisfied by wording. */
+  it("the two conditions RENDER different problem `type`s", async () => {
+    /* ── this cell looked in the wrong place, and my own note named only two of three ──
+       It read `type` off the instance and said that if it lived on the constructor instead,
+       the cell would say where to look. **There is a third answer neither option covered: the
+       `type` is in the RENDERER.** The class carries `name` on its prototype and nothing on
+       the instance, and `withProfileErrors` is what produces the `problem+json` member — which
+       is also the only place a CALLER ever sees it, so it is where D-130-10's distinction
+       becomes observable rather than merely true.
+
+       Neither string is written down here. Both are read off documents the MODULE rendered,
+       from two errors the MODULE raised, and required to differ. The oracle is the thing being
+       agreed with rather than a second opinion about it. */
+    const withProfileErrors = await renderer();
+
     const refusal = await refusalFrom(s.db, owner.handle);
     const fault = await refusalFrom(
       (closed as unknown as { db: unknown }).db,
       "t130-vocab-no-such-handle",
     );
 
-    const typeOf = (e: unknown): unknown => (e as { type?: unknown }).type;
+    const refusalType = await renderedType(withProfileErrors, refusal, "the refused vocabulary");
+    const faultType = await renderedType(withProfileErrors, fault, "a store that cannot answer");
 
     expect(
-      typeOf(refusal),
-      "D-130-10 gives this condition \"its own sealed class, its own `type`\". If the `type` " +
-        "lives on the constructor rather than the instance, this cell says where to look " +
-        "rather than guessing a string.",
+      refusalType,
+      "D-130-10 gives this condition \"its own sealed class, its own `type`\", and the `type` " +
+        "is a member of the rendered problem document",
     ).toEqual(expect.any(String));
-    expect(typeOf(fault)).toEqual(expect.any(String));
-    expect(typeOf(refusal)).not.toBe(typeOf(fault));
+    expect(faultType).toEqual(expect.any(String));
+    expect(
+      refusalType,
+      "the whole of D-130-10: a caller must be able to tell a release it could not READ from a " +
+        "store that could not ANSWER. Same `type` and the two are one condition on the wire, " +
+        "whatever the classes are behind it.",
+    ).not.toBe(faultType);
   });
 
   it("the parser's diagnostic travels on `cause` and never in the message", async () => {
