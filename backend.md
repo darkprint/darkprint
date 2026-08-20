@@ -4386,8 +4386,10 @@ failed**, which is the one thing this module's boundary exists to prevent. **Att
 ruling it agrees with is a sharper move than attacking the ruling.**
 
 **Ruled: the refusal gets its own sealed class rendered as its own `type`**, and either the call moves
-outside `withProfileStore` or the wrapper passes it through unrelabelled. **`error-hygiene` goes to 23 at
-T130's merge, not 22**, re-stated against the tree actually merged.
+outside `withProfileStore` or the wrapper passes it through unrelabelled. ~~`error-hygiene` goes to 23 at
+T130's merge, not 22~~ — **CORRECTED by D-130-14: 23 counts a class nobody has written.** It is **22 if
+T130 merges as it stands and 23 only once this ruling is implemented**, re-stated against the tree
+actually merged and never carried as a prediction.
 
 ## I ran a full suite inside a slot I had granted by name, for the second time
 
@@ -4567,6 +4569,40 @@ D-130-04 forbids.** The two are one trade: correctness of visibility bought with
 everything. **A cost recorded as the ruling's price cannot later be reported as somebody's laziness**, and
 whoever wants it cheap needs a T080 amendment — T132's shape again. §11.1 at T130's merge, beside the
 other two shortcuts, in those words.
+
+## D-130-14: a ruling made after a round closes is unimplemented contract, and it needs a HOLDER and a MOMENT
+
+T130's implementer, released and holding nothing, reported the fourth finding I invited: **D-130-12 and
+D-130-10 are now contract that no code satisfies.** `6ffdb17` emits `"No such handle."`, not
+`"author: no such handle."`; the vocabulary refusal has no sealed class and no arm. **Both landed after
+the round closed.**
+
+**It is the shape this file already names** — *an amendment to a published signature is not done when it
+is written; it is done when the module matches it or when someone is holding a ticket to make it match* —
+**and neither was true of either.** Not a charge, and it said so: T040's precedent is that an implementer
+cannot have built a ruling that did not exist, and it is not asking for the tree back mid-adversary.
+
+**And `error-hygiene = 23` was the tell.** I wrote it into two places as a fact about the merge. **It is a
+count of classes, one of which nobody has written**, so it would have sat in a report as a measurement of
+code that does not exist. Corrected in both places: **22 if T130 merges as it stands, 23 only once
+D-130-10 is implemented**, and never carried forward as a prediction.
+
+**Ruled — holder and moment, both named.** Both amendments are **owed by T130's implementer**, at **the
+moment the adversary's round returns its verdict**, before any merge. They enter the same queue as the
+round's charges without being charges. **The adversary must not spend a cell on either divergence**: they
+are dated contract, not defects, and a cell that reds on one measures the date a ruling was written.
+
+## A distinction stated in your own words is not a distinction you are applying
+
+T130's implementer's own diagnosis of D-130-10, and it is better than my ruling was. **`http.ts` argues at
+length that pulling `getPublicAuthor`'s fault into the wrapper would relabel a store that was working** —
+and then `terms.ts`, **in the same commit**, seals a *parse* failure as `store-failed`, naming a store
+that was working, for the same reason one level in.
+
+**The tell it names is the one to keep: the argument reads as finished because it IS finished — about
+foreign faults, which is the case it was thinking about.** A distinction written down completely for the
+instance that provoked it looks handled, and the second instance never gets asked. **Not a lapse of
+attention; a property of having done the work well once.**
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
@@ -14493,6 +14529,11 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T130, Profiles and the public author surface
 
 - **State:** impl-done
+- **D-130-14: D-130-12 and D-130-10 are unimplemented contract, owed by T130's implementer at the
+  adversary's verdict, before any merge.** Both landed after the round closed, so they are dated contract
+  rather than defects — **the adversary must not spend a cell on either divergence.** `6ffdb17` emits
+  `"No such handle."` and has no sealed class for the vocabulary refusal. Reported by the implementer
+  itself, released and holding nothing, against its own work.
 - **D-130-12: the 404 `detail` is `"author: no such handle."`**, as a named constant. Three merged
   routes already agreed on `<resource>: no such <thing>.` — T050's `account:`, T080's `blueprint:`,
   T020's `card:` — so this was an unwritten convention rather than an open question. The shipped
@@ -14530,7 +14571,8 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   inside `withProfileStore("getProfile", …)`, so an unparseable vocabulary becomes a `ProfileStoreError`
   and 500s as *Store failed* — **naming a store that was working**, which is the relabelling `store.ts`'s
   own header refuses. Its own sealed class, its own `type`; the call moves outside the wrapper or the
-  wrapper passes it through unrelabelled. **`error-hygiene` goes to 23 at merge, not 22.**
+  wrapper passes it through unrelabelled. **`error-hygiene` is 22 if T130 merges as it stands, 23 only
+  once this ruling is implemented** (D-130-14) — re-stated against the tree actually merged.
 - **Adversary round scope (D-130-08): 43 of the blind suite's 60 cells.** `pins.test.ts` (10) and
   `follow.test.ts` (7) drive `setPins` and `toggleFollow`, which **D-130-06 cut to T131 after the blind
   suite was committed**. They do not merge, they are not deleted and they are not skipped; they stay on
