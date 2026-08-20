@@ -100,19 +100,26 @@ describe("the five published URLs are served", () => {
     });
   }
 
-  it("serves no route the contract does not publish", () => {
-    /* `Forbidden` names `app/api/account/{notifications,saves,delete,keys}/**` — T190's, T140's,
-       T120's and T230's. A route appearing there is a partition breach, and it is cheaper to
-       catch here than at whichever task's merge discovers its own path already taken.
-       `DELETE /api/account` is specifically not T050's, whatever seams.md's SEAM-50 said. */
-    const published = new Set<string>(ROUTE_NAMES.map((n) => ROUTES[n].path));
-    const extra = servedPatterns().filter((p) => !published.has(p));
-    expect(
-      extra,
-      `these URLs are served and unpublished. \`Forbidden\`: ` +
-        `app/api/account/{notifications,saves,delete,keys}/**`,
-    ).toEqual([]);
-  });
+  /*
+   * The partition check that lived here has MOVED to `tests/route-partition.test.ts`, and this
+   * note is here so the removal is not silent.
+   *
+   * It compared every served pattern under `app/api/account/` against T050's five and called the
+   * difference a partition breach — but `Forbidden` here means forbidden to T050, and
+   * `app/api/account/{notifications,saves,delete,keys}/**` are T190's, T140's, T120's and T230's
+   * `Owns`. **It read "not mine" as "must not exist"**, and reds for each of those four the moment
+   * its granted route lands. T140's implementer met it that way and stopped a round on it.
+   *
+   * Moved rather than repaired in place, for two reasons. It is a claim about the whole partition
+   * and not about T050: restricted to this tree it covered 5 of 29 shipped routes, and it now
+   * covers all 29. And **this file opens a scratch database**, so once the check parses
+   * `backend.md` a prose-only commit moving an `Owns` line could flip a database-touching guard —
+   * which the cheap file-guard exemption to the re-gate rule does not cover. T140's implementer
+   * reported that consequence; the new file opens no connection.
+   *
+   * What is NOT lost: the five published paths are still asserted served, one cell each, by the
+   * loop above. That was always the half of this describe that was about T050.
+   */
 });
 
 describe("AC5 — reading the account without a session is problem+json 401, never a fixture", () => {
