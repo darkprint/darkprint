@@ -11740,7 +11740,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **And the block T005 built for T140 cites T140's own criteria as its reasons**: the `save` table's header names T140 and B-10, argues the inline `target_kind`/`target_id` from **T140's AC1**, and names `save_account_target_key` as **T140's AC2**. **The dependency was not merely satisfied — it was satisfied on purpose, by a task that read this one's contract.** A block's *checked against* line is a claim with a timestamp, exactly like a base line, **and nothing re-checks it when the thing it was checked against moves.** Barrel: `@/lib/server/limits`.)
 
-        interface LimitVerdict { allowed: boolean; limit: number; remaining: number; resetAt: Date }
+        interface LimitVerdict { allowed: boolean; limit: number; remaining: number; resetAt: Date; windowMs: number }  // windowMs added by D-230-10
         interface ApiKeyRecord { keyId: string; accountId: string; label: string; createdAt: Date; revokedAt: Date | null }
 
         checkLimit(db: Db, subject: { accountId: string | null; keyId: string | null; ip: string }, bucket: string): Promise<LimitVerdict>
@@ -11753,6 +11753,16 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **AC4 — "a revoked key is refused immediately" — forbids caching `resolveKey`.** The natural optimisation is a process-local map, and it satisfies every other criterion while leaving a revoked key live until the process restarts. If a cache is ever wanted it needs invalidation on revoke, which is a harder thing to get right; state the prohibition rather than leaving it to be discovered.
 
   **AC5 is a negative and negatives go untested.** "An anonymous read below the ceiling is never delayed or challenged" — asserted by measuring that `checkLimit` on an under-ceiling read performs **no write**, not by observing that a response came back. A counter implementation that writes on every read passes a latency-free test on an idle machine and falls over under load.
+
+  **D-230-10, ruled on T230's implementer's charge: `LimitVerdict` gains `windowMs`, and `rateLimited` keeps three parameters.** **My D-230-01 signature could not produce my D-230-01 message.** The form is `"<bucket>: limit of <n> per <window> reached; resets at <ISO instant>."`; `LimitVerdict` published four fields with no window and `bucket` is a name, **so the three-argument form could render the bucket, the number and the instant and could not render `<window>` at all.**
+
+  **And the available derivation is WRONG rather than missing, which is what makes it a ruling.** `resetAt − now` is the time **remaining** in the window, not its **length** — a caller refused thirty seconds into a sixty-second ceiling reads *"limit of 60 per 30 seconds"*. **An adjacent quantity substituted for the one the sentence is about, inside an exact-matched form**, and the fourth instance of that charge after a source size, a loop count, a cause chain and a live extent — **arriving inside the fix for the third.**
+
+  **Ruled toward the verdict rather than toward a fourth parameter, on a discriminator its charger supplied without taking**: a fourth parameter **admits a caller passing a window that disagrees with the verdict it is rendering**, and the verdict-carried field **forecloses it** — one object, one source, and `rateLimited` cannot be called inconsistently. Both spellings refuse to compile when the number is absent, so that is not the discriminator; **consistency is.**
+
+        interface LimitVerdict { allowed: boolean; limit: number; remaining: number; resetAt: Date; windowMs: number }
+
+  **This is an amendment with two holders and both are told in one window** — the blind author's exact-equality assertion over `LimitVerdict`'s key set **reds on the fifth key, correctly**, and *telling only the implementer manufactures D-70-12*.
 
   **D-230-09, ruled on F-230-E: T220's AC6 and T230's admissible form could not both be satisfied, and the fix publishes the 429's KEY SET.** `backend.md` requires T230's 429 to reach the MCP client *with the limit, the reset instant **and the fact that a key exists***. **T230's form carries bucket, number, window and instant — and an admissible form is EXACT-MATCHED, which is its whole purpose.** So an implementation satisfying T220 by naming the key affordance in the message **violates T230's published form**, and one satisfying the form **leaves T220's AC6 unsatisfiable.**
 
