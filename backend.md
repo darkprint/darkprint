@@ -3864,6 +3864,64 @@ distinguishes a live claim from a retracted one being quoted.**
 finding displaced anything is exactly what four of my rulings needed and did not get — **and the check
 that would have answered it is one line longer than the one it ran.**
 
+## `Exact<any, T>` is `true`, so a type binding is vacuous in the position it is written from
+
+**T140's blind author predicted a `TS2322` from its `Exact<SaveRecord, …>` check and reported that it
+COULD NOT FIRE.** With the module absent, `SaveRecord` resolves to **`any`**, and `Exact<any, T>` is
+`true` — **so the compile-time binding is vacuous in the blind tree.**
+
+**And it cannot be falsified from there either**: `tsc` resolves the specifier through `tsconfig` paths
+to the worktree, never to the scratchpad reference, **so no mutation a blind author can run reaches it.**
+**A guard that cannot fail in the only position from which its author can test it** — new, and different
+from every vacuity this file has charged, because the guard is fine and the *vantage point* is not.
+
+**Stated as a gap and handed forward with the falsification owed**: mutate a member optional once the
+barrel exists and require `TS2322`. **T060's blind author saw its `Exact<>` collapse against the error
+type; this one collapses against `any`, and only one of those is visible from the blind side.**
+
+## Absent is not zero, and a sampler that cannot see its own run measured nothing
+
+**Its contention sampler reported `peers=0` across seventeen samples while its own `vitest` was
+demonstrably running.** Almost certainly macOS `ps` truncating `args` — **the 160-character instance this
+file already records, arriving in a second author's instrument.**
+
+**So it attached NO peer figure to any number in the round.** *I would rather say I did not read it than
+print a zero I did not read.* **A sampler blind to the one process it knows is there is blind to every
+process it does not**, and the zero would have read as a clean host.
+
+**Load reported separately from `sysctl` and explicitly not conflated with a peer count** — 58 to 65
+across the window.
+
+## `.next` is tree state that porcelain cannot see
+
+**It ran a build, so `.next` now exists — 36 MB, gitignored — and whoever inherits that worktree gets 2
+typecheck errors rather than 20.** **A fact about one directory's existence that changes what a gate
+reports, invisible to `git status`, and readable only with `ls .next/types` before running anything.**
+
+**That is why the look is owed before the number and not after it**, and it is the first time in this run
+anyone has declared it as *state handed to the next holder* rather than as a premise about themselves.
+
+## Four one-red mutations on four rulings is a measurement that the axes are independent
+
+**D-140-05, D-140-03's term half, D-140-03's card half, and AC4's kind-aware delete each reddened exactly
+one cell, and a different one.** **That is the independence measured rather than argued** — and it is what
+lets a future red name its own ruling.
+
+**Its ownership mutation is the same shape at a finer grain**: of seven non-owner shapes, **exactly one
+reds — the actor INHERITING the owner's id** — which is the delegate-versus-reimplement discriminator
+firing alone, **demonstrable only with an actor whose identity is real but not its own.**
+
+**And the requested `countSaves` mutation answered both halves**: 7 reds, every one a value cell, **169
+passed and every PAIR cell green.** *The value pin holds the ruling, and the pair formulation is
+reading-independent* — **the measurement the request was after, surviving the ruling that inverted its
+expected result.**
+
+**Two of its patches did not express their names** — one whose `keep.delete`/`keep.add` sequence **reads
+as a conjunction and executes as last-wins**, one patched in the wrong file and reported as
+`PATTERN-NOT-FOUND` rather than as a zero. **And its scorer under-predicted five times from one cause:
+vitest quotes test names.** **Second session this hour whose classifier missed on quoting** — T130's was
+backticks — **and both recorded it as one diagnosis rather than five lapses.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
