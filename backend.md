@@ -3680,6 +3680,33 @@ names no `accounts`.** **Green for the declaration rather than for the consumpti
 the distinction *recompute the graph from what contracts CONSUME, not what they DECLARE* exists to
 catch, and the guard cannot make it.**
 
+## The sentence saying the guard is blind to this is what made the guard red
+
+**`wave-dependencies` was RED on base and I did not know**, until T230's blind author measured base
+itself and reported **two** expected reds where the preamble states one. The offender:
+`T230 (claimed) consumes unmerged: T240`.
+
+**The trigger is my own D-230-08, which spelled the observability barrel in order to rule it OUT** —
+and the guard matches `@/lib/server/([a-z]+)` anywhere in the contract body. **The sentence claiming the
+guard would be green over the alternative reading is the sentence that made it red.**
+
+**And the guard already knows this class**: it excludes the Log on exactly this ground — *a Log entry
+quoting a barrel is a record of what happened, not a declaration of what this task consumes*, a
+distinction its own comment says cost a false defect report earlier in this run. **A ruling paragraph
+that names a barrel to exclude it is the same class, one surface over.**
+
+**So both failure directions are now charged.** T230's implementer found it **green for a declaration
+rather than for a consumption** — its routes consume `actorFrom` while its section names no accounts
+barrel. This is **red for a mention rather than a consumption.** **A prose-scanning guard cannot
+distinguish naming a thing from using it, and this run has now paid in both directions.**
+
+Fixed here by not spelling the path in a ruling **about** the guard, which is a symptom fix and is
+recorded as one: **the guard's domain is prose, and prose is where a mention and a use look identical.**
+
+**And base's line is corrected: TWO expected reds, not one** — this and T090's AC6. **Measured by a
+blind author that refused to carry a figure I handed it, which is the third time that refusal has found
+something.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -11901,7 +11928,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **D-230-07, ruled: `resolveKey` refuses anything not of the minted shape BEFORE hashing, and returns `undefined` rather than throwing.** The secret is unauthenticated caller input of unbounded length, so hashing it first is work proportional to attacker input performed to decide the input is worthless — **D-40-B's clause on a path nobody has to be authenticated to reach.** The module **mints** the secret, so its length and alphabet are known by construction. **`undefined` and not a throw, because a caller able to distinguish *malformed* from *no such key* has an identity oracle** — the same thing D-13 charges. **Corollary: `label` is caller data into an unbounded `text` column and gets a published number, and it REFUSES rather than truncates (D-05-09).** **And `subject.ip` arrives from the edge and is bounded before it reaches a hash** — the same shape one call over, reported by its implementer rather than found in a round.
 
-  **D-230-08, ruled: AC3's audit half is (a) ATTRIBUTABLE, not (b) audited.** This module publishes the attribution — `resolveKey` returns `keyId` and `accountId`, and `checkLimit`'s subject carries both — and whoever writes the audit row has what it needs. **T240 is not a dependency and T230 is correctly waved.** **And the guard is blind to the alternative: `tests/wave-dependencies.test.ts` would be green over a (b) reading, because T230's section names no `@/lib/server/observability` and a module nobody imports is not a barrel** — the same blindness as the five-tasks-need-T005 drift.
+  **D-230-08, ruled: AC3's audit half is (a) ATTRIBUTABLE, not (b) audited.** This module publishes the attribution — `resolveKey` returns `keyId` and `accountId`, and `checkLimit`'s subject carries both — and whoever writes the audit row has what it needs. **T240 is not a dependency and T230 is correctly waved.** **And the guard is blind to the alternative: `tests/wave-dependencies.test.ts` would be green over a (b) reading, because T230's section names no T240's observability barrel and a module nobody imports is not a barrel** — the same blindness as the five-tasks-need-T005 drift.
 
   **D-230-01, ruled on T230's blind author's F-230-B: AC1 named a behaviour NO PUBLISHED SURFACE COULD PRODUCE, and the fix is a published renderer.** `checkLimit` **returns** a `LimitVerdict`; it does not throw. `RateLimitedError` sat in the admissible-form block **in no signature, with no published constructor, returned or thrown by nothing** — and every route that could render a 429 is Forbidden to this task, while its own `app/api/account/keys/**` has no published URL, method, body or response. **So *an over-limit request returns 429* had no published caller and nothing blind could drive it.** Fourth instance of *a criterion nothing published can reach*, and the first where the criterion rather than a guard is the thing out of reach.
 
