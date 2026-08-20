@@ -4917,11 +4917,14 @@ instruction: both readings converge on not merging, so standing down loses nothi
 
 ## The merge the owner had just ruled out landed on `backend`, and I committed the RULING on top of it
 
-Reflog, `backend@{1}`: **`merge test/t130-profiles: Fast-forward`, 19:38:26**, in this worktree. Between
-my `69f60da` at 19:34:33 and my `01ed62a` at 19:42:06 — **so the commit whose subject is *owner rules
-T130's blind suite lands with the implementation, not before it* has the merge it rules out as its
-parent.** T130's blind author had mentioned killing a **watcher**; nothing else in this worktree runs
-`git merge`.
+Reflog: **`backend@{19:41:03}: merge test/t130-profiles: Fast-forward`**, in this worktree, **63 seconds
+before my `01ed62a` at 19:42:06** — so the commit whose subject is *owner rules T130's blind suite lands
+with the implementation, not before it* has the merge it rules out as its parent.
+
+~~T130's blind author had mentioned killing a watcher; nothing else in this worktree runs `git merge`.~~
+**WITHDRAWN — wrong on both halves, and see the correction two entries below.** I quoted **19:38:26**,
+which is `test/t130-profiles@{…}: merge backend`, **the other branch's reflog and the opposite
+direction.** I read one ref's log and attributed it to another.
 
 **And my guards were green across it, which is the part worth keeping.** I ran seven before committing
 `01ed62a` and they passed. **None of them typechecks**, and the nine files import `@/lib/server/profiles`,
@@ -4942,6 +4945,44 @@ had already withdrawn — **an automation outlives the intent that created it**,
 the author rather than the process. And **I chose a guard subset by price and then read its green as a
 property of the tree**, which is the same act as reading a suite's green as a property of code it does not
 reach.
+
+## I read one ref's reflog and attributed it to another, then built an accusation on it
+
+**Corrected.** The two entries are one branch apart and three minutes apart, and they run in **opposite
+directions**:
+
+        test/t130-profiles@{19:38:26}   merge backend            -> moves the BLIND branch. Its act.
+        backend@{19:41:03}              merge test/t130-profiles -> moves BASE, in this worktree.
+
+**I quoted the first and called it the second**, put `19:38:26` in the file and in a report to the owner,
+and named a **watcher** as the actor. **The watcher could not have done it**: its body is
+`git worktree list`, `grep`, `sleep`, `echo` — **no git write of any kind** — and its author offered that
+as a falsifier before making its case, along with the sharper one: *if any command I issued contains
+`git merge test/t130-profiles`, my account is wrong.* Its branch's reflog is nine entries and **every one
+is `merge backend` into itself.**
+
+**Its own hypothesis is likelier than either of mine, and it is the one that indicts it rather than
+exonerates it**: it put `cd ~/Github/darkprint && git merge --ff-only test/t130-profiles` in front of its
+user **twice**, and the reflog line at `19:41:03` is exactly what that string produces with `backend`
+checked out. **63 seconds before my commit, inside the window the owner was answering me in.** It states
+it cannot see their terminal and does not claim to — **and keeps the half that is its own regardless of
+who ran it: *putting a loaded command into a decision brief is mine.***
+
+## Misattribution in the PLEASANT direction is the one nobody corrects
+
+Its framing, and it is why its report is trustworthy in a way a conclusion never is. **The comfortable
+answer for it was *not me*, so it led with the falsifier** — the exact string that would prove its account
+wrong — before offering any evidence for itself. **A party that hands you the test that would sink it has
+told you more than a party that hands you a proof.**
+
+**The general form, and it binds me twice over here**: I reached for the reading in which the failure was
+somebody else's automation, and the evidence I reached for was **a reflog I had not checked belonged to
+the ref I was talking about.** *An attribution is a measurement.* It owes its instrument like any other,
+and mine was the wrong file.
+
+**And it verified the half that protects it rather than accepting it**: `685382a` is not an ancestor of
+`backend`, base carries 0 of its nine files, its tip is unchanged. **A reset it was told was safe, checked
+by the party it would have cost.**
 
 ## Every sha in a report is a measurement, including the ones that are only context
 
