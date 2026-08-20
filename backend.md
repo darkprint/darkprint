@@ -3949,6 +3949,155 @@ where these are the two loudest things running.
 **I could not terminate them: the action was refused by this session's permission classifier.** Surfaced
 to the owner rather than worked around, and reported to the session that owns them.
 
+## A substitution displaces the QUOTATION of what was wrong along with the instruction
+
+**T130's implementer found that my D-130-01 displacement broke the ruling it was applying.** The
+substitution replaced `validated: boolean` with `validated: number` **everywhere in the section —
+including inside the ruling's own sentence *the block published `validated: boolean`***, which is
+**evidence rather than instruction.** The ruling then read *the block published `validated: number`
+while both surfaces declare a count*, **arguing with itself.**
+
+**So the rule has a second half nobody had stated: a substitution displaces every occurrence, and some
+occurrences are the record of what was wrong.** *A retraction has to keep what it retracts* — this file
+says that about deletions and had not said it about **replacements**, which is the form displacement
+actually takes. **Displacing correctly is not one operation; it is remove the instruction, keep the
+quotation.**
+
+**Four charges against that section for landing rulings as additions, and the fifth is for landing one
+as an over-broad substitution.** Fixed here.
+
+## A `grep -c` that counted the sentence making the claim
+
+**T130's implementer shipped a comment asserting `grep -rn "throw "` over its module returns exactly one
+line. It returns six — and three are its own PROSE describing the rule, including the sentence making
+the claim.**
+
+**The count answers *does the string appear*; the claim was *does this module author a refusal*.** Two
+sentences, **and its own tell fired**. Corrected with the question and the claim in one sentence and the
+real numbers: three `throw` statements, **none taking a caller's input as its subject, so no published
+function of this module rejects anything a caller can send** — which is the property, and why there is
+one error class and no `isDecision`.
+
+**Its third correlated-measurement instance this session**, after reading `head`'s exit code. **Its own
+note: *attention is not the variable* — both were caught by re-running rather than by re-reading.**
+
+## A digest of an error message is a well-formed digest
+
+**T130's implementer's first handover stamp was a sha256 of a `fatal:` string and it looked exactly like
+a stamp.** `FILES=$(… | sort)` then `for f in $FILES` — **zsh does not word-split an unquoted
+parameter**, so `git hash-object` received the eight paths **joined by newlines as one argument**,
+answered `fatal: could not open '<all eight>'`, and the pipeline hashed **that text** into
+`67c50de8…`: sixty-four hex characters with nothing to do with its files.
+
+**Fifth zsh-versus-bash instance in this run and the first whose output was a plausible VALUE rather than
+an obvious zero.** The `SCOPE="a b c"` case printed *No test files found* seven times, **which announces
+itself.** A content digest announces nothing — **it is 64 hex either way — and it was going into the one
+field of a handover that has no redundancy.**
+
+**Its rewrite carries the check the first lacked**: every id asserted to be 40 hex, the manifest asserted
+to contain no `fatal`, printed as `SELF-CHECK OK` beside the digest. *Check the instrument, not the
+result* — **and here the instrument is what produced the result.**
+
+## Stating the METHOD is what made the digest travel
+
+**T140's combined digest did not reproduce and its per-file ones did, so the tree was fine and the
+combination was not.** T130's implementer read that and shipped **the method with the number**: paths
+from `git status --porcelain -uall` field 2, `LC_ALL=C` sorted, one line of
+`<git hash-object><two spaces><path><LF>` each, `sha256` over that stream, nothing trailing.
+
+**Reproduced here exactly — all eight ids and the combined figure.** **A digest without its method is a
+claim only its author can check.**
+
+**And it chose git's own blob hashes rather than a content hash, which is the stronger half**: after the
+commit, `git ls-tree -r HEAD` shows **the same eight object ids verbatim** — **so a mismatch names WHICH
+file rather than only that something moved.** Verified after committing, not before.
+
+## Neither declining a relay nor accepting it
+
+**Three sessions declined my relayed authorisation. T130's implementer did neither, and drew the
+distinction the other three had not**: *you are not asking me to act, you are telling me you will act
+under an authorisation you hold. That needs nothing from me except the tree and a stamp.*
+
+**So the question was never whether the relay was good enough to act on — it was whether anyone needed
+to act on it at all.** *Releasing a tree costs no authority*, and the whole standoff was about an act
+that had a second party who did not need one.
+
+## A superseded document is only superseded where the READER lands
+
+**D-140-04 ruled `seams.md`'s T140 rows superseded eight days ago and left the rows standing.** They are
+still there, still publishing `DELETE /api/account/saves/{key}` and `{ target: string }`, and so is
+`components/ui/FavoriteStar.tsx:28`, which carries that same dead route **in the code**.
+
+**The charge D-140-04 itself made is the one it left open**: *silence makes an author ask; a
+contradiction lets them proceed.* A ruling recorded in `backend.md` and not landed in the document
+**converts silence into contradiction** — before the ruling a reader of `seams.md` had one wrong
+surface, after it they have two surfaces and no way to know which is live. **Fourth instance this run of
+a superseded sentence left standing**, and the first where the standing copy is a `TODO` in a source
+file rather than a line in a document.
+
+## `rulings-bind` could not see a single ruling from any task in flight
+
+Its domain regex was `\bD-(\d{2})-`, which **cannot match `D-130-06`**: after `D-` it takes `13`, then
+wants a `-` and finds `0`. **Every `D-130-*`, `D-140-*` and `D-230-*` — the entire id space of the three
+tasks now open — was outside the guard**, and it was green because nothing had yet arrived in the region
+it was blind to.
+
+**Same shape as `error-hygiene`'s absent class**: a domain built to a pattern rather than to the
+document, excluding exactly what was in use. **And it was falsifiable only by first creating the thing it
+could not see** — widened to `\d{2,3}`, then `## D-140-07` added to the preamble with no citation in
+T140's section, which red with `D-140-07: argued in the preamble, absent from T140`; the citation made it
+green. **A widening that stays green proves the widening, not the guard.**
+
+## D-140-07: `app/api/account/saves/**` is four routes over ONE request shape
+
+D-140-04 charged two published request shapes for one route and left the surface owed by me. Ruled, and
+the shape is **not a choice between the two** — it is the barrel's own parameter, so the route translates
+nothing and there is nothing for an implementer to invent or a blind author to guess.
+
+        GET    /api/account/saves          —                               200 SavesView | 401 500
+        POST   /api/account/saves          { kind, refId }                 200 SavesView | 400 401 500
+        DELETE /api/account/saves          { kind, refId }                 200 SavesView | 400 401 500
+        POST   /api/account/saves/migrate  { targets: { kind, refId }[] }  200 SavesView | 400 401 500
+
+**SEAM-62's key space is WITHDRAWN, not mapped.** `blueprint:<slug>` cannot resolve under B-09's
+per-owner uniqueness, `node:<id>@<version>` carries the version grain B-10 forbids, `bundle:` is not a
+member of the enum and `term` is missing from the keys — **a translation would have to invent three
+things the contract does not state.** Whatever mapping the browser-local set needs is **T262's**, which
+owns the `localStorage` key and is the only thing that knows what is in it.
+
+**`DELETE` carries a body because `refId`'s lexical shape per kind is unpublished.** A
+`/{kind}/{refId}` segment has to know whether a blueprint's ref contains a `/`, and a catch-all makes the
+split ambiguous. **Cost stated: a body on `DELETE` is awkward for proxies and caches**, neither of which
+touches a private authenticated surface.
+
+**No 403, and the reason is T050's rather than a fresh derivation.** `lib/server/accounts/http.ts` ships
+it: every route passes `session.accountId`, so `NotAccountOwnerError` compares an id against itself.
+**Consequence, and it binds the blind author: AC1's non-owner denial is UNREACHABLE from HTTP in this
+task** — module cells drive it, route cells must not expect a 403, and **its absence is not evidence the
+denial is untested.**
+
+**No 404 on a write, deliberately.** A write-time existence check on a polymorphic target is exactly the
+oracle AC1 closes — 404 for a private blueprint and 200 for a public one tells a stranger which private
+slugs are real. AC3 already answers it at read time. **Cost: a client typo is accepted silently.**
+
+**The read returns both published functions' answers.** AC3 requires `listSaves` and `countSaves` to
+agree by construction; **a route deriving `count` from `saves.length` would satisfy that agreement by
+making it unobservable.** One payload, both values, one extra query per read.
+
+**The writes answer the resulting `SavesView` rather than 204**, because `lib/server/http` publishes `ok`
+and no `noContent` and is not in T140's `Owns` — a 204 would be a raw `Response` beside the envelope
+every other status uses. It is also the shipped convention (`200 AccountRecord` after every account
+`PATCH`), and it makes **AC2's idempotence drivable in two requests instead of three.**
+
+**No handle is required.** A save is private and is never rendered under a public identity. **The
+deciding case is AC5's own**: the browser-local set migrates *on first sign-in*, and an account on its
+first sign-in has `handle: null` until it reaches `PATCH /api/account/handle` — **requiring a handle
+would 403 exactly the account AC5 is about.**
+
+**`savedAt` crosses as an ISO string**, since `SaveRecord.savedAt` is a `Date` and `ok` is
+`Response.json`. Stated because it is the one field where a blind route cell and a blind module cell
+assert different types for the same name.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -7107,14 +7256,17 @@ it does not decide differently inside a worktree.
 | T020 | Card library: versions, digests, private cards | T000, T025 | `lib/server/cards/**` | `../darkprint-wt-t020-cards` | `feat/t020-cards` | **merged** | round-2 defects (D-20-03 neighbor-only chain check, D-20-04 T-02 seen-set + O(1) walk) fixed at `c5c2b0e`; typecheck/lint/build clean; 4001/4001 on three consecutive serialised runs |
 | T030 | Ontology store, merged view, versioned releases | T000, T025 | `lib/server/ontology/**` | `../darkprint-wt-t030-ontology` | `feat/t030-ontology` | **merged** | 155 blind tests on `test/t030-ontology`, all red on the one missing module, exit 1 over 6 files; every fix measured by a module mutation |
 | T050 | Accounts and sessions | T000, T070 | `lib/server/accounts/**`, `app/api/auth/**`, `app/api/account/{route,profile,handle,email,default-visibility}` | `../darkprint-wt-t050-accounts` | `feat/t050-accounts` | merged | merged at `194dd86` as the eleventh task, **tagged `t050-verified` only after the merge was measured**: full suite on base at `42d4ac1`, `1 failed, 5443 passed, 0 skipped` of 5444, the one red T090's known `persistArtefacts` dependency, stamps identical both ends. The 5444 is **measured**, and it is exactly the number T050's adversary computed as arithmetic and refused to offer as a result. Adversary **PASS** after four rounds. D-50-21's four falsifications each predicted before running: F1 1 red via `ArchiveConflictError` from a barrel the guard never names, F2 guard-green/module-red as pre-registered, F3'' 3, F4 3 ⊃ F1 with 2 unique. Sites 2/3/4 pairwise disjoint, site 1 a superset of all three. Blind axis re-measured at `17639b1`: **7 predictions, 7 hits**, site 1 redding 15 of 16 cells. Triple `1 failed, 5427 passed, 0 skipped`; non-T050 at 5209 from three parties and three trees. Standing: eight round-1 behaviours colocated-only, D-50-20 deferred by ruling, `NamingStoreError`'s arrival observed colocated only |
-| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind) | `feat/t040-engine`, `test/t040-engine` | impl-done | **Round 6 at `70a4074`; blind at `f7d1407` (201 tests); adversary round 6 pending.** Nine charges closed across six rounds — D-40-A/B/C, D-40-D, D-40-F, D-40-G, D-40-H, D-40-I — plus D-40-23 (mine, ruled after a round closed). **Every charge but the first was introduced by the fix for the one before, until D-40-I was ruled as a boundary to break that.** Latest triple `1 failed, 5834 passed, 0 skipped` of 5835, reconciliation `5835 − 271 = 5564`. **Round 7 at `ebb5e24`: D-40-J and D-40-K closed**, witness first, pre-registration exact; triple `1 failed, 5849 passed, 0 skipped` of 5850, `5850 − 286 = 5564`; sweep 5/5 HIT; **retirement 0 across 16 by identity**; **the delegated/transcribed candidate set shipped in `limits.ts` with all six uncharged transcriptions mutated, none at zero**. **Blind has seen neither D-40-J's callable cells nor D-40-K.** Adversary round 6 had FAILed at `456bfc6`: **D-40-J** — `typeof === "object"` for *Type(value) is Object*, so a callable carrying `toJSON` is dropped; unbounded under-count, `maxBytes` bypass, barrel-only. **The Log is the history; this row is a summary and stops growing** |
+| T040 | Engine service: validate and analyze | T000, T030 | `lib/server/engine/**`, `app/api/validate/**` | `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind) | `feat/t040-engine`, `test/t040-engine` | merged | **merged at `ad44537` as the thirteenth task, tagged `t040-verified`, ON A FAIL.** Seven adversary rounds, twelve lettered charges, five sessions of which three no longer exist. **D-40-L charged, measured and NOT fixed here** — `limits.ts:468` reads `Number(length)` where `LengthOfArrayLike` is `ToNumber`, so the walk **answers where the formula refuses**; one-line repair measured at 10 of 10, carried as a numbered follow-up. **Every charge from D-40-E on is barrel-only and its consumers do not exist**, which is why an eighth round was not run while eleven tasks sat idle. Ships the delegated/transcribed audit that ends the sequence. **Standing: an unexplained 1-in-21 red whose non-reproduction is SEVEN clean runs rather than twenty, the load axis having been uncalibrated by three runaway burners** |
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
-| T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | tests-written | blind suite `3337fb0`: **176 cells over 6 files**, `167 failed, 9 passed, 0 skipped` twice with identical failing sets. **The nine greens measure the DRIVER** — closed port `ECONNREFUSED`, dropped table `42P01`, and **drizzle rendering bound `accountId`/`refId`, which settles D-140-06's premise before implementation.** Reference 176/176 first try, offered as the weaker result. 18 mutations: **four one-red mutations on four rulings**, and **exactly one of seven non-owner shapes reds** under a re-implemented ownership check. **`SaveRecord`'s `Exact<>` is vacuous from a blind tree — `Exact<any,T>` is `true` — and cannot be falsified from there.** Implementation at `3f0f3f9`+ pending its own gate. **Route surface owed by the orchestrator (D-140-04)** |
+| T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | tests-written | blind suite `3337fb0`: **176 cells over 6 files**, `167 failed, 9 passed, 0 skipped` twice with identical failing sets. **The nine greens measure the DRIVER** — closed port `ECONNREFUSED`, dropped table `42P01`, and **drizzle rendering bound `accountId`/`refId`, which settles D-140-06's premise before implementation.** Reference 176/176 first try, offered as the weaker result. 18 mutations: **four one-red mutations on four rulings**, and **exactly one of seven non-owner shapes reds** under a re-implemented ownership check. **`SaveRecord`'s `Exact<>` is vacuous from a blind tree — `Exact<any,T>` is `true` — and cannot be falsified from there.** Implementation at `3f0f3f9`+ pending its own gate. **Route surface was owed by the orchestrator (D-140-04) and is now PUBLISHED as D-140-07**: four routes under `app/api/account/saves/**` over one request shape, which is `saveTarget`'s own `target`. No 403 (T050's reason, cited not re-derived) and no 404 on a write (the existence oracle AC1 closes), so **AC1's non-owner denial is unreachable from HTTP and route cells must not expect it**. `seams.md`'s SEAM-61/62 and `FavoriteStar.tsx`'s `TODO(SEAM-62)` corrected in the same commit |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | `../darkprint-wt-t230-limits` (impl), `../darkprint-wt-t230-limits-tests` (blind) | `feat/t230-limits`, `test/t230-limits` | tests-written | module `8338951`, 17 files across two trees, four sealed classes so the merge count is **18 → 22**. Gates ITS measurements at `0f23379`, scope TARGETED: `typecheck` 0 unfiltered, `lint` 0 read in full, `vitest lib/server/limits` **84/84** — **not a full suite, not a triple, and the three repo guards it pre-registered green were outside that scope so their green is still a prediction.** **Both pre-registered candidate reds passed and the two real ones were elsewhere**: a lone surrogate walking a control-character check **in the opposite direction from a NUL**, and a refusal test whose input was accepted. Blind suite at `test/t230-limits`, 7 ahead |
 | T100 | Publishing and releases | T010, T020, T025, T040, T050, T060, T070, T090 | `lib/server/publish/**`, `app/api/bundles/**` | — | — | todo | — |
-| T130 | Profiles and the public author surface | T050, T060, T080 | `lib/server/profiles/**`, `app/api/authors/**` | `../darkprint-wt-t130-profiles` (impl), `../darkprint-wt-t130-profiles-tests` (blind) | `feat/t130-profiles`, `test/t130-profiles` | tests-written | blind suite `32556b7`: **73 cells over 8 files**, pre-registration exact on all four figures **and all six pass identities** — `67 failed, 6 passed, 0 skipped`. Base measured independently at `1b90422`, its one red identity-matched; reconciliation pre-registered as arithmetic and measured exact at 5637. **Reference 73/73 first try, offered as the WEAKER result.** 26 mutations, 20 HIT; **two of its own patches reddened 0 and had not mutated**; six aimed at its own controls, six caught; **K2 truncating candidates to index 0 reds 8, which is what makes K1's green the discovery discovering.** Handed over with a CONTENT DIGEST in place of a sha, verified before staging. Standing: `counts.cards` asserted against a field D-130-04 blocks, `watchers` has no derived-versus-stored witness, `support`/`validated` typed only, two AC3 cells pass over an empty array. **Task blocked: three of five stored fields have no table** |
+| T130 | Profiles and the public author surface | T050, T060, T080 | `lib/server/profiles/**`, `app/api/authors/**` | `../darkprint-wt-t130-profiles` (impl), `../darkprint-wt-t130-profiles-tests` (blind) | `feat/t130-profiles`, `test/t130-profiles` | impl-done | implementation `6ffdb17`, blind suite `32556b7`. **Cut to `{ author, joinedAt, counts: { blueprints, terms } }` by D-130-06 (owner)** — `setPins`/`toggleFollow` removed, AC3/AC4 to T131, `counts.cards` to T132. **No owner/visitor branch anywhere: AC2 falls out of the `Actor`, T080 decides visibility, no second `readable()`.** `withProfileStore` deliberately narrower than `withRegistryStore` — re-wrapping a sealed fault relabels a working store. **D-130-07: `counts.terms` consumes the shared parser, does not require `text`, and REFUSES an unreadable vocabulary rather than skipping** (cost stated: one bad release 500s a profile). Gates by its author at `eccab30`: typecheck 0, lint 0 with the single `warning` match read as a LINE — the prebuild's own `--disable-warning=` — and build 0 **with the route table showing the handler collected, which typecheck cannot claim.** Handed over with a content digest **and its method**, reproduced exactly. Adversary round owed |
+| T131 | Profiles: follows, pins and the tables they need | T130, T180 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**`, `lib/server/profiles/**` (extension), `app/api/authors/**` (extension) | — | — | todo | **Created by D-130-06 (owner, 2026-08-20).** Carries the half T130 could not build: `watchers` + `toggleFollow` + AC4, `pinned` + `setPins` + AC3, `support`, and `validated` (a count, D-130-01, blocked on T180). **It owes the TABLES before the behaviour** — no follow relation, no pin storage, no `support` column, and neither `target_kind` nor `target_actor_kind` can name an account as a target or a follow as an act, so both need `ALTER TYPE`. **Inherits AC1's clause unchanged: anything countable is counted, never stored as a counter.** T130's blind suite already holds the pins, follow and `counts.cards` families |
+| T132 | Amendments to merged published records that T130 needs | T080, T130 | `lib/server/registry/types.ts`, `lib/server/registry/**` (extension), `lib/server/profiles/**` (extension) | — | — | todo | **Created by D-130-06.** `CardSummary` carries no owner and `card.author` is `author?: string` — optional, and content the uploader wrote rather than the row's ownership — while `card_version.owner_id` is `NOT NULL`, authoritative and unpublished. **D-130-04 forbids re-implementing T080's visibility filter against `card_version`**, so this is an amendment to a MERGED task's published record and therefore not T130's to take |
+| T041 | D-40-L: `ToNumber` is `+`, not `Number()` | T040 | `lib/server/engine/limits.ts` | — | — | todo | **Created at T040's merge (`ad44537`), charged and measured by its round-7 adversary and NOT fixed there.** `limits.ts:468` reads `Number((container).length)` where `LengthOfArrayLike` is `ToLength` is `ToNumber`; `Number(v)` is `ToNumeric` then BigInt→Number, **so it accepts a BigInt where `ToNumber` refuses one and the walk ANSWERS where the ruled formula REFUSES.** Repair is one line — `+(...)` — **measured at 4 divergences closing, 6 controls holding, 10 of 10 agreeing, D-40-K's own halves untouched**, after which the walk throws the same bare `TypeError` the formula does and lands inside D-40-24's already-numbered class. **Barrel-only**, sixth in the transcription sequence. **Owes a witness BEFORE the fix**: coverage is zero in both suites and no cell reaches the `ToNumber` half |
 | T150 | Counters: stars and downloads | T050, T060, T080, T090 | `lib/server/counters/**`, `app/api/signals/**` | — | — | todo | — |
 | T160 | Community ballot and vote weighting | T050, T060, T080 | `lib/server/ballot/**`, `app/api/votes/**` | — | — | todo | — |
 | T170 | Notes and note votes | T050, T060, T080 | `lib/server/notes/**`, `app/api/notes/**` | — | — | todo | — |
@@ -11263,7 +11415,7 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
 ### T040, Engine service: validate and analyze
 
-- **State:** impl-done
+- **State:** merged
 - **Worktree:** `../darkprint-wt-t040-engine` (impl), `../darkprint-wt-t040-engine-tests` (blind)
 - **Branch:** `feat/t040-engine` (impl), `test/t040-engine` (blind)
 - **Depends on:** T000 (contract: envelope), T030 (data: the vocabulary to resolve against)
@@ -11494,7 +11646,1492 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Out of scope:** persistence, publishing, the archive's own re-validation sweep.
 - **Log:**
   - 2026-08-13 orchestrator: created. Contract was already derivable; unchanged by the decisions.
+  - 2026-08-18 test author: `tests-written`. 98 tests in eight files under `tests/server/t040/**`, plus
+    `contract.ts` and `fixtures.ts`, which are helpers and not collected. In this worktree: **96 failed |
+    2 passed (98)**, every red `@/lib/server/engine does not load` or `ERR_MODULE_NOT_FOUND` and none a
+    syntax error or a bad path. The 2 green are module-independent by construction — the README oracle's
+    own parse and the one-bundle-carries-a-vocabulary count — and are reported as such rather than as
+    coverage: a set that can only be empty is not a measurement. `npm run lint` 0. `tsc --noEmit` is
+    **exactly two errors**, both `Cannot find module '@/lib/server/engine'`, after `npm run build` once
+    to generate `.next/types`' `PageProps` globals (18 phantom errors before it, 0 after, no source
+    change between — the fresh-worktree artefact this file records).
+  - 2026-08-18 test author: **evidence the suite discriminates.** Run against a throwaway correct
+    reference in a scratch git worktree outside this tree, never written into it: **98/98 on three
+    identical runs**. Then 33 mutations of that reference: **32 CAUGHT, 0 MISS, 1 GAP**, each with the
+    test it was predicted to red named before the run. The single GAP is classified rather than counted —
+    iterating `cardFiles` in insertion order is an **equivalent mutant through the published surface**,
+    because `loadBundle` returns every array through `sortDiagnostics` and no two card diagnostics can
+    tie: `location.file` is the card's own key and is part of the sort. So AC5's "`cardFiles` is rebuilt
+    in sorted key order" is defence-in-depth that nothing downstream can observe, and that is a fact
+    about the contract's surface rather than a hole in this suite.
+  - 2026-08-18 test author: **three assertions were wrong against a correct reference and were fixed as
+    test defects, which is what running one first is for.** (1) A `process.env` read counter measured
+    **1885** reads on a clean module: `node_modules/yaml/dist/parse/parser.js` reads `LOG_TOKENS` once per
+    token and `lib/core/card/parse.ts` parses every card through it. A name whitelist would have been the
+    blacklist-predicate move; the boundary moved instead — the zero is asserted on the paths that reach
+    no YAML parser, and the paths that do are held by an invariance test under two environments, which is
+    the property AC5 states rather than a proxy for it. (2) A bound of one card-read per card on the
+    byte-refusal path became **unsatisfiable** when D-40-17 ruled the measure to be
+    `Buffer.byteLength(JSON.stringify(input))` and AC5 required `cardFiles` rebuilt before `loadBundle`:
+    a correct module now reads each card twice. Replaced by a comparison — the refusal path reads the DOT
+    strictly fewer times than the accepted path — which survives that class of change. (3) The
+    determinism fixture for "the input is not mutated" handed over an already-sorted record, so an
+    in-place sort was a no-op against it: an equivalent mutant manufactured by the fixture. Reversed.
+  - 2026-08-18 test author: **four gaps found by mutating behaviours chosen for NOT being on the list
+    this suite was built from**, all closed and all re-measured as CAUGHT: the manifest is on
+    `blueprint.manifest` and nothing looked at it; `validateCardSource` could drop every non-error
+    diagnostic unobserved; `validateVocabularySource` has a **second** refusal path — a document that
+    parses as YAML and is not a vocabulary — which the malformed-YAML fixture returns before ever
+    reaching; and `validateDot` could drop its parse diagnostics on the path where a graph IS produced,
+    which no fixture reached because the unparseable ones return early and the archive ones parse clean.
+  - 2026-08-18 test author: AC1's oracle is `public/bundles/<slug>/README.md`, written by `prebuild` and
+    carrying the digest, autonomy class, security level and security rationale verbatim. All nine were
+    reproduced from the shipped folder bytes before it was adopted, and it reds on a dropped `extensions`,
+    a mangled `cardFiles` key, a withheld analysis and any re-scoring — a reference that can register the
+    quantity rather than one immune to it. **Its coverage is stated beside its greens**: only
+    `frontline-triage` ships `ontology/extensions.yaml`, so the nine-case sweep carries a ONE-case
+    discriminator for `extensions`, and the saturation direction — a module layering the archive's own
+    extensions in regardless of its argument — is caught by one test and by nothing in the sweep.
   - **2026-08-18 adversary round 1, FAIL — recorded here because it reached the implementer only in a message, which is this file's own least durable medium.** Four charges. **D-40-A (defect, charged):** `validateBundle`'s card-count refusal read every card value — `guardBytes` ran before `guardCards` and `byteLengthOf` walks `cardFiles` — while `limits.ts:153` stated the opposite in its own docstring. One red blind test, one-line cause, and nothing in the blind suite pinned the order because every limits case breaches one bound with the others generous. **D-40-B (defect, charged):** the byte guard materialises the input to measure it — a depth-25 diamond (26 objects) threw a bare `RangeError` where a `LimitExceededError` was owed, and below that allocated up to 386 MB of transient heap to decide a submission exceeds 2 MB. **D-40-C (defect, charged):** a circular `manifest` **or `extensions`** gave `TypeError: Converting circular structure to JSON`; hygiene intact, so `error-hygiene` cannot see it. All three closed through the routes and open through the barrel, which T100/T263/T270 consume in-process. **Nine GAPs**, of which the ones that became work: `maxCards`/`maxNodes` pinned at neither end while `maxBytes` was pinned at both; `resolveLimits` `??`→`||` making `maxBytes: 0` silently 2 MiB; `documentBytes` byte-vs-code-unit; `guardNodes` resolved-vs-declared; `validateCardSource`'s `card: undefined` versus an omitted key. **And the second-biggest item: the blind suite reached no route at all** — 81 tests, no `Response`, no `POST`, no status code; six route mutations reddened zero blind tests and two were caught by nothing. Verdict measured at `cf1f7a1`; byte figures reconciled (17 947 archive max, 18 195 = that plus frontline-triage's 248-byte extensions; the blind author's 17 963 reproduces under no reading and is unresolved).
+  - 2026-08-18 implementer, **round 2, all four charges fixed and falsified.** Merged `backend` at
+    `ebe0544` rather than rebasing; both conflicts were `backend.md` and nothing else, resolved by
+    taking base's text everywhere and keeping both sides' Log entries. Diffed the result against
+    `backend:backend.md`: **zero lines present in base are missing here**, which is the check a
+    hand-resolve does not perform.
+  - 2026-08-18 implementer, **D-40-A fixed, and it was a real defect rather than a test gap.** The card
+    guard now runs before the measurement. Measuring a submission necessarily reads every card value,
+    so with the byte guard first a *card-count* refusal opened all six card files on its way to
+    refusing — the opposite of what `guardCards`' own docstring claimed. Falsified with a getter per
+    card value, since `Object.keys` does not invoke one and the walk does: the refusal now reads **0**
+    values, and the control — an accepted submission — reads more than zero, so the zero is a
+    measurement rather than a property of the fixture.
+  - 2026-08-18 implementer, **D-40-B fixed under D-40-20: the number is normative, the procedure is
+    not.** `Buffer.byteLength(JSON.stringify(input))` is replaced by a walk that accumulates and stops
+    the instant the running total passes `maxBytes`. Every step spends at least one byte, so the step
+    count is bounded by the limit rather than by the input graph. A depth-25 diamond — 33 554 432 paths
+    over 26 objects — now refuses as `LimitExceededError` in under 2 s where the formula threw a bare
+    `RangeError`, and depth 30 does the same. **No `seen` set for the size**, deliberately: memoising a
+    shared subtree counts it once where the formula counts it per path, which would change the number
+    for exactly the inputs this was written for.
+  - 2026-08-18 implementer, **the replacement is held by a differential property, not by a docstring.**
+    A different procedure computing a normative number is only safe if the two agree, so
+    `measure.test.ts` asserts equality with `Buffer.byteLength(JSON.stringify(x), "utf8")` over 22
+    shapes chosen for what the serialiser treats specially rather than for what I expected to matter —
+    non-finite numbers, `-0`, exponent form, `undefined` dropped in an object and `null` in an array,
+    functions in both positions, escapes, astral-plane text, multi-byte in a **key**, `toJSON`, an
+    object with no enumerable keys — plus all nine archive submissions. Mutating the object braces to
+    cost nothing reds **23**; dropping `toJSON`, mis-measuring non-finite numbers, and skipping
+    `undefined` in an array each red exactly the corpus case that names them.
+  - 2026-08-18 implementer, **D-40-C fixed, and the class name is OWED CONTRACT rather than settled.**
+    A cycle in `manifest` or in `extensions` now raises `CircularReferenceError` instead of a bare
+    `TypeError`. D-40-20 ruled that the refusal is typed and did not say what type, so the name, the
+    message form and the export are the implementer's proposal: `"<operation>: the submission contains
+    a circular reference."`, sealed like every other published class. **If the blind suite pins another
+    name this is one line.** The `open` set is path-scoped so legitimate sharing is not mistaken for a
+    cycle — mutating `open.delete` into a no-op reds 6, including the archive's own shared terms.
+  - 2026-08-18 implementer, **five of the nine GAPs closed, and three of them describe correct code
+    rather than defects.** `documentBytes` already used `Buffer.byteLength`, `guardNodes` already
+    counted `graph.ids` and `validateCardSource` already omitted its key — what was missing was
+    anything that would notice if they stopped. Each now has a test that reds under the named mutation:
+    a multi-byte DOT where code units and bytes differ, a partly-carded bundle with a bound between the
+    resolved and declared counts, and `"card" in result` rather than `result.card === undefined`, which
+    is the barrel/wire asymmetry — `JSON.stringify` drops an undefined key and `in` does not, so every
+    route assertion passed either way while an in-process caller got the opposite answer. **Every bound
+    now owes both ends**: exactly `maxBytes` is accepted and one byte less refuses, and the same for
+    cards and nodes; a bound of **zero** is honoured rather than read as absent, which is the only
+    input that separates `??` from `||`.
+  - 2026-08-18 implementer, **14 mutations, 13 CAUGHT, 1 equivalent, every prediction stated before the
+    run.** The one zero is `cardFiles` iterated in insertion order, and it is the **same** equivalent
+    mutant the blind author classified independently. Its reason is better than my measurement because
+    it says why rather than that: `loadBundle` returns every array through `sortDiagnostics`, and no two
+    card diagnostics can tie because `location.file` is the card's own key and is part of the sort key.
+    Two parties, two instruments, one conclusion — a fact about the contract's surface rather than a
+    hole in either suite. Adopted into the comment, credited.
+  - 2026-08-18 implementer, **gates.** `typecheck` 0, `lint` 0, `build` 0 leaving no `public/bundles`
+    diff. Targeted **79/79** over four files; the eight repo-wide guards **11/11**, and
+    `error-hygiene` was falsified two-axis rather than trusted — making the fields enumerable makes it
+    name `engine/LimitExceededError` with both renderings, restoring them makes it pass. No full-suite
+    run and no slot request: nothing here touches a database, and the count plus its reconciliation are
+    owed at the closing triple against a base line measured then rather than carried.
+  - 2026-08-18 implementer, **two reporting defects of the round, neither mine to fix.** The four
+    charged items and the nine GAPs reached me only in a message: `backend.md` carries **D-40-20 and
+    D-40-21 and nothing else** from that verdict, so a reader of this file cannot tell what T040 was
+    failed for. That is the same rule the orchestrator applied to my missing round-1 Log entry, one
+    level up. And `ebe0544`'s task-index row replaced the blind author's evidence string — *98 blind
+    tests, 96 red on the absent module, 33 mutations 32/0/1* — with `—`; it survives only on this
+    branch, because the test branch was merged here and never into base.
+  - **2026-08-18 implementer — WITHDRAWN 2026-08-18 by T040's adversary, round 2, falsified by
+    measurement. The entry is kept because a retraction with nothing to retract is not a record; it
+    binds nothing and no reader may follow it.** It claimed: *the equivalent mutant is PROVABLE, and
+    the adversary's caveat is what sent me to prove it* — three parties had reached the same
+    classification by three routes (this suite by mutating the sort away twice for 0 red, the blind
+    author by arguing no two card diagnostics can tie on `location.file`, the adversary by narrowing
+    that to *only while every card diagnostic carries a location, so sampled, not proved*); all three
+    downstream of a sort that has already happened; **`cardFiles` is read in exactly one place in the
+    whole of `lib/core`** — `bundle/resolve.ts:191`,
+    `for (const file of Object.keys(bundle.cardFiles).sort(cmpString))` — with `cmpString` equal to
+    `Array.prototype.sort()`'s default on strings, so `sortedByKey` applies the same sort immediately
+    before `lib/core` applies it again and **the record's insertion order cannot reach anything**;
+    *"Sampled becomes proved, from one line."*
+    **Struck.** Both readings were pre-registered before the run and the green one, named in advance
+    as the worse news, is what came back. Four cells in a throwaway worktree over
+    `tests/server/t040` + `lib/server/engine` + `app/api/validate` — 13 files, 226 tests — each patch
+    state verified by grep: both sorts intact **226 passed**; module sort removed **226 passed**;
+    core's `.sort(cmpString)` removed **226 passed**; **both removed — the discriminator — 226
+    passed**, where the claim predicts a red. Driven directly with both gone, forward against
+    reversed, **0 of 9 archive bundles differ**. So `resolve.ts:191` is not what makes the module's
+    sort unobservable: the conclusion holds and the stated cause does not, which is this file's own
+    sixth reading of a zero — **a mechanism claim that is false about code that is correct** —
+    arriving in the entry that upgraded *sampled* to *proved*.
+    **WITHDRAWN 2026-08-19 by T040's implementer, round 4, falsified by measurement. The
+    struck sentence is quoted above rather than deleted, because a retraction with nothing to
+    retract is not a record and a reader who half-remembers this has nothing to check against.**
+    What is struck is *"So `resolve.ts:191` is not what makes the module's sort unobservable"*
+    and *"What normalises the order instead is not established"* two paragraphs below. **The four
+    cells held the INPUT constant and the input is the variable.** `resolve.ts:191` sits inside
+    the branch its own comment calls order-dependent — *"the first file wins"*, reached only when
+    two files claim one `id@version` with **different content** — and no archive bundle and none
+    of those 226 tests carries such a pair, so **no arrangement of the two sorts could have been
+    observed by any of them**. The green was a zero from a probe that could not reach. Re-run
+    through `validateBundle` on an `adversarial-consensus-line` submission with one card
+    duplicated under two filenames and one field changed, each patch state verified by grep:
+    intact/intact same, module removed/core intact same, module intact/core removed same, **both
+    removed DIFFERS** — forward resolves `AAA COPY`, reversed `ZZZ COPY`, and the diagnostics move
+    with them. So `resolve.ts:191` **is** the mechanism, S10 is an equivalent mutant **conditional
+    on that line**, and what the clause defends against is nameable rather than unnamed. The
+    preamble copy of the same sentence is struck on base at `b1aad18`; this entry is a Log entry,
+    Log entries merge, so it is marked in place.
+    **The warrant reverts to the blind author's `sortDiagnostics` reading and stays SAMPLED**, with
+    its own caveat intact: `message` is not in `cmpDiagnostic`'s key, so a tie is ruled out only while
+    every card-derived diagnostic carries a location, which is a property of today's `lib/core` and
+    not a theorem; a witness was hunted and none found. **What normalises the order instead is not
+    established.** That `sortDiagnostics` accounts for all of it is an **unverified successor
+    hypothesis**, labelled and left out of the module and the contract deliberately — replacing one
+    unproved cause with another is the move this retraction exists to undo.
+    **And the sentence that had to go is not the number.** *"Sampled becomes proved, from one line"*
+    does not merely assert something false, it tells the next reader to stop asking, so a retraction
+    leaving it standing would have withdrawn the claim and kept the instruction. `406eba1`'s commit
+    message carries the same claim and cannot be edited without rewriting a sha this file cites; it is
+    quoted verbatim beside its correction in an empty commit instead.
+  - 2026-08-18 implementer, **so AC5's `cardFiles` clause is defence-in-depth, and it should say so.**
+    "`cardFiles` is rebuilt in sorted key order before `loadBundle` sees it" guards against a future
+    change to `resolve.ts:191`, not against anything reachable today. `lib/core/**` is Forbidden here,
+    so this module cannot be the thing that notices if that line moves — which is worth a contract line
+    rather than a comment, since the clause currently reads as though it were load-bearing now.
+  - **2026-08-18 adversary, round 2: the entry above inherits the struck premise and is narrowed, not
+    withdrawn.** Its conclusion is right — the clause is defence-in-depth and nothing reachable today
+    observes it — and *"guards against a future change to `resolve.ts:191`"* is the false mechanism
+    reused. Cell 3 of the experiment removed exactly that line with the module's sort intact and
+    **226 passed**, so this module's sort is not measurably standing between `resolve.ts:191` and any
+    caller. The honest statement is the unqualified one: **`sortedByKey` is unobservable through the
+    published surface, and what it defends against is unnamed.** It stays in the module because AC5
+    mandates it.
+  - 2026-08-18 implementer, **a slot discipline slip of my own, reported rather than left to be
+    noticed.** Checking the merge resolution I ran `npx vitest run tests/` — meaning the eight root
+    guards — and that glob also collects `tests/server/**`, which is DB-touching, while T050's blind
+    author holds the slot. `DATABASE_URL` was unset and `psql` is not on this PATH, so 596 tests
+    skipped and the rest failed on a missing connection string: no connection was opened and no scratch
+    database can exist. No contention was possible either, at 10 s of import-time failures. Recorded
+    because the rule is about what I ran, not about what it happened to cost.
+  - 2026-08-18 test author, **round 2: the route half, which round 1 named and did not close.**
+    Every one of round 1's 98 tests bound the module — no `Response`, no `POST`, no status code
+    anywhere under `tests/server/t040/**`. I reported the gap in my own handback and offered the
+    round; the round closed without it, and four paths, four request shapes and three status codes
+    were left held by the implementer's colocated file alone. `routes.test.ts` is 35 tests over the
+    four published URLs. Suite is now **133**: in this worktree `127 failed | 6 passed`, every red
+    either `@/lib/server/engine does not load` or ``No route file exists under `app/api/validate/` ``,
+    both naming the failed criterion. **All 6 green are module-independent by construction** — the
+    README oracle's own parse, the one-bundle-carries-a-vocabulary count, and four floor assertions
+    over this suite's own bad-body case list — and are reported as such rather than as coverage.
+    `lint` 0; `tsc --noEmit` still exactly 2, both the absent module.
+  - 2026-08-18 test author: **the routes are DISCOVERED, not guessed.** `app/api/validate/**` is
+    walked and dispatched through Next's own matcher, following T070's idiom, so a red says "this
+    URL is unserved" rather than "a file is missing from where I looked" — the file layout is the
+    implementation's and the URL is the contract's. It also keeps `@/app/api/validate/...` out of
+    `tsc` entirely, so the routes' absence is a runtime criterion rather than a compile error that
+    would stop every other file being checked.
+  - 2026-08-18 test author: **21 route mutations against a reference carrying all four routes:
+    18 CAUGHT, 0 MISS, 3 GAP.** The adversary's six were taken as the specification and not as its
+    answers — tests written from the contract, scored against the list afterwards. Five of the six
+    are CAUGHT. **The sixth, `withLimits` swallowing every throw, reds nothing and is an equivalent
+    mutant against a CONFORMING route**, measured rather than assumed: a body that fails a shape
+    check is refused *by return* and not by a throw, and `lib/core`'s `loadBundle` is documented
+    "Never throws", so nothing but a limit ever reaches the catch. It is a real defect only in
+    combination with a route that does not validate — so that half is now driven directly: a route
+    stripped of all three body checks reds **7**, and a body that is both malformed and oversized
+    must answer 400 rather than 413, which is the ordering a request can actually exercise.
+    The other two GAPs are the same species and are classified, not counted: removing the
+    array guard on the body itself, and treating an unparseable body as `{}`, both still end in 400
+    through the per-field checks, so neither is distinguishable through the published surface.
+  - 2026-08-18 test author, **correction to round 1's GAP argument, from T040's adversary and
+    accepted.** I wrote that no two card diagnostics *can* tie because `location.file` is in the
+    sort key. Too strong: `cmpDiagnostic` sorts on severity, file, line, column and code —
+    **`message` is not in the key** — and `sortDiagnostics` falls back to input order on a full
+    tie. The tie is ruled out only while every card-derived diagnostic carries a location, which is
+    a property of today's `lib/core` and not a theorem. A witness was hunted across the nine
+    bundles, an under-carded bundle, unparseable files, duplicate ids, empty documents and unknown
+    terms and none was found. **Equivalent through the published surface, sampled rather than
+    proved** — and the verdict stands while the reason is weaker than I claimed. The comment in
+    `determinism.test.ts` carries the corrected argument; labelling it a theorem is what would have
+    retired the next sweep.
+  - 2026-08-18 test author, **correcting a number of mine that the adversary could not reproduce, and
+    it is reproducible now.** It charged *"the blind author's 17 963 reproduces under no reading and is
+    unresolved."* It was right and the cause is mine: my throwaway probe assembled each bundle as
+    `{ ...bundle, vocabulary: terms }` and stringified **that**, so every bundle carrying no extensions
+    still gained the sixteen bytes of `,"vocabulary":[]` — a key no submission has. **17 947 + 16 =
+    17 963**, measured both ways just now. The archive maximum is **17 947** (`grounded-research-desk`),
+    which is the adversary's figure exactly. The published block is corrected above.
+    **The shipped fixture was never wrong**: `archiveMaxima()` recomputes from `archiveCases()`, whose
+    inputs carry `extensions` only for the one bundle that ships it, and it returns
+    `{"bytes":17947,"cards":9,"nodes":9}` today. So only the number I *reported* was false — a false
+    figure supporting a true conclusion, corroborated by everything around it, which is the shape this
+    file says is hardest to catch. It reached a committed report and this document, and what caught it
+    was a second party recomputing rather than any re-reading of mine.
+  - 2026-08-18 test author, **round 3, on D-40-22 and the three unclaimed GAPs.** 14 tests, suite now
+    **147**. `CircularReferenceError` is reachable **through the barrel and not through the wire** —
+    `request.json()` cannot produce a cycle — so a round scoped to routes would have left the class
+    D-40-20 ruled owed with no blind witness at all, on a surface T100, T263 and T270 consume
+    in-process. Held on both fields the adversary charged, `manifest` and `extensions`, because a guard
+    installed on one is the narrow-worked-example shape; pinned by class, by the published message
+    literal, and against `TypeError`, which satisfies every hygiene clause and is therefore invisible to
+    `tests/error-hygiene.test.ts` by construction. **And the pair that keeps the guard honest**: shared
+    substructure must still be ACCEPTED, since D-40-20 forbids a `seen` set for the size — a global set
+    reds that test and nothing else.
+    The three GAPs that described correct code are now held blind: UTF-8 bytes rather than code units
+    (`é` × 20 is 20 units and 40 bytes, refused at 30 and accepted at 50, on all three siblings);
+    `maxNodes` counting declared rather than resolved nodes (an uncarded eight-node bundle, where a
+    resolved count is 0 and admits it); and an absent optional being an **omitted key** rather than one
+    set to `undefined` — which `JSON.stringify` drops, so no route test could ever see it and only an
+    in-process caller can. Two more from the FAIL's GAP list: `maxCards`/`maxNodes` pinned at both ends,
+    and `0` on each axis being a real limit rather than the `||`-shaped fallback.
+  - 2026-08-18 test author: **33 mutations across the routes and the new material: 29 CAUGHT, 0 MISS,
+    4 GAP**, every prediction named before the run. All four GAPs are equivalents and are classified
+    rather than counted — `withLimits` widened to a catch-all (unreachable against a route that refuses
+    by *return*), the body-level array guard and the unparseable-body guard (both still 400 through the
+    per-field checks), and `submissionOf` including `ontology`, **which was predicted GAP in advance
+    because D-40-21 states it**: no route can set that field, so every wire call gives the same number
+    under either reading. A predicted zero is the only kind worth reporting.
+    One process note against myself: six route anchors came back `PATCH-MISS` on the first sweep because
+    I had re-emitted the reference's `wire.ts` in a different shape after losing the worktree. A
+    PATCH-MISS is not a measurement, so the shape was restored and **the whole sweep re-run from one
+    tree** rather than the six results being carried over from the previous one. The reference is now
+    archived beside the harness so it cannot be lost a second time.
+  - 2026-08-19 test author, **round 4: D-40-D, D-40-F and D-40-G, which the implementer flagged as
+    held by colocated tests alone rather than shipping past.** 25 tests in `measure.test.ts`; suite
+    **172**. Branch tip `test/t040-engine` at the sha in the handback. In this worktree
+    **164 failed | 8 passed | 0 skipped (172)**, every red `@/lib/server/engine does not load`
+    or ``No route file exists under `app/api/validate/` ``. `npx eslint .` prints **zero bytes**,
+    exit 0 — read in full rather than tailed, since `tail -1` on an empty report prints a blank
+    line and reads like a pass either way. `tsc --noEmit` still exactly 2, both the absent module.
+    **All 8 green are module-independent by construction and are named rather than counted**: the
+    README oracle's two, four bad-body floor assertions, and round 4's two new controls — the
+    user-code counter's own two-factor and the serialiser-partition oracle.
+  - 2026-08-19 test author: **the witness for D-40-F is the mechanism and the claim is INVARIANCE.**
+    Every timing figure either party has is one host and the two independent measurements of that
+    defect came out 1.5–1.8x apart, so a wall-clock threshold would be a number about a laptop.
+    Asserted instead: the count of user-code invocations **does not grow with the number of plain
+    containers** — 20 containers against 2 000, same count, and 0 for a submission with nothing
+    boxed in it. Container counts are taken by **walking the built objects**, never from the loop
+    bounds that made them, which is the shape that made one of the implementer's own controls
+    unable to move with the thing it described. A second axis is aimed at the alternative the
+    ruling REJECTED rather than at the one it chose: a planted `@@toStringTag` **getter** must be
+    read **0** times, which is what "invokes user code the old version did not" means, and it is
+    what an implementation that quietly switched to `Object.prototype.toString` would fail.
+  - 2026-08-19 test author: **D-40-G is held as a three-way partition re-derived at run time.**
+    Refused, dropped and unboxed are three different obligations, and which half a value falls in
+    is decided by **asking `JSON.stringify` inside the test** rather than by the labels in
+    `fixtures.ts` — a construction over an author's transcription of the serialiser's branches is
+    a maintained list one level up, which is D-40-G's own charge, and it applies to a blind
+    suite's fixtures exactly as it applied to `VALUE_CLASSES`. The number for a **dropped** value
+    is deliberately not asserted: the ruling grants that freedom and a test pinning it would be
+    pinning a freedom. What is asserted is that a dropped value is **answered** — collapsing the
+    partition in that direction rejects a legal submission and no refusal test would notice.
+  - 2026-08-19 test author: **16 mutations, 15 CAUGHT, 0 MISS, 1 GAP — and four of them were aimed
+    at this suite's OWN controls**, which is the practice T040's round-4 implementer arrived at by
+    finding two of its controls reddening 0. Three of my four are caught: a `countContainers` that
+    stops counting the artefact, a user-code counter that never installs itself, and a partition
+    oracle that answers `true` for everything. **The fourth is structurally uncatchable and that is
+    the finding**: it deletes an inline two-factor assertion, and a suite cannot catch the deletion
+    of one of its own assertions. An inline control is held by review, not by the suite — so
+    "mutate your controls" has a floor, and it is worth knowing where the floor is rather than
+    reporting 4/4.
+  - 2026-08-19 test author: **two of my own mutations were defective and were fixed rather than
+    reported as gaps.** One swapped `stack.length` for `open.size` to simulate a count-based
+    ceiling — but `open` is the path set, so the two are the same number and the patch was a no-op.
+    The other needed two edits the harness applies one at a time, so its second half alone reddened
+    87 and the harness correctly called BREAKAGE rather than a result. *Check the instrument, not
+    the result* — a zero from a patch that did not express what it meant is not a measurement, and
+    both were re-run as single contiguous patches.
+  - 2026-08-19 test author, **and the reference had to be rebuilt to be conforming, which is itself
+    a measurement.** Its byte count still went through `JSON.stringify`, and at depth **9 000** —
+    below the ceiling, inside a manifest, under vitest — that threw **`RangeError: Maximum call
+    stack size exceeded`**. That is D-40-D's own defect, reproduced independently and by accident:
+    the recursive serialiser is not usable as the number's source at the depths the ceiling admits.
+    The reference now carries a hand-written iterative walk with an explicit stack, and it agrees
+    with `Buffer.byteLength(JSON.stringify(input), "utf8")` **exactly** on a real archive bundle —
+    which is the D-40-17 boundary test passing, and a second route to the same number rather than
+    a restatement of the first.
+  - 2026-08-19 test author, **D-40-23 pinned; round 4's refusal to invent the class is why it
+    exists.** 1 test added and 8 assertions tightened; suite **173**. The class, the message as a
+    written-out literal, and `expectSealedError` replace round 4's *"it is an Error, it is sealed,
+    and it is neither of the two published classes"* — which was the right handling of an
+    unanswered contract and is now superseded by the answer. **"The value is never named" is held
+    on three axes**, because a refusal can quote its input from three places: the value's own
+    content, the key it sat under, and the submission's identity. The bigint is minted from a
+    distinctive digit string so the VALUE can be sentinelled at all — a bigint cannot carry a
+    string sentinel, and a test planting one only in the key would have left unchecked exactly the
+    half the clause is about.
+  - 2026-08-19 test author: **5 mutations on the D-40-23 cells, 5 CAUGHT** — a bare `TypeError`
+    escaping (9 red), the refusal naming the value it refused (9), a different message (9), the
+    CIRCULAR class substituted for it (9), and **a control**: a fixture where the sentinel never
+    reaches the submission reds 1. That control IS catchable, unlike round 4's fourth, and the
+    difference is the general form — **a control that asserts a property of the FIXTURE can be
+    mutated and caught; one that is an inline two-factor assertion can only be deleted, and a
+    suite cannot catch the deletion of its own assertion.**
+  - 2026-08-20 test author, **round 5: D-40-H and D-40-24, raised by the implementer as unheld for
+    the second round running.** 17 tests in `coercion.test.ts`; suite **190**. Targeted in this
+    worktree **182 failed | 8 passed | 0 skipped (190)**; `npx eslint .` **zero bytes**, exit 0,
+    read in full; `tsc --noEmit` 2, both the absent module. All 8 green are module-independent by
+    construction and named in the handback.
+  - 2026-08-20 test author: **how a byte count is observed at all, since it is on no published
+    return.** Every coercion cell is a PAIR driven at the `maxBytes` boundary — accepted at exactly
+    `Buffer.byteLength(JSON.stringify(input), "utf8")`, refused at one fewer — so **the oracle is
+    the serialiser itself and never a number I wrote down.** "The walk agrees with the ruled
+    formula" is a claim about the serialiser, and a test carrying its own arithmetic would be
+    checking my transcription of it instead.
+  - 2026-08-20 test author: **the three axes, and the second is the one nothing else separates.**
+    Channel and hint order: an overridden `valueOf` moves a boxed Number and an overridden
+    `toString` does **not** (hint `number` reaches `valueOf` first); an overridden `toString` moves
+    a boxed String and an overridden `valueOf` does **not**. Those two "does NOT consult" cells
+    fail **only** under a wrong hint order, which is the mis-fix cell the `@@toStringTag` cell was
+    the model for. What the channel returns: `ToNumber` is `+value`, and **measured** —
+    `Number(1n)` is `1`, `+1n` throws, and `JSON.stringify` of a boxed Number whose `valueOf`
+    returns a BigInt throws. The non-coercing slots as the control: `[[BooleanData]]` and
+    `[[BigIntData]]` unmoved under all three channels, quantified over the three rather than over
+    the one that would have been enough to notice.
+  - 2026-08-20 test author: **`assert the difference, do not arrange it` is applied to every cell.**
+    Each override's answer is measured against the plain boxed counterpart and required to differ,
+    and each "does NOT consult" cell **computes what the wrong hint would have measured** and
+    requires that to differ too — so `unchanged` has something to be unchanged *from*. That is the
+    check whose absence left one of the implementer's own agreeing cells unable to fail.
+  - 2026-08-20 test author: **11 mutations, 11 CAUGHT, 0 MISS, 0 GAP — and every prediction is
+    recorded with what ELSE saw it**, which is the diagnosis behind six MISSes across the previous
+    two sweeps. The result worth keeping: **`Number()` written for `+` reds exactly 2, and both are
+    BigInt-coercion cells — nothing on the channel axis sees it at all.** That is the claim *nothing
+    on the first axis separates the two implementations*, measured rather than repeated. Two of the
+    eleven are aimed at this round's own controls: a `submissionBytes` that stops consulting the
+    serialiser reds 15, a `withChannel` that installs nothing reds 12.
+  - 2026-08-20 test author: **and the reference needed D-40-H before it could be a reference.** Its
+    `normalise` read all four slots directly — the charged shape — so the suite was written first
+    and the reference corrected to match the ruling, not the other way round. `+v` for 4a, `String(v)`
+    for 4b, direct reads for 4c and 4d, and **no `catch` anywhere near a coercion**, which is what
+    D-40-24 requires: a caller's own throwing `toString` propagates untouched because
+    `JSON.stringify` propagates it too.
+  - 2026-08-20 test author, **round 6: D-40-I, the extent/content boundary.** 11 tests in
+    `extent.test.ts`; suite **201**. Targeted **193 failed | 8 passed | 0 skipped (201)**;
+    `npx eslint .` **zero bytes**, exit 0, read in full; `tsc --noEmit` 2, both the absent module.
+    The 8 green are the same module-independent set as round 5 — this round added none.
+  - 2026-08-20 test author: **the cells live in a named file with per-reading construction, and
+    that is forced rather than chosen.** A self-mutating value answers differently on every read,
+    so a helper that built one submission and read it three times would be handing the second
+    reader a value whose caller code had already run — *two readings that ran different amounts of
+    caller code are not two readings of one value*. `expectMeasuredFresh` builds a fresh submission
+    per reading and exists so that is impossible to forget.
+    **The fired-check is not "it re-serialises differently."** That proxy holds only for a mutation
+    both visible on a second pass and non-idempotent, and the shrinking-object fixture is neither —
+    measured, it renders `{"a":1}` twice. What is checked instead is the quantity the axis rests
+    on: **the extent the serialiser emitted against the extent the value reaches after the
+    caller's code has run**, which a fixture growing by nothing cannot satisfy.
+  - 2026-08-20 test author: **the boundary is held on both sides.** Three array-extent cells
+    (growth by `toJSON`, shrinkage, and growth by a **plain getter**, so the axis is not downstream
+    of D-40-H) and **six content cells as the control against a fix that also froze the elements**.
+    Each content cell computes what a walk snapshotting its children at enter would have rendered —
+    `frozenRendering`, which captures the container BEFORE anything reads it — and requires the
+    live rendering to differ. **Growth OVER-counts**, so the `maxBytes: expected` half of each pair
+    is what sees it: an over-count refuses a conforming submission and no test that only checks
+    refusals would notice.
+  - 2026-08-20 test author: **8 mutations, 8 CAUGHT — after a first sweep that returned 1 GAP, 1
+    MISS and 2 of my own defective patches, which is where the round's value is.**
+    **I02 was a no-op**: my "snapshot the content" patch rebuilt the snapshot every iteration, which
+    is a live read. **K07 was a no-op**: my "reuse one submission" patch left every call site still
+    building a fresh one. Both re-expressed as single contiguous patches — a memoised snapshot, and
+    redefining the builder itself — and both then CAUGHT at 8 and 5.
+    **And I03 was a REAL MISS that demanded a new cell.** Re-reading `Object.keys` per index while
+    keeping the snapshotted length reddened nothing, because for a two-key object a key added lands
+    past the loop bound and a key deleted leaves index 1 answering `undefined` either way — both
+    equivalent. **Three keys with the MIDDLE one deleted and a new one added is what separates
+    them**: measured, the serialiser emits `{"a":1,"c":"CCCC"}` where a key-set re-read emits
+    `{"a":1,"c":"CCCC","zzz":"ZZZZZZZZZZZZ"}`. So the claim is not *the length is snapshotted* but
+    *the KEY SET is*, and the two existing object cells could not tell those apart.
+  - 2026-08-20 test author: **the reference carried the opposite defect and the suite caught it.**
+    Its walk snapshotted `children` at enter — the frozen-content shape — so the content cells
+    reddened it before any mutation was run. Fixed to snapshot the EXTENT (`length` for an array,
+    `Object.keys` for an object) and read the CONTENT live at each index, which is
+    `Get(value, index)`. Second round running that a blind reference has had to be corrected to a
+    ruling rather than the ruling checked against it.
+  - 2026-08-20 test author, **round 7: D-40-J and D-40-K.** 20 tests in `domain.test.ts`; suite
+    **221**. Targeted **212 failed | 9 passed | 0 skipped (221)**; `npx eslint .` **zero bytes**,
+    exit 0, read in full; `tsc --noEmit` 2, both the absent module.
+    **The ninth green is new and it is not coverage**: the D-40-J equivalence cell measures a
+    property of JavaScript, not of the module, so no implementation can break it. It is named here
+    rather than left to raise the count quietly — and it is not vacuous, because its own control
+    (the domain shrinking to nothing) reds.
+  - 2026-08-20 test author: **the cells the block told me NOT to write are absent, and that is the
+    substance of D-40-J's half.** No cell claims `Object(x) === x` catches more than
+    `typeof === "object" || "function"`: measured over a domain built by construction — one witness
+    per `typeof` result, the boxed primitives, a proxy over each — **zero disagreements over 19
+    values.** The ruling is about the READER, and a cell asserting a behavioural difference would
+    be asserting something false. **And the top-level cell is written down LABELLED as agreeing by
+    delegation** — the walk falls through to `JSON.stringify`, which applies its own holder wrapper
+    and calls `toJSON`, so it agrees with the thing it is supposed to be an independent route to.
+    Omitting it would leave the next reader to add it and read its green as coverage.
+  - 2026-08-20 test author: **each half of `ToLength` is held by its own instrument, measured
+    rather than claimed.** Removing the truncation half reds exactly the two truncation cells;
+    removing the NaN half reds exactly the two NaN cells; **zero overlap.** The three agreeing
+    controls (`-1`, `"2"`, `{valueOf:()=>2}`) are what make that a ruling rather than a patch —
+    `-1` because the loop bound is immediately satisfied and `ToLength(-1)` is 0, the other two
+    because `>=` coerces exactly as `ToNumber` does. **And the refusal-set change is bound**: a
+    proxied array with a NaN length is refused today and accepted at the ruled number after.
+  - 2026-08-20 test author: **11 CAUGHT, 0 MISS, 4 GAP — and all four GAPs were predicted in
+    advance**, which is the only kind of zero worth reporting. Two are the equivalence claim above
+    (the narrow repair, and dropping step 2's BigInt half); two are `ToLength` clauses the loop
+    bound or the byte budget already subsumes (the negative clamp, the 2^53-1 cap). Four
+    mutations were aimed at this round's own controls and all four red.
+  - 2026-08-20 test author, **and one mutation is UNRUNNABLE, which is a finding rather than a
+    gap.** *The walk stops short-circuiting* cannot be run: with the bound checked only at the end,
+    a `1e30` length trap clamps to 2^53 - 1 and the measure becomes a **synchronous
+    non-terminating loop**. `testTimeout` fires between async ticks and a synchronous loop never
+    yields, so the absence of the short-circuit is a **HANG, not a red**. Measured, not predicted —
+    it stalled a sweep for twenty-one minutes and had to be killed by process group, leaving four
+    orphaned workers behind. **So D-40-20's short-circuit is not an optimisation: it is what makes
+    the refusal reachable at all, and no test can demonstrate its absence.** Same class as round
+    4's fourth control mutation.
+  - 2026-08-20 test author, **three instrument defects in one round, each caught by checking the
+    instrument rather than the result.** A `grep` pipe block-buffered the sweep's output, so a
+    finished run looked like a stalled one; `python3` then block-buffered it again until `-u`;
+    and a restart raced a still-live sweep, which left **the reference mid-patch** — so any number
+    read off either run would have been measured against a module that was neither the reference
+    nor a stated mutation. **The reference was diffed against its canonical copy before any result
+    was believed**, restored, and the baseline re-verified at 221/221 before the sweep was re-run
+    in foreground batches. *Check the instrument, not the result* three layers deep in one sitting.
+
+  - **2026-08-18 adversary round 2, FAIL.** Two charges, both about the D-40-B replacement, and the
+    first is reachable through the wire where D-40-B and D-40-C were not. Measured on
+    `feat/t040-engine` after merging `test/t040-engine` at `a3b90de` and `backend` three times as it
+    moved — `248da0f` → `a4bc5b2` → `8e9430e` → `59973d2` — reaching `743b05e`, `a87abb3`, `b49d6e3`
+    and `e0b43fb`; every one read from `git rev-parse HEAD`, and the intermediate resolutions each
+    diffed against `backend:backend.md` with **zero base lines missing** but for the blind author's
+    own `17 947` correction, which base does not carry. `ls .next/types` before quoting a typecheck:
+    present, so the 18 phantom `PageProps` errors are not in play and the reading is a reading.
+  - **D-40-D (defect, charged): the bounded walk is RECURSIVE, so D-40-B is fixed in breadth and open
+    in depth — and depth is wire-reachable.** `POST /api/validate/bundle` with a **6 134-byte** body
+    whose `manifest` carries a nested array throws a bare `RangeError: Maximum call stack size
+    exceeded` out of the handler. No 200, no 413, no `problem+json`. That is 0.3% of the 2 MiB
+    default. **The submission is conforming under the ruled number**: `Buffer.byteLength(JSON
+    .stringify(input),"utf8")` measures the same input at 6 134 and, measured in the same process,
+    keeps answering up to nesting depth **1 000 000** (2 000 000 bytes) without throwing — V8's
+    serialiser is not recursion-limited and the replacement is. **So the fix for D-40-B is a
+    regression against the formula it replaced**, on a shape the formula handles, and it falsifies
+    the clause that pays for the substitution: *the number is preserved exactly for every submission
+    that is accepted.* Here no number is produced at all. `withLimits` catches only
+    `LimitExceededError`, so the throw leaves the envelope every other failure on that route uses.
+    **And the boundary is a property of the stack rather than of the input**: the same walk survives
+    depth 7 000 called directly and dies at 3 000 under the route handler, so no fixture pins it.
+    `manifest` is the door — `readManifest` checks only that it is an object, deliberately and
+    correctly, and `dot`/`cardFiles` are strings.
+  - **D-40-E (defect, charged): the 22-shape corpus is the whole warrant for the procedure
+    substitution, and it is a list.** D-40-20 makes a different procedure legal *only if the two
+    agree*. Nine measured divergences, in three classes the corpus does not reach, each run against
+    `Buffer.byteLength(JSON.stringify(v),"utf8")` in the same process: **`toJSON` returning a
+    droppable** — the walk tests the raw value for droppable-ness and unwraps afterwards, where the
+    serialiser unwraps first, so a key whose `toJSON` gives `undefined` is charged when it should be
+    dropped (18 vs 13) and an array element that should serialise as `null` is charged nothing (12
+    vs 16); **`toJSON` reading its key argument**, which `unwrap` never passes (21 vs 13); and
+    **boxed primitives**, which the serialiser has an explicit step for — `new String("xy")` is 23
+    vs 10, `new Number(5)` 8 vs 7, `new Boolean(true)` 8 vs 10, and a boxed string at the top is 17
+    vs 4. Both directions occur, and both matter: over-counting refuses a submission the ruled
+    number accepts, under-counting admits one it refuses. The array/`toJSON` shape under-counts by a
+    factor of ~5 and is therefore a **bypass of `maxBytes`**, barrel-only. **A 22-case list chosen
+    for "what the serialiser treats specially" is a maintained domain**, and the same file rules that
+    a domain built by listing stops covering what nobody remembered. What is owed is a construction —
+    generated values over the serialiser's own equivalence classes — not three more rows.
+  - **The corpus's boolean case cannot fail, and my own prediction is what found it.** I predicted
+    CAUGHT for swapping the boolean costs (`true`→5, `false`→4) and measured **0 red**: the corpus's
+    single boolean case is `{ t: true, f: false }`, exactly one of each, so the swap **cancels** —
+    20 = 20. Split, it discriminates at once: `{t:true}` reads 11 against 10, `{f:false}` 10 against
+    11. A fixture-manufactured equivalence, in the one file whose job is to be the warrant.
+  - **C1, the pre-registered `resolve.ts:191` experiment: the GREEN branch, which was named in
+    advance as the worse news. The stated mechanism is WRONG.** Scope, because a pre-registration
+    owes it: `tests/server/t040` + `lib/server/engine` + `app/api/validate`, 13 files, **226 tests**,
+    in a throwaway `git worktree` outside every live tree. Four cells, each with the patch state
+    verified by grep before the run:
+
+        module sortedByKey   core .sort(cmpString)   result
+        INTACT               INTACT                  226 passed   (baseline)
+        REMOVED              INTACT                  226 passed   (the equivalence claim)
+        INTACT               REMOVED                 226 passed
+        REMOVED              REMOVED                 226 passed   <- DISCRIMINATOR, predicted to RED
+
+    With **both** sorts gone, permuting `cardFiles` still changes nothing: driven directly over all
+    nine archive bundles, forward against reversed, **0 of 9 differ**. So `resolve.ts:191` is not
+    what makes the module's sort unobservable, and *"the record's insertion order cannot reach
+    anything"* is a true conclusion resting on a false cause — the sixth reading of a zero, **a
+    mechanism claim that is false about code that is correct**, arriving in the entry that upgraded
+    *sampled* to *proved*. The equivalence itself survives; its warrant reverts to the blind author's
+    weaker argument about `sortDiagnostics`, which the round-1 adversary had already narrowed to
+    *sampled*. Owed: the retraction in the Log entry, in `engine.test.ts`'s comment and in AC5's
+    defence-in-depth line, which all now carry the proof.
+  - **42 mutations, two passes, every prediction stated before the run: 31 CAUGHT, 6 MISS, 11 GAP, 0
+    SILENT GREEN, 0 equivalent mutants.** Baseline and post-sweep restore both `226 passed (226)`
+    with identical failing sets, and every patch verified applied — no PATCH-MISS was carried. **The
+    second pass was aimed at the files the first left at zero**, and six of the eleven GAPs came out
+    of it, which is the third instance of that rule paying in this run.
+  - **All four GAPs the blind author labelled "equivalents ... classified rather than counted" have
+    measured discriminators. None of them is an equivalent mutant.** This is the re-run I was asked
+    for before the word travelled further. `withLimits` widened to a catch-all: intact the depth
+    payload **throws**, mutated it answers **413 with `detail: "Maximum call stack size exceeded"`** —
+    two different behaviours through the published wire surface, and a V8 internal in a response
+    body. Its stated premise — *nothing but a limit ever reaches the catch, because shape checks
+    refuse by return and `loadBundle` never throws* — omits `lib/server/engine`'s **own** throw,
+    which is D-40-D. The body-level array guard and the unparseable-body guard are equivalent **on
+    status** and not on the response: the `detail` moves from *"The request body must be a JSON
+    object."* / *"...is not valid JSON."* to *"`dot` must be a string."*. `submissionOf` including
+    `ontology` moves the measured number from **64 to 8 448** on a route-shaped input — a 132x
+    divergence, unobserved because nothing passes an `ontology` and then looks at the size.
+  - **Six MISSes, and each is a coverage hole rather than a wrong suite.** Predicted CAUGHT, measured
+    0: the boolean swap above; **the three sibling routes each losing their `withLimits` 413
+    mapping** — intact `/card`, `/dot` and `/ontology` all answer **413** to an oversized document,
+    mutated all three **throw** — so of D-40-02's four published 413s exactly one, the bundle
+    route's, is held by anything; **`LimitExceededError.prototype.name` deleted**, which takes
+    `err.name` from `"LimitExceededError"` to `"Error"` and `String(err)`/`stack` with it, pinned
+    nowhere (`error-hygiene`'s four clauses are about renderings and enumerability, not the class
+    name); and **`messageOf` replaced by a fixed string** on `validateVocabularySource`'s shape
+    stage, which collapses four distinct `parseOntologyTerms` messages into one and reds nothing —
+    the module's only path where a foreign module's exception text becomes a diagnostic.
+  - **Two more GAPs, both found by hunting the discriminating input rather than by accepting a
+    sample.** Dropping `sortDiagnostics` on `validateDot`'s unparseable-DOT path reds nothing, and my
+    first five malformed inputs all returned exactly one diagnostic — which would have made it look
+    equivalent. It is not: `parseDot` returns `[...lexed.diagnostics, ...parser.diagnostics]`, two
+    position-ordered lists concatenated, so `digraph g { a -> } @ # $` arrives `@1:20, @1:18` and
+    sorts to `@1:18, @1:20`. **Four of seven hunted inputs reorder**, and AC5 names diagnostic order.
+    Same shape for `validateVocabularySource` dropping `parsed.diagnostics` when the shape stage
+    throws: six inputs said equivalent, and `"%YAML 1.3\n---\nterms: 3\n"` returns **two**
+    diagnostics — the shape error and *"Unsupported YAML version 1.3."* — of which the mutation loses
+    the second.
+  - **D-40-21's two guards are written and both are falsified**, at
+    `app/api/validate/ontology-not-caller-supplied.test.ts`, 4 tests. **Behavioural**: the input the
+    bundle route actually builds — captured by wrapping the barrel, not hand-assembled — is refused
+    at `maxBytes = literal - 1` and accepted at `maxBytes = literal`, where `literal` is
+    `Buffer.byteLength(JSON.stringify(input),"utf8")`. **My first version was a guard that could not
+    fail and falsification is what caught it**: asserting `measureSubmission(input) === literal`
+    compares the whole input against itself, because `submissionOf`'s exclusion happens *inside*
+    `validateBundle` — a route made to pass an `ontology` left it green. Driving the bound states the
+    same integer equality and cannot go vacuous. **Structural**: no file under `app/api/**` may call
+    `ontologyView` with a second argument, over a domain walked from the filesystem, comments
+    stripped, arguments split at paren depth zero, with a floor assertion and a planted-call
+    self-test so a walk that finds nothing reds. Falsified both ways: a route passing a caller-built
+    view reds the behavioural half, and a helper file under `app/api/` reds both — a helper outside
+    `app/api/` would red only the behavioural one, which is the asymmetry the pair exists for.
+    **The structural half's proper home is a repo-wide guard on base**, since one living in T040's
+    `Owns` is deleted with T040's tree.
+  - **The 8 359-byte floor, reached independently.** I measured `ontologyView(CORE_ONTOLOGY)` at
+    **8 372** bytes as a view's data property before reading base's entry, which is the same figure
+    by a different route; and I add the third point that makes *floor* the right word empirically
+    rather than by argument — with the archive's own shipped extensions layered in the same view
+    serialises to **8 605**. The number moves with the overlay, and a caller's overlay is unbounded.
+  - **C3, measured rather than asserted.** `JSON.parse('{"a":{"x":1},"b":{"x":1}}')` yields `a !== b`,
+    and a JSON text has no syntax that denotes a back-edge — a `$ref` parses as an inert string. So
+    the route/barrel split under D-40-18 and D-40-C rests on a measurement now.
+  - **A retracted number survives in two shipped comments, with a false provenance attached.**
+    `limits.ts:40` says the archive maxima *"measured through this module's own entry point"* are
+    **17 963** bytes, and `validate.ts:283` repeats *"the archive's 17 963 reproduces either way."*
+    The blind author retracted 17 963 and corrected this file; the module was never corrected.
+    Measured through this module's own entry point just now: **17 947** with each bundle's own
+    extensions (`grounded-research-desk`) and **18 195** with the shared vocabulary applied to all
+    nine, which is what `measure.test.ts` itself does. The comment is wrong under both readings, and
+    it is the sentence that claims to have been measured here.
+  - **Contention I caused, disclosed rather than left to be attributed.** My `--config
+    .t040-adversary/vitest.p…` was named in T005's implementer's samples. The larger share is not
+    that: the 42-mutation sweep is **44 full runs of 13 test files** and it ran from a scratch
+    `git worktree` at `…/scratchpad/c1-worktree`, plus one `npm run build` and two `npm run lint`.
+    **A detector that excludes runs naming its own worktree and looks for the other sessions' names
+    cannot see a run from a fourth path that is neither** — the scratch worktree is invisible to the
+    instrument in both directions. The worktree is removed and every probe file deleted; porcelain
+    carries only the guard above. No database was reached at any point — `DATABASE_URL` was never
+    exported in this shell and the T040 surface takes no `Db` — so the cost was CPU, not the
+    resource the slot names.
+  - **Gates, and when each was taken.** `ls .next/types` present; `npx tsc --noEmit` written to a
+    file and read **unfiltered, 0 lines, exit 0**; `npm run lint` **0 errors 0 warnings**;
+    `npm run build` exit 0, `Compiled successfully`, and porcelain clean afterwards — no
+    `public/bundles` diff. Targeted, before the stop order: the nine repo-wide root guards plus the
+    whole T040 surface, **23 files, 244 passed | 0 failed | 0 skipped**, which is the 226 above plus
+    this round's 4 plus 14 root-guard tests. **No full-suite run and no base reconciliation**: those
+    need the slot, the slot is T005's implementer's, and a number taken now would be a number taken
+    off somebody else's triple. Owed at a slot, by name.
+  - **What would overturn this verdict.** D-40-D rests on one host's stack size — a build with a
+    larger stack moves the depth at which it fires but not that it fires, and I did not test whether
+    Next's runtime catches the `RangeError` into a 500 rather than an unhandled rejection, so the
+    *status* a caller sees is read, not measured. D-40-E's nine divergences are all barrel-only:
+    `JSON.parse` produces none of those shapes, so no route reaches them today and the charge is
+    about the warrant for the substitution rather than about a live wire defect. My 42 mutations are
+    still a set I chose; the second pass narrowed the untouched region but `lib/core` and
+    `lib/server/http` were never mutated at all. And the 11 GAPs are gaps in the suites **I ran** —
+    226 tests over three globs — which is not the whole tree.
+  - 2026-08-18 implementer, **round 3: D-40-D and D-40-E fixed, on the gate slot granted by name.**
+    Merged `backend` at `c20a162` before stamping. Gates in the ordered sequence, stopping at the first
+    red: `tsc --noEmit` **0**, `eslint` **0**, `npx vitest run lib/server/engine app/api/validate`
+    **69/69 exit 0**, peak foreign `vitest` **0** across 22 in-run samples counted by process group.
+  - 2026-08-18 implementer, **the count moved 79 → 69 and it reconciles exactly.** `measure.test.ts`
+    went 32 → 18 because the old corpus emitted **one `it` per shape** and the construction that
+    replaced it is one assertion over 400+ generated cells — −22 rows, +8 new cases, **−14**. The other
+    +4 is `app/api/validate/ontology-not-caller-supplied.test.ts`, which is **not mine**: T040's
+    adversary built D-40-21's two guards into my `Owns` and they pass. 79 − 14 + 4 = 69, and the
+    per-file split is 33/18/4/10 plus the adversary's 4.
+  - 2026-08-18 implementer, **D-40-D built, and the ceiling is placed so nothing previously measured
+    stops being measured.** Iterative with an explicit frame stack, one mutable `open` set, enter/leave
+    by pop — the `isWellFormedDeep` shape. `MAX_NESTING_DEPTH = 10 000`, refusing as
+    `"validateBundle: the nesting depth exceeds the limit of 10000 levels."`, above **every** observed
+    crash point of the recursive walk (3 000 through a route, 7 000 direct), so depths that used to
+    crash now measure and depths past the ceiling refuse cleanly. **The main assertion is over the
+    outcome KIND across four orders of magnitude** — at depths 1 to 50 000 the answer is a number or a
+    `LimitExceededError` and `RangeError` is legal at no depth — with the threshold cases as witnesses
+    under the property rather than as the property, because a threshold assertion would have been the
+    ceiling validated against the input that motivated it. Not a fourth `EngineLimits` field: T230 owns
+    those three as product decisions about what a submission may contain, and a depth bound is a
+    property of what this procedure can hold.
+  - 2026-08-18 implementer, **D-40-E built as a construction over `SerializeJSONProperty`'s own
+    branches.** 50 value classes × 9 positions, each class commenting the algorithm step it covers,
+    plus **500 composed values** to depth 3 under a seeded LCG — because a flat product tests each
+    class beside a constant while the steps interact, and a `toJSON` returning a boxed primitive inside
+    an array inside an object exercises three branches in one value that no single cell reaches. The
+    generator is asserted **before** its results, so a corpus that silently stopped generating cannot
+    report agreement over nothing. **The ordering fix is structural**: `normalise` resolves `toJSON(key)`
+    then unboxes, and droppability is decided on the **resolved** value, which is the serialiser's
+    order — all three charged classes were one defect wearing three faces, so the order makes them
+    unreachable rather than fixed. Boxing is tested by calling `String.prototype.valueOf` and catching,
+    which asks the internal-slot question where `instanceof` is realm-scoped and
+    `Object.prototype.toString` is forgeable through `Symbol.toStringTag`.
+  - 2026-08-18 implementer, **three defects the run found that no amount of reading had.** This is the
+    argument for having asked for the slot rather than shipping on a read, and each is a different kind.
+    (1) **`1n` is a syntax error at this project's `target: ES2017`** while `lib: esnext` types the
+    global, so `BigInt(1)` — found by `tsc` in one second, invisible to inspection. (2) **The 22-shape
+    corpus's replacement made D-40-E's own mistake, one level up, in the generator written to close
+    it**: each class carried a hand-set `droppable` flag, so the cells excluded from the top were those
+    whose *raw* value is droppable — and `JSON.stringify({ toJSON: () => undefined })` is `undefined`
+    too, so `Buffer.byteLength` threw and the run died **inside the corpus**. Droppability declared
+    instead of derived, which is the charge verbatim. The partition is now computed by asking
+    `JSON.stringify` whether it has a value, which cannot make the same mistake because it *is* the
+    thing being agreed with, and the excluded half is asserted rather than skipped — non-empty, every
+    member genuinely undefined, and two named `toJSON` cells required to be in it. (3) **An absolute
+    `< 2000 ms` assertion failed at 2 187 ms on a quiet host holding the slot**, and it deserved to: a
+    millisecond bound is a **host-dependent threshold**, the same defect D-40-D charged in the
+    `RangeError` boundary. Replaced by the property the ruling actually states — hold `maxBytes` fixed
+    and vary the depth: an exponential walk costs 2^15 times more at depth 40 than at 25, a bounded one
+    costs the same, and **the ratio cancels the host**.
+  - 2026-08-18 implementer, **10 mutations, 9 CAUGHT, 1 equivalent, and my first attempt at the tenth
+    was an equivalent mutant of my own making.** S1 was meant to reproduce D-40-E's array half and
+    reddened **nothing** — because it kept the post-normalise droppable check, so a `toJSON` returning
+    `undefined` still cost 4. That is not the defect; the defect spends **0**. Rewritten to check the
+    raw value only and let the unwrap happen downstream, it reds **3** — the cross product, the named
+    witnesses, and the composed values independently. **Third time in this task a mutation has not done
+    what its name said, and the harness cannot tell me**: it reports a failing set, and whether the
+    patch changed the behaviour it claims is a question about the patch. The remaining zero is S10,
+    `cardFiles` unsorted, measured equivalent for the third round running.
+  - 2026-08-18 implementer, **the ratio the adversary offered is mechanised.** `limits.ts` claims each
+    default "clears its maximum by at least fifty times" — a sentence the adversary verified because it
+    was in its eye line rather than because anything would check it again, its own words. It is now
+    three assertions beside the three maxima. Four lines, and it converts a claim that reads as checked
+    into one that is.
+  - **2026-08-19 implementer, round 4 — and the first thing to report is that the round's two
+    charges are published NOWHERE.** `D-40-F` and `D-40-G` occur **zero** times in `backend.md`,
+    on `backend` at `b35b4d8` and in this worktree: not in the preamble, not in this task's
+    contract section, not in this Log. Both reached me only in a dispatch. The dispatch says
+    *"both in the contract section"*, and it is not a claim anyone could have checked from the
+    file. This is *a ruling granted in a reply is a ruling published nowhere* with the reply
+    being a dispatch and both charges accepted — and the exposure is the one that rule already
+    names: the module is about to match them, so **nothing I do reveals the gap**, and the whole
+    cost lands on the blind author, which binds the published block and cannot see the dispatch.
+    Numbering, message forms and any binding text are the orchestrator's; what follows is
+    implemented from the dispatch and reported rather than published by me.
+  - 2026-08-19 implementer, **base merged off-slot before anything else.** `backend` at `b35b4d8`
+    into `c5501da`, reaching `14c0e31`, porcelain empty, **no conflicts** — and the standing check
+    in both directions: `git show backend:backend.md` diffed against the merged file, **0 base
+    lines missing**.
+  - 2026-08-19 implementer, **D-40-F reproduced before it was fixed, and the numbers are mine
+    rather than carried.** In-process, through `measureSubmission`: `unbox` on a plain object
+    **25 993 ns**, on `new String("x")` **12.4 ns**, `Object.prototype.toString.call` **8.6 ns**.
+    On the adversary's payload rebuilt from its description — 400 005 containers, **1 200 141
+    bytes, 57% of the 2 MiB default, so conforming and owed an answer** — the ruled formula
+    answers in **6 ms** and the walk took **8 281 ms**, agreeing on the number. **My figures are
+    1.5x to 1.8x the adversary's** (9 140 ns, 4 834 ms, 751x) and the conclusion is identical;
+    the difference is a host and a `tsx` loader, and it is stated rather than smoothed because
+    quoting its numbers back as mine would have been a measurement I did not take.
+  - 2026-08-19 implementer, **D-40-F fixed by asking the runtime the question the previous
+    version asked by throwing.** `node:util`'s `types.is{String,Number,Boolean,BigInt}Object` is
+    the internal-slot predicate itself: cross-realm correct where `instanceof` is not,
+    unforgeable where `Object.prototype.toString` is not, and it runs **no user code at all** —
+    no `Symbol.toStringTag` getter, no proxy trap — so nothing this walk used to measure can
+    start throwing here, which is the clause D-40-D was charged for losing. The obvious cheaper
+    candidate was measured and rejected on that last axis: `Object.prototype.toString` plus a
+    `Symbol.toStringTag` fallback runs at 40 ms where this runs at 68 ms, and it invokes a
+    getter the old code did not. **Four separating cells were driven against all three
+    instruments** — a boxed `String` tagged `"Foo"`, a plain object tagged `"String"`, a `Proxy`
+    over a boxed `String`, and a boxed `String` from another realm — and all four agree with the
+    formula. Result on the conforming payload: **8 281 ms → 68 ms**, still exactly `1 200 141`.
+  - 2026-08-19 implementer, **the witness is the mechanism, not a clock.** The defect is whether
+    three functions are *called*, so a counter on `String`/`Number`/`Boolean`/`BigInt.prototype
+    .valueOf` answers it deterministically and no threshold is involved. Installed on the
+    prototypes rather than on the module, because `unbox` reads them at call time, so it measures
+    the shipped code and reds for any implementation that goes back to asking by throwing.
+    Measured over 2 000 plain objects: fixed **`{String:0, Number:0, Boolean:0, BigInt:0}`**,
+    reverse mutation **`{String:2005, Number:2005, Boolean:2005, BigInt:0}`** — three per
+    container, and that fourth zero is D-40-G visible in the tally. **Two-factor**: the same
+    installation registers **1** on a submission carrying a boxed string, so the zero is a
+    measurement rather than a dead probe.
+  - 2026-08-19 implementer, **the cost assertion is a ratio of ratios, because one ratio still
+    carries the host.** `walk / formula` on one payload measures this machine's native
+    serialiser against interpreted JavaScript as much as anything else. Dividing the
+    container-dense ratio by the ratio for **the same byte count arranged as one string**
+    cancels that too and leaves the only quantity the defect moved. Both operating points
+    measured twice: throwing `unbox` **976 and 580**, slot predicates **9.7 and 8.8**; the
+    threshold is 100, a midpoint in the only scale a ratio has. **The control measures the
+    quantity the ratio names**: the two payloads are asserted **byte-identical in length** and
+    **15 001x apart in container count**, because a ratio between two payloads that were already
+    the same shape holds for the reason it is supposed to detect.
+  - 2026-08-19 implementer, **the instrument beside the fix was changed by the fix, exactly as
+    warned.** D-40-B's depth ratio took one sample per depth and divided by
+    `Math.max(shallow, 0.05)`. The floor was chosen against a walk **sixty times slower**: the
+    depth-25 refusal went **115 ms → 2.1 ms**, so a GC pause that used to be a rounding error is
+    now the measurement. Single samples on this host spread **0.58 to 4.58** against a threshold
+    of 4 — the assertion would have failed with nothing wrong. **Re-derived rather than
+    re-tuned**: `min` of five per depth, because a pause only ever *adds* time and the minimum is
+    the estimator noise cannot move in the failing direction (measured after: 1.13, 1.16, 1.20).
+    And the floor is **replaced by an asserted precondition**, not lowered — a floor that engages
+    turns `deep / floor < 4` into `deep < 0.2 ms`, an absolute millisecond bound wearing a
+    ratio's clothes, which is the defect the ratio exists to remove arriving silently. It now
+    says so instead.
+  - 2026-08-19 implementer, **D-40-G fixed, and the corpus that could not see it is the more
+    interesting half.** `[[BigIntData]]` is the fourth slot the serialiser's steps name; `unbox`
+    implemented three, so `Object(BigInt(1))` fell through to the object branch and measured
+    **8** for `{ k: Object(1n) }` where `JSON.stringify` **throws**. `VALUE_CLASSES` had no
+    bigint entry at the same time and in the same direction — **a construction over the
+    serialiser's branches is a construction over one author's transcription of them, and the
+    transcription dropped the branch in the code and in the domain together**, which is why
+    nothing reddened.
+  - 2026-08-19 implementer, **the corpus gains a third partition rather than three more rows.**
+    `cells()` split cells by `JSON.stringify(...) === undefined`, so a value the serialiser
+    **drops** and a value the serialiser **refuses** were the same event to this file —
+    `Buffer.byteLength(undefined)` throws as loudly as a bigint does. They are different
+    obligations: for a dropped key the walk may produce anything, for a refusal it owes the same
+    refusal. Three partitions now, summed against `classes x positions` so a fourth nobody
+    asserts is impossible rather than unlikely, and the per-class check is an **exact count**
+    over all three instead of `some` over the measurable half — which is what lets three classes
+    that can never be measurable be covered with no exemption anybody maintains. 54 classes x 9
+    positions = **486 cells: 454 measurable, 5 undefined, 27 unserialisable**, 0 divergences on
+    all three. The composed half asserts the refusal too instead of `continue`-ing past it, with
+    a floor on how many composed values reach it: **325 checked, 175 refused, 0 divergences**.
+  - 2026-08-19 implementer, **the acceptance number for D-40-G is the reverse mutation, and it is
+    not 0.** Restoring the three-slot `unbox` against the new corpus reds **9** in the
+    unserialisable partition (all nine positions of `bigint/boxed`) and **58** among the composed
+    values, independently. `bigint/raw` and `bigint/toJSON-returns-bigint` throw under both, so
+    they are controls rather than padding: only the boxed class discriminates, which is the class
+    the missing slot was about.
+  - **2026-08-19 implementer, S10 is settled, and round 2's replacement conclusion is FALSE.**
+    The C1 experiment measured four patch states and found the fourth — both sorts removed,
+    predicted to red — green, and concluded *"`resolve.ts:191` is not what makes the module's
+    sort unobservable"*. **Retracting *proved* was right; that replacement is a zero from a probe
+    that could not reach.** C1 held the **input** constant and varied the patch, and the input is
+    the variable: `resolve.ts:191` sits inside the branch its own comment calls order-dependent —
+    *"the first file wins"*, reached only when two files claim one `id@version` with **different
+    content** — and no archive bundle and none of the 226 tests carries such a pair, so no
+    arrangement of the two sorts could have been observed by any of them.
+  - 2026-08-19 implementer, **the 2x2 re-run with a discriminating input, through
+    `validateBundle`, in a throwaway `git worktree` at `14c0e31`, each patch state verified by
+    grep before its run:**
+
+        module sortedByKey   core .sort(cmpString)   archive bundle   duplicate-ref bundle
+        INTACT               INTACT                  same             same
+        REMOVED              INTACT                  same             same
+        INTACT               REMOVED                 same             same
+        REMOVED              REMOVED                 same             DIFFERS
+
+    Forward resolves `AAA COPY`, reversed resolves `ZZZ COPY`, and the diagnostics move with it.
+    So **`resolve.ts:191` is the mechanism after all**, and the module's sort is the only thing
+    between a caller and an order-dependent answer the moment that line changes — row 3 shows it
+    doing that job, row 4 shows the absence of it. **S10 is an equivalent mutant CONDITIONAL on
+    `resolve.ts:191`**, which is narrower than three rounds of "equivalent, sampled" and stronger
+    than "cause unknown".
+  - 2026-08-19 implementer, **and the clause's subject has a name and a witness now.** Round 2
+    left AC5's `cardFiles` line as *"defence-in-depth, and what it defends against is unnamed"*.
+    It defends against a change to `resolve.ts:191`, on the input class above — and that property
+    is assertable through the published surface even though the module's own sort is not.
+    `engine.test.ts` gains one test: a `frontline`-shaped submission with one card duplicated
+    under two filenames and one field changed must answer identically permuted. **It is a guard
+    that can fail and the falsification is row 4**, measured on the bundle the test actually
+    picks; rows 1 to 3 are green, which is the correct shape. Its control asserts the planted
+    duplicate **reaches the resolution** — 1 of the two copies resolves onto a node in all four
+    cells — so it is not permutation-independence over an input carrying no decision. Three
+    rounds of a zero, closed by changing the input rather than the instrument.
+  - 2026-08-19 implementer, **what I have NOT run, and it is most of a gate.** The gate slot is
+    T081's adversary's, granted by name, so **no `vitest`, no `tsc`, no `eslint`, no
+    `npm run build`** has been taken on this tree. Every number above is an in-process probe
+    against the shipped module, plus `esbuild.transformSync` as a syntax check on the three
+    changed files. **`measure.test.ts` goes 18 -> 21 `it()` declarations and `engine.test.ts` 
+    gains 1, so the targeted count should move 69 -> 73**, and that is arithmetic rather than a
+    measurement. Owed at a slot, by name: the four gates unfiltered, `ls .next/types` before
+    quoting a typecheck, the targeted run, and a base reconciliation against a base line measured
+    then rather than carried. `node:util` is a new import in `lib/server/**`, precedented by
+    `node:crypto` in `lib/server/auth/**` and by `Buffer` in this file, and **it makes one
+    sentence of the published block false**: *"this module's only import is `@/lib/core`"*. The
+    property that sentence exists for — synchronous, pure, no `Db`, no I/O, no clock, no
+    randomness — is untouched, and `types` is a pure predicate namespace. Reported rather than
+    edited, because the block is base's.
+  - 2026-08-19 implementer, **round 4 on the gate slot, granted by name.** Merged `backend` three
+    times as it moved — `b35b4d8`, `b1aad18`, `6f2439d` — reaching `0fc6809`, then `53948b5`;
+    every sha from `git rev-parse HEAD`, porcelain empty at each, and **one base line missing from
+    the merged `backend.md` at every step, which is my own round-4 T040 row replacing base's
+    round-3 one.** `ls .next/types` present before any typecheck was quoted.
+  - 2026-08-19 implementer, **a base guard no implementer worktree could satisfy, found by running
+    the triple rather than by reading.** `tests/error-hygiene.test.ts` had become an equality at
+    `toBe(18)` while its domain was still `readdirSync(SERVER_DIR)` — **the working tree**, where
+    the number is a property of the **shipped** tree. This worktree publishes **20**: base's 18
+    plus `engine/LimitExceededError` and `engine/CircularReferenceError`. Reported rather than
+    fixed (`tests/**` is in no task's `Owns`) and reported **before** spending the triple, because
+    a defensible report of a contaminated measurement is still a contaminated measurement. Fixed
+    on base at `6f2439d` by moving the domain to `git ls-tree -d backend lib/server/`. The triple
+    already taken at `169403f` is **superseded and not offered**: three identical runs,
+    `2 failed | 5782 passed | 0 skipped` of 5784, the second red being that guard.
+  - 2026-08-19 implementer, **gates at `0fc6809`, each read the way this file requires.**
+    `npx tsc --noEmit` to a file, read **unfiltered: 0 lines, exit 0**. `npm run lint` read in
+    **full**, four lines all npm banner, with **`warning` 0, `problems` 0, `error` 0** asserted by
+    grep rather than inferred from a `tail`. `npm run build` exit 0 and **porcelain clean
+    afterwards**, no `public/bundles` diff. Targeted `lib/server/engine app/api/validate`
+    **5 files, 73 passed, 0 failed, 0 skipped** — the pre-registered 69 → 73 hit exactly, +3 in
+    `measure.test.ts` and +1 in `engine.test.ts`.
+  - 2026-08-19 implementer, **the triple, with the reconciliation measured on both sides.** Three
+    consecutive full suites at `0fc6809`, stamps identical and porcelain empty at both ends of
+    each: **`1 failed | 5783 passed | 0 skipped (5784)`**, three times, with **identical sorted
+    failing sets** whose single member is T090's known AC6. Reconciled by measuring rather than by
+    subtracting a carried number: `tests/server/t040` alone **147 over 9 files**,
+    `lib/server/engine app/api/validate` alone **73 over 5**, and **5784 − 220 = 5564**, base's
+    line at `752721d` exactly. Residue **0**: `darkprint%` databases 4 before and 4 after,
+    connections 1 and 1, counted with the corrected `darkprint%` pattern.
+  - 2026-08-19 implementer, **contention read as lines, and the honest statement is narrower than
+    a zero.** Sampled every 2 s across all three runs, filtering on **activity** (≥5% CPU) over
+    every process on the host, ownership by pgid, keeping the matching lines. **Zero foreign
+    processes named a darkprint path in any of the three**, so no peer build or test ran inside my
+    slot. Load peaked at 34, 38 and 45, carried by browsers, Spotify, Docker Desktop and `claude`
+    sessions — including pgid `41150`, the orchestrator's, at 13.2% during run 3, and **including
+    my own agent process at 7–11%, which classifies as foreign because it sits in a different
+    process group from the run.** So `peers=0` here means *no peer build or test*, not *no peer
+    working*. The sampler was falsified before it was trusted: a deliberate six-second burner
+    registered.
+  - 2026-08-19 implementer, **the sweep: 7 mutations, every prediction written before the run, 4
+    HIT and 3 MISS, 0 newly green anywhere.** Scope `lib/server/engine app/api/validate
+    tests/server/t040`, **220 tests over 14 files**, baseline green, run from one tree at
+    `53948b5`, each patch verified applied by a harness that re-reads the file and refuses a
+    `PATCH-NOOP` or a `PATCH-NOT-TAKEN`.
+
+        M1  unbox decides by throwing again      4 red   MISS  the three predicted, plus the cost ratio
+        M2  drop only the [[BigIntData]] slot    2 red   HIT   D-40-G alone, and NOT the valueOf witness
+        M3  never unbox anything                 5 red   MISS  the three predicted, plus composed and the witness
+        M4b the cost ratio's own control         1 red   HIT   expected 1 to be greater than 1000
+        M5  sortedByKey removed                  0 red   HIT   predicted zero
+        M6b the S10 witness's own control        1 red   HIT   digest-mismatch absent
+        M7  toJSON stops receiving its key       3 red   MISS  the two predicted, plus composed
+
+  - 2026-08-19 implementer, **the three MISSes are one diagnosis rather than three lapses, and it
+    is against me.** Every one is the **composed-values** assertion redding where I had named only
+    the cell-level tests. The 500 composed values draw from the same class list, so any
+    class-level defect reaches them — a broader instrument than I credited, three times running,
+    and I kept predicting the narrow half. A MISS whose diagnosis is *the suite was right and I
+    was wrong* is still a MISS and is the more useful kind. **M3's extra red is the better news
+    inside it**: the valueOf witness fired through its **two-factor half** — with nothing
+    unboxing, `onBoxed` is 0 and the probe reports itself dead — which is what that half exists
+    for and is not something I would have thought to predict.
+  - 2026-08-19 implementer, **and the sweep found two defects in my own instruments, both by
+    aiming a mutation at the CONTROL rather than at the code.** The cost ratio's control asserted
+    `dense.containers / flat.containers > 1000` over two numbers computed from the loop bound:
+    making both payloads the same object reddened **nothing**, because a declared count does not
+    move with the thing it describes. The S10 witness's control asserted that one of the two
+    planted card names resolves — which **planting a single copy satisfies exactly as well**, so
+    it passed over an input with nothing to order. **Same class both times, and it is this round's
+    own class**: a property declared beside the fixture instead of derived from it, and *an
+    anti-vacuity control measuring an adjacent quantity is the defect it was written to prevent*.
+    Fixed at `53948b5` — containers counted by **walking the payload**, and the branch's
+    **precondition** asserted through the `bundle/digest-mismatch` diagnostic `resolve.ts` emits
+    for exactly that pair, present with two copies and absent with one. **Acceptance number for
+    each is the reverse mutation: 0 → 1**, with the control itself as the assertion that fires.
+  - 2026-08-19 implementer, **M5 is the round's only zero and it is classified by reading the
+    patch rather than the failing set.** The anchor is the single call to `sortedByKey` in
+    `validate.ts`, verified present before and absent after, so the mutation does what its name
+    says. The zero means **equivalent conditional on `lib/core`'s `resolve.ts:191`**, which this
+    tree is Forbidden to edit and which the 2x2 above measures as the mechanism. Narrower than
+    three rounds of "equivalent, sampled", and the first version of the claim with a warrant that
+    names what would make the mutation observable.
+  - 2026-08-19 implementer, **a zero I nearly reported, and the instrument that caught it.** The
+    first sweep returned **seven zeros in a row** — and its baseline line was **empty**, because
+    `SCOPE="a b c"` expanded to a single argument: **zsh does not word-split an unquoted
+    parameter**, so `vitest` received one filter matching nothing and printed `No test files
+    found` seven times. Seven mutations, seven zeros, from an instrument that ran no test. The
+    same trap had fired once already tonight in the S10 patch matrix, where the grep-verified
+    patch counts caught it. **Both times what caught it was a check on the instrument rather than
+    on the result**, and a sweep that reports counts without a baseline line cannot tell "nothing
+    observes this" from "nothing ran".
+  - 2026-08-19 implementer, **and the harness reverted my own uncommitted work, which is the
+    hazard this file already records against somebody else's.** The sweep restores with
+    `git checkout -- lib/server/engine app/api/validate`; the two control fixes were uncommitted
+    in exactly that scope, so the first restore of the re-run silently deleted them and both
+    controls measured **0** again. Caught by reading the mutated file rather than the count — the
+    line still carried the old assertion. **A snapshot-restore harness must refuse a dirty tree**,
+    which it now does, and the controls were committed before the sweep was re-run. The cost here
+    was a measurement rather than somebody's edits, and only because the writer it reverted was
+    me.
+  - 2026-08-19 implementer, **the closing triple, re-taken at the sha being handed over rather
+    than carried.** The two control fixes and this Log moved the tree after the `0fc6809` triple,
+    and a test-file commit moves a failing set at least as thoroughly as a prose one, so the
+    numbers were taken again at **`86c34ab`**: `tsc` **0 unfiltered**, `lint` **0 errors 0
+    warnings read in full**, `build` exit 0 `Compiled successfully` with porcelain clean, targeted
+    **73 of 73**, and three consecutive full suites **`1 failed | 5783 passed | 0 skipped (5784)`**
+    with **identical sorted failing sets**, the one red T090's known AC6. Stamps identical and
+    porcelain empty at both ends of every run. Residue **0** — `darkprint%` databases 4 before and
+    4 after, connections 1 and 1. **Zero foreign darkprint-named processes across all three**, at
+    peak loads 18, 23 and 22. The `0fc6809` triple is left in the record above rather than deleted,
+    because it is the one the reconciliation was computed against and the two agree.
+  - 2026-08-19 implementer, **what would overturn this round.** The 68 ms, the 8 281 ms and the
+    ratios are **one host**; a machine where a thrown exception is cheap moves every one of them,
+    and what does not move is the `valueOf` counter, which is why the witness is the counter and
+    the ratio only sits beside it. `util.types` is asserted correct against **four** separating
+    cells and cross-realm through `vm`; a boxed primitive arriving by a channel none of those four
+    models is unchecked. **D-40-G's fix is barrel-only in practice** — `JSON.parse` cannot produce
+    a boxed bigint, so no route reaches it and the charge was always about the warrant. The sweep
+    is **7 mutations I chose**, all inside `lib/server/engine`, and `lib/core`, `lib/server/http`
+    and the four route files were not mutated at all this round. The S10 2x2 was driven in a
+    throwaway worktree against a patched copy of `lib/core`, so it establishes what
+    `resolve.ts:191` does and **not** that anything in this repository would notice it changing —
+    which is exactly the gap the new witness fills at one input class and nowhere else. And this
+    round measured the tree it holds: **the blind suite has seen none of round 4**, so `D-40-F`,
+    `D-40-G` and the S10 witness are held by colocated tests alone, which is D-70-12's shape and
+    the first thing a fresh adversary should weigh.
+  - 2026-08-20 implementer, **round 5, and the merge went first because this file says so.**
+    `ccd1dac` + `backend` at `9fd9e84` → **`1b54406`**, no conflicts, porcelain empty, and **0
+    base lines missing** — the one deliberate exception the last three merges carried is gone,
+    because base now holds this task's row. Both rulings read from the binding surfaces rather
+    than from the dispatch that carried them.
+  - 2026-08-20 implementer, **D-40-H reproduced on my own cell set before anything was touched.**
+    15 channels, **6 diverge**, against the adversary's 7 of 15 — **different cell sets, same
+    conclusion, and neither count reconciled into the other.** What carries the finding is the
+    asymmetry rather than the number: **every divergence sits on a coercing slot and not one sits
+    on a non-coercing slot**, with `[[BooleanData]]` agreeing under `valueOf`, `toString` **and**
+    `@@toPrimitive`, and `[[BigIntData]]` refusing on both sides. And the bypass driven at a
+    bound: a `toString` returning 100 000 characters measures **100 008** by the formula and
+    **10** by the walk, so at `maxBytes = 100` `measureSubmission` **returns 10 and accepts** a
+    submission the ruled number refuses. 100 000 rather than the charge's 5 000 000, because a
+    test that allocates five megabytes to prove a bound is a shape this task has been charged for.
+  - 2026-08-20 implementer, **the fix, and the half of it I would not have found from the charge.**
+    `[[NumberData]]` becomes `ToNumber` and `[[StringData]]` becomes `ToString`; 4c and 4d stay
+    reads. **`ToNumber` is `+value` and NOT `Number(value)`** — measured: a `valueOf` returning
+    `7n` gives **7** under `Number()`, **throws** under `+`, and the serialiser **throws**. They
+    are different functions and the charge does not say which to use.
+    **That is a THIRD axis and finding it is D-40-H's own lesson repeated.** The charge's cells and
+    mine vary **which channel** the coercion consults; this varies **what the channel returns**,
+    and nothing on the other two axes separates `Number()` from `ToNumber`. Seven cells added on
+    it — `valueOf` returning a bigint, a symbol, no primitive at all, in both slots — and the
+    sweep confirms the axis is load-bearing rather than decorative: **N2 is the only mutation in
+    the round that reds it and nothing else.**
+  - 2026-08-20 implementer, **the witness came first, and the acceptance number is why.** The
+    adversary's own measurement was **0 newly red on the number under a spec-correct `unbox`, in
+    any suite** — because **every boxed cell in the 486-cell corpus was a virgin box**, where a
+    slot read and a coercion agree by construction. So the corpus gained the coercion channel
+    tampered with, **foreign-prototype boxes that need no tampering at all**
+    (`Reflect.construct(String, ["xy"], Alien)`), the coercion-result axis, and the two
+    non-coercing slots under the identical tampering as the **built-in control**. Measured against
+    the **unfixed** module before a line of the fix existed, twice, with the reds named in
+    advance: **4 red / 2 pass**, then **6 red / 4 pass** once D-40-23's witness was in, and the
+    pre-registration was exact both times.
+  - 2026-08-20 implementer, **the two cells that AGREE are the sharpest thing here and the file
+    now says why.** `ToString` runs the string hint, which tries `toString` then `valueOf`;
+    `ToNumber` runs the number hint, which tries `valueOf` then `toString`. So overriding the
+    *second* method of each pair changes nothing, and those two cells red **only** for a fix that
+    ran the wrong hint — a mis-repair no other assertion here would catch. **An agreeing cell with
+    no stated reason is the first thing a later reader deletes as redundant.**
+  - 2026-08-20 implementer, **and the sweep found that one of those two cells COULD NOT FAIL.**
+    It asserted a **number** while its override serialised to the same length as the slot's own
+    value — `"VO"` against `"xy"`, two characters each — so a deliberately wrong-hinted `unbox`
+    reddened every other assertion in the file and left exactly these green. **A discriminator
+    designed out of reach by its own fixture, found by the mutation written to prove it works.**
+    The override is length-distinguishable now, and the property is **asserted rather than
+    arranged**: the wrong hint's answer is computed and required to differ, so the next person to
+    edit one of these strings finds out here. Acceptance number is the re-run: N3 goes **6 → 7**
+    and the seventh is that witness.
+  - 2026-08-20 implementer, **D-40-23 built, and its scope is controlled rather than stated.**
+    `UnserializableValueError`, sealed, exported, message exactly as published, value never named.
+    The narrow half is the ruling; **the other half is what stops the widest reading**, and it is
+    a criterion in two parts because an implementation satisfying either alone is wrong in a
+    different direction: a caller's **own** throwing `toString` **propagates untouched**, because
+    `JSON.stringify` propagates it too and relabelling it would name a refusal this module never
+    made. Without that half, *wrap everything that throws* satisfies the first half completely —
+    and N6b is the mutation that does exactly that and reds **one** test, on
+    `expected error to be instance of RangeError`.
+  - 2026-08-20 implementer, **two assertions comparing the formula's error CLASS were corrected
+    rather than deleted.** D-40-23 makes the walk's class differ from the formula's **on purpose**,
+    so a name comparison reds on the ruling being implemented: **117 divergences among the composed
+    values, and zero of them numbers.** The universal property is that neither side invents a
+    number; the classes are pinned per kind in a witness that can state the difference between a
+    refusal this module makes and one it passes on. Deleting them would have removed the check that
+    the walk does not answer where the formula refuses, which is the `maxBytes` half.
+  - 2026-08-20 implementer, **the D-40-F two-factor control was re-aimed rather than kept alive.**
+    A spec-correct `unbox` unwraps a boxed string through `ToString`, whose string hint never
+    reaches `valueOf`, so a counter on the four prototypes' `valueOf` stopped registering and the
+    control **reported itself dead against a correct module**. Swapping in a boxed type whose
+    coercion still happens to call `valueOf` would have kept it green and made **the control
+    depend on the mechanism it is controlling for**. The call goes direct now, inside the same
+    installation, the way `determinism.test.ts` does `void Date.now()` in its own window — and a
+    **second** control asserts the walk returned the expected byte count, so the zero cannot come
+    from a walk that measured nothing. **Two failure modes, two controls, neither of them the
+    mechanism under test.**
+  - 2026-08-20 implementer, **gates, at `9c22183`.** `ls .next/types` present; `npx tsc --noEmit`
+    to a file, read **unfiltered, 0 lines, exit 0**; `npm run lint` read in **full**, four lines
+    all npm banner, **`warning` 0, `problems` 0, `error` 0**; `npm run build` exit 0
+    `Compiled successfully` with porcelain clean. Targeted **engine + routes 77 of 77**
+    (pre-registered 73 → 77, `measure.test.ts` 21 → 25 `it()`), **blind suite 173 of 173 with its
+    nine D-40-23 reds cleared**, whole T040 surface **250**.
+  - 2026-08-20 implementer, **the triple, pre-registered on all four figures and exact.** Three
+    consecutive full suites, stamps identical and porcelain empty at both ends of each:
+    **`1 failed | 5813 passed | 0 skipped (5814)`**, **identical sorted failing sets**, the one red
+    T090's known AC6. Reconciliation measured on both sides: T040's surface alone **250**, and
+    **5814 − 250 = 5564**, base's line. Residue **0** — `darkprint%` 4 databases and 1 connection
+    before and after. **Zero foreign darkprint-named processes across all three**, peak loads 22,
+    21 and 17.
+  - 2026-08-20 implementer, **the sweep: 8 mutations from one tree, 5 HIT and 3 MISS, no zeros
+    and 0 newly green anywhere.**
+
+        N1  all four steps read the slot again      6 red   MISS  the four predicted, plus the refusal partition and D-40-23's witness
+        N2  ToNumber written as Number()            2 red   HIT   the coercion-RESULT axis alone, which is what makes it load-bearing
+        N3  the string slot runs the number hint    7 red   MISS  the six predicted, plus the hint-order witness once its cell could fail
+        N4  the boolean slot coerced too            3 red   HIT   the built-in control fires
+        N5  the serialiser throws naturally again  11 red   HIT   2 of mine and the blind suite's 9
+        N6b the caller's own error relabelled       1 red   HIT   propagation half, `expected error to be instance of RangeError`
+        N7  the refusal names the value            10 red   MISS  the blind suite pins the message literal on all eight of its cells
+        N8  tampering that reaches nothing          1 red   HIT   aimed at the control, and the control alone
+
+  - 2026-08-20 implementer, **the three MISSes are one diagnosis and it is the same one as round
+    4's.** Every one is a prediction that named **the assertion which identifies the defect** and
+    omitted **the broader assertions that also see it** — the refusal partition, the composed
+    values, the blind suite's per-cell message pins. Round 4's version of this was three MISSes on
+    the composed half alone; generalised, it is that I predict the narrow witness and forget the
+    wide ones, and it has now happened six times across two rounds. **A MISS whose diagnosis is
+    *the suite was right and I was wrong* is still a MISS**, and I am recording the pattern rather
+    than the instances.
+  - 2026-08-20 implementer, **a mutation that did not do what its name said, and the harness that
+    could not express one.** N6's first version wrapped `enter(normalise(root, ""))` — the **root**
+    value only — while the propagation fixture sits on a **child**, so it reddened **0** and the
+    zero meant nothing about the wide reading. Caught by reading the patch, not the count.
+    And N6 and N7 were both **refused** by the harness as `PATCH-NOT-TAKEN`, correctly by its own
+    rule and wrongly in fact: it required the anchor to be **absent** after the write, which
+    refuses any **wrapping** mutation, whose replacement contains its own anchor. It compares the
+    re-read against the intended text now, which is the check that was meant and is right for
+    every shape rather than for the shapes tried first. **Refusing is the good direction**: a
+    strict instrument reported that it could not measure, where a lenient one would have reported
+    two more zeros.
+  - **2026-08-20 implementer, OPEN and reported rather than decided: two engine-raised coercion
+    refusals still escape as bare `TypeError`s.** Measured through the barrel at `9c22183`:
+
+        {k: Number box whose valueOf returns a Symbol}  formula TypeError  walk TypeError  "Cannot convert a Symbol value to a number"
+        {k: String box with no primitive available}     formula TypeError  walk TypeError  "Cannot convert object to primitive value"
+        {k: String box whose toString throws}           formula RangeError walk RangeError "caller's own"   <- must stay bare
+
+    The first two are **the engine refusing**, which is what D-40-23 exists to type; the third is
+    **the caller's own error propagating**, which it must not touch. Both readings of the ruling
+    are defensible — its evidence names `limits.ts:263` and a bigint, and the blind suite pins
+    bigints, which is what I built; the wider reading is *a value JSON cannot serialise* as a
+    property over the output, and a box with no primitive is one. **What makes it a decision rather
+    than an omission is the cost of the wide reading**: separating "the engine refused" from "the
+    caller threw" needs `ToPrimitive` reimplemented so the caller's channels are ours to call and
+    only the final conversion is wrapped — a transcription of the very step D-40-H was charged for
+    transcribing wrongly. **I am not taking that decision inside a fix round.**
+  - 2026-08-20 implementer, **round 6. Merged twice, because base moved with the ruling.**
+    `2468c09` + `b643085` → `c3ef68c`, then `bd1b6fd` → **`3734dae`**; every sha from
+    `git rev-parse HEAD`, porcelain empty at each, **0 base lines missing** both times.
+  - 2026-08-20 implementer, **D-40-I reproduced on my own cells first.** 3 array-extent cells
+    against the charger's 5, **unreconciled**: grows-through-`toJSON` 3 against 10, shrinks 13
+    against 3, grows-through-a-plain-**getter** 3 against 10, **and both object controls agree**.
+    The bound driven in the direction that is easy to miss: at `maxBytes = 200` the ruled number
+    is **3** and the walk **refuses**. An over-count refuses a **conforming** submission, and no
+    assertion about a returned number can see it, because there is no returned number.
+  - 2026-08-20 implementer, **the fifth axis was open, I looked, and it is clean for a reason.**
+    Five cells replacing an array element or an object value mid-walk — ahead of the cursor,
+    behind it, and through a getter — **all agree**. Not luck: `SerializeJSONArray` takes
+    `LengthOfArrayLike` **once** and `Get(value, index)` **per iteration**, and
+    `SerializeJSONObject` does the same with `EnumerableOwnPropertyNames`. **So the rule is not
+    *snapshot the length*: it is snapshot exactly what the serialiser snapshots, the EXTENT, and
+    read live exactly what it reads live, the CONTENT.** That says why the object branch was
+    already right and — the useful half — **why an over-eager fix freezing the contents would be a
+    new defect**, so those five cells are the control against it. `P2` and `P3b` make each half of
+    that fix and each reds exactly the content test.
+  - 2026-08-20 implementer, **why neither corpus could see this, and it is stronger than nobody
+    having written a cell.** `cells()` calls `make()` **once** and reads the result **three
+    times** — `JSON.stringify` to partition, `formula` for expected, `measureSubmission` for
+    measured — so a value that mutates while it is walked answers differently on each. **It is not
+    a cell nobody wrote; it is a cell the instrument's design excludes.** Which of the two it is
+    decides what to do about it: this axis lives in a named test with **per-reading
+    construction**, and a corpus class here would produce nonsense.
+  - 2026-08-20 implementer, **the witness's own anti-vacuity control was rebuilt BEFORE it ran,
+    and it is the third of this family.** Its first version asked whether serialising the value a
+    second time gave a different string. That is an adjacent quantity: true only for a mutation
+    both **visible on a second pass** and **non-idempotent**, and **five of the ten fixtures are
+    neither** — `{a:{toJSON(){delete o.b}}, b:"gone"}` renders `{"a":1}` twice because the key set
+    was snapshotted before `b` went, and an idempotent element write renders identically twice.
+    **Both mutations fire; the proxy for them did not.** The quantity the axis is about is
+    **whether the caller's code runs mid-walk**, so the fixture counts that at the moment it
+    happens, and **both readings assert it** — two readings that ran different amounts of caller
+    code are not two readings of one value.
+  - 2026-08-20 implementer, **witness first, measured red against the unfixed module, and the
+    pre-registration was exact**: the two extent tests red, **the object-key control and all five
+    content cells green — before the fix**. The asymmetry stated as an assertion rather than as
+    prose, which is what makes it a mechanism instead of a sample.
+  - **2026-08-20 implementer, *what did this fix stop being able to fail?* — answered by
+    measurement, and the answer is NOTHING.** Twelve mutations from rounds 4 and 5 re-run against
+    the fixed tree. **Counts are the wrong instrument** — seven rose — so the comparison is by
+    **identity**: for each mutation, which tests were red then, still exist now, and are green
+    now. **Zero, for every one.** And the rises are accounted for rather than shrugged at: every
+    added red is a **blind** cell from the re-opened blind round, named individually — seven for
+    `N1` covering `@@toPrimitive`, `valueOf`, `toString` and the BigInt coercion result, four for
+    `N5` covering `[[BigIntData]]` staying refused. **Not one is a colocated test changing what it
+    can see.** Round 5 found the D-40-D ceiling had retired round 3's `withLimits` probe two rounds
+    late and by accident; this is the same question asked **at** the fix, and a measurement rather
+    than a reassurance.
+  - 2026-08-20 implementer, **gates at `504c53d`.** `ls .next/types` present; `npx tsc --noEmit`
+    **unfiltered, 0 lines, exit 0**; `npm run lint` read in **full**, four lines all banner,
+    **`warning` 0, `problems` 0, `error` 0**; `npm run build` exit 0 `Compiled successfully` with
+    porcelain clean. Targeted **engine + routes 81 of 81**, **blind 190 of 190**, whole surface
+    **271**. **Triple identical: `1 failed | 5834 passed | 0 skipped (5835)`**, pre-registered on
+    all four figures and exact, the one red T090's known AC6, stamps identical and porcelain empty
+    at both ends of each run. Reconciliation measured both sides: **5835 − 271 = 5564**. Residue
+    **0**. **Zero foreign darkprint-named processes** across all three, peak loads 13, 14 and 15.
+  - 2026-08-20 implementer, **the sweep: 5 mutations from one tree, 3 HIT and 2 MISS, no zeros
+    and 0 newly green.**
+
+        P1  read the extent live again          2 red   HIT   both extent tests, and NOTHING blind
+        P2  snapshot the array content too      2 red   MISS  the content test, plus the extent one
+        P3b snapshot the object content too     2 red   MISS  the content test, plus the key-set control
+        P4  a fixture whose mutation never runs 1 red   HIT   the control, on its own message
+        P5  the bound cell decides nothing      1 red   HIT   the re-aimed control, 0 -> 1
+
+  - 2026-08-20 implementer, **the sweep found a third control measuring an adjacent quantity, and
+    it is mine.** The bound cell's control asserted only that the ruled number is under the
+    bound — **which stays true of a fixture that grows by nothing at all** — so reducing the growth
+    to zero left the cell with no decision and reddened **0**. The quantity it is about is the size
+    the array reaches **after** the caller's code runs, because that is what a live extent read
+    would have charged. Both sides are required now, and the acceptance number is the re-run:
+    **0 → 1**, firing on *what a live extent read would have charged must exceed the bound*.
+  - 2026-08-20 implementer, **and a mutation whose red set reached subjects it had no business
+    touching.** `P3`'s first version snapshotted the object's contents by replacing the container
+    with a spread copy, which also destroys **object identity**, so it reddened the cycle,
+    shared-substructure and depth tests as well. **A content snapshot has no business reaching
+    *does not mistake legitimate sharing for a cycle*.** Re-expressed to change only the **read**,
+    it reds 2 and both are about content. **The identity of the reds is what showed it; the count
+    would have read as a thorough mutation.**
+  - **2026-08-20 implementer, measured and worth a decision that is not mine: the blind suite does
+    not cover D-40-I.** `P1` — reverting the extent snapshot — reds **two colocated tests and
+    nothing blind**. The blind round closed at `4c961d1` before D-40-I was charged, so the axis is
+    held by this file alone, which is D-70-12's shape for the third time on this task. Its two
+    predecessors were closed by re-opening the blind round; whether this one is, is yours.
+  - 2026-08-20 implementer, **what would overturn this round.** The extent/content rule rests on my
+    reading of `SerializeJSONArray` and `SerializeJSONObject` **plus** ten agreeing cells; a third
+    thing the serialiser snapshots that neither names would be invisible to both. The retirement
+    measurement covers the **twelve mutations I hold on disk** from rounds 4 and 5 over the T040
+    surface — an adversary's own probes are not in it, and a probe retired outside that surface
+    would not appear. `P2` and `P3b` prove a frozen-content fix is caught and **not** that every
+    wrong placement of the snapshot is. And the five content cells run through `toJSON` and
+    getters: a container mutated from a **coercion** — the two channels D-40-H added — is the same
+    axis reached by a route I built no cell for, though `P1`'s getter cell shows the axis does not
+    depend on which channel runs.
+  - 2026-08-20 implementer, **round 7. Merged twice, because base moved with the ruling and then
+    with my own find.** `456bfc6` + `d219d9b` → `bfb5b71`, then `3b18971` → **`1bad988`**; every
+    sha from `git rev-parse HEAD`, porcelain empty, **0 base lines missing** both times.
+  - 2026-08-20 implementer, **D-40-J reproduced on my own cells: 7 diverge, 3 controls agree.**
+    `function+toJSON` in an object slot 16 against 2, in an array slot 12 against 6, arrow, class,
+    async and generator all 16 against 2, **and a `Proxy` over a callable also 16 against 2**,
+    because `typeof` answers `"function"` through a proxy too. Controls: `toJSON` resolving to
+    `undefined` 2 = 2, a plain function 2 = 2, a plain object with `toJSON` 16 = 16. Bypass driven:
+    ruled number **100 008**, and at `maxBytes = 100` the walk **accepts at 2**.
+    **The top-level cell agrees and is documented rather than asserted as coverage**: there the
+    walk falls through to `Buffer.byteLength(JSON.stringify(value) ?? "")`, and `JSON.stringify`
+    applies its own holder wrapper. **It agrees by delegating to the thing it is supposed to be
+    independent of**, so the assertions are all nested.
+  - 2026-08-20 implementer, **built as the condition.** `Object(x) === x` is `Type(value) is
+    Object`: the identity `ToObject` has on objects and on nothing else. Written that way rather
+    than as `typeof === "function"` **because the narrow repair fixes the instance and leaves the
+    next reader a predicate that reads exactly as safe as this one did.**
+  - **2026-08-20 implementer, and the honest half: `Q2` measured an EQUIVALENT MUTANT.** The narrow
+    repair — `typeof === "object" || "function" || "bigint"` — passes **every cell in the tree**,
+    286 of 286. Measured rather than argued: **16 candidate values distinguish the two predicates
+    zero times**, including proxies over callables and over plain objects, cross-realm objects,
+    `Object.create(null)`, boxed symbols and bigints, and an `arguments` object. The only value
+    that would is an `[[IsHTMLDDA]]` object — `document.all` — which Node cannot construct. **So
+    the case for `Object(x) === x` is that it states the condition, not that it catches a
+    reachable input**, and saying otherwise would be a behavioural claim the measurement does not
+    support.
+  - **2026-08-20 implementer, D-40-K found BEFORE it was charged**, by walking the two algorithms
+    D-40-J's charger named as unwalked rather than waiting for the sixth round. `LengthOfArrayLike`
+    is `ToLength(Get(value, "length"))`, and round 6's extent snapshot stored `container.length`
+    **raw**. `Array.isArray` pierces a `Proxy` exactly as the spec's `IsArray` does, so a proxied
+    array reaches that branch with whatever its trap returns:
+
+        Proxy array, length trap -> 1.5              formula 10   walk 13          DIVERGES
+        Proxy array, length trap -> 2.9              formula 13   walk 16          DIVERGES
+        Proxy array, length trap -> NaN              formula  8   walk REFUSES     DIVERGES
+        Proxy array, length trap -> 1e30             formula RangeError  walk REFUSES
+        Proxy array, length trap -> -1               formula  8   walk  8          agrees   <- control
+        Proxy array, length trap -> "2"              formula 13   walk 13          agrees   <- control
+        Proxy array, length trap -> {valueOf:()=>2}  formula 13   walk 13          agrees   <- control
+
+    **The three agreeing cells are what isolate the cause**: `>=` already coerces a string and a
+    `valueOf` object the way `ToNumber` does, and a negative length ends the loop at once as
+    `ToLength` says. **What `>=` does not do is truncate toward zero or map NaN to zero.** And the
+    NaN cell is the severe one: `index >= NaN` is always false, so **the walk did not terminate on
+    the extent at all** and ran until the byte budget stopped it — D-40-B's clause a fifth time, in
+    the branch fixed the round before.
+  - 2026-08-20 implementer, **the refusal-set change is stated because it is one.** A proxied array
+    with a NaN length is **refused today and measures 8 after**, which is what the ruled number
+    says. **Every input that previously produced a number still produces the same one** — the three
+    agreeing cells are exactly that guarantee. Same shape as `MAX_NESTING_DEPTH`, and it belongs in
+    the contract rather than here. **And the residual is stated rather than closed**: at
+    `length -> 1e30` the formula throws `RangeError` while the walk refuses with
+    `LimitExceededError`. Both refuse; the kinds differ; **making the walk match would reintroduce
+    D-40-D**, and an agreement engineered to make a table look uniform is the same defect as a cell
+    that agrees by delegating to the oracle.
+  - 2026-08-20 implementer, **the other named algorithm is clean and I can say why.**
+    `QuoteJSONString` is **delegated, not transcribed** — the walk spends
+    `Buffer.byteLength(JSON.stringify(value))` for a string **and** for a key, so the quoter is
+    never read here and cannot be mis-transcribed. *Clean because delegated* is a claim, so it was
+    probed anyway: **7 of 7** — lone high and low surrogates, a well-formed astral pair, all seven
+    Table-74 escapes, `U+0001`, `U+007F` which is deliberately **not** escaped, and an
+    astral-plus-lone-surrogate **key**. Two transcriptions nobody had named were swept in the same
+    pass: `String(n).length` for `Number::toString` (7 of 7, including `1e21`, `5e-324`, `-0` and
+    `Number.MAX_VALUE`) and `Object.keys` against `EnumerableOwnPropertyNames` through a `Proxy`
+    whose `ownKeys` adds a key with no descriptor and one that is non-enumerable (both agree).
+  - **2026-08-20 implementer, the artefact, and it is what ends the sequence rather than extending
+    it.** Five charges share one mechanism — a list for the branches, four reads for two coercions
+    and two reads, a live length for a snapshotted extent, a `typeof` for a spec type predicate, a
+    raw `.length` for `ToLength`. **So the audit is not *which spec algorithms exist* but *which
+    spec operations does this code RE-IMPLEMENT rather than DELEGATE*.** Delegated is safe by
+    construction; transcribed is a candidate; and the candidate set is small, enumerable and
+    written in the file. It is now a block in `limits.ts`, **beside the walk, where the next
+    transcription would be written**: **seven delegated**, `QuoteJSONString` among them, and
+    **eleven transcribed**, of which five are the five charges.
+  - 2026-08-20 implementer, **and the other six transcriptions were MEASURED rather than asserted
+    covered.** Claiming the corpus sees them would have been the kind of sentence this file
+    charges, so each was mutated: non-finite number width **3 red**, boolean literal widths **7**,
+    `null` width **2**, the comma **27**, the colon **36**, the array's `undefined -> "null"`
+    **5**. **None at zero.** So the block's closing claim is a measurement: **nothing in the
+    delegated column can be a sixth charge, and nothing in the transcribed column is unobserved.**
+  - 2026-08-20 implementer, **witness before both fixes, pre-registration exact.** Against the
+    unfixed module: **5 red** — the cross product, the 500 composed values, D-40-J's callable test,
+    D-40-J's bound test and the `ToLength` test — and **green**: all three D-40-J controls and all
+    three partition tests. Then D-40-J alone took it to 3 red, all of them D-40-K's, and the clamp
+    took it to 0.
+  - 2026-08-20 implementer, **the sweep: 5 mutations from one tree, 5 HIT, 0 newly green, one of
+    them a predicted green.**
+
+        Q1  the gate goes back to typeof object   4 red   HIT   callable + bound + cross product + composed
+        Q2  the NARROW repair, typeof function    0 red   HIT   predicted green, and measured equivalent
+        Q3  the clamp goes back to a raw length   3 red   HIT
+        Q4  clamp without the NaN rule            1 red   HIT   only the ToLength test, which separates the halves
+        Q5  clamp without the truncation          2 red   HIT   only the corpus cells, which is the other half
+
+    **Q4 and Q5 are the pair worth keeping**: `ToLength` does two things, and each mutation reds
+    exactly one instrument, so the two halves are held independently rather than by one assertion
+    with two names.
+  - 2026-08-20 implementer, **gates at `cb0ff1d`, and the triple.** `ls .next/types` present;
+    `npx tsc --noEmit` **unfiltered, 0 lines, exit 0**; `npm run lint` read in **full**, four lines
+    all banner, **`warning` 0, `problems` 0, `error` 0**; `npm run build` exit 0 with porcelain
+    clean. Targeted **engine + routes 85 of 85**, **blind 201 of 201**, whole surface **286**.
+    **Triple identical: `1 failed | 5849 passed | 0 skipped (5850)`**, pre-registered on all four
+    figures and exact, the one red T090's known AC6, stamps identical and porcelain empty at both
+    ends of each run. Reconciliation measured both sides: **5850 − 286 = 5564**. Residue **0**.
+    **Zero foreign darkprint-named processes** across all three, peak loads 21, 23 and 23.
+  - 2026-08-20 implementer, ***what did this stop being able to fail?* — nothing, again, and by
+    identity.** Sixteen mutations from rounds 4, 5 and 6 re-run: **0 retired** for every one. One
+    anchor moved — `P2`'s, because **my own D-40-K fix edited the line it patched** — and that is
+    an anchor being edited rather than a probe being retired, so it was re-expressed as `P2b`
+    against the new line and reports 0 like the rest. Counts are not the instrument; identity is.
+  - 2026-08-20 implementer, **what would overturn this round.** The candidate-set block rests on my
+    reading of this file, and an operation I classified as delegated because a runtime primitive
+    performs it would move columns if that primitive is not the spec operation — which is exactly
+    what `Number()` against `ToNumber` turned out to be in round 5, one column over. `Q2`'s
+    equivalence is measured over **16 values I chose** and an argument about `typeof`'s eight
+    results; a ninth would falsify it. The `ToLength` cells all reach the clamp through a `Proxy`,
+    which is the only route I found — an array-like that is not an `Array` never reaches this
+    branch, because `Array.isArray` gates it. And D-40-K is **barrel-only** like its four
+    predecessors: `JSON.parse` produces no proxies and no callables.
+
+  - **2026-08-20 adversary round 7, FAIL. One charge, and it is inside the round's own fix.**
+    Measured on `feat/t040-engine` at **`1f3df72`** after merging `test/t040-engine` at
+    `7ec22d8`; every sha from `git rev-parse HEAD`, porcelain empty at both ends of every run,
+    `ls .next/types` present before any typecheck was quoted. **`backend` at `dae638e` is NOT
+    merged**: `git merge backend` was refused twice by this session's own permission layer, not
+    by anything in the repository. Both unmerged commits touch `backend.md` and nothing else
+    (`dae638e` 6+/6−, `22e426e` 5+/1−), so **11 base lines are missing from this tree and no code
+    or test file is**; two of the ten root guards parse that file and they are green without those
+    lines rather than with them. The one merge conflict was T040's own task-index row and it was
+    resolved by taking base's text, which already carries the round-7 summary and says the row
+    stops growing.
+  - **D-40-L (defect, charged): `lengthOfArrayLike` spells `ToNumber` as `Number()`, and
+    `Number()` is not `ToNumber` — which is the sentence this file wrote in round 5 and the
+    comment `limits.ts` carries 95 lines below the defect.** `LengthOfArrayLike` is
+    `ToLength(Get(value,"length"))`, `ToLength` is `ToIntegerOrInfinity`, and that is **`ToNumber`**.
+    `Number(v)` is `ToNumeric(v)` followed by BigInt→Number, so it **accepts a BigInt where
+    `ToNumber` refuses one**. Measured through `measureSubmission` at `1f3df72`:
+
+        length trap -> 3n                    formula TypeError   walk 19    DIVERGES
+        length trap -> {valueOf: () => 2n}   formula TypeError   walk 15    DIVERGES
+        length trap -> Object(2n)            formula TypeError   walk 15    DIVERGES
+        length trap -> 3n at TOP level       formula TypeError   walk 13    DIVERGES
+        length trap -> 2                     formula 15   walk 15   agrees  <- control
+        length trap -> "2"                   formula 15   walk 15   agrees  <- control
+        length trap -> {valueOf: () => 2}    formula 15   walk 15   agrees  <- control
+        length trap -> 1.5                   formula 11   walk 11   agrees  <- D-40-K's own cell
+        length trap -> NaN                   formula  8   walk  8   agrees  <- D-40-K's own cell
+        length trap -> Symbol()              both TypeError        agrees  <- D-40-24's class
+
+    **The direction is neither an over-count nor an under-count: the walk ANSWERS where the ruled
+    formula REFUSES.** That is the half round 5 named when it declined to delete the two
+    class-comparing assertions — *the check that the walk does not answer where the formula
+    refuses, which is the `maxBytes` half*. Under D-40-23 a value `JSON.stringify` will not
+    serialise owes a typed refusal; here it owes one and gets 19. **It is not D-40-24's deferred
+    item**: the `Symbol()` cell is that one, where both sides throw the same bare `TypeError` and
+    only the class is in question. Here one side refuses and the other accepts.
+  - **Coverage is ZERO in both suites, and that is a measurement rather than a reading of the
+    fixtures.** The blind suite's five D-40-K cells (`domain.test.ts:257-345`) and the corpus's
+    five (`measure.test.ts:284-299`) are 1.5, 2.9, NaN, −1, `"2"` and `{valueOf:()=>2}` — every one
+    a number, a string, or a `valueOf` returning a number. `Q3`/`Q4`/`Q5` mutate the truncation
+    half and the NaN half. **Nothing in either reaches the `ToNumber` half.** Driven: with the
+    one-line repair applied in the tree, the whole T040 surface is **306 passed | 0 failed | 0
+    skipped over 18 files — 0 newly red.** The zero has its two-factor built in, because the
+    probe above registers a difference the suites cannot: **the suites are blind to a divergence
+    that demonstrably exists**, which is what separates this zero from a dead instrument.
+  - **The repair is one line and it was measured, not proposed.** `Number(...)` becomes `+(...)`.
+    All four divergences close, all six controls hold, **10 of 10 agree**, and D-40-K's own two
+    halves are untouched. Afterwards the walk throws the same bare `TypeError` the formula does,
+    which lands it inside D-40-24's already-numbered class rather than opening a new one.
+  - **This is a finding about the candidate-set artefact, and the artefact's weak column is not
+    the one its author named.** The DELEGATED column survives audit: all seven were walked —
+    `QuoteJSONString` via `JSON.stringify`, `String(value)` for `ToString`, `+value` for
+    `ToNumber`, `util.types.is*Object`, the BigInt refusal, `Object.keys` for
+    `EnumerableOwnPropertyNames`, `Array.isArray` for `IsArray` — and every one is genuinely the
+    spec operation. **The block fails one column over, in a way its shape cannot express: a
+    TRANSCRIBED operation can itself DELEGATE a sub-operation to a primitive.** `ToLength` has
+    three parts — `ToNumber`, truncation toward zero, NaN→0 with the clamp — and D-40-K's fix
+    transcribed two and delegated the third to `Number()`. One row per operation leaves nowhere
+    to record a delegation nested inside a transcription, so the block's closing claim —
+    *nothing in the transcribed column is unobserved* — is true of the two halves the charge
+    named and false of the third. **And the countermeasure was already written down in the same
+    file**, at `limits.ts:562-564`: *"`ToNumber(value)`, and `+` is the only spelling of it.
+    `Number(value)` is a DIFFERENT function — it accepts a BigInt where `ToNumber` refuses one"*.
+    The next transcription was written at `limits.ts:468` and did not read it.
+  - **Barrel-only, sixth in the sequence.** `Array.isArray` gates the branch, so only a `Proxy`
+    over an array reaches it and `JSON.parse` produces none. Disposition is the orchestrator's
+    standing instruction: a numbered follow-up task, not an eighth round.
+  - **The audit's negative results, stated so the search has a shape.** 15 further cells across
+    the predicates in neither column: **14 agree**, and the fifteenth is D-40-23's *ruled*
+    difference (a boxed bigint in an array — formula `TypeError`, walk `UnserializableValueError`),
+    which is conformance. **Step 4's gate is `typeof resolved === "object"` at `limits.ts:509` —
+    D-40-J's charged predicate, left standing one line below its own fix.** `Object(x) === x` was
+    applied to step 2 and not to step 4. Measured and NOT charged: no callable in this runtime
+    carries any of the four slots — `Reflect.construct(String, ["xy"], function Alien(){})` gives
+    a `typeof "object"` String exotic, a `class extends Function` instance carries no slot, and a
+    `Proxy` over a callable answers `false` to all four `util.types` predicates. Same standing as
+    `Q2`. It is worth a line only because D-40-J ruled that *the general repair is the condition*,
+    and the general repair reached one of the two gates. `IsCallable` is transcribed as
+    `typeof === "function"` twice — `normalise`'s `toJSON` check and `isDroppable` — and is in
+    neither column; equivalent for `Q2`'s reason.
+  - **Gates at `1f3df72`, each read the way this file requires.** `npx tsc --noEmit` written to a
+    file and read **unfiltered: 0 lines, exit 0**. `npm run lint` read in **full**, four lines all
+    npm banner, **`warning` 0, `error` 0, `problems` 0** by grep rather than inferred from a tail.
+    `npm run build` exit 0, `Compiled successfully`, porcelain clean afterwards with no
+    `public/bundles` diff. Targeted: engine + routes **85 passed | 0 failed | 0 skipped** over 5
+    files; blind **221 passed | 0 failed | 0 skipped** over 13; whole T040 surface **306 passed |
+    0 failed | 0 skipped** over 18, and **85 + 221 = 306 exactly**. The ten root guards **15
+    passed | 0 failed | 0 skipped** over 10 files.
+  - **No full-suite triple and no reconciliation, and the arithmetic is not offered as a result.**
+    The slot is contended — six fresh worktrees are taking `npm ci` and a first build and four
+    darkprint sessions read busy — so a triple taken now is a number taken off somebody else's.
+    `5564 + 306 = 5870` is arithmetic. Residue and the contention reading are owed with it.
+    Disclosed instead: my own load was one `npm run build`, two `npm run lint`, about thirty
+    targeted `vitest` runs over three globs, and two short deliberate CPU burners (four-way and
+    six-way, under a minute each) used to try to reproduce the red below. No database was reached
+    at any point — `DATABASE_URL` was never exported in this shell and the T040 surface takes no
+    `Db` — so the cost was CPU rather than the resource the slot names.
+  - **What would overturn this verdict, and the first item is a red I cannot name.** The round's
+    **first** narrow-scope run returned **`1 failed | 84 passed | 0 skipped (85)`**, `Test Files 1
+    failed | 4 passed (5)`, on a cold vite cache with transform 16.56 s against 1.13 s warm. It
+    did not recur in **20 further narrow runs** — including three cold-cache runs, two replays of
+    the exact wide-then-narrow sequence, and six runs of the two timing tests under a declared
+    six-way burner. **I do not have its identity and I am not classifying it**, because an
+    unreproduced red classified from its neighbours is the shape this file charges. The two
+    host-dependent assertions were measured rather than assumed: the D-40-F cost ratio spreads
+    **4.20 – 29.16 idle** and **8.12 – 9.58 under a six-way burner** against a threshold of 100 —
+    the `min`-of-7 estimator is *steadier* under load, which is why load did not reproduce it —
+    and the D-40-B depth ratio passed 6 of 6 under the same burner. **So a 1-in-21 red on this
+    surface is unexplained on a task whose AC5 is a determinism criterion**, and it is the first
+    thing a successor should take. Further: my probes are values I chose, and the `Proxy` route to
+    `lengthOfArrayLike` is the only one I found, as D-40-K itself says. The triple is not taken.
+    `backend` is unmerged and two root guards parse the 11 lines it carries. And the 306 green is
+    measured against a suite whose D-40-K cells I have just shown incomplete on one of three axes;
+    the other transcribed rows' counts (3, 7, 2, 27, 36, 5) are the implementer's and were
+    re-derived by nobody this round.
+
+  - **2026-08-20 adversary round 7, CORRECTION to the entry above, raised by the orchestrator and
+    falsified by measurement. Two sentences are struck and they are quoted rather than deleted,
+    because a retraction with nothing to retract is not a record.** Struck: *"including three
+    cold-cache runs, two replays of the exact wide-then-narrow sequence, and six runs of the two
+    timing tests under a declared six-way burner"* as a statement about a **contrast**, and *"the
+    D-40-F cost ratio spreads 4.20 – 29.16 idle and 8.12 – 9.58 under a six-way burner ... the
+    min-of-7 estimator is steadier under load, which is why load did not reproduce it."*
+    **The word `idle` is false in both.**
+  - **The mechanism: my burners were backgrounded with `&` and outlived the loop that started
+    them, so `kill %1 %2 …` in a non-interactive `zsh` did not reach them.** Three groups, not the
+    two the orchestrator measured — `62717` (from the 4-way block), `67540` and `68110` (the two
+    6-way blocks) — six processes at 92–99% CPU for **five hours and forty-nine minutes**, killed
+    at the orchestrator's report with `kill -TERM -<pgid>`, and an activity-based sweep after it
+    shows nothing on the host above 36%. **A declared cost is a claim about INTENT and not a
+    measurement of duration**: I declared *under a minute each* about commands that had already
+    been backgrounded, so the declaration was true of what I meant and false of what ran.
+  - **What that does to the round's own numbers, reconstructed from the vitest `Start at` stamps
+    against the groups' elapsed times.** The first burner started at about **09:27**; the red is
+    at **09:24:56**. So:
+      - **The red was observed on a burner-free host.** Nothing I ran had loaded it yet.
+      - **Seven of the non-reproduction runs were also burner-free** — the 09:25:28 re-run and the
+        six-run loop after it. Those seven stand exactly as reported.
+      - **Everything after 09:27 carried two to eight saturated cores**, including the three
+        cold-cache runs, both sequence replays, both probe3 sweeps and the six timing-test runs.
+      - **So the contrast I reported was 2 cores against 8, not 0 against 6**, and the 4.20 – 29.16
+        spread labelled `idle` was measured with two cores already gone. **I never re-ran the
+        condition the red actually occurred in**, which is the one direction a non-reproduction
+        needed to cover.
+    **The honest statement is narrower**: seven clean non-reproductions, not twenty, and the
+    load axis is uncalibrated rather than measured. The red is more open than I left it, not less.
+  - **And the correction runs the other way for the gates, which is not a consolation but the same
+    fact.** `tsc`, `lint`, `build`, the ten root guards and every 306-test run were taken at
+    **09:32 and later, under six saturated cores nobody could see.** Green there is stronger than
+    green on a quiet host, exactly as it is for a determinism triple.
+  - **The finding that outlives this round is the orchestrator's and it is about the samplers.**
+    Every contention detector in this run matches on a **name** — a `vitest` process group, a
+    `darkprint` path — and these were `zsh` wrappers whose group is neither. **Six processes at
+    99% were the loudest things on the host and every name-matching detector looked straight past
+    them, while being correct about what it measured.** The instrument that would have caught it
+    exists and was not adopted: **filter on ACTIVITY — `%CPU` over every process on the host —
+    then attribute, rather than filtering on a name and never seeing what the name misses.**
+    `peers=0` from a name filter means *no peer process I can name*, which is not the quantity the
+    slot rule is about.
+  - **Nothing here touches D-40-L, and that is a claim about kind rather than a reassurance.**
+    The charge, its ten cells, the three controls, the 10-of-10 repair and the 0-newly-red
+    coverage measurement are **in-process differential comparisons against `JSON.stringify` in the
+    same process**, with no clock in any of them. The 306 is a count. A saturated host moves none
+    of those, and the two sentences struck above are the only ones in that entry that rest on a
+    duration.
 
 ### T080, Registry read model and read API
 
@@ -12042,6 +13679,40 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   - 2026-08-15 test author, **the T080 red was MINE, and my own conflict resolver caused it.** I reported T080's index row and section as disagreeing and correctly did not touch the row — but the disagreement did not exist at base. My rebase helper's fallback branch emits **both sides** of an unresolved hunk, which is right for Log entries and **wrong for a table row**: a row is a unique record keyed by its task id, so emitting both does not merge it, it duplicates it. Six rebases left **three** T080 rows and **two** T090 rows — 35 where base has 32 — and the guard read the stale copies. Rebuilt the whole index from base's rows with only T090's replaced by mine; 32 rows, no duplicates, guard green. **The general form: a merge strategy is per-record-shape, and "keep both" is only correct where both can coexist.** I attributed it to T080 for one round because I compared the two halves of my own tree to each other and never to base — the same one-tree reading the guard's own scope note warns about, arriving in the report of that guard's finding.
   - 2026-08-14 test author, **gates**. `npm run lint` clean, 0 problems. `npm run typecheck` and `npm run build` each fail on exactly the four `TS2307`s for the absent modules — `@/lib/server/export` and the three routes — which is the honest red for a module that is not there, the same shape T010 carried until its barrel landed. (The `app/**` `PageProps` errors in a `typecheck` run predate this branch: they are Next's generated route types and are absent until a build has run.) Build leaves no `public/bundles`/`public/cards` diff. Full suite, module absent: **exit 1, 6 failed files, 83 failed | 4453 passed**, **nothing skipped**, and no suite outside `tests/server/t090` reddened. Every one of the 83 traces to one of the four absent specifiers; none is a syntax error or a bad path. Against a throwaway correct reference the same six files are **86/86**.
 
+
+### T131, Profiles: follows, pins and the tables they need
+
+- **State:** todo
+- **Depends on:** T130, T180
+- **Owns:** `lib/db/schema.ts` (extension only), `lib/db/migrations/**`, `lib/server/profiles/**` (extension), `app/api/authors/**` (extension)
+- **Created by:** D-130-06, the owner's decision of 2026-08-20, splitting T130 rather than blocking it behind a schema task.
+- **Contract:** carries the half T130 could not build — `watchers` and `toggleFollow` (AC4), `pinned` and `setPins` (AC3), `support`, and `validated`, which D-130-01 ruled a **count** and which therefore depends on T180's run reports. **It owes the TABLES before it owes the behaviour.** Measured at `ad44537` by both halves of T130 independently: `grep -in "follow|watcher|pinned|support"` over `lib/db/schema.ts` and all four migrations returns **zero**; `target_kind` is `blueprint|card|term` and `target_actor_kind` is `star|note_vote`, so **neither can name an account as a target nor a follow as an act** and both need an `ALTER TYPE`. **`support` has no column AND no derivation** — the frontend sums stars off the item lists while `support` is a separate per-account figure passed through — so *anything countable is counted* does not reach it.
+- **Inherits unchanged from T130:** AC1's clause — **anything countable is counted, never stored as a counter** — and AC2's, that `counts` cannot be cached across callers because an owner's and a visitor's differ by exactly the private rows.
+- **Already written:** T130's blind suite at `32556b7` holds the pins, follow and `counts.cards` families, including a pin spelling **discovered rather than chosen** with K2 as the control that makes the discovery meaningful.
+- **Log:**
+
+### T132, Amendments to merged published records that T130 needs
+
+- **State:** todo
+- **Depends on:** T080, T130
+- **Owns:** `lib/server/registry/types.ts`, `lib/server/registry/**` (extension), `lib/server/profiles/**` (extension)
+- **Created by:** D-130-06.
+- **Contract:** `CardSummary` (`lib/server/registry/types.ts:38-46`) carries **no owner**. The only attribution through T080's barrel is `card.author`, declared `author?: string` — **optional, and content the uploader wrote rather than the row's ownership** — while `card_version.owner_id` is `NOT NULL`, authoritative and **unpublished**. **D-130-04 forbids re-implementing T080's visibility filter against `card_version`**, which is exactly what T130's inherited-read-semantics paragraph exists to prevent, **so this is an amendment to a MERGED task's published record and was never T130's to take.**
+- **Second item, added by D-130-07: T090 publishes `storedVocabulary` from its barrel.** `release.local_vocabulary` is `jsonb` and **T010 publishes its writer's input as `vocabulary?: unknown`**, so the column's interpretation is held by no type anywhere and any caller of `addRelease` can store any shape. **Its only reader, `lib/server/export/vocabulary.ts`'s `storedVocabulary`, is NOT on T090's barrel** — and that file's own docblock says *a second opinion about it in this module is exactly the second reader that file exists to prevent*. T130 therefore has one, by necessity and under D-130-07. **Publishing it collapses the two readers back to one.**
+- **Standing:** T130's blind author asserted these cells against a reference that reads `card_version.owner_id` directly — **the route the ruling forbids** — and said so. **Those cells are not evidence about anything buildable until this task lands.**
+- **Log:**
+
+### T041, D-40-L: `ToNumber` is `+`, not `Number()`
+
+- **State:** todo
+- **Depends on:** T040
+- **Owns:** `lib/server/engine/limits.ts`
+- **Created by:** T040's merge at `ad44537`. **Charged and measured by round 7's adversary and deliberately NOT fixed there**, because every charge from D-40-E onward is barrel-only and T040 gated one task while eleven sat idle.
+- **Contract:** `limits.ts:468` reads `Number((container as { length: unknown }).length)`. **`LengthOfArrayLike` is `ToLength` is `ToIntegerOrInfinity` is `ToNumber`; `Number(v)` is `ToNumeric` then BigInt→Number, so it ACCEPTS a BigInt where `ToNumber` REFUSES one.** Measured through `measureSubmission`: a `length` trap answering `3n`, `{valueOf: () => 2n}`, `Object(2n)` or `3n` at top level gives **formula `TypeError` against walk 19 / 15 / 15 / 13** — **the walk ANSWERS where the ruled formula REFUSES**, which is neither over- nor under-count and is the half D-40-23 exists to type. Six controls hold: `2`, `"2"`, `{valueOf:()=>2}`, `1.5`, `NaN`, `Symbol()`.
+- **Repair, measured rather than proposed:** `Number(...)` → `+(...)`. **Four divergences close, six controls hold, 10 of 10 agree, D-40-K's own truncation and NaN halves untouched**, after which the walk throws the same bare `TypeError` the formula does and lands **inside D-40-24's already-numbered class** rather than opening a new one.
+- **Owes a witness BEFORE the fix.** Coverage is **zero** in both suites, measured not read: the blind five and the corpus five are 1.5, 2.9, NaN, −1, `"2"`, `{valueOf:()=>2}` — every one a number, a string, or a `valueOf` returning a number. **Nothing reaches the `ToNumber` half**, and with the repair applied the whole T040 surface is 306 green with **0 newly red** — *a suite that could not see a defect cannot see its fix.*
+- **And the audit artefact needs a column it does not have.** `limits.ts` ships seven operations **delegated** and eleven **transcribed**, and this defect is neither: **a transcribed operation that itself DELEGATES a sub-operation to a primitive.** `ToLength` has three parts and D-40-K's fix transcribed two and delegated the third to `Number()`. **One row per operation has nowhere to record that**, so the block's closing claim is true of the two halves the charge named and false of the third.
+- **Log:**
 ### T140, Saves (private bookmarks)
 
 - **State:** tests-written
@@ -12059,7 +13730,47 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         countSaves(db: Db, actor: Actor, accountId: string): Promise<number>
         migrateLocalSaves(db: Db, actor: Actor, accountId: string, targets: readonly { kind: "blueprint" | "card" | "term"; refId: string }[]): Promise<void>
 
-  **AC1 covers the count as well as the list, and the count is the one that leaks.** "A save is invisible to every caller but its owner and the operator, **including its count**" — so `countSaves` takes an `Actor` and is not a cheap public aggregate. A visitor gets `undefined`-equivalent behaviour, not zero: zero is an answer, and answering zero for a set you may not see tells the caller the set exists.
+  **The route surface, published by D-140-07 and owed to this task since D-140-04.** Four routes over
+  **one** request shape, and that shape is `saveTarget`'s own `target` parameter rather than a third
+  naming of the three kinds — **so the route translates nothing.** `SEAM-61`/`SEAM-62`'s key space is
+  **withdrawn**, not mapped, and the browser-local mapping is T262's.
+
+        interface SavesView { saves: readonly SaveRecord[]; count: number }
+
+        withSaveErrors(request: Request, handler: () => Promise<Response>): Promise<Response>
+
+        GET    /api/account/saves          —                               200 SavesView | 401 500
+        POST   /api/account/saves          { kind, refId }                 200 SavesView | 400 401 500
+        DELETE /api/account/saves          { kind, refId }                 200 SavesView | 400 401 500
+        POST   /api/account/saves/migrate  { targets: { kind, refId }[] }  200 SavesView | 400 401 500
+
+  **`withSaveErrors` maps `SaveStoreError` to a 500 `problem+json` carrying the published message
+  unaltered** (D-140-02's form, D-13's clause, D-50-18's mapping) **and re-throws everything else**, so
+  that arm keeps meaning *unrecognised*. `actorFrom` is imported from `@/lib/server/accounts`, which is
+  Forbidden to WRITE here and already exports it.
+
+  **There is no 403 in any status line, and the reason is structural rather than an omission**: every
+  route passes `session.accountId`, so `NotAccountOwnerError` compares an id against itself —
+  `lib/server/accounts/http.ts` rules this and ships it. **Binding on the blind author: AC1's non-owner
+  denial is unreachable from HTTP in this task.** Drive it from module cells; do not write a route cell
+  expecting a 403, and **do not read its absence as the denial being untested.**
+
+  **There is no 404 on a write either.** A write-time existence check on a polymorphic target is the
+  oracle AC1 closes — 404 for a private blueprint against 200 for a public one names which private slugs
+  are real — and AC3 already answers the case at read time. **A save of a target that does not exist is
+  accepted and never listed; the cost is that a client typo is silently accepted.**
+
+  **`count` comes from `countSaves`, never from `saves.length`.** AC3's *agree by construction* would
+  otherwise be satisfied by making the agreement unobservable. One extra query per read, paid so AC3 has
+  a cell that goes through the transport. **The three writes answer the resulting `SavesView`** rather
+  than a 204 that `lib/server/http` does not publish and this task may not add — which is the shipped
+  `200 AccountRecord` convention and makes **AC2 drivable in two requests instead of three**.
+
+  **No handle is required**, and AC5 is the deciding case: the browser-local set migrates *on first
+  sign-in*, when the account still has `handle: null`. **`savedAt` crosses as an ISO string**, `ok` being
+  `Response.json` over a `Date`.
+
+  **AC1 covers the count as well as the list, and the count is the one that leaks.** "A save is invisible to every caller but its owner and the operator, **including its count**" — so `countSaves` takes an `Actor` and is not a cheap public aggregate. **WITHDRAWN by D-140-01 and displaced here on the FOURTH charge against this section for the same defect.** It read *a visitor gets `undefined`-equivalent behaviour, not zero: zero is an answer, and answering zero for a set you may not see tells the caller the set exists* — **and that reason is false: an owner with no saves also gets `0`, so zero was never the discriminator.** What leaks is answering a non-owner the **TRUE** count, which both readings refuse. **Ruled: `countSaves` stays `Promise<number>` and a denied caller gets `0`**.
 
   **AC3 needs a ruling and does not have one: what happens to a save whose target went private or was deleted?** Ruled: **the save row survives and the listing omits it**, with the count matching the listing. Deleting the row would make a target briefly private and later public again lose a bookmark permanently; returning a tombstone would tell the owner of the save that something exists which they may not see. So the row is retained, the read filters through `visibleTo`, and `listSaves` and `countSaves` **agree by construction because the count is derived from the same filtered query** — not a separate `COUNT(*)` that forgets the filter, which is the defect this criterion exists to catch.
 
@@ -12250,7 +13961,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 ### T130, Profiles and the public author surface
 
-- **State:** tests-written
+- **State:** impl-done
 - **Depends on:** T050, T060, T080
 - **Blocks:** T250, T262
 - **Owns:** `lib/server/profiles/**`, `app/api/authors/**`
@@ -12259,14 +13970,30 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
         interface ProfileRecord {
           author: PublicAuthor; joinedAt: Date;
-          watchers: number; support: number; validated: number;
-          pinned: readonly string[];
-          counts: { blueprints: number; cards: number; terms: number };
+          counts: { blueprints: number; terms: number };
         }
+        // SCOPE CUT, owner's decision 2026-08-20. `watchers`, `support`, `pinned`,
+        // `validated` and `counts.cards` are REMOVED from this task -- see D-130-06.
 
         getProfile(db: Db, actor: Actor, handle: string): Promise<ProfileRecord | undefined>
-        setPins(db: Db, actor: Actor, accountId: string, pins: readonly string[]): Promise<ProfileRecord>
-        toggleFollow(db: Db, actor: Actor, handle: string): Promise<{ watchers: number; followedByCaller: boolean }>
+
+  **D-130-07, ruled on T130's implementer's second divergence: `counts.terms` REFUSES an unreadable stored vocabulary rather than skipping it, and does not require `text`.**
+
+  **Three parts, and the first two are upheld as built.** It consumes **`parseOntologyTerms` from `@/lib/content/ontology-file` — the same parser `storedVocabulary` consumes** — rather than writing a second opinion about what a term is, **so the oracle and the standard are the same object and cannot disagree.** And it does **not** require `text`: **`text` exists so `exportBundle` can write the author's own bytes into a folder unaltered, and a count emits no bytes**, so a `{ terms }` row with no `text` is **refused by T090 under D-90-03 and counted here.** That divergence is real, stated, and correct — the two readers are answering different questions.
+
+  **The third it asked to have overruled and I am upholding it: refuse, do not skip.** Its own cost is named and I am not softening it — **one unreadable release anywhere in an author's history 500s their whole profile page**, which is a large blast radius for a summary figure. **Upheld because D-05-09 already rules that direction: refusal is loud and recoverable, truncation is silent.** A silently short count is AC1's own failure — *a count that drifts* — arriving through a parse rather than through a column, **and T090 already refuses such a release, so refusing is the behaviour the archive already has rather than a new severity.** The parser's message quotes the offending entry's index and `kind`, i.e. **stored content**, so sealing it as a `ProfileStoreError` is required rather than stylistic.
+
+  **And its wrapper-width divergence (A) is upheld without a ruling being needed**: `withProfileStore` wraps only this module's own statements because `getPublicAuthor` and `blueprints` seal their own, **and pulling their faults into this wrapper would re-wrap them — a sanitizer applied twice does not sanitize twice, it relabels**, naming a store that was working. **D-13 holds by construction rather than by breadth.**
+
+  **The durable fix is T090 publishing `storedVocabulary` from its barrel**, at which point there is one reader of that column again. **That is an amendment to a MERGED task and is therefore not T130's to take** — same class as D-130-04, and it is added to **T132**, which already exists to carry exactly that.
+
+  **D-130-06, the OWNER'S decision on Finding 1, taken 2026-08-20: T130 ships the countable half and the rest becomes a follow-up task.** Measured by both halves independently, by different methods: **`watchers`, `support` and `pinned` have no column**, `grep -in "follow|watcher|pinned|support"` over `lib/db/schema.ts` and all four migrations returns **zero**, and neither `target_kind` (`blueprint|card|term`) nor `target_actor_kind` (`star|note_vote`) can name an account as a target or a follow as an act. **`validated` is a count (D-130-01) and depends on T180's run reports, which do not exist.** **`counts.cards` is unreachable through the declared dependency (D-130-04)** — `CardSummary` carries no owner, `card.author` is optional content rather than row ownership, and re-implementing T080's visibility filter is what this section's inherited-read-semantics paragraph exists to prevent.
+
+  **So `ProfileRecord` is `{ author, joinedAt, counts: { blueprints, terms } }`, and `setPins`/`toggleFollow` are removed from the published surface.** AC3 (pins) and AC4 (watchers) are **not in this task**. **The alternative was a schema task, which T005 already showed costs a full three-agent loop.**
+
+  **What the cut does NOT do**: it does not decide that follows and pins are unwanted, and it does not license a stored counter for anything that returns. **The follow-up task inherits AC1's clause unchanged — anything countable is counted, never stored as a counter — and it owes the tables before it owes the behaviour.**
+
+  **And the blind suite already measured what survives.** Of its 73 cells the `counts.blueprints`/`counts.terms`, `author`, `joinedAt`, unknown-handle, visibility, store-fault and route families remain; **the pins, follow and `counts.cards` families are the cut.** Its own standing note applies to exactly the removed half: *`counts.cards` was asserted against a field D-130-04 blocks, and the reference reached it by the route the ruling forbids.*
 
   **AC1 is the contract's own sentence made structural: `counts` is computed at read time and is not a column.** "Anything countable is counted, never stored as a counter" — the profile record holds only what the archive cannot count. A stored count passes every criterion here and drifts silently the first time a bundle is deleted, transferred (T120) or made private. **There is no counter column and there must not be one.**
 
@@ -12280,7 +14007,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **Inherited read semantics from T080, published here so this task's author binds to the same rules.** These are properties of the barrel this task consumes, ruled at T080's implementation and identical everywhere: `BlueprintSummary.cardRefs` is **filtered to cards the actor may read**, so a partial caller's `cardRefs` does not reproduce `digest`'s input; a card pinned only by an invisible bundle is **not indexed** for that actor; a bundle whose owner has **no handle** is excluded; lists sort **by slug, then owner handle**; `scoresOf` is **all four axes or nothing**; and pins are canonicalised to `id@version`, with an unparseable pin dropped. Raised by T080's implementer, which noticed that ten tasks list it under `Blocks` and that these are read semantics they inherit rather than implementation details they may ignore.
 
 - **Goal:** serve the page at one handle — identity, published work, pins, follows, and the summary figures.
-- **Contract:** the profile record holds only what the archive cannot count: `{ joinedAt, watchers, support, validated, pinned }` (`lib/data/profiles.ts:33-60`); anything countable is counted, never stored as a counter. A pin is at most two, a blueprint or a card ref, and a pin whose target no longer resolves is omitted rather than returned null (`components/profile/load.ts:182-190`). Owner and visitor counts differ by exactly the private rows (B-13, T060).
+- **Contract:** **AMENDED by D-130-06 (owner, 2026-08-20).** It read *the profile record holds only what the archive cannot count: `{ joinedAt, watchers, support, validated, pinned }`* — **and four of those five have no storage, so the record this task ships is `{ author, joinedAt, counts: { blueprints, terms } }` and the rest is a follow-up.** The original sentence stands withdrawn rather than deleted, because it is the record `lib/data/profiles.ts:33-60` still fixtures and the follow-up inherits it; anything countable is counted, never stored as a counter. A pin is at most two, a blueprint or a card ref, and a pin whose target no longer resolves is omitted rather than returned null (`components/profile/load.ts:182-190`). Owner and visitor counts differ by exactly the private rows (B-13, T060).
 - **Rulings from T130's implementer's opening measurement, all charged before anything was built:**
 
   **D-130-05, ruled: T130's route surface, published now because it is MINE and it is being paid for.** Its implementer charged that I quoted Finding 4 back and deferred the `ARCHITECTURE` rows *after the route surface is settled* — **which reads as agreeing it is unsettled while ruling nothing.** And it is right that this one is separable: **Finding 1 is a schema-or-scope call and Finding 2 amends a merged task, but a path, a method, a request shape and a status code are mine to write**, and **`GET /api/authors/{handle}` survives whatever the owner decides about follows and pins.**
@@ -12293,7 +14020,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **The cost of leaving even this much unpublished was measured on T040 and is not hypothetical: 81 blind cells all bound the module and six route mutations reddened zero**, in a task where the surface was published **during** the round. Here it had not been published at all, with a blind author already on the contract.
 
-  **D-130-01: `validated` is a NUMBER, not a boolean.** The block published `validated: number` while both surfaces it claims to have been checked against declare a count — `lib/data/profiles.ts:57` is `validated: number` with a docblock defining it as *how many other accounts' blueprints this handle downloaded, ran and reported on*, and `ProfileHeader.tsx:77` takes a `number` rendered through `compact()`. **The five NAMES matched, which is all the header's claim was ever about; the quantity did not.** And the boolean is already carried elsewhere — `ProfileRecord.author` is a `PublicAuthor`, which has `validator: boolean` — **so the published field was either a duplicate of that or a wrong transcription of a count.** It is the count, and it therefore depends on T180's run reports, which do not exist: **a fourth blocked field.**
+  **D-130-01: `validated` is a NUMBER, not a boolean.** The block published `validated: boolean` while both surfaces it claims to have been checked against declare a count — `lib/data/profiles.ts:57` is `validated: number` with a docblock defining it as *how many other accounts' blueprints this handle downloaded, ran and reported on*, and `ProfileHeader.tsx:77` takes a `number` rendered through `compact()`. **The five NAMES matched, which is all the header's claim was ever about; the quantity did not.** And the boolean is already carried elsewhere — `ProfileRecord.author` is a `PublicAuthor`, which has `validator: boolean` — **so the published field was either a duplicate of that or a wrong transcription of a count.** It is the count, and it therefore depends on T180's run reports, which do not exist: **a fourth blocked field.**
 
   **D-130-02: `getProfile` returns a VALUE and publishes no rejection.** The block listed `"getProfile: no such handle."` as an admissible message on a function published as `Promise<ProfileRecord | undefined>`. **B-03 answers 404 over 403, and T081's readers return values precisely so a route cannot distinguish *no such row* from *not yours*.** Ruled: **`undefined` is the answer, the 404 is the route's, and that message belongs in the route's `problem` detail rather than on a class.** The admissible-form entry is withdrawn.
 
