@@ -411,13 +411,39 @@ describe("AC5 — a card pinned twice keeps both digests", () => {
     const mark = marker("ac5paired");
     const bundleId = await freshBundle(mark);
     const dot = validDot(mark);
-    /* Card digests whose sort order is the reverse of their refs' — so a store that sorts
-       one array and not the other shows up here as a pairing that no longer holds. The
-       digests are minted until they land on the required order rather than assumed into it. */
+    /*
+     * Card digests whose sort order is the reverse of their refs' — so a store that sorts one
+     * array and not the other shows up here as a pairing that no longer holds.
+     *
+     * ORDERED, not searched for, and the difference was a permanent flake. This read:
+     *
+     *     const first = cardDigestFor(mark, 1);
+     *     let   second = cardDigestFor(mark, 2);
+     *     for (let n = 3; first <= second && n < 200; n += 1) second = cardDigestFor(mark, n);
+     *
+     * with a comment claiming *the digests are minted until they land on the required order
+     * rather than assumed into it* — and **the search is one-sided.** It re-mints `second` and
+     * never `first`, so when `first` happens to be the smallest of all 199 candidates no amount
+     * of re-minting helps and the precondition fails. `marker()` carries `Math.random()`, so the
+     * draw is fresh per run: analytically `1/199` = 0.503%, and T230's implementer measured
+     * 87 failures over 20 000 markers in-process, 0.435%. **A permanent ~1-in-230 red in a
+     * merged suite, independent of load and of whatever else is running.**
+     *
+     * It surfaced as one member of a non-identical triple, and separating it from the genuine
+     * contention artifact in the same triple is what identified it: a defect is stable and an
+     * artifact moves, and here one moved for load and one moved for a coin.
+     *
+     * Two digests and a swap is O(1) and cannot fail, so the comment above is now true of the
+     * code below it. The pairing itself is arbitrary — all the criterion needs is that the two
+     * orders are opposite — so ordering the digests is enough and the refs stay as they are.
+     */
     const refs = ["aaa-card@1.0.0", "zzz-card@1.0.0"];
-    const first = cardDigestFor(mark, 1);
-    let second = cardDigestFor(mark, 2);
-    for (let n = 3; first <= second && n < 200; n += 1) second = cardDigestFor(mark, n);
+    const minted = [cardDigestFor(mark, 1), cardDigestFor(mark, 2)] as const;
+    /* Two different inputs to the same hash: equal outputs are a collision, not a fixture
+       state. Asserted rather than tolerated, because `>` and `>=` differ for exactly this
+       case and a non-strict order would make the criterion below vacuous. */
+    expect(minted[0], "two distinct inputs hashed to one digest").not.toBe(minted[1]);
+    const [first, second] = minted[0] > minted[1] ? minted : ([minted[1], minted[0]] as const);
     expect(first > second, "fixture needs a digest pair in reverse order of its refs").toBe(true);
 
     const record = asRecord(
