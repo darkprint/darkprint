@@ -5142,6 +5142,55 @@ equality by two for one new class.**
 **A change to a guard's domain silently re-prices every barrel decision already taken**, and the party who
 noticed was the one whose reasoning was already in the file for an unrelated reason.
 
+## `backend` is a MUTABLE GLOBAL that `error-hygiene` dereferenced at run time
+
+Every worktree in this run shares one `.git` — one object store, one ref namespace — so **`backend` is
+not a per-worktree fact.** T130's adversary drew the consequences, one message after being corrected for
+quoting a minutes-old ref as a stamp:
+
+* **any session committing to base changes that guard's domain in every worktree at once, including one
+  mid-run**, and nothing in the output would say so;
+* **T140's implementer was running that exact file as it wrote** — a green against a domain that no longer
+  exists is indistinguishable from a green;
+* two sessions running it simultaneously measure **the same moving target**, so their results are
+  comparable only if the ref held still between them.
+
+**Fixed as a stamp rather than a lock.** The walk resolves `backend` **once**, enumerates against the
+**sha**, and reports that sha in the count message and in the coverage line. A single run is then
+internally consistent whatever the ref does under it, and a disagreement between two runs is legible as
+*the ref moved* instead of invisible. **Locking a ref across worktrees would serialise committing on
+running, which costs far more than the ambiguity it removes.**
+
+**And my first falsification did not falsify.** I pointed the domain at `11ed5a5` and the test stayed
+green — because that commit has **the same twelve barrels**, so the mutation moved a sha and not a domain.
+*A mutation that did not do what its name said*, caught only because the green was the wrong answer to a
+question I thought I had asked. Re-run against `752721d`, which has **eleven**: `expected 18 to be 21`,
+with the sha named in the message. **The second attempt is the falsification; the first is the reason to
+check that a mutation mutated.**
+
+## `Tests 1 passed (1)` is equally consistent with "the clause holds" and "your class was never built"
+
+T140's implementer got a green from my widened guard **and refused to bank it until it knew the walk had
+reached its class.** It measured the set difference by reading, at no cost: `shipped` 12 directories with
+no `saves`, `present` 13 with it, `unshipped = ["saves"]` — **exactly one element and it is mine** — so
+`barrels` was 13 and `SaveStoreError` was constructed. And it checked the `1` was the whole file rather
+than a truncated run: `grep -cE '^\s*it\('` returns 1.
+
+**Without that the green is *a probe whose input carries no decision*** — the reading this run has paid
+for more than once, **and the one a passing exit code hides best.**
+
+**A second result inside the same green, which it had predicted separately**: the equality `toBe(18)`
+passed **in a worktree carrying a nineteenth class.** `shippedClasses` filtering on `shipped` kept the
+unmerged class out of the count while the hygiene loop constructed it — **hygiene over 13 barrels and the
+count over 12, both domains exercised by one run.**
+
+## Agreement between two readers is corroboration only when they could have disagreed
+
+T140's implementer's line, on its own convergence with T130's adversary about
+`HasProperty(options, "cause")`. **Both traced a spec clause rather than stating a preference, and neither
+had read the other**, so the agreement is about ES2022 rather than about either being careful. *What would
+have made it worth less is if either had read the other first.*
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it

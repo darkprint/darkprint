@@ -60,7 +60,7 @@ interface Published {
   shipped: boolean;
 }
 
-async function publishedErrorClasses(): Promise<readonly Published[]> {
+async function publishedErrorClasses(): Promise<{ classes: readonly Published[]; domainSha: string }> {
   /*
    * The domain is what has SHIPPED, not what is in this checkout, and the count below is a property
    * of the shipped tree — so reading `readdirSync` here made the two describe different sets by
@@ -85,8 +85,33 @@ async function publishedErrorClasses(): Promise<readonly Published[]> {
    * is why the missing case below is an error rather than a skip: a worktree behind base gets a
    * message naming the merge, not an ENOENT.
    */
-  const shipped = execFileSync("git", ["ls-tree", "-d", "--name-only", "backend", "lib/server/"], {
-    cwd: fileURLToPath(new URL("..", import.meta.url)),
+  /*
+   * `backend` is resolved ONCE, to a sha, and the walk enumerates against that sha rather than
+   * against the name.
+   *
+   * Every worktree in this run shares one `.git` — one object store, one ref namespace — so
+   * `backend` is not a per-worktree fact. It is a **mutable global that this guard dereferences at
+   * run time**. Any session committing to base **changes this guard's domain in every worktree at
+   * once, including one mid-run**, and nothing in the output would say so: a green would be against
+   * a domain that no longer exists, and two sessions running this file simultaneously would be
+   * measuring the same moving target rather than their own trees.
+   *
+   * Resolving once makes a single run internally consistent whatever the ref does under it, and
+   * reporting the sha makes a disagreement between two runs legible as *the ref moved* instead of
+   * invisible. **A stamp rather than a lock** — locking a ref across worktrees would serialise
+   * committing on running, which is a far larger cost than the ambiguity it removes.
+   *
+   * Reported by T130's adversary, from a worktree three commits behind base, immediately after
+   * quoting a minutes-old ref as a stamp in its own report and being corrected for it.
+   */
+  const repoRoot = fileURLToPath(new URL("..", import.meta.url));
+  const domainSha = execFileSync("git", ["rev-parse", "backend"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+  }).trim();
+
+  const shipped = execFileSync("git", ["ls-tree", "-d", "--name-only", domainSha, "lib/server/"], {
+    cwd: repoRoot,
     encoding: "utf8",
   })
     .split("\n")
@@ -153,7 +178,7 @@ async function publishedErrorClasses(): Promise<readonly Published[]> {
         found.push({ barrel, name, ctor: value, shipped: shipped.includes(barrel) });
     }
   }
-  return found;
+  return { classes: found, domainSha };
 }
 
 /**
@@ -168,7 +193,7 @@ const SHAPES: readonly (readonly unknown[])[] = [
 
 describe("every published error class satisfies D-13's four-part hygiene clause", () => {
   it("each renders as {} and keeps its stack, at every arity", async () => {
-    const classes = await publishedErrorClasses();
+    const { classes, domainSha } = await publishedErrorClasses();
 
     /* A zero here has three causes and only one of them is good news. This rules out the two bad
        ones: if the walk found nothing, the assertions below would all pass over an empty set. */
@@ -206,7 +231,9 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
         "that stopped being exported is exactly what this walk exists to notice. This counts only " +
         "barrels on `backend`: a module in your worktree that has not merged is checked for HYGIENE " +
         "below and deliberately does not move this number, so a merge commit remains the only place " +
-        "it changes.",
+        "it changes. Domain resolved from `backend` at " +
+        `${domainSha} — if this number disagrees with another run's, compare that sha first: the ` +
+        "ref is shared by every worktree and moves under a running suite.",
     ).toBe(21);
 
     const rendered: string[] = [];
@@ -256,6 +283,7 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
     /* Named in both messages below, because a reader has to know which classes were covered — and
        an unshipped barrel appearing here is a class nobody else's gate can see yet. */
     const covered =
+      `Domain from \`backend\` at ${domainSha}. ` +
       `Checked ${classes.length} class(es) across ${new Set(classes.map((c) => c.barrel)).size} ` +
       `barrel(s); unmerged barrels covered for hygiene only: ` +
       `${classes.filter((c) => !c.shipped).map((c) => `${c.barrel}/${c.name}`).join(", ") || "(none)"}. `;
