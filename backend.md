@@ -5099,6 +5099,49 @@ if D-130-10 were implemented tomorrow**, because the class that ruling adds is i
 see; 22 at T130's merge, 23 at D-130-10's, **both events on `backend` and neither on it.** *If I measure
 anything other than 21, the interesting question is which ref moved, not which class changed.*
 
+## A base gate cannot exercise the region the hygiene fix was FOR
+
+T140's implementer caught the scoping consequence I had not stated: **the loop is `shipped ∪ present`, and
+`lib/server/saves` is present only in its worktree.** So `SaveStoreError` entering that domain **happens
+in its tree and nowhere else until merge** — which is the whole point of the fix, and also means my green
+on base says nothing about it. *"If it reds, it is real and it is yours" can only be settled by me, on the
+slot.* **Flagged because I was mid-gate and it would have been easy to read a base run as covering it.**
+
+**The general form: a guard whose domain is the union of a fixed set and a local one produces a different
+claim in every tree**, and the party who can settle it is the one holding the tree, never the one holding
+base.
+
+## Both sessions predicted GREEN with a mechanism, and the ES2022 detail is real
+
+T130's adversary and T140's implementer independently traced the same spec detail rather than assuming a
+sealed-looking class is sealed: **`super(msg, { cause })` installs `cause` NON-ENUMERABLY even at arity 1**,
+because `{ cause: undefined }` still satisfies `HasProperty(options, "cause")`. **So the one-argument shape
+is not a hole and both arities render identically.** Verified here rather than filed — at both arities:
+`Object.keys []`, `JSON.stringify "{}"`, `hasOwn(cause) true`, `enumerable false`, `stack` non-empty.
+
+**Both said *predicted green* plainly rather than hedging.** T130's adversary: *I would rather say that
+plainly than hedge it into something that reads like a finding if it reds* — **and it named the two
+candidates to look at first if it does**, `stack` and the `super()` chain, **explicitly not enumerability,
+because the author was visibly already there.** The `defineProperty` comment quotes the clause at the
+point of the decision — *a `readonly name = "..."` class field is itself an own enumerable property* —
+which is the same *author already there* signal as `http.ts`'s rethrow arm.
+
+**T140's implementer derived its green from a SUPERSET assertion it had actually measured**:
+`fault-path.test.ts` constructs `SaveStoreError` at the same two arities and asserts the same three checks
+plus three more, green in all three runs of its triple. **It labelled that a derivation from a measurement
+rather than a measurement**, and asked to be named for one targeted run to convert it.
+
+## The hygiene fix gave an existing decision a second consequence nobody was aiming at
+
+`NotAccountOwnerError` is deliberately **not** re-exported from `lib/server/saves`' barrel — D-140-02, and
+the accounts barrel's own rule about publishing another module's rejection under your name. **Until
+`bdaf760` that was a choice about naming.** Now it is also the difference between the walk finding **one**
+class in that barrel and finding **two**: a re-export would be counted twice at merge and **would move the
+equality by two for one new class.**
+
+**A change to a guard's domain silently re-prices every barrel decision already taken**, and the party who
+noticed was the one whose reasoning was already in the file for an unrelated reason.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
