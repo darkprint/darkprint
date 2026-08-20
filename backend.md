@@ -3981,6 +3981,47 @@ one error class and no `isDecision`.
 **Its third correlated-measurement instance this session**, after reading `head`'s exit code. **Its own
 note: *attention is not the variable* — both were caught by re-running rather than by re-reading.**
 
+## A digest of an error message is a well-formed digest
+
+**T130's implementer's first handover stamp was a sha256 of a `fatal:` string and it looked exactly like
+a stamp.** `FILES=$(… | sort)` then `for f in $FILES` — **zsh does not word-split an unquoted
+parameter**, so `git hash-object` received the eight paths **joined by newlines as one argument**,
+answered `fatal: could not open '<all eight>'`, and the pipeline hashed **that text** into
+`67c50de8…`: sixty-four hex characters with nothing to do with its files.
+
+**Fifth zsh-versus-bash instance in this run and the first whose output was a plausible VALUE rather than
+an obvious zero.** The `SCOPE="a b c"` case printed *No test files found* seven times, **which announces
+itself.** A content digest announces nothing — **it is 64 hex either way — and it was going into the one
+field of a handover that has no redundancy.**
+
+**Its rewrite carries the check the first lacked**: every id asserted to be 40 hex, the manifest asserted
+to contain no `fatal`, printed as `SELF-CHECK OK` beside the digest. *Check the instrument, not the
+result* — **and here the instrument is what produced the result.**
+
+## Stating the METHOD is what made the digest travel
+
+**T140's combined digest did not reproduce and its per-file ones did, so the tree was fine and the
+combination was not.** T130's implementer read that and shipped **the method with the number**: paths
+from `git status --porcelain -uall` field 2, `LC_ALL=C` sorted, one line of
+`<git hash-object><two spaces><path><LF>` each, `sha256` over that stream, nothing trailing.
+
+**Reproduced here exactly — all eight ids and the combined figure.** **A digest without its method is a
+claim only its author can check.**
+
+**And it chose git's own blob hashes rather than a content hash, which is the stronger half**: after the
+commit, `git ls-tree -r HEAD` shows **the same eight object ids verbatim** — **so a mismatch names WHICH
+file rather than only that something moved.** Verified after committing, not before.
+
+## Neither declining a relay nor accepting it
+
+**Three sessions declined my relayed authorisation. T130's implementer did neither, and drew the
+distinction the other three had not**: *you are not asking me to act, you are telling me you will act
+under an authorisation you hold. That needs nothing from me except the tree and a stamp.*
+
+**So the question was never whether the relay was good enough to act on — it was whether anyone needed
+to act on it at all.** *Releasing a tree costs no authority*, and the whole standoff was about an act
+that had a second party who did not need one.
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
@@ -7146,7 +7187,7 @@ it does not decide differently inside a worktree.
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | tests-written | blind suite `3337fb0`: **176 cells over 6 files**, `167 failed, 9 passed, 0 skipped` twice with identical failing sets. **The nine greens measure the DRIVER** — closed port `ECONNREFUSED`, dropped table `42P01`, and **drizzle rendering bound `accountId`/`refId`, which settles D-140-06's premise before implementation.** Reference 176/176 first try, offered as the weaker result. 18 mutations: **four one-red mutations on four rulings**, and **exactly one of seven non-owner shapes reds** under a re-implemented ownership check. **`SaveRecord`'s `Exact<>` is vacuous from a blind tree — `Exact<any,T>` is `true` — and cannot be falsified from there.** Implementation at `3f0f3f9`+ pending its own gate. **Route surface owed by the orchestrator (D-140-04)** |
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | `../darkprint-wt-t230-limits` (impl), `../darkprint-wt-t230-limits-tests` (blind) | `feat/t230-limits`, `test/t230-limits` | tests-written | module `8338951`, 17 files across two trees, four sealed classes so the merge count is **18 → 22**. Gates ITS measurements at `0f23379`, scope TARGETED: `typecheck` 0 unfiltered, `lint` 0 read in full, `vitest lib/server/limits` **84/84** — **not a full suite, not a triple, and the three repo guards it pre-registered green were outside that scope so their green is still a prediction.** **Both pre-registered candidate reds passed and the two real ones were elsewhere**: a lone surrogate walking a control-character check **in the opposite direction from a NUL**, and a refusal test whose input was accepted. Blind suite at `test/t230-limits`, 7 ahead |
 | T100 | Publishing and releases | T010, T020, T025, T040, T050, T060, T070, T090 | `lib/server/publish/**`, `app/api/bundles/**` | — | — | todo | — |
-| T130 | Profiles and the public author surface | T050, T060, T080 | `lib/server/profiles/**`, `app/api/authors/**` | `../darkprint-wt-t130-profiles` (impl), `../darkprint-wt-t130-profiles-tests` (blind) | `feat/t130-profiles`, `test/t130-profiles` | tests-written | blind suite `32556b7`: **73 cells over 8 files**, pre-registration exact on all four figures **and all six pass identities** — `67 failed, 6 passed, 0 skipped`. Base measured independently at `1b90422`, its one red identity-matched; reconciliation pre-registered as arithmetic and measured exact at 5637. **Reference 73/73 first try, offered as the WEAKER result.** 26 mutations, 20 HIT; **two of its own patches reddened 0 and had not mutated**; six aimed at its own controls, six caught; **K2 truncating candidates to index 0 reds 8, which is what makes K1's green the discovery discovering.** Handed over with a CONTENT DIGEST in place of a sha, verified before staging. Standing: `counts.cards` asserted against a field D-130-04 blocks, `watchers` has no derived-versus-stored witness, `support`/`validated` typed only, two AC3 cells pass over an empty array. **Task blocked: three of five stored fields have no table** |
+| T130 | Profiles and the public author surface | T050, T060, T080 | `lib/server/profiles/**`, `app/api/authors/**` | `../darkprint-wt-t130-profiles` (impl), `../darkprint-wt-t130-profiles-tests` (blind) | `feat/t130-profiles`, `test/t130-profiles` | impl-done | implementation `6ffdb17`, blind suite `32556b7`. **Cut to `{ author, joinedAt, counts: { blueprints, terms } }` by D-130-06 (owner)** — `setPins`/`toggleFollow` removed, AC3/AC4 to T131, `counts.cards` to T132. **No owner/visitor branch anywhere: AC2 falls out of the `Actor`, T080 decides visibility, no second `readable()`.** `withProfileStore` deliberately narrower than `withRegistryStore` — re-wrapping a sealed fault relabels a working store. **D-130-07: `counts.terms` consumes the shared parser, does not require `text`, and REFUSES an unreadable vocabulary rather than skipping** (cost stated: one bad release 500s a profile). Gates by its author at `eccab30`: typecheck 0, lint 0 with the single `warning` match read as a LINE — the prebuild's own `--disable-warning=` — and build 0 **with the route table showing the handler collected, which typecheck cannot claim.** Handed over with a content digest **and its method**, reproduced exactly. Adversary round owed |
 | T131 | Profiles: follows, pins and the tables they need | T130, T180 | `lib/db/schema.ts` (extension only), `lib/db/migrations/**`, `lib/server/profiles/**` (extension), `app/api/authors/**` (extension) | — | — | todo | **Created by D-130-06 (owner, 2026-08-20).** Carries the half T130 could not build: `watchers` + `toggleFollow` + AC4, `pinned` + `setPins` + AC3, `support`, and `validated` (a count, D-130-01, blocked on T180). **It owes the TABLES before the behaviour** — no follow relation, no pin storage, no `support` column, and neither `target_kind` nor `target_actor_kind` can name an account as a target or a follow as an act, so both need `ALTER TYPE`. **Inherits AC1's clause unchanged: anything countable is counted, never stored as a counter.** T130's blind suite already holds the pins, follow and `counts.cards` families |
 | T132 | Amendments to merged published records that T130 needs | T080, T130 | `lib/server/registry/types.ts`, `lib/server/registry/**` (extension), `lib/server/profiles/**` (extension) | — | — | todo | **Created by D-130-06.** `CardSummary` carries no owner and `card.author` is `author?: string` — optional, and content the uploader wrote rather than the row's ownership — while `card_version.owner_id` is `NOT NULL`, authoritative and unpublished. **D-130-04 forbids re-implementing T080's visibility filter against `card_version`**, so this is an amendment to a MERGED task's published record and therefore not T130's to take |
 | T041 | D-40-L: `ToNumber` is `+`, not `Number()` | T040 | `lib/server/engine/limits.ts` | — | — | todo | **Created at T040's merge (`ad44537`), charged and measured by its round-7 adversary and NOT fixed there.** `limits.ts:468` reads `Number((container).length)` where `LengthOfArrayLike` is `ToLength` is `ToNumber`; `Number(v)` is `ToNumeric` then BigInt→Number, **so it accepts a BigInt where `ToNumber` refuses one and the walk ANSWERS where the ruled formula REFUSES.** Repair is one line — `+(...)` — **measured at 4 divergences closing, 6 controls holding, 10 of 10 agreeing, D-40-K's own halves untouched**, after which the walk throws the same bare `TypeError` the formula does and lands inside D-40-24's already-numbered class. **Barrel-only**, sixth in the transcription sequence. **Owes a witness BEFORE the fix**: coverage is zero in both suites and no cell reaches the `ToNumber` half |
@@ -13804,7 +13845,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 ### T130, Profiles and the public author surface
 
-- **State:** tests-written
+- **State:** impl-done
 - **Depends on:** T050, T060, T080
 - **Blocks:** T250, T262
 - **Owns:** `lib/server/profiles/**`, `app/api/authors/**`
