@@ -1,9 +1,11 @@
 /* ============================================================
    T230 — issuing, revoking and resolving
 
-   AC3 "a valid API key raises the ceiling and is attributable in
-   the audit log", AC4 "a revoked key is refused immediately", and
-   the authorization `issueKey`/`revokeKey` take an `Actor` for.
+   AC4 "a revoked key is refused immediately", AC3's attribution
+   half as **D-230-08** rules it — (a) ATTRIBUTABLE, not (b)
+   audited — the authorization `issueKey`/`revokeKey` take an
+   `Actor` for, and **D-230-07**'s refusal-before-hashing on the
+   one path nobody has to authenticate to reach.
 
    ── the reading AC4 forces, taken and flagged ──
    "Refused immediately" resolves two ways against a signature that
@@ -35,9 +37,12 @@ import {
   ANONYMOUS,
   type Scratch,
   accountActor,
+  awaited,
   describe_,
   dropScratchDatabases,
   freeAccount,
+  proxyDb,
+  publishedFunction,
   requiredFn,
   scratchDatabase,
 } from "./contract";
@@ -69,10 +74,6 @@ async function issueFor(accountId: string, label = "t230"): Promise<Key> {
 
 async function apiKeyRows(): Promise<Record<string, unknown>[]> {
   return scratch.query(`select * from "api_key"`);
-}
-
-async function auditRows(): Promise<Record<string, unknown>[]> {
-  return scratch.query(`select * from "audit" order by "occurred_at"`);
 }
 
 /** Both readings of AC4 agree that this is false for a revoked key. */
@@ -172,7 +173,9 @@ describe("T230 the Actor issueKey and revokeKey take", () => {
     const stranger = await freeAccount(scratch);
     const before = (await apiKeyRows()).length;
 
-    await issueKey(scratch.db, accountActor(stranger), owner, "stolen").catch(() => undefined);
+    await awaited(issueKey(scratch.db, accountActor(stranger), owner, "stolen")).catch(
+      () => undefined,
+    );
 
     expect(
       (await apiKeyRows()).length,
@@ -188,7 +191,7 @@ describe("T230 the Actor issueKey and revokeKey take", () => {
     const owner = await freeAccount(scratch);
     const before = (await apiKeyRows()).length;
 
-    await issueKey(scratch.db, ANONYMOUS, owner, "anonymous").catch(() => undefined);
+    await awaited(issueKey(scratch.db, ANONYMOUS, owner, "anonymous")).catch(() => undefined);
 
     expect((await apiKeyRows()).length).toBe(before);
   });
@@ -200,7 +203,9 @@ describe("T230 the Actor issueKey and revokeKey take", () => {
     const stranger = await freeAccount(scratch);
     const key = await issueFor(owner);
 
-    await revokeKey(scratch.db, accountActor(stranger), key.keyId).catch(() => undefined);
+    await awaited(revokeKey(scratch.db, accountActor(stranger), key.keyId)).catch(
+      () => undefined,
+    );
 
     expect(
       readsAsUsable(await resolveKey(scratch.db, key.secret)),
@@ -212,61 +217,174 @@ describe("T230 the Actor issueKey and revokeKey take", () => {
   });
 });
 
-describe("T230 AC3 — a key is attributable in the audit log", () => {
+describe("T230 AC3(a) — the attribution this module publishes", () => {
   /**
-   * A READING, flagged. B-14 makes every state change write an audit row and AC3 says
-   * a key is "attributable in the audit log", but §T230 publishes no audit action name
-   * and does not say whether this module writes the row or a wrapper does. T240 owns
-   * `lib/server/observability/**`, is `todo`, and has `lib/server/limits/**` Forbidden
-   * in both directions — so nothing published joins the two.
+   * D-230-08 ruled the reading I flagged, and ruled AGAINST it. I read AC3's audit half
+   * as *this module writes an audit row* and asserted a row appeared; the ruling is that
+   * AC3(a) is ATTRIBUTABLE and not (b) audited — "this module publishes the attribution
+   * — `resolveKey` returns `keyId` and `accountId` — and whoever writes the audit row has
+   * what it needs. T240 is not a dependency and T230 is correctly waved."
    *
-   * What is asserted is the weakest thing AC3 can mean and still mean anything: minting
-   * a credential leaves a trace naming who did it. Not the action string, which is
-   * unpublished. Not the count either — `fresh.length` is right there and an exactly-one
-   * assertion would run, so this is a decision about SCOPE rather than a claim about
-   * reach: "exactly one row per state-changing operation" is T240's AC1, it is quantified
-   * over T240's operations, and pinning it here would make this suite a second contract
-   * for a module whose own section is still `todo`.
+   * The two audit cells are deleted. What replaces them is the half the ruling makes
+   * T230's, and it is the half a key-set pin cannot reach: that the attribution is
+   * CORRECT. `Object.keys` says `accountId` is present; nothing before this said it
+   * names the account the key was issued for, and a resolver joining on the wrong column
+   * satisfies every shape assertion in this suite while attributing every request to
+   * whichever account happens to sort first.
    */
-  it("issuing a key leaves an audit row naming the actor", async () => {
-    const accountId = await freeAccount(scratch);
-    const before = await auditRows();
-    await issueFor(accountId, "audited");
-    const after = await auditRows();
+  it("resolveKey attributes a secret to the account it was issued for", async () => {
+    const resolveKey = await requiredFn("resolveKey");
+    const mine = await freeAccount(scratch);
+    const theirs = await freeAccount(scratch);
 
-    const fresh = after.slice(before.length);
-    expect(
-      fresh.length,
-      `Issuing a key wrote no audit row. B-14: "every state change writes an audit row ` +
-        `(actor, action, target, time)", and AC3 requires a key be "attributable in the ` +
-        `audit log" — a key nobody can attribute to an issuing account is the one credential ` +
-        `in the system with no provenance.\n` +
-        `  READING, flagged: §T230 publishes no audit action name and does not say whether ` +
-        `this module writes the row or a wrapper does, and T240 is \`todo\` with ` +
-        `\`lib/server/limits/**\` Forbidden. If this red is the test, it is the contract that ` +
-        `owes the sentence.`,
-    ).toBeGreaterThan(0);
+    /* A second account with its own key, so "returns an accountId" and "returns the
+       right one" are different results rather than the same one. */
+    const ours = await issueFor(mine, "mine");
+    await issueFor(theirs, "theirs");
 
+    const resolved = (await resolveKey(scratch.db, ours.secret)) as {
+      accountId?: unknown;
+      keyId?: unknown;
+    } | undefined;
+
+    expect(resolved, `resolveKey answered nothing for a key just issued`).toBeDefined();
     expect(
-      fresh.map((row) => row.actor_id),
-      `An audit row was written and none of them names the issuing account, so the trace ` +
-        `exists and attributes nothing.`,
-    ).toContain(accountId);
+      resolved?.accountId,
+      `resolveKey attributed the secret to the wrong account. Two accounts each hold a key ` +
+        `here, so this cell separates "an accountId came back" from "the right accountId ` +
+        `came back" — and every key-set assertion in this suite passes under both.`,
+    ).toBe(mine);
+    expect(
+      resolved?.keyId,
+      `resolveKey answered a different key's id than the one issueKey returned for this ` +
+        `secret. AC3(a) is the whole of what this module owes the audit writer, and a keyId ` +
+        `that does not address the row makes revokeKey unreachable for that key.`,
+    ).toBe(ours.keyId);
   });
 
-  it("revoking a key leaves an audit row too", async () => {
-    const revokeKey = await requiredFn("revokeKey");
-    const accountId = await freeAccount(scratch);
-    const key = await issueFor(accountId, "revoked-audited");
-    const before = await auditRows();
+  it("checkLimit's subject carries both halves of the attribution", async () => {
+    /* Not an assertion about behaviour: `subject` is published as
+       `{ accountId: string | null; keyId: string | null; ip: string }`, and D-230-08
+       rests on those two members existing for the audit writer to read. Pinned from the
+       parsed block so it reds if either is dropped from the signature. */
+    const subject = publishedFunction("checkLimit").params[1];
+    for (const member of ["accountId", "keyId"]) {
+      expect(
+        subject.includes(`${member}:`),
+        `\`checkLimit\`'s subject no longer carries \`${member}\`.\n` +
+          `  ${publishedFunction("checkLimit").text}\n` +
+          `  D-230-08 makes AC3(a) satisfiable precisely because this module hands both ` +
+          `halves of the attribution to whoever writes the audit row. Dropping either ` +
+          `moves AC3 back to being unreachable, which is the state D-230-01 just fixed one ` +
+          `criterion over.`,
+      ).toBe(true);
+    }
+  });
+});
 
-    await revokeKey(scratch.db, accountActor(accountId), key.keyId);
+describe("T230 D-230-07 — resolveKey refuses malformed input before it hashes it", () => {
+  /**
+   * "The secret is unauthenticated caller input of unbounded length, so hashing it first
+   * is work proportional to attacker input performed to decide the input is worthless —
+   * D-40-B's clause on a path nobody has to be authenticated to reach."
+   *
+   * Measured as the database never being reached, which is the observable that
+   * distinguishes *refused before hashing* from *refused after a lookup*. A cell that
+   * only checked the return value passes against the version that hashes a megabyte and
+   * then queries, which is the version the ruling exists to forbid.
+   */
+  it("a 1 MB secret is refused without the database being touched", async () => {
+    const resolveKey = await requiredFn("resolveKey");
+    const probe = proxyDb(scratch.db);
+    const answered = await resolveKey(probe.db, "x".repeat(1024 * 1024));
 
     expect(
-      (await auditRows()).length,
-      `Revoking a key wrote no audit row. Revocation is the state change an incident ` +
-        `response reads first, and B-14 quantifies over every state change rather than over ` +
-        `the ones somebody listed.`,
-    ).toBeGreaterThan(before.length);
+      answered,
+      `resolveKey answered ${describe_(answered)} for a megabyte of caller input.`,
+    ).toBeUndefined();
+    expect(
+      probe.touched(),
+      `resolveKey reached the database for a secret that is not of the minted shape. ` +
+        `First reached: ${probe.reached().slice(0, 6).join(", ")}.\n` +
+        `  D-230-07: the module MINTS the secret, so its length and alphabet are known by ` +
+        `construction and a refusal costs nothing. Work proportional to attacker input, ` +
+        `performed to decide the input is worthless, on a path nobody has to authenticate ` +
+        `to reach.`,
+    ).toBe(false);
+  });
+
+  it("an empty secret is refused, and refused the same way", async () => {
+    const resolveKey = await requiredFn("resolveKey");
+    const probe = proxyDb(scratch.db);
+    expect(await resolveKey(probe.db, "")).toBeUndefined();
+    expect(probe.touched(), `an empty secret reached the database`).toBe(false);
+  });
+
+  /**
+   * The identity-oracle half, and it is the reason the ruling says `undefined` rather
+   * than a throw: "a caller able to distinguish *malformed* from *no such key* has an
+   * identity oracle". Asserted as the DIFFERENCE between the two answers being nothing
+   * at all, rather than by checking each against a shape — a throw for one and
+   * `undefined` for the other satisfies every per-case assertion and is exactly the
+   * oracle.
+   */
+  it("malformed and unknown-but-well-formed are indistinguishable", async () => {
+    const resolveKey = await requiredFn("resolveKey");
+    const accountId = await freeAccount(scratch);
+    const live = await issueFor(accountId, "shape-donor");
+
+    const malformed = await awaited(
+      resolveKey(scratch.db, "\u0000 not a key at all"),
+    ).catch((error: unknown) => ({ threw: String(error) }));
+    /* Same length and alphabet as a real one, so only the value differs. */
+    const unknown = await awaited(
+      resolveKey(scratch.db, `${live.secret.slice(0, -1)}${live.secret.endsWith("A") ? "B" : "A"}`),
+    ).catch((error: unknown) => ({ threw: String(error) }));
+
+    expect(
+      { malformed, unknown },
+      `resolveKey answers malformed input differently from a well-formed secret nothing ` +
+        `issued. D-230-07 forbids exactly this: the difference is an oracle, and a caller ` +
+        `who can tell the two apart can learn which shapes are real keys without holding ` +
+        `one.`,
+    ).toEqual({ malformed: undefined, unknown: undefined });
+  });
+
+  /**
+   * The corollary, and it is about the OTHER direction of caller input: "`label` is
+   * caller data into an unbounded `text` column and gets a published number, and it
+   * REFUSES rather than truncates (D-05-09)."
+   *
+   * The number is not in the block, so nothing here pins one. What is pinned is the
+   * property D-05-09 names and that a number cannot express: whatever is accepted comes
+   * back unchanged. A bound that truncates is worse than no bound, because the caller is
+   * told it succeeded and holds a record that does not describe the row.
+   */
+  it("an accepted label is stored whole, never truncated", async () => {
+    const issueKey = await requiredFn("issueKey");
+    const accountId = await freeAccount(scratch);
+    const label = `t230-${"L".repeat(180)}-end`;
+
+    const answered = await awaited(
+      issueKey(scratch.db, accountActor(accountId), accountId, label),
+    ).catch(() => undefined);
+    if (answered === undefined) return; /* refused: D-05-09's other arm, and correct */
+
+    const record = (answered as { record: { label: string; keyId: string } }).record;
+    expect(
+      record.label,
+      `issueKey accepted a label and stored a different one. D-05-09: a bound that ` +
+        `truncates rather than refuses is worse than no bound — the caller is told it ` +
+        `succeeded and holds a record that does not describe the row.`,
+    ).toBe(label);
+
+    const [row] = await scratch.query(`select "label" from "api_key" where "id" = $1`, [
+      record.keyId,
+    ]);
+    expect(
+      row?.label,
+      `the record and the row disagree about the label, so the truncation is in the ` +
+        `column rather than in the return`,
+    ).toBe(label);
   });
 });

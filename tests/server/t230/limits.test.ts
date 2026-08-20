@@ -30,12 +30,12 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
-  BUCKET_READING,
-  READ_BUCKET,
   type Scratch,
   type Subject,
-  WRITE_BUCKET,
   accountActor,
+  awaited,
+  bucketNote,
+  buckets,
   anonymousSubject,
   describe_,
   dropScratchDatabases,
@@ -43,9 +43,11 @@ import {
   freeIp,
   keyedSubject,
   measureWork,
+  proxyDb,
   publishedInterface,
   requiredFn,
   scratchDatabase,
+  unconfiguredBucket,
 } from "./contract";
 
 let scratch: Scratch;
@@ -65,15 +67,22 @@ interface Verdict {
   resetAt: Date;
 }
 
-async function check(subject: Subject, bucket = READ_BUCKET): Promise<Verdict> {
+async function check(subject: Subject, bucket?: string, db = scratch.db): Promise<Verdict> {
   const checkLimit = await requiredFn("checkLimit");
-  const answered = await checkLimit(scratch.db, subject, bucket);
+  const probe = await buckets();
+  const answered = await checkLimit(db, subject, bucket ?? probe.read);
   if (answered === null || typeof answered !== "object") {
     throw new Error(
-      `checkLimit answered ${describe_(answered)}; the contract publishes a LimitVerdict.\n  ${BUCKET_READING}`,
+      `checkLimit answered ${describe_(answered)}; the contract publishes a LimitVerdict.\n` +
+        `  ${bucketNote(probe.source)}`,
     );
   }
   return answered as unknown as Verdict;
+}
+
+/** Quoted into every message that drives a bucket, so no red is read without it. */
+async function note(): Promise<string> {
+  return bucketNote((await buckets()).source);
 }
 
 /**
@@ -163,7 +172,8 @@ describe("T230 the bound, driven against the ceiling the module publishes", () =
 
     expect(
       opening.limit,
-      `The ceiling for an anonymous ${JSON.stringify(READ_BUCKET)} is ${opening.limit}, which ` +
+      `The ceiling for an anonymous ${JSON.stringify((await buckets()).read)} is ` +
+        `${opening.limit}, which ` +
         `this suite will not exhaust in process.\n` +
         `  GAP, and it is not a defect: B-17 makes a generous anonymous ceiling the product ` +
         `requirement — "the product's discoverability by agents depends on that ceiling being ` +
@@ -171,7 +181,7 @@ describe("T230 the bound, driven against the ceiling the module publishes", () =
         `missing is a published way to drive AC1 without exhausting it: a bucket with a small ` +
         `ceiling, an injectable clock, or a seam that presets a counter. §T230 publishes ` +
         `none, so AC1 — the headline criterion — has no blind test at a realistic ceiling.\n` +
-        `  ${BUCKET_READING}`,
+        `  ${await note()}`,
     ).toBeLessThanOrEqual(EXHAUST_CAP);
     expect(
       opening.limit,
@@ -222,17 +232,18 @@ describe("T230 the bound, driven against the ceiling the module publishes", () =
   });
 
   it("a bucket is a partition — spending one does not spend another", async () => {
+    const probe = await buckets();
     const subject = anonymousSubject();
-    const opening = await check(subject, READ_BUCKET);
-    for (let i = 0; i < 3; i += 1) await check(subject, READ_BUCKET);
-    const other = await check(subject, WRITE_BUCKET);
+    const opening = await check(subject, probe.read);
+    for (let i = 0; i < 3; i += 1) await check(subject, probe.read);
+    const other = await check(subject, probe.write);
 
     expect(
       other.remaining,
-      `Spending in ${JSON.stringify(READ_BUCKET)} reduced what is left in ` +
-        `${JSON.stringify(WRITE_BUCKET)} for the same subject, so \`bucket\` is a label rather ` +
+      `Spending in ${JSON.stringify(probe.read)} reduced what is left in ` +
+        `${JSON.stringify(probe.write)} for the same subject, so \`bucket\` is a label rather ` +
         `than a partition key and the parameter decides nothing. B-17 makes reads and writes ` +
-        `separately limited.\n  ${BUCKET_READING}`,
+        `separately limited.\n  ${bucketNote(probe.source)}`,
     ).toBe(other.limit - 1);
     expect(opening.remaining).toBe(opening.limit - 1);
   });
@@ -252,6 +263,41 @@ describe("T230 the bound, driven against the ceiling the module publishes", () =
   });
 });
 
+describe("T230 D-230-04 — an unconfigured bucket refuses", () => {
+  /**
+   * A CRITERION rather than a note, and the ruling names the shape it belongs to:
+   * "D-70-18's shape — a config lookup returning `undefined` read as *no limit* is a
+   * criterion satisfiable by never limiting anything."
+   *
+   * This is the one bucket cell that needs no vocabulary. Every other cell in this file
+   * depends on naming a bucket the module has configured; this one depends on naming
+   * one it cannot possibly have, so it is the only bucket assertion here that is immune
+   * to F-230-D.
+   */
+  it("a bucket no config can contain is refused, not waved through", async () => {
+    const verdict = await check(anonymousSubject(), unconfiguredBucket());
+    expect(
+      verdict.allowed,
+      `An unconfigured bucket was allowed. D-230-04: a lookup returning \`undefined\` read ` +
+        `as "no limit" makes AC1 satisfiable by never limiting anything — the same shape as ` +
+        `AC6 before D-70-18, where a module that never returned a suggestion satisfied the ` +
+        `criterion completely and observed nothing.\n` +
+        `  A caller reaching an unnamed bucket is either a typo or a route the config has ` +
+        `not caught up with, and both are cases where the safe answer is no.`,
+    ).toBe(false);
+  });
+
+  it("the refusal for an unconfigured bucket is still a well-formed verdict", async () => {
+    /* Failing closed is not the same as failing shapeless: `rateLimited` renders whatever
+       comes back, so a verdict with a NaN limit or a missing reset reaches a caller as a
+       429 whose `detail` says "limit of NaN". */
+    const verdict = await check(anonymousSubject(), unconfiguredBucket());
+    expect(Number.isInteger(verdict.limit), `\`limit\` is ${describe_(verdict.limit)}`).toBe(true);
+    expect(verdict.remaining).toBe(0);
+    expect(verdict.resetAt, `\`resetAt\` is ${describe_(verdict.resetAt)}`).toBeInstanceOf(Date);
+  });
+});
+
 describe("T230 AC5 — an under-ceiling read is never delayed or challenged", () => {
   /**
    * THE CONTROL, a separate test rather than a line inside the next one: a control
@@ -267,7 +313,7 @@ describe("T230 AC5 — an under-ceiling read is never delayed or challenged", ()
     const issueKey = await requiredFn("issueKey");
     const accountId = await freeAccount(scratch);
     const work = await measureWork(scratch, () =>
-      issueKey(scratch.db, accountActor(accountId), accountId, "control"),
+      awaited(issueKey(scratch.db, accountActor(accountId), accountId, "control")),
     );
     expect(
       work.changed,
@@ -275,6 +321,71 @@ describe("T230 AC5 — an under-ceiling read is never delayed or challenged", ()
         `thinks it is reading and AC5's zero beside it measures nothing.`,
     ).toContain("api_key");
     expect(work.statements.length, `and the statement recorder saw the module speak`).toBeGreaterThan(0);
+  });
+
+  /**
+   * D-230-05, and the ruling names the instrument rather than leaving it to be chosen:
+   * AC5 is "`checkLimit` never touching `db` on an under-ceiling anonymous read,
+   * measured with a `Proxy`-backed `Db` asserting `touched() === false` — a proof the
+   * resource was never reached rather than a latency claim."
+   *
+   * Strictly stronger than the effect snapshot below for this case, and a DIFFERENT
+   * instrument rather than a second spelling of it: the snapshot answers *did a row
+   * move*, this answers *was the database reached at all*. A counter that SELECTs a
+   * shared row per request writes nothing, moves nothing, and is exactly what
+   * "never delayed or challenged" is about under load.
+   */
+  it("never reaches the database at all on an anonymous under-ceiling read", async () => {
+    const probe = proxyDb(scratch.db);
+    const verdict = await check(anonymousSubject(), undefined, probe.db);
+
+    expect(verdict.allowed, `the probe call was refused, so this measures the wrong branch`).toBe(
+      true,
+    );
+    expect(
+      probe.touched(),
+      `\`checkLimit\` reached the database on an anonymous read below the ceiling. ` +
+        `Reached: ${probe.reached().slice(0, 8).join(", ")}.\n` +
+        `  D-230-05: "anonymous, zero access; keyed, one indexed read that AC4 already ` +
+        `mandates; never a write." The counter is in-process, and AC5 and a durable counter ` +
+        `are incompatible by definition — a durable counter is a write per request, which ` +
+        `is the whole of what the phrase means.\n` +
+        `  ${await note()}`,
+    ).toBe(false);
+  });
+
+  /**
+   * The keyed half of the same ruling, and it is a NUMBER rather than a zero: "keyed,
+   * one indexed read that AC4 already mandates". So this is not "does it write" — it is
+   * what work was done, pinned at the figure the ruling publishes.
+   *
+   * A keyed check that re-reads the config, or joins the account, or looks the key up
+   * twice, writes nothing and passes every other cell in this file.
+   */
+  it("costs exactly one statement on a keyed read, and still writes nothing", async () => {
+    const issueKey = await requiredFn("issueKey");
+    const accountId = await freeAccount(scratch);
+    const issued = (await issueKey(scratch.db, accountActor(accountId), accountId, "one-read")) as {
+      record: { keyId: string };
+    };
+    const subject = keyedSubject(accountId, issued.record.keyId);
+
+    /* Warm first: a first touch may legitimately build the window that the measured call
+       then finds, and measuring the cold call would report that as the module's cost. */
+    await check(subject);
+    const work = await measureWork(scratch, () => check(subject));
+
+    expect((work.result as Verdict).allowed, `the measured keyed call was refused`).toBe(true);
+    expect(
+      work.statements.length,
+      `A keyed check issued ${work.statements.length} statements where D-230-05 publishes ` +
+        `ONE — "keyed, one indexed read that AC4 already mandates".\n` +
+        `  statements: ${work.statements.map((q) => q.slice(0, 140)).join(" | ")}\n` +
+        `  This is a published figure rather than a budget this suite chose, and it is the ` +
+        `difference between a limiter that costs a lookup and one that costs a join per ` +
+        `request on the hottest path in the system.`,
+    ).toBe(1);
+    expect(work.changed, `a keyed check wrote to ${work.changed.join(", ")}`).toEqual([]);
   });
 
   /**
@@ -369,12 +480,17 @@ describe("T230 AC2 and AC3 — the ceiling is the server's, and a key raises it"
 
     expect(
       keyed.limit,
-      `A valid API key did not raise the ceiling: keyed ${keyed.limit}, anonymous ` +
+      `A valid API key LOWERED the ceiling: keyed ${keyed.limit}, anonymous ` +
         `${anonymous.limit}. AC3, and B-17's whole reason for reversing D-83 — "keys issued ` +
         `per account for volume". Asserted as the difference between two verdicts rather ` +
         `than against a number, because the ceiling values are TBD and this suite must not ` +
-        `invent them.`,
-    ).toBeGreaterThan(anonymous.limit);
+        `invent them.\n` +
+        `  D-230-03 ruled the comparison and ruled AGAINST the one I first wrote: AC3's ` +
+        `"raises the ceiling" is an ORDERING, so this is \`>=\` and not \`>\`. A strict pin ` +
+        `would red a correct implementation whose config gave this bucket equal tiers, ` +
+        `which is exactly what a pin on a guess does.\n` +
+        `  ${await note()}`,
+    ).toBeGreaterThanOrEqual(anonymous.limit);
   });
 
   it("a revoked key does not raise the ceiling", async () => {

@@ -21,75 +21,65 @@
    the variable is set, which is what stops a reference-mode run
    being read as a result about the implementation.
 
-   ── the four findings this suite was written around ──
-   Each resolves two ways against the section as published. None is
-   resolved here: a pin on a guess reds a correct implementation
-   that guessed differently, and picking would remove the finding.
+   ── the five findings, and where each of them landed ──
+   All five were reported rather than resolved, and all five have
+   now been ruled. The suite is rewritten against the rulings; what
+   is kept here is the shape of each, because a ruling read without
+   the finding it answers is a rule with no reason attached.
 
-   **F-230-A — the block's schema premise is stale.** It says, at
-   `912666e`, that no API-key table exists and calls that a
-   dependency on T000's owner. T005 merged at `011a851` and
-   `lib/db/schema.ts:537` carries `api_key` with exactly the five
-   columns `ApiKeyRecord` needs plus `token_hash`. This suite is
-   written against the merged table. Harmless direction, and it
-   still reads as settled to the next person who opens the block.
+   **F-230-A — the block's schema premise was stale.** WITHDRAWN in
+   the block, and it turned out to be the smaller half: T140's
+   block carried the identical stale claim, and the orchestrator's
+   re-read that said otherwise was itself a wrong measurement.
 
-   **F-230-B — AC1 is not reachable through anything published.**
-   `checkLimit` RETURNS a verdict; it does not throw.
-   `RateLimitedError` and its message form sit in the admissible-
-   form block, but the class is in no signature, has no published
-   constructor, and no published function returns or throws it.
-   MEASURED rather than asserted, because a claim of silence is the
-   cheapest measurement to get wrong: `grep -n RateLimitedError
-   backend.md` returns exactly ONE line in 12 152, and it is the
-   admissible-form line itself. The
-   only surface that turns a verdict into a `problem+json` 429 is a
-   route — and every other route file is Forbidden to T230, while
-   T230's own `app/api/account/keys/**` has no published URL,
-   method, body or response shape. Compare T081, whose eleven route
-   probes were published and were the whole reason its key-set
-   whitelist could run. So `refusal.test.ts` pins the message form
-   as a SHAPE, derived from the contract's own line rather than
-   retyped, and says in place that nothing drives it.
+   **F-230-B — AC1 had no published caller.** Ruled **D-230-01**:
+   `@/lib/server/limits` publishes
+   `rateLimited(request, verdict, bucket): Response`, so AC1 is
+   drivable from the barrel without T230 owning a rate-limited
+   route. `refusal.test.ts` is that criterion, and it exists only
+   because the finding was reported instead of guessed at.
 
-   **F-230-C — "consumed not restated" is unsatisfiable as
-   written.** `MAX_KB = 512` is a module-private `const` in
-   `components/upload/BundleDropzone.tsx` and `MAX_PARAM_DEPTH =
-   100` is a module-private `const` in `lib/core/card/validate.ts`.
-   Neither is exported from anything, so `lib/server/limits` cannot
-   consume either and the only move available to an implementer is
-   the restatement the clause forbids. `premises.test.ts` guards
-   the two cited sites against drift and is labelled as a guard on
-   the contract's premise rather than on T230.
+   **F-230-C — "consumed not restated" was unsatisfiable.** Ruled
+   **D-230-02**: the numbers are TRANSCRIBED and a drift guard pins
+   the agreement. The `GAP:` cell that carried the finding is
+   DELETED rather than weakened until it passed — which is what its
+   own message said would happen if the ruling went this way.
 
-   **F-230-E — T220's AC6 requires a fifth thing in the refusal
-   and T230's form has no slot for it.** `backend.md:11893`: "T230's
-   429 must reach the MCP client with the limit, the reset instant
-   **and the fact that a key exists**." T230's admissible form
-   carries the bucket, the number, the window and the instant, and
-   an admissible form is exact-matched — that is its whole purpose.
-   So an implementation satisfying T220's AC6 by naming the key
-   affordance in the message violates T230's published form, and
-   one satisfying the form leaves T220's AC6 unsatisfiable. The
-   natural home is an RFC 9457 extension member or a `Link` header
-   on the 429, and §T230 publishes NO key set for that problem
-   document at all — which is exactly the hole T081 closed for its
-   own eleven routes, arriving in a task that ships no route the
-   429 can be observed on (F-230-B).
+   **F-230-D — `bucket: string` had no vocabulary.** Not resolved,
+   and **D-230-04 made it load-bearing**: an unconfigured bucket
+   now REFUSES rather than passing, so a guessed name no longer
+   degrades a cell, it inverts it. Handled by discovering the names
+   from a published `LimitConfig` where one is reachable and
+   reporting which happened — see `buckets()`.
 
-   **F-230-D — `bucket: string` has no published vocabulary.** So
-   nothing blind can name a bucket, and an implementation that
-   refuses an unknown one reds this suite for a reason that is this
-   suite's. `READ_BUCKET`/`WRITE_BUCKET` below are the closest the
-   contract comes to naming any — B-17 is "reads as well as
-   writes" and AC5 is "an anonymous read" — and they are labelled
-   as a reading rather than a resolution.
+   **F-230-E — T220's AC6 and the admissible form could not both
+   be satisfied.** Ruled **D-230-09**: the form is unchanged, the
+   affordance is an RFC 9457 §3.2 extension member, and the 429's
+   whole KEY SET is published. That set is parsed out of the block
+   here rather than transcribed.
 
-   Two smaller readings, taken and flagged where they are used:
-   `checkLimit` is assumed to CONSUME budget rather than merely
-   report it (`remaining` is otherwise inert), and AC4's "refused
-   immediately" is pinned as the disjunction both readings share,
-   since `ApiKeyRecord` carries `revokedAt` at all.
+   ── two readings I flagged, and the block ruled AGAINST both ──
+   Worth keeping visible, because flagging them is the only reason
+   either was ruled rather than silently inherited.
+
+   **AC3's audit half.** I read it as *this module writes an audit
+   row* and said so. **D-230-08 rules (a) ATTRIBUTABLE, not (b)
+   audited** — T230 publishes the attribution and whoever writes
+   the row has what it needs. The two audit cells are DELETED and
+   replaced by cells that assert the attribution is CORRECT, which
+   is the whole of AC3(a).
+
+   **AC3's ceiling.** I asserted a keyed ceiling STRICTLY above an
+   anonymous one. **D-230-03 rules it an ORDERING** — `≥`, not `>`.
+   A strict pin would have reddened a correct implementation whose
+   config gave a bucket equal tiers, which is exactly the failure a
+   pin on a guess produces.
+
+   ── the readings still open, taken and flagged in place ──
+   `checkLimit` is read as CONSUMING budget rather than reporting
+   it, since `remaining` is inert under the other reading; and
+   AC4's "refused immediately" is pinned as the disjunction both
+   readings share, since `ApiKeyRecord` carries `revokedAt` at all.
    ============================================================ */
 
 import { readFileSync } from "node:fs";
@@ -161,11 +151,28 @@ export interface PublishedInterface {
   text: string;
 }
 
+export interface PublishedType {
+  name: string;
+  definition: string;
+  /** String-literal members of a union type, in the order the block writes them. */
+  literals: readonly string[];
+}
+
+/** D-230-09's published response shape: a status and the members it admits, exactly. */
+export interface PublishedProblem {
+  status: number;
+  members: readonly string[];
+  /** Members the block pins to a literal value, e.g. `keysAvailable: true`. */
+  pinned: Readonly<Record<string, string>>;
+}
+
 export interface PublishedBlock {
   functions: readonly PublishedFunction[];
   interfaces: readonly PublishedInterface[];
+  types: readonly PublishedType[];
   /** `RateLimitedError` and the quoted admissible message form, as the block writes them. */
   admissible: readonly { name: string; form: string }[];
+  problems: readonly PublishedProblem[];
 }
 
 function sectionOf(document: string, heading: string): string {
@@ -203,14 +210,21 @@ function splitTopLevel(text: string): string[] {
 
 const SIGNATURE = /^(\w+)\((.*)\):\s*(.+)$/;
 const INTERFACE = /^interface\s+(\w+)\s*\{(.+)\}$/;
+const TYPE_ALIAS = /^type\s+(\w+)\s*=\s*(.+)$/;
 const ADMISSIBLE = /^(\w*Error)\s+"(.+)"$/;
+/** D-230-09 writes the response shape as a heading followed by more-indented member rows. */
+const PROBLEM_HEADING = /^problem\+json\s+(\d+)\s+members exactly:$/;
+const STRING_LITERAL = /"([^"]*)"/g;
 
 let block: PublishedBlock | undefined;
 
 /**
- * The `- **Published signatures**` block of `### T230`, parsed. Everything indented
- * eight spaces inside the section and above `- **Goal:**` is the block; the section's
- * prose is not indented that way and its own fenced examples are not either.
+ * The `- **Published signatures**` block of `### T230`, parsed. Everything indented at
+ * least eight spaces inside the section and above `- **Goal:**` is the block; the
+ * section's prose is not indented that way.
+ *
+ * The member rows of a `problem+json` shape are indented FURTHER than eight, which is
+ * how they are distinguished from a signature rather than by matching their content.
  */
 export function publishedBlock(): PublishedBlock {
   if (block !== undefined) return block;
@@ -220,11 +234,45 @@ export function publishedBlock(): PublishedBlock {
 
   const functions: PublishedFunction[] = [];
   const interfaces: PublishedInterface[] = [];
+  const types: PublishedType[] = [];
   const admissible: { name: string; form: string }[] = [];
+  const problems: PublishedProblem[] = [];
+
+  /** The problem shape currently being read, if the previous heading opened one. */
+  let openProblem: { status: number; members: string[]; pinned: Record<string, string> } | undefined;
 
   for (const raw of scope.split("\n")) {
-    if (!/^ {8}\S/.test(raw)) continue;
+    const indent = raw.length - raw.trimStart().length;
+    if (!/^ {8,}\S/.test(raw)) {
+      /* A blank line does not close a member list; a line at the block's own indent does. */
+      if (raw.trim() !== "") openProblem = undefined;
+      continue;
+    }
     const line = raw.trim();
+
+    if (openProblem !== undefined && indent > 8) {
+      /* `type, title, status, detail, instance          (RFC 9457's five)` */
+      for (const token of line.replace(/\s*\(.*\)\s*$/, "").split(",")) {
+        const member = token.trim();
+        if (member === "") continue;
+        const colon = member.indexOf(":");
+        if (colon === -1) openProblem.members.push(member);
+        else {
+          const name = member.slice(0, colon).trim();
+          openProblem.members.push(name);
+          openProblem.pinned[name] = member.slice(colon + 1).trim();
+        }
+      }
+      continue;
+    }
+    openProblem = undefined;
+
+    const heading = PROBLEM_HEADING.exec(line);
+    if (heading !== null) {
+      openProblem = { status: Number(heading[1]), members: [], pinned: {} };
+      problems.push(openProblem);
+      continue;
+    }
 
     const iface = INTERFACE.exec(line);
     if (iface !== null) {
@@ -237,6 +285,16 @@ export function publishedBlock(): PublishedBlock {
           .map((f) => f.slice(0, f.indexOf(":")).trim()),
         text: line,
       });
+      continue;
+    }
+
+    const alias = TYPE_ALIAS.exec(line);
+    if (alias !== null) {
+      const literals: string[] = [];
+      STRING_LITERAL.lastIndex = 0;
+      let literal: RegExpExecArray | null;
+      while ((literal = STRING_LITERAL.exec(alias[2])) !== null) literals.push(literal[1]);
+      types.push({ name: alias[1], definition: alias[2], literals });
       continue;
     }
 
@@ -264,8 +322,31 @@ export function publishedBlock(): PublishedBlock {
         `section; if its indentation changed, this parser is what is broken, not T230.`,
     );
   }
-  block = { functions, interfaces, admissible };
+  block = { functions, interfaces, types, admissible, problems };
   return block;
+}
+
+export function publishedType(name: string): PublishedType {
+  const found = publishedBlock().types.find((t) => t.name === name);
+  if (found === undefined) {
+    throw new Error(
+      `The T230 Published signatures block declares no \`type ${name}\`. It declares: ` +
+        `${publishedBlock().types.map((t) => t.name).join(", ") || "(nothing)"}.`,
+    );
+  }
+  return found;
+}
+
+/** D-230-09's 429 shape. */
+export function publishedProblem(status: number): PublishedProblem {
+  const found = publishedBlock().problems.find((p) => p.status === status);
+  if (found === undefined) {
+    throw new Error(
+      `The T230 block publishes no \`problem+json ${status}\` member list. It publishes: ` +
+        `${publishedBlock().problems.map((p) => p.status).join(", ") || "(none)"}.`,
+    );
+  }
+  return found;
 }
 
 export function publishedFunction(name: string): PublishedFunction {
@@ -300,12 +381,27 @@ export function publishedInterface(name: string): PublishedInterface {
  * equality on the whole set rather than a subset check or a count.
  */
 export const TRANSCRIBED = {
-  functions: ["checkLimit", "issueKey", "revokeKey", "resolveKey"],
+  functions: ["checkLimit", "issueKey", "revokeKey", "resolveKey", "rateLimited"],
   interfaces: {
     LimitVerdict: ["allowed", "limit", "remaining", "resetAt"],
     ApiKeyRecord: ["keyId", "accountId", "label", "createdAt", "revokedAt"],
+    BucketLimit: ["limit", "windowMs"],
   },
+  types: ["Tier", "LimitConfig"],
+  tiers: ["anonymous", "account", "key"],
   admissible: ["RateLimitedError"],
+  /** D-230-09, and the ORDER is the block's own rather than sorted. */
+  problem429: [
+    "type",
+    "title",
+    "status",
+    "detail",
+    "instance",
+    "limit",
+    "remaining",
+    "resetAt",
+    "keysAvailable",
+  ],
 } as const;
 
 /** Declared arity, from the parsed parameter lists rather than from a table typed here. */
@@ -386,19 +482,91 @@ export function messageForm(): MessageForm {
 /* ============================================================
    buckets
 
-   F-230-D. Named here once so a red can say which reading it
-   rests on rather than leaving a bare string at nine call sites.
+   D-230-04 turned F-230-D from awkward into LOAD-BEARING: "an
+   unconfigured bucket REFUSES, it does not pass." So a bucket name
+   this suite guessed wrong no longer produces a confusing verdict,
+   it produces a refusal — and every consumption cell would red for
+   a reason that is the suite's rather than the module's.
+
+   The names are therefore DISCOVERED from a published
+   `LimitConfig` when one is reachable, and the tier keys used to
+   recognise it come from `type Tier` in the block rather than from
+   a list typed here. `bucketSource()` reports which of the two
+   happened, and every message that drives a bucket quotes it, so a
+   red can never be read without knowing whether the bucket was the
+   module's own name or this suite's guess.
    ============================================================ */
 
-export const READ_BUCKET = "read";
-export const WRITE_BUCKET = "write";
+let probe = 0;
 
-export const BUCKET_READING =
-  `\`bucket: string\` has no published vocabulary in §T230, so this suite probes ` +
-  `${JSON.stringify(READ_BUCKET)} and ${JSON.stringify(WRITE_BUCKET)} — the closest the ` +
-  `contract comes to naming any (B-17 is "reads as well as writes", AC5 is "an anonymous ` +
-  `read"). If this red is an implementation that refuses an unknown bucket, the red is this ` +
-  `suite's and the fix is to publish the vocabulary, not to change the module.`;
+/** The contract's closest thing to a bucket name: B-17's "reads as well as writes". */
+const FALLBACK_BUCKETS = ["read", "write"] as const;
+
+export type BucketSource = "config" | "fallback";
+
+interface BucketProbe {
+  read: string;
+  write: string;
+  all: readonly string[];
+  source: BucketSource;
+}
+
+function looksLikeLimitConfig(value: unknown, tiers: readonly string[]): boolean {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const buckets = Object.values(value as Record<string, unknown>);
+  if (buckets.length === 0) return false;
+  return buckets.every((bucket) => {
+    if (bucket === null || typeof bucket !== "object") return false;
+    const byTier = bucket as Record<string, unknown>;
+    return tiers.every((tier) => {
+      const entry = byTier[tier];
+      if (entry === null || typeof entry !== "object") return false;
+      const { limit, windowMs } = entry as { limit?: unknown; windowMs?: unknown };
+      return typeof limit === "number" && typeof windowMs === "number";
+    });
+  });
+}
+
+let probe_: BucketProbe | undefined;
+
+export async function buckets(): Promise<BucketProbe> {
+  if (probe_ !== undefined) return probe_;
+  const tiers = publishedType("Tier").literals;
+  let found: string[] | undefined;
+  try {
+    const mod = await loadLimits();
+    for (const value of Object.values(mod)) {
+      if (looksLikeLimitConfig(value, tiers)) {
+        found = Object.keys(value as Record<string, unknown>).sort();
+        break;
+      }
+    }
+  } catch {
+    /* The module is absent; the fallback is what a red will quote. */
+  }
+  probe_ =
+    found === undefined || found.length < 2
+      ? { read: FALLBACK_BUCKETS[0], write: FALLBACK_BUCKETS[1], all: FALLBACK_BUCKETS, source: "fallback" }
+      : { read: found[0], write: found[1], all: found, source: "config" };
+  return probe_;
+}
+
+/** A bucket no `LimitConfig` can contain, for D-230-04. */
+export function unconfiguredBucket(): string {
+  probe += 1;
+  return `t230-unconfigured-${probe}-${process.pid}`;
+}
+
+export function bucketNote(source: BucketSource): string {
+  return source === "config"
+    ? `Bucket names were DISCOVERED from a \`LimitConfig\` published on the barrel, so this ` +
+        `red is about the module and not about a name this suite chose.`
+    : `Bucket names are this suite's FALLBACK — ${JSON.stringify([...FALLBACK_BUCKETS])} — ` +
+        `because no export of \`${BARREL}\` matches D-230-03's \`LimitConfig\` shape ` +
+        `(a record of buckets, each a record over \`type Tier\`, each \`{ limit, windowMs }\`). ` +
+        `D-230-04 makes an unconfigured bucket REFUSE, so if these names are not the module's ` +
+        `own then this red is the suite's and the fix is to publish the vocabulary.`;
+}
 
 /* ============================================================
    subjects and actors
@@ -409,8 +577,6 @@ export interface Subject {
   keyId: string | null;
   ip: string;
 }
-
-let probe = 0;
 
 /** A caller nothing has seen, so its counters start where the implementation starts them. */
 export function freeIp(): string {
@@ -697,6 +863,19 @@ export function describe_(value: unknown): string {
   return `${typeof value} ${JSON.stringify(value)}`;
 }
 
+/**
+ * What a `UnknownFn` returned, as a promise.
+ *
+ * `requiredFn` binds through a dynamic import and can only be typed as
+ * `(...args: unknown[]) => unknown`, so the published functions' returns arrive as
+ * `unknown` and `.catch` is not callable on them. Rather than casting at each call site
+ * — where a cast reads as an assertion about the value — the widening happens here, in
+ * one place, and says what it is.
+ */
+export function awaited(value: unknown): Promise<unknown> {
+  return Promise.resolve(value as Promise<unknown>);
+}
+
 /** A promise expected to reject. Returns the rejection so a caller can inspect it. */
 export async function rejection(call: Promise<unknown>, where: string): Promise<unknown> {
   try {
@@ -782,4 +961,53 @@ export function sourceLine(path: string, line: number): string {
     );
   }
   return lines[line - 1];
+}
+
+/* ============================================================
+   the D-230-05 instrument
+
+   The ruling names it: AC5's instrument is `checkLimit` never
+   touching `db` on an under-ceiling anonymous read, "measured with
+   a `Proxy`-backed `Db` asserting `touched() === false` — a proof
+   the resource was never reached rather than a latency claim."
+
+   Strictly stronger than the whole-database effect snapshot for
+   the anonymous case, and not the same instrument: the snapshot
+   answers *did a row move*, this answers *was the database reached
+   at all*. Both are kept, on the two cases where each is the one
+   that can fail — anonymous must never reach it, keyed must reach
+   it exactly once and write nothing.
+
+   `Reflect.get` binds to the TARGET rather than to the proxy, so
+   drizzle's own internal property access does not count as the
+   module reaching for the database. What is recorded is the
+   module's own first touch.
+   ============================================================ */
+
+export interface ProxiedDb {
+  /** Hand this to the function under test in place of the real `Db`. */
+  db: Db;
+  touched(): boolean;
+  /** Which properties were reached for, in order, so a red can name the first one. */
+  reached(): readonly string[];
+}
+
+export function proxyDb(real: Db): ProxiedDb {
+  const reached: string[] = [];
+  const db = new Proxy(real as object, {
+    get(target, property, receiver) {
+      if (typeof property === "string") reached.push(property);
+      const value = Reflect.get(target, property, receiver);
+      return typeof value === "function" ? (value as UnknownFn).bind(target) : value;
+    },
+    has(target, property) {
+      if (typeof property === "string") reached.push(`in:${property}`);
+      return Reflect.has(target, property);
+    },
+  }) as Db;
+  return {
+    db,
+    touched: () => reached.length > 0,
+    reached: () => reached,
+  };
 }

@@ -17,6 +17,8 @@ import {
   publishedArity,
   publishedBlock,
   publishedInterface,
+  publishedProblem,
+  publishedType,
   requiredFn,
 } from "./contract";
 
@@ -52,6 +54,36 @@ describe("T230 the domain this suite quantifies over", () => {
         [...fields].sort(),
       );
     }
+
+    /* D-230-03's two aliases and the tier vocabulary `buckets()` recognises a config by. */
+    expect(block.types.map((t) => t.name).sort(), stale).toEqual([...TRANSCRIBED.types].sort());
+    expect(publishedType("Tier").literals, `${stale}\n  type Tier`).toEqual([
+      ...TRANSCRIBED.tiers,
+    ]);
+  });
+
+  /**
+   * D-230-09's member list, parsed. This is the floor under `refusal.test.ts`'s
+   * strongest cell, and the ruling says why the set rather than the members: T081's
+   * key-set whitelist was the only instrument that caught an extension member carrying
+   * a driver value once `type`, `title` and `detail` were each pinned. A whitelist
+   * built from a list typed in this file would be a second contract; built from the
+   * block it is the contract.
+   */
+  it("the 429's published member set is exactly the nine the block writes", () => {
+    const problem = publishedProblem(429);
+    expect(
+      problem.members,
+      `backend.md §T230's \`problem+json 429 members exactly:\` block has changed. ` +
+        `refusal.test.ts asserts key-set EQUALITY against it, so a changed set changes what ` +
+        `that file admits — and admitting one member too many is the whole failure D-230-09 ` +
+        `published the set to prevent.`,
+    ).toEqual([...TRANSCRIBED.problem429]);
+    expect(
+      problem.pinned.keysAvailable,
+      `The block pins \`keysAvailable\` to a literal and that literal is what T220's AC6 ` +
+        `reads as "the fact that a key exists".`,
+    ).toBe("true");
   });
 
   /**

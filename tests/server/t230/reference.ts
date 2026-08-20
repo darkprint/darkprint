@@ -40,6 +40,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
 
 import { type Db, schema } from "@/lib/db";
+import { PROBLEM_TYPE_BASE, problem } from "@/lib/server/http";
 import { type Actor, can } from "@/lib/server/policy";
 
 export interface LimitVerdict {
@@ -74,71 +75,140 @@ export class RateLimitedError extends Error {
   }
 }
 
-/* --------------------- ceilings, the reference's own --------------------- */
+/* --------------------- the config, the reference's own numbers --------------------- */
 
-const WINDOW_MS = 60 * 60 * 1000;
+export type Tier = "anonymous" | "account" | "key";
 
-const CEILING: Record<string, { anonymous: number; account: number; keyed: number }> = {
-  read: { anonymous: 60, account: 120, keyed: 600 },
-  write: { anonymous: 10, account: 40, keyed: 200 },
-};
+export interface BucketLimit {
+  limit: number;
+  windowMs: number;
+}
 
-const DEFAULT_CEILING = { anonymous: 30, account: 60, keyed: 300 };
+export type LimitConfig = Readonly<Record<string, Readonly<Record<Tier, BucketLimit>>>>;
+
+const HOUR = 60 * 60 * 1000;
 
 /**
- * The counters, in memory. AC5 forbids a write on an under-ceiling read, so they
- * cannot live in a table that is written per request. That is the consequence THIS
- * reference drew from the criterion rather than the only one available — a shared store
- * outside Postgres would satisfy it too — and it is why `db` appears in `checkLimit`'s
- * signature here only for the key lookup a keyed subject needs.
+ * D-230-03: the SHAPE is contract and the numbers are the owner's. These are small
+ * enough to exhaust in process and are **not a proposal** — nothing in
+ * `tests/server/t230/*.test.ts` reads them, and every cell drives the ceiling the module
+ * under test publishes on its own first verdict.
+ *
+ * Exported so a blind caller can enumerate the bucket vocabulary, which F-230-D says the
+ * section does not publish and D-230-04 makes load-bearing: with an unconfigured bucket
+ * refusing, a caller that cannot discover a configured name cannot drive the module at
+ * all.
  */
-interface Window {
+export const LIMITS: LimitConfig = {
+  read: {
+    anonymous: { limit: 60, windowMs: HOUR },
+    account: { limit: 120, windowMs: HOUR },
+    /* Equal to `account` on purpose in no bucket here — but the ORDERING is what
+       D-230-03 rules, so `>=` is what the suite asserts and this reference must not be
+       read as evidence that `>` holds. */
+    key: { limit: 600, windowMs: HOUR },
+  },
+  write: {
+    anonymous: { limit: 10, windowMs: HOUR },
+    account: { limit: 40, windowMs: HOUR },
+    key: { limit: 200, windowMs: HOUR },
+  },
+};
+
+/**
+ * D-230-06: a FIXED number of slots, `hash(subject) mod N`. `N` is a memory bound in
+ * D-70-17's sense rather than a ceiling — memory is exactly `N`, and it fails CLOSED,
+ * since a collision makes two subjects share one budget, stricter and never looser. An
+ * LRU fails OPEN: an attacker evicts their own entry and the limit silently stops
+ * existing.
+ *
+ * The cost is real and is stated rather than hidden: a colliding caller can be pushed
+ * toward a ceiling it never approached.
+ */
+export const COUNTER_SLOTS = 4096;
+
+/** `subject.ip` arrives from the edge, so it is bounded before it reaches a hash. */
+const MAX_IP_CHARS = 64;
+
+interface Slot {
+  key: string;
   count: number;
   resetAt: number;
 }
 
-const counters = new Map<string, Window>();
+const slots = new Array<Slot | undefined>(COUNTER_SLOTS);
 
-function windowFor(key: string, now: number): Window {
-  const existing = counters.get(key);
-  if (existing !== undefined && existing.resetAt > now) return existing;
-  const fresh = { count: 0, resetAt: now + WINDOW_MS };
-  counters.set(key, fresh);
+function slotIndex(key: string): number {
+  /* FNV-1a, and it is a slot index rather than a security property. */
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < key.length; i += 1) {
+    hash ^= key.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash % COUNTER_SLOTS;
+}
+
+function windowFor(key: string, windowMs: number, now: number): Slot {
+  const index = slotIndex(key);
+  const existing = slots[index];
+  if (existing !== undefined && existing.key === key && existing.resetAt > now) return existing;
+  const fresh = { key, count: 0, resetAt: now + windowMs };
+  slots[index] = fresh;
   return fresh;
 }
 
 /** The subject's counter key. Never rendered anywhere a caller can see. */
-function subjectKey(subject: { accountId: string | null; keyId: string | null; ip: string }): string {
+function subjectKey(subject: {
+  accountId: string | null;
+  keyId: string | null;
+  ip: string;
+}): string {
   if (subject.keyId !== null) return `key:${subject.keyId}`;
   if (subject.accountId !== null) return `account:${subject.accountId}`;
-  return `ip:${subject.ip}`;
+  return `ip:${String(subject.ip).slice(0, MAX_IP_CHARS)}`;
 }
+
+/**
+ * D-230-04: an unconfigured bucket REFUSES. A lookup returning `undefined` read as "no
+ * limit" is a criterion satisfiable by never limiting anything — D-70-18's shape.
+ *
+ * The refusal is still a WELL-FORMED verdict, because `rateLimited` renders whatever it
+ * is handed and a `NaN` limit reaches a caller as "limit of NaN".
+ */
+const UNCONFIGURED: BucketLimit = { limit: 0, windowMs: HOUR };
 
 export async function checkLimit(
   db: Db,
   subject: { accountId: string | null; keyId: string | null; ip: string },
   bucket: string,
 ): Promise<LimitVerdict> {
-  const ceilings = CEILING[bucket] ?? DEFAULT_CEILING;
+  const configured = Object.prototype.hasOwnProperty.call(LIMITS, bucket)
+    ? LIMITS[bucket]
+    : undefined;
 
-  /* A revoked key is refused immediately here too, or its raised ceiling outlives the
-     revocation and every AC4 test that only drives `resolveKey` passes against it. */
-  let tier: keyof typeof DEFAULT_CEILING = "anonymous";
+  if (configured === undefined) {
+    return { allowed: false, limit: UNCONFIGURED.limit, remaining: 0, resetAt: new Date(Date.now() + UNCONFIGURED.windowMs) };
+  }
+
+  /* D-230-05: anonymous, ZERO access. The tier is decided from the subject before any
+     reach for `db`, so an anonymous read never touches the connection at all. */
+  let tier: Tier = "anonymous";
   if (subject.keyId !== null) {
+    /* One indexed read, and it is the one AC4 already mandates: a revoked key's raised
+       ceiling must not outlive the revocation. */
     const [row] = await db
       .select({ revokedAt: schema.apiKey.revokedAt })
       .from(schema.apiKey)
       .where(eq(schema.apiKey.id, subject.keyId))
       .limit(1);
-    if (row !== undefined && row.revokedAt === null) tier = "keyed";
-    else if (subject.accountId !== null) tier = "account";
+    tier = row !== undefined && row.revokedAt === null ? "key" : subject.accountId !== null ? "account" : "anonymous";
   } else if (subject.accountId !== null) {
     tier = "account";
   }
 
-  const limit = ceilings[tier];
+  const { limit, windowMs } = configured[tier];
   const now = Date.now();
-  const window = windowFor(`${bucket}|${tier}|${subjectKey(subject)}`, now);
+  const window = windowFor(`${bucket}|${tier}|${subjectKey(subject)}`, windowMs, now);
 
   if (window.count >= limit) {
     return { allowed: false, limit, remaining: 0, resetAt: new Date(window.resetAt) };
@@ -147,14 +217,67 @@ export async function checkLimit(
   return {
     allowed: true,
     limit,
-    remaining: limit - window.count,
+    remaining: Math.max(0, limit - window.count),
     resetAt: new Date(window.resetAt),
   };
+}
+
+/* --------------------- D-230-01: the published renderer --------------------- */
+
+/** The window, rendered for `<window>`. Wording is unpublished; this is the reference's. */
+function windowLabel(windowMs: number): string {
+  if (windowMs % HOUR === 0) return windowMs === HOUR ? "hour" : `${windowMs / HOUR} hours`;
+  return `${Math.round(windowMs / 1000)} seconds`;
+}
+
+function windowOf(bucket: string, limit: number): number {
+  const configured = LIMITS[bucket];
+  if (configured === undefined) return UNCONFIGURED.windowMs;
+  for (const tier of ["anonymous", "account", "key"] as const) {
+    if (configured[tier].limit === limit) return configured[tier].windowMs;
+  }
+  return configured.anonymous.windowMs;
+}
+
+/**
+ * D-230-01, and D-230-09 for the member set. `detail` is the admissible form byte for
+ * byte; `limit`/`remaining`/`resetAt` are the verdict machine-readable; `keysAvailable`
+ * is T220 AC6's affordance, which could not live in `detail` without violating an
+ * exact-matched message form.
+ *
+ * Built through `@/lib/server/http`'s `problem`, so `instance` and the content type come
+ * from the one definition rather than from a second copy here.
+ */
+export function rateLimited(request: Request, verdict: LimitVerdict, bucket: string): Response {
+  return problem(request, {
+    type: `${PROBLEM_TYPE_BASE}/rate-limited`,
+    title: "Too many requests",
+    status: 429,
+    detail:
+      `${bucket}: limit of ${verdict.limit} per ${windowLabel(windowOf(bucket, verdict.limit))} ` +
+      `reached; resets at ${verdict.resetAt.toISOString()}.`,
+    limit: verdict.limit,
+    remaining: verdict.remaining,
+    resetAt: verdict.resetAt.toISOString(),
+    keysAvailable: true,
+  });
 }
 
 /* --------------------- keys --------------------- */
 
 const SECRET_BYTES = 32;
+
+/**
+ * D-230-07: the module MINTS the secret, so its length and alphabet are known by
+ * construction and anything else is refused BEFORE hashing. The secret is
+ * unauthenticated caller input of unbounded length, and hashing it first is work
+ * proportional to attacker input performed to decide the input is worthless — D-40-B's
+ * clause on a path nobody has to be authenticated to reach.
+ */
+const MINTED_SHAPE = /^dpk_[A-Za-z0-9_-]{43}$/;
+
+/** D-230-07's corollary: caller data into an unbounded `text` column, refused not truncated. */
+export const MAX_LABEL_LENGTH = 200;
 
 function hashOf(secret: string): string {
   return createHash("sha256").update(secret, "utf8").digest("hex");
@@ -191,23 +314,6 @@ class NotKeyOwnerError extends Error {
   }
 }
 
-async function audit(
-  db: Db,
-  actor: Actor,
-  action: string,
-  targetId: string,
-  decision: "allowed" | "denied",
-): Promise<void> {
-  await db.insert(schema.audit).values({
-    actorId: actor.kind === "anonymous" ? null : actor.accountId,
-    actorKind: actor.kind === "operator" ? "operator" : "owner",
-    action,
-    targetKind: "api_key",
-    targetId,
-    decision,
-  });
-}
-
 export async function issueKey(
   db: Db,
   actor: Actor,
@@ -217,13 +323,17 @@ export async function issueKey(
   if (!can(actor, "write", { kind: "account", accountId })) {
     throw new NotKeyOwnerError("issueKey");
   }
+  if (label.length > MAX_LABEL_LENGTH) {
+    /* D-05-09: refuses rather than truncates. A bound that truncates tells the caller it
+       succeeded and hands back a record that does not describe the row. */
+    throw new NotKeyOwnerError("issueKey");
+  }
   const secret = mintSecret();
   const id = randomUUID();
   const [row] = await db
     .insert(schema.apiKey)
     .values({ id, accountId, tokenHash: hashOf(secret), label })
     .returning();
-  await audit(db, actor, "api_key.issue", id, "allowed");
   return { record: recordOf(row), secret };
 }
 
@@ -241,7 +351,6 @@ export async function revokeKey(db: Db, actor: Actor, keyId: string): Promise<vo
     .update(schema.apiKey)
     .set({ revokedAt: new Date() })
     .where(and(eq(schema.apiKey.id, keyId), isNull(schema.apiKey.revokedAt)));
-  await audit(db, actor, "api_key.revoke", keyId, "allowed");
 }
 
 /**
@@ -250,6 +359,9 @@ export async function revokeKey(db: Db, actor: Actor, keyId: string): Promise<vo
  * every call and the reference carries no memo to be wrong.
  */
 export async function resolveKey(db: Db, secret: string): Promise<ApiKeyRecord | undefined> {
+  /* Before `db` is reached for at all, and `undefined` rather than a throw: a caller able
+     to distinguish *malformed* from *no such key* has an identity oracle. */
+  if (typeof secret !== "string" || !MINTED_SHAPE.test(secret)) return undefined;
   const [row] = await db
     .select()
     .from(schema.apiKey)
