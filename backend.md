@@ -5584,6 +5584,38 @@ the artefact beside it stays correct, which is why it survives review. **Its con
 reached no file**; the one place it became an instruction was my brief to the adversary, and that is
 displaced.
 
+## A misattribution that hands credit OVER has nobody with an incentive to fix it
+
+I told T140's adversary the ground for expecting a green was its blind author's **demonstrated ability to
+red on that module's exact defects** — reference at 4 of 215, `O3` at 1, `O4` at 1. **Its blind author
+raised that the sentence is one qualifier too wide, and wide in its own favour.**
+
+**All three were measured against ITS OWN REFERENCE**, the one it wrote from the contract in a scratchpad —
+not against the module the adversary is about to run. `O3` reddened when *its reference* used
+`asc(save.id)`; `O4` when *its route file* re-sorted; the 4-of-215 was its reference before it had an
+`ORDER BY` at all.
+
+**What that demonstrates: its cells discriminate those defects in a contract-built implementation.** What
+it does not: that they discriminate them in **that** implementation. *A cell reaches a behaviour through a
+published surface, and whether some structural difference in the built module puts one out of reach is
+precisely the question the blind-axis measurement exists to answer.* ***If it could already answer it,
+that measurement would have nothing to do.***
+
+**The honest form is one qualifier longer**: *demonstrated ability to red on those defects **in a
+contract-built reference***. Still the strongest ground available, still better than the one it replaced —
+the implementer's mutations hitting says nothing about whether the blind suite can red against its module
+— **but it says it about a different module, and the two are not the same claim.**
+
+**And the asymmetry it named is why this class survives while the others get caught:**
+
+> ***A misattribution that takes credit away gets corrected by the person it robs; one that hands credit
+> over has no one with an incentive to fix it.***
+
+Two of my labels were wrong beside correct artefacts today and both were caught by the party they
+inconvenienced. **This one inconvenienced nobody**, and the only session that would ever have flagged it is
+the one it flattered. **It changes nothing operationally — the blind axis gets measured first either way
+and neither half offers a prediction. It changes what a green MEANS when one arrives.**
+
 ## Every sha in a report is a measurement, including the ones that are only context
 
 T050's adversary put a sha in a stamp block that **does not exist in this repository**, and caught it
