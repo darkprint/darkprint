@@ -7297,6 +7297,46 @@ vocabulary while a caller's document is caller data — reachable by property ac
 use *because* it catches what `JSON.stringify` drops. **AC4 says "never the caller's value", and
 carrying it violates the words even where it survives the rationale.** No shipped class exploits it.
 
+## A repair carries a regression when an adjacent quantity rides along with the answer
+
+**D-231-01, mine, and both halves of T231 charged it independently within ten minutes of each
+other, quoting the same shipped header, neither able to see the other.**
+
+T231's blind author asked whether `db` leaves `enforceLimit` as well as `checkLimit` (F-231-D).
+The answer is yes and **dropping `db` pays it in full**. I published
+
+    enforceLimit(request: Request, subject: LimitSubject, bucket: string): Promise<Response | undefined>
+
+attaching a **return-type change that answered no question anyone had asked.** `Response |
+undefined` is `payload | Response` — the exact shape T000 rejected for `withSession`, and the shape
+`check.ts:196-206` quotes as the reason `enforceLimit` exists at all: *"a guard that returns a union
+depends on every caller checking the union, and a caller who forgets runs the handler anyway...
+So the enforcing form throws."* **I would have made forgettable the one function whose entire
+purpose is that a refusal cannot be forgotten**, reopening T230's AC2 one call over.
+
+Three consequences neither of them had to speculate about:
+
+* **`RateLimitedError` would be thrown by nothing** — barrel-exported, in the admissible-form
+  block, inside `error-hygiene`'s equality, and with no producer. That is verbatim the state
+  D-230-01 was ruled to end, restored by the repair for its sibling.
+* `withLimitsErrors` ships an arm nothing can reach, in a wrapper whose own test asserts its arms
+  are disjoint and **live** — and `http.ts` is Forbidden to T231, so its implementer could not have
+  removed the dead arm even having seen it.
+* `http.test.ts` asserts **one author for the 429 across BOTH compositions**. Deleting the throwing
+  composition leaves the one-author property true and **deletes half of what the cell measures** —
+  a cell that still passes while covering less.
+
+**This is the fourth instance of one shape: an adjacent quantity substituted for the one the
+sentence is about, INSIDE the repair for the previous instance.** The others today: a docblock
+rewritten to remove a refused spelling that quoted the spelling; a leak instrument widened to
+`getOwnPropertyNames` while its comment still claimed a prototype walk; an AC3 comment pricing a
+grammar boundary that was covering for a clause with no business outside it.
+
+**The cheap countermeasure is the one that worked here: charge the ruling in the same window it
+lands, from both holders.** The blind author marked the affected cells `F-231-E PENDING` **in
+place** rather than guessing or blocking, so the complete list of what moved was known before the
+ruling settled, and the whole exchange cost nothing.
+
 ## Check the DECISION that already read the artefact, not the artefact
 
 **Four instances on 2026-08-22, in two sessions, and it is the dominant failure shape of the day.**
