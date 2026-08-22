@@ -7230,9 +7230,39 @@ value on the error as a **non-enumerable own property** — `Object.keys` `[]`, 
 
 It then falsified inertness on the second axis rather than believing the zero:
 `MUTATION_IS_LIVE: true`, `SUITE_INSTRUMENT_SEES_IT: false`, `inspectShowHiddenSeesIt: true`.
-`stringsIn` walks `Object.entries`, which is enumerable-only, so the instrument is blind to
-precisely the shape the sibling guard blesses. One line closes it —
-`Object.getOwnPropertyNames` — and it is a strict widening.
+`stringsIn` walked `Object.entries`, which is enumerable-only, so the instrument was blind to
+precisely the shape the sibling guard blesses.
+
+**The repair is THREE shapes, not one, and the blind author found the other two plus a second
+defect in the same docblock.** `stringsIn`'s own comment claimed it walked *"the prototype chain's
+own enumerable properties"* — **an instrument describing a walk it was not doing**, which is the
+same class of object as a guard that cannot fail being described as a guard.
+
+1. `Object.getOwnPropertyNames` — M8's shape.
+2. `Object.getOwnPropertySymbols` — the next hop, invisible to `Object.keys`, to `JSON.stringify`
+   **and** to `getOwnPropertyNames` alike.
+3. **The prototype chain, and THIS REPOSITORY'S OWN CONVENTION IS WHAT MAKES IT REACHABLE.** The
+   house style puts a sealed class's fields **on the prototype** precisely so they stay off
+   `Object.keys` and satisfy the hygiene clause. **A per-call subclass carrying caller data there
+   satisfies the letter of that convention and defeats an own-properties-only scan.** The evasion
+   is not exotic; it is the documented pattern, used once more.
+
+Read through **descriptors**, so a getter is called inside a `try` rather than throwing mid-scan,
+and function-valued properties are recorded by name rather than descended into — otherwise
+`constructor`/`prototype` off every method turns a leak scan into a heap traversal.
+
+**Falsified in both directions and KEPT AS CELLS rather than run once and described.** Each of the
+three evading shapes asserts in one cell that it satisfies D-13's four-part clause, that the
+widened scan sees it, and that the retained narrow `Object.entries` control does not. Narrowing
+back reds exactly those three and leaves the fourth green. **It now regresses loudly instead of
+silently, which is what M8 proved it could not do.**
+
+**And what the scan still cannot see is written down rather than left as silence**: a value held
+only in a closure, and one synthesised by a getter that answers differently on a second read — the
+shape T010's D-12 round already recorded against its own traversal. **Stated so nobody reads
+silence as coverage.** The four new cells measure *the suite* rather than the module and live in a
+file of their own so the split is visible from the file list: **an adversary counting acceptance
+cells reads 50, not 54.**
 
 **The scoping matters as much as the finding.** The value reaches no message, `String()`,
 `JSON.stringify` or default `inspect`, so under D-13's *rationale* it is arguably not a leak, in
