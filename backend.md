@@ -7195,9 +7195,20 @@ arrives with a measurement attached. If it does not, they are raised at the merg
 is itself information about the round's coverage** — which telling it in advance would have
 destroyed.
 
-One of the three cost nothing to withhold: AC1's refusal having no witness in the merged corpus is
-a fact about the **corpus**, not a hint about the code, and it was already the centre of the
-adversary's brief.
+**THE CRITERION, and it is the implementer's rather than mine — a test instead of a prohibition:
+A FACT ABOUT THE CORPUS TRAVELS; A HINT ABOUT THE CODE DOES NOT.** AC1's refusal having zero
+witnesses describes the state of the **test tree** and belongs in the adversary's brief, where it
+was already the centre of the job. The unenforced `operation` and the uncrossed `text`/`terms`
+describe the **implementation** and do not travel. That line is what makes the rule usable, and it
+is why withholding costs nothing: found independently the finding arrives with a measurement
+attached, and not found, the miss is coverage information that telling would have destroyed.
+
+**And the implementer's account of why it sent them is the transferable part.** Offering *"here is
+where I would look"* **felt like disclosure**, which this run rewards — but *"disclosure is stating
+what I decided and why, in the code and the handback. Triaging the adversary's round for it is
+something else wearing the same clothes."* It also named the failure mode that let it happen:
+**it already held the mirror rule and did not recognise the instance coming out of its own mouth.**
+A rule held as a prohibition on others is not the same as a rule held as a test on yourself.
 
 **The implementer's own framing of the second is the model for shipping a known gap**: deliberate,
 reasoned from D-133-04, priced in the code, and *"chargeable if the reasoning is wrong."* A pattern
