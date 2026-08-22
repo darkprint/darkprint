@@ -7110,6 +7110,111 @@ The reader's tree is the only one that matters and only the reader can read it. 
 here because four sessions checked — which is the point: the rule this run keeps arriving at is that a
 premise handed to you is the thing to re-examine, and they did.
 
+## A stamp is only a veto if something acts on it, and taking can be automated while refusing is not
+
+T230's adversary, on aborting a triple it should not have started, and the wording is its own:
+
+> I had automated the taking without automating the refusing.
+
+Its script took a BEFORE stamp at the moment the run started and then **proceeded past it**.
+The numbers were captured, correct, and inert:
+
+  its own stamp, replying to the grant:    load 26.76,  0.79% idle
+  the script's BEFORE stamp, ~2 min later: load 41.44,  0.13% idle
+
+**The window closed inside the two minutes between reading a grant and acting on it.** So a
+grant is a point-in-time claim about a host the granter cannot see, and it decays — which is
+why the rule is *a naming is what STARTS you; a stamp can still STOP you*, and why the veto
+does not expire when the grant arrives. The failure direction that matters is the one that
+happened: **the holder deferred to the orchestrator's naming over its own instrument**, and
+the orchestrator is the party who cannot see the host.
+
+**And in-flight sampling earned its keep on the same run**, against edges alone:
+
+  [BEFORE] scratch_dbs=20  backends=6
+  [during] scratch_dbs=28  backends=16      <- the peak, seen by no edge
+  [AFTER]  scratch_dbs=25
+
+Edges would have reported 20 → 25 and missed a peak of 28 with 16 backends. The intruder that
+arrives and leaves between two stamps was, this time, the sampler's own suite.
+
+## When a cell's comment names a concrete bad output, the assertion must EXCLUDE it
+
+Derived by T230's adversary from two findings in one round, and stated better by it than by
+me, so its wording stands:
+
+> When a cell's comment names a concrete bad output, the assertion must exclude that output,
+> not merely admit the good one.
+
+**Both instances were written by authors who had already found the right hazard.** That is
+what makes this a rule rather than a note about weak tests.
+
+**F-230-J.** `keys.test.ts`'s own comment calls it THE DISCRIMINATING CELL, its design is
+right — prime, revoke, resolve again — and its author wrote down the reasoning that emptied
+it: *"both readings of 'refused immediately' agree here: undefined, or a record whose
+revokedAt is set. This asserts only what they share."* **The intersection of two readings
+was weaker than the criterion either reading states.** Deleting `isNull(revokedAt)` from
+`resolveKey`'s WHERE — the one line implementing AC4 — scored **0 new failures across 164
+tests**, with non-inertness falsified on the second axis end to end: a revoked key holds a
+**6000 ceiling against 600**, permanently.
+
+**F-230-M.** `limits.test.ts:312`'s comment names the defect exactly — *"a verdict with a NaN
+limit or a missing reset reaches a caller as a 429 whose detail says 'limit of NaN'"* — and
+then asserts `expect(verdict.resetAt).toBeInstanceOf(Date)`. `new Date(0)` is an instance of
+Date. `check.ts:127` returns that epoch for an unconfigured bucket, so the 429 tells a client
+honouring the published machine-readable `resetAt` to retry after zero milliseconds, forever.
+
+The narrowings differ — one to a shared reading, one to a type — and the mechanism is one.
+`toBeInstanceOf(Date)` admits the good output; `expect(resetAt.getTime()).toBeGreaterThan(0)`
+excludes the bad one.
+
+**Why it needs an instrument rather than diligence: the prose reads as coverage.** A later
+reader sees a comment naming the hazard directly above an assertion and concludes the hazard
+is held. The only way to find the gap is to break the module, which is exactly what nobody
+downstream does. Both were found by mutation, and both mutations scored **0** — a number that
+means nothing until inertness is falsified on the second axis, which is why that step is not
+optional.
+
+## Capacity is two tasks in flight, and the load number misattributes its own preparation
+
+**Owner ruling, 2026-08-22: two tasks in flight — four active sessions plus an adversary —
+provided the gate stays serialised.** Adopted after measuring what sessions actually cost:
+**26 Claude processes together drew 34.4% of one core**, while a single unrelated Python job
+drew 470%. Session count is not the constraint and reducing it frees nothing; the constraint
+is what a session *does*, which is why the gate slot — one full suite at a time, granted by
+name — remains the only serialisation that matters.
+
+The three roles do not overlap the way the count suggests. An implementer and a blind author
+run concurrently; the adversary starts only after both halves exist, by which point the other
+two are done. **A task in flight costs two active sessions, not three.**
+
+**And the host's load average misattributes work to whoever reads it.** Measured within one
+minute of each other: 19.31, then 61.39. The delta was not a task starting. It was a 436%
+Python job that had been climbing, three `mdworker_shared` processes at ~17% each — Spotlight
+indexing the two worktrees I had just created — and an `npm ci` in a third. **Creating a
+worktree and installing into it are themselves load**, they appear under no name that says
+"darkprint", and they arrive exactly when a dispatcher is deciding whether the host is free.
+So a contention stamp taken while preparing the ground measures the preparation. Take it
+before creating anything, or after the installs have settled, and never in between.
+
+## T200 is NOT free, and it is the sixth instance of the schema trap
+
+Caught by recomputing the graph before dispatch rather than by reading the declarations —
+T200 was about to be dispatched on the strength of `Depends on: T080`, which is merged and
+true and not the question.
+
+**T200's contract stores embeddings "in a vector column" and `lib/db/schema.ts` contains zero
+occurrences of `vector`, `embedding`, `tsvector` or `search`.** The column does not exist, and
+`lib/db/schema.ts` is not in T200's `Owns` — it is Forbidden, as it is to every task. So T200
+cannot build its subject and cannot add what it needs, which is the identical shape already
+recorded for saves (T140), notes (T170), ballot (T160), API keys (T230) and run reports
+(T180). It is the **sixth**, and the first one caught *before* a session was dispatched into it.
+
+The blocked set is now four tasks — T160, T170, T180, T200 — plus everything behind them:
+T131 behind T180, and T220/T260/T261 behind T200. **That makes an orchestrator-owned schema
+extension the single highest-leverage unblock available**, on T005's precedent, and it is
+owed a contract before any of the four can be dispatched.
+
 ## The fourth route block, and a guard that binds a ruling to the wrong task
 
 **D-50-03 and D-40-01 are the fourth and fifth instances of an owned route tree with nothing
