@@ -7823,6 +7823,269 @@ comparison flips `Exact<any, T>` from `true` to `false`, so every pin starts red
 `TS2307` already reports one line above — **the repair arrives as noise, and the next author deletes
 the pin while believing they are cleaning up.** A repair that reds for the wrong reason gets removed.
 
+## A guard whose failure mode is SILENTLY NEVER ARMING cannot be cleared by its own green
+
+T231's adversary charged that `agrees-with-the-document.test.ts` could return `undefined`, report
+"vacuous", and pass forever if the block's marker were spelled differently. When the block landed and
+the guard came back **9 of 9 green**, it refused to accept that as clearance — *"I am the one who
+charged it with being able to pass while blind."*
+
+So it ran the real parser against the real `backend.md` and **printed what the parser actually sees**:
+`BLOCK: string, 5535 bytes` — not `undefined` — and the nine indented lines, enumerated. **A green
+from a guard that might be blind and a green from a guard that is armed are the same green.** The
+only thing that separates them is making the instrument show its input.
+
+**And then it did the part that makes it a measurement rather than a formality: it checked those nine
+lines against the SHIPPED SOURCE, not against the guard.** The guard compares the document to the
+suite's transcription and says nothing about whether either matches the code. Line by line against
+`types.ts`, `check.ts` and `keys.ts` — the brand's declaration and unexported-ness, all three union
+arms, `resolveKey`'s return, `db` absent from both functions with `options` third and defaulted.
+**Document, transcription and implementation are the same object for the first time**, established on
+an axis none of the three could establish about itself.
+
+## "No foreign vitest" is the wrong check — a foreign run does not have to be a vitest run
+
+I named it on **demand 366%, load 53, and "no foreign vitest"**. Its own stamp did not reproduce
+mine, and the reason is my check:
+
+> The reason my first check said "no foreign vitest" is that I **searched by command-line
+> substring**, which is the thing the traps file tells me not to do.
+
+Sampling by process **group** with the top consumer named found what the substring missed: **pgid
+85457 at 128–160%**, **pgid 86322 at 116.5%**, a Virtualization VM at 57%, and later a Python group
+at 93.6%. **None matches `vitest`**, so a name-based check reports a clear host throughout.
+
+**Both node groups were gone by the time it looked them up** — arrived and left between stamps, the
+invisible-intruder shape, **caught only because it sampled six times instead of three.**
+
+The rule this run already holds is *count by process GROUP, never by command-line substring*, and I
+had been applying it to the question *is somebody else running vitest* rather than to the question
+that matters: **how much of this host is not mine.** The demand figure was always the real signal;
+naming the supplementary check "no foreign vitest" made a busy host read as a clear one.
+
+## A tautology dressed as a measurement — the purest instance of the zero that could only ever be zero
+
+T231's adversary built AC3's behavioural cell, got **zero queries on all six paths**, and would have
+sent a green. Its own diagnosis after the mandatory falsifier caught it:
+
+> Because `checkLimit` accepts no pool at all, *"it did not use the pool I handed it"* was very
+> nearly **a tautology dressed as a measurement.**
+
+The first observer wrapped the pool `createDbClient` returns. Mutating `checkLimit` to call
+`getSharedDbClient()` — **a different pool, cached on `globalThis` behind a symbol** — reported
+**zero on all six paths while throwing `DrizzleQueryError` from the driver**, so the query
+demonstrably reached Postgres. Rebuilt at `pg`'s `Client.prototype.query`, which counts every query
+on every pool including one a module reaches for privately: both controls at 1, both falsifiers at
+**6 of 6 FAIL**.
+
+**And the measurement that justifies the cell existing at all**, run against both instruments at
+once on the same evasion — `check.ts` holding its own `new Pool()`:
+
+```
+source cells   (absence of a HANDLE)   8 passed / 0 failed    BLIND
+behavioural    (absence of an EFFECT)  6 of 6 FAIL            CAUGHT
+```
+
+**The behavioural cell catches exactly what the handle cells provably cannot, measured rather than
+argued** — which retires a disclosed caveat instead of merely restating it.
+
+Two further instrument corrections from the same build, both **inflating** counts and therefore
+biased against the module, so neither could have manufactured a false zero: instrumenting
+`pool.query` *and* the checked-out client double-counts, because `pg` implements the former via the
+latter; and `observe()` re-wrapping an already-wrapped pooled client nests the counter.
+
+## An ALL-GREEN suite is a claim about an instrument until something proves otherwise
+
+The zero rule in its other polarity, stated by T100's adversary at the moment it reached 52 of 52:
+
+> **An all-green suite is a claim about an instrument until something proves otherwise**, and 52/52
+> arriving right after the last red cleared is exactly the moment that rule exists for.
+
+It did not report the green until it had shown the suite still fires. Three mutations at that sha,
+each pre-registered, each restored with the tree verified byte-identical:
+
+```
+V1  revert F5: storage?: ObjectStorage        1 failed | 51 passed   surface.test.ts   arity
+V2  delegation -> ownerId === actor.accountId 1 failed | 51 passed   ownership.test.ts agreement
+V3  cardDigests -> [...new Set(...)]          1 failed | 51 passed   identity.test.ts  AC3
+```
+
+**Three for three, exactly one red each, each in the predicted cell, on three independent axes** — a
+published signature, an authorization delegation, and a content-identity computation. **So the 52 is
+a discriminating green rather than a resolving one**, which is the same distinction a near-miss draws
+for a type pin.
+
+**V3 is the one worth keeping.** `bundleDigest` sorts but does not dedupe, so `[...new Set(...)]`
+produces a different digest over the same bytes **and the release looks entirely healthy** — the
+mutation that "still looks fine". The cell that catches it is the one asserting a card pinned by two
+DOT nodes appears **twice**.
+
+## Re-merge before EVERY measurement — a report that names a red decays at the branch tip
+
+Fifth instance today of a ref moving under a reader, and its author named the mechanism rather than
+the count:
+
+> I merged `b2f2164`, measured it, and reported one red **that had already been fixed on a ref I had
+> not re-fetched.** The finding was still correct — the fix landed *because* of it — but **the number
+> I sent you was stale at the moment I sent it.**
+
+Its practice change is the rule: **re-merge immediately before every measurement, and quote the
+arithmetic against that sha only.** The corollary for the reader: **if a report names a red, check
+the branch tip before acting on it** — a correct finding and a current number are different claims,
+and a handback carries both under one heading.
+
+The same session had, an hour earlier, refused a repair *I* handed it as already measured — *"that
+proves the mechanism and says nothing about `publish`"* — and probed the real barrel export instead.
+**The stand-in rule applied to a repair rather than to a guard**, which is a place this run had not
+seen it land before.
+
+## Every masking failure this run met was repaired by WIDENING WHAT THE FAILURE SAYS, never by narrowing what the code ACCEPTS
+
+T100's adversary, stating as a class what it had met three times as instances:
+
+* **F4** — the agreement cell reported an **authorization defect** for an ontology error.
+* **F6** — `boundPublish` reported an **absent module** while the fixture beneath it had never run.
+* **`refusalFrom`** — a foreign rejection reported as a **wrong `kind`**.
+
+> Every one is a red that reports a plausible wrong cause, and in every one **the repair was to widen
+> what the failure SAYS rather than to narrow what the code ACCEPTS.** The tempting fix in each case
+> — tighten the helper, assert the module first, hard-code the outcome — **makes the instrument
+> stricter and the diagnosis no better.**
+
+Its worked example for the third: **keep `refusalFrom` permissive**, because four foreign rejections
+now reach a caller unaltered *by contract* and a stricter helper would red correct behaviour on all
+four. But when `kind` is `undefined` the thrown value is by definition not a `PublishRefusedError`,
+and the helper already captures `thrown.name` — so it can say *"rejected with
+`UnknownOntologyVersionError`, which carries no `kind`; four foreign rejections pass through this
+verb by contract, so this is a premise that failed upstream or a refusal never reached — not a wrong
+`kind`"* instead of `expected undefined to be "unfinished"`. **Permissiveness unchanged, diagnosis
+discriminating**, and the eight cells that produced a histogram would have named the cause in one read.
+
+## A falsification can get the VERDICT right and the CODE PATH wrong, and read identically either way
+
+The delegation falsification was re-run after three never-executed cells started executing, and the
+adversary found it had been **materially weaker than it looked** — for a reason sharper than "the
+plants now land":
+
+> With the four plants dead, `getBundle` returned `undefined` for every subject, so all four rows
+> took the **create** path — a non-owner publishing to a **free** slug. **AC7 is "a non-owner
+> publishing to an EXISTING `(owner, slug)`."** The old run measured the adjacent scenario and would
+> have read identically in any summary.
+
+Same verdict, same one red, same operator-row diff — **and the wrong code path.** Now the bundles
+exist, all four rows take the **append** path, and the criterion is the one D-100-04 is actually
+about. **A green or a red proves something about whatever line actually ran**, and a falsification
+that never states which path it exercised cannot distinguish the criterion from its neighbour.
+
+## Bind the module LAST — an early red masks every write below it, and DURATION is the detector
+
+T100's blind author was sent one never-executed cell (F6) and **generalised its cause instead of
+fixing its symptom.** The cause was not "wrong card":
+
+> **`boundPublish()` sat at the top of the cell**, so while the barrel is absent it reds first and
+> every fixture write below it never runs. That is why nobody could see the seed was throwing — **the
+> red said "module absent" and it was telling the truth about the wrong thing.**
+
+**A correct red about the module masks an incorrect premise beneath it**, and the masking red is not
+wrong about its own subject, which is what makes it invisible. Rebinding the module **last** — after
+the premises and the planting — found **two more cells that had never executed**:
+
+* AC8's out-of-order plant, the only construction where highest-semver and latest-by-`createdAt`
+  disagree: **0ms → 27ms**, and it holds, so T010 does accept releases written out of semver order.
+* The delegation cell's four plants: **0ms → 21ms**, all four land.
+
+**DURATION IS THE DETECTOR — with one qualifier, supplied by T100's adversary, without which it
+flags every correct pure cell in the suite.** A cell that reds in **0ms** did not reach a database;
+one that reds in 27ms did its setup and then failed on the thing it was testing. Both look identical
+in a summary line and in a failing-test name.
+
+**But 0ms is CORRECT for a cell that does no I/O.** Measured, both files fully green: the delegation
+premise — a pure `can()` call over in-memory actors — costs **0ms and is right**, beside a
+card-bytes cell at 39ms and an agreement cell at 85ms.
+
+> **The detector is not "0ms means the cell never ran" — it is "NO I/O WHERE I/O WAS EXPECTED."**
+
+Read against the cell's own expected work it is exactly as sharp; read as a bare threshold it
+condemns every pure cell in the suite. Its author's reason for insisting on the qualifier is the one
+that matters: **the version that flags false positives is the version somebody switches off.**
+
+The ordering has a second benefit its author named: the card-bytes cell now reds on `boundPublish`
+**after** proving its premise, **which makes it self-diagnosing next time.**
+
+**And the audit was the right scope.** Every other store write is a `seedOwner` or a `beforeAll`
+`seedCard`, all exercised and proven by passing premise cells; the three deliberately-broken corpora
+are only ever passed to `publish` as input, never to a store; and the remaining references to the
+unstorable variant assert its **absence**, which is its correct use.
+
+**One judgement call it flagged rather than took, and the restraint is right.** `refusalFrom` accepts
+any `Error`, which is why eight ontology throws read as assertion failures — *the same masking as F6,
+one layer down: a red that reports a plausible wrong cause.* It declined to tighten it, because
+**three foreign rejections are contractually allowed to reach the caller** and a stricter helper would
+red correct behaviour. Flagged for me rather than decided for me.
+
+## A cell that has never once executed, testing the most carefully-reasoned ruling in its task
+
+T100's `transaction.test.ts` card-bytes cell dies in `seedCard` **before `publish` is ever called**:
+it seeds `env.failure.declared`, the variant its own fixture comment describes as *"a patch bump
+carrying a change that requires a major one"* — **built for AC5, un-storable by design.**
+
+**That cell is the only thing testing D-100-02** — source bytes over digest *and* over `body`, the
+ruling whose reasoning the implementer improved by finding that `source` round-trips **byte**-identical
+while `body` round-trips **value**-identical only. **It is testing nothing and has never run.** The
+cell body is correct; only the seed is wrong.
+
+**The general form: a red can hide a cell that never executed, and the two are indistinguishable in
+a summary line.** A cell failing in `beforeAll` reports as a skip; a cell failing in its own setup
+reports as a red — and both look like the criterion was exercised and found wanting.
+
+## Declaring a risk makes a finding CHEAP TO ACT ON; it does not make it FINDABLE
+
+T100's implementer shipped `d3c66f1` saying plainly it was unmeasured and that the AC6 witness had
+not been observed. F5 — a four-parameter function against a three-parameter contract — was in that
+commit. I credited the declaration; **it refused the credit and drew the line better than I had:**
+
+> Declaring the risk did not make the defect less mine. **What the declaration bought was that
+> nobody had to spend a round establishing whether it was known**, so the finding arrived as a fix
+> instead of an argument. That is worth something, and it is smaller than *"the report was correct
+> because I hedged it"*. **The declaration made the finding cheap to act on; it did not make it
+> findable.**
+>
+> The thing that actually caught it was your adversary running a suite I could not, on a commit I
+> had told you was unverified.
+
+**The distinction is worth holding because the failure mode is real**: a session that hedges
+thoroughly can accumulate credit for candour while shipping the same defects, and an orchestrator
+who rewards the hedge stops noticing that the finding still came from somewhere else.
+
+## The mechanism is not the module — verify a handed-down repair against the thing itself
+
+Same session, same fix, and it declined a repair I had handed it as already measured. `?` erases
+while a default expression does not — confirmable with two throwaway functions, and it confirmed it,
+getting 4 and 3.
+
+> **That proves the mechanism and says nothing about `publish`.**
+
+So it ran a probe over the **real export from the barrel**, mutated back to the charged spelling, and
+measured both: `with ?` → exit 1, `expected 4 to be 3`, reproducing the adversary's message exactly;
+`with = undefined` → exit 0. **Red-to-green on the thing itself**, probe removed before committing.
+
+Same family as *a stand-in written by the instrument's author cannot falsify the instrument*, one
+step further out: **a repair verified against the general mechanism is verified against a model of
+the defect, not the defect.** A handed-down fix arrives with someone else's measurement attached,
+and that measurement was taken on someone else's tree.
+
+## `?` does not reduce `Function.length`, and the docstring claimed it did
+
+`publish` grew `storage?: ObjectStorage` and `surface.test.ts`'s arity pin went 5/5 → 4/5.
+**TypeScript's `?` erases to nothing; only a default-value expression or a rest element stops the
+parameter counting.** The docstring read *"Optional and defaulted"* — it was optional and **not**
+defaulted, so **the comment claimed exactly the property that would have made the code correct.**
+
+The fix is `storage: ObjectStorage | undefined = undefined`, which preserves the reason the default
+expression was avoided in the first place: nothing is evaluated on entry, so a refusal still does not
+depend on `S3_*` being configured. **The stated reason for avoiding a default did not apply to
+`= undefined`** — the `?` was standing in for a distinction nobody had made explicit.
+
 ## A stand-in written by the instrument's author cannot falsify the instrument
 
 **The co-authored-reference error, one layer lower, and it produced a passing run.**
