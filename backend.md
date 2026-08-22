@@ -16805,12 +16805,22 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Owns:** `lib/server/publish/**`, `app/api/bundles/**`
 - **Forbidden:** `app/api/blueprints/**`, `lib/server/archive/**`, `lib/server/versioning/**`
 - **Inherited from T010's amendment:** refusing a release whose diagnostics carry an error severity is **this task's** responsibility, not the persistence layer's. T010 cannot decide it — that needs full card bodies and an `OntologyView` from T020 and T030, both outside its Owns — so the gate lives here, where the bundle has already been resolved.
+- **D-133-09, ruled 2026-08-22 BEFORE T100 was dispatched: `PublishInput.vocabulary` is `StoredVocabulary`, not `readonly OntologyTerm[]`, and this is the FOURTH independent encoding of the bare-array misreading.**
+
+  **The amendment was already in this section and had not reached the signature.** The block below carried `vocabulary?: readonly OntologyTerm[]`, while a paragraph further down carries *"Amendment from T090's D-90-03: `release.local_vocabulary` stores `{ text, terms }`, not `OntologyTerm[]`."* **Two readings of one field, two paragraphs apart, in one section** — and an implementer reading the signature builds the shape `addRelease` now refuses, while one reading the amendment builds the right one. This is *the preamble is where a ruling is argued; the criteria and the published block are where it binds*, failing inside a single task's own section. `rulings-bind.test.ts` cannot see it: that guard checks a ruling reaches its task's SECTION, not that an amendment reaches the SIGNATURE BLOCK.
+
+  **Caught before dispatch, which is the only time it is free.** T100 has no worktree and no session; had it been dispatched against this block, its implementer would have built a bare array, handed it to `addRelease`, and been refused at the write — discovering T133's contract by failing it.
+
+  **And this is what T133 bought.** The first three encodings — `schema.ts:183`'s comment, T130's blind author, `t010/release.test.ts` — were undiscoverable because *no published shape existed to check any of them against*. This one was found by grepping a contract against `StoredVocabulary`, which took one command. **A published shape does not only stop the next author guessing; it makes every prior guess findable.**
+
+  **The sweep was then run to completion rather than stopped at the first hit, and T100 was the only false one.** Three other contracts carry `readonly OntologyTerm[]` legitimately — T025's `inferOntologyBump(previous, next)` compares two in-memory term lists, and T030's `OntologyView`/`openView(db, version, extensions?)` are the ontology store's own shapes. **None of them describes `release.local_vocabulary`**, which is the distinction the grep cannot make and a reader must: the domain is *what reaches the column*, not *what is spelled like a term list* — the same distinction T133's implementer drew when `/api/validate`'s YAML-string `vocabulary` field nearly sent it to edit four files that were never at risk.
+
 - **Published signatures** (checked against `backend` at `b1f67d6`. This task **composes** and owns no storage: it calls `@/lib/server/engine` (T040), `@/lib/server/archive` (T010), `@/lib/server/cards` (T020), `@/lib/server/versioning` (T025), `@/lib/server/naming` (T070), `@/lib/server/policy` (T060) and `@/lib/server/export` (T090), all through their barrels. Barrel: `@/lib/server/publish`.)
 
         interface PublishInput {
           ownerHandle: string; slug: string; version: string;
           manifest: BundleManifest; dot: string;
-          cardFiles: Record<string, string>; vocabulary?: readonly OntologyTerm[];
+          cardFiles: Record<string, string>; vocabulary?: StoredVocabulary;   // D-133-09; was `readonly OntologyTerm[]`, which addRelease now refuses
           visibility?: "public" | "private";
           lineage?: { ownerHandle: string; slug: string; version: string };
         }
