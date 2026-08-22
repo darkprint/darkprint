@@ -7371,6 +7371,38 @@ that the old spelling is *described rather than quoted*, and that restoring the 
 name back to be helpful and silently blinding the check again. Its author's note: *"I nearly was
 that person, with the best of intentions and a correction in hand."*
 
+## Arm a waiter on DEMAND, never on the load average — and a wrong instrument is worse than none
+
+**Measured on two hosts' worth of samples, mine and T100's implementer's, minutes apart:**
+
+```
+load 1-min      83.61   80.20   79.94        falling
+total demand     562%    771%    846%        rising
+```
+
+The **load average is a decaying mean** — a memory of a host that was worse. **Demand is what is
+happening.** T100's implementer had a watcher armed for `load < 30`; it would eventually have fired
+on a host at 846% demand, worse than the 617% I had already refused it on.
+
+**Its own statement of the cost is the item, and it generalises past watchers:**
+
+> Arming on the wrong figure would have been worse than having no watcher at all, because it would
+> have arrived **wearing the authority of a measurement**.
+
+The corrected form, and both halves matter: **total %CPU across all processes below ~350%, held for
+THREE consecutive samples 20s apart.** One dip under the bar is noise, and the whole lesson of the
+surrounding hour is that a single reading at one instant decides nothing.
+
+**Two corollaries this run has now paid for separately.** A watcher killed at a harness cap looks
+exactly like one that has not fired yet — **silence is the same signal for both** — so re-arm rather
+than reading quiet as quiet. And a fired watcher is **evidence about one instant, not a permit**:
+the naming starts you, your own stamp can still stop you, and the watcher can only ever say *maybe*.
+
+**Note the symmetry with the granting side, because the rule cuts both ways and I have used it in
+both directions today.** I granted a slot on demand 293% while the load average read 34, and that
+grant was correct. I refused one on demand 846% while the average read 80, and that refusal was
+correct. Reading the average alone would have inverted both decisions.
+
 ## Re-read your own diff after you have declared it done — and recency is not a method
 
 T231's implementer charged my leak scan for deriving its deny set from `Object.values`, and an hour
