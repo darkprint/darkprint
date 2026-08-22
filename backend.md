@@ -7716,6 +7716,42 @@ The corollary for anyone writing a docstring in this repository: **the distincti
 are the ones you can currently keep in your head**, because those are exactly the ones the next
 reader cannot.
 
+## An amendment with TWO holders, told to ONE — `tierOf`, and the blind author bound its inference honestly
+
+**D-231-01 as I sent it to the implementer ended:** *"`tierOf` is why `config.ts` (`tierOf` signature
+only) is in your Owns: the union carries the tier, so the function either becomes trivial or
+disappears. **Your call which, and say which you chose.**" It chose *disappears* and said so.
+
+**D-231-01 as I sent it to the BLIND AUTHOR contained no `tierOf` line at all.** Its transcription is
+faithful to what it received. It then did the correct thing with silence — inferred
+`tierOf(subject): Tier` from the `Owns` clause and **labelled it as that inference**, which is why
+`PUBLISHED.tierOf` is declared and read by no cell. **It bound its inference honestly and the
+inference was wrong because the ruling never reached it.**
+
+**This is D-70-12's shape: an amendment has two holders, and telling only the implementer
+manufactures the defect.** The adversary framed the collision as *an ownership clause read as a
+mandate to preserve, versus silence read as a licence to delete* — and the tiebreak is that **the
+silence was mine to fill and I filled it for one party only.**
+
+## Two findings that looked independent were ONE, and the instrument's own defect is what split them
+
+T100's blind author, after repairing both:
+
+> With the seed in place the four delegation rows should now reach a release rather than dying at
+> `openView` — so if that cell reds again it is **actually** about authorization. Under the old
+> reading you could not have told the two apart, **which is why the sixteen ontology reds and the one
+> delegation red looked like different problems and were one.**
+
+The fixture gap produced an upstream error; the agreement cell's `granted = !thrown` reading **dressed
+that error as an authorization defect** and printed a message asserting the diagnosis. Charged
+separately and correctly by the adversary as F3 and F4 — **and either repair alone would have left
+the other looking like an independent problem.**
+
+**The general form: a mis-diagnosing instrument does not merely mislabel one failure, it PARTITIONS
+one failure into several.** The count of distinct findings is itself an output of the instrument, so
+*how many problems there are* is not safe to read off a run until the instrument reporting them is
+known good.
+
 ## A ruling can arrive with zero coverage, and the shape that fixes it asserts AGREEMENT not OUTCOME
 
 I ruled *"T100 honours `can`"* and it became contract with **nothing checking it**. T100's blind
