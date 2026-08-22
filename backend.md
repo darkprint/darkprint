@@ -7635,6 +7635,54 @@ so **one `||` arm answered for two failure modes and it read a missing binary as
 variable.** The consequence it names is the reason it matters: it would then have expected the
 accounts DB suite to skip, and **read those skips as environmental rather than as a defect.**
 
+## A freeze is a PROMISE until the runner pins the blob — and equal counts are not equal state
+
+**I froze `backend.md` for the duration of a full-suite run. Its runner did not take that on trust:**
+it resolved `git rev-parse HEAD:backend.md` **at every 15s sample** and compared against the
+taking-stamp, reporting `frozen-ok, blob 98cdcbf` nine times plus both edges.
+
+> Not *"you said you would not commit"* — **the object identity, nine times.**
+
+**Adopted as standing form: the runner pins the document's blob sha and reports it.** The freeze
+becomes a measured property rather than a promise, **and a number can finally state which document
+version it belongs to** — the thing that was missing every time a suite parsed that file today.
+Ninety-one files in this tree reference it.
+
+**The re-run's actual finding was that nothing moved**: zero document-parsing cells changed verdict
+across a 147-line insertion. That is a result rather than an absence, because it is now measured
+against the shipped document instead of a stale one.
+
+**EQUAL COUNTS ARE NOT EQUAL STATE.** `t231-blind` caught itself shipping the opposite: its Postgres
+stamp read **14 before and 14 after with different NAME SETS** — a foreign run having come and gone
+between them — and because the counts matched, its check passed and it nearly reported "identical".
+**Compare names element-wise for a leak verdict; counts are for contention only.**
+
+## A scoped run is off-slot-legal and still pays for the slot-holder's contention
+
+The foreign activity `t231-blind` saw was **its adversary's own full-suite run**, matched by window
+and namespace signature. Nobody broke the slot: a scoped partition measurement is off-slot-legal by
+the protocol, and the full suite legitimately held the slot.
+
+**But its F5 measurement was taken under that contention**, which is why it had to raise a settling
+cap — *a real cost the slot-holder's run imposed on another session's numbers, and one the protocol
+does not currently account for.* The slot serialises **the taking**; it does not serialise **the
+degradation**, and an off-slot session has no way to know a full suite is running unless it samples.
+
+## F6 — a succeeding network read on the awaited path, invisible to BOTH instruments
+
+`t231-blind` mutated `checkLimit` to `await fetch(...)` against the MinIO container — **a genuine,
+completing network read, on the path, not deferred** — and **both instruments stayed fully green**:
+behavioural 11 of 11, handle cells 8 of 8.
+
+Half is now closed structurally: walking `check.ts`'s **import closure at any depth** against a
+four-file-plus-`node:crypto` allowlist, falsified with `node:http` two levels down. **What stays open
+is a global needing no import — `fetch` — named with its specific evasion rather than filed as a bare
+"unmeasured".**
+
+And F5's guard is stated as a **heuristic** rather than allowed to read stronger than it is: under
+load a deferred statement can land after the window, so **a red is decisive; a green means "not seen
+within a second", not "absent".**
+
 ## The demand threshold was a PROXY, and on this host it came apart from the hazard — re-calibrated
 
 **Ruled 2026-08-22 after T231's adversary refused the slot five times and then measured WHY rather
