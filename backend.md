@@ -7661,6 +7661,51 @@ comparison flips `Exact<any, T>` from `true` to `false`, so every pin starts red
 `TS2307` already reports one line above — **the repair arrives as noise, and the next author deletes
 the pin while believing they are cleaning up.** A repair that reds for the wrong reason gets removed.
 
+## A stand-in written by the instrument's author cannot falsify the instrument
+
+**The co-authored-reference error, one layer lower, and it produced a passing run.**
+
+T231's blind author was told to make `Pin<>` state its vacuity explicitly, on my claim that adding a
+key-set clause flips `Exact<any, T>` to `false`. It built that, **pre-registered 7 typecheck errors,
+measured 6, and did not round the difference away.**
+
+**My claim was wrong.** When an operand is an **unresolved import** the pin collapses to the
+**ERROR type**, not to `any`-the-type — so `Pin<A, Absent>` accepts `true`, accepts `false`, **and
+accepts its own vacuous message**, all three, with no diagnostic. The short-circuit's condition is
+computed over the error type and collapses with it. **No formulation of the guard can report the
+absence from inside the type system.**
+
+**How it found out is the item.** Its first experiment used `type Absent = any` as a stand-in for an
+absent member. **With that stand-in the guard fires perfectly** — it has the passing run. The
+stand-in behaves differently from the real thing, so it had tested the instrument against a **model
+of the problem rather than the problem**, and would have shipped a guard it would have described as
+working, with evidence.
+
+> **A reference written by the author of the assertions cannot falsify their reading. A STAND-IN
+> written by the author of the INSTRUMENT cannot falsify the instrument.**
+
+**The repair is not a type: source cells that read the barrel from disk.** They red today, name what
+is missing, and are the only thing that can tell a reader whether a red typecheck means *a member is
+absent* or *an assertion failed*. **A type-level instrument cannot observe its own blindness;
+something outside it has to.**
+
+Keeping the `any` short-circuit and **labelling it as not covering the absent-member case** is the
+right disposition rather than a compromise — it is real for a genuinely `any` operand, and a reader
+deleting it because "it never fires" would remove a live guard for a false reason.
+
+## `keyof` on a UNION is the INTERSECTION, so the key-set repair misses the shape most likely to be pinned
+
+**A defect in the repair I propagated, not in anyone's application of it.** I sent *"add a key-set
+clause"* to two suites. Followed literally it produces a pin that **still cannot see an added
+optional inside one arm of a union**, because `keyof (A | B | C)` yields only the keys every arm
+shares. Measured: two three-armed unions differing by one `keyId?` compare **exact**.
+
+The clause must **distribute**: `type Keys<T> = T extends unknown ? keyof T : never`.
+
+**A union is the shape most likely to be pinned** — a discriminated subject, a result type, a
+published variant — so the naive repair is blind exactly where the pin matters most. Propagate the
+distribution **with** the repair, never after it.
+
 ## `Exact<A, B>` by mutual assignability is BLIND to an added optional member — repo-wide
 
 Found by T100's blind author, in the formulation **every blind suite in this run uses**:
