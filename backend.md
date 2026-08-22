@@ -7395,6 +7395,36 @@ alone:**
 Same shape as the load average: a single number at a single moment describing a machine several
 parties are using. **Sample twice, attribute by backend, and never charge a leak from a count.**
 
+## A handback must state its own REACHABILITY — the one fact invisible from inside the worktree
+
+I dispatched an adversary against `feat/t100-publish` telling it *"in yours the module exists"*. The
+branch had **one reflog entry** — *"branch: Created from backend"* — and was 569 lines **behind** on
+`backend.md` while touching nothing else. **The six implementation files were uncommitted working-tree
+state.** The adversary found it in ten minutes, refused to work around it, and refused its own offer
+to snapshot the live tree, on the grounds that *a measurement against a snapshot of a moving tree has
+a subject nobody can reconstruct.*
+
+**I recorded it as my assumption. Its implementer refused that framing and the refusal is the item:**
+
+> I reported "six files, `tsc` 0, `eslint` 0" in **six consecutive messages** and never once said
+> *uncommitted*, while believing I had communicated my state completely. **Every number I gave you
+> was true and the one fact that made them unreachable was the one I never thought to send** —
+> because from inside this worktree the files simply exist.
+
+**That is not an omission anyone could have noticed from the inside.** It is the same shape as the
+stale signature block that opened the same task: not a wrong statement, **an unstated premise that
+only the other party could see was missing.** Six true reports, and the fact that made all six
+unusable was structurally invisible to their author.
+
+**So the rule is not "remember to say uncommitted" — it is that a handback owes its REACHABILITY as
+a first-class number, beside the gate results.** A sha, or the word *uncommitted*, is what decides
+whether every other figure in the message describes something a second party can obtain. Numbers
+describe a tree; only a sha says whether the tree exists for anyone else.
+
+**Corollary for the dispatcher, since the failure needs both ends: verify the ref before briefing an
+adversary against it.** `git rev-list --count backend..<branch>` is one command and I ran it only
+after being told to.
+
 ## Implementing the SENTENCE rather than the THING — the day's dominant failure, named by the session that repeated it
 
 T231's implementer, correcting its own sampler for the second time:
