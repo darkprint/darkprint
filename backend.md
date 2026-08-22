@@ -7894,6 +7894,51 @@ biased against the module, so neither could have manufactured a false zero: inst
 `pool.query` *and* the checked-out client double-counts, because `pg` implements the former via the
 latter; and `observe()` re-wrapping an already-wrapped pooled client nests the counter.
 
+## An ALL-GREEN suite is a claim about an instrument until something proves otherwise
+
+The zero rule in its other polarity, stated by T100's adversary at the moment it reached 52 of 52:
+
+> **An all-green suite is a claim about an instrument until something proves otherwise**, and 52/52
+> arriving right after the last red cleared is exactly the moment that rule exists for.
+
+It did not report the green until it had shown the suite still fires. Three mutations at that sha,
+each pre-registered, each restored with the tree verified byte-identical:
+
+```
+V1  revert F5: storage?: ObjectStorage        1 failed | 51 passed   surface.test.ts   arity
+V2  delegation -> ownerId === actor.accountId 1 failed | 51 passed   ownership.test.ts agreement
+V3  cardDigests -> [...new Set(...)]          1 failed | 51 passed   identity.test.ts  AC3
+```
+
+**Three for three, exactly one red each, each in the predicted cell, on three independent axes** — a
+published signature, an authorization delegation, and a content-identity computation. **So the 52 is
+a discriminating green rather than a resolving one**, which is the same distinction a near-miss draws
+for a type pin.
+
+**V3 is the one worth keeping.** `bundleDigest` sorts but does not dedupe, so `[...new Set(...)]`
+produces a different digest over the same bytes **and the release looks entirely healthy** — the
+mutation that "still looks fine". The cell that catches it is the one asserting a card pinned by two
+DOT nodes appears **twice**.
+
+## Re-merge before EVERY measurement — a report that names a red decays at the branch tip
+
+Fifth instance today of a ref moving under a reader, and its author named the mechanism rather than
+the count:
+
+> I merged `b2f2164`, measured it, and reported one red **that had already been fixed on a ref I had
+> not re-fetched.** The finding was still correct — the fix landed *because* of it — but **the number
+> I sent you was stale at the moment I sent it.**
+
+Its practice change is the rule: **re-merge immediately before every measurement, and quote the
+arithmetic against that sha only.** The corollary for the reader: **if a report names a red, check
+the branch tip before acting on it** — a correct finding and a current number are different claims,
+and a handback carries both under one heading.
+
+The same session had, an hour earlier, refused a repair *I* handed it as already measured — *"that
+proves the mechanism and says nothing about `publish`"* — and probed the real barrel export instead.
+**The stand-in rule applied to a repair rather than to a guard**, which is a place this run had not
+seen it land before.
+
 ## Every masking failure this run met was repaired by WIDENING WHAT THE FAILURE SAYS, never by narrowing what the code ACCEPTS
 
 T100's adversary, stating as a class what it had met three times as instances:
