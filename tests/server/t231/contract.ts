@@ -101,12 +101,22 @@ function document(): string {
   return readFileSync(BACKEND_MD, "utf8");
 }
 
-export function sectionOf(heading: string): string {
+/**
+ * A section, found by a STABLE PREFIX rather than by its full title.
+ *
+ * The title used to be matched byte for byte, apostrophe included. That made all four cells
+ * in `agrees-with-the-document.test.ts` hostage to a heading tidy-up: swapping the ASCII
+ * apostrophe for a typographic one, or rewording the title, would red them for a reason
+ * that has nothing to do with any criterion. **The task number is the identifier; the prose
+ * after it is not.** Charged by T231's adversary; the apostrophe was verified ASCII on both
+ * sides at `25ef93d`, so this is prospective fragility fixed rather than a live red.
+ */
+export function sectionOf(prefix: string): string {
   const doc = document();
-  const start = doc.indexOf(`\n### ${heading}`);
+  const start = doc.indexOf(`\n### ${prefix}`);
   if (start === -1) {
     throw new Error(
-      `backend.md carries no \`### ${heading}\` section.\n` +
+      `backend.md carries no \`### ${prefix}\` section.\n` +
         `  This suite derives its domain from that section rather than from a list typed ` +
         `here, so a missing heading is a broken test and not a failed criterion.`,
     );
@@ -116,8 +126,8 @@ export function sectionOf(heading: string): string {
   return end === -1 ? rest : rest.slice(0, end);
 }
 
-export const T230_HEADING = "T230, Rate limiting and API keys";
-export const T231_HEADING = "T231, `checkLimit`'s key precondition should be a type, not a comment";
+export const T230_HEADING = "T230,";
+export const T231_HEADING = "T231,";
 
 /**
  * D-230-09's published 429, parsed from the indented block in §T230.
@@ -146,8 +156,21 @@ export function publishedProblemMembers(): { members: string[]; pinned: Record<s
   const members: string[] = [];
   const pinned: Record<string, string> = {};
   for (const raw of section.slice(at).split("\n").slice(1)) {
-    /* The block ends at the first line that is not one of its indented member rows. */
-    if (!/^\s{2,}\S/.test(raw)) break;
+    /* The member rows are CODE, indented four or more; the prose that follows the block is
+       indented two. The old test was `^\s{2,}`, which cannot tell them apart and relied on
+       the blank line between them to stop — so the set was positional on §T230's spacing.
+       Charged by T231's adversary.
+
+       The attempted repair was to skip blank lines, and it was WRONG: it ran straight into
+       the prose and parsed 21 members. The `.length === 9` assertion below caught it, which
+       is what that assertion is for. Tightening the indent is the fix that actually
+       separates the two, and the blank line stays a terminator because the rows really are
+       contiguous.
+
+       If the document's block changes shape this reds, and redding is CORRECT — the cells
+       say `report it, do not delete the cell`. A parser that silently kept working over a
+       block it no longer understood is the failure worth avoiding, not a loud one. */
+    if (!/^\s{4,}\S/.test(raw)) break;
     const line = raw.replace(/\([^)]*\)/g, "").trim();
     if (line === "") continue;
     for (const entry of line.split(",")) {
@@ -326,8 +349,82 @@ export const SUBJECT_TIERS = ["anonymous", "account", "key"] as const;
  * orchestrator's to fix at the merge, and a red here would be this suite failing a task for
  * a document it is forbidden to write. The cell that calls this says so in place.
  */
-export function t231PublishedBlock(): string | undefined {
-  const section = sectionOf(T231_HEADING);
-  const at = section.indexOf("**Published signatures**");
+export const PUBLISHED_SIGNATURES_MARKER = "**Published signatures**";
+
+/**
+ * The Published signatures block of a section, or `undefined` while it has none.
+ *
+ * Pure, so the five candidate blocks in `agrees-with-the-document.test.ts` can be run
+ * through the REAL parser rather than through a copy of it. That is not a convenience: the
+ * defects below were found by an adversary simulating this parser, and a simulation is the
+ * thing a committed cell replaces.
+ */
+export function publishedBlockIn(section: string): string | undefined {
+  const at = section.indexOf(PUBLISHED_SIGNATURES_MARKER);
   return at === -1 ? undefined : section.slice(at);
+}
+
+/**
+ * Every spelling of "Published signatures" the section contains that this parser does NOT
+ * match — the near-miss detector.
+ *
+ * **A guard that silently never arms is worse than one that reds.** `publishedBlockIn`
+ * matches one literal spelling; all 36 existing blocks use it, so the convention is real,
+ * but a block landing as `**Published signatures:**` would make every cell downstream
+ * answer "vacuous" and PASS, forever, while reporting that F-231-A was still open after it
+ * had been closed. Nothing would ever say otherwise.
+ *
+ * So: find the phrase however it is written, and report any occurrence the parser missed.
+ */
+export function unmatchedSignatureMarkers(section: string): string[] {
+  const out: string[] = [];
+  for (const match of section.matchAll(/.{0,4}Published\s+[Ss]ignatures.{0,4}/g)) {
+    const text = match[0];
+    if (!text.includes(PUBLISHED_SIGNATURES_MARKER)) out.push(text.trim());
+  }
+  return out;
+}
+
+/**
+ * The INDENTED code lines of a block — the signatures themselves, not the prose about them.
+ *
+ * Code in this document is indented eight spaces and prose two, so four separates them.
+ * Everything that reads a signature reads these lines and never the whole block, and the
+ * reason is a defect this suite shipped: scanning the block made a WITHDRAWAL NOTE quoting
+ * an old signature indistinguishable from the published one, and §T230's own block is
+ * written exactly that way — it prints the withdrawn `LimitVerdict` at length and then the
+ * replacement. A guard blinded by quoting what it looks for is the third instance of that
+ * shape in this run.
+ */
+export function signatureLinesIn(block: string): string[] {
+  return block.split("\n").filter((line) => /^\s{4,}\S/.test(line));
+}
+
+/**
+ * The parameter list of the published `checkLimit`, taken from the LAST signature line that
+ * declares one.
+ *
+ * Last rather than first, because this document records its own history: a block that
+ * withdraws a signature prints the old one above the new one, and the new one is what binds.
+ */
+export function checkLimitSignatureIn(block: string): string | undefined {
+  let found: string | undefined;
+  for (const line of signatureLinesIn(block)) {
+    const match = /checkLimit\s*\(([^)]*)\)/.exec(line);
+    if (match !== null) found = match[1];
+  }
+  return found;
+}
+
+/** Whether any published SIGNATURE narrows `revokedAt` to `null` — never the prose. */
+export function narrowsRevokedAtToNull(block: string): boolean {
+  return signatureLinesIn(block).some((line) => /revokedAt\s*:\s*null/.test(line));
+}
+
+export function t231Section(): string {
+  return sectionOf(T231_HEADING);
+}
+
+export function t231PublishedBlock(): string | undefined {
+  return publishedBlockIn(t231Section());
 }
