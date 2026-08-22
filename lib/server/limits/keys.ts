@@ -18,9 +18,12 @@
    Note what that costs and where it is repaid: one indexed
    equality read per keyed request, on a unique index over
    `token_hash`. `checkLimit` then needs no read of its own,
-   because the tier is derivable from the `keyId` this read
+   because a keyed subject carries the `ResolvedKey` this read
    produced — so the criterion that forbids the cache is what pays
-   for AC5's zero-access counter.
+   for AC5's zero-access counter. **`checkLimit` no longer accepts
+   a `Db` at all** (T231), which is why the record this function
+   returns is the only thing standing between a keyed request and
+   the key tier's ceiling.
 
    ── `ApiKeyRecord` carries no secret, structurally ──
    `rowToRecord` names the five fields it returns and never
@@ -54,7 +57,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { schema, type Db } from "@/lib/db";
 import { can, type Actor } from "@/lib/server/policy";
 import { invalidLabelError, notKeyOwnerError } from "./errors";
-import type { ApiKeyRecord } from "./types";
+import type { ApiKeyRecord, ResolvedKey } from "./types";
 import { hashSecret, mintSecret, parseSecret } from "./secret";
 import { withStore } from "./store";
 
@@ -264,8 +267,15 @@ export async function listKeys(db: Db, actor: Actor, accountId: string): Promise
  *
  * The shape check runs before the hash. That is the D-40-B fix and `secret.ts` carries the
  * argument.
+ *
+ * **`ResolvedKey` rather than `ApiKeyRecord`, and this function is its only producer
+ * (T231).** The brand is a `unique symbol` `types.ts` does not export, so no other file can
+ * write a value of this type. That is what stops a `keyId` string, or one of `listKeys`'
+ * deliberately-included revoked rows, reaching `checkLimit` and buying the key tier's
+ * ceiling. The `WHERE` below is the warrant; see the cast for what it does and does not
+ * claim.
  */
-export async function resolveKey(db: Db, secret: string): Promise<ApiKeyRecord | undefined> {
+export async function resolveKey(db: Db, secret: string): Promise<ResolvedKey | undefined> {
   return withStore("resolveKey", async () => {
     const parsed = parseSecret(secret);
     if (parsed === undefined) return undefined;
@@ -276,6 +286,18 @@ export async function resolveKey(db: Db, secret: string): Promise<ApiKeyRecord |
       .where(and(eq(schema.apiKey.tokenHash, hashSecret(parsed)), isNull(schema.apiKey.revokedAt)))
       .limit(1);
 
-    return row === undefined ? undefined : rowToRecord(row);
+    /* The cast is the module's whole claim about this value and its warrant is the `WHERE`
+       four lines up, which is why that clause is now load-bearing rather than merely
+       correct. It asserts PROVENANCE — this record came out of this query — and nothing
+       more; it does not re-check `revokedAt`, and `ResolvedKey` deliberately does not narrow
+       that member to `null`.
+
+       Both halves of that were ruled. A re-check here would be a second spelling of the
+       clause above it, and it would make the one mutation that has ever measured that clause
+       inert — F-230-J deleted `isNull(revokedAt)` and reddened 0 of 164 cells, which is the
+       measurement T231 exists because of. Non-revocation is defended by the `WHERE` and by
+       `keys.test.ts`'s revoked-key cells. It is not defended by this line and must not look
+       as though it is. */
+    return row === undefined ? undefined : (rowToRecord(row) as ResolvedKey);
   });
 }

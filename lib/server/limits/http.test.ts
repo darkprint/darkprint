@@ -19,9 +19,9 @@
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
-import type { Db } from "@/lib/db";
 import { enforceLimit } from "./check";
 import type { LimitConfig } from "./config";
+import type { LimitSubject, ResolvedKey } from "./types";
 import { createSlotCounter } from "./counter";
 import { LimitsStoreError, RateLimitedError, invalidLabelError, limitsStoreError } from "./errors";
 import { armsNotDisjoint, rateLimited, readJsonObject, withLimitsErrors } from "./http";
@@ -34,15 +34,65 @@ const CONFIG: LimitConfig = {
   },
 };
 
-/** Every field a distinctive literal, so a leak of any of them is unmistakable. */
-const SUBJECT = {
-  accountId: "ACCOUNTLITERAL-4444-4444-8444-444444444444",
+/**
+ * A keyed subject, every string a distinctive literal so a leak of any of them is
+ * unmistakable — INCLUDING the ones inside the record (T231).
+ *
+ * `label` carries one too. It is caller data the account chose, it travels into the subject
+ * now that the subject carries a whole `ResolvedKey`, and a refusal that echoed it would be
+ * the same leak as one echoing a `keyId`.
+ *
+ * The cast is how a colocated test holds what only `resolveKey` can produce; see
+ * `check.test.ts` for the cells that measure that no other file can.
+ */
+const KEY: ResolvedKey = {
   keyId: "KEYIDLITERAL-5555-4555-8555-555555555555",
-  ip: "198.51.100.203",
-};
+  accountId: "ACCOUNTLITERAL-4444-4444-8444-444444444444",
+  label: "LABELLITERAL-8888-4888-8888-888888888888",
+  createdAt: new Date(1_000_000),
+  revokedAt: null,
+} as ResolvedKey;
+
+const SUBJECT: LimitSubject = { tier: "key", key: KEY, ip: "198.51.100.203" };
+
+/**
+ * Every string a caller supplied, flattened one level out of the subject.
+ *
+ * **A strengthening rather than a repair, and it was found in the instrument.** The deny set
+ * used to be `Object.values(SUBJECT)`, which was total while the subject was three strings.
+ * Under the union a keyed subject's values are a string and an OBJECT, so `keyId`,
+ * `accountId` and `label` would have dropped out of the deny set silently and the scan would
+ * have read as coverage while covering less.
+ *
+ * Strings only, and that is deliberate rather than convenient: `revokedAt` is `null` and
+ * `createdAt` is a `Date`, and neither has a rendering a caller could recognise as its own —
+ * where `String(null)` would false-red against any JSON body carrying a null.
+ *
+ * **`tier` is excluded and it is the one exclusion here.** It is the union's discriminant
+ * rather than anything a caller chose, and its value for the case that matters is the
+ * literal `"key"` — which D-230-09 publishes inside the refusal on purpose, as
+ * `keysAvailable`. Scanning it would red every keyed refusal against the member T220's AC6
+ * requires to be there. Named rather than filtered by length or by shape, so a future member
+ * does not fall out of the deny set by resembling this one.
+ *
+ * The brand leaves no trace here: it is a `declare const unique symbol`, ambient and erased,
+ * so there is no property for this walk to find or to trip over.
+ */
+function suppliedStrings(subject: LimitSubject): readonly string[] {
+  const out: string[] = [];
+  for (const [member, value] of Object.entries(subject)) {
+    if (member === "tier") continue;
+    if (typeof value === "string") out.push(value);
+    else if (value !== null && typeof value === "object") {
+      for (const inner of Object.values(value as unknown as Record<string, unknown>)) {
+        if (typeof inner === "string") out.push(inner);
+      }
+    }
+  }
+  return out;
+}
 
 const request = () => new Request("https://darkprint.io/api/blueprints");
-const noDb = null as unknown as Db;
 
 describe("the arms are pairwise disjoint, so arm order cannot change an answer", () => {
   it("no mapped class is a subtype of another", () => {
@@ -161,8 +211,8 @@ describe("AC1: the refusal is a problem+json 429", () => {
   async function refusal(): Promise<Response> {
     const counter = createSlotCounter({ slots: 64, seed: 1, now: () => 1_000_000 });
     return withLimitsErrors(request(), async () => {
-      await enforceLimit(noDb, SUBJECT, "read", { config: CONFIG, counter });
-      await enforceLimit(noDb, SUBJECT, "read", { config: CONFIG, counter });
+      await enforceLimit(SUBJECT, "read", { config: CONFIG, counter });
+      await enforceLimit(SUBJECT, "read", { config: CONFIG, counter });
       return new Response("unreachable");
     });
   }
@@ -226,7 +276,7 @@ describe("F-230-M: an unconfigured bucket's 429 does not invite a hot loop", () 
     return withLimitsErrors(request(), async () => {
       /* A bucket absent from CONFIG. This is the shape the defect is actually reached
          through: the next task to wire a route mistypes `reads` for `read`. */
-      await enforceLimit(noDb, SUBJECT, "nobody-sized-this", { config: CONFIG, counter });
+      await enforceLimit(SUBJECT, "nobody-sized-this", { config: CONFIG, counter });
       return new Response("unreachable");
     });
   }
@@ -278,15 +328,20 @@ describe("the refusal names no subject", () => {
   it("no identifier the caller supplied survives into any rendering", async () => {
     const counter = createSlotCounter({ slots: 64, seed: 1, now: () => 1_000_000 });
     const response = await withLimitsErrors(request(), async () => {
-      await enforceLimit(noDb, SUBJECT, "read", { config: CONFIG, counter });
-      await enforceLimit(noDb, SUBJECT, "read", { config: CONFIG, counter });
+      await enforceLimit(SUBJECT, "read", { config: CONFIG, counter });
+      await enforceLimit(SUBJECT, "read", { config: CONFIG, counter });
       return new Response("unreachable");
     });
 
     /* The deny set is DERIVED from what the caller supplied rather than hand-listed, so a
        sixth identifier nobody enumerated is covered the day somebody adds one to
-       `LimitSubject`. `Object.values` rather than three named reads for the same reason. */
-    const supplied = Object.values(SUBJECT);
+       `LimitSubject` or to the record it carries. See `suppliedStrings` for why it walks one
+       level in, and for the two members it deliberately does not scan. */
+    const supplied = suppliedStrings(SUBJECT);
+    /* Anti-vacuity: a walk that found nothing would satisfy every `not.toContain` below for
+       every possible response. Four strings — the ip, and the record's keyId, accountId and
+       label — and the equality reds if the subject grows a fifth nobody scanned. */
+    expect(supplied).toHaveLength(4);
     const rendered = [
       await response.clone().text(),
       JSON.stringify([...response.headers]),
@@ -302,11 +357,11 @@ describe("the refusal names no subject", () => {
     /* The stronger claim, and the one that says "oracle" rather than "leak": if the two
        renderings differ at all, the difference is a channel, whatever it happens to carry.
        An assertion that named the three fields would miss a fourth; an equality cannot. */
-    async function refusalFor(subject: typeof SUBJECT): Promise<string> {
+    async function refusalFor(subject: LimitSubject): Promise<string> {
       const counter = createSlotCounter({ slots: 64, seed: 1, now: () => 1_000_000 });
       const response = await withLimitsErrors(request(), async () => {
-        await enforceLimit(noDb, subject, "read", { config: CONFIG, counter });
-        await enforceLimit(noDb, subject, "read", { config: CONFIG, counter });
+        await enforceLimit(subject, "read", { config: CONFIG, counter });
+        await enforceLimit(subject, "read", { config: CONFIG, counter });
         return new Response("unreachable");
       });
       return await response.text();
@@ -314,8 +369,14 @@ describe("the refusal names no subject", () => {
 
     const first = await refusalFor(SUBJECT);
     const second = await refusalFor({
-      accountId: "DIFFERENT-6666-4666-8666-666666666666",
-      keyId: "OTHERKEY-7777-4777-8777-777777777777",
+      tier: "key",
+      key: {
+        keyId: "OTHERKEY-7777-4777-8777-777777777777",
+        accountId: "DIFFERENT-6666-4666-8666-666666666666",
+        label: "OTHERLABEL-9999-4999-8999-999999999999",
+        createdAt: new Date(2_000_000),
+        revokedAt: null,
+      } as ResolvedKey,
       ip: "203.0.113.99",
     });
     expect(first).toBe(second);

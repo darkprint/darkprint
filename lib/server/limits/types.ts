@@ -41,17 +41,62 @@ export interface LimitVerdict {
 }
 
 /**
- * The published subject. Every field is what the route already resolved, never a header.
+ * The phantom member that makes `ResolvedKey` unforgeable, and it is `declare` so it never
+ * exists.
  *
- * `keyId` is non-null only for a key `resolveKey` answered for, which is a key that exists
- * and is not revoked — so AC4's *a revoked key is refused immediately* reaches `tierOf` as
- * an absent `keyId` rather than as a flag anybody checks twice.
+ * A `unique symbol` that nothing exports is a member no other file can name, so no other
+ * file can write an object literal that satisfies `ResolvedKey`. Ambient, so it is erased
+ * before any output: there is no property to enumerate, nothing for a leak scan to trip
+ * over, and no cost at a call.
  */
-export interface LimitSubject {
-  accountId: string | null;
-  keyId: string | null;
-  ip: string;
-}
+declare const RESOLVED_KEY: unique symbol;
+
+/**
+ * An `ApiKeyRecord` that `resolveKey` answered with, and a type only `resolveKey` produces.
+ *
+ * **The brand proves PROVENANCE and it does not prove non-revocation** (D-231-01, amended).
+ * `resolveKey`'s `WHERE` carries `isNull(revokedAt)` and that clause is the whole of why a
+ * value of this type names a live key — so the type says *this came out of that query*, and
+ * says nothing the type system could not check.
+ *
+ * The narrowed spelling, `revokedAt: null` on the interface, was published and then
+ * withdrawn: TypeScript cannot verify non-revocation, so that member could only ever be
+ * produced by a cast — a claim nothing checks, sitting where every later reader would read
+ * it as a guarantee the type provides. It would also have made the one mutation that has
+ * ever measured `isNull(revokedAt)` inert, trading the instrument for the guard.
+ *
+ * What it does buy is the thing caller discipline was holding. `listKeys` returns
+ * `ApiKeyRecord[]` **including revoked rows**, deliberately, because `revokedAt` moving from
+ * `null` to an instant is AC4's only HTTP-observable form. Those records are structurally
+ * identical to `resolveKey`'s, so before this brand a caller could hand one straight to
+ * `checkLimit` and buy the key tier's ceiling with a key that had been revoked. Now that is
+ * a compile error, as is a bare `keyId` string that no `resolveKey` ever answered.
+ */
+export type ResolvedKey = ApiKeyRecord & { readonly [RESOLVED_KEY]: true };
+
+/**
+ * The published subject: one of three shapes, never a record with nullable holes.
+ *
+ * **A union rather than `{ accountId, keyId, ip }`, and the tier is carried rather than
+ * derived.** The old record let a caller fill any combination of two nullable fields and had
+ * `tierOf` decide what that meant, which is how a `keyId` no `resolveKey` ever produced
+ * bought the key tier's ceiling. Here the identifier that decides the tier is the only one
+ * the shape admits, so the tier and the identifier cannot disagree.
+ *
+ * **A keyed subject carries `accountId` exactly once**, inside its `ResolvedKey`. The
+ * declined alternative kept `accountId` beside the key as well, which is two sources for one
+ * quantity — the shape D-230-10 forecloses one file over at `windowMs`, for the same reason:
+ * nothing would compare the two, so a disagreement would be exactly and confidently wrong.
+ *
+ * D-230-08's attribution survives intact and is now sourced rather than asserted: a keyed
+ * subject's `key.keyId` and `key.accountId` are the row's own, and whoever writes the audit
+ * row reads them off a record that came out of the database rather than off two strings a
+ * caller assembled.
+ */
+export type LimitSubject =
+  | { readonly tier: "anonymous"; readonly ip: string }
+  | { readonly tier: "account"; readonly accountId: string; readonly ip: string }
+  | { readonly tier: "key"; readonly key: ResolvedKey; readonly ip: string };
 
 /**
  * What `GET` and `DELETE` on `app/api/account/keys` answer (D-230-11).

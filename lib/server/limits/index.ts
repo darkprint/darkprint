@@ -49,7 +49,12 @@
 
 /* --------------------- the numbers --------------------- */
 export type { BucketLimit, LimitConfig, Tier } from "./config";
-export { DEFAULT_LIMITS, TIER_ORDER, limitFor, tierOf } from "./config";
+/* `tierOf` is GONE rather than trivial (T231). `LimitSubject` carries its tier, so the body
+   would be `subject.tier` — and the name would still say *derived* to a reader looking for
+   the rule. Off the barrel as well as out of the file: an exported `tierOf` hands a caller a
+   `Tier` detached from the subject it came from, which is a second source for the quantity
+   the union exists to carry once. */
+export { DEFAULT_LIMITS, TIER_ORDER, limitFor } from "./config";
 
 /* D-230-02: the contract's two starting numbers, TRANSCRIBED rather than consumed, because
    both are module-private `const`s exported from nothing and the clause as written had no
@@ -68,7 +73,19 @@ export {
 } from "./counter";
 
 /* --------------------- the verdict --------------------- */
-export type { ApiKeyRecord, IssuedKey, KeyList, LimitSubject, LimitVerdict } from "./types";
+/* `ResolvedKey` is exported as a TYPE and has no value form anywhere, which is the point.
+   Its brand is a `unique symbol` `types.ts` declares and does not export, so a caller can
+   NAME the type — it has to, to hold what `resolveKey` answered — and cannot construct one.
+   There is deliberately no `asResolvedKey` on this barrel or in this module: a published
+   mint would be the compile error with an escape hatch beside it. */
+export type {
+  ApiKeyRecord,
+  IssuedKey,
+  KeyList,
+  LimitSubject,
+  LimitVerdict,
+  ResolvedKey,
+} from "./types";
 export type { CheckLimitOptions } from "./check";
 export { checkLimit, enforceLimit } from "./check";
 
