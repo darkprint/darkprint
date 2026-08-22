@@ -7894,6 +7894,42 @@ biased against the module, so neither could have manufactured a false zero: inst
 `pool.query` *and* the checked-out client double-counts, because `pg` implements the former via the
 latter; and `observe()` re-wrapping an already-wrapped pooled client nests the counter.
 
+## Bind the module LAST — an early red masks every write below it, and DURATION is the detector
+
+T100's blind author was sent one never-executed cell (F6) and **generalised its cause instead of
+fixing its symptom.** The cause was not "wrong card":
+
+> **`boundPublish()` sat at the top of the cell**, so while the barrel is absent it reds first and
+> every fixture write below it never runs. That is why nobody could see the seed was throwing — **the
+> red said "module absent" and it was telling the truth about the wrong thing.**
+
+**A correct red about the module masks an incorrect premise beneath it**, and the masking red is not
+wrong about its own subject, which is what makes it invisible. Rebinding the module **last** — after
+the premises and the planting — found **two more cells that had never executed**:
+
+* AC8's out-of-order plant, the only construction where highest-semver and latest-by-`createdAt`
+  disagree: **0ms → 27ms**, and it holds, so T010 does accept releases written out of semver order.
+* The delegation cell's four plants: **0ms → 21ms**, all four land.
+
+**DURATION IS THE DETECTOR, and it is the cheapest one available.** A cell that reds in **0ms** did
+not reach a database; one that reds in 27ms did its setup and then failed on the thing it was
+testing. Both look identical in a summary line and in a failing-test name. **A red with a suspiciously
+round zero is a cell that never got started.**
+
+The ordering has a second benefit its author named: the card-bytes cell now reds on `boundPublish`
+**after** proving its premise, **which makes it self-diagnosing next time.**
+
+**And the audit was the right scope.** Every other store write is a `seedOwner` or a `beforeAll`
+`seedCard`, all exercised and proven by passing premise cells; the three deliberately-broken corpora
+are only ever passed to `publish` as input, never to a store; and the remaining references to the
+unstorable variant assert its **absence**, which is its correct use.
+
+**One judgement call it flagged rather than took, and the restraint is right.** `refusalFrom` accepts
+any `Error`, which is why eight ontology throws read as assertion failures — *the same masking as F6,
+one layer down: a red that reports a plausible wrong cause.* It declined to tighten it, because
+**three foreign rejections are contractually allowed to reach the caller** and a stricter helper would
+red correct behaviour. Flagged for me rather than decided for me.
+
 ## A cell that has never once executed, testing the most carefully-reasoned ruling in its task
 
 T100's `transaction.test.ts` card-bytes cell dies in `seedCard` **before `publish` is ever called**:
