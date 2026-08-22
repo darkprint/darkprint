@@ -153,6 +153,34 @@ function show(sql: readonly string[]): string {
 }
 
 /** Counts the queries one call issues. A refusal is a fine outcome; a query on the way is not. */
+/**
+ * Waits until the query counter stops moving, so a statement issued AFTER the call returned
+ * still lands inside the measurement window.
+ *
+ * **F5, and it was a real hole**: a `checkLimit` that fires a query without awaiting it —
+ * `void (async () => { … })()` — passed this file 11 of 11 while the query demonstrably
+ * reached Postgres. The counter was read the instant `await fn()` resolved, and the
+ * statement had not been issued yet. A fire-and-forget read is still a read, and it is
+ * exactly the shape a "never delayed or challenged" implementation is tempted toward:
+ * asynchronous, off the critical path, and invisible to any latency measurement.
+ *
+ * Bounded and adaptive rather than a fixed sleep: it returns as soon as the count has been
+ * still for three consecutive polls, and gives up at 400ms so a genuinely quiet path costs
+ * about 30ms instead of a flat wait.
+ */
+async function settle(): Promise<void> {
+  let still = 0;
+  let last = queries;
+  for (let waited = 0; waited < 400 && still < 3; waited += 10) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    if (queries === last) still += 1;
+    else {
+      still = 0;
+      last = queries;
+    }
+  }
+}
+
 async function count(
   fn: () => Promise<unknown>,
 ): Promise<{ n: number; sql: string[]; result: unknown }> {
@@ -166,6 +194,8 @@ async function count(
        below are expected to refuse. A throw that mattered would show up as a red in
        `behaviour.test.ts`, which is where outcomes are asserted. */
   }
+  /* AFTER the call, not at the instant it resolved. See `settle` — this is F5. */
+  await settle();
   return { n: queries, sql: [...seen], result };
 }
 
