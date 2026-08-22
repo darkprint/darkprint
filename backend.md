@@ -7635,6 +7635,52 @@ so **one `||` arm answered for two failure modes and it read a missing binary as
 variable.** The consequence it names is the reason it matters: it would then have expected the
 accounts DB suite to skip, and **read those skips as environmental rather than as a defect.**
 
+## The demand threshold was a PROXY, and on this host it came apart from the hazard — re-calibrated
+
+**Ruled 2026-08-22 after T231's adversary refused the slot five times and then measured WHY rather
+than refusing a sixth.**
+
+Its characterisation, reproduced independently by me before ruling: **30 samples, median 390%, p90
+634%, only 7 of 30 under the 300% threshold.** A full suite takes minutes, so the probability of
+starting *and staying* inside a compliant window is near zero. **The criterion was not being narrowly
+missed; it was unreachable.**
+
+**And the two hazards the slot stands for had come apart:**
+
+* **A foreign run racing on shared state — MEASURABLY ABSENT.** One Postgres client backend and it
+  was its own `psql`; four database names, zero scratch; every `node` on the box an idling MCP
+  server at 0.0%.
+* **Timing distortion — PRESENT, and it is the owner's desktop.** A Virtualization VM at 50–72%,
+  WindowServer at 29–44%, Spotlight at 25%, Docker, `cmux`, `cloudd`, `mdworker_shared`. **That is
+  this machine's floor with 35 login sessions**, not somebody's run.
+
+> *A busy host is a veto* was a proxy for *somebody else is running*. Here the proxy is saturated by
+> the desktop and the thing it stands for is absent. **A rule I hold as a test on myself rather than
+> as a prohibition on others has to notice when its own premise stops holding.**
+
+**RE-CALIBRATED. Take the slot when BOTH hold, and report demand rather than gating on it:**
+
+1. **No foreign vitest or tsc process GROUP** — by pgid with the top consumer named, never by
+   command-line substring.
+2. **No foreign Postgres client backend.**
+
+**AND ABORT MID-RUN IF A FOREIGN POSTGRES BACKEND APPEARS.** The precondition and the abort are not
+alternatives: **an instantaneous check cannot see what arrives after it.** Verifying its report I
+caught a `node` at **163–202%** that was **gone before I could resolve its pgid** — the same
+invisible-intruder shape it had reported hours earlier with two other groups. A precondition covers
+the instant; only a continuous condition covers the run.
+
+**Its automation reproduced the decay it was automating against**, which is the other half of why
+this needed ruling rather than waiting: its waiter fired `HOST QUIET: last=230%`, and its taking-stamp
+six seconds later read **368 / 540 / 590%**. *A naming cannot be fresher than the message carrying
+it* — with the naming its own and the carrier its own background job.
+
+**Timing is reported as unreliable on any run taken under this rule.** A 400% floor slows a suite and
+can surface flakes that are the host's rather than the tree's, which is exactly how `D-40-F` inflated
+to 102.69 and read as a defect. **The one thing that must not happen is presenting a contended run as
+a clean one** — a number with its contention profile attached is worth having; the same number
+without one is not.
+
 ## Arm a waiter on DEMAND, never on the load average — and a wrong instrument is worse than none
 
 **Measured on two hosts' worth of samples, mine and T100's implementer's, minutes apart:**
@@ -7862,6 +7908,47 @@ The rule this run already holds is *count by process GROUP, never by command-lin
 had been applying it to the question *is somebody else running vitest* rather than to the question
 that matters: **how much of this host is not mine.** The demand figure was always the real signal;
 naming the supplementary check "no foreign vitest" made a busy host read as a clear one.
+
+## The tautology has a SUBJECT form too, and only a differing tree exposed it
+
+T231's adversary built the AC3 observer, caught its own instrument reporting a zero it could only
+ever report, and rebuilt it. **`t231-blind` then found the same defect in the SUBJECT of that probe,
+and could only find it because its tree differs:**
+
+> **Its six zeros never checked the call did any work.** On a tree **without** the implementation the
+> arguments shift, every call lands on the unconfigured refusal, and you get **six perfect zeros
+> measuring nothing** — it passed 10 of 10 that way before adding the guard.
+
+Its adversary's own summary: *"a zero from an instrument that could only ever report zero was my
+sentence about the observer; this is the same sentence about the subject, and **my tree hid it
+because the implementation is present there, so every call was real.**"*
+
+**The instrument can be sound and the subject inert.** The repair is a work-verification guard: the
+cells now prove they reached **600 / 600 / 6000** before their zero is read. Adopted into the
+migrated control, and falsified independently — breaking `limitFor` so every call is a no-op reds
+**3**, so the guard bites rather than being a comment.
+
+**And the reason it was findable at all is that two sessions held different trees.** A blind author's
+tree lacks the module; an adversary's has it. **The same probe means different things in the two, and
+neither session could have seen it alone.**
+
+## Refusing to publish a figure you cannot defend — the run/non-run split
+
+Its contention report omits a number it had collected:
+
+> **The run/non-run split I captured is unsound and I am not reporting it as a number.** I located one
+> pgid from the first matching vitest process, and **vitest fans out across workers**, so I cannot
+> show that a single pgid captured the whole run — the split would have attributed my own workers to
+> "foreign".
+
+Instead it inferred from the floor it had already measured: **idle median 390%, during-run median
+646%, difference ~250%**, consistent with its own cost on an unchanged host. **"The host's
+contribution during the run matches its measured floor, so no intruder arrived. That is the claim the
+data supports."**
+
+**A weaker claim that the data supports beats a stronger one it does not** — and the discarded figure
+would have been wrong in the direction that manufactures contention, which is the direction this run
+has already been burned by twice.
 
 ## A tautology dressed as a measurement — the purest instance of the zero that could only ever be zero
 
@@ -8217,6 +8304,66 @@ WHENEVER THE SUBJECT FAILS IS NOT A CONTROL.** Its first paired `isNull(revokedA
 against its absence in `listKeys` — which reds under the very mutation it was controlling for. Found
 **by running the mutations, not by reading the cells**, twice, and repaired by discriminating on
 `tokenHash`, which no change in the task can touch.
+
+## A RELAY is the one place an attribution error cannot be checked by either endpoint — twice today, opposite directions
+
+**Second instance, same channel.** The first was mine: I relayed T231's implementer's charge numbers
+(C1, C3) to its **blind author** as *"two of your charges"*, and only the blind author knowing its own
+list caught it.
+
+**The second was its adversary's, in the other direction.** My breakdown said the nine `t230` reds
+were **mine**. Relaying it onward it wrote *"**your** 9 positional-shift reds"* — and to that reader
+*your* means **its**. **Nine orchestrator-owned reds arrived at the blind author's door with its name
+on them.** It checked rather than protested, and the adversary then verified independently:
+
+```
+git log 25ef93d..test/t231-keytype --name-only -- tests/server/t230   ->  0 commits
+limits.test.ts   last written by 8fc439a   (T230's merge)
+surface.test.ts  last written by b580dc7   (T230's D-230-10)
+§T231 Out of scope: "… anything in tests/server/t230/**"
+```
+
+**The classification never changed. Only the pronoun did, and only in one direction.**
+
+> **The relaying party is the only one who can see both sides, and neither endpoint can check it from
+> where it sits.**
+
+Its own diagnosis of why: *"that is exactly the position in which I stopped being careful."* The
+countermeasure is the one already in this file and it now has a second witness: **relay a charge by
+its CONTENT, or quote the sender, never by a pronoun or a number alone.** A pronoun is worse than a
+number, because it silently rebinds to the reader.
+
+## "Strictly stronger" was two claims, and only one of them was true
+
+Its adversary reported the migrated control's real resolved key as a **strictly stronger** positive
+than a hand-cast subject. Measured against the code, it is not — behaviourally:
+
+```
+types.ts:52   declare const RESOLVED_KEY: unique symbol;   ambient, erased
+check.ts:181  ? subject.key.keyId                          the only field read
+RESOLVED_KEY outside types.ts:  no runtime reference anywhere
+```
+
+**A minted `ResolvedKey` and a labelled cast are indistinguishable to `checkLimit` by construction.**
+So the migrated run is a stronger **provenance** claim and a **runtime-identical behavioural** one —
+two claims that had been carried as one.
+
+**And the consequence overturned my own ruling, correctly.** I authorised a scratch database for that
+control. `t231-blind` folded it in **by citation instead**, because *a runtime-identical claim does not
+earn a database on every run of that partition, on a machine that leaked 28 this week* — and rescoped
+the assertion to what it actually establishes, *a query issued from inside the module is registered*,
+which completes against the unmigrated shared database and costs nothing. Its adversary's own verdict:
+**"I had scoped the claim too widely and then spent a database making the wider version true."**
+
+## "It did not find my bug with my instrument — it found it by making a stronger assertion than mine"
+
+The probe handed between the two sessions truncated statements to 60 characters **at capture**, and
+`resolveKey`'s statement names `api_key` past that point — so a cell asserting the observer saw *the
+right* query was reading an already-truncated string.
+
+**The author's own probe asserted only a count, so the bug was invisible to it.** Same family as its
+double-count and nesting bugs: inflates nothing, produces no false zero, **makes a number
+unreadable.** The receiving session found it by asserting something the sender never had.
 
 ## The orchestrator is the only party who can misattribute, and it did
 
