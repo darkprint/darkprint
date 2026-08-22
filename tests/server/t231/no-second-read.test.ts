@@ -51,7 +51,20 @@ function importsOf(file: string): string[] {
   return out;
 }
 
-/** True when a file can reach a database at all: the `Db` handle, the client, or the schema. */
+/**
+ * True when a file reaches a database **through one of the three doors this suite knows**:
+ * the `Db` handle, a client factory, or `schema`.
+ *
+ * **NOT "can reach a database at all", which is what this comment used to claim.** A file
+ * holding its own `new Pool()` from `pg` reaches a database and this predicate answers
+ * `false` — measured, not supposed: with that mutation in `check.ts` these eight cells pass
+ * 8 of 8 while `no-second-read-behaviour.test.ts` reds 6 of 6.
+ *
+ * Charged by T231's adversary, and the sting is the location: a comment overstating its
+ * predicate, in a file whose whole subject is instruments that overstate themselves. The
+ * behavioural cell is what closes the gap; this comment now describes the doors rather than
+ * the outcome.
+ */
 function reachesTheDatabase(file: string): boolean {
   const source = withoutComments(moduleSource(file));
   const viaImport = importsOf(file).some((s) => s === "@/lib/db" || s.startsWith("@/lib/db/"));
