@@ -16,6 +16,8 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { can, type Actor } from "@/lib/server/policy";
+
 import { MESSAGE_FORMS, REFUSAL_KINDS, boundPublish, refusalFrom, resultOf } from "./contract";
 import {
   RecordedSetup,
@@ -610,5 +612,196 @@ describe("T100 — the refusal kinds are a closed set of five", () => {
       refusal.kind,
       "`kind` is not readable as a property on the thrown error, so no caller can branch on it.",
     ).toBe("not-owner");
+  });
+});
+
+/* ============================================================
+   Authorization is DELEGATED to T060, never re-decided here
+
+   D-100-05: "T100 HONOURS `can`." An operator's grant for
+   `publish` is unconditional by design (B-13 break-glass), and if
+   that is too wide for publishing it is a T060 amendment rather
+   than a T100 exception — "a second opinion about authorization
+   living inside T100 is the defect this run has charged more than
+   any other."
+
+   **Why this section exists at all: the ruling had zero coverage.**
+   Every other actor in this suite is `{ kind: "account", … }` —
+   one factory, `fixtures.ts:187`, used everywhere. So an
+   implementation that never calls `can`, that simply writes
+   `ownerId === actor.accountId`, passes all three AC7 cells and
+   all 48 cells beside them. The decision the ruling requires could
+   be omitted entirely and nothing would go red.
+
+   ── the assertion is AGREEMENT, not an outcome ──
+   Each subject's expected answer is computed by calling `can`
+   here, and compared against what `publish` actually did. Nothing
+   below hard-codes "the operator succeeds".
+
+   That is the only form that survives the amendment the ruling
+   itself contemplates. If T060 later narrows the operator grant,
+   `can` starts answering false, `publish` starts refusing, and
+   these cells stay green with nobody editing them. An outcome cell
+   would have to be rewritten by whoever made that amendment — and
+   would be found by them redding, which is the worst moment to
+   discover a test encoded a decision rather than an invariant.
+
+   ── what the operator row is doing here ──
+   It is the only row that discriminates. `can` grants an operator
+   and denies bob, while an `ownerId === accountId` hard-code
+   denies BOTH — so the operator is the single subject on which the
+   correct implementation and the plausible wrong one disagree.
+   Anonymous and non-owner are carried because a row that agrees
+   under both readings is what proves the instrument is not simply
+   answering "refused" to everything.
+
+   The operator is unreachable through HTTP by construction
+   (`actorFrom` mints `kind: "account"`, D-50-13), which is exactly
+   why this lives at the module boundary where an `Actor` is handed
+   in directly.
+   ============================================================ */
+
+interface Subject {
+  name: string;
+  slug: string;
+  actor: Actor;
+}
+
+describe("T100 — authorization is delegated to `can`, not re-decided", () => {
+  /** Alice owns every bundle below; the subjects differ only in who is acting on it. */
+  function subjectsFor(env: Env): readonly Subject[] {
+    return [
+      { name: "the owner", slug: "agree-owner", actor: env.alice.actor },
+      { name: "another account", slug: "agree-other", actor: env.bob.actor },
+      /* An operator who is NOT the owner. B-13's break-glass subject. */
+      {
+        name: "an operator",
+        slug: "agree-operator",
+        actor: { kind: "operator", accountId: env.bob.accountId },
+      },
+      { name: "anonymous", slug: "agree-anonymous", actor: { kind: "anonymous" } },
+    ];
+  }
+
+  /** Alice's bundle, planted through T010 so the premise does not depend on the module under test. */
+  async function plant(env: Env, slug: string): Promise<void> {
+    const { addRelease, createBundle } = await import("@/lib/server/archive");
+    const blueprint = (await import("./fixtures")).validate(env.base).blueprint;
+    if (blueprint === undefined) throw new Error("premise: the corpus does not resolve.");
+    const bundle = await createBundle(env.scratch.db, {
+      ownerId: env.alice.accountId,
+      slug,
+      visibility: "public",
+    });
+    await addRelease(env.scratch.db, {
+      bundleId: bundle.id,
+      version: "1.0.0",
+      dot: env.base.dot,
+      manifest: env.base.manifest,
+      cardRefs: blueprint.nodes.map((n) => n.ref),
+      cardDigests: blueprint.nodes.map((n) => n.digest),
+    });
+  }
+
+  it("the premise: `can` separates these four subjects, and only the operator row discriminates", () => {
+    const env = setup.require();
+    const resource = {
+      kind: "bundle" as const,
+      ownerId: env.alice.accountId,
+      visibility: "public" as const,
+    };
+
+    const verdicts = subjectsFor(env).map((s) => can(s.actor, "publish", resource));
+
+    /* **Runnable today, and it is what makes the agreement cell worth writing.** T060 is
+       merged, so this measures real behaviour in this worktree rather than describing it.
+       If it ever changes, the agreement cell below changes meaning with it and this red is
+       the notice. */
+    expect(
+      verdicts,
+      "`can(actor, \"publish\", bundle)` no longer answers " +
+        "[owner, other, operator, anonymous] = [true, false, true, false].",
+    ).toEqual([true, false, true, false]);
+
+    /* And the discrimination, stated rather than left implicit: an `ownerId === accountId`
+       hard-code answers [true, false, FALSE, false]. The operator row is the one place the
+       two readings diverge, so it is the row carrying this section's evidential weight. */
+    const hardCoded = subjectsFor(env).map(
+      (s) => s.actor.kind === "account" && s.actor.accountId === env.alice.accountId,
+    );
+    expect(
+      hardCoded,
+      "The plausible wrong implementation no longer differs from `can` on any subject, so " +
+        "these cells can no longer tell the two apart and have stopped being evidence.",
+    ).toEqual([true, false, false, false]);
+    expect(
+      verdicts,
+      "`can` and the ownership hard-code now agree everywhere — see above.",
+    ).not.toEqual(hardCoded);
+  });
+
+  it("answers each subject exactly as `can` does", async () => {
+    const env = setup.require();
+    const publish = await boundPublish();
+    const resource = {
+      kind: "bundle" as const,
+      ownerId: env.alice.accountId,
+      visibility: "public" as const,
+    };
+
+    const observed: Record<string, { granted: boolean; kind?: unknown; detail: string }> = {};
+    const expected: Record<string, { granted: boolean }> = {};
+
+    for (const subject of subjectsFor(env)) {
+      await plant(env, subject.slug);
+      expected[subject.name] = { granted: can(subject.actor, "publish", resource) };
+
+      /* A release the owner could legally append, so authorization is the only thing that can
+         decide the outcome: higher version, different bytes, resolves cleanly. */
+      const input = {
+        ownerHandle: env.alice.handle,
+        slug: subject.slug,
+        version: "2.0.0",
+        manifest: env.revision.manifest,
+        dot: env.revision.dot,
+        cardFiles: env.revision.cardFiles,
+      };
+
+      try {
+        const result = resultOf(await publish(env.scratch.db, subject.actor, input), subject.name);
+        observed[subject.name] = { granted: true, detail: `released ${result.releaseId}` };
+      } catch (thrown) {
+        observed[subject.name] = {
+          granted: false,
+          kind: (thrown as { kind?: unknown }).kind,
+          detail: thrown instanceof Error ? thrown.message : String(thrown),
+        };
+      }
+    }
+
+    const granted = Object.fromEntries(
+      Object.entries(observed).map(([name, o]) => [name, { granted: o.granted }]),
+    );
+
+    expect(
+      granted,
+      `T100 disagreed with \`can\` about who may publish.\n` +
+        `  Expected (computed by calling \`can\`): ${JSON.stringify(expected)}\n` +
+        `  Observed: ${JSON.stringify(observed)}\n` +
+        `  D-100-05: T100 honours \`can\`. A disagreement on the OPERATOR row is the signature ` +
+        `of an \`ownerId === actor.accountId\` check standing in for an authorization decision ` +
+        `— which passes every other cell in this suite. If the operator grant is too wide for ` +
+        `publishing, that is a T060 amendment and not a T100 exception.`,
+    ).toEqual(expected);
+
+    /* Every denial `can` produced must arrive as `not-owner` rather than as some other kind:
+       the delegation has to reach the caller as the published refusal, not merely be consulted. */
+    const deniedKinds = Object.entries(observed)
+      .filter(([name]) => !expected[name]?.granted)
+      .map(([name, o]) => [name, o.kind] as const);
+    expect(
+      Object.fromEntries(deniedKinds),
+      `A subject \`can\` denied was refused with something other than \`not-owner\`.`,
+    ).toEqual(Object.fromEntries(deniedKinds.map(([name]) => [name, "not-owner"])));
   });
 });
