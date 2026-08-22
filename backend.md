@@ -17119,6 +17119,32 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Forbidden:** `lib/server/limits/keys.ts` beyond its return type; every other module.
 - **Goal:** make the resolved-key precondition structural, so an unresolved or revoked key cannot reach `checkLimit` at all.
 - **Contract:** **D-230-05 ruled that `checkLimit` touches `db` on no path and that a non-null `keyId` is a precondition only `resolveKey` can establish.** That ruling stands and this task does not reopen it — it was derived from the clause's own arithmetic, since the alternative reading makes a keyed request issue two reads where the clause licenses one. **What this task fixes is that the precondition is held by CALLER DISCIPLINE rather than by STRUCTURE.** `checkLimit` is exported from the barrel, its subject carries `keyId: string | null`, and any later caller may pass a bare string that no `resolveKey` ever produced.
+- **Published signatures** (checked against `backend` at `3f2ddb5`. D-231-01, amended twice inside the hour it was ruled, and both amendments came from the halves rather than from me.)
+
+        declare const RESOLVED_KEY: unique symbol;          // declared, never exported
+        export type ResolvedKey = ApiKeyRecord & { readonly [RESOLVED_KEY]: true };
+
+        export type LimitSubject =
+          | { readonly tier: "anonymous"; readonly ip: string }
+          | { readonly tier: "account"; readonly accountId: string; readonly ip: string }
+          | { readonly tier: "key"; readonly key: ResolvedKey; readonly ip: string };
+
+        resolveKey(db: Db, secret: string): Promise<ResolvedKey | undefined>
+        checkLimit(subject: LimitSubject, bucket: string, options?: CheckLimitOptions): Promise<LimitVerdict>
+        enforceLimit(subject: LimitSubject, bucket: string, options?: CheckLimitOptions): Promise<LimitVerdict>
+
+  **The brand proves PROVENANCE, not non-revocation, and the first amendment removed a narrowing I had published.** I first wrote `ActiveKey extends ApiKeyRecord` carrying a null `revokedAt` member. T231's implementer refused it: **TypeScript cannot verify non-revocation, so that member could only be produced by a cast nothing checks**, sitting in a Forbidden file and reading to every later reader as a guarantee the type provides — *an instrument describing a walk it is not doing.* **And it would have traded the instrument for the guard**: deleting `isNull(revokedAt)` from `resolveKey`'s WHERE still mints a branded record, so the narrowing would have made F-230-J's mutation **inert rather than red**. Vindicated by measurement at the adversary round: that deletion now reds **3** cells on two independent axes, where F-230-J measured **0 across 164**.
+
+  **The second amendment withdrew `enforceLimit(request, subject, bucket): Promise<Response | undefined>`, and BOTH halves charged it independently within ten minutes**, quoting the same shipped header. `Response | undefined` is `payload | Response` — the shape T000 rejected for `withSession`, and the one `check.ts:196-206` cites as the reason `enforceLimit` exists: *a guard that returns a union depends on every caller checking the union, and a caller who forgets runs the handler anyway.* **It would have made forgettable the one function whose purpose is that a refusal cannot be forgotten.** Dropping `db` answered the question that was asked; the return type answered none, and would have left `RateLimitedError` thrown by nothing while `withLimitsErrors` shipped an arm nothing could reach.
+
+  **`db` leaves BOTH functions, and `checkLimit` cannot reach a connection — it is not a parameter.** That is stronger than D-230-05's *touches `db` on no path*, which describes a discipline; this describes a type, and it is held by an equality on `check.ts`'s import list plus a transitive check that no module it imports reaches `@/lib/db` at any depth.
+
+  **`tierOf` is WITHDRAWN from `config.ts` and from the barrel — and this clause reached only one holder, which is the defect.** I asked the implementer to choose between *trivial* and *gone*; it chose gone, for a better reason than mine: *an identity cannot drift; the problem is that the NAME says derived*, so a reader opening it after the union finds an identity and goes looking for what they missed. **The blind author was never sent this clause**, inferred `tierOf(subject): Tier` from the `Owns` line, and **labelled it as that inference** — which is why `PUBLISHED.tierOf` is declared and read by no cell. An amendment has two holders; telling one manufactures the defect.
+
+  **`options` survives as a defaulted THIRD parameter**, so `checkLimit.length` is **2** and matches the published two-parameter line that `surface.test.ts` pins by arity.
+
+  **What the brand does not buy, stated rather than implied**: accidental misuse is impossible, and **deliberate forgery is one `as` and is greppable** — `rec as ResolvedKey` suffices, without `as unknown as`, because `ResolvedKey` is a subtype of `ApiKeyRecord`. Eleven spellings were tried at the adversary round: six refused, five compile, and all five are casts.
+
 - **Acceptance criteria:** (1) `checkLimit` accepts what `resolveKey` returns rather than a bare `keyId`, so passing an unresolved key is a **compile error**; (2) `db` leaves `checkLimit`'s signature, since D-230-05 already establishes it is never used there; (3) no second database read is introduced on any path — the repair is a type, not a lookup; (4) the 429's published key set (D-230-09) is unchanged.
 - **Out of scope:** re-litigating D-230-05; `resolveKey`'s own WHERE clause; anything in `tests/server/t230/**`.
 - **Log:**
