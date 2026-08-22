@@ -186,14 +186,23 @@ export const release = pgTable("release", {
   /**
    * `StoredVocabulary` — `{ text, terms }` — or `null` for none.
    *
-   * **This comment used to say `OntologyTerm[]`, and that is the shape both readers refuse.**
-   * D-90-03 moved the column to `{ text, terms }` so `exportBundle` could write the author's
-   * own bytes into a folder unaltered, and it ruled — correctly — that the column type and
-   * this file needed no change. What it left behind was this line, and it was not inert:
-   * `readonly Record<string, unknown>[]` is what following it produces, and that is what
-   * T130's blind author stored. Recorded in those words because the tree's account of that
-   * incident was "two authors guessed incompatibly from nothing", and the truth is that one of
-   * them read the only documentation there was (D-133-02 F1).
+   * **This comment used to describe the column as a bare array of terms, and that is the shape
+   * both readers refuse.** D-90-03 moved the column to `{ text, terms }` so `exportBundle`
+   * could write the author's own bytes into a folder unaltered, and it ruled — correctly —
+   * that the column type and this file needed no change. What it left behind was this line,
+   * and it was not inert: a bare array is what following it produces, and that is what T130's
+   * blind author stored. Recorded because the tree's account of that incident was "two authors
+   * guessed incompatibly from nothing", and the truth is that one of them read the only
+   * documentation there was (D-133-02 F1).
+   *
+   * **The old spelling is described here rather than quoted, and putting it back is a
+   * regression rather than a clarification.** A check greps this docblock for that type name,
+   * so a docblock that quotes it reads identically to the docblock that once documented it —
+   * and the one instrument that can see this defect's removal then cannot tell it from the
+   * defect. It is `lib/server/archive/errors.ts`'s argument in this file: a mechanically
+   * checkable clause is worth having *because* it is absolute, and an exception for the
+   * mention we meant to keep costs exactly what an exception for the field we meant to
+   * publish would.
    *
    * The shape is published as `StoredVocabulary` from `@/lib/server/archive` and `addRelease`
    * refuses anything else at the write (T133 AC1). A comment is not an enforcement, which is
