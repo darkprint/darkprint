@@ -7661,6 +7661,58 @@ the mechanism both *unchanged* and *observed not to fire*.
 "reasoned, with the risky part shown to be unchanged" and explicitly NOT verified.** That honesty is
 what made it closable: checks 4 and 5 turned somebody else's reasoning into measurement.
 
+## An error that FLATTERS you is harder to catch, because nothing in you objects to it
+
+T231's adversary credited its blind counterpart with five of the six AC3 blindness axes. **The blind
+author corrected it against its own interest** — the true split is **three its adversary's, two its
+own, one joint** — and stated the principle doing it:
+
+> **Correcting a misattribution running toward you is the same act as correcting one running against
+> you, and it would be a poor showing to only do the first kind.**
+
+It had already corrected two attributions *against* itself earlier in the same round, **so it is a
+demonstrated standard rather than a stated one.**
+
+**The adversary's diagnosis of its own error is the transferable half:** *"I reached for a generous
+summary instead of counting — the same failure as reporting a total instead of a set."* **That is the
+comparator rule in the attribution domain**, and it is the same family as the two bugs the blind
+author had just caught: **a flattering error is the attribution version of a green that agrees with
+expectation.** Nothing in the receiver objects, so nothing prompts the check.
+
+**And the substantive point underneath the miscount matters more than the count:** F1 and F2
+established the instrument was **needed at all**; F4 and F5 are **refinements of an instrument that
+had to be made correct first**. Collapsing two kinds of contribution into one number is the error the
+arithmetic was a symptom of.
+
+## The blind-halves argument, stated as a measurement rather than a principle
+
+Asked which findings it would carry longest, the adversary refused sole credit for both **and gave
+the reason as a measurement**:
+
+* The **AC3 observer reporting a zero it could only ever report** was its own — *"but only because the
+  mandatory falsifier is not optional. I had already written the green and would have sent it.
+  **The rule did the work, not the judgement.**"*
+* The **behavioural cell catching what the handle cells provably cannot** needed both trees: it
+  measured E4 from a tree **with** the implementation; its counterpart reproduced F2 from one
+  **without**; and **neither position could have produced the pair.** The same held at the close —
+  the blind tree saw a subject doing no work that the merged tree structurally could not, and the
+  merged tree saw a document-versus-code axis the blind tree could not.
+
+> **That is the argument for building the halves blind, stated as a measurement rather than a
+> principle.**
+
+## The re-calibrated gate rule is CONDITIONAL and must be re-tightened, not inherited
+
+The gate was loosened to *no foreign vitest/tsc process group, no foreign Postgres client backend,
+demand reported not gating* **because this host's idle floor was measured at ~390% median with the
+saturation attributable to the owner's desktop.**
+
+> **If the machine quiets down, that rule should be re-tightened rather than inherited, since the
+> reason it was loosened was a measurement and not a preference.**
+
+Recorded so a successor meeting a quiet host does not inherit a permission that was granted against a
+condition that has since expired — the same failure mode as an exemption outliving its defect.
+
 ## Name the property a comparator compares, and ask whether two different states could share it
 
 `t231-blind` caught **two comparator bugs in one hour**, and the second is the one that generalises:
