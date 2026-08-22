@@ -8305,6 +8305,66 @@ against its absence in `listKeys` — which reds under the very mutation it was 
 **by running the mutations, not by reading the cells**, twice, and repaired by discriminating on
 `tokenHash`, which no change in the task can touch.
 
+## A RELAY is the one place an attribution error cannot be checked by either endpoint — twice today, opposite directions
+
+**Second instance, same channel.** The first was mine: I relayed T231's implementer's charge numbers
+(C1, C3) to its **blind author** as *"two of your charges"*, and only the blind author knowing its own
+list caught it.
+
+**The second was its adversary's, in the other direction.** My breakdown said the nine `t230` reds
+were **mine**. Relaying it onward it wrote *"**your** 9 positional-shift reds"* — and to that reader
+*your* means **its**. **Nine orchestrator-owned reds arrived at the blind author's door with its name
+on them.** It checked rather than protested, and the adversary then verified independently:
+
+```
+git log 25ef93d..test/t231-keytype --name-only -- tests/server/t230   ->  0 commits
+limits.test.ts   last written by 8fc439a   (T230's merge)
+surface.test.ts  last written by b580dc7   (T230's D-230-10)
+§T231 Out of scope: "… anything in tests/server/t230/**"
+```
+
+**The classification never changed. Only the pronoun did, and only in one direction.**
+
+> **The relaying party is the only one who can see both sides, and neither endpoint can check it from
+> where it sits.**
+
+Its own diagnosis of why: *"that is exactly the position in which I stopped being careful."* The
+countermeasure is the one already in this file and it now has a second witness: **relay a charge by
+its CONTENT, or quote the sender, never by a pronoun or a number alone.** A pronoun is worse than a
+number, because it silently rebinds to the reader.
+
+## "Strictly stronger" was two claims, and only one of them was true
+
+Its adversary reported the migrated control's real resolved key as a **strictly stronger** positive
+than a hand-cast subject. Measured against the code, it is not — behaviourally:
+
+```
+types.ts:52   declare const RESOLVED_KEY: unique symbol;   ambient, erased
+check.ts:181  ? subject.key.keyId                          the only field read
+RESOLVED_KEY outside types.ts:  no runtime reference anywhere
+```
+
+**A minted `ResolvedKey` and a labelled cast are indistinguishable to `checkLimit` by construction.**
+So the migrated run is a stronger **provenance** claim and a **runtime-identical behavioural** one —
+two claims that had been carried as one.
+
+**And the consequence overturned my own ruling, correctly.** I authorised a scratch database for that
+control. `t231-blind` folded it in **by citation instead**, because *a runtime-identical claim does not
+earn a database on every run of that partition, on a machine that leaked 28 this week* — and rescoped
+the assertion to what it actually establishes, *a query issued from inside the module is registered*,
+which completes against the unmigrated shared database and costs nothing. Its adversary's own verdict:
+**"I had scoped the claim too widely and then spent a database making the wider version true."**
+
+## "It did not find my bug with my instrument — it found it by making a stronger assertion than mine"
+
+The probe handed between the two sessions truncated statements to 60 characters **at capture**, and
+`resolveKey`'s statement names `api_key` past that point — so a cell asserting the observer saw *the
+right* query was reading an already-truncated string.
+
+**The author's own probe asserted only a count, so the bug was invisible to it.** Same family as its
+double-count and nesting bugs: inflates nothing, produces no false zero, **makes a number
+unreadable.** The receiving session found it by asserting something the sender never had.
+
 ## The orchestrator is the only party who can misattribute, and it did
 
 T231's blind author raised charges **A through E**. Its implementer raised **C1 through C4**. I wrote
