@@ -46,7 +46,7 @@ import {
   type OntologyView,
 } from "@/lib/core";
 import { bundleProgress } from "@/components/upload/progress";
-import type { Db } from "@/lib/db";
+import { createObjectStorage, type Db, type ObjectStorage } from "@/lib/db";
 import { resolveOwner } from "@/lib/server/accounts";
 import {
   addRelease,
@@ -59,8 +59,10 @@ import {
 } from "@/lib/server/archive";
 import { addCard, getCard } from "@/lib/server/cards";
 import { validateBundle } from "@/lib/server/engine";
+import { exportRelease } from "@/lib/server/export";
 import { openView } from "@/lib/server/ontology";
 import { can, type Actor } from "@/lib/server/policy";
+import { persistArtefacts } from "./artefacts";
 import { cardConflict, conflict, inError, notOwner, unfinished, versionNotHigher } from "./errors";
 
 type Visibility = "public" | "private";
@@ -102,7 +104,20 @@ export interface PublishResult {
  * version nobody published, and `CardStoreError` from T020 when a card fails its chain check.
  * Re-rendering any of them as a publish refusal would put a second author on one sentence.
  */
-export async function publish(db: Db, actor: Actor, input: PublishInput): Promise<PublishResult> {
+export async function publish(
+  db: Db,
+  actor: Actor,
+  input: PublishInput,
+  /**
+   * Where the frozen artefacts go. Optional and defaulted, so the three-argument call the
+   * contract publishes is unchanged and a caller that has no reason to name a bucket does
+   * not have to. Constructed LAZILY inside the transaction rather than as a default
+   * parameter expression: `objectStorageConfigFromEnv()` throws for an unset `S3_*`, and a
+   * default evaluated on entry would make every refusal on this path — an unowned slug, an
+   * unfinished bundle — depend on storage being configured.
+   */
+  storage?: ObjectStorage,
+): Promise<PublishResult> {
   /* The owner is resolved from the handle rather than taken off the actor's session, and the
      difference is not stylistic. Deriving `ownerId` from `actor.accountId` when the handles
      match makes the `can` call below trivially true, which hands AC7 to a `===` in this file
@@ -263,6 +278,27 @@ export async function publish(db: Db, actor: Actor, input: PublishInput): Promis
         phaseCoverage: analysis.phaseCoverage,
       },
     });
+
+    /* The freeze, and it is inside the transaction on purpose (D-100-01 A4 as amended).
+       B-08 re-scores `release.autonomy`/`security` on an ontology release, and
+       `bundle-export.ts` quotes both into `README.md` — so without this write ONE DIGEST
+       SERVES DIFFERENT BYTES OVER TIME, at the address `/mcp` calls load-bearing precisely
+       because it does not move. Postgres holds the canonical record and the current
+       projection; object storage holds the frozen artefact (B-01).
+
+       Through `exportRelease` rather than by assembling the folder here, and the published
+       signature says so in terms — *"T100, at publish, after `exportRelease` returns"*. It
+       is also the only construction that makes the frozen bytes the SAME bytes the read
+       path generates: `buildExport` decides the file set, the card dedup order and which
+       analysis wins, and a second assembly here would be a second opinion about all three
+       — so the freeze could differ from the fallback it exists to make unnecessary.
+
+       Inside the transaction rather than after it, so a release is never committed
+       unfrozen. An object left behind by a rollback is inert: its key IS the content
+       digest and `exportBundle` is pure, so nothing can ever claim that key with different
+       content, and a retry writes the identical object. */
+    const files = await exportRelease(tx, actor, bundle.id, release.digest);
+    await persistArtefacts(storage ?? createObjectStorage(), release.digest, files);
 
     return { bundleId: bundle.id, releaseId: release.id, digest: release.digest, created: existing === undefined };
   });

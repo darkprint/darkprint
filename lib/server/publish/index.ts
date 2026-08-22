@@ -32,3 +32,14 @@ export { publish } from "./publish";
 
 export type { PublishRefusedKind } from "./errors";
 export { PublishRefusedError } from "./errors";
+
+/* The freeze, and the codec that reads it back.
+
+   `persistArtefacts` is T100's published write verb. `encodeArtefacts`, `decodeArtefacts`
+   and `selectArtefact` are published WITH it because `readPersisted` is T090's and is not
+   built: `ObjectStorage` addresses one object per digest, so a folder is stored as a single
+   object, and a container format invented here and left unstated is one its reader cannot
+   guess. A frozen artefact nobody can decode is worth less than none, since the fallback at
+   least produces bytes. Published so `readPersisted` consumes this reading rather than
+   deriving a second one — T133's rule, one column one shape, applied to a bucket. */
+export { decodeArtefacts, encodeArtefacts, persistArtefacts, selectArtefact } from "./artefacts";
