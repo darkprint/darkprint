@@ -48,10 +48,11 @@
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 
-import { bundleDigest, parseCardRef } from "@/lib/core";
+import { CORE_ONTOLOGY, bundleDigest, parseCardRef } from "@/lib/core";
 import type { BundleManifest, LoadBundleResult } from "@/lib/core";
 import { createDbClient, migrateUp, type Db, type DbClient } from "@/lib/db";
 import { addCard, getCard } from "@/lib/server/cards";
+import { addOntologyVersion } from "@/lib/server/ontology";
 import { validateBundle, validateCardSource } from "@/lib/server/engine";
 import { readContent, type LoadedBundle } from "@/lib/content/read";
 import { bundleProgress } from "@/components/upload/progress";
@@ -136,6 +137,24 @@ export async function scratchDatabase(tag: string): Promise<Scratch> {
     );
   }
 
+  /* **The ontology version has to be a row before any publish can run** (D-100-05 A2).
+     `publish` opens an `OntologyView` for `manifest.ontologyVersion`, and an unpublished
+     version raises T030's `UnknownOntologyVersionError` — which is a foreign rejection that
+     reaches the caller unaltered, so it does not even look like a T100 refusal.
+
+     Seeded here rather than per file because EVERY scratch database in this suite is used to
+     publish, so a file that forgot the call would not be exercising a different scenario, it
+     would be measuring an upstream failure and reporting it as a criterion. `t090/fixtures.ts`
+     and `t140/fixtures.ts` seed it too, for the same reason their docstrings give.
+
+     A2 ("`openView` REQUIRED, T030 joins the composition set") was ruled in a message and never
+     reached `backend.md`, so the original enumeration of merged modules in this file's header
+     was correct against the contract as written and wrong against the contract as ruled. */
+  await addOntologyVersion(client.db, {
+    version: CORE_ONTOLOGY.version,
+    terms: [...CORE_ONTOLOGY.terms],
+  });
+
   return {
     db: client.db,
     pool: client.pool,
@@ -147,6 +166,9 @@ export async function scratchDatabase(tag: string): Promise<Scratch> {
     },
   };
 }
+
+/** The version every scratch database publishes, exported so a cell can name it. */
+export const SEEDED_ONTOLOGY_VERSION = CORE_ONTOLOGY.version;
 
 /* --------------------- an owner --------------------- */
 
@@ -236,7 +258,22 @@ export function resolvingCorpus(): Corpus {
   const smallest = [...bundles].sort(
     (a, b) => a.blueprint.graph.ids.length - b.blueprint.graph.ids.length,
   )[0];
-  return corpusFrom(smallest as LoadedBundle);
+  const corpus = corpusFrom(smallest as LoadedBundle);
+
+  /* The join between the corpus and the seed. `scratchDatabase` publishes
+     `CORE_ONTOLOGY.version`, and `publish` opens a view for whatever the MANIFEST names — so if
+     the archive ever declares a different one, every cell in this suite would fail at
+     `openView` with an error that has nothing to do with its criterion. Checked here, once,
+     where both halves are visible. */
+  if (corpus.manifest.ontologyVersion !== CORE_ONTOLOGY.version) {
+    throw new Error(
+      `${corpus.slug}'s manifest declares ontologyVersion \`${corpus.manifest.ontologyVersion}\` ` +
+        `and scratchDatabase seeds \`${CORE_ONTOLOGY.version}\`.\n` +
+        `  Every publish would then raise T030's UnknownOntologyVersionError, which is a foreign ` +
+        `rejection and reads as anything but a broken fixture.`,
+    );
+  }
+  return corpus;
 }
 
 /** A second, different bundle — for the fork's upstream, so it cannot be confused with the fork. */

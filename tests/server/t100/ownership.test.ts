@@ -749,7 +749,10 @@ describe("T100 — authorization is delegated to `can`, not re-decided", () => {
       visibility: "public" as const,
     };
 
-    const observed: Record<string, { granted: boolean; kind?: unknown; detail: string }> = {};
+    const observed: Record<
+      string,
+      { granted: boolean; kind?: unknown; detail: string }
+    > = {};
     const expected: Record<string, { granted: boolean }> = {};
 
     for (const subject of subjectsFor(env)) {
@@ -771,9 +774,26 @@ describe("T100 — authorization is delegated to `can`, not re-decided", () => {
         const result = resultOf(await publish(env.scratch.db, subject.actor, input), subject.name);
         observed[subject.name] = { granted: true, detail: `released ${result.releaseId}` };
       } catch (thrown) {
+        const kind = (thrown as { kind?: unknown }).kind;
         observed[subject.name] = {
-          granted: false,
-          kind: (thrown as { kind?: unknown }).kind,
+          /* **`granted` is "was it refused on AUTHORIZATION", not "did it throw", and the
+             difference is the whole correctness of this cell.**
+
+             Read as `!thrown`, ANY unrelated upstream failure inverts a row that `can` granted
+             — and the message below then reports it as an ownership hard-code. That is a false
+             positive shaped exactly like the true positive, which is worse than a miss, because
+             the message asserts a diagnosis a reader will go and hunt for.
+
+             It happened: with the ontology version unseeded, the owner and operator rows died
+             at `openView` with T030's `UnknownOntologyVersionError` and this cell announced a
+             hard-coded ownership check in an implementation that calls `can` correctly and
+             agrees with it on all four subjects.
+
+             So a throw carrying any other `kind` — or none, as a foreign typed rejection does —
+             means the actor PASSED authorization and failed further on. That is `granted: true`
+             for this cell's purpose, and the detail is kept so the run still shows it. */
+          granted: kind !== "not-owner",
+          kind,
           detail: thrown instanceof Error ? thrown.message : String(thrown),
         };
       }
@@ -783,15 +803,26 @@ describe("T100 — authorization is delegated to `can`, not re-decided", () => {
       Object.entries(observed).map(([name, o]) => [name, { granted: o.granted }]),
     );
 
+    /* Surfaced separately: rows that cleared authorization but failed downstream. They do not
+       make this cell red — it is not their criterion — but a reader seeing four agreeing rows
+       should still be told that two of them never reached a release. */
+    const clearedButFailed = Object.entries(observed)
+      .filter(([, o]) => o.granted && o.kind === undefined && !o.detail.startsWith("released"))
+      .map(([name, o]) => `${name}: ${o.detail}`);
+
     expect(
       granted,
       `T100 disagreed with \`can\` about who may publish.\n` +
         `  Expected (computed by calling \`can\`): ${JSON.stringify(expected)}\n` +
         `  Observed: ${JSON.stringify(observed)}\n` +
-        `  D-100-05: T100 honours \`can\`. A disagreement on the OPERATOR row is the signature ` +
-        `of an \`ownerId === actor.accountId\` check standing in for an authorization decision ` +
-        `— which passes every other cell in this suite. If the operator grant is too wide for ` +
-        `publishing, that is a T060 amendment and not a T100 exception.`,
+        `  Read as "refused with kind \`not-owner\`", NOT as "threw" — a row that failed for an ` +
+        `unrelated reason cleared authorization and is not evidence about it.\n` +
+        (clearedButFailed.length > 0
+          ? `  Cleared authorization but failed downstream: ${clearedButFailed.join("; ")}\n`
+          : "") +
+        `  D-100-05: T100 honours \`can\`. A disagreement on the OPERATOR row — and only on a ` +
+        `row that came back \`not-owner\` — is the signature of an ` +
+        `\`ownerId === actor.accountId\` check standing in for an authorization decision.`,
     ).toEqual(expected);
 
     /* Every denial `can` produced must arrive as `not-owner` rather than as some other kind:
