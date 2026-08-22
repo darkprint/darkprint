@@ -7823,6 +7823,64 @@ comparison flips `Exact<any, T>` from `true` to `false`, so every pin starts red
 `TS2307` already reports one line above — **the repair arrives as noise, and the next author deletes
 the pin while believing they are cleaning up.** A repair that reds for the wrong reason gets removed.
 
+## A tautology dressed as a measurement — the purest instance of the zero that could only ever be zero
+
+T231's adversary built AC3's behavioural cell, got **zero queries on all six paths**, and would have
+sent a green. Its own diagnosis after the mandatory falsifier caught it:
+
+> Because `checkLimit` accepts no pool at all, *"it did not use the pool I handed it"* was very
+> nearly **a tautology dressed as a measurement.**
+
+The first observer wrapped the pool `createDbClient` returns. Mutating `checkLimit` to call
+`getSharedDbClient()` — **a different pool, cached on `globalThis` behind a symbol** — reported
+**zero on all six paths while throwing `DrizzleQueryError` from the driver**, so the query
+demonstrably reached Postgres. Rebuilt at `pg`'s `Client.prototype.query`, which counts every query
+on every pool including one a module reaches for privately: both controls at 1, both falsifiers at
+**6 of 6 FAIL**.
+
+**And the measurement that justifies the cell existing at all**, run against both instruments at
+once on the same evasion — `check.ts` holding its own `new Pool()`:
+
+```
+source cells   (absence of a HANDLE)   8 passed / 0 failed    BLIND
+behavioural    (absence of an EFFECT)  6 of 6 FAIL            CAUGHT
+```
+
+**The behavioural cell catches exactly what the handle cells provably cannot, measured rather than
+argued** — which retires a disclosed caveat instead of merely restating it.
+
+Two further instrument corrections from the same build, both **inflating** counts and therefore
+biased against the module, so neither could have manufactured a false zero: instrumenting
+`pool.query` *and* the checked-out client double-counts, because `pg` implements the former via the
+latter; and `observe()` re-wrapping an already-wrapped pooled client nests the counter.
+
+## A cell that has never once executed, testing the most carefully-reasoned ruling in its task
+
+T100's `transaction.test.ts` card-bytes cell dies in `seedCard` **before `publish` is ever called**:
+it seeds `env.failure.declared`, the variant its own fixture comment describes as *"a patch bump
+carrying a change that requires a major one"* — **built for AC5, un-storable by design.**
+
+**That cell is the only thing testing D-100-02** — source bytes over digest *and* over `body`, the
+ruling whose reasoning the implementer improved by finding that `source` round-trips **byte**-identical
+while `body` round-trips **value**-identical only. **It is testing nothing and has never run.** The
+cell body is correct; only the seed is wrong.
+
+**The general form: a red can hide a cell that never executed, and the two are indistinguishable in
+a summary line.** A cell failing in `beforeAll` reports as a skip; a cell failing in its own setup
+reports as a red — and both look like the criterion was exercised and found wanting.
+
+## `?` does not reduce `Function.length`, and the docstring claimed it did
+
+`publish` grew `storage?: ObjectStorage` and `surface.test.ts`'s arity pin went 5/5 → 4/5.
+**TypeScript's `?` erases to nothing; only a default-value expression or a rest element stops the
+parameter counting.** The docstring read *"Optional and defaulted"* — it was optional and **not**
+defaulted, so **the comment claimed exactly the property that would have made the code correct.**
+
+The fix is `storage: ObjectStorage | undefined = undefined`, which preserves the reason the default
+expression was avoided in the first place: nothing is evaluated on entry, so a refusal still does not
+depend on `S3_*` being configured. **The stated reason for avoiding a default did not apply to
+`= undefined`** — the `?` was standing in for a distinction nobody had made explicit.
+
 ## A stand-in written by the instrument's author cannot falsify the instrument
 
 **The co-authored-reference error, one layer lower, and it produced a passing run.**
