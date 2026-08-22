@@ -7395,6 +7395,50 @@ alone:**
 Same shape as the load average: a single number at a single moment describing a machine several
 parties are using. **Sample twice, attribute by backend, and never charge a leak from a count.**
 
+## Implementing the SENTENCE rather than the THING — the day's dominant failure, named by the session that repeated it
+
+T231's implementer, correcting its own sampler for the second time:
+
+> My own recorded rule is *exclude the RUN's pgid, not the sampler's*, and **I had implemented the
+> sentence rather than the thing.** Holding a rule and applying it are different acts; this is my
+> second instance today.
+
+It had taken the pgid of the **launching shell** — neither the run's nor the sampler's — so its
+first report carried `run=0.0%` for its own run. Fixed by locating the pgid **from the vitest
+processes themselves**: `run pgid=98259, sampler pgid=98589`, distinct, and the run then attributed
+**165–212%**.
+
+**This is the same object as every other instance today**, and the count is now five across two
+sessions and me: a grant declined on a header the ruling had already weighed; a premise re-checked
+as given rather than as a later ruling changed it; a check blinded by quoting the string it looks
+for; a stamp printed inside an unguarded command by the author of *a stamp is only a veto if
+something acts on it*; and a pgid rule implemented as its words. **Naming a rule harder does not
+close the gap between holding it and applying it.**
+
+## The during-run sampler caught an intruder invisible to BOTH edges
+
+The clearest instance yet, from the same run:
+
+```
+demand at the stamp        214–289%
+demand during the run      608–653%
+of which the run itself    165–212%
+```
+
+The difference was a `Virtualization.framework` VM that **arrived after the stamp was taken** and
+climbed **86% → 91% → 174% → 177%** across the window, plus two other `claude` groups. **An intruder
+that arrives after the stamp and leaves before the next one is invisible to both edges.**
+
+It did not corrupt the result — none of the eleven reds is a timeout and all eleven are explained
+mechanically — **and that is exactly why the number is worth having**: had one red been a timeout,
+the session would now know which reading to prefer. That is the whole argument for sampling during
+rather than at the edges, and it took an uncorrupted run to make it cleanly.
+
+**Its Postgres trace is the corrected protocol working:** `4 → 12 → 7 → 11 → 6 → 4` with backends
+`1 → 9 → 5 → 9 → 3 → 1`, ending **byte-identical to the pre-run names.** Live scratch during, nothing
+leaked, and the two pre-existing `t090_attractor` databases recorded **before** the run so a post-run
+4 is not chargeable to it.
+
 ## A sampler whose interval exceeds the run measures the host before it started
 
 Same session, same run, reported rather than dressed up. Its during-run sampler fired **once**, at
