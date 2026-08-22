@@ -7823,6 +7823,46 @@ comparison flips `Exact<any, T>` from `true` to `false`, so every pin starts red
 `TS2307` already reports one line above — **the repair arrives as noise, and the next author deletes
 the pin while believing they are cleaning up.** A repair that reds for the wrong reason gets removed.
 
+## A guard whose failure mode is SILENTLY NEVER ARMING cannot be cleared by its own green
+
+T231's adversary charged that `agrees-with-the-document.test.ts` could return `undefined`, report
+"vacuous", and pass forever if the block's marker were spelled differently. When the block landed and
+the guard came back **9 of 9 green**, it refused to accept that as clearance — *"I am the one who
+charged it with being able to pass while blind."*
+
+So it ran the real parser against the real `backend.md` and **printed what the parser actually sees**:
+`BLOCK: string, 5535 bytes` — not `undefined` — and the nine indented lines, enumerated. **A green
+from a guard that might be blind and a green from a guard that is armed are the same green.** The
+only thing that separates them is making the instrument show its input.
+
+**And then it did the part that makes it a measurement rather than a formality: it checked those nine
+lines against the SHIPPED SOURCE, not against the guard.** The guard compares the document to the
+suite's transcription and says nothing about whether either matches the code. Line by line against
+`types.ts`, `check.ts` and `keys.ts` — the brand's declaration and unexported-ness, all three union
+arms, `resolveKey`'s return, `db` absent from both functions with `options` third and defaulted.
+**Document, transcription and implementation are the same object for the first time**, established on
+an axis none of the three could establish about itself.
+
+## "No foreign vitest" is the wrong check — a foreign run does not have to be a vitest run
+
+I named it on **demand 366%, load 53, and "no foreign vitest"**. Its own stamp did not reproduce
+mine, and the reason is my check:
+
+> The reason my first check said "no foreign vitest" is that I **searched by command-line
+> substring**, which is the thing the traps file tells me not to do.
+
+Sampling by process **group** with the top consumer named found what the substring missed: **pgid
+85457 at 128–160%**, **pgid 86322 at 116.5%**, a Virtualization VM at 57%, and later a Python group
+at 93.6%. **None matches `vitest`**, so a name-based check reports a clear host throughout.
+
+**Both node groups were gone by the time it looked them up** — arrived and left between stamps, the
+invisible-intruder shape, **caught only because it sampled six times instead of three.**
+
+The rule this run already holds is *count by process GROUP, never by command-line substring*, and I
+had been applying it to the question *is somebody else running vitest* rather than to the question
+that matters: **how much of this host is not mine.** The demand figure was always the real signal;
+naming the supplementary check "no foreign vitest" made a busy host read as a clear one.
+
 ## A tautology dressed as a measurement — the purest instance of the zero that could only ever be zero
 
 T231's adversary built AC3's behavioural cell, got **zero queries on all six paths**, and would have
