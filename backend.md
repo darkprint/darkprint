@@ -7371,6 +7371,27 @@ that the old spelling is *described rather than quoted*, and that restoring the 
 name back to be helpful and silently blinding the check again. Its author's note: *"I nearly was
 that person, with the best of intentions and a correction in hand."*
 
+## A comment written by an earlier task prevented a defect today, and the implementer said which artefact did the work
+
+I ruled T100's card comparison as *source bytes, not digests* and **would have accepted a `body`
+comparison as satisfying it**. T100's implementer did not, because `CardRecord`'s docstring — T020's,
+written at merge — records that **`source` is `text` and round-trips BYTE-identical while `body` is
+`jsonb` and round-trips VALUE-identical only.** Comparing `body` reintroduces exactly the blindness
+the ruling rejected, by a different route.
+
+Its own correction of my praise is the item: *"that was not care on my part, it came from
+`CardRecord`'s own docstring. That sentence exists because T020's author wrote down a distinction
+they could have left implicit. Worth knowing which artefact did the work."*
+
+**So the countermeasure that fired here was not an instrument, a guard or a round — it was one
+sentence a session wrote down months earlier about a distinction nothing forced it to mention.**
+Every other defence in this file is something that runs. This one only had to be readable at the
+moment somebody needed it.
+
+The corollary for anyone writing a docstring in this repository: **the distinctions worth recording
+are the ones you can currently keep in your head**, because those are exactly the ones the next
+reader cannot.
+
 ## A type-level pin lies THREE ways, and all three end at "the pin cannot be read"
 
 Two were documented this morning; T231's blind author measured the third rather than predicting it.
