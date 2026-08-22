@@ -473,9 +473,14 @@ describe("the pin machinery discriminates — a control on the instrument, not o
 
    They are the disambiguator for the `TS2724` next door: a reader
    looking at a red typecheck cannot tell a missing member from a
-   failed assertion, and these say which. They red today, for a
-   reason a reader can act on, and go green when `types.ts`
-   declares the two names.
+   failed assertion, and these say which. That distinction has cost
+   this run two separate confusions. They red today, for a reason a
+   reader can act on, and go green when `types.ts` declares the two
+   names.
+
+   **A type-level instrument cannot observe its own blindness;
+   something outside it has to.** That is why these cells are here
+   rather than expressed as one more pin.
    ============================================================ */
 
 describe("the types the pins name are declared, which no pin can check", () => {
