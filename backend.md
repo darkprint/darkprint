@@ -17714,6 +17714,23 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Forbidden:** `lib/server/publish/**`; the codec's format, which T100 published and this task consumes rather than redefines.
 - **Goal:** make `serveFile` return the frozen bytes when one exists, so "the bytes of that release" stay the bytes of that release across a re-score.
 - **Contract:** `16676` reads *"**NEITHER** verb is T090's to build in this round"* — `persistArtefacts` was deferred to T100 **by name** and **`readPersisted` to nobody.** T100 built the write at `d3c66f1`; **AC6 still did not go green.** Measured rather than argued: `serveFile` calls `buildExport` unconditionally, and a grep over `lib/server/export/*.ts` for `readPersisted`, `ObjectStorage` and `storage` returns **zero hits** — there is no path in that module that consults a persisted artefact. **The frozen bytes are written and never read.**
+- **Published signatures** (checked against `backend` at the merge of T100, and **written late — the third time in one day that a task of mine reached a dispatch queue with nothing published.** D-100-05 charged the first, T231's blind author the second. Both halves of this task would otherwise have inferred the same shapes independently and only met at an adversary round.)
+
+        persistArtefacts(storage: ObjectStorage, digest: string, files: readonly ExportedFile[]): Promise<void>   // T100's, SHIPPED
+        readPersisted(storage: ObjectStorage, digest: string, path: string): Promise<Uint8Array | undefined>       // THIS TASK
+
+        // T100's codec, consumed rather than redefined — exported from @/lib/server/publish
+        decodeArtefacts(bytes: Uint8Array): readonly ExportedFile[]
+        selectArtefact(files: readonly ExportedFile[], path: string): ExportedFile | undefined
+
+  **`readPersisted` is `storage.get(digest)` handed to `decodeArtefacts`, then `selectArtefact`.** The container format is T100's and is **not** this task's to redefine — `keyForDigest` refuses anything that is not `sha256:` + 64 hex, so there is no path component and a folder cannot be stored file-per-key. That is also the only reading under which `readPersisted`'s `path` argument is needed at all, which is what turns the format from a guess into a derivation.
+
+  **`serveFile` prefers the frozen artefact and falls back to generating from Postgres**, so a release predating the freeze still serves. The fallback is not a convenience: every release currently in the database was written before T100 shipped `persistArtefacts`.
+
+  **`checkFactoryDot` stays where T090 put it.** Its own header explains why the serving edge is correct — *a release stored before a lint rule changed would have passed that one and would be served unchecked forever* — and T100 already runs it at publish as a consequence of calling `exportRelease`. Neither placement is this task's to move.
+
+  **AC3 is worded to forbid the tempting fix.** `t090/serve.test.ts`'s AC6 cell must go green **without its assertion being weakened**, and that file's own comment records why: *"kept rather than deleted... a named red with a stated dependency is worth more than a criterion nobody is measuring"*, and *"so nobody later reads the missing persist call as an oversight and 'fixes' the test into vacuity."* **Two sessions wrote comments specifically to prevent that, and a third refused to touch the file when it could have.**
+
 - **Acceptance criteria:** (1) `readPersisted(storage, digest, path)` exists and consumes T100's published codec — `storage.get(digest)` then `decodeArtefacts` then `selectArtefact`; (2) `serveFile` prefers the frozen artefact and falls back to generate-from-Postgres when none exists, so a release predating the freeze still serves; (3) `tests/server/t090/serve.test.ts`'s AC6 cell goes green **without its assertion being weakened**; (4) that cell's failure message stops naming T100 and names this task.
 - **Out of scope:** the container format (T100's, published), `persistArtefacts` (T100's, built), and any change to what `buildExport` computes.
 - **Log:**
