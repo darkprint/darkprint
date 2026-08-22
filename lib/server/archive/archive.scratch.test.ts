@@ -279,8 +279,19 @@ describe.skipIf(!hasDb)("lib/server/archive", () => {
   it("D-vocab: a shared (non-cyclic) sub-object is not mistaken for a cycle", async () => {
     const owner = await ownerId("gh-16");
     const bundle = await createBundle(client.db, { ownerId: owner, slug: "b16", visibility: "public" });
-    const shared = { x: 1 };
-    const vocabulary = { a: shared, b: shared };
+    /* Re-carried at T133 (D-133-02 F2), assertion unchanged. This used to be
+       `{ a: shared, b: shared }`, which `addRelease` now refuses — a value the writer rejects
+       never reaches `isWellFormedDeep`'s `open` set, so the cell would have gone green while
+       testing nothing. The payload is a legal `StoredVocabulary` whose `terms` list holds ONE
+       object twice, which is the same structure under test: a value reached through two paths
+       must not read as a cycle. Carried here rather than on `manifest` because that field is
+       typed `BundleManifest`, and `as unknown as` to force it would keep the letter of this
+       test and destroy what it checks. */
+    const shared = {
+      id: "gh16/shared", kind: "tool", label: "Shared",
+      description: "One object, reached twice.", since: "0.1.0",
+    };
+    const vocabulary = { text: "terms: []\n", terms: [shared, shared] };
 
     const release = await addRelease(client.db, {
       bundleId: bundle.id, version: "1.0.0", dot: "digraph { a -> b }", manifest,

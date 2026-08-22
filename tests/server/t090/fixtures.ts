@@ -617,10 +617,29 @@ export async function seedRelease(
       })
     ).id;
 
-  const vocabulary =
-    "rawVocabulary" in options
-      ? (options.rawVocabulary as StoredVocabulary | undefined)
-      : storedVocabulary(options.vocabularyText);
+  /*
+   * `rawVocabulary` BYPASSES `addRelease` and writes the column directly (D-133-04).
+   *
+   * It used to go through the writer, and T133 closed that route: `addRelease` now refuses
+   * anything that is not `StoredVocabulary` at the write. Both cells that use this option —
+   * `export.test.ts:380` and `hygiene.test.ts:233` — store a bare term array in order to
+   * observe the reader refusing it, so the refusal would have killed them **in the fixture,
+   * before their assertion**, and D-90-02's fifth admissible message form would have lost both
+   * of its witnesses at once. A cell proving *the reader refuses the wrong shape* has to be
+   * able to store a wrong shape.
+   *
+   * The bypass is an `update` after the insert rather than a raw `insert into release`: the
+   * digest is T010's to compute (`bundleDigest` over `dot` and the card digests), and a fixture
+   * that recomputed it here would be a second copy of the identity rule — the same class of
+   * defect this task exists to close, one table over. So the release is written by the module
+   * that owns writing it, and exactly one column is then overwritten.
+   *
+   * That the row can be reached this way is not a hole in AC1. It is the reason the readers
+   * keep refusing: direct SQL and pre-amendment rows are routes into this column that the
+   * writer does not stand on, which is what `export.scratch.test.ts:187` demonstrates too.
+   */
+  const raw = "rawVocabulary" in options;
+  const vocabulary = raw ? undefined : storedVocabulary(options.vocabularyText);
   const release = await addRelease(db, {
     bundleId,
     version: options.version ?? "1.0.0",
@@ -629,11 +648,20 @@ export async function seedRelease(
     cardRefs,
     cardDigests,
     /* D-90-03: `{ text, terms }`, so the author's bytes survive and `ontology/extensions.yaml`
-       is served verbatim rather than re-emitted from the parse. T010 types the field `unknown`
-       and T030 reads `.terms` for `openView`'s extensions. */
+       is served verbatim rather than re-emitted from the parse. T133 publishes that shape as
+       `StoredVocabulary` and `addRelease` refuses anything else; T030 reads `.terms` for
+       `openView`'s extensions. */
     ...(vocabulary === undefined ? {} : { vocabulary }),
     analysis: analysisFor(entry.blueprint, entry.analysis),
   });
+
+  if (raw) {
+    const value = options.rawVocabulary;
+    await scratch.pool.query("update release set local_vocabulary = $1 where id = $2", [
+      value === undefined ? null : JSON.stringify(value),
+      release.id,
+    ]);
+  }
 
   return {
     bundleId,
