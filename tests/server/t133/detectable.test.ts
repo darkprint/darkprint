@@ -53,6 +53,13 @@ import {
  * `is not null` first, because `null` is the other legal column value and most releases
  * have it -- a report that named every release without a vocabulary would name almost the
  * whole table.
+ *
+ * **The first clause is MEASURED REDUNDANT and is labelled rather than deleted.** Removing
+ * `jsonb_typeof(local_vocabulary) <> 'object'` reds nothing: `->` on an array or a scalar
+ * yields SQL NULL, so the `text` clause already catches every non-object. Found by
+ * falsifying this query rather than by reading it. It stays because it states D-133-01's
+ * first clause where a reader looks for it, and it is labelled because an unfalsifiable
+ * line described as a guard is how a future reader comes to rely on nothing.
  */
 const REFUSED_ROWS = `
   select id from release
