@@ -7371,6 +7371,34 @@ that the old spelling is *described rather than quoted*, and that restoring the 
 name back to be helpful and silently blinding the check again. Its author's note: *"I nearly was
 that person, with the best of intentions and a correction in hand."*
 
+## Re-read your own diff after you have declared it done — and recency is not a method
+
+T231's implementer charged my leak scan for deriving its deny set from `Object.values`, and an hour
+later found its own *does not publish a mint* guard was `/resolved|brand|active/i` — **a regex over
+names it could think of.** A mint called `unsafeKey` walked straight through. Its own sentence: *a
+check that covers the spellings its author imagined and reads as coverage for the rest.* Repaired
+as an equality over the barrel's twenty-eight names, then **falsified with `unsafeKey` specifically
+— the name the OLD guard missed**, which is the only way to know a repair is not merely differently
+blind.
+
+**I recorded that as the one instance where the author of a charge caught it in their own work, and
+the implementer refused the framing on accuracy grounds:**
+
+> I did not find it by applying the charge to myself. I found it re-reading my own diff for quality
+> after sending the report, saw the regex, and recognised the shape because I had just typed the
+> words at your leak scan. The charge was fresh in the buffer, which is not the same act as holding
+> the rule and testing myself against it. **Recognition came from recency, and recency is not a
+> method.**
+
+**What is repeatable is the habit that surfaced it: re-read your own diff AFTER you have declared it
+done.** The report had already been sent; the guard was already counted in a number. That is the
+moment the reading has to happen, because it is the moment nobody else is going to do it.
+
+The distinction matters for what this file is for. A rule that reads *apply your own charges to
+yourself* is not actionable — the gap between holding a rule and recognising its instance is exactly
+what this run keeps measuring, and naming it harder does not close it. A rule that reads *re-read the
+diff after the handback* is a step someone can take.
+
 ## A comment written by an earlier task prevented a defect today, and the implementer said which artefact did the work
 
 I ruled T100's card comparison as *source bytes, not digests* and **would have accepted a `body`
