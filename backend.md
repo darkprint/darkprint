@@ -16132,6 +16132,19 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   bare term array is **refused**"*, stores the bare array **deliberately** with a comment saying so, asserts
   the rejection, then restores `{ text, terms }`. **One test exercising both sides of a boundary, not two
   conventions colliding.** T133 stands on the untyped-column ground alone, which is enough.
+- **Published signatures** — **D-133-01, ruled 2026-08-22 on T133's blind author's charge, which is correct and is the sixth instance of an owned deliverable with nothing published.** The irony is worth recording rather than smoothing: **the task that exists because a column has no published shape had no published shape for its own deliverable**, and both halves were already building against it blind. Charged before either wrote code, which is why it costs nothing.
+
+  **The shape is DERIVED, not invented, and that is the whole ruling.** It is already fixed by construction — the two merged readers jointly determine it and nobody wrote it down. Read off `lib/server/export/vocabulary.ts:36-50` and `lib/content/ontology-file.ts:46-57`:
+
+        /** The published shape of `release.local_vocabulary`. `null` is the other legal value. */
+        interface StoredVocabulary { text: string; terms?: readonly unknown[] | null }
+
+  Each clause has a merged reader that already enforces it: **not an array and not a primitive** (`storedVocabulary` throws on `Array.isArray`, `parseOntologyTerms` throws `is not a YAML mapping`); **`text` is a required `string`** (`storedVocabulary` throws otherwise, and D-90-03 ruled `text` in precisely so the author's bytes survive); **`terms` absent or `null` means `[]`** (`parseOntologyTerms:52`), **and when present it must be an array of mappings** (`:53` and `toTerm`). `StoredVocabulary` is the name `tests/server/t090/fixtures.ts:493` already uses and two suites already write, so it is adopted rather than coined.
+
+  **AC1's refusal belongs at the write and the class is `MalformedVocabularyError`**, in `lib/server/archive/errors.ts` beside `ArchiveConflictError`, following that file's convention exactly: **fields assigned on the prototype rather than in the constructor**, because a constructor assignment makes the property enumerable and breaks the hygiene clause that `Object.keys(err)` is `[]` and `JSON.stringify(err)` is exactly `"{}"`. It carries the operation and the failing clause, never the value — a caller's vocabulary is caller data and D-13 applies to it.
+
+  **What this ruling does NOT do:** it does not move a reader, it does not widen or narrow the grammar (T030's), and it does not touch the bundle format (T090's). `addRelease` refuses what the readers would have refused later, at the moment the row is written. **An existing row in a refused shape is out of scope and stays** — the Open question above is unresolved and this ruling does not resolve it.
+
 - **Out of scope:** the ontology parser's grammar (T030), the export bundle's format (T090).
 - **Log:**
   - 2026-08-20 orchestrator: **created at T130's adversary round, from a demonstrated instance rather than a warning.** T130's blind author independently guessed `readonly Record<string, unknown>[]` for this column and stored a bare array; neither merged reader accepts it, and the result was three reds that looked like a T130 implementation defect until its adversary traced them. **Two authors who could not see each other, one untyped column, two incompatible readings — and a
