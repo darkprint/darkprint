@@ -69,7 +69,13 @@
    ============================================================ */
 
 import type { Db } from "@/lib/db";
-import { DEFAULT_LIMITS, limitFor, tierOf, type LimitConfig } from "./config";
+import {
+  DEFAULT_LIMITS,
+  UNCONFIGURED_BACKOFF_MS,
+  limitFor,
+  tierOf,
+  type LimitConfig,
+} from "./config";
 import { createSlotCounter, type SlotCounter } from "./counter";
 import type { LimitSubject, LimitVerdict } from "./types";
 import { rateLimitedError } from "./errors";
@@ -103,6 +109,12 @@ const processCounter: SlotCounter = createSlotCounter();
  * `Record` index, and the one place AC2 could be false with nothing to show it. The verdict
  * for that case carries `limit: 0` and `remaining: 0`, which is the honest rendering of "no
  * ceiling has been set for this bucket" and is not a ceiling anybody chose.
+ *
+ * **All four of the verdict's other fields are priced, not just those two (F-230-M).** The
+ * refusal is a document a client PARSES — D-230-09 publishes `resetAt` as a machine-readable
+ * member for exactly that reason — so `resetAt` and `windowMs` are answers to a caller and
+ * not slots to fill with whatever is cheapest. They carry `UNCONFIGURED_BACKOFF_MS`; the
+ * branch below says why.
  */
 export async function checkLimit(
   db: Db,
@@ -123,8 +135,46 @@ export async function checkLimit(
 
   if (configured === undefined) {
     /* No window to roll and nothing to count, so the counter is not touched: an
-       unconfigured bucket must not be able to consume slots. */
-    return { allowed: false, limit: 0, remaining: 0, resetAt: new Date(0), windowMs: 0 };
+       unconfigured bucket must not be able to consume slots.
+
+       ── F-230-M: this branch returned `resetAt: new Date(0)` and `windowMs: 0` ──
+       Both reached a caller and both were wrong, in a way `limit: 0` and `remaining: 0` are
+       not. D-230-09 publishes `resetAt` as a MACHINE-READABLE member precisely so a client
+       parses it rather than regexing the sentence, and `http.ts` declines a `retry-after`
+       deliberately — so this one field is the entire recovery signal. The Unix epoch tells a
+       correctly-implemented client to wait zero: it retries, is refused, retries, and loops
+       at full request rate forever. The better-behaved the client, the tighter the loop.
+
+       `windowMs: 0` was the same sentinel surfacing in the exact-matched `detail`, as
+       `per 0ms`. `describeWindow`'s claim that a configured window it cannot describe does
+       not exist is true, and is exactly the assumption a sentinel breaks: an unconfigured
+       bucket has no configured window at all, and it was reaching a renderer that assumes it
+       is looking at one.
+
+       ── What replaces them ──
+       The true answer to *when may I come back* is "not without a deploy", so the refusal
+       says the longest thing a `Date` can honestly carry rather than the shortest. This
+       invents no ceiling: `limit` is 0, no request is ever admitted, and nothing is being
+       rationed over the interval — see `UNCONFIGURED_BACKOFF_MS` for why the number is also
+       chosen to be unlike every configured window, so the sentence identifies itself instead
+       of reading as a cell somebody closed on purpose.
+
+       `windowStart` is now, which keeps D-230-03's bindable `resetAt = windowStart +
+       windowMs` true for this verdict as it is for every other — the two fields are one
+       decision here, not two independent ones.
+
+       `Date.now()` rather than a clock on `CheckLimitOptions`: the counter already owns one,
+       and a second knob for the same quantity is the two-sources shape D-230-10 forecloses
+       at the window. The branch touches no slot, so it cannot borrow the counter's either.
+       `check.test.ts` brackets the call between two real clock reads instead. */
+    const windowStart = Date.now();
+    return {
+      allowed: false,
+      limit: 0,
+      remaining: 0,
+      resetAt: new Date(windowStart + UNCONFIGURED_BACKOFF_MS),
+      windowMs: UNCONFIGURED_BACKOFF_MS,
+    };
   }
 
   /* The subject key is the identifier that DECIDED the tier, so the three cases cannot

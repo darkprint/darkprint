@@ -29,7 +29,7 @@
 import { describe, expect, it } from "vitest";
 import type { Db } from "@/lib/db";
 import { checkLimit, enforceLimit } from "./check";
-import { DEFAULT_LIMITS, limitFor } from "./config";
+import { DEFAULT_LIMITS, UNCONFIGURED_BACKOFF_MS, limitFor } from "./config";
 import type { LimitConfig } from "./config";
 import { createSlotCounter } from "./counter";
 import { RateLimitedError } from "./errors";
@@ -202,6 +202,67 @@ describe("an unconfigured bucket refuses rather than passing", () => {
     for (const bucket of ["constructor", "toString", "__proto__", "hasOwnProperty"]) {
       const verdict = await checkLimit(db, ANON, bucket, { config: CONFIG, counter });
       expect(verdict.allowed, `bucket ${bucket}`).toBe(false);
+    }
+  });
+
+  it("F-230-M: its resetAt is in the FUTURE, so a client honouring it does not hot-loop", async () => {
+    /* The field was `new Date(0)`. D-230-09 publishes `resetAt` as a MACHINE-READABLE member
+       so a client parses it instead of regexing the sentence, and `http.ts` declines a
+       `retry-after` deliberately — so this is the whole recovery signal. An epoch instant
+       computes a wait of zero: retry, refused, retry, at full request rate, forever.
+
+       Bracketed between two real clock reads rather than pinned to a literal. The instant is
+       relative to now because the module reads `Date.now()` rather than carrying a second
+       clock beside the counter's, and the bracket is exact to the duration of the call. */
+    const { counter } = fixedCounter();
+    const { db } = recordingDb();
+    const before = Date.now();
+    const verdict = await checkLimit(db, ANON, "unconfigured", { config: CONFIG, counter });
+    const after = Date.now();
+    expect(verdict.resetAt.getTime()).toBeGreaterThan(after);
+    expect(verdict.resetAt.getTime()).toBeGreaterThanOrEqual(before + UNCONFIGURED_BACKOFF_MS);
+    expect(verdict.resetAt.getTime()).toBeLessThanOrEqual(after + UNCONFIGURED_BACKOFF_MS);
+  });
+
+  it("its window is not the zero sentinel, and resetAt is that window's start plus it", async () => {
+    /* `windowMs: 0` rendered as `per 0ms` inside the EXACT-MATCHED form. `describeWindow`'s
+       comment says a configured window it cannot describe does not exist — true, and the
+       assumption the sentinel broke, since an unconfigured bucket has no configured window.
+
+       The second half is D-230-03's bindable property, `resetAt = windowStart + windowMs`,
+       held for this verdict as for every other. Without it the two fields could be chosen
+       independently and one of them could go back to being a sentinel on its own. */
+    const { counter } = fixedCounter();
+    const { db } = recordingDb();
+    const before = Date.now();
+    const verdict = await checkLimit(db, ANON, "unconfigured", { config: CONFIG, counter });
+    const after = Date.now();
+    expect(verdict.windowMs).toBeGreaterThan(0);
+    const windowStart = verdict.resetAt.getTime() - verdict.windowMs;
+    expect(windowStart).toBeGreaterThanOrEqual(before);
+    expect(windowStart).toBeLessThanOrEqual(after);
+  });
+
+  it("its refusal is distinguishable from a cell somebody closed on purpose", async () => {
+    /* D-230-04's intent is that adding a bucket without a number is LOUD rather than free.
+       `write`/`anonymous` is a deliberately closed cell and renders `limit of 0 per hour`; an
+       unconfigured bucket rendering the same sentence would be indistinguishable from it to
+       the developer who mistyped a bucket name, and the refusal would read as a decision
+       somebody took. The window is the only part of the exact-matched form that can separate
+       them, so this is the assertion that it does.
+
+       Derived from `DEFAULT_LIMITS` rather than from the literal hour, so it stays true if
+       the owner ever rules a window that is not an hour. The length check is the anti-vacuity
+       control: over an empty table every `toBeGreaterThan` below would pass. */
+    const { counter } = fixedCounter();
+    const { db } = recordingDb();
+    const verdict = await checkLimit(db, ANON, "unconfigured", { config: CONFIG, counter });
+    const configuredWindows = Object.values(DEFAULT_LIMITS).flatMap((tiers) =>
+      Object.values(tiers).map((cell) => cell.windowMs),
+    );
+    expect(configuredWindows).toHaveLength(9);
+    for (const windowMs of configuredWindows) {
+      expect(verdict.windowMs).toBeGreaterThan(windowMs);
     }
   });
 

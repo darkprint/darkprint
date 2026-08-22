@@ -212,6 +212,68 @@ describe("AC1: the refusal is a problem+json 429", () => {
   });
 });
 
+describe("F-230-M: an unconfigured bucket's 429 does not invite a hot loop", () => {
+  /* The defect driven the way it reaches a caller — `enforceLimit` -> `withLimitsErrors` ->
+     the published document — rather than at the verdict, which `check.test.ts` holds. These
+     are about what a CLIENT parses, which is where the epoch did its damage: the sentence
+     read plausibly and the machine-readable member said "come back now".
+
+     Nothing here is outside D-230-09's published key set. The set is exactly nine members and
+     T081's whitelist is asserted against it, so the fix moves two values that were already
+     members rather than adding a tenth to make the refusal loud. */
+  async function refusal(): Promise<Response> {
+    const counter = createSlotCounter({ slots: 64, seed: 1, now: () => 1_000_000 });
+    return withLimitsErrors(request(), async () => {
+      /* A bucket absent from CONFIG. This is the shape the defect is actually reached
+         through: the next task to wire a route mistypes `reads` for `read`. */
+      await enforceLimit(noDb, SUBJECT, "nobody-sized-this", { config: CONFIG, counter });
+      return new Response("unreachable");
+    });
+  }
+
+  it("answers 429 rather than passing the request", async () => {
+    expect((await refusal()).status).toBe(429);
+  });
+
+  it("resetAt is in the future, so a client computing a wait gets a positive one", async () => {
+    const body = (await (await refusal()).json()) as Record<string, unknown>;
+    const wait = Date.parse(body.resetAt as string) - Date.now();
+    expect(wait).toBeGreaterThan(0);
+  });
+
+  it("detail is the admissible form, says no `per 0ms`, and names the member's own instant", async () => {
+    const body = (await (await refusal()).json()) as Record<string, unknown>;
+    /* Written out as the form rather than assembled from the module, with only the instant
+       read off the DOCUMENT — a literal for that would be a literal for `Date.now()`. Reading
+       it from `resetAt` is not the subject agreeing with itself: it is the assertion that the
+       sentence and the machine-readable member name the SAME instant, which is the one
+       cross-check the epoch satisfied while both were wrong.
+
+       The negative is redundant against the equality above and is kept, because it is the
+       charge in F-230-M's own words and a reader looking for it should find it asserted. */
+    expect(body.detail).not.toContain("per 0ms");
+    expect(body.detail).toBe(
+      `nobody-sized-this: limit of 0 per 365 days reached; resets at ${body.resetAt as string}.`,
+    );
+  });
+
+  it("carries exactly the published nine members, loud or not", async () => {
+    /* The refusal being made loud must not have been paid for with a tenth member. */
+    const body = (await (await refusal()).json()) as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual([
+      "detail",
+      "instance",
+      "keysAvailable",
+      "limit",
+      "remaining",
+      "resetAt",
+      "status",
+      "title",
+      "type",
+    ]);
+  });
+});
+
 describe("the refusal names no subject", () => {
   it("no identifier the caller supplied survives into any rendering", async () => {
     const counter = createSlotCounter({ slots: 64, seed: 1, now: () => 1_000_000 });

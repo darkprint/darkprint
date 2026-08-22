@@ -107,6 +107,28 @@ const HOUR = 60 * 60 * 1000;
 const REFUSED: BucketLimit = { limit: 0, windowMs: HOUR };
 
 /**
+ * How long a caller is told to stay away from a bucket nobody configured (F-230-M).
+ *
+ * **Not a ceiling and not a window, and that is why this task may choose it.** `limit` is 0
+ * for this case, so nothing is rationed and no rate is being invented — the number answers
+ * *when is it worth coming back*, and for a bucket absent from the table the honest answer
+ * is "not without a deploy". A year is the nearest thing to that a `Date` can carry.
+ *
+ * **It is deliberately unlike every configured window.** Those are all an hour, so
+ * `describeWindow` renders this one as `365 days` and the refusal identifies itself:
+ * `limit of 0 per 365 days` is not a ceiling anybody would set, where `limit of 0 per hour`
+ * is exactly what `REFUSED` above renders and would have read to the developer who mistyped
+ * a bucket name as a closure somebody decided on. D-230-04's intent is that adding a bucket
+ * without a number is LOUD rather than free, and an ordinary-looking refusal is the opposite.
+ *
+ * **Not on the barrel.** Publishing it would invite
+ * `verdict.windowMs === UNCONFIGURED_BACKOFF_MS` as a way to detect the case, which is a
+ * second spelling of a condition the verdict already answers with `allowed: false` — and a
+ * second spelling is what drifts.
+ */
+export const UNCONFIGURED_BACKOFF_MS = 365 * 24 * HOUR;
+
+/**
  * The ceilings, CONFIRMED by the owner on 2026-08-20 and generous by design.
  *
  *                   anonymous     account         key
