@@ -164,6 +164,69 @@ describe("AC3 — the repair is a type, so `check.ts` cannot reach a database at
   });
 });
 
+describe("AC3 — and nothing `check.ts` reaches, at any depth, can reach a database", () => {
+  /*
+   * The three-door predicate above reads ONE file. A second driver imported by something
+   * `check.ts` imports would satisfy every cell in this file and reach a database at depth
+   * two — so the closure is walked rather than the module.
+   *
+   * This is the structural half of F6. The behavioural cell counts `pg` and only `pg`, so a
+   * second driver evades it too; an import-closure check catches any channel that arrives by
+   * IMPORT, which is what a second driver does. What neither catches is measured and named
+   * in the behavioural file's header: a global like `fetch` needs no import at all.
+   */
+  const ALLOWED = new Set(["node:crypto"]);
+
+  function closureOf(entry: string): Map<string, string[]> {
+    const seen = new Map<string, string[]>();
+    const queue = [entry];
+    while (queue.length > 0) {
+      const file = queue.shift() as string;
+      if (seen.has(file)) continue;
+      const specifiers = importsOf(file);
+      seen.set(file, specifiers);
+      for (const specifier of specifiers) {
+        if (!specifier.startsWith("./")) continue;
+        const next = `${specifier.slice(2).replace(/\.ts$/, "")}.ts`;
+        if (!seen.has(next)) queue.push(next);
+      }
+    }
+    return seen;
+  }
+
+  it("reaches only sibling modules and an allowlisted node builtin", () => {
+    const closure = closureOf("check.ts");
+    const foreign: string[] = [];
+    for (const [file, specifiers] of closure) {
+      for (const specifier of specifiers) {
+        if (specifier.startsWith("./")) continue;
+        if (ALLOWED.has(specifier)) continue;
+        foreign.push(`${file} -> ${specifier}`);
+      }
+    }
+
+    expect(
+      foreign,
+      `\`check.ts\`'s import closure reaches outside \`lib/server/limits\`.\n` +
+        `  ${foreign.join("\n  ")}\n` +
+        `  AC3 is about EVERY path, and a module two imports away can reach a database while ` +
+        `every three-door cell in this file stays green. The allowlist is deliberately tiny: ` +
+        `a new entry is a decision, not a maintenance chore.`,
+    ).toEqual([]);
+  });
+
+  it("walks more than the entry file — the control", () => {
+    /* A closure that stopped at `check.ts` would answer `[]` for a reason that has nothing to
+       do with what the module reaches, and would look exactly like a clean result. */
+    const closure = closureOf("check.ts");
+    expect(
+      [...closure.keys()].length,
+      `the closure walked ${closure.size} file(s): ${[...closure.keys()].join(", ")}`,
+    ).toBeGreaterThan(1);
+    expect([...closure.keys()]).toContain("counter.ts");
+  });
+});
+
 describe("the detector is falsified on a second axis", () => {
   it("finds the database in the file that genuinely reaches it", () => {
     /*
