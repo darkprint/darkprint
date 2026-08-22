@@ -7686,7 +7686,26 @@ working, with evidence.
 
 **The repair is not a type: source cells that read the barrel from disk.** They red today, name what
 is missing, and are the only thing that can tell a reader whether a red typecheck means *a member is
-absent* or *an assertion failed*. **A type-level instrument cannot observe its own blindness;
+absent* or *an assertion failed*.
+
+**Scoped correctly by T100's blind author, and the distinction matters when propagating this: a
+barrel's FUNCTIONS have a runtime absence detector for free; its TYPES do not, and only those need
+the source cell.** The runtime binding cells import the barrel and red with the clause that
+published it. Types are erased, so they have no runtime witness at all — which is exactly the gap
+the source cell fills, and the only one.
+
+**Confirmed independently in a second tree, and it is worse than first described.** Pointing a pin at
+a genuinely absent barrel and asserting BOTH verdicts: `Pin<Absent, T> = true` compiles,
+`Pin<Absent, T> = false` **also** compiles, `IsAny<Absent> = true` compiles, `IsAny<Absent> = false`
+**also** compiles. **All four, with only `TS2307` on the import line.** And in the same probe
+`Pin<any, T> = false` under `@ts-expect-error` **consumed the directive** — against `any` the guard
+fires perfectly. The stand-in half reproduces exactly.
+
+That session re-measured rather than accepting the report, and named why: **a finding accepted
+unmeasured is the co-authored-reference error at one more remove.** Its source cells were then
+falsified against six synthetic barrels — passing both-re-exported, both-inline and
+two-separate-lines, redding one-missing and both-missing, and catching **declared but never
+exported**, which a naive `includes()` waves through. **A type-level instrument cannot observe its own blindness;
 something outside it has to.**
 
 Keeping the `any` short-circuit and **labelling it as not covering the absent-member case** is the
