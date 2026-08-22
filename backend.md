@@ -7175,6 +7175,40 @@ downstream does. Both were found by mutation, and both mutations scored **0** �
 means nothing until inertness is falsified on the second axis, which is why that step is not
 optional.
 
+## Check the DECISION that already read the artefact, not the artefact
+
+**Four instances on 2026-08-22, in two sessions, and it is the dominant failure shape of the day.**
+Named by T133's implementer after its third: *"the common shape is checking the artefact rather
+than the decision that had already read the artefact."*
+
+1. **Mine.** I confirmed `lib/server/ontology/**` as `StoredVocabulary`'s home after **checking the
+   cycle evidence** — and checked the premise **as it was given** rather than as D-133-01 had just
+   changed it. Once the error class landed in `archive/errors.ts`, ontology was a hop with nothing
+   at the end of it. A verification that re-checks the premise it was handed cannot catch a premise
+   a later ruling invalidated.
+2. **The implementer.** Declined D-133-02 F4's grant of `export/index.ts` on the strength of that
+   file's own header arguing against re-exporting a type it only consumes — **an argument the
+   ruling had already weighed. The grant WAS the answer to that header.**
+3. **The implementer.** Enumerated D-133-04's collateral from recall rather than mechanically, and
+   missed the suite belonging to the very function it was changing.
+4. **The implementer, and the sharpest**: blinded a check by quoting the spelling the check looks
+   for — *"asking for the exception it declined to grant itself"*, since `archive/errors.ts:28`,
+   **its own file, in this same task**, argues that an exception for mentions-we-meant-to-keep
+   reintroduces the list the clause replaced. **The artefact it re-derived from was a rule it had
+   written itself, four files away.**
+
+**The measurement that makes instance 4 worth keeping.** The docblock above `localVocabulary` went
+**90 chars → 1107 → 1752** across the defect, the rewrite, and the fix; the cell's verdict was
+`1 → 1 → 0`. **Identical across a 1017-character rewrite of the thing it watches** — it would have
+red the same had the file never been opened. A cell that cannot separate a defect from its removal
+is measuring a string's presence, not the remediation.
+
+**And the repair carries its own guard-rail rather than a commit message.** The docblock now states
+that the old spelling is *described rather than quoted*, and that restoring the literal is a
+**regression, not a clarification** — because the obvious future edit is somebody putting the exact
+name back to be helpful and silently blinding the check again. Its author's note: *"I nearly was
+that person, with the best of intentions and a correction in hand."*
+
 ## Absent MODULE and absent MEMBER are one axis with two failure directions, and both end at "unreadable"
 
 Found independently by two T133 sessions in different contexts on the same afternoon, and they
