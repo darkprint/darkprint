@@ -7371,6 +7371,52 @@ that the old spelling is *described rather than quoted*, and that restoring the 
 name back to be helpful and silently blinding the check again. Its author's note: *"I nearly was
 that person, with the best of intentions and a correction in hand."*
 
+## Distinguish a LEAK from LIVE SCRATCH by the backend count, not by the database count
+
+T231's implementer, stamping Postgres at 4 against a baseline of 3:
+
+> Client backends: **1**, and that one is my own stamp's connection. So the two `t090_attractor`
+> databases are **held open by nothing. Live scratch would have backends on it.**
+
+**The database count alone cannot tell a leak from a run in progress** — both read as *above
+baseline*. The connection count separates them: a scratch database a suite is currently using has a
+backend on it; one that outlived its run has none. Recording it because three sessions have now
+flagged those two databases and each had to re-derive the distinction.
+
+It also declined to drop them — *dropping databases is a standing no, and they are not mine* — and
+flagged the count **so nobody reads 4 during a legitimate run and charges the wrong session.**
+
+## A shell's exit status describes its LAST COMMAND — third instance, third costume
+
+Its stamp script **exited 1** and it diagnosed the cause rather than reporting a broken instrument:
+the loop's last statement is `[ $i -lt 3 ] && sleep 20`, false on the third pass. **All three
+samples printed correctly.** Its own line: *the exit code described the guard on the sleep, not the
+measurement.*
+
+Three instances today, all the same object:
+
+* `npm test 2>&1 | tail` — exit 0 beside a red, because the status was `tail`'s.
+* `psql "$DATABASE_URL" … || echo "unset"` — **one `||` arm answering for two failure modes**, so a
+  missing binary read as a missing variable.
+* `[ $i -lt 3 ] && sleep 20` — the loop guard's status standing in for the loop's result.
+
+**The general form: a status is a fact about one command, and the command it is a fact about is
+almost never the one you care about.** In all three the numbers themselves were correct and present;
+only the status lied. Read the output, not `$?`.
+
+## Demand and the load average pointed in OPPOSITE directions across forty seconds
+
+The sharpest instance of the rule, measured by T231's implementer at three samples 20s apart:
+
+```
+demand  816.70%  →  905.50%  →  934.60%      rising
+load1    134.37  →   127.10  →   125.81      falling
+```
+
+**A `load < 30` watcher would have seen a number improving and armed into a host getting worse.**
+One process group — `pgid 69757`, homebrew Python — was 616% → 745% of it, with everything else on
+the machine under 200% combined. Counted by **pgid, not by name**.
+
 ## Automate the REFUSING; never automate the TAKING
 
 Two sessions, eight hours apart, bracketing one rule from opposite sides.
