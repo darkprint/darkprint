@@ -12,6 +12,20 @@
    from there. Re-publishing them here would make this module look
    like the author of a file set it only consumes.
 
+   **`StoredVocabulary` IS re-exported, and the paragraph above is
+   why it nearly was not (D-133-02 F4).** That rule reads as though
+   it covers this type too — it is another module's and this one
+   only consumes it — and T133's implementer declined the grant on
+   exactly that reading. The ruling had already weighed it: **a
+   published shape nobody can import is not published.** The
+   distinction is what the type is FOR here. `ExportedVocabulary`
+   names a file this module writes into a folder, and a caller
+   wanting it wants `lib/content`; `StoredVocabulary` names the
+   argument this module's own reader takes and refuses, so a caller
+   binding that reader has nowhere else to get it. Re-exported by
+   name from `@/lib/server/archive` rather than restated, so there
+   is no second declaration to drift.
+
    The message literals are not exported either. A test that
    imports its expected message from the module under test asserts
    that the module agrees with itself, and passes unchanged if the
@@ -24,6 +38,11 @@ export type { ReleaseRef, ServedFile } from "./types";
    and must reach the caller as a 500. They are siblings, not parent and child, so a route
    that checks one cannot accidentally swallow the other. */
 export { ExportError, ExportReadError } from "./errors";
+
+/* T133 AC2. The shape `storedVocabulary` consumes and refuses, published so a caller can name
+   what this module reads without reaching into `@/lib/server/archive`'s deep paths. The one
+   re-export of another module's type here; the header says why this case differs. */
+export type { StoredVocabulary } from "@/lib/server/archive";
 
 export { exportRelease } from "./export-release";
 /* B-14's event, published at the blind suite's delivery: the clause said one event per
