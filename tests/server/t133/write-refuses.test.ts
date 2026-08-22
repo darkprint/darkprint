@@ -25,7 +25,16 @@
    value, in a key, nested inside a term -- and the cell asserts the
    nonce is absent from everything reachable off the error: its
    message, its `String()`, its `JSON.stringify`, its stack, its
-   `cause` chain and every key and string inside all of them.
+   `cause` chain and every key and string inside all of them,
+   **non-enumerable and symbol-keyed and prototype-level properties
+   included**. That last clause was added after T133's adversary
+   charged the instrument rather than the implementation: a value
+   shaped to satisfy D-13's hygiene clause exactly -- `Object.keys`
+   `[]`, `JSON.stringify` `"{}"` -- is the one shape an
+   enumerable-only walk cannot read, so the two guards were in
+   tension and neither said so. The widening is falsified in both
+   directions in `leak-instrument.test.ts`, whose cells measure THIS
+   SUITE rather than the module and say so in their own header.
 
    ── the hook holds nothing a criterion needs ──
    A throw in `beforeAll` produces SKIPS, not reds, and a skipped

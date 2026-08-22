@@ -409,9 +409,45 @@ export async function outcomeOf(call: () => unknown): Promise<Outcome> {
 /* --------------------- the leak instrument --------------------- */
 
 /**
- * Every string reachable inside a value, keys included -- a leak arrives as a property
- * NAME as readily as a value -- following `cause` and walking the prototype chain's own
- * enumerable properties, with a seen-set so a cyclic error cannot hang the scan.
+ * Every string reachable inside a value, keys included -- a leak arrives as a property NAME
+ * as readily as a value -- following `cause`, walking the prototype chain, and reading
+ * NON-ENUMERABLE and SYMBOL-KEYED properties as well as ordinary ones, with a seen-set so a
+ * cyclic error cannot hang the scan.
+ *
+ * ── WIDENED after T133's adversary charged it, and the charge is the interesting part ──
+ * This walked `Object.entries`, which is **own and enumerable only**, and the docblock above
+ * it claimed a prototype-chain walk it was not doing. Mutation M8 put the caller's
+ * vocabulary on the refusal as a **non-enumerable own property** and predicted zero reds:
+ *
+ *     MUTATION_IS_LIVE_offeredCarriesNonce:  true    <- the value IS on the error
+ *     SUITE_INSTRUMENT_renderedFullySeesIt:  false   <- and this could not see it
+ *     objectKeys: []   jsonStringify: "{}"   inspectShowHiddenSeesIt: true
+ *
+ * Zero reds across 6202 cells, and the adversary falsified the inertness on a second axis
+ * rather than believing the zero.
+ *
+ * **The two guards were in tension and neither said so.** D-13's four-part hygiene clause
+ * asks that `Object.keys(err)` be `[]` and `JSON.stringify(err)` be exactly `"{}"` -- and a
+ * value shaped to satisfy that clause EXACTLY is the one shape an enumerable-only scan
+ * cannot see. Satisfying the first guard was the way through the second.
+ *
+ * ── the honest scope of what carrying it would be ──
+ * Recorded rather than smoothed, because AC4's teeth are in the wording. Such a value does
+ * not reach `message`, `String(err)`, `JSON.stringify(err)` or a default `util.inspect`, so
+ * under D-13's *rationale* -- which is about renderings -- it is arguably not a leak, exactly
+ * as `ArchiveConflictError.kind` is not. But `kind` is a closed union of the module's own
+ * vocabulary, and a caller's vocabulary document is caller data: reachable by property
+ * access, by `Object.getOwnPropertyNames`, and by `util.inspect(err, { showHidden: true })`,
+ * which error-reporting SDKs use precisely because it catches what `JSON.stringify` drops.
+ * **AC4's own words are "never the caller's value", and carrying it violates the words even
+ * where it survives the rationale.** No shipped implementation exploits this; the class was
+ * confirmed clean on the unmutated tree. This was a gap in what the suite could MEASURE.
+ *
+ * ── what it still cannot see, stated so nobody relies on silence ──
+ * A value held only in a closure, and one synthesised by a getter that answers differently
+ * on a second read. Both are outside anything a property walk can reach, and the second is
+ * the shape T010's own D-12 round already recorded against its well-formedness traversal.
+ * Function-valued properties are recorded by NAME and not descended into.
  */
 export function stringsIn(value: unknown): string[] {
   const found: string[] = [];
@@ -423,18 +459,47 @@ export function stringsIn(value: unknown): string[] {
       found.push(current);
       continue;
     }
+    if (typeof current === "symbol") {
+      found.push(current.description ?? "");
+      continue;
+    }
     if (current === null || typeof current !== "object") continue;
     if (seen.has(current)) continue;
     seen.add(current);
     if (current instanceof Error) {
+      /* Kept alongside the walk below rather than replaced by it: `name` normally lives on
+         the prototype and `cause` is non-enumerable, and a duplicate string costs a
+         substring search nothing. */
       found.push(current.message, current.name, current.stack ?? "");
       if (current.cause !== undefined) stack.push(current.cause);
     }
-    for (const [key, entry] of Object.entries(current)) {
-      found.push(key);
-      stack.push(entry);
+    for (
+      let level: object | null = current;
+      level !== null && level !== Object.prototype;
+      level = Object.getPrototypeOf(level) as object | null
+    ) {
+      const keys: (string | symbol)[] = [
+        ...Object.getOwnPropertyNames(level),
+        ...Object.getOwnPropertySymbols(level),
+      ];
+      for (const key of keys) {
+        found.push(typeof key === "string" ? key : key.description ?? "");
+        const descriptor = Object.getOwnPropertyDescriptor(level, key);
+        if (descriptor === undefined) continue;
+        if ("value" in descriptor) {
+          /* A function is recorded by its name above and not descended into: a leak inside a
+             closure is not reachable by a property walk at all, and walking `prototype` and
+             `constructor` off every method turns a scan into a heap traversal. */
+          if (typeof descriptor.value !== "function") stack.push(descriptor.value);
+          continue;
+        }
+        try {
+          stack.push(descriptor.get?.call(current));
+        } catch {
+          /* A getter that throws hides nothing this scan could otherwise have read. */
+        }
+      }
     }
-    if (Array.isArray(current)) for (const entry of current) stack.push(entry);
   }
   return found;
 }
