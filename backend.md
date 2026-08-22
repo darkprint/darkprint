@@ -7894,6 +7894,44 @@ biased against the module, so neither could have manufactured a false zero: inst
 `pool.query` *and* the checked-out client double-counts, because `pg` implements the former via the
 latter; and `observe()` re-wrapping an already-wrapped pooled client nests the counter.
 
+## Every masking failure this run met was repaired by WIDENING WHAT THE FAILURE SAYS, never by narrowing what the code ACCEPTS
+
+T100's adversary, stating as a class what it had met three times as instances:
+
+* **F4** — the agreement cell reported an **authorization defect** for an ontology error.
+* **F6** — `boundPublish` reported an **absent module** while the fixture beneath it had never run.
+* **`refusalFrom`** — a foreign rejection reported as a **wrong `kind`**.
+
+> Every one is a red that reports a plausible wrong cause, and in every one **the repair was to widen
+> what the failure SAYS rather than to narrow what the code ACCEPTS.** The tempting fix in each case
+> — tighten the helper, assert the module first, hard-code the outcome — **makes the instrument
+> stricter and the diagnosis no better.**
+
+Its worked example for the third: **keep `refusalFrom` permissive**, because four foreign rejections
+now reach a caller unaltered *by contract* and a stricter helper would red correct behaviour on all
+four. But when `kind` is `undefined` the thrown value is by definition not a `PublishRefusedError`,
+and the helper already captures `thrown.name` — so it can say *"rejected with
+`UnknownOntologyVersionError`, which carries no `kind`; four foreign rejections pass through this
+verb by contract, so this is a premise that failed upstream or a refusal never reached — not a wrong
+`kind`"* instead of `expected undefined to be "unfinished"`. **Permissiveness unchanged, diagnosis
+discriminating**, and the eight cells that produced a histogram would have named the cause in one read.
+
+## A falsification can get the VERDICT right and the CODE PATH wrong, and read identically either way
+
+The delegation falsification was re-run after three never-executed cells started executing, and the
+adversary found it had been **materially weaker than it looked** — for a reason sharper than "the
+plants now land":
+
+> With the four plants dead, `getBundle` returned `undefined` for every subject, so all four rows
+> took the **create** path — a non-owner publishing to a **free** slug. **AC7 is "a non-owner
+> publishing to an EXISTING `(owner, slug)`."** The old run measured the adjacent scenario and would
+> have read identically in any summary.
+
+Same verdict, same one red, same operator-row diff — **and the wrong code path.** Now the bundles
+exist, all four rows take the **append** path, and the criterion is the one D-100-04 is actually
+about. **A green or a red proves something about whatever line actually ran**, and a falsification
+that never states which path it exercised cannot distinguish the criterion from its neighbour.
+
 ## Bind the module LAST — an early red masks every write below it, and DURATION is the detector
 
 T100's blind author was sent one never-executed cell (F6) and **generalised its cause instead of
@@ -7911,10 +7949,20 @@ the premises and the planting — found **two more cells that had never executed
   disagree: **0ms → 27ms**, and it holds, so T010 does accept releases written out of semver order.
 * The delegation cell's four plants: **0ms → 21ms**, all four land.
 
-**DURATION IS THE DETECTOR, and it is the cheapest one available.** A cell that reds in **0ms** did
-not reach a database; one that reds in 27ms did its setup and then failed on the thing it was
-testing. Both look identical in a summary line and in a failing-test name. **A red with a suspiciously
-round zero is a cell that never got started.**
+**DURATION IS THE DETECTOR — with one qualifier, supplied by T100's adversary, without which it
+flags every correct pure cell in the suite.** A cell that reds in **0ms** did not reach a database;
+one that reds in 27ms did its setup and then failed on the thing it was testing. Both look identical
+in a summary line and in a failing-test name.
+
+**But 0ms is CORRECT for a cell that does no I/O.** Measured, both files fully green: the delegation
+premise — a pure `can()` call over in-memory actors — costs **0ms and is right**, beside a
+card-bytes cell at 39ms and an agreement cell at 85ms.
+
+> **The detector is not "0ms means the cell never ran" — it is "NO I/O WHERE I/O WAS EXPECTED."**
+
+Read against the cell's own expected work it is exactly as sharp; read as a bare threshold it
+condemns every pure cell in the suite. Its author's reason for insisting on the qualifier is the one
+that matters: **the version that flags false positives is the version somebody switches off.**
 
 The ordering has a second benefit its author named: the card-bytes cell now reds on `boundPublish`
 **after** proving its premise, **which makes it self-diagnosing next time.**
