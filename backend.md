@@ -7175,6 +7175,39 @@ downstream does. Both were found by mutation, and both mutations scored **0** �
 means nothing until inertness is falsified on the second axis, which is why that step is not
 optional.
 
+## Absent MODULE and absent MEMBER are one axis with two failure directions, and both end at "unreadable"
+
+Found independently by two T133 sessions in different contexts on the same afternoon, and they
+compose into one item neither of them could see alone.
+
+**The blind author, on `next build`:** an absent **module** is `TS2307` and **fails** the build;
+absent **members** of a present barrel are `TS2305` and **do not**, because Next 16's build program
+excludes `tests/**` while `tsc --noEmit` does not. So a blind suite's build result depends on
+which of the two its subject is missing.
+
+**The implementer, on an `Exact<>` pin:** the documented vacuity is *absent module → `tsc` resolves
+to `any` → `Exact<any, T>` is `true` → **silently green***. This case was the other direction — a
+present barrel missing a member is **loud**, `TS2305`, and the pin was **still unfalsifiable**:
+*"not a green that meant nothing, but a red that drowned the signal."* A vacuous pin and a working
+one were indistinguishable because the typecheck was already red for an unrelated reason.
+
+**Both end at "the instrument cannot be read", and only the silent one was in the notes.** The
+loud one is more dangerous in a specific way: a green that means nothing invites suspicion, while a
+red with a plausible cause invites a fix to the cause and no further questions.
+
+**The discriminator, and it is what proves an instrument works rather than merely resolves:** a
+**near-miss** mutation. Restoring the export takes the tree to zero errors; a near-miss pin — the
+same shape with `| null` dropped from `terms` — reds `TS2322` at the export pin alone while the
+archive pin stays green. Green-against-red on two shapes that differ by one union member is
+discrimination. Zero errors on its own is only resolution.
+
+**Corollary already paid for twice today: an inline restore is not the snapshot pattern.** Both
+near-misses came from a restore written by hand mid-falsification rather than taken from the
+pristine snapshot the session had already set up — once `git checkout <file>` reverting an
+uncommitted fix to `HEAD`, once a zsh word-split passing one argument where four were meant. Both
+were caught by checking the tree rather than by the restore erroring; **only one of the two errored
+at all.**
+
 ## An implementer's self-assessment does not reach its adversary either
 
 The standing rule is that **adversary probes are never shown to the implementer**, because a fix
