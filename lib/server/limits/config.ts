@@ -195,15 +195,16 @@ export function limitFor(config: LimitConfig, bucket: string, tier: Tier): Bucke
   return forBucket[tier];
 }
 
-/**
- * Which ceiling a subject is under. A key outranks an account, an account outranks nobody.
+/*
+ * `tierOf(subject)` was published here and is REMOVED rather than made trivial (D-231-01).
  *
- * Note what decides `"key"`: a `keyId`, which only `resolveKey` produces and only for a
- * key that exists and is not revoked. So AC4's "a revoked key is refused immediately"
- * reaches this function as an absent `keyId` rather than as a flag anybody checks here.
+ * `LimitSubject` is now a union that CARRIES its tier, so the body would be `subject.tier`.
+ * The objection is not drift — an identity cannot drift — it is the name. `tierOf` said
+ * *derived*, and it was: it read which of two nullable identifiers was present and decided
+ * what that meant. Nothing is derived any more, so a reader opening it for the rule would
+ * find an identity and go looking for the part they had missed.
+ *
+ * Removing it also takes it off the barrel, which is the half that matters: an exported
+ * `tierOf` hands a caller a `Tier` detached from the subject it came from, and a tier apart
+ * from its subject is a second source for the quantity the union exists to carry once.
  */
-export function tierOf(subject: { accountId: string | null; keyId: string | null }): Tier {
-  if (subject.keyId !== null) return "key";
-  if (subject.accountId !== null) return "account";
-  return "anonymous";
-}

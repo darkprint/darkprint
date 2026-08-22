@@ -8,7 +8,7 @@
    back. A counter that writes on every read passes a latency-free
    test on an idle machine and falls over under load.
 
-   ── `db` is accepted and never touched, and that is the point ──
+   ── `db` is not accepted at all, and that is T231 ──
    AC5 and a durable counter are incompatible BY DEFINITION: a
    durable counter is a write per request, which is what the words
    mean. The absent counter table is not what makes them so, and a
@@ -17,23 +17,24 @@
    So the counter is in process (`counter.ts`) and this function
    touches `db` on NO path — not on the anonymous one AC5 names,
    and not on the keyed one either. A keyed subject arrives here
-   already carrying its `keyId`, because the route resolved it,
-   and the tier is derivable from the subject's shape alone.
+   already carrying the record `resolveKey` answered with, because
+   the route resolved it, and the tier is carried on the subject.
 
-   That makes AC5's instrument total rather than conditional: a
-   `Proxy`-backed `Db` recording any property access asserts
-   `touched() === false` for EVERY tier, which is a proof the
-   resource was never reached rather than a claim about latency.
-   T050 reached the same instrument from the other side — five
-   guards that its own sanitized error surface could not separate.
+   T230 shipped `db` as a parameter and never used it, and said so
+   in this comment. That was the published signature and not that
+   task's to change. **D-230-05 had already established the
+   parameter was unused on every path, so it was dead weight with
+   an argument attached** — and the argument for keeping it was
+   that AC5's instrument, a `Proxy`-backed `Db` asserting
+   `touched() === false`, needs something to hand the Proxy.
 
-   **The parameter is therefore unused, and it is kept rather than
-   removed.** It is the published signature and not this module's
-   to change; a durable counter would use it; and its presence is
-   what makes the `touched() === false` assertion meaningful, since
-   an assertion that the module never touched a thing it was never
-   given is vacuous. Reported to the orchestrator rather than
-   worked around.
+   T231 takes the stronger reading (C3, ratified): a function that
+   CANNOT REACH a connection beats one observed not to. There is
+   no `Db` in this file's imports, so the claim is checked by the
+   compiler on every build rather than by a cell that has to be
+   run — and the cell it un-writes was measuring the weaker thing.
+   The no-WRITE half of AC5 is still a runtime question and still
+   has a witness; the no-ACCESS half is now structural.
 
    ── Where the IP bound actually is, and what it does NOT
       cover ──
@@ -68,12 +69,10 @@
    have and which is Forbidden here.
    ============================================================ */
 
-import type { Db } from "@/lib/db";
 import {
   DEFAULT_LIMITS,
   UNCONFIGURED_BACKOFF_MS,
   limitFor,
-  tierOf,
   type LimitConfig,
 } from "./config";
 import { createSlotCounter, type SlotCounter } from "./counter";
@@ -117,20 +116,13 @@ const processCounter: SlotCounter = createSlotCounter();
  * branch below says why.
  */
 export async function checkLimit(
-  db: Db,
   subject: LimitSubject,
   bucket: string,
   options: CheckLimitOptions = {},
 ): Promise<LimitVerdict> {
-  /* The `void` is the repository's own idiom for a deliberately unused binding
-     (`lib/server/policy/can.ts`'s `assertNever`). It is here so the unused parameter is a
-     stated decision in the code rather than a lint exemption somebody reads as an
-     oversight. See this file's header for why the parameter is kept at all. */
-  void db;
-
   const config = options.config ?? DEFAULT_LIMITS;
   const counter = options.counter ?? processCounter;
-  const tier = tierOf(subject);
+  const tier = subject.tier;
   const configured = limitFor(config, bucket, tier);
 
   if (configured === undefined) {
@@ -177,11 +169,20 @@ export async function checkLimit(
     };
   }
 
-  /* The subject key is the identifier that DECIDED the tier, so the three cases cannot
-     disagree with `tierOf`. Reading `ip` for a keyed subject would let one caller's
-     requests count against two slots depending on which field a route happened to fill. */
-  const key = tier === "key" ? subject.keyId : tier === "account" ? subject.accountId : subject.ip;
-  const { count, resetAt } = counter.hit(bucket, tier, key ?? "", configured.windowMs);
+  /* The identifier the tier NAMES, and the union is what makes the three cases total: each
+     arm carries exactly one identifier, so the branches below narrow to a `string` on every
+     path and the `?? ""` this line used to end with is gone. That fallback was not cosmetic —
+     it was the reading under which an absent identifier became one shared empty-string slot,
+     which is what a subject with nullable holes made possible. Reading `ip` for a keyed
+     subject would let one caller's requests count against two slots depending on which field
+     a route happened to fill. */
+  const identifier =
+    subject.tier === "key"
+      ? subject.key.keyId
+      : subject.tier === "account"
+        ? subject.accountId
+        : subject.ip;
+  const { count, resetAt } = counter.hit(bucket, tier, identifier, configured.windowMs);
 
   return {
     allowed: count <= configured.limit,
@@ -205,12 +206,11 @@ export async function checkLimit(
  * that must not serve should be reaching for.
  */
 export async function enforceLimit(
-  db: Db,
   subject: LimitSubject,
   bucket: string,
   options: CheckLimitOptions = {},
 ): Promise<LimitVerdict> {
-  const verdict = await checkLimit(db, subject, bucket, options);
+  const verdict = await checkLimit(subject, bucket, options);
   if (verdict.allowed) return verdict;
   /* Every part comes off the ONE verdict, including the window (D-230-10). Re-deriving any
      of them here from the config would reintroduce exactly the disagreement the carried
