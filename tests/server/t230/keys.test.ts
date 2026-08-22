@@ -76,11 +76,24 @@ async function apiKeyRows(): Promise<Record<string, unknown>[]> {
   return scratch.query(`select * from "api_key"`);
 }
 
-/** Both readings of AC4 agree that this is false for a revoked key. */
+/**
+ * F-230-J: this predicate asserted the INTERSECTION of two readings and the intersection was
+ * weaker than the criterion either reading states.
+ *
+ * It read: "both readings of AC4 agree this is false for a revoked key — `undefined`, or a record
+ * whose `revokedAt` is set. This asserts only what they share." That is a careful, well-argued
+ * choice and it emptied the only cell defending AC4. A record with `revokedAt` populated returned
+ * `false` here, which is exactly what a `resolveKey` stripped of `isNull(revokedAt)` hands back —
+ * so **deleting the one line implementing "a revoked key is refused immediately" reddened 0 of
+ * 164 cells across both halves**, while end-to-end a revoked key held a 6000 ceiling against 600.
+ *
+ * The rule this produced, and it is general: **when a cell's comment names a concrete bad output,
+ * the assertion must EXCLUDE that output, not merely admit the good one.** `resolveKey` must
+ * return nothing at all for a revoked key; a record carrying `revokedAt` is the bad output and is
+ * now refused here rather than tolerated.
+ */
 function readsAsUsable(resolved: unknown): boolean {
-  if (resolved === undefined || resolved === null) return false;
-  const revokedAt = (resolved as { revokedAt?: unknown }).revokedAt;
-  return revokedAt === null || revokedAt === undefined;
+  return resolved !== undefined && resolved !== null;
 }
 
 describe("T230 AC4 — a revoked key is refused immediately", () => {

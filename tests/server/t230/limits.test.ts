@@ -254,11 +254,33 @@ describe("T230 the bound, driven against the ceiling the module publishes", () =
   });
 
   it("a bucket is a partition — spending one does not spend another", async () => {
+    /*
+     * F-230-G: this ran on an ANONYMOUS subject and asserted `other.remaining === other.limit - 1`.
+     *
+     * The premise was true when written and stopped being true when the owner's ceilings landed:
+     * under the ruled matrix `write` is REFUSED for anonymous, so `other.limit` is 0, `remaining`
+     * is floored at 0 by published contract, and `-1` is unreachable BY CONSTRUCTION. The cell was
+     * asserting a number the module is forbidden to produce.
+     *
+     * An ACCOUNT subject is what makes this discriminating rather than merely passing: anonymous
+     * has exactly one bucket with a ceiling (`read` 600; `write` and `upload` both REFUSED), so no
+     * anonymous pair can show leakage at all. At the account tier all three are configured — 600,
+     * 120, 30 — and spending in one must leave the other untouched.
+     */
     const probe = await buckets();
-    const subject = anonymousSubject();
+    const accountId = await freeAccount(scratch);
+    const subject = accountSubject(accountId);
     const opening = await check(subject, probe.read);
     for (let i = 0; i < 3; i += 1) await check(subject, probe.read);
     const other = await check(subject, probe.write);
+
+    expect(
+      other.limit,
+      `This cell needs a second bucket with a ceiling to be able to observe leakage at all. ` +
+        `${JSON.stringify(probe.write)} is refused for this subject, so \`remaining\` is floored ` +
+        `at 0 whether spending leaked or not and the assertion below cannot fail.` +
+        `\n  ${bucketNote(probe.source)}`,
+    ).toBeGreaterThan(0);
 
     expect(
       other.remaining,
@@ -398,15 +420,31 @@ describe("T230 AC5 — an under-ceiling read is never delayed or challenged", ()
     const work = await measureWork(scratch, () => check(subject));
 
     expect((work.result as Verdict).allowed, `the measured keyed call was refused`).toBe(true);
+    /*
+     * F-230-H: this asserted ONE statement from `checkLimit` and the correct number is ZERO.
+     *
+     * D-230-05's clause reads "anonymous, zero access; keyed, one indexed read that AC4 already
+     * mandates; never a write" — and it counts the db access of a keyed REQUEST, not of
+     * `checkLimit`. The read it names is AC4's, which is `resolveKey`'s revocation check at the
+     * route. Under the reading this cell encoded, a keyed request issues `resolveKey`'s statement
+     * AND `checkLimit`'s — **two**, contradicting the same clause that licenses one. The reading
+     * that makes D-230-05 self-consistent is the implementation's: `checkLimit` touches `db` on no
+     * path, and the one indexed read lives in `resolveKey`.
+     *
+     * The wording was mine and it was ambiguous; both halves read it honestly and differently.
+     * T231 carries the structural repair — `checkLimit` taking what `resolveKey` returns, so the
+     * precondition is a compile error rather than caller discipline — and until it lands, the
+     * measured cost of `checkLimit` itself is zero statements.
+     */
     expect(
       work.statements.length,
-      `A keyed check issued ${work.statements.length} statements where D-230-05 publishes ` +
-        `ONE — "keyed, one indexed read that AC4 already mandates".\n` +
+      `A keyed check issued ${work.statements.length} statements where \`checkLimit\` must issue ` +
+        `NONE.\n` +
         `  statements: ${work.statements.map((q) => q.slice(0, 140)).join(" | ")}\n` +
-        `  This is a published figure rather than a budget this suite chose, and it is the ` +
-        `difference between a limiter that costs a lookup and one that costs a join per ` +
-        `request on the hottest path in the system.`,
-    ).toBe(1);
+        `  D-230-05's "keyed, one indexed read" counts the whole REQUEST and names AC4's read, ` +
+        `which is \`resolveKey\`'s at the route. A statement here would make a keyed request cost ` +
+        `two, contradicting the clause that licenses one.`,
+    ).toBe(0);
     expect(work.changed, `a keyed check wrote to ${work.changed.join(", ")}`).toEqual([]);
   });
 
@@ -533,25 +571,46 @@ describe("T230 AC2 and AC3 — the ceiling is the server's, and a key raises it"
     const issueKey = await requiredFn("issueKey");
     const revokeKey = await requiredFn("revokeKey");
     const accountId = await freeAccount(scratch);
+    const resolveKey = await requiredFn("resolveKey");
     const issued = (await issueKey(scratch.db, accountActor(accountId), accountId, "revoked")) as {
       record: { keyId: string };
+      secret: string;
     };
 
     await revokeKey(scratch.db, accountActor(accountId), issued.record.keyId);
 
-    const withoutKey = await check(accountSubject(accountId));
-    const withRevoked = await check(keyedSubject(accountId, issued.record.keyId));
-
+    /*
+     * F-230-I: this built a `keyedSubject` from the revoked `keyId` and called `checkLimit`
+     * directly, which drives a state the system cannot produce.
+     *
+     * D-230-05 ruled that a non-null `keyId` on a subject is a PRECONDITION only `resolveKey` can
+     * establish — `checkLimit` touches `db` on no path, so it cannot re-verify and is not asked to.
+     * Handing it a `keyId` no `resolveKey` ever returned tests a caller's discipline, not the
+     * module.
+     *
+     * The reachable guarantee is the one a route actually takes, and it is asserted here: resolve
+     * first, and a revoked secret must resolve to NOTHING, so no keyed subject exists to raise a
+     * ceiling with. F-230-J measured what this rests on — deleting `isNull(revokedAt)` from
+     * `resolveKey`'s WHERE reddened 0 of 164 cells while a revoked key kept 6000 against 600 — so
+     * this cell is now that line's witness. **T231 carries the structural repair**: `checkLimit`
+     * taking what `resolveKey` returns, which makes the precondition a compile error rather than
+     * something a future caller is trusted to honour.
+     */
+    const resolved = await resolveKey(scratch.db, issued.secret);
     expect(
-      withRevoked.limit,
-      `A revoked key still raises the ceiling: ${withRevoked.limit} presenting it against ` +
-        `${withoutKey.limit} for the same subject without it.\n` +
-        `  This is where AC3 and AC4 meet, and it is the cell that separates "revocation ` +
-        `stops resolveKey answering" from "revocation stops the key doing anything". A ` +
-        `limiter that trusts the \`keyId\` on the subject without re-checking revocation ` +
-        `leaves a revoked key with its raised ceiling forever, and every AC4 test that only ` +
-        `drives resolveKey passes against it.\n` +
-        `  ${await note()}`,
-    ).toBeLessThanOrEqual(withoutKey.limit);
+      resolved,
+      `A revoked secret still resolves. AC4 says a revoked key is refused IMMEDIATELY, and ` +
+        `\`resolveKey\` returning a record is what lets a caller build a keyed subject and carry ` +
+        `the raised ceiling forever. This is the single line the whole design rests on: ` +
+        `\`isNull(revokedAt)\` in resolveKey's WHERE. Deleting it reddened nothing across 164 ` +
+        `cells before this assertion existed.\n  ${await note()}`,
+    ).toBeUndefined();
+
+    const withoutKey = await check(accountSubject(accountId));
+    expect(
+      withoutKey.limit,
+      `With the key revoked and unresolvable, the subject falls back to its account tier and ` +
+        `must carry the account ceiling.\n  ${await note()}`,
+    ).toBeGreaterThan(0);
   });
 });

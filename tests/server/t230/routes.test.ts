@@ -107,6 +107,24 @@ beforeAll(async () => {
 afterAll(async () => {
   if (savedDatabaseUrl === undefined) delete process.env.DATABASE_URL;
   else process.env.DATABASE_URL = savedDatabaseUrl;
+  /*
+   * F-230-J's sibling, F-230-F: CLOSE the client before dropping the reference.
+   *
+   * This deleted the global key and nothing else, which drops the REFERENCE and never closes the
+   * POOL. The connections stayed open against the scratch database, so `DROP DATABASE` refused
+   * with "is being accessed by other users" — thrown from `afterAll`, which vitest reports as a
+   * FILE-level failure while every cell in the file passes. Read by test total the file was
+   * `Tests 3 passed (3)`; read by exit code and failed-file count it was red. Both true of one run.
+   *
+   * It was also an unbounded leak on infrastructure every worktree on this machine shares: one
+   * scratch database per run, invisible to a load average, measured at 25 → 26 → 27 → 28 across
+   * three consecutive runs. `DbClient.close` (`lib/db/client.ts:46`) is `pool.end()` and was
+   * published all along — the suite had the affordance and dropped the reference instead.
+   */
+  const shared = (globalThis as GlobalWithSharedClient)[SHARED_CLIENT_KEY] as
+    | { close?: () => Promise<void> }
+    | undefined;
+  if (typeof shared?.close === "function") await shared.close();
   delete (globalThis as GlobalWithSharedClient)[SHARED_CLIENT_KEY];
   await dropScratchDatabases();
 });
