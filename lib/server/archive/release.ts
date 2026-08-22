@@ -10,11 +10,12 @@
 
 import { and, eq } from "drizzle-orm";
 import { bundleDigest } from "@/lib/core";
+import { parseOntologyTerms } from "@/lib/content/ontology-file";
 import { keyForDigest, schema, type Db } from "@/lib/db";
-import type { AutonomyResult, BundleManifest, PhaseCoverage, SecurityResult } from "@/lib/server/types";
+import type { AutonomyResult, BundleManifest, OntologyTerm, PhaseCoverage, SecurityResult } from "@/lib/server/types";
 import { RELEASE_BUNDLE_VERSION_CONSTRAINT } from "./constraints";
-import { ArchiveConflictError, isUniqueViolationOn, sanitizedWriteError } from "./errors";
-import type { ReleaseRecord } from "./types";
+import { ArchiveConflictError, MalformedVocabularyError, isUniqueViolationOn, sanitizedWriteError } from "./errors";
+import type { ReleaseRecord, StoredVocabulary } from "./types";
 import { isWellFormedDeep } from "./well-formed";
 
 function toReleaseRecord(row: typeof schema.release.$inferSelect): ReleaseRecord {
@@ -29,7 +30,11 @@ function toReleaseRecord(row: typeof schema.release.$inferSelect): ReleaseRecord
     cardRefs: row.cardRefs,
     cardDigests: row.cardDigests,
   };
-  if (row.localVocabulary !== null) record.vocabulary = row.localVocabulary;
+  /* Cast, like `manifest` above, and for the same reason it is only a cast: this row may have
+     been written by something other than `addRelease` — a direct `UPDATE`, a row stored before
+     the shape was published. The readers refuse what arrives that way; that is why AC1 moving
+     the primary guarantee to the write does not delete their refusals. */
+  if (row.localVocabulary !== null) record.vocabulary = row.localVocabulary as StoredVocabulary;
   if (row.autonomy !== null && row.security !== null && row.phaseCoverage !== null) {
     record.analysis = {
       autonomy: row.autonomy as AutonomyResult,
@@ -47,14 +52,105 @@ export interface AddReleaseInput {
   manifest: BundleManifest;
   cardRefs: readonly string[];
   cardDigests: readonly string[];
+  /**
+   * Stays `unknown` while `ReleaseRecord.vocabulary` is typed, and the asymmetry is the point.
+   *
+   * This value arrives from a request body; it is the one input with no assumed shape. Typing
+   * it `StoredVocabulary` would move the claim to the caller — which is how the column came to
+   * hold whatever anyone passed — and would make the runtime refusal below look redundant. The
+   * writer is where the interpretation is held, so it is checked here rather than promised
+   * there. It is also what keeps the D-12 cells able to hand this field a hostile value without
+   * a cast.
+   */
   vocabulary?: unknown;
   analysis?: { autonomy: AutonomyResult; security: SecurityResult; phaseCoverage: PhaseCoverage };
 }
 
+/** The name the parser's diagnostics quote. A column, since that is where the bytes are. */
+const STORED_VOCABULARY = "release.local_vocabulary";
+
+/*
+ * AC3, stated as a query rather than as a migration.
+ *
+ * `addRelease` refuses a refused shape from now on, but rows reach this column by routes the
+ * writer does not stand on — a direct `UPDATE`, a row stored before the shape was published —
+ * so "are any already there?" is a question that has to stay answerable. It is one sequential
+ * scan over `release`, which is what "without reading every row" asks for: the predicate runs
+ * in Postgres and only the offending rows come back, rather than every row crossing into a
+ * process to be inspected.
+ *
+ *     SELECT id, bundle_id, version FROM release
+ *     WHERE local_vocabulary IS NOT NULL
+ *       AND (jsonb_typeof(local_vocabulary) <> 'object'
+ *            OR jsonb_typeof(local_vocabulary -> 'text') <> 'string');
+ *
+ * It reports the two clauses SQL can decide — not a mapping, and `text` absent or not a string.
+ * The third, `terms` being a list of term mappings, is `parseOntologyTerms`' and is deliberately
+ * NOT transcribed into SQL here: a second copy of the grammar in a dialect that cannot import it
+ * is exactly the second reading this task exists to end, and it would be the one copy nobody
+ * runs. So this query UNDER-reports by construction, and that is the honest direction — every
+ * row it names is refused, and a row it misses is still refused by the readers.
+ *
+ * No migration: `lib/db/migrations/**` is not this task's, the column type does not change, and
+ * what becomes of such a row is an open question this task does not answer (D-133-01).
+ */
+
 /**
- * Refuses when `cardRefs` and `cardDigests` disagree in length (AC5), or when
- * any string this call would persist cannot survive a UTF-8 round trip (D-12)
- * — the two checks this layer can make on its own without reading card bodies
+ * The one reading of `release.local_vocabulary`, consumed by the writer below and by
+ * `lib/server/export/vocabulary.ts` rather than re-derived in each (AC2).
+ *
+ * **It calls the readers' own `parseOntologyTerms` instead of a predicate written beside it
+ * (D-133-03).** That is the only construction in which the writer and the readers cannot come
+ * to disagree: a second predicate here would be a second reading of this column, which is the
+ * defect this task exists to end, moved to the write. It also holds the grammar boundary
+ * structurally rather than by anyone remembering — this module adds no term rule, it runs
+ * T030's, so `terms: [42]` is refused without T133 ruling on what a term is.
+ *
+ * **Where the readers already decide, this adds no rule (D-133-04).** `{ text: "", terms: [] }`
+ * is accepted, because `storedVocabulary` checks only `typeof text !== "string"` and refusing
+ * the empty string would invent a boundary neither reader has; unknown keys are accepted,
+ * because both readers ignore them. A writer stricter than its readers is a third reading.
+ *
+ * `undefined` means the release declares no local vocabulary, which is the ordinary case.
+ * `null` is included in that because it is what the column holds for a release with no local
+ * terms and what `toReleaseRecord` filters out.
+ */
+export function parseStoredVocabulary(
+  value: unknown,
+  operation: string,
+): { text: string; terms: readonly OntologyTerm[] } | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "object" || Array.isArray(value)) {
+    throw new MalformedVocabularyError(operation, "not-a-mapping");
+  }
+
+  const record = value as Record<string, unknown>;
+  const text = record.text;
+  if (typeof text !== "string") throw new MalformedVocabularyError(operation, "text");
+
+  let terms: readonly OntologyTerm[];
+  try {
+    /* `{ terms: [...] }` is the document shape this parser reads and the shape the column
+       stores, so the value goes in as it stands rather than being rewrapped. */
+    terms = parseOntologyTerms(record, STORED_VOCABULARY);
+  } catch (cause) {
+    /* The parser's message quotes the offending entry's index and its `kind` — caller content
+       — so it travels on `cause` and never in a message (D-13). */
+    throw new MalformedVocabularyError(operation, "terms", cause);
+  }
+
+  return { text, terms };
+}
+
+/**
+ * Refuses when `cardRefs` and `cardDigests` disagree in length (AC5), when
+ * any string this call would persist cannot survive a UTF-8 round trip (D-12),
+ * or when `vocabulary` is not `StoredVocabulary` — a typed
+ * `MalformedVocabularyError` naming the field and the failing clause and never
+ * the caller's value (T133 AC1/AC4, D-13). That third check is what stops the
+ * column holding a shape its readers refuse; it is the writer's because a shape
+ * refused by two readers independently is a shape two authors have each guessed
+ * at. The three checks this layer can make on its own without reading card bodies
  * or an `OntologyView`. Refusing a release whose diagnostics carry an error is
  * T100's: that decision needs both, and both live in T020 and T030, Forbidden
  * here (contract). A duplicate `(bundleId, version)` rejects with a typed
@@ -89,6 +185,18 @@ export async function addRelease(db: Db, input: AddReleaseInput): Promise<Releas
       "addRelease: content contains an unpaired UTF-16 surrogate and cannot be stored losslessly (D-12) — refused rather than silently rewritten.",
     );
   }
+
+  /* AC1: the refusal is HERE and not at the readers. A shape refused by two readers
+     independently is a shape two authors have each guessed at — and one of them was directed
+     to its guess by `schema.ts`'s own comment. Deliberately AFTER the D-12 walk (D-133-02 F2):
+     a cyclic value must still fail as D-12 rather than as a shape, which is what keeps the
+     cycle cell's message unchanged.
+
+     The result is discarded and `input.vocabulary` is stored exactly as given. `toTerm`
+     normalises — a YAML `since: 0.1` arrives as the number and leaves as `"0.1"` — so storing
+     the parsed copy would rewrite the caller's content, which is the silent repair D-12
+     refuses to perform two checks above. This call is asked whether, not what. */
+  parseStoredVocabulary(input.vocabulary, "addRelease");
 
   // Stored as given — unsorted, undeduplicated (AC5). `bundleDigest` sorts its own
   // copy for the identity computation, so passing the caller's order through here

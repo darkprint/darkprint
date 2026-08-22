@@ -1,8 +1,10 @@
 /* ============================================================
    DarkPrint backend — a release's stored local vocabulary
-   `release.local_vocabulary` is `jsonb` and typed `unknown` all
-   the way out of `ReleaseRecord`, so this is where it becomes
-   `ExportedVocabulary`.
+   `release.local_vocabulary` is `jsonb`. Since T133 it has one
+   published shape, `StoredVocabulary`, which `ReleaseRecord` now
+   carries rather than `unknown` — so this is where the stored
+   shape becomes `ExportedVocabulary`, and no longer where anyone
+   decides what the stored shape was.
 
    Since D-90-03 the column holds `{ text, terms }` — the file's
    own bytes beside the parsed terms — for the reason
@@ -18,11 +20,26 @@
    own statement of what a term is, it is pure and client-safe,
    and a second opinion about it in this module is exactly the
    second reader that file exists to prevent.
+
+   **T133 AC2: the checks this file used to make are gone, and it
+   consumes `parseStoredVocabulary` instead.** The paragraph above
+   was right about the parser and stopped one level short — the
+   `Array.isArray` and `typeof text` checks were still a second
+   opinion about the COLUMN, held here and independently in
+   `addRelease` and in `lib/server/profiles/terms.ts`. The column
+   now has one published shape (`StoredVocabulary`, D-133-01) and
+   one reading of it, and this module consumes that reading rather
+   than re-deriving it.
+
+   **What did not change is the refusal.** The write refuses this
+   shape first (AC1), but a row still reaches the column by direct
+   `UPDATE` or from before the shape was published — so this reader
+   keeps refusing, with its own class and its own published message.
+   `export.scratch.test.ts:187` is the standing witness.
    ============================================================ */
 
-import { parseOntologyTerms } from "@/lib/content/ontology-file";
 import type { ExportedVocabulary } from "@/lib/content/bundle-export";
-import { BUNDLE_VOCABULARY } from "@/lib/content/bundle-export";
+import { parseStoredVocabulary } from "@/lib/server/archive";
 import { malformedStoredVocabulary } from "./errors";
 
 /**
@@ -34,23 +51,19 @@ import { malformedStoredVocabulary } from "./errors";
  * release with no local terms and what `toReleaseRecord` filters out.
  */
 export function storedVocabulary(value: unknown): ExportedVocabulary | undefined {
-  if (value === undefined || value === null) return undefined;
-  if (typeof value !== "object" || Array.isArray(value)) throw malformedStoredVocabulary();
-
-  const record = value as Record<string, unknown>;
-  const text = record.text;
-  if (typeof text !== "string") throw malformedStoredVocabulary();
-
-  let terms;
   try {
-    // `{ terms: [...] }` is the document shape this parser reads, and it is the shape the
-    // column stores, so the value goes in as it stands rather than being rewrapped.
-    terms = parseOntologyTerms(record, BUNDLE_VOCABULARY);
+    /* `"export"`, not `"exportRelease"`: this is reached from `exportRelease` AND from
+       `serveFile`, so a verb here would be a literal whose truth depends on which entry point
+       happened to call. `readFailed` in `./errors` records that correction; the name travels
+       on the `cause` chain, so it has to be true on both paths. */
+    return parseStoredVocabulary(value, "export");
   } catch (err) {
-    // The parser's own message quotes the offending entry's index and its `kind`, which is
-    // stored content rather than the caller's input. It travels on `cause`.
+    /* The refusal is re-thrown as this module's OWN class, and that is not ceremony: the route
+       maps `ExportError` to 404, `MalformedVocabularyError` is not one, and a fact about a
+       release that leaves here untyped reaches the caller as a 500. The published message is
+       unchanged and still a bare literal — `MalformedVocabularyError` and the parser's
+       diagnostic both quote stored content, so both travel on `cause` and neither in a
+       message. */
     throw malformedStoredVocabulary(err);
   }
-
-  return { text, terms };
 }

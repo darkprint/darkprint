@@ -228,7 +228,26 @@ describe("the published surface", () => {
     const bundleId = await freshBundle(mark);
     const dot = validDot(mark);
     const cardDigests = [cardDigestFor(mark, 1)];
-    const vocabulary = [{ id: `${mark}/local`, kind: "phase", label: "Local" }];
+    /* T133: the bare `OntologyTerm[]` this cell used to store is REFUSED at the write now.
+       That array was the pre-T133 spelling of this column and it was never a legal value —
+       neither merged reader accepted it — but `AddReleaseInput.vocabulary` was `unknown`, so
+       nothing said so. `release.local_vocabulary` has one published shape, `StoredVocabulary`
+       (`{ text, terms }`, D-133-01): `text` is the file's own bytes and `terms` is its parse.
+       The payload changes; every assertion below is untouched. */
+    const vocabulary = {
+      text:
+        `terms:\n  - id: ${mark}/local\n    kind: phase\n    label: Local\n` +
+        `    description: One local term.\n    since: 0.1.0\n`,
+      terms: [
+        {
+          id: `${mark}/local`,
+          kind: "phase",
+          label: "Local",
+          description: "One local term.",
+          since: "0.1.0",
+        },
+      ],
+    };
 
     const record = asRecord(
       await api.addRelease(scratch.db, {
@@ -268,7 +287,26 @@ describe("the published surface", () => {
     const bundleId = await freshBundle(mark);
     const dot = validDot(mark);
     const cardDigests = [cardDigestFor(mark, 1)];
-    const vocabulary = [{ id: `${mark}/local`, kind: "phase", label: "Local" }];
+    /* T133: the bare `OntologyTerm[]` this cell used to store is REFUSED at the write now.
+       That array was the pre-T133 spelling of this column and it was never a legal value —
+       neither merged reader accepted it — but `AddReleaseInput.vocabulary` was `unknown`, so
+       nothing said so. `release.local_vocabulary` has one published shape, `StoredVocabulary`
+       (`{ text, terms }`, D-133-01): `text` is the file's own bytes and `terms` is its parse.
+       The payload changes; every assertion below is untouched. */
+    const vocabulary = {
+      text:
+        `terms:\n  - id: ${mark}/local\n    kind: phase\n    label: Local\n` +
+        `    description: One local term.\n    since: 0.1.0\n`,
+      terms: [
+        {
+          id: `${mark}/local`,
+          kind: "phase",
+          label: "Local",
+          description: "One local term.",
+          since: "0.1.0",
+        },
+      ],
+    };
 
     const written = asRecord(
       await api.addRelease(scratch.db, {
@@ -1048,9 +1086,30 @@ describe("input the contract leaves at its edges", () => {
     const cardDigests = [cardDigestFor(mark, 1)];
     /* `vocabulary?` is the release's local/namespaced overlay — `release.local_vocabulary`,
        nullable, which is what T090 exports as `ontology/extensions.yaml`. */
-    const vocabulary = [
-      { id: `${mark}/custom-phase`, kind: "phase", label: "Custom", broader: ["design"] },
-    ];
+    /* T133: the bare `OntologyTerm[]` this cell used to store is REFUSED at the write now.
+       That array was the pre-T133 spelling of this column and it was never a legal value —
+       neither merged reader accepted it — but `AddReleaseInput.vocabulary` was `unknown`, so
+       nothing said so. `release.local_vocabulary` has one published shape, `StoredVocabulary`
+       (`{ text, terms }`, D-133-01): `text` is the file's own bytes and `terms` is its parse.
+       The payload changes; every assertion below is untouched. */
+    /* `broader` is a STRING here, not `["design"]`. The array spelling is refused by
+       `parseOntologyTerms` the same way the bare outer array is — `OntologyTerm.broader` is one
+       id — so the old value was doubly a shape this column never accepted. */
+    const vocabulary = {
+      text:
+        `terms:\n  - id: ${mark}/custom-phase\n    kind: phase\n    label: Custom\n` +
+        `    description: A local phase.\n    since: 0.1.0\n    broader: design\n`,
+      terms: [
+        {
+          id: `${mark}/custom-phase`,
+          kind: "phase",
+          label: "Custom",
+          description: "A local phase.",
+          since: "0.1.0",
+          broader: "design",
+        },
+      ],
+    };
 
     const record = asRecord(
       await api.addRelease(scratch.db, {
