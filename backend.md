@@ -7371,6 +7371,49 @@ that the old spelling is *described rather than quoted*, and that restoring the 
 name back to be helpful and silently blinding the check again. Its author's note: *"I nearly was
 that person, with the best of intentions and a correction in hand."*
 
+## The naming cannot be fresher than the message carrying it — so PRE-NAME and let the holder's stamp decide
+
+**Measured three times on 2026-08-22, and the third made it a rule rather than a coincidence.**
+
+* I granted T230's adversary at demand 293%. It re-stamped at the moment of taking and found
+  **0.79% idle**; the window had shut in the two minutes between my sampling and its reading. It
+  refused itself, correctly, and took the slot later when the host genuinely cleared.
+* T100's implementer sampled **demand 294–336%, load 25–27** and asked to be named. By the time I
+  read the message and sampled, demand was **623 → 709 → 768% and rising.** Neither instrument was
+  wrong. The host moved.
+
+**The round-trip between a stamp and the naming that answers it exceeds the duration of the window
+the stamp describes.** So a grant is a statement about a host that no longer exists by the time it
+arrives, and **the protocol has only ever worked because the holder re-stamps** — every one of the
+day's three refusals was the holder's, and every one was right.
+
+**Corrected form: PRE-NAME.** The orchestrator grants the slot to a named session for a named run,
+in advance; the session takes it **the moment its own stamp agrees**, without a further round trip,
+and reports what it took it on. The naming still serialises — one session pre-named at a time — but
+it stops pretending to carry a measurement it cannot.
+
+## A scoped run over a directory with no test files collects ZERO and exits 0
+
+T100's implementer asked to be named for `vitest run lib/server/publish app/api/bundles` **three
+times**, and I read the request three times, before it checked and found **zero test files under
+either path** — its module's tests are the blind author's and live on the test branch, absent from
+its worktree entirely.
+
+**It would have reported an exit-0 green scoped run.** `vitest.config.ts` records this failure twice
+in its own comments — *an uncollected suite runs zero tests and reads as green* — and neither of us
+looked. Its own line: *a zero is a claim about an instrument until something proves otherwise*, and
+here **the instrument was the collection, not the assertions.**
+
+**Confirm collection before quoting a scoped result**, and prefer a path where a file is known to
+exist. The blind-round partition makes this structural rather than accidental: an implementer's
+worktree frequently contains **no tests for the module it is building**.
+
+**Same session, same message, a second instrument corrected:** it had told me `DATABASE_URL` was
+unset. It was set. It had run `psql "$DATABASE_URL" … || echo "unset"` with `psql` absent from PATH,
+so **one `||` arm answered for two failure modes and it read a missing binary as a missing
+variable.** The consequence it names is the reason it matters: it would then have expected the
+accounts DB suite to skip, and **read those skips as environmental rather than as a defect.**
+
 ## Arm a waiter on DEMAND, never on the load average — and a wrong instrument is worse than none
 
 **Measured on two hosts' worth of samples, mine and T100's implementer's, minutes apart:**
