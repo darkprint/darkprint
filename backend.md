@@ -7175,6 +7175,58 @@ downstream does. Both were found by mutation, and both mutations scored **0** �
 means nothing until inertness is falsified on the second axis, which is why that step is not
 optional.
 
+## Enumerate what reaches the writer MECHANICALLY and TRANSITIVELY, never from recall
+
+D-133-04 ruled that a write-time refusal removes the witnesses of the reader-time refusal it makes
+unreachable, and named T090's two cells. **We then failed to apply our own rule**: T133's full
+suite reddened three cells in `tests/server/t010/release.test.ts` — the suite belonging to the
+very function being changed — because both of us enumerated the collateral **from memory**.
+
+The instrument, built by T133's implementer after the miss: **seven files reach `addRelease`
+directly**, and **six more reach it only through `seedRelease`**, which a grep for `addRelease`
+cannot show. My own five-file grep was missing `app/api/files/routes.scratch.test.ts`. Both
+enumerations then agreed with what the run found empirically, which is what makes "the three T010
+cells were the entire remaining collateral" a result rather than a hope.
+
+**And the near-miss is as instructive as the miss.** `tests/server/t040/*` and `app/api/validate/*`
+grep as `vocabulary:` and are **not this field** — they are `/api/validate`'s request body, where
+it is a YAML string. **The domain is "what reaches the writer", not "what is spelled like the
+column"**, and a grep on the field name would have sent an editor to four files never at risk.
+
+## The bare-array misreading has THREE independent encodings and no disagreement between them
+
+F1 recorded that `lib/db/schema.ts:183` documented the refused shape. The tally is now three:
+
+1. `schema.ts:183` — `/** Local/namespaced ` + "`OntologyTerm[]`" + ` … */`, the refused shape, documented.
+2. T130's blind author stored a bare array, guessing `readonly Record<string, unknown>[]`.
+3. **`tests/server/t010/release.test.ts:1051` encodes it too**, beneath a comment describing the
+   column correctly — in the merged suite for the function that writes the field.
+
+**Three authors, one wrong comment, and NO DISAGREEMENT BETWEEN THEM — which is exactly why
+nothing ever reddened.** Not two authors guessing incompatibly; every author following the same
+wrong line. The defect surfaced only when one of them was finally required to write the shape
+down. And it nests: `broader: ["design"]` in the same cell is an array where `OntologyTerm.broader`
+is a single id through `requireString`, so that cell stored an impossible shape **twice over**.
+
+## Two more attribution traps, and the third is the subtlest
+
+Recorded together because all three are the same failure — a detector counting the wrong thing —
+and all three fired in one afternoon:
+
+* **A command-line substring counts the thing doing the looking.** Already recorded; fired again
+  when my own `pgrep -fl vitest` matched the shell running it.
+* **A pipeline's exit status is the LAST command's.** T230's fix session ran `npm test 2>&1 | tail`,
+  got exit 0 beside a red, and **refused to quote the exit code**, reading every number off
+  vitest's own summary instead. Same family as `tsc --noEmit | grep -v PageProps` producing a
+  `typecheck 0` byte-indistinguishable from a real one. **An exit 0 beside a red is how "the suite
+  passed" enters a record and never leaves.**
+* **The pgid to exclude is the RUN's, not the SAMPLER's.** Same session keyed "mine" off its
+  sampling shell's process group while the run was a background job in its own — so **its own
+  vitest classified as foreign** and it printed `my vitest procs: 0` while being the only thing
+  running. Caught by reconstructing all four samples against the run's clock, which also showed the
+  genuinely foreign group starting *after* the run had exited. Zero foreign groups established
+  rather than assumed.
+
 ## Capacity is two tasks in flight, and the load number misattributes its own preparation
 
 **Owner ruling, 2026-08-22: two tasks in flight — four active sessions plus an adversary —
