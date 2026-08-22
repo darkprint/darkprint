@@ -7175,6 +7175,31 @@ downstream does. Both were found by mutation, and both mutations scored **0** �
 means nothing until inertness is falsified on the second axis, which is why that step is not
 optional.
 
+## The 28 orphan scratch databases are DROPPED, and the Postgres baseline is now 3
+
+**Owner ruling, 2026-08-22: drop them.** Done, after verifying **zero connections to any of the
+28** and looking at the list rather than trusting the pattern. `darkprint` itself and the two
+`darkprint_t090_attractor*` databases were left — they are another session's and are not scratch.
+About 240 MB reclaimed.
+
+**The new baseline for every contention stamp is 3.** Anything above 3 during a run is live
+scratch; anything above 3 after one is a leak. Sessions stamping against the old 30/31 will read a
+drop that nothing in their own work explains, and this entry is why.
+
+**Three sessions independently declined to drop them and all three were right to.** T230's
+implementer attributed two of them to me *by creation time* after three sessions had stopped at
+"zero connections, cannot attribute" — the wrong instrument. T230's adversary attributed its own by
+**mechanism and its own run count**, kept "almost certainly" rather than rounding to certainty
+because it could not see other sessions' runs, and **still declined to drop**, on the grounds that a
+discarded run's residue is evidence. **The residual was the honest part of the number**, and none of
+them had the standing to clear it; the owner did.
+
+**The leak that produced them is fixed and merged.** F-230-F: `routes.test.ts`'s `afterAll` dropped
+the shared-client *reference* without closing the *pool*, so `DROP DATABASE` refused with "is being
+accessed by other users" — one database per run, unbounded, invisible to a load average, and
+reported by vitest as a **file-level** failure while every cell in the file passed. `DbClient.close`
+was published at `lib/db/client.ts:46` the whole time.
+
 ## A `beforeAll` that seeds through the module under test converts that module's defects into SKIPS
 
 **Measured, not argued, and the number is the whole item: under a writer that refuses everything,
