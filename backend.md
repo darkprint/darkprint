@@ -7371,6 +7371,55 @@ that the old spelling is *described rather than quoted*, and that restoring the 
 name back to be helpful and silently blinding the check again. Its author's note: *"I nearly was
 that person, with the best of intentions and a correction in hand."*
 
+## Automate the REFUSING; never automate the TAKING
+
+Two sessions, eight hours apart, bracketing one rule from opposite sides.
+
+**T230's implementer, on aborting a triple it should not have started:** *"I had automated the
+taking without automating the refusing."* Its script captured a `BEFORE` stamp reading **0.13% idle**
+and walked straight past it — the numbers were correct, present, and **inert**.
+
+**T100's implementer, refusing to wire its monitor to launch the run:**
+
+> A stamp is only a veto if something can act on it, and **an automated take is a stamp nothing can
+> refuse — I would have built a mechanism that can only ever say yes.** The monitor's job is to wake
+> me; the decision stays a decision.
+
+It had every reason to automate it: pre-naming had just removed the round trip, and closing the last
+gap to zero was one line. **It declined because the gap is where the refusal lives.**
+
+**Its first act under pre-naming was a refusal**, which is the design working rather than a
+setback — its own stamp read demand 776/833/633% against my 623–768%, load risen from 42 to 112.
+*The pre-naming did not start me; my own stamp stopped me.*
+
+And it tightened its own bar unprompted, from `<350%` over 20s to **`<300%` sustained over three
+samples 15s apart**, for a reason that is about the measured window rather than about caution: a
+tighter bar buys margin for the window to survive the minute between the monitor firing and the
+stamp, and faster polling makes the evidence behind a fire **30s old instead of 60s**.
+
+## Write the sentence down; do not trust the reader — TWICE in one day, from the same session
+
+**It refused credit for the zero-collection catch and named what actually did the work:**
+
+> It was not vigilance. I went to check the vitest `include` globs **to describe my run accurately
+> to you**, and `find … -name "*.test.ts*" | wc -l` printed `0` on the way past. I was writing a
+> message, not auditing myself. **The reason it registered at all is that this repo's config
+> comments name that exact failure twice, so a zero in that position already had a meaning attached
+> to it before I saw one.**
+
+That is the **second** time this session has traced a save to a written-down sentence rather than to
+its own care — the first was `CardRecord`'s note that `source` round-trips byte-identical while
+`body` round-trips value-identical, which refused a `body` comparison my ruling would have accepted.
+
+**Its conclusion is the one to keep, and it is an argument about what documentation is for:** *that
+is an argument for writing the sentence down, not for trusting the reader.* A comment cannot make
+anyone look. What it can do is ensure that **when they do look, the thing they see already means
+something** — which is a different and much weaker claim than "documentation prevents defects", and
+the only one the evidence supports.
+
+Three askings, three unchecked readings by two parties, caught by an accident with a prepared
+reader. **Not recorded as care.**
+
 ## The naming cannot be fresher than the message carrying it — so PRE-NAME and let the holder's stamp decide
 
 **Measured three times on 2026-08-22, and the third made it a rule rather than a coincidence.**
