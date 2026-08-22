@@ -57,6 +57,34 @@
    asserted idempotent. Both bugs inflate, so neither could have
    produced a false zero, but both make the numbers unreadable.
 
+   ── the migrated control, cited rather than run here ──
+   T231's adversary provisioned a scratch database on the gate
+   slot — migrated, one account and one `api_key` seeded through
+   raw SQL so the control could not fail for an authorization
+   reason — and measured `resolveKey` returning a REAL
+   `ResolvedKey` at `queries=1`, matching the seeded row, with
+   `checkLimit` still at zero for that genuinely resolved key and
+   the keyed ceiling reached at 6000. The database was created and
+   dropped, `with (force)` in a `finally`.
+
+   **That run is cited here and deliberately not reproduced.** It
+   closes the objection it was raised against, and the reason not
+   to make it a per-run cell is measured rather than preferred:
+
+   **the brand is ERASED AT RUNTIME.** `types.ts` declares the
+   phantom member `declare const … unique symbol` and says so —
+   *"Ambient, so it is erased"* — and `check.ts` reads exactly one
+   field off the key, `subject.key.keyId`. So a genuinely minted
+   `ResolvedKey` and the labelled cast below are **indistinguishable
+   to `checkLimit` by construction.** The migrated run is a
+   stronger PROVENANCE claim and a runtime-identical BEHAVIOURAL
+   one, and only the first of those is worth a scratch database per
+   run on a machine that has already leaked 28 this week.
+
+   What the module-level control here does establish is scoped to
+   match: the observer registers a query issued from inside the
+   module. That does not need the relation to exist.
+
    ── what this cell needs, and what it does not ──
    **No scratch database.** `checkLimit` takes no `db`, so the
    question is *does this process issue a query*, never *what does
@@ -101,7 +129,13 @@ beforeAll(() => {
   const wrapper = function (this: unknown, ...args: unknown[]): unknown {
     queries += 1;
     const first = args[0] as { text?: string } | string | undefined;
-    seen.push(String(typeof first === "object" ? (first?.text ?? first) : first).slice(0, 60));
+    /* The FULL statement is kept and truncated only for display. It was truncated at capture,
+       and that cost a control: `resolveKey`'s statement mentions `api_key` past the 60th
+       character, so a cell checking the observer had seen the right query was reading a
+       string the observer had already cut. An instrument must not discard what its own
+       controls need — the same family as the double-count and nesting bugs the adversary
+       found, and like those it inflates nothing and simply makes a number unreadable. */
+    seen.push(String(typeof first === "object" ? (first?.text ?? first) : first));
     return (realQuery as QueryFn).apply(this, args);
   } as QueryFn & { [INSTALLED]?: true };
   wrapper[INSTALLED] = true;
@@ -113,7 +147,40 @@ afterAll(async () => {
   if (owned !== undefined) await owned.close();
 });
 
+/** Statements, shortened for a failure message only. Never for a comparison. */
+function show(sql: readonly string[]): string {
+  return sql.map((q) => q.replace(/\s+/g, " ").slice(0, 90)).join(" ; ");
+}
+
 /** Counts the queries one call issues. A refusal is a fine outcome; a query on the way is not. */
+/**
+ * Waits until the query counter stops moving, so a statement issued AFTER the call returned
+ * still lands inside the measurement window.
+ *
+ * **F5, and it was a real hole**: a `checkLimit` that fires a query without awaiting it —
+ * `void (async () => { … })()` — passed this file 11 of 11 while the query demonstrably
+ * reached Postgres. The counter was read the instant `await fn()` resolved, and the
+ * statement had not been issued yet. A fire-and-forget read is still a read, and it is
+ * exactly the shape a "never delayed or challenged" implementation is tempted toward:
+ * asynchronous, off the critical path, and invisible to any latency measurement.
+ *
+ * Bounded and adaptive rather than a fixed sleep: it returns as soon as the count has been
+ * still for three consecutive polls, and gives up at 400ms so a genuinely quiet path costs
+ * about 30ms instead of a flat wait.
+ */
+async function settle(): Promise<void> {
+  let still = 0;
+  let last = queries;
+  for (let waited = 0; waited < 400 && still < 3; waited += 10) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    if (queries === last) still += 1;
+    else {
+      still = 0;
+      last = queries;
+    }
+  }
+}
+
 async function count(
   fn: () => Promise<unknown>,
 ): Promise<{ n: number; sql: string[]; result: unknown }> {
@@ -127,6 +194,8 @@ async function count(
        below are expected to refuse. A throw that mattered would show up as a red in
        `behaviour.test.ts`, which is where outcomes are asserted. */
   }
+  /* AFTER the call, not at the instant it resolved. See `settle` — this is F5. */
+  await settle();
   return { n: queries, sql: [...seen], result };
 }
 
@@ -221,10 +290,49 @@ describe("the observer, falsified before any zero below is read", () => {
     ).toBeGreaterThan(0);
   });
 
+  it("counts a query issued from INSIDE the module under test", async () => {
+    /*
+     * The module-level control, and its assertion is scoped to what it actually establishes:
+     * **the observer registers a query issued from inside `lib/server/limits`**, not that the
+     * query found a row.
+     *
+     * T231's adversary flagged that this control "did not complete" here — `api_key` is not
+     * migrated into the shared `darkprint`, so `resolveKey`'s statement reaches the wire and
+     * comes back *relation does not exist*, sanitised by `withStore` into `LimitsStoreError`.
+     * That was a fair objection to the CLAIM and not to the measurement: the observer saw the
+     * query, which is the whole of what a control on an observer needs to show.
+     *
+     * So the assertion is scoped rather than the database provisioned. It is closed by making
+     * the cell say what it proves, not by creating a scratch database per run on a machine
+     * that has already leaked 28 of them this week — see the header for the migrated run that
+     * confirms it also completes when the relation exists.
+     *
+     * The secret is well-formed on purpose: `resolveKey` refuses a malformed one BEFORE
+     * hashing (D-230-07), and a refusal that never reaches the driver would make this control
+     * count zero for a reason that has nothing to do with the observer.
+     */
+    owned ??= createDbClient(process.env.DATABASE_URL as string);
+    const resolveKey = (await limits()).resolveKey as (db: unknown, s: string) => Promise<unknown>;
+    const { n, sql } = await count(() => resolveKey(owned!.db, `dp_${"a".repeat(43)}`));
+
+    expect(
+      n,
+      `\`resolveKey\` issued no query the observer could see. Every zero in this file is ` +
+        `then a statement about the observer rather than about \`checkLimit\` — which is ` +
+        `exactly how six zeros were once produced by an instrument that could only ever ` +
+        `report zero.\n  seen: ${show(sql)}`,
+    ).toBeGreaterThan(0);
+    expect(
+      sql.some((q) => /api_key/i.test(q)),
+      `the query the observer saw does not mention \`api_key\`, so it may not be ` +
+        `\`resolveKey\`'s at all: ${show(sql)}`,
+    ).toBe(true);
+  });
+
   it("counts a query on a pool this file owns, and counts it ONCE", async () => {
     owned ??= createDbClient(process.env.DATABASE_URL as string);
     const { n, sql } = await count(() => owned!.query("select 1", []));
-    expect(n, `a raw \`select 1\` counted ${n} times: ${sql.join(" ; ")}`).toBe(1);
+    expect(n, `a raw \`select 1\` counted ${n} times: ${show(sql)}`).toBe(1);
   });
 });
 
@@ -243,7 +351,7 @@ describe("AC3 — no path through `checkLimit` issues a query", () => {
       expect(
         n,
         `\`checkLimit\` issued ${n} quer${n === 1 ? "y" : "ies"} for a ${name} subject.\n` +
-          `  ${sql.join(" ; ")}\n` +
+          `  ${show(sql)}\n` +
           `  AC3: no second database read on any path — the repair is a type, not a lookup. ` +
           `D-230-05 as ruled: \`checkLimit\` touches \`db\` on NO path, keyed included; the ` +
           `one indexed read the clause licenses is \`resolveKey\`'s, at the route.`,
@@ -264,7 +372,7 @@ describe("AC3 — no path through `checkLimit` issues a query", () => {
     const v = result as { allowed?: unknown; limit?: unknown } | undefined;
     expect(v?.allowed, `the unconfigured bucket ADMITTED the request (D-230-04)`).toBe(false);
     expect(v?.limit, `the unconfigured verdict does not carry \`limit: 0\``).toBe(0);
-    expect(n, `the unconfigured branch issued ${n}: ${sql.join(" ; ")}`).toBe(0);
+    expect(n, `the unconfigured branch issued ${n}: ${show(sql)}`).toBe(0);
   });
 
   it("covers every published arm of the subject union", () => {
@@ -287,7 +395,7 @@ describe("AC3 — nor does `enforceLimit`, including well past the ceiling", () 
         await enforce({ tier: "anonymous", ip: "198.51.100.9" }, "read").catch(() => undefined);
       }
     });
-    expect(n, `700 calls issued ${n} queries: ${sql.slice(0, 4).join(" ; ")}`).toBe(0);
+    expect(n, `700 calls issued ${n} queries: ${show(sql.slice(0, 4))}`).toBe(0);
   });
 
   it("issues none across 6100 keyed calls against a 6000 ceiling", async () => {
@@ -297,6 +405,6 @@ describe("AC3 — nor does `enforceLimit`, including well past the ceiling", () 
         await enforce(keyed, "read").catch(() => undefined);
       }
     });
-    expect(n, `6100 keyed calls issued ${n} queries: ${sql.slice(0, 4).join(" ; ")}`).toBe(0);
+    expect(n, `6100 keyed calls issued ${n} queries: ${show(sql.slice(0, 4))}`).toBe(0);
   });
 });
