@@ -51,8 +51,9 @@
    afternoon on T133's equivalent block.
 
    ── what this file actually produces, MEASURED at `25ef93d` ──
-   Reported rather than predicted. `npm run typecheck` goes from
-   **0 errors** to **6**, all six in this file:
+   Reported rather than predicted, and re-measured after the
+   `Pin<>` repair. `npm run typecheck` goes from **0 errors** to
+   **6**, all six in this file:
 
      1 x TS2724  `ResolvedKey` is not exported (the loud lie; a
                  TS2305 variant, since `resolveKey` is a near name)
@@ -112,10 +113,81 @@ import type {
   resolveKey,
 } from "@/lib/server/limits";
 
-import { BARREL, loadLimits, PUBLISHED, required } from "./contract";
+import { BARREL, loadLimits, moduleSource, PUBLISHED, required, withoutComments } from "./contract";
 
-/** Mutual assignability. `Exact<any, T>` is `true`, which is this file's stated blind spot. */
-type Exact<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+/* -- the pin, and the fourth way this instrument lies --
+   Mutual assignability ALONE reports `{a: string}` and `{a: string; b?: number}` as EQUAL,
+   because an optional member is assignable in both directions. That is the single divergence
+   a pin on a published interface most needs to catch: an implementer adding a field nobody
+   published sails straight through a green pin.
+
+   Found in T100's blind suite and propagated here. Verified rather than assumed, by
+   predicting eleven verdicts and letting `tsc` rule on them; all eleven held, including the
+   two below that a reader would not expect.
+
+   **`keyof` on a UNION is the INTERSECTION of its arms' keys**, so the obvious repair --
+   adding a `keyof A extends keyof B` clause -- MISSES this defect on exactly the shape this
+   file pins. `LimitSubject` is a three-armed union; an added optional inside the keyed arm
+   leaves `keyof` unchanged and the naive repair green. `Keys<T>` distributes over the union
+   so each arm contributes, which is what makes the clause bite here.
+
+   -- and the vacuity CANNOT be made loud from inside the type system --
+   `Pin<>` below short-circuits on `any` and resolves to a sentence saying the pin was never
+   evaluated. **Measured: that short-circuit is INERT for the case it was written for.**
+
+   The prediction was that adding the key-set clause would flip a pin over an absent member
+   from silently-`true` to loudly-`false`, and that the short-circuit would catch it and say
+   why. `tsc` disagreed, and the disagreement is the finding:
+
+   **When an operand is an UNRESOLVED IMPORT, the whole pin collapses to the error type.**
+   It is not `any`-the-type, it is the error type, and it swallows the conditional that was
+   supposed to detect it: `Pin<A, ResolvedKey | undefined>` accepts `true`, accepts `false`,
+   and accepts the VACUOUS string itself -- measured, all three, against this tree. So no
+   formulation of the guard can report the absence, because the guard's own condition is
+   computed over the error type and collapses with it.
+
+   **The `any` short-circuit is kept because it is not useless** -- it fires for an operand
+   that is genuinely `any` rather than unresolved -- but it must not be read as covering the
+   absent-member case, which is the case that actually occurs here.
+
+   **What reports the absence is therefore NOT a type at all**: the `TS2305`/`TS2724` on the
+   import line, and the source cells at the bottom of this file, which read `types.ts` from
+   disk and red today for a reason a reader can act on. A type-level instrument cannot
+   observe its own blindness; something outside it has to.
+
+   The lesson is the one that produced the finding: **the first version of this experiment
+   used `type Absent = any` as a stand-in for an absent member, and the stand-in behaved
+   DIFFERENTLY from the real thing.** Testing an instrument against a model of the problem
+   is the co-authored-reference error one level down. */
+
+/** Distributes, so each arm of a union contributes its own keys rather than the intersection. */
+type Keys<T> = T extends unknown ? keyof T : never;
+
+type IsAny<T> = 0 extends 1 & T ? true : false;
+
+/** Mutual assignability AND matching key sets. */
+type ExactK<A, B> = [A] extends [B]
+  ? [B] extends [A]
+    ? [Keys<A>] extends [Keys<B>]
+      ? [Keys<B>] extends [Keys<A>]
+        ? true
+        : false
+      : false
+    : false
+  : false;
+
+/**
+ * `ExactK`, with the vacuity stated rather than inherited.
+ *
+ * A pin whose subject is absent resolves to the sentence below, so the red says *this was
+ * never evaluated* instead of *`true` is not assignable to `false`* -- which is the same
+ * error text a genuine divergence produces and is indistinguishable from it.
+ */
+type Pin<A, B> = IsAny<A> extends true
+  ? "VACUOUS: the pinned type resolved to `any`, so this pin was NEVER EVALUATED. A member is absent from the barrel -- read the TS2305/TS2724 above and not this line. It becomes load-bearing when the member lands."
+  : IsAny<B> extends true
+    ? "VACUOUS: the expected type resolved to `any`, so this pin was NEVER EVALUATED. A member named in it is absent from the barrel -- read the TS2305/TS2724 above and not this line."
+    : ExactK<A, B>;
 
 /** One-way. The AC1 pins are negatives, and a negative is `Assignable<…> = false`. */
 type Assignable<A, B> = [A] extends [B] ? true : false;
@@ -137,7 +209,7 @@ type Assignable<A, B> = [A] extends [B] ? true : false;
  * subject holding both is the two-sources-for-one-quantity shape D-230-10 already forecloses
  * in this same module at `windowMs`.
  */
-const subjectIsTheThreeArmedUnion: Exact<
+const subjectIsTheThreeArmedUnion: Pin<
   LimitSubject,
   | { tier: "anonymous"; ip: string }
   | { tier: "account"; accountId: string; ip: string }
@@ -194,7 +266,7 @@ const aResolvedKeyIsAccepted: Assignable<
 > = true;
 
 /** D-231-01: `| undefined`, matching what `resolveKey` already returns. Never `| null`. */
-const resolveKeyAnswersTheBrandedType: Exact<
+const resolveKeyAnswersTheBrandedType: Pin<
   Awaited<ReturnType<typeof resolveKey>>,
   ResolvedKey | undefined
 > = true;
@@ -220,13 +292,13 @@ const checkLimitTakesNoDb: NoParameterIsADb<typeof checkLimit> = true;
 const enforceLimitTakesNoDb: NoParameterIsADb<typeof enforceLimit> = true;
 
 /** F-231-E, upheld: `enforceLimit` throws. A union return is a refusal a caller can drop. */
-const enforceLimitReturnsAVerdictAndNotAUnion: Exact<
+const enforceLimitReturnsAVerdictAndNotAUnion: Pin<
   Awaited<ReturnType<typeof enforceLimit>>,
   LimitVerdict
 > = true;
 
 /** AC4's neighbour: `checkLimit` still answers the verdict D-230-10 published. */
-const checkLimitStillAnswersTheVerdict: Exact<
+const checkLimitStillAnswersTheVerdict: Pin<
   Awaited<ReturnType<typeof checkLimit>>,
   LimitVerdict
 > = true;
@@ -336,6 +408,27 @@ const localBrandAdmitsARevokedInstant: Assignable<
   LocalResolved
 > = true;
 
+/* The fourth lie, controlled locally: an added OPTIONAL member is the divergence mutual
+   assignability cannot see, and `LimitSubject` is a union, where the obvious `keyof` repair
+   also cannot see it. Both are pinned, so neither can regress silently. */
+type LocalSubjectPlusOptional =
+  | { tier: "anonymous"; ip: string }
+  | { tier: "account"; accountId: string; ip: string }
+  | { tier: "key"; key: LocalResolved; ip: string; keyId?: string };
+
+const localAddedOptionalIsCaught: Pin<LocalSubject, LocalSubjectPlusOptional> = false;
+const localIdenticalUnionsAgree: Pin<LocalSubject, LocalSubject> = true;
+/** The reason the repair had to distribute: `keyof` over a union answers the INTERSECTION. */
+const keyofAUnionIsTheIntersection: Assignable<
+  keyof LocalSubjectPlusOptional,
+  "tier" | "ip"
+> = true;
+/** ...while `Keys<>` answers the union, which is what makes the added member visible. */
+const distributedKeysSeeTheAddedMember: Assignable<
+  "keyId",
+  Keys<LocalSubjectPlusOptional>
+> = true;
+
 describe("the pin machinery discriminates — a control on the instrument, not on the module", () => {
   it("separates a branded key from a five-member forgery of it", () => {
     expect([
@@ -347,10 +440,76 @@ describe("the pin machinery discriminates — a control on the instrument, not o
     ]).toEqual([true, false, false, false, true]);
   });
 
+  it("catches an added optional member, which mutual assignability alone cannot see", () => {
+    /* The near-miss one level down: not two shapes of a key, but two shapes of the PIN.
+       `localIdenticalUnionsAgree` is the positive half — without it, a `Pin<>` that answered
+       `false` to everything would satisfy the negative and look like discrimination. */
+    expect([localAddedOptionalIsCaught, localIdenticalUnionsAgree]).toEqual([false, true]);
+  });
+
+  it("records WHY the repair had to distribute over the union", () => {
+    /* Both constants are `true`, and they are `true` about opposite things: `keyof` over this
+       union answers only the two keys every arm shares, while `Keys<>` reaches the added
+       member. A repair that used `keyof` would be green here and blind upstairs. */
+    expect([keyofAUnionIsTheIntersection, distributedKeysSeeTheAddedMember]).toEqual([true, true]);
+  });
+
   it("names the barrel it is NOT reaching, so this block cannot be quoted as a module result", () => {
     /* A cheap, literal statement of scope. `BARREL` appears here and nowhere else in this
        block; if a later edit points these pins at the real module the constant stops being
        a lie about what was measured and starts being one, which is the point of naming it. */
     expect(BARREL).toBe("@/lib/server/limits");
+  });
+});
+
+/* ============================================================
+   what reports the absence, since no type can
+
+   A pin whose operand is unresolved collapses to the error type
+   and accepts everything — measured above. So the only instrument
+   that can say *the type is not there yet* is one that does not
+   live in the type system. These cells read `lib/server/limits`
+   from disk.
+
+   They are the disambiguator for the `TS2724` next door: a reader
+   looking at a red typecheck cannot tell a missing member from a
+   failed assertion, and these say which. They red today, for a
+   reason a reader can act on, and go green when `types.ts`
+   declares the two names.
+   ============================================================ */
+
+describe("the types the pins name are declared, which no pin can check", () => {
+  for (const name of ["ResolvedKey", "LimitSubject"] as const) {
+    it(`\`types.ts\` declares \`${name}\``, () => {
+      const source = withoutComments(moduleSource("types.ts"));
+      expect(
+        new RegExp(`export\\s+(?:type|interface)\\s+${name}\\b`).test(source),
+        `\`lib/server/limits/types.ts\` declares no \`${name}\`.\n` +
+          `  Every \`Pin<>\` in this file that names it is COLLAPSED TO THE ERROR TYPE and ` +
+          `accepts true, false and its own vacuity message alike — so its green says nothing ` +
+          `and its red, if it had one, would say nothing either.\n` +
+          `  This cell is the only thing in the partition that can tell you that.`,
+      ).toBe(true);
+    });
+  }
+
+  it("`index.ts` re-exports both, since a type no barrel exports cannot be pinned", () => {
+    /* D-133-02 F4, one sentence: *a published shape nobody can import is not published.*
+       The pins reach these through the barrel, so a declaration in `types.ts` that the
+       barrel does not re-export leaves them collapsed exactly as an absent one would. */
+    const barrel = withoutComments(moduleSource("index.ts"));
+    for (const name of ["ResolvedKey", "LimitSubject"] as const) {
+      expect(
+        new RegExp(`\\b${name}\\b`).test(barrel),
+        `\`lib/server/limits/index.ts\` does not re-export \`${name}\`.`,
+      ).toBe(true);
+    }
+  });
+
+  it("reads a non-empty `types.ts` — the control", () => {
+    /* Every cell above is a regex over a file read. An empty or moved read makes all of them
+       red for a reason that has nothing to do with whether the type was declared. */
+    expect(moduleSource("types.ts").length).toBeGreaterThan(500);
+    expect(withoutComments(moduleSource("types.ts"))).toContain("LimitVerdict");
   });
 });
