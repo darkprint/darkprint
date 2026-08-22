@@ -109,14 +109,22 @@ export async function publish(
   actor: Actor,
   input: PublishInput,
   /**
-   * Where the frozen artefacts go. Optional and defaulted, so the three-argument call the
-   * contract publishes is unchanged and a caller that has no reason to name a bucket does
-   * not have to. Constructed LAZILY inside the transaction rather than as a default
-   * parameter expression: `objectStorageConfigFromEnv()` throws for an unset `S3_*`, and a
-   * default evaluated on entry would make every refusal on this path — an unowned slug, an
-   * unfinished bundle — depend on storage being configured.
+   * Where the frozen artefacts go, so the three-argument call the contract publishes is
+   * unchanged and a caller with no reason to name a bucket does not have to.
+   *
+   * **`= undefined` and NOT `?`, and the difference is observable rather than stylistic.**
+   * TypeScript's `?` erases to nothing, so `publish?: (a, b, c, d)` still reports
+   * `Function.length === 4` and a suite asserting the published three-parameter arity reds
+   * against it. Only a default-value expression or a rest element stops a parameter
+   * counting. The `?` spelling shipped here once and was charged as F5.
+   *
+   * The default is `undefined` rather than `createObjectStorage()`, and that is what keeps
+   * the reason the `?` was standing in for: `objectStorageConfigFromEnv()` throws for an
+   * unset `S3_*`, so a default evaluated on entry would make every refusal on this path —
+   * an unowned slug, an unfinished bundle — depend on storage being configured. The handle
+   * is still built lazily, at the one point that actually writes.
    */
-  storage?: ObjectStorage,
+  storage: ObjectStorage | undefined = undefined,
 ): Promise<PublishResult> {
   /* The owner is resolved from the handle rather than taken off the actor's session, and the
      difference is not stylistic. Deriving `ownerId` from `actor.accountId` when the handles
