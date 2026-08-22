@@ -7635,6 +7635,52 @@ so **one `||` arm answered for two failure modes and it read a missing binary as
 variable.** The consequence it names is the reason it matters: it would then have expected the
 accounts DB suite to skip, and **read those skips as environmental rather than as a defect.**
 
+## The demand threshold was a PROXY, and on this host it came apart from the hazard — re-calibrated
+
+**Ruled 2026-08-22 after T231's adversary refused the slot five times and then measured WHY rather
+than refusing a sixth.**
+
+Its characterisation, reproduced independently by me before ruling: **30 samples, median 390%, p90
+634%, only 7 of 30 under the 300% threshold.** A full suite takes minutes, so the probability of
+starting *and staying* inside a compliant window is near zero. **The criterion was not being narrowly
+missed; it was unreachable.**
+
+**And the two hazards the slot stands for had come apart:**
+
+* **A foreign run racing on shared state — MEASURABLY ABSENT.** One Postgres client backend and it
+  was its own `psql`; four database names, zero scratch; every `node` on the box an idling MCP
+  server at 0.0%.
+* **Timing distortion — PRESENT, and it is the owner's desktop.** A Virtualization VM at 50–72%,
+  WindowServer at 29–44%, Spotlight at 25%, Docker, `cmux`, `cloudd`, `mdworker_shared`. **That is
+  this machine's floor with 35 login sessions**, not somebody's run.
+
+> *A busy host is a veto* was a proxy for *somebody else is running*. Here the proxy is saturated by
+> the desktop and the thing it stands for is absent. **A rule I hold as a test on myself rather than
+> as a prohibition on others has to notice when its own premise stops holding.**
+
+**RE-CALIBRATED. Take the slot when BOTH hold, and report demand rather than gating on it:**
+
+1. **No foreign vitest or tsc process GROUP** — by pgid with the top consumer named, never by
+   command-line substring.
+2. **No foreign Postgres client backend.**
+
+**AND ABORT MID-RUN IF A FOREIGN POSTGRES BACKEND APPEARS.** The precondition and the abort are not
+alternatives: **an instantaneous check cannot see what arrives after it.** Verifying its report I
+caught a `node` at **163–202%** that was **gone before I could resolve its pgid** — the same
+invisible-intruder shape it had reported hours earlier with two other groups. A precondition covers
+the instant; only a continuous condition covers the run.
+
+**Its automation reproduced the decay it was automating against**, which is the other half of why
+this needed ruling rather than waiting: its waiter fired `HOST QUIET: last=230%`, and its taking-stamp
+six seconds later read **368 / 540 / 590%**. *A naming cannot be fresher than the message carrying
+it* — with the naming its own and the carrier its own background job.
+
+**Timing is reported as unreliable on any run taken under this rule.** A 400% floor slows a suite and
+can surface flakes that are the host's rather than the tree's, which is exactly how `D-40-F` inflated
+to 102.69 and read as a defect. **The one thing that must not happen is presenting a contended run as
+a clean one** — a number with its contention profile attached is worth having; the same number
+without one is not.
+
 ## Arm a waiter on DEMAND, never on the load average — and a wrong instrument is worse than none
 
 **Measured on two hosts' worth of samples, mine and T100's implementer's, minutes apart:**
