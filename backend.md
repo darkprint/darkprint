@@ -7909,6 +7909,47 @@ had been applying it to the question *is somebody else running vitest* rather th
 that matters: **how much of this host is not mine.** The demand figure was always the real signal;
 naming the supplementary check "no foreign vitest" made a busy host read as a clear one.
 
+## The tautology has a SUBJECT form too, and only a differing tree exposed it
+
+T231's adversary built the AC3 observer, caught its own instrument reporting a zero it could only
+ever report, and rebuilt it. **`t231-blind` then found the same defect in the SUBJECT of that probe,
+and could only find it because its tree differs:**
+
+> **Its six zeros never checked the call did any work.** On a tree **without** the implementation the
+> arguments shift, every call lands on the unconfigured refusal, and you get **six perfect zeros
+> measuring nothing** — it passed 10 of 10 that way before adding the guard.
+
+Its adversary's own summary: *"a zero from an instrument that could only ever report zero was my
+sentence about the observer; this is the same sentence about the subject, and **my tree hid it
+because the implementation is present there, so every call was real.**"*
+
+**The instrument can be sound and the subject inert.** The repair is a work-verification guard: the
+cells now prove they reached **600 / 600 / 6000** before their zero is read. Adopted into the
+migrated control, and falsified independently — breaking `limitFor` so every call is a no-op reds
+**3**, so the guard bites rather than being a comment.
+
+**And the reason it was findable at all is that two sessions held different trees.** A blind author's
+tree lacks the module; an adversary's has it. **The same probe means different things in the two, and
+neither session could have seen it alone.**
+
+## Refusing to publish a figure you cannot defend — the run/non-run split
+
+Its contention report omits a number it had collected:
+
+> **The run/non-run split I captured is unsound and I am not reporting it as a number.** I located one
+> pgid from the first matching vitest process, and **vitest fans out across workers**, so I cannot
+> show that a single pgid captured the whole run — the split would have attributed my own workers to
+> "foreign".
+
+Instead it inferred from the floor it had already measured: **idle median 390%, during-run median
+646%, difference ~250%**, consistent with its own cost on an unchanged host. **"The host's
+contribution during the run matches its measured floor, so no intruder arrived. That is the claim the
+data supports."**
+
+**A weaker claim that the data supports beats a stronger one it does not** — and the discarded figure
+would have been wrong in the direction that manufactures contention, which is the direction this run
+has already been burned by twice.
+
 ## A tautology dressed as a measurement — the purest instance of the zero that could only ever be zero
 
 T231's adversary built AC3's behavioural cell, got **zero queries on all six paths**, and would have
