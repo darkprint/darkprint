@@ -267,7 +267,6 @@ describe("T100 AC8 — a semver not higher than the previous release is refused"
 
   it("takes \"previous\" as the HIGHEST semver, not the most recent by createdAt", async () => {
     const env = setup.require();
-    const publish = await boundPublish();
     const { addRelease, createBundle } = await import("@/lib/server/archive");
 
     /* **Planted through T010 rather than through publish, and that is the only way to reach
@@ -296,6 +295,13 @@ describe("T100 AC8 — a semver not higher than the previous release is refused"
         cardDigests: blueprint.nodes.map((n) => n.digest),
       });
     }
+
+    /* Bound only now, after the plant. F6's lesson generalised: while `lib/server/publish` is
+       absent every cell reds on it, so a binding taken first hides whether the FIXTURE works —
+       and this plant, writing releases out of semver order through T010, had never executed
+       for exactly that reason. Ordering it this way is what turned it from unverified into
+       measured. */
+    const publish = await boundPublish();
 
     /* 2.0.0 is higher than the most recently created release (1.0.0) and lower than the
        highest (3.0.0). An implementation reading "previous" off `listReleases`' last row
@@ -742,12 +748,18 @@ describe("T100 — authorization is delegated to `can`, not re-decided", () => {
 
   it("answers each subject exactly as `can` does", async () => {
     const env = setup.require();
-    const publish = await boundPublish();
     const resource = {
       kind: "bundle" as const,
       ownerId: env.alice.accountId,
       visibility: "public" as const,
     };
+
+    /* Every bundle planted BEFORE the module is bound, for F6's reason: a binding taken first
+       reds on the absent barrel and leaves the fixture unexercised, so nobody learns whether
+       the planting works until the tree that has `publish` runs it. */
+    for (const subject of subjectsFor(env)) await plant(env, subject.slug);
+
+    const publish = await boundPublish();
 
     const observed: Record<
       string,
@@ -756,7 +768,6 @@ describe("T100 — authorization is delegated to `can`, not re-decided", () => {
     const expected: Record<string, { granted: boolean }> = {};
 
     for (const subject of subjectsFor(env)) {
-      await plant(env, subject.slug);
       expected[subject.name] = { granted: can(subject.actor, "publish", resource) };
 
       /* A release the owner could legally append, so authorization is the only thing that can

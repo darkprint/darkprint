@@ -38,6 +38,7 @@ import {
   snapshotRows,
   totalRowsAdded,
   type ChainFailure,
+  type Corpus,
   type Owner,
   type Scratch,
 } from "./fixtures";
@@ -46,6 +47,8 @@ interface Env {
   scratch: Scratch;
   owner: Owner;
   failure: ChainFailure;
+  /** The unmutated corpus, for the card-bytes cell — which needs a STORABLE card, not AC5's. */
+  base: Corpus;
 }
 
 const setup = new RecordedSetup<Env>("The transaction scratch database and chain fixture");
@@ -54,11 +57,12 @@ beforeAll(async () => {
   await setup.run(async () => {
     const scratch = await scratchDatabase("transaction");
     const owner = await seedOwner(scratch, "transactor");
-    const failure = chainFailureVariant(resolvingCorpus());
+    const base = resolvingCorpus();
+    const failure = chainFailureVariant(base);
     /* The published version the submission's patch bump is measured against. Without it there
        is no chain to fail and the submission would simply be a first publish of that card. */
     await seedCard(scratch, owner, failure.previous);
-    return { scratch, owner, failure };
+    return { scratch, owner, failure, base };
   });
 });
 
@@ -233,32 +237,46 @@ describe("T100 AC5 — a card whose bump is too small aborts the whole publish",
 describe("T100 — a card pinned at bytes that differ from the stored row", () => {
   it("is refused as a conflict, and stores nothing", async () => {
     const env = setup.require();
-    const publish = await boundPublish();
-    const { cardExists: exists, seedCard: seed } = await import("./fixtures");
+    const { cardExists: exists } = await import("./fixtures");
 
-    /* The submission repins the second card at a NEW version whose bytes differ from what is
-       about to be seeded under that same version. A trailing YAML comment is the whole
-       difference: it parses to an identical `NodeCard`, so `cardDigest` is identical,
-       `inferBump` sees no change and the version chain is silent. The ONLY thing that
-       disagrees is the source text.
+    /* **The subject is `previous`, and picking the wrong one is what kept this cell from ever
+       executing.** It originally seeded `env.failure.declared` — the `1.0.1` variant
+       `chainFailureVariant` builds specifically so `addCard` will REFUSE it, since its patch
+       bump carries a change requiring a major one. That is the whole reason that variant
+       exists, for AC5. Seeding it threw `CardStoreError` inside the fixture, before `publish`
+       was reached, so D-100-02's only cell had never once run.
 
-       That is deliberate and it is what gives this cell its discriminating power. An
-       implementation comparing digests finds them equal, concludes the card is already
-       published unchanged, and proceeds — publishing a folder whose bytes are the stored
-       row's rather than the author's. Only a comparison over `source` refuses it. */
-    const declared = env.failure.declared;
-    await seed(env.scratch, env.owner, {
-      id: declared.id,
-      version: declared.version,
-      source: declared.source,
-    });
+       `previous` is the storable one — this file's `beforeAll` already has it in the store,
+       which is what AC5's chain needs — so nothing extra is seeded here. */
+    const stored = env.failure.previous;
+    expect(
+      await exists(env.scratch, env.owner, stored),
+      `Premise: ${stored.ref} should already be in the store from this file's \`beforeAll\`. ` +
+        `Without it there is nothing for the submitted bytes to disagree WITH, and a conflict ` +
+        `could not arise however \`publish\` compares them.`,
+    ).toBe(true);
 
-    const divergent = { ...env.failure.corpus };
-    const file = `cards/${declared.id}@${declared.version}.yaml`;
-    divergent.cardFiles = {
-      ...divergent.cardFiles,
-      [file]: `${declared.source}\n# these bytes are not the stored ones\n`,
+    /* The submission is the UNMUTATED corpus — which pins `code-builder@1.0.0`, the version
+       just confirmed present — with a trailing comment appended to that one card file. Same
+       version, same parsed `NodeCard`, same `cardDigest`, same `body` after a `jsonb` round
+       trip. The only thing that differs anywhere is the source text. */
+    const file = `cards/${stored.id}@${stored.version}.yaml`;
+    const original = env.base.cardFiles[file];
+    expect(
+      original,
+      `Premise: the corpus has no ${file} to diverge from.`,
+    ).toBeDefined();
+
+    const cardFiles = {
+      ...env.base.cardFiles,
+      [file]: `${original as string}\n# these bytes are not the stored ones\n`,
     };
+
+    /* Bound only now, AFTER the premises. While `lib/server/publish` is absent every cell in
+       this suite reds on it, and a binding taken first would mask a broken fixture behind that
+       red — which is exactly how this cell hid for as long as it did: it threw in `seedCard`
+       and nobody could see that the premise, not the module, was what failed. */
+    const publish = await boundPublish();
 
     const before = await snapshotRows(env.scratch);
     const refusal = await refusalFrom(
@@ -266,24 +284,24 @@ describe("T100 — a card pinned at bytes that differ from the stored row", () =
         ownerHandle: env.owner.handle,
         slug: "divergent-card-bytes",
         version: "1.0.0",
-        manifest: divergent.manifest,
-        dot: divergent.dot,
-        cardFiles: divergent.cardFiles,
+        manifest: env.base.manifest,
+        dot: env.base.dot,
+        cardFiles,
       }),
       "card bytes",
     );
 
     expect(
       refusal.kind,
-      `A card pinned at bytes differing from the stored ${declared.ref} came back as ` +
+      `A card pinned at bytes differing from the stored ${stored.ref} came back as ` +
         `${JSON.stringify(refusal.kind)}.\n` +
         `  D-100-01: this is a \`conflict\` — the release's digest would be over the submitted ` +
         `bytes while the export reads \`card_version.source\`, so the folder and the digest ` +
         `disagree forever.\n` +
         `  D-100-02: and the comparison is by SOURCE BYTES. These two cards have the same ` +
-        `\`cardDigest\` and differ only by a trailing comment, so an implementation comparing ` +
-        `digests accepts this submission and publishes the stored row's bytes as though they ` +
-        `were the author's.\n  Message: ${refusal.message}`,
+        `\`cardDigest\` and the same \`body\`, and differ only by a trailing comment, so an ` +
+        `implementation comparing either one accepts this submission and publishes the stored ` +
+        `row's bytes as though they were the author's.\n  Message: ${refusal.message}`,
     ).toBe("conflict");
 
     /* D-100-02's second form. The release form names a version and a release, neither of which
@@ -299,8 +317,8 @@ describe("T100 — a card pinned at bytes that differ from the stored row", () =
 
     expect(
       match?.[1],
-      `The card conflict names \`${match?.[1]}\`; the submission pinned ${declared.ref}.`,
-    ).toBe(declared.ref);
+      `The card conflict names \`${match?.[1]}\`; the submission pinned ${stored.ref}.`,
+    ).toBe(stored.ref);
 
     const added = rowsAdded(before, await snapshotRows(env.scratch));
     expect(
@@ -310,8 +328,8 @@ describe("T100 — a card pinned at bytes that differ from the stored row", () =
 
     /* And the stored card still holds the bytes it was seeded with. */
     expect(
-      await exists(env.scratch, env.owner, declared),
-      `The refusal removed the already-stored ${declared.ref}.`,
+      await exists(env.scratch, env.owner, stored),
+      `The refusal removed the already-stored ${stored.ref}.`,
     ).toBe(true);
   });
 });
