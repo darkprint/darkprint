@@ -32,6 +32,7 @@
    ============================================================ */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { readFile } from "node:fs/promises";
 
 import {
   ANONYMOUS,
@@ -42,7 +43,6 @@ import {
   dropScratchDatabases,
   freeAccount,
   proxyDb,
-  publishedFunction,
   requiredFn,
   scratchDatabase,
 } from "./contract";
@@ -276,20 +276,50 @@ describe("T230 AC3(a) — the attribution this module publishes", () => {
   });
 
   it("checkLimit's subject carries both halves of the attribution", async () => {
-    /* Not an assertion about behaviour: `subject` is published as
-       `{ accountId: string | null; keyId: string | null; ip: string }`, and D-230-08
-       rests on those two members existing for the audit writer to read. Pinned from the
-       parsed block so it reds if either is dropped from the signature. */
-    const subject = publishedFunction("checkLimit").params[1];
-    for (const member of ["accountId", "keyId"]) {
+    /*
+     * RE-POINTED AT T231'S MERGE. The criterion survives; the shape it read moved.
+     *
+     * This read `checkLimit`'s SECOND parameter and asserted it named `accountId` and `keyId`,
+     * because the subject was published flat as `{ accountId, keyId, ip }`. Under D-231-01 the
+     * second parameter is `bucket: string` and the subject is a three-armed union — so the cell
+     * was reading the wrong slot and would have red against a correct module.
+     *
+     * **D-230-08's property is unchanged and still holds**: both halves of the attribution reach
+     * whoever writes the audit row. They now arrive through the arms rather than through one flat
+     * record — the account arm carries `accountId`, and the keyed arm carries a `ResolvedKey`,
+     * which is an `ApiKeyRecord` and therefore supplies **both** `keyId` and `accountId`. That is
+     * strictly more attribution than before, not less, since the keyed arm can no longer be built
+     * with one half missing.
+     *
+     * Asserted against the shipped union rather than against the parsed block, because the block
+     * that defines `LimitSubject` is §T231's and this suite's parser reads §T230's.
+     */
+    const source = await readFile(
+      new URL("../../../lib/server/limits/types.ts", import.meta.url),
+      "utf8",
+    );
+    /* Captured to the blank line that ends the declaration, NOT to the first `;` — the members
+       inside each arm are semicolon-separated, so a non-greedy stop at `;` truncates after the
+       first arm and the assertion below then reports "no longer carries `accountId`", which is a
+       plausible wrong cause. Caught by the message naming a member the union plainly has. */
+    const union = /export type LimitSubject =([\s\S]*?)\n\s*\n/.exec(source)?.[1] ?? "";
+
+    expect(
+      union.length,
+      "`export type LimitSubject` was not found in lib/server/limits/types.ts, which would make " +
+        "the assertions below pass over an empty string.",
+    ).toBeGreaterThan(0);
+
+    for (const member of ["accountId", "key"]) {
       expect(
-        subject.includes(`${member}:`),
-        `\`checkLimit\`'s subject no longer carries \`${member}\`.\n` +
-          `  ${publishedFunction("checkLimit").text}\n` +
+        new RegExp(`\\b${member}\\s*:`).test(union),
+        `\`LimitSubject\` no longer carries \`${member}\` on any arm.\n` +
+          `  union: ${union.trim()}\n` +
           `  D-230-08 makes AC3(a) satisfiable precisely because this module hands both ` +
-          `halves of the attribution to whoever writes the audit row. Dropping either ` +
-          `moves AC3 back to being unreachable, which is the state D-230-01 just fixed one ` +
-          `criterion over.`,
+          `halves of the attribution to whoever writes the audit row. The account arm supplies ` +
+          `\`accountId\`; the keyed arm supplies a \`ResolvedKey\`, which is an \`ApiKeyRecord\` ` +
+          `and carries both \`keyId\` and \`accountId\`. Dropping either moves AC3 back to being ` +
+          `unreachable, which is the state D-230-01 fixed one criterion over.`,
       ).toBe(true);
     }
   });
