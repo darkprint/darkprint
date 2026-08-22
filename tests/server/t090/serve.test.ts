@@ -476,7 +476,12 @@ describe("AC6 — fetching by digest returns the bytes of that release even afte
      * So a red here is **the dependency, not a defect in T090**, and this suite must not be read
      * as charging one. It is kept rather than deleted for the reason that precedent records: a
      * named red with a stated dependency is worth more than a criterion nobody is measuring, and
-     * it turns green by itself the day T100 persists.
+     * it turns green the day **T091** builds the READ half. **CORRECTED at T100's merge: this
+     * sentence used to name T100 and it was FALSE.** T100 now persists — `persistArtefacts` freezes
+     * the folder at publish — and this cell is still red, because **persisting is necessary and not
+     * sufficient**: `serveFile` calls `buildExport` unconditionally and nothing in
+     * `lib/server/export/**` consults a persisted artefact. The criterion measures the READ; T100
+     * built the WRITE. `readPersisted` was deferred to nobody and is now T091's.
      *
      * It is also the reason the fixture does not persist anything before re-scoring: it *cannot*,
      * because the write verb belongs to another task. Stating that here so nobody later reads the
@@ -535,7 +540,9 @@ describe("AC6 — fetching by digest returns the bytes of that release even afte
         `  THIS RED IS THE NAMED DEPENDENCY, NOT A DEFECT IN T090. The bytes can only be frozen ` +
         `by \`persistArtefacts\`, which is T100's, and read back by \`readPersisted\`, whose ` +
         `\`undefined\` is the pre-persistence release. Neither is T090's to build in this round, ` +
-        `and this test turns green by itself once T100 persists.`,
+        `and this test turns green once T091 builds the READ half. It does NOT clear at T100: ` +
+        `T100 persists the artefact and \`serveFile\` still generates from Postgres, so the ` +
+        `frozen bytes are written and never read.`,
     ).toBe(decode(before.bytes));
   }, 120_000);
 

@@ -234,7 +234,7 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
         "it changes. Domain resolved from `backend` at " +
         `${domainSha} — if this number disagrees with another run's, compare that sha first: the ` +
         "ref is shared by every worktree and moves under a running suite.",
-    ).toBe(29);
+    ).toBe(30);
 
     const rendered: string[] = [];
     const traceless: string[] = [];
