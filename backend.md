@@ -7175,6 +7175,73 @@ downstream does. Both were found by mutation, and both mutations scored **0** �
 means nothing until inertness is falsified on the second axis, which is why that step is not
 optional.
 
+## A `beforeAll` that seeds through the module under test converts that module's defects into SKIPS
+
+**Measured, not argued, and the number is the whole item: under a writer that refuses everything,
+127 merged cells went SILENT instead of red.** T133's adversary ran it as M9 — `55 failed |
+6020 passed | **127 skipped**` against a baseline of **0 skipped**.
+
+Eight merged files skipped **wholesale** — `t090/{hygiene,serve,export,attractor,downloads,routes}`,
+`lib/server/export/export.scratch`, `app/api/files/routes.scratch` — because each seeds through
+`addRelease` in `beforeAll`, and **a throw in a hook produces skips, not failures.** A skipped cell
+adds nothing to the failed column while looking, in every summary line anyone reads, like a cell
+that ran.
+
+**T133's blind files were immune BY DESIGN and this is what vindicates the design.** They record
+the setup failure and **re-raise it per cell**, so all 8 `write-accepts` and all 5 `readers-agree`
+cells reported as **reds**. Same defect, same hook, opposite visibility.
+
+**This is a rule about hook design, not about T133.** A suite whose `beforeAll` reaches the module
+it is testing cannot fail when that module breaks — it stands down. And it is the second,
+structural reason the implementer's own M1 zero was always going to be a zero: not only had the
+write-time refusal closed the paths merged cells used to reach the defect, a hook failure in that
+region converts to silence rather than to failure.
+
+## A disclosed cost is not a defect — UNLESS the disclosed thing IS the deliverable
+
+The standing rule protects an author who states what their artefact does not do. **T133's AC3
+query is the case it does not cover, and the adversary's line is the distinction: the cost the
+author priced is not the cost the query pays.**
+
+AC3's deliverable **is the reported query**. Its comment disclosed an under-report and attributed
+it to T030's grammar boundary. Measured against 17 planted rows in Postgres, the query caught
+**6 of 9** separable rows, and the three misses decompose into two defects that have nothing to do
+with the grammar:
+
+* **`<>` on an absent key is NULL, not true.** `jsonb_typeof(local_vocabulary -> 'text') <> 'string'`
+  drops every row where `text` is **absent** — the clause the comment claims to decide. Shown:
+  `{ arrow: null, typeof: null, ne: null, idf: true }`. `IS DISTINCT FROM` fixes it and moves
+  nothing else. **The row it misses is the likeliest one to exist**: `{ terms: [...] }` with no
+  `text` is the pre-D-90-03 spelling and the one shape the two merged readers genuinely differ on.
+* **The `terms` SHAPE clause is SQL-decidable and was omitted**, then misattributed. *"`terms` is a
+  list"* is D-133-01's shape clause; *"the entries are term mappings"* is T030's grammar. The
+  comment folds the first into the second and calls the whole thing the parser's.
+
+Neither predicate produced a false positive over 6 legal rows, so **the direction stays honest** —
+what is wrong is what goes unreported and what the comment claims about it. **A query missing a
+third of what it can decide is a defective artefact, not a documented limit.**
+
+## Two guards can be in tension: the shape that satisfies one evades the other
+
+**AC4's leak instrument measures RENDERINGS; D-13's hygiene clause measures ENUMERABILITY; and a
+leak can satisfy the second exactly while defeating the first.** T133's adversary put the caller's
+value on the error as a **non-enumerable own property** — `Object.keys` `[]`, `JSON.stringify`
+`"{}"`, hygiene clause fully satisfied — and **zero cells reddened across 6202.**
+
+It then falsified inertness on the second axis rather than believing the zero:
+`MUTATION_IS_LIVE: true`, `SUITE_INSTRUMENT_SEES_IT: false`, `inspectShowHiddenSeesIt: true`.
+`stringsIn` walks `Object.entries`, which is enumerable-only, so the instrument is blind to
+precisely the shape the sibling guard blesses. One line closes it —
+`Object.getOwnPropertyNames` — and it is a strict widening.
+
+**The scoping matters as much as the finding.** The value reaches no message, `String()`,
+`JSON.stringify` or default `inspect`, so under D-13's *rationale* it is arguably not a leak, in
+the way `ArchiveConflictError.kind` is not. But `kind` is a closed union of the module's own
+vocabulary while a caller's document is caller data — reachable by property access, by
+`getOwnPropertyNames`, and by `util.inspect(err, { showHidden: true })`, which error-reporting SDKs
+use *because* it catches what `JSON.stringify` drops. **AC4 says "never the caller's value", and
+carrying it violates the words even where it survives the rationale.** No shipped class exploits it.
+
 ## Check the DECISION that already read the artefact, not the artefact
 
 **Four instances on 2026-08-22, in two sessions, and it is the dominant failure shape of the day.**
