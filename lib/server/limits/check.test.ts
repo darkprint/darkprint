@@ -9,49 +9,32 @@
    on every read passes a latency-free test on an idle machine and
    falls over under load.
 
-   The instrument is a `Proxy`-backed `Db` recording ANY property
-   access, asserting `touched()` is empty — a proof the resource
-   was never reached rather than a stronger assertion about a
-   return value. T050 reached the same instrument from the other
-   side, for five guards its own sanitized error surface could not
-   separate.
+   **The `Proxy`-backed `Db` that used to measure it is GONE, and
+   what replaced it is stronger (T231, C3).** The instrument was a
+   `Db` recording any property access, asserting `touched()` was
+   empty. It needed a `db` parameter to hand the Proxy — and
+   D-230-05 had already established that parameter was never used
+   on any path, so the module carried a parameter for the sake of
+   the cell that measured it not being used.
 
-   **The Proxy is itself controlled.** A recorder that records
-   nothing satisfies `touched() === []` for every implementation,
-   including one that opens a connection — the anti-vacuity
-   control this run charges three times for measuring an adjacent
-   quantity. So the first test touches the Proxy on purpose and
-   requires it to notice.
+   `db` has left both signatures. A function that CANNOT REACH a
+   connection is a stronger claim than one observed not to, and it
+   is checked by the compiler on every build rather than by a cell
+   somebody has to run. What stands in its place here is an
+   equality on `check.ts`'s own import list, below — the claim
+   *this file cannot reach the database* stated where it can red.
 
    Nothing here needs a database, so it runs off-slot.
    ============================================================ */
 
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { Db } from "@/lib/db";
 import { checkLimit, enforceLimit } from "./check";
 import { DEFAULT_LIMITS, UNCONFIGURED_BACKOFF_MS, limitFor } from "./config";
 import type { LimitConfig } from "./config";
-import { createSlotCounter } from "./counter";
+import { createSlotCounter, type SlotCounter } from "./counter";
 import { RateLimitedError } from "./errors";
-
-/** Records every property read on the object handed to the module. */
-function recordingDb(): { db: Db; touched: () => readonly string[] } {
-  const seen: string[] = [];
-  const db = new Proxy(
-    {},
-    {
-      get(_target, property) {
-        seen.push(String(property));
-        return undefined;
-      },
-      has(_target, property) {
-        seen.push(`has:${String(property)}`);
-        return false;
-      },
-    },
-  ) as Db;
-  return { db, touched: () => seen };
-}
+import type { ApiKeyRecord, LimitSubject, ResolvedKey } from "./types";
 
 const CONFIG: LimitConfig = {
   read: {
@@ -61,9 +44,33 @@ const CONFIG: LimitConfig = {
   },
 };
 
-const ANON = { accountId: null, keyId: null, ip: "203.0.113.7" };
-const ACCOUNT = { accountId: "acc-1", keyId: null, ip: "203.0.113.7" };
-const KEYED = { accountId: "acc-1", keyId: "key-1", ip: "203.0.113.7" };
+/**
+ * A record shaped exactly as `listKeys` returns them — the forgeable half of the pair.
+ *
+ * Live, not revoked, so the cells below separate the BRAND from the revocation state. A
+ * revoked record would let a reader think the compile error is about `revokedAt`, and it is
+ * not: the brand proves provenance and nothing about revocation.
+ */
+const UNRESOLVED: ApiKeyRecord = {
+  keyId: "KEYIDLITERAL-1111-4111-8111-111111111111",
+  accountId: "acc-1",
+  label: "a listed key",
+  createdAt: new Date(0),
+  revokedAt: null,
+};
+
+/**
+ * What `resolveKey` answers, forged HERE by a cast because nothing else can make one.
+ *
+ * The cast is the demonstration rather than a workaround: a colocated test can reach for it
+ * and a caller in another module cannot, because the brand is a `unique symbol` `types.ts`
+ * declares and does not export. `@ts-expect-error` below is what measures that.
+ */
+const RESOLVED = UNRESOLVED as ResolvedKey;
+
+const ANON: LimitSubject = { tier: "anonymous", ip: "203.0.113.7" };
+const ACCOUNT: LimitSubject = { tier: "account", accountId: "acc-1", ip: "203.0.113.7" };
+const KEYED: LimitSubject = { tier: "key", key: RESOLVED, ip: "203.0.113.7" };
 
 /** A counter whose clock the test owns, so a window can be crossed without sleeping. */
 function fixedCounter(startAt = 1_000_000) {
@@ -76,85 +83,237 @@ function fixedCounter(startAt = 1_000_000) {
   };
 }
 
-describe("the no-write instrument can fail", () => {
-  it("the recording Db notices a property read", () => {
-    const { db, touched } = recordingDb();
-    /* Two-factor: without this the assertions below are satisfied by a recorder that
-       records nothing, whatever the module does. Called directly rather than through the
-       module, so the control does not depend on the mechanism it is controlling for. */
-    void (db as unknown as Record<string, unknown>).select;
-    expect(touched()).toEqual(["select"]);
+describe("AC5: this file cannot reach a database, which is stronger than not reaching one", () => {
+  it("check.ts imports nothing that could open a connection", () => {
+    /* The T231 replacement for the `Proxy`-backed `Db`. That instrument needed a `db`
+       parameter to hand the Proxy, and D-230-05 had already ruled the parameter unused on
+       every path — so the module carried an argument so that a cell could watch it not be
+       used. With `db` off the signature there is nothing to hand a Proxy and the claim moves
+       up a level: this file has no route to a connection at all.
+
+       An EQUALITY on the whole import list rather than a `not.toContain("@/lib/db")`. A
+       containment check absorbs a fifth import silently, and the failure this is guarding
+       against is somebody restoring database access — which would arrive as an import
+       nobody enumerated. The equality also cannot be blinded by the file's own prose: it
+       matches `import ... from "..."` statements anchored to line boundaries, so the four
+       mentions of `Db` and `lib/db/schema.ts` in the header comment are not candidates.
+
+       The list length is the anti-vacuity control: a regex that matched nothing would
+       satisfy `not.toContain` for every possible file, and satisfies this for none. */
+    const source = readFileSync(new URL("./check.ts", import.meta.url), "utf8");
+    const imported = [...source.matchAll(/^import[\s\S]*?from "([^"]+)";$/gm)].map((m) => m[1]);
+    expect(
+      imported,
+      `check.ts's import list changed. AC5's no-access half is held by this list being ` +
+        `exactly the four module-local files, so an import that can reach a connection reds ` +
+        `here rather than in a cell somebody has to think to write.`,
+    ).toEqual(["./config", "./counter", "./types", "./errors"]);
+  });
+
+  it("neither published function declares a Db parameter", () => {
+    /* The runtime half of the same claim, and it is what `surface.test.ts` reads from the
+       other side: `checkLimit` declares `(subject, bucket)` with `options` defaulted, so
+       `.length` is 2. A restored `db` would move it to 3 whichever end it was added at. */
+    expect(checkLimit.length).toBe(2);
+    expect(enforceLimit.length).toBe(2);
+  });
+
+  it("an under-ceiling read reaches the counter and nothing else", async () => {
+    /* AC5's no-WRITE half, which is still a runtime question: the counter is the only thing
+       `checkLimit` touches, and this is the cell that says so by owning it. `hit` is the
+       whole of the interface, so a call that went anywhere else would have to invent a
+       collaborator this counter does not provide. */
+    const { counter } = fixedCounter();
+    const calls: string[] = [];
+    const watched: SlotCounter = {
+      hit: (bucket, tier, subject, windowMs) => {
+        calls.push(`${bucket}/${tier}/${subject}`);
+        return counter.hit(bucket, tier, subject, windowMs);
+      },
+      bytes: () => counter.bytes(),
+    };
+    const verdict = await checkLimit(ANON, "read", { config: CONFIG, counter: watched });
+    expect(verdict.allowed).toBe(true);
+    expect(calls).toEqual(["read/anonymous/203.0.113.7"]);
   });
 });
 
-describe("AC5: an under-ceiling read reaches no database", () => {
-  it("an anonymous under-ceiling read touches the Db on no property", async () => {
-    const { counter } = fixedCounter();
-    const { db, touched } = recordingDb();
-    const verdict = await checkLimit(db, ANON, "read", { config: CONFIG, counter });
-    expect(verdict.allowed).toBe(true);
-    expect(touched()).toEqual([]);
+describe("T231: the key precondition is a type rather than caller discipline", () => {
+  it("refuses a bare keyId string, which is what the old subject accepted", () => {
+    /* The measurement T231 exists because of: `checkLimit` was handed `keyId: string | null`
+       and any caller could fill it with a string no `resolveKey` ever produced. Each
+       `@ts-expect-error` below is an assertion that reds AT TYPECHECK if the shape ever
+       admits its line again — the directive itself errors when the code under it compiles,
+       so these are green-against-red rather than comments about an intention. */
+    // @ts-expect-error a bare keyId is exactly what T231 closes: the union has no such member
+    void ((): LimitSubject => ({ tier: "key", keyId: "key-1", ip: "203.0.113.7" }));
+    // @ts-expect-error and the key arm cannot be satisfied by a string in the right place
+    void ((): LimitSubject => ({ tier: "key", key: "key-1", ip: "203.0.113.7" }));
   });
 
-  it("an OVER-ceiling read touches the Db on no property either", async () => {
-    /* The criterion is about the under-ceiling case and this is the wider claim: there is
-       no path through `checkLimit` that reaches a connection, so the instrument cannot be
-       satisfied by an implementation that only defers its write until the ceiling. */
-    const { counter } = fixedCounter();
-    const { db, touched } = recordingDb();
-    for (let i = 0; i < 5; i += 1) await checkLimit(db, ANON, "read", { config: CONFIG, counter });
-    expect(touched()).toEqual([]);
+  it("refuses an ApiKeyRecord, which is what listKeys hands a caller", () => {
+    /* The leak that actually mattered. `listKeys` returns `ApiKeyRecord[]` INCLUDING revoked
+       rows — deliberately, because `revokedAt` moving to an instant is AC4's only
+       HTTP-observable form — and those records were structurally identical to `resolveKey`'s.
+       A caller could take one and buy the key tier's ceiling with it. `UNRESOLVED` is a LIVE
+       record on purpose: the refusal is about provenance, not about revocation. */
+    // @ts-expect-error an unbranded record is not what resolveKey returns, live or revoked
+    void ((): LimitSubject => ({ tier: "key", key: UNRESOLVED, ip: "203.0.113.7" }));
+    /* The same refusal against a freshly INFERRED object type rather than one annotated
+       `ApiKeyRecord`, so the first directive cannot be passing because of how `UNRESOLVED` is
+       declared. Bound to a const first because `@ts-expect-error` suppresses the line that
+       follows it, and a multi-line literal reports its error several lines in — a directive
+       that misses its error reds as unused, which is a guard that fails for the right reason
+       at the wrong moment. */
+    const inferred = {
+      keyId: "KEYIDLITERAL-2222-4222-8222-222222222222",
+      accountId: "acc-1",
+      label: "written out in place",
+      createdAt: new Date(0),
+      revokedAt: null,
+    };
+    // @ts-expect-error nor is one written out in place, so it is the BRAND and not the const
+    void ((): LimitSubject => ({ tier: "key", key: inferred, ip: "203.0.113.7" }));
   });
 
-  it("a keyed read touches the Db on no property, so the claim is total over tiers", async () => {
+  it("holds the brand on exactly two of its seven compile-time directives", () => {
+    /* A reader counting directives in this file gets seven and could conclude seven of them
+       hold the brand. They do not, and the difference was MEASURED rather than reasoned: deleting
+       the brand from `ResolvedKey` leaves exactly the two directives in the cell above
+       unused, and every other one still errors for a reason the UNION supplies — a string is
+       not a record, the account arm has no `key`, the key arm has no `accountId`. Those are
+       real assertions about a real property and they are not evidence about the brand.
+
+       So the count is pinned rather than described. An eighth directive lands here and makes
+       whoever added it say which of the two claims it belongs to.
+
+       Anchored to line start, which is what stops this counting its own pattern: the regex
+       lives on a line beginning with `const`, so a pattern requiring the line to OPEN with a
+       comment marker cannot match at it. A check blinded by quoting the string it looks for
+       is a check that reads green either way. */
+    const source = readFileSync(new URL("./check.test.ts", import.meta.url), "utf8");
+    const directives = source.match(/^\s*\/\/ @ts-expect-error/gm) ?? [];
+    expect(
+      directives,
+      `the compile-time directive count moved. Two of them hold the ResolvedKey brand and ` +
+        `five hold the LimitSubject union; a new one belongs to one of those claims and the ` +
+        `cell above says which is which.`,
+    ).toHaveLength(7);
+  });
+
+  it("refuses a tier that disagrees with the identifier beside it", () => {
+    /* The union's other half. The old record let a caller fill `accountId` and `keyId`
+       together and had `tierOf` decide what that meant; here each arm admits exactly the one
+       identifier its tier names, so the two cannot disagree. */
+    // @ts-expect-error the account arm has no key
+    void ((): LimitSubject => ({ tier: "account", key: RESOLVED, ip: "203.0.113.7" }));
+    // @ts-expect-error the key arm carries accountId once, inside the record
+    void ((): LimitSubject => ({ tier: "key", key: RESOLVED, accountId: "acc-1", ip: "1.2.3.4" }));
+    // @ts-expect-error the anonymous arm carries no identifier at all
+    void ((): LimitSubject => ({ tier: "anonymous", accountId: "acc-1", ip: "203.0.113.7" }));
+  });
+
+  it("still accepts what resolveKey returns, so the refusals above are not vacuous", async () => {
+    /* The positive control, and it is the half that separates a working brand from a type
+       nothing can satisfy. Every `@ts-expect-error` above would still be green if
+       `LimitSubject` were uninhabitable; this is the cell that says the key arm has a
+       member. */
     const { counter } = fixedCounter();
-    const { db, touched } = recordingDb();
-    await checkLimit(db, KEYED, "read", { config: CONFIG, counter });
-    expect(touched()).toEqual([]);
+    const verdict = await checkLimit(KEYED, "read", { config: CONFIG, counter });
+    expect(verdict.limit).toBe(9);
+  });
+
+  it("does not publish a way to mint one, and does not publish tierOf either", async () => {
+    /* A brand with an exported constructor is a compile error with an escape hatch beside it,
+       and a mint could be spelled anything — `asResolvedKey`, `brandKey`, `unsafeKey`. A
+       pattern over names I could think of would cover the spellings I thought of, which is
+       the shape of guard that reads as coverage while covering less.
+
+       So this is an EQUALITY over the barrel's whole value surface. `A floor absorbs
+       additions silently and then stops detecting removals` is `contract.ts`'s own sentence
+       for why, one directory over. It reds for a mint under any name; it also reds for
+       `tierOf` coming back, which is the second claim this cell holds and the reason the two
+       are not separate cells — they are one question about what this barrel publishes.
+
+       Types are absent by construction rather than by filtering: `ResolvedKey` and
+       `LimitSubject` are `export type`, so they have no runtime witness to appear here.
+       That is the property being asserted, not an omission from the list. */
+    const barrel: Record<string, unknown> = await import("./index");
+    expect(
+      Object.keys(barrel).sort(),
+      `the limits barrel's value surface changed. Two things this cell holds: nothing here ` +
+        `may construct a ResolvedKey — only resolveKey may, and a published mint reopens ` +
+        `exactly what T231 closes — and tierOf stays gone, because an exported tierOf hands ` +
+        `a caller a Tier detached from the subject it came from.`,
+    ).toEqual([
+      "BYTES_PER_SLOT",
+      "DEFAULT_LIMITS",
+      "DEFAULT_SLOTS",
+      "InvalidLabelError",
+      "LimitsStoreError",
+      "MAX_COUNTER_BYTES",
+      "MAX_LABEL_LENGTH",
+      "MAX_PARAM_DEPTH",
+      "MAX_SUBJECT_CHARS",
+      "MAX_UPLOAD_KB",
+      "NotKeyOwnerError",
+      "RateLimitedError",
+      "SECRET_LENGTH",
+      "SECRET_PREFIX",
+      "TIER_ORDER",
+      "armsNotDisjoint",
+      "checkLimit",
+      "createSlotCounter",
+      "enforceLimit",
+      "issueKey",
+      "limitFor",
+      "listKeys",
+      "rateLimitContext",
+      "rateLimited",
+      "readJsonObject",
+      "resolveKey",
+      "revokeKey",
+      "withLimitsErrors",
+    ]);
   });
 });
 
 describe("the verdict", () => {
   it("counts the request being judged, so remaining falls from the first call", async () => {
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
-    const first = await checkLimit(db, ANON, "read", { config: CONFIG, counter });
+    const first = await checkLimit(ANON, "read", { config: CONFIG, counter });
     expect(first).toMatchObject({ allowed: true, limit: 3, remaining: 2 });
   });
 
   it("allows exactly `limit` requests and refuses the next", async () => {
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
     const seen: boolean[] = [];
     for (let i = 0; i < 4; i += 1) {
-      seen.push((await checkLimit(db, ANON, "read", { config: CONFIG, counter })).allowed);
+      seen.push((await checkLimit(ANON, "read", { config: CONFIG, counter })).allowed);
     }
     expect(seen).toEqual([true, true, true, false]);
   });
 
   it("never reports a negative remaining", async () => {
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
     let last = 0;
     for (let i = 0; i < 10; i += 1) {
-      last = (await checkLimit(db, ANON, "read", { config: CONFIG, counter })).remaining;
+      last = (await checkLimit(ANON, "read", { config: CONFIG, counter })).remaining;
     }
     expect(last).toBe(0);
   });
 
   it("resets when the window rolls", async () => {
     const { counter, advance } = fixedCounter();
-    const { db } = recordingDb();
-    for (let i = 0; i < 4; i += 1) await checkLimit(db, ANON, "read", { config: CONFIG, counter });
+    for (let i = 0; i < 4; i += 1) await checkLimit(ANON, "read", { config: CONFIG, counter });
     advance(60_000);
-    const after = await checkLimit(db, ANON, "read", { config: CONFIG, counter });
+    const after = await checkLimit(ANON, "read", { config: CONFIG, counter });
     expect(after).toMatchObject({ allowed: true, remaining: 2 });
   });
 
   it("resetAt is the window start plus its length, not a duration from now", async () => {
     const { counter } = fixedCounter(1_000_000);
-    const { db } = recordingDb();
-    const verdict = await checkLimit(db, ANON, "read", { config: CONFIG, counter });
+    const verdict = await checkLimit(ANON, "read", { config: CONFIG, counter });
     expect(verdict.resetAt.getTime()).toBe(1_000_000 + 60_000);
   });
 });
@@ -162,10 +321,9 @@ describe("the verdict", () => {
 describe("AC3: a key raises the ceiling, and it is an ordering rather than a value", () => {
   it("key >= account >= anonymous for the same bucket", async () => {
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
-    const anon = await checkLimit(db, ANON, "read", { config: CONFIG, counter });
-    const account = await checkLimit(db, ACCOUNT, "read", { config: CONFIG, counter });
-    const keyed = await checkLimit(db, KEYED, "read", { config: CONFIG, counter });
+    const anon = await checkLimit(ANON, "read", { config: CONFIG, counter });
+    const account = await checkLimit(ACCOUNT, "read", { config: CONFIG, counter });
+    const keyed = await checkLimit(KEYED, "read", { config: CONFIG, counter });
     /* Asserted as an ordering because the numbers are the owner's and still `TBD:`. This
        holds against any ceilings anybody chooses, which is the property the contract can
        carry while the values are open. */
@@ -175,9 +333,8 @@ describe("AC3: a key raises the ceiling, and it is an ordering rather than a val
 
   it("the tiers count separately, so an anonymous flood cannot spend a key's budget", async () => {
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
-    for (let i = 0; i < 20; i += 1) await checkLimit(db, ANON, "read", { config: CONFIG, counter });
-    const keyed = await checkLimit(db, KEYED, "read", { config: CONFIG, counter });
+    for (let i = 0; i < 20; i += 1) await checkLimit(ANON, "read", { config: CONFIG, counter });
+    const keyed = await checkLimit(KEYED, "read", { config: CONFIG, counter });
     expect(keyed.allowed).toBe(true);
   });
 });
@@ -185,22 +342,20 @@ describe("AC3: a key raises the ceiling, and it is an ordering rather than a val
 describe("an unconfigured bucket refuses rather than passing", () => {
   it("refuses a bucket nobody configured", async () => {
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
     /* D-70-18's shape at a `Record` index: a lookup answering `undefined`, read as "no
        limit", is a criterion satisfiable by never limiting anything. This is the assertion
        that makes AC2 false-able. */
-    const verdict = await checkLimit(db, ANON, "unconfigured", { config: CONFIG, counter });
+    const verdict = await checkLimit(ANON, "unconfigured", { config: CONFIG, counter });
     expect(verdict).toMatchObject({ allowed: false, limit: 0, remaining: 0 });
   });
 
   it("refuses a bucket named by a prototype property rather than by the config", async () => {
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
     /* `Object.prototype.constructor` is reachable by a bare index read on a `Record`, and it
        would answer a FUNCTION where the type says `BucketLimit`. T060's never-inherit ruling
        at a config lookup. */
     for (const bucket of ["constructor", "toString", "__proto__", "hasOwnProperty"]) {
-      const verdict = await checkLimit(db, ANON, bucket, { config: CONFIG, counter });
+      const verdict = await checkLimit(ANON, bucket, { config: CONFIG, counter });
       expect(verdict.allowed, `bucket ${bucket}`).toBe(false);
     }
   });
@@ -215,9 +370,8 @@ describe("an unconfigured bucket refuses rather than passing", () => {
        relative to now because the module reads `Date.now()` rather than carrying a second
        clock beside the counter's, and the bracket is exact to the duration of the call. */
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
     const before = Date.now();
-    const verdict = await checkLimit(db, ANON, "unconfigured", { config: CONFIG, counter });
+    const verdict = await checkLimit(ANON, "unconfigured", { config: CONFIG, counter });
     const after = Date.now();
     expect(verdict.resetAt.getTime()).toBeGreaterThan(after);
     expect(verdict.resetAt.getTime()).toBeGreaterThanOrEqual(before + UNCONFIGURED_BACKOFF_MS);
@@ -233,9 +387,8 @@ describe("an unconfigured bucket refuses rather than passing", () => {
        held for this verdict as for every other. Without it the two fields could be chosen
        independently and one of them could go back to being a sentinel on its own. */
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
     const before = Date.now();
-    const verdict = await checkLimit(db, ANON, "unconfigured", { config: CONFIG, counter });
+    const verdict = await checkLimit(ANON, "unconfigured", { config: CONFIG, counter });
     const after = Date.now();
     expect(verdict.windowMs).toBeGreaterThan(0);
     const windowStart = verdict.resetAt.getTime() - verdict.windowMs;
@@ -255,8 +408,7 @@ describe("an unconfigured bucket refuses rather than passing", () => {
        the owner ever rules a window that is not an hour. The length check is the anti-vacuity
        control: over an empty table every `toBeGreaterThan` below would pass. */
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
-    const verdict = await checkLimit(db, ANON, "unconfigured", { config: CONFIG, counter });
+    const verdict = await checkLimit(ANON, "unconfigured", { config: CONFIG, counter });
     const configuredWindows = Object.values(DEFAULT_LIMITS).flatMap((tiers) =>
       Object.values(tiers).map((cell) => cell.windowMs),
     );
@@ -270,11 +422,10 @@ describe("an unconfigured bucket refuses rather than passing", () => {
     /* It must not be possible to fill the fixed array by naming buckets nobody configured —
        which would be D-40-B's clause arriving through the refusal path. */
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
     for (let i = 0; i < 50; i += 1) {
-      await checkLimit(db, ANON, `nope-${i}`, { config: CONFIG, counter });
+      await checkLimit(ANON, `nope-${i}`, { config: CONFIG, counter });
     }
-    const verdict = await checkLimit(db, ANON, "read", { config: CONFIG, counter });
+    const verdict = await checkLimit(ANON, "read", { config: CONFIG, counter });
     expect(verdict.remaining).toBe(2);
   });
 });
@@ -282,20 +433,18 @@ describe("an unconfigured bucket refuses rather than passing", () => {
 describe("enforceLimit refuses rather than reporting", () => {
   it("returns the verdict while under the ceiling", async () => {
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
-    await expect(enforceLimit(db, ANON, "read", { config: CONFIG, counter })).resolves.toMatchObject({
+    await expect(enforceLimit(ANON, "read", { config: CONFIG, counter })).resolves.toMatchObject({
       allowed: true,
     });
   });
 
   it("throws RateLimitedError past it, naming the bucket, the number, the window and the instant", async () => {
     const { counter } = fixedCounter(1_000_000);
-    const { db } = recordingDb();
-    for (let i = 0; i < 3; i += 1) await enforceLimit(db, ANON, "read", { config: CONFIG, counter });
+    for (let i = 0; i < 3; i += 1) await enforceLimit(ANON, "read", { config: CONFIG, counter });
     /* The expected message is a LITERAL here rather than built from the module. A test that
        imports its expectation from the subject asserts that the subject agrees with itself,
        and passes unchanged the day the wording starts interpolating something it should not. */
-    await expect(enforceLimit(db, ANON, "read", { config: CONFIG, counter })).rejects.toThrow(
+    await expect(enforceLimit(ANON, "read", { config: CONFIG, counter })).rejects.toThrow(
       new RateLimitedError(
         "read: limit of 3 per minute reached; resets at 1970-01-01T00:17:40.000Z.",
       ),
@@ -304,9 +453,8 @@ describe("enforceLimit refuses rather than reporting", () => {
 
   it("refuses an unconfigured bucket rather than passing it", async () => {
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
     await expect(
-      enforceLimit(db, ANON, "unconfigured", { config: CONFIG, counter }),
+      enforceLimit(ANON, "unconfigured", { config: CONFIG, counter }),
     ).rejects.toBeInstanceOf(RateLimitedError);
   });
 });
@@ -340,10 +488,9 @@ describe("the ruled ceilings, as shipped", () => {
        satisfy the matrix equality above perfectly, because that one asserts the VALUE and
        this one asserts what the value does. */
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
-    const anon = { accountId: null, keyId: null, ip: "203.0.113.7" };
+    const anon: LimitSubject = { tier: "anonymous", ip: "203.0.113.7" };
     for (const bucket of ["write", "upload"]) {
-      const verdict = await checkLimit(db, anon, bucket, { counter });
+      const verdict = await checkLimit(anon, bucket, { counter });
       expect(verdict.allowed, bucket).toBe(false);
       expect(verdict.limit, bucket).toBe(0);
       expect(verdict.remaining, bucket).toBe(0);
@@ -356,16 +503,15 @@ describe("the ruled ceilings, as shipped", () => {
        `account` and `key` must agree on `write` and `upload`. Three equalities, and each is a
        different way the fill could have been transcribed wrongly. */
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
     const ip = "203.0.113.7";
-    const anon = await checkLimit(db, { accountId: null, keyId: null, ip }, "read", { counter });
-    const acct = await checkLimit(db, { accountId: "a", keyId: null, ip }, "read", { counter });
-    const keyed = await checkLimit(db, { accountId: "a", keyId: "k", ip }, "read", { counter });
+    const anon = await checkLimit({ tier: "anonymous", ip }, "read", { counter });
+    const acct = await checkLimit({ tier: "account", accountId: "a", ip }, "read", { counter });
+    const keyed = await checkLimit({ tier: "key", key: RESOLVED, ip }, "read", { counter });
     expect(acct.limit).toBe(anon.limit);
     expect(keyed.limit).toBe(anon.limit * 10);
 
-    const acctW = await checkLimit(db, { accountId: "a", keyId: null, ip }, "write", { counter });
-    const keyedW = await checkLimit(db, { accountId: "a", keyId: "k", ip }, "write", { counter });
+    const acctW = await checkLimit({ tier: "account", accountId: "a", ip }, "write", { counter });
+    const keyedW = await checkLimit({ tier: "key", key: RESOLVED, ip }, "write", { counter });
     expect(keyedW.limit).toBe(acctW.limit);
   });
 
@@ -373,8 +519,7 @@ describe("the ruled ceilings, as shipped", () => {
     /* D-230-04 survives the emptiness ending. That property was what made an empty table safe
        and it is easy to lose in the edit that populates one. */
     const { counter } = fixedCounter();
-    const { db } = recordingDb();
-    const anon = { accountId: null, keyId: null, ip: "203.0.113.7" };
-    expect((await checkLimit(db, anon, "search", { counter })).allowed).toBe(false);
+    const anon: LimitSubject = { tier: "anonymous", ip: "203.0.113.7" };
+    expect((await checkLimit(anon, "search", { counter })).allowed).toBe(false);
   });
 });
