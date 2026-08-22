@@ -7175,6 +7175,35 @@ downstream does. Both were found by mutation, and both mutations scored **0** �
 means nothing until inertness is falsified on the second axis, which is why that step is not
 optional.
 
+## An implementer's self-assessment does not reach its adversary either
+
+The standing rule is that **adversary probes are never shown to the implementer**, because a fix
+that satisfies probes it was shown proves nothing. **The mirror image has the same defect and it
+took a generous handback to notice.**
+
+T133's implementer stood down by listing three places it believed its own work was thinnest — the
+unenforced `operation` parameter, the uncrossed `text`/`terms`, and AC1's missing witness. Offered
+in good faith and genuinely useful. **Forwarded, it would have made the adversary look where it
+was invited to look, and its round would then measure the IMPLEMENTER'S IMAGINATION rather than
+the module.** Worse, the misses become invisible: whatever the implementer did not think of is
+precisely the region neither party would then cover. Same shape as a reference written by the
+author of the assertions — a consistency check wearing the costume of an independent axis.
+
+**Held rather than forwarded, and the disposition is stated in advance so it stays honest:** if
+the adversary finds them independently, that is corroboration worth more than a pointer and it
+arrives with a measurement attached. If it does not, they are raised at the merge and **the miss
+is itself information about the round's coverage** — which telling it in advance would have
+destroyed.
+
+One of the three cost nothing to withhold: AC1's refusal having no witness in the merged corpus is
+a fact about the **corpus**, not a hint about the code, and it was already the centre of the
+adversary's brief.
+
+**The implementer's own framing of the second is the model for shipping a known gap**: deliberate,
+reasoned from D-133-04, priced in the code, and *"chargeable if the reasoning is wrong."* A pattern
+that finds a priced gap has found the author already standing there — and it is exactly why an
+independent reader should be left free to disagree with the price.
+
 ## Enumerate what reaches the writer MECHANICALLY and TRANSITIVELY, never from recall
 
 D-133-04 ruled that a write-time refusal removes the witnesses of the reader-time refusal it makes
