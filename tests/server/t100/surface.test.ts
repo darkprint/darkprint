@@ -181,9 +181,31 @@ type PinResult = Pin<
   ContractPublishResult
 >;
 
-/* The two lines that will start failing the typecheck once the barrel exists and disagrees. */
-const _pinInput: PinInput = true as PinInput;
-const _pinResult: PinResult = true as PinResult;
+/* ------------------------------------------------------------
+   The two lines that fail the typecheck once the barrel exists
+   and disagrees — and they only became those lines just now.
+
+   **They read `= true as PinInput` until this commit, and the cast
+   made them inert.** `true as false` is a permitted comparability
+   conversion, so the assertion absorbed exactly the disagreement it
+   was written to surface: four mutations to the real interfaces
+   produced no diagnostic here at all, and the only line that caught
+   them was the runtime comparison below — the one this file's own
+   comment called bookkeeping rather than a guard.
+
+   Measured before changing it, on a local `type Disagrees = false`
+   so the absent barrel could not confound the result:
+   `const a: Disagrees = true as Disagrees` compiles clean, and
+   `const a: Disagrees = true` is `TS2322`. The cast was the whole
+   difference.
+
+   That is the corollary from the `Exact<>` work arriving one level
+   in: **the line described as decoration was the guard, and the
+   lines described as the guard were decoration** — with a comment
+   inviting a tidier to delete the working one.
+   ------------------------------------------------------------ */
+const _pinInput: PinInput = true;
+const _pinResult: PinResult = true;
 
 /* ------------------------------------------------------------
    Falsifying the INSTRUMENT, since the pin itself cannot be
@@ -224,9 +246,16 @@ const _exactDiscriminates: [
 
 describe("T100 published shapes", () => {
   it("pins PublishInput and PublishResult — vacuous until the barrel lands", () => {
-    /* Deliberately not an assertion about the pins: they are a COMPILE-time claim and there is
-       nothing for a runtime expectation to look at. This cell exists so the debt above appears
-       in the run's output rather than only in a comment nobody opens. */
+    /* **This comparison is a second compile-time guard, not bookkeeping**, and the earlier
+       version of this comment saying otherwise is what made the file misleading. When a pin
+       resolves to `false`, `_pinInput === true` is `TS2367` — "these types have no overlap" —
+       so this line reds at build time exactly as the declarations above now do. It was in fact
+       the ONLY line that caught four mutations to the real interfaces while those declarations
+       still carried their neutering cast.
+
+       Both are kept. They fail with different codes (`TS2322` on the declaration, `TS2367`
+       here) and a reader who sees only one has still been told. The runtime `expect` also puts
+       the debt in the run's output rather than only in a comment nobody opens. */
     expect(
       _pinInput === true && _pinResult === true,
       "The type pins live in this file's type space; see the header for what they establish " +
