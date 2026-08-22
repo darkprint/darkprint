@@ -35,6 +35,7 @@ import { withSession } from "@/lib/server/auth";
 import { LimitExceededError, validateVocabularySource } from "@/lib/server/engine";
 import { badRequest, ok, problem } from "@/lib/server/http";
 import { ArchiveConflictError, MalformedVocabularyError } from "@/lib/server/archive";
+import { ExportError } from "@/lib/server/export";
 import { UnknownOntologyVersionError } from "@/lib/server/ontology";
 import { CardStoreError } from "@/lib/server/cards";
 import { PublishRefusedError, publish, type PublishInput } from "@/lib/server/publish";
@@ -168,6 +169,21 @@ function statusFor(request: Request, thrown: unknown): Response | undefined {
     return problem(request, {
       type: "https://darkprint.io/problems/card-refused",
       title: "Card refused",
+      status: 422,
+      detail: thrown.message,
+    });
+  }
+  /* 422: the freeze could not be built from what was just written. In practice this is
+     `checkFactoryDot` — the emitted `factory.dot` failing the two checks Attractor runs
+     before it will execute a pipeline — and it is a fact about the submitted graph, so the
+     caller can act on it. `ExportError` only; `ExportReadError` is T090's driver-failure
+     sibling and is deliberately NOT caught here, because the split is load-bearing (D-90-A):
+     an infrastructure fault must reach the caller as a 500 rather than as a verdict on
+     their bundle. Falling through returns `undefined` and the handler rethrows. */
+  if (thrown instanceof ExportError) {
+    return problem(request, {
+      type: "https://darkprint.io/problems/export-refused",
+      title: "Release does not export",
       status: 422,
       detail: thrown.message,
     });
