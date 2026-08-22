@@ -65,3 +65,47 @@ export async function getPublicAuthor(db: Db, handle: string): Promise<PublicAut
     return row === undefined ? undefined : publicAuthorOf(row);
   });
 }
+
+/**
+ * The account behind a handle, reduced to the two facts a publish needs: whose row it is,
+ * and what visibility that owner publishes at by default.
+ *
+ * **Added by D-100-01, and it exists because nothing published could answer the question.**
+ * `PublishInput` names an owner by handle while `createBundle` takes an `ownerId`, and no
+ * export of any `lib/server/*` barrel bridged the two: `getPublicAuthor` returns
+ * `PublicAuthor`, whose whole design is to carry nothing owner-only and which therefore has
+ * no id (`types.ts`, AC2's structural half); `getAccount` already needs the id; T070's
+ * `checkHandle` answers a boolean. The only construction in the tree was an inline join on
+ * `schema.account`, spelled twice in `lib/server/registry` (`scores.ts`, `snapshot.ts`), and
+ * a third copy at the one door that WRITES through it is a copy worth retiring rather than
+ * adding.
+ *
+ * **No `Actor`, and no `can` call, deliberately.** This is not a read of somebody's account:
+ * it is the resolution of a name into the subject an authorization question is then asked
+ * ABOUT. Taking an actor here would invite the caller to treat a successful resolve as a
+ * grant, and the grant is T060's — `can(actor, "publish", { kind: "bundle", ownerId, ... })`,
+ * asked by the caller with what this returns. Everything in the answer is either already
+ * public (a handle is how the site addresses an author) or is a default the caller needs to
+ * write a row on that account's behalf, and neither is `email`.
+ *
+ * `defaultVisibility` travels with the id rather than being fetched separately because a
+ * publish that omitted a visibility needs it in the same breath and a second round trip
+ * would let the two answers come from different moments. A user who set their account to
+ * private must not have something published publicly by a default that was not theirs.
+ *
+ * The grammar guard and the `typeof` guard are `getPublicAuthor`'s, for its reasons
+ * unchanged: `handle` is a `text` column, `pg` sends `text` as UTF-8, and an unpaired
+ * surrogate reaching the `SELECT` arrives as U+FFFD, so this would answer about a name
+ * nobody typed.
+ */
+export async function resolveOwner(
+  db: Db,
+  handle: string,
+): Promise<{ accountId: string; defaultVisibility: "public" | "private" } | undefined> {
+  if (typeof handle !== "string") return undefined;
+  if (validateNamespace(handle).length > 0) return undefined;
+  return await withStore("resolveOwner", async () => {
+    const row = await accountRowByHandle(db, handle);
+    return row === undefined ? undefined : { accountId: row.id, defaultVisibility: row.defaultVisibility };
+  });
+}
