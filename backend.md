@@ -7544,6 +7544,40 @@ The corollary for anyone writing a docstring in this repository: **the distincti
 are the ones you can currently keep in your head**, because those are exactly the ones the next
 reader cannot.
 
+## A blind author refused to write a cell I ruled for, and the ruling was false
+
+I ruled: *an operator publishing to a bundle it does not own is `can(actor, "publish", ...)`
+returning false, so `not-owner` -> 404.* **`can` returns TRUE.** Verified on all three legs:
+
+* `can.ts:39` — `ACTIONS` contains `"publish"`.
+* `can.ts:203` — `case "bundle"` is `isOperatorGrant(actor, action) || canOnVisibilityScoped(...)`,
+  so the operator arm **short-circuits before ownership is consulted.**
+* `can.ts`'s own header — the grant is *"exactly as wide as a recognized resource, never wider...
+  **unconditional** once `resource.kind` is one of the five."* B-13's break-glass, working as designed.
+
+**The cell I asked for would have redded an implementation that consulted `can` correctly.** Its
+author wrote neither that cell nor its opposite — which would have encoded a product decision nobody
+has made — and **documented both readings in the file header with line references, so the next
+reader meets the divergence rather than my ruling.**
+
+**RULED: T100 honours `can`.** If the operator grant is too wide for publishing, that is a **T060
+amendment, not a T100 exception** — a second opinion about authorization living inside a composing
+task is the defect this run charges most, and ruling around a module that already decides would
+create one.
+
+**And it is unreachable through HTTP by construction, which is the part worth keeping.** `actorFrom`
+always mints `kind: "account"` (D-50-13: *"no route can mint an operator and `can`'s operator grant
+is unreachable through HTTP rather than merely untested"*), so **a route-level operator cell has no
+way to construct its subject.** The question — should a break-glass operator publish into someone
+else's namespace? — is settleable only at the module boundary, and now has a named site rather than
+being latent.
+
+**Corollary on propagating the `Exact<>` repair, insisted on by the same author and it is right:
+the `IsAny` short-circuit must land in the SAME change as the key-set clause.** Adding key-set
+comparison flips `Exact<any, T>` from `true` to `false`, so every pin starts redding for a reason
+`TS2307` already reports one line above — **the repair arrives as noise, and the next author deletes
+the pin while believing they are cleaning up.** A repair that reds for the wrong reason gets removed.
+
 ## `Exact<A, B>` by mutual assignability is BLIND to an added optional member — repo-wide
 
 Found by T100's blind author, in the formulation **every blind suite in this run uses**:
