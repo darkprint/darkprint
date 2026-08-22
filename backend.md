@@ -7869,6 +7869,42 @@ cell body is correct; only the seed is wrong.
 a summary line.** A cell failing in `beforeAll` reports as a skip; a cell failing in its own setup
 reports as a red — and both look like the criterion was exercised and found wanting.
 
+## Declaring a risk makes a finding CHEAP TO ACT ON; it does not make it FINDABLE
+
+T100's implementer shipped `d3c66f1` saying plainly it was unmeasured and that the AC6 witness had
+not been observed. F5 — a four-parameter function against a three-parameter contract — was in that
+commit. I credited the declaration; **it refused the credit and drew the line better than I had:**
+
+> Declaring the risk did not make the defect less mine. **What the declaration bought was that
+> nobody had to spend a round establishing whether it was known**, so the finding arrived as a fix
+> instead of an argument. That is worth something, and it is smaller than *"the report was correct
+> because I hedged it"*. **The declaration made the finding cheap to act on; it did not make it
+> findable.**
+>
+> The thing that actually caught it was your adversary running a suite I could not, on a commit I
+> had told you was unverified.
+
+**The distinction is worth holding because the failure mode is real**: a session that hedges
+thoroughly can accumulate credit for candour while shipping the same defects, and an orchestrator
+who rewards the hedge stops noticing that the finding still came from somewhere else.
+
+## The mechanism is not the module — verify a handed-down repair against the thing itself
+
+Same session, same fix, and it declined a repair I had handed it as already measured. `?` erases
+while a default expression does not — confirmable with two throwaway functions, and it confirmed it,
+getting 4 and 3.
+
+> **That proves the mechanism and says nothing about `publish`.**
+
+So it ran a probe over the **real export from the barrel**, mutated back to the charged spelling, and
+measured both: `with ?` → exit 1, `expected 4 to be 3`, reproducing the adversary's message exactly;
+`with = undefined` → exit 0. **Red-to-green on the thing itself**, probe removed before committing.
+
+Same family as *a stand-in written by the instrument's author cannot falsify the instrument*, one
+step further out: **a repair verified against the general mechanism is verified against a model of
+the defect, not the defect.** A handed-down fix arrives with someone else's measurement attached,
+and that measurement was taken on someone else's tree.
+
 ## `?` does not reduce `Function.length`, and the docstring claimed it did
 
 `publish` grew `storage?: ObjectStorage` and `surface.test.ts`'s arity pin went 5/5 → 4/5.
