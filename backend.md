@@ -7452,6 +7452,45 @@ The corollary for anyone writing a docstring in this repository: **the distincti
 are the ones you can currently keep in your head**, because those are exactly the ones the next
 reader cannot.
 
+## `Exact<A, B>` by mutual assignability is BLIND to an added optional member — repo-wide
+
+Found by T100's blind author, in the formulation **every blind suite in this run uses**:
+
+> `Exact<A, B>` by mutual assignability alone reports `{a: string}` and `{a: string; b?: number}`
+> as **EQUAL**, because an optional member is assignable in both directions.
+
+**That is the single divergence a pin on a published interface most needs to catch** — an
+implementer adding a field nobody published sails through a green pin, which is the whole failure a
+type pin exists to prevent.
+
+**The repair has two halves and the second is not optional.** `Exact` must compare **key sets** as
+well as assignability; and `Pin<>` must state the vacuity-while-absent **explicitly** rather than
+inheriting it from `Exact<any, T>` — because once the key-set half is added, **`Exact<any, T>` is
+`false`**, so the old formulation reds for a reason `TS2307` already reports. That is the
+loud-but-unreadable lie arriving through the fix for a different one.
+
+**How it was found is worth as much as the finding: the author predicted four near-miss verdicts and
+let `tsc` disagree with it, and what was wrong was the PREDICTION.** A pin nobody has tried to fool
+is a pin nobody has tested.
+
+**It composes with the third lie into a pair worth stating together**, since they look identical
+from outside: a **negative** pin is falsely green while the target shape does not exist, and an
+**`Exact` positive** is falsely green over an added optional member.
+
+## The digest blindness that a ruling rests on, pinned as a fact rather than assumed
+
+Same session, same run: it wrote *"a changed byte in a CARD moves the digest"*, the cell **failed**,
+and the reason is that `cardDigest` hashes the **parsed** `NodeCard`, so comments are invisible to it.
+
+**That blindness is exactly what D-100-02's source-byte comparison rests on** — the card comparison
+was ruled onto `source` *because* no digest check can see a comment-only edit. So the cell was
+inverted to pin the blindness **as a fact**, with a header saying that a red there means the two
+rulings must be re-read together.
+
+**Neither the ruling nor the suite was designed to do that.** A cell that started as a wrong
+assumption became the thing that makes two independent rulings mutually checkable — found by being
+wrong out loud rather than by being careful.
+
 ## A type-level pin lies THREE ways, and all three end at "the pin cannot be read"
 
 Two were documented this morning; T231's blind author measured the third rather than predicting it.
