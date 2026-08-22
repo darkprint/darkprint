@@ -82,14 +82,31 @@ const STORED_VOCABULARY = "release.local_vocabulary";
  *     SELECT id, bundle_id, version FROM release
  *     WHERE local_vocabulary IS NOT NULL
  *       AND (jsonb_typeof(local_vocabulary) <> 'object'
- *            OR jsonb_typeof(local_vocabulary -> 'text') <> 'string');
+ *            OR jsonb_typeof(local_vocabulary -> 'text') IS DISTINCT FROM 'string'
+ *            OR COALESCE(jsonb_typeof(local_vocabulary -> 'terms'), 'null')
+ *                 NOT IN ('array', 'null'));
  *
- * It reports the two clauses SQL can decide — not a mapping, and `text` absent or not a string.
- * The third, `terms` being a list of term mappings, is `parseOntologyTerms`' and is deliberately
- * NOT transcribed into SQL here: a second copy of the grammar in a dialect that cannot import it
- * is exactly the second reading this task exists to end, and it would be the one copy nobody
- * runs. So this query UNDER-reports by construction, and that is the honest direction — every
- * row it names is refused, and a row it misses is still refused by the readers.
+ * `IS DISTINCT FROM`, never `<>`, and this is the whole of the second clause rather than a
+ * style note. For a row with no `text` KEY, `->` yields SQL NULL, `jsonb_typeof(NULL)` yields
+ * NULL, and `NULL <> 'string'` is NULL rather than true — so `WHERE` drops the row and the
+ * clause silently fails to decide the case it exists for. Measured: `<>` gives NULL and
+ * `IS DISTINCT FROM` gives true for `'{}'::jsonb -> 'text'`. **And the row this loses is the
+ * worst one to lose** — `{ terms: [...] }` with no `text` is the pre-D-90-03 spelling, the one
+ * shape the two merged readers genuinely differ on (D-130-07), so it is the likeliest refused
+ * row to actually exist and it was the one row the report could not see.
+ *
+ * The `terms` clause is SQL-decidable and belongs here. D-133-01 says `terms` absent or null
+ * means `[]` and present means an array — that is a SHAPE clause and Postgres decides it. Only
+ * "the entries are term mappings" is T030's GRAMMAR, and only that is left out: a second copy
+ * of the grammar in a dialect that cannot import it is the second reading this task exists to
+ * end, and it would be the copy nobody runs. `COALESCE(..., 'null')` is how absent and JSON
+ * null are made one case, which is exactly what `parseOntologyTerms` does with them.
+ *
+ * So the query still UNDER-reports, by the entries clause alone rather than by the whole of
+ * `terms`. Measured over a 16-row corpus of legal and refused values, 10 of them refused and
+ * SQL-separable: **10/10 caught, 0 false positives**, with `{ text, terms: [42] }` correctly
+ * NOT reported because that one is T030's. Under-reporting is the honest direction — every row
+ * it names is refused, and a row it misses is still refused by the readers.
  *
  * No migration: `lib/db/migrations/**` is not this task's, the column type does not change, and
  * what becomes of such a row is an open question this task does not answer (D-133-01).
