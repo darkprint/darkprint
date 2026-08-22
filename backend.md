@@ -7544,6 +7544,43 @@ The corollary for anyone writing a docstring in this repository: **the distincti
 are the ones you can currently keep in your head**, because those are exactly the ones the next
 reader cannot.
 
+## A ruling can arrive with zero coverage, and the shape that fixes it asserts AGREEMENT not OUTCOME
+
+I ruled *"T100 honours `can`"* and it became contract with **nothing checking it**. T100's blind
+author measured that against its own finished suite: every actor its 48 cells construct comes from
+one factory as `{ kind: "account", ... }`, so **an implementation that never calls `can` at all —
+that writes `ownerId === actor.accountId` — passes every cell including all three AC7 cells.** The
+delegation the ruling exists to require is precisely what the suite cannot see.
+
+**This is F-230-J's shape arriving at a CONTRACT CLAUSE rather than at a line of code.** There, the
+one line implementing AC4 could be deleted with **0 reds across 164 cells**. Here, the one decision
+implementing the ruling can be omitted entirely with **0 reds across 48**. *A criterion whose
+defending cell is absent* and *a criterion whose defending cell is too weak* are the same failure,
+and this run met both within a day.
+
+**The cell that works asserts AGREEMENT, not an outcome:**
+
+    publish's answer for a given actor matches
+    can(actor, "publish", { kind: "bundle", ownerId, visibility })
+
+**Why the outcome form fails and this one does not:** the operator grant is an **open product
+decision** — `can` currently returns true for an operator publishing into another's namespace, and
+whether it should is unruled. An outcome cell encodes today's answer and must be **rewritten by
+whoever amends T060**, who discovers it by redding. The agreement cell pins **the invariant that was
+actually ruled** — no second opinion about authorization inside a composing task — and stays green
+across that amendment without anyone touching it.
+
+**Write it at the MODULE boundary, not the route.** `actorFrom` mints `kind: "account"`
+unconditionally (D-50-13), so the operator arm is unreachable through HTTP; at the module an `Actor`
+is handed in directly. That closes both halves of the hole — the grant untestable through HTTP, and
+the delegation untested at the module — rather than one.
+
+**Generalised, by the same author, and this version is the one to keep:** *any guard whose fix adds
+noise — the suppressor has to land in the same change, not the next one.* Between the two changes
+the guard is loud and useless, **and that is exactly the window in which somebody tidies it away.**
+The instance was `Exact<>`'s key-set clause needing the `IsAny` short-circuit beside it; the class is
+every repair that makes a guard fire for the wrong reason before it makes it fire for the right one.
+
 ## A blind author refused to write a cell I ruled for, and the ruling was false
 
 I ruled: *an operator publishing to a bundle it does not own is `can(actor, "publish", ...)`
