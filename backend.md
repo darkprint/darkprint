@@ -7635,6 +7635,51 @@ so **one `||` arm answered for two failure modes and it read a missing binary as
 variable.** The consequence it names is the reason it matters: it would then have expected the
 accounts DB suite to skip, and **read those skips as environmental rather than as a defect.**
 
+## When to re-run and when to reason: the test is WHO ELSE CONSUMES IT, not how big the diff is
+
+T231's adversary refused to reason its way out of one re-run and then declined the next, **and
+derived the discriminator between them:**
+
+> **Re-run when the change is to something other suites READ** — a parsed document, a shared helper,
+> a global. **Reason when the change is confined and you can MEASURE that nothing outside reads it
+> and no new global is touched.** The test is not *how big is the diff*, it is **who else consumes
+> it**.
+
+`backend.md` was the first case: 91 files parse it, and the blast radius is invisible from inside any
+partition. The second was two commits confined to one test directory, and it closed the question with
+**five checks, none of them judgment** — delta confined to the partition; nothing outside references
+the file; **zero new `prototype`/`globalThis`/`process.env`/`Symbol.for` in the added lines**; the one
+pre-existing global mutation's install/restore region **hashed byte-identical at both shas**; and the
+partition run **in one vitest invocation alongside the suite it could bleed into**, which passed.
+
+**That last check is the direct test of the only hazard anyone had flagged** — a
+`Client.prototype.query` patch is process-global and follows later suites in the same worker. Running
+them together exercises exactly that, and combining it with the byte-identical restore region makes
+the mechanism both *unchanged* and *observed not to fire*.
+
+**And its peer had scoped the same delta first, labelling its own cross-suite claim
+"reasoned, with the risky part shown to be unchanged" and explicitly NOT verified.** That honesty is
+what made it closable: checks 4 and 5 turned somebody else's reasoning into measurement.
+
+## Name the property a comparator compares, and ask whether two different states could share it
+
+`t231-blind` caught **two comparator bugs in one hour**, and the second is the one that generalises:
+
+* **Postgres:** 14 databases before, 14 after, **different name sets** — a foreign run had come and
+  gone. The count matched, the check passed, it nearly shipped "identical".
+* **Determinism:** it compared two runs' failing sets with Python's `hash(tuple(names))` and got
+  **different digests for identical sets**, because **`hash()` is salted per process** and two
+  `python3` invocations digest the same input differently. It was one step from reporting
+  non-determinism in its own partition.
+
+> **When a check compares two observations, name the property being compared and ask whether two
+> genuinely different states could share it. Counts, lengths and totals almost always can.**
+
+**The first was a green that agreed with expectation; the second was a red that looked like a real
+finding. Neither looks like a broken instrument, and both were the instrument.** Its response to the
+near-miss was to start reporting its partition as a **triple with byte-identical failing sets**
+rather than a single run.
+
 ## A freeze is a PROMISE until the runner pins the blob — and equal counts are not equal state
 
 **I froze `backend.md` for the duration of a full-suite run. Its runner did not take that on trust:**
