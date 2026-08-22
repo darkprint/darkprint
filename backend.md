@@ -7371,6 +7371,46 @@ that the old spelling is *described rather than quoted*, and that restoring the 
 name back to be helpful and silently blinding the check again. Its author's note: *"I nearly was
 that person, with the best of intentions and a correction in hand."*
 
+## A type-level pin lies THREE ways, and all three end at "the pin cannot be read"
+
+Two were documented this morning; T231's blind author measured the third rather than predicting it.
+
+1. **Silently vacuous — absent MODULE.** `tsc` resolves the import to `any`, `Exact<any, T>` is
+   `true`, the check passes and reports nothing.
+2. **Loudly useless — absent MEMBER of a present barrel.** `TS2305` reds the typecheck for a reason
+   unrelated to whether the pin discriminates. *"Not a green that meant nothing, but a red that
+   drowned the signal."*
+3. **FALSELY GREEN — a NEGATIVE pin whose probe matches neither shape.** `bareStringKeyIsRefused`,
+   `aListedKeyCannotBeSpent` and `forgedRecordIsRefused` were all green **not because the criterion
+   held** but because nothing carrying a `tier` field is assignable to the shipped
+   `{accountId; keyId; ip}` either. **Three of four negatives, worth nothing until the union lands.**
+
+The third is the worst of the set because a green negative reads as the criterion holding, while the
+other two announce themselves. Its author put *do not read this file's green cells as coverage* in
+the **file header** rather than in a handback, which is what makes it survive the session.
+
+**The discriminator remains a NEAR-MISS**: green-against-red on two shapes differing by one member.
+And the control for the technique belongs beside the pins, **labelled as a control on the technique
+and not a result about the module** — a check written by the author of the assertions is a
+consistency check and never a second axis.
+
+**Corollary, from the same session, after it broke its own control twice: A CONTROL THAT FAILS
+WHENEVER THE SUBJECT FAILS IS NOT A CONTROL.** Its first paired `isNull(revokedAt)` in `resolveKey`
+against its absence in `listKeys` — which reds under the very mutation it was controlling for. Found
+**by running the mutations, not by reading the cells**, twice, and repaired by discriminating on
+`tokenHash`, which no change in the task can touch.
+
+## The orchestrator is the only party who can misattribute, and it did
+
+T231's blind author raised charges **A through E**. Its implementer raised **C1 through C4**. I wrote
+"two of your charges — C1 and C3" in a message **to the blind author**, having conflated two
+sessions' numbering while relaying between them.
+
+**Neither session can check my attribution — I am the only party who sees both.** The blind author
+caught it only by knowing its own list, and said so plainly. The cost was nothing this time because
+it had not acted on them; the general cost is that a session can be handed another's obligations and
+have no way to tell. **Relay a charge by its content, or quote the sender, never by a number alone.**
+
 ## Absent MODULE and absent MEMBER are one axis with two failure directions, and both end at "unreadable"
 
 Found independently by two T133 sessions in different contexts on the same afternoon, and they
