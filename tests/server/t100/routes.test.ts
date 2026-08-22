@@ -48,10 +48,37 @@
    rather than on a criterion — reported to the orchestrator as an
    open question rather than settled here.
 
-   Unauthenticated and operator callers are NOT asserted: no ruling
-   covers either, and guessing 401 against an implementation that
-   answers 404 would be this author's reading reaching a status
-   code. Charged to the orchestrator instead.
+   ── the unauthenticated caller is T000's answer, not T100's ──
+   D-100-04 ruled it 401 and ruled WHOSE it is: `withSession`
+   (`lib/server/auth/guard.ts:29`) is T000's published guard, it
+   answers `problem+json` 401 before the handler runs, and ten
+   merged routes already reach it. So the cell below pins T000's
+   behaviour AS SEEN THROUGH this route — that the route is guarded
+   at all — rather than a decision T100 made. A red there means the
+   route forgot the guard, not that the 401 is wrong.
+
+   ── and there is no operator cell, on purpose ──
+   D-100-04 also asked for one, on the reasoning that an operator
+   publishing to a bundle it does not own is `can(actor, "publish",
+   …)` returning false. **The code says otherwise and the code
+   wins.** `can`'s bundle case is `isOperatorGrant(actor, action) ||
+   canOnVisibilityScoped(…)` (`lib/server/policy/can.ts:203`), and
+   `isOperatorGrant` is `isOperator(actor) && ACTIONS.has(action)`
+   with `"publish"` among the five (`can.ts:39-44`). So
+   `can(operator, "publish", { kind: "bundle", … })` is **true** —
+   B-13's break-glass grant, which that module's own header calls
+   "unconditional once `resource.kind` is one of the five".
+
+   Asserting 404 would red an implementation that consulted `can`
+   correctly; asserting success would encode a product decision
+   nobody has made. Both are reported rather than written.
+
+   It is moot at this route in any case: `actorFrom` mints
+   `{ accountId, handle }` with no `kind`, and its own header states
+   that "no route can mint an operator and `can`'s operator grant is
+   unreachable through HTTP rather than merely untested"
+   (`lib/server/accounts/http.ts:61-62`). A route-level operator
+   cell has no way to construct its subject.
    ============================================================ */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -197,6 +224,42 @@ describe("T100 POST /api/bundles", () => {
         `\`Symbol.for("darkprint.db.sharedClient")\` and this file has been testing the shared ` +
         `database.\n  Body: ${await response.clone().text()}`,
     ).toBeLessThan(300);
+  });
+
+  it("answers an unauthenticated caller 401 — T000's guard, seen through this route", async () => {
+    const env = setup.require();
+
+    /* No cookie. D-100-04: 401, and it is `withSession`'s answer rather than T100's —
+       `lib/server/auth/guard.ts:29` wraps rather than returns a union precisely so "the
+       handler never runs for an unauthenticated request" is structurally true and not a check
+       a route can forget.
+
+       So what this cell actually establishes is that the route IS guarded. It is not a check
+       on the status itself, which T000 owns and its own suite already holds. A red here means
+       `POST /api/bundles` reached its handler without a session. */
+    const response = await post(submission(env.alice, "route-401", "1.0.0", env.base));
+
+    expect(
+      response.status,
+      `An unauthenticated publish answered ${response.status}.\n` +
+        `  T000's \`withSession\` answers \`problem+json\` 401 before the handler runs, and ten ` +
+        `merged routes reach it. Anything else means this route is not behind the guard.\n` +
+        `  Body: ${await response.clone().text()}`,
+    ).toBe(401);
+
+    expect(
+      isProblemContentType(response.headers.get("content-type")),
+      `The 401 came back as \`${response.headers.get("content-type")}\` rather than ` +
+        `\`application/problem+json\` (B-03).`,
+    ).toBe(true);
+
+    /* And it wrote nothing. An unauthenticated request that reached the store before being
+       turned away is a worse defect than a wrong status, and the status alone cannot see it. */
+    const { getBundle } = await import("@/lib/server/archive");
+    expect(
+      await getBundle(env.scratch.db, env.alice.accountId, "route-401"),
+      "An unauthenticated publish created a bundle before the guard turned it away.",
+    ).toBeUndefined();
   });
 
   it("answers a conflict 409", async () => {
