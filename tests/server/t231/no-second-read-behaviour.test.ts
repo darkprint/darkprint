@@ -57,6 +57,38 @@
    asserted idempotent. Both bugs inflate, so neither could have
    produced a false zero, but both make the numbers unreadable.
 
+   ── what this observer does NOT count, MEASURED not supposed ──
+   It patches `pg`'s `Client.prototype.query`, so it counts `pg`
+   and only `pg`. A read over any other channel is invisible to it
+   — and invisible to the handle cells too, if it avoids their
+   three doors.
+
+   Measured rather than left as a caveat. A `checkLimit` doing
+   `await fetch("http://127.0.0.1:9000/")` inside its awaited path
+   — a real, succeeding network read — scores:
+
+       behavioural cell   11 of 11 PASSED
+       handle cells        8 of 8  PASSED
+
+   **Both instruments fully green against a function demonstrably
+   reading over the network.** That is the sixth axis and it is a
+   real gap, not a hypothetical one.
+
+   Half of it is closed structurally rather than here: the import
+   closure of `check.ts` is walked in `no-second-read.test.ts`, so
+   a SECOND DRIVER — anything arriving by import, at any depth —
+   reds. Falsified: `node:http` imported by `counter.ts`, two
+   levels down, reds that cell.
+
+   **What stays open is a global that needs no import**, `fetch`
+   being the one measured above. Not paid for, deliberately: the
+   module's whole closure is four sibling files and `node:crypto`,
+   so nothing here is near it. Recorded as *unmeasured, and here
+   is the specific thing that would evade it* rather than as
+   *unmeasured*, because the second is a sentence a reader cannot
+   act on. Sharpened by T231's adversary, who pointed out that F2
+   and this share one escape route a level apart.
+
    ── the migrated control, cited rather than run here ──
    T231's adversary provisioned a scratch database on the gate
    slot — migrated, one account and one `api_key` seeded through
@@ -165,13 +197,21 @@ function show(sql: readonly string[]): string {
  * asynchronous, off the critical path, and invisible to any latency measurement.
  *
  * Bounded and adaptive rather than a fixed sleep: it returns as soon as the count has been
- * still for three consecutive polls, and gives up at 400ms so a genuinely quiet path costs
- * about 30ms instead of a flat wait.
+ * still for three consecutive polls, and gives up at 1000ms. The early exit is what keeps it
+ * cheap — a genuinely quiet path costs about 30ms, and only a path that is still working
+ * waits longer.
+ *
+ * **A heuristic, and it cannot be made sound.** Under heavy contention a deferred statement
+ * could be issued after the window closes, or could not have started while the counter looked
+ * still — and this run was measured with a foreign full-suite run in flight, so that is not a
+ * hypothetical. The cap was raised from 400ms for that reason. What this does NOT do is make
+ * a green here a proof of absence: it makes a fire-and-forget read detectable, not undetectable
+ * in reverse. Read a red as decisive and a green as "not seen within a second".
  */
 async function settle(): Promise<void> {
   let still = 0;
   let last = queries;
-  for (let waited = 0; waited < 400 && still < 3; waited += 10) {
+  for (let waited = 0; waited < 1_000 && still < 3; waited += 10) {
     await new Promise((resolve) => setTimeout(resolve, 10));
     if (queries === last) still += 1;
     else {
