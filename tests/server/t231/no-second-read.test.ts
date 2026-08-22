@@ -22,7 +22,7 @@
 
    ── why source and not behaviour ──
    The behavioural form needs a scratch Postgres. This run stands
-   **28 scratch databases** awaiting the owner's ruling, created
+   **28 scratch databases** awaiting the owner — **dropped 2026-08-22 on the owner's ruling, so the live baseline is `darkprint` plus two pre-existing `t090_attractor_*`; compare NAMES rather than counts, since equal counts are not equal state** — formerly awaiting the owner's ruling, created
    one per run by exactly this kind of cell, and a blind suite is
    not the place to add to them. Stated rather than hidden: these
    cells pin the ABSENCE OF A HANDLE, not the absence of an effect.

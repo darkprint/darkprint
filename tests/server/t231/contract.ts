@@ -200,7 +200,7 @@ export function publishedProblemMembers(): { members: string[]; pinned: Record<s
    reaching `getSharedDbClient()` internally satisfies AC2's
    parameter list and performs exactly the lookup AC3 forbids.
    That is observable in the source and needs no database, which
-   is deliberate — this run stands 28 scratch databases the owner
+   is deliberate — this run stood 28 scratch databases (dropped 2026-08-22 on the owner's ruling; the baseline is now `darkprint` plus two pre-existing `t090_attractor_*`) the owner
    has yet to rule on, and a blind suite is not the place to add
    to them.
    ============================================================ */

@@ -48,7 +48,6 @@ interface Verdict {
 
 type Subject = Record<string, unknown>;
 type Check = (subject: Subject, bucket: string, options?: Record<string, unknown>) => Promise<Verdict>;
-type TierOf = (subject: Subject) => string;
 
 async function limits(): Promise<Record<string, unknown>> {
   return (await import("@/lib/server/limits")) as unknown as Record<string, unknown>;
@@ -89,17 +88,43 @@ const keyed = (keyId = "key-1", accountId = "acc-1", ip = "203.0.113.7"): Subjec
 });
 
 describe("AC1 — the tier follows the arm, and the arms are the three D-231-01 publishes", () => {
-  it("`tierOf` answers each arm's own tier", async () => {
+  /*
+   * CORRECTED AT THE MERGE, AND THE DEFECT WAS THE ORCHESTRATOR'S, NOT THIS AUTHOR'S.
+   *
+   * This cell called `tierOf(subject)` and asserted it answered each arm's tier. **`tierOf` is
+   * withdrawn** — D-231-01 removed it from `config.ts` and from the barrel, because with the tier
+   * carried on the subject its body is `subject.tier` and *an identity cannot drift; the problem is
+   * that the NAME says derived*, so a reader opening it finds an identity and goes looking for what
+   * they missed.
+   *
+   * **That clause reached only one of two holders.** The implementer was asked to choose between
+   * *trivial* and *gone* and chose gone; the blind author was sent a signature block with no
+   * `tierOf` line at all, inferred `tierOf(subject): Tier` from §T231's `Owns` clause, and
+   * **labelled it as that inference** — which is why `PUBLISHED.tierOf` was declared and read by no
+   * cell. An amendment has two holders and telling one manufactures the defect.
+   *
+   * The criterion this cell was written for survives and is asserted below without the withdrawn
+   * function: the arm IS the tier, and the withdrawal is itself observable rather than silent.
+   */
+  it("the arm IS the tier, and no `tierOf` survives to derive it", async () => {
     const mod = await limits();
-    const tierOf = mod.tierOf as TierOf;
 
-    const answers = [tierOf(anonymous()), tierOf(account()), tierOf(keyed())];
     expect(
-      answers,
-      `\`tierOf\` no longer agrees with the subject's arm. Under D-231-01 the arm IS the ` +
-        `tier — that is what makes the precondition structural — so a disagreement here ` +
-        `means the tier is still being inferred from which field happened to be filled.`,
+      [anonymous().tier, account().tier, keyed().tier],
+      `A subject's arm no longer carries its own tier. Under D-231-01 the arm IS the tier — that ` +
+        `is what makes the precondition structural — so a disagreement here means the tier is ` +
+        `being inferred from which field happened to be filled, which is the shape the union ` +
+        `replaced.`,
     ).toEqual([...SUBJECT_TIERS]);
+
+    expect(
+      Object.keys(mod).includes("tierOf"),
+      `\`tierOf\` is back on the barrel. It was withdrawn deliberately: with the tier carried on ` +
+        `the subject its body is \`subject.tier\`, and a function whose NAME says derived while ` +
+        `its body is an identity sends a reader looking for a rule that is not there. Publishing ` +
+        `it again also lets a caller hold a tier apart from the subject that carries it, which is ` +
+        `the two-sources shape D-230-10 already forecloses in this module at \`windowMs\`.`,
+    ).toBe(false);
   });
 
   it("the published arms are exactly three, counted from the contract module", () => {

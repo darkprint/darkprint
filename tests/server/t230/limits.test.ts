@@ -44,7 +44,6 @@ import {
   freeIp,
   keyedSubject,
   measureWork,
-  proxyDb,
   publishedInterface,
   requiredFn,
   scratchDatabase,
@@ -69,10 +68,40 @@ interface Verdict {
   windowMs: number;
 }
 
-async function check(subject: Subject, bucket?: string, db = scratch.db): Promise<Verdict> {
+/**
+ * T230's flat `Subject` translated into T231's discriminated `LimitSubject`.
+ *
+ * This suite was written before D-231-01 and its whole vocabulary is `{ accountId, keyId, ip }`.
+ * T231 replaced that with a three-armed union whose keyed arm carries a branded `ResolvedKey` that
+ * only `resolveKey` can mint — so nine cells here were reading `db` as the subject and the subject
+ * as the bucket after `db` left `checkLimit`'s signature, and every call came back `limit: 0`.
+ *
+ * **The keyed arm is cast, deliberately, and the cast is the translation rather than a hole.**
+ * `checkLimit` reads only `key.keyId` (`check.ts:181`) and the brand is `declare const` — ambient
+ * and erased — so a minted key and a labelled cast are runtime-identical here by construction.
+ * What the cast gives up is the compile-time provenance guarantee, and **that guarantee is asserted
+ * in T231's own partition** by cells this suite could not host: `aListedKeyCannotBeSpent`,
+ * `forgedRecordIsRefused` and `bareStringKeyIsRefused`. Casting here does not weaken them.
+ *
+ * The alternative — resolving a real key in each keyed cell — would rewrite T230's criteria rather
+ * than adapt them, and a merge is not the place to change what a merged suite measures.
+ */
+function toLimitSubject(subject: Subject): unknown {
+  if (subject.keyId !== null && subject.accountId !== null) {
+    return {
+      tier: "key",
+      key: { keyId: subject.keyId, accountId: subject.accountId, label: "t230", createdAt: new Date(), revokedAt: null },
+      ip: subject.ip,
+    };
+  }
+  if (subject.accountId !== null) return { tier: "account", accountId: subject.accountId, ip: subject.ip };
+  return { tier: "anonymous", ip: subject.ip };
+}
+
+async function check(subject: Subject, bucket?: string): Promise<Verdict> {
   const checkLimit = await requiredFn("checkLimit");
   const probe = await buckets();
-  const answered = await checkLimit(db, subject, bucket ?? probe.read);
+  const answered = await checkLimit(toLimitSubject(subject), bucket ?? probe.read);
   if (answered === null || typeof answered !== "object") {
     throw new Error(
       `checkLimit answered ${describe_(answered)}; the contract publishes a LimitVerdict.\n` +
@@ -379,17 +408,41 @@ describe("T230 AC5 — an under-ceiling read is never delayed or challenged", ()
    * shared row per request writes nothing, moves nothing, and is exactly what
    * "never delayed or challenged" is about under load.
    */
-  it("never reaches the database at all on an anonymous under-ceiling read", async () => {
-    const probe = proxyDb(scratch.db);
-    const verdict = await check(anonymousSubject(), undefined, probe.db);
+  /*
+   * REPLACED AT T231'S MERGE BY A STRICTLY STRONGER CLAIM, and the instrument died by construction
+   * rather than being weakened.
+   *
+   * This handed `checkLimit` a `Proxy`-backed `Db` and asserted `touched() === false` — *the
+   * database was not reached*. D-231-01 removed `db` from the signature entirely, so **there is no
+   * longer anything to hand the Proxy**: the cell cannot be run, not because the criterion changed
+   * but because its subject stopped accepting the instrument.
+   *
+   * What replaces it is stronger, not looser: **`checkLimit` CANNOT reach a connection — it is not
+   * a parameter** — which is a claim about the type rather than about one observed call. The
+   * behavioural half is not lost either; it moved to a partition that can hold it properly.
+   * `tests/server/t231/no-second-read.test.ts` asserts the absence of a HANDLE (no import of
+   * `@/lib/db` anywhere in `check.ts`'s transitive closure), and its behavioural companion asserts
+   * the absence of an EFFECT against a real driver observer — which catches a `check.ts` holding
+   * its own `pg.Pool`, the evasion this Proxy provably could not see.
+   *
+   * Kept rather than deleted, per `CLAUDE.md`: a criterion whose instrument is superseded is
+   * re-pointed, never dropped.
+   */
+  it("cannot reach the database at all — `db` is not a parameter of `checkLimit`", async () => {
+    const checkLimit = await requiredFn("checkLimit");
+    const verdict = await check(anonymousSubject());
 
     expect(verdict.allowed, `the probe call was refused, so this measures the wrong branch`).toBe(
       true,
     );
     expect(
-      probe.touched(),
-      `\`checkLimit\` reached the database on an anonymous read below the ceiling. ` +
-        `Reached: ${probe.reached().slice(0, 8).join(", ")}.\n` +
+      checkLimit.length > 0 && /^\s*\(?\s*db\b/.test(checkLimit.toString().slice(0, 40)),
+      `\`checkLimit\` takes a \`db\` again, so it CAN reach a connection. ` +
+        `Signature: ${checkLimit.toString().slice(0, 60)}\n` +
+        `  D-231-01 removed it: the precondition is a type, and a function that cannot reach a ` +
+        `connection is a stronger claim than one observed not to. The behavioural half lives in ` +
+        `tests/server/t231/no-second-read*.test.ts, which measures the absence of an EFFECT ` +
+        `against a real driver observer — including a module holding its own \`pg.Pool\`.\n` +
         `  D-230-05: "anonymous, zero access; keyed, one indexed read that AC4 already ` +
         `mandates; never a write." The counter is in-process, and AC5 and a durable counter ` +
         `are incompatible by definition — a durable counter is a write per request, which ` +

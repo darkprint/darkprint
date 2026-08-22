@@ -432,8 +432,24 @@ export const TRANSCRIBED = {
 } as const;
 
 /** Declared arity, from the parsed parameter lists rather than from a table typed here. */
+/**
+ * The count `Function.length` will report — REQUIRED parameters only.
+ *
+ * The cell that consumes this already knew the rule and said so in its own failure message: *"a
+ * default or rest parameter moves this number legitimately; a swapped parameter list does not."*
+ * **It stated the property and the parser did not implement it**, so a published signature that
+ * grew a defaulted parameter red against a correct module — exactly the class of defect this run
+ * has charged repeatedly, arriving in the instrument that charges it.
+ *
+ * Corrected at T231's merge, when D-231-01 made `checkLimit(subject, bucket, options?)` — three
+ * declared parameters, **two required**, because `options` is defaulted. `Function.length` stops
+ * counting at the first default or rest element, so an optional or defaulted parameter must not
+ * count here either. Note `?` alone erases to nothing in JavaScript: it is the DEFAULT that moves
+ * the number, which is F5's finding on `publish` one task over, and both spellings are excluded
+ * here because a signature block writes `?` where the code writes `= undefined`.
+ */
 export function publishedArity(name: string): number {
-  return publishedFunction(name).params.length;
+  return publishedFunction(name).params.filter((p) => !/[?=]/.test(p.split(":")[0] ?? p)).length;
 }
 
 export async function requiredFn(name: string): Promise<UnknownFn> {

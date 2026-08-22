@@ -296,7 +296,10 @@ export async function resolveKey(db: Db, secret: string): Promise<ResolvedKey | 
        clause above it, and it would make the one mutation that has ever measured that clause
        inert — F-230-J deleted `isNull(revokedAt)` and reddened 0 of 164 cells, which is the
        measurement T231 exists because of. Non-revocation is defended by the `WHERE` and by
-       `keys.test.ts`'s revoked-key cells. It is not defended by this line and must not look
+       `tests/server/t230/keys.test.ts`'s revoked-key cells — **NOT the sibling
+       `lib/server/limits/keys.test.ts`, whose `stubDb` records the call as the bare string `"where"`
+       and discards the argument, so this clause's deletion is invisible to it and it stays green under
+       the mutation.** It is not defended by this line and must not look
        as though it is. */
     return row === undefined ? undefined : (rowToRecord(row) as ResolvedKey);
   });
