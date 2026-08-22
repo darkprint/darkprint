@@ -7297,6 +7297,46 @@ vocabulary while a caller's document is caller data — reachable by property ac
 use *because* it catches what `JSON.stringify` drops. **AC4 says "never the caller's value", and
 carrying it violates the words even where it survives the rationale.** No shipped class exploits it.
 
+## A repair carries a regression when an adjacent quantity rides along with the answer
+
+**D-231-01, mine, and both halves of T231 charged it independently within ten minutes of each
+other, quoting the same shipped header, neither able to see the other.**
+
+T231's blind author asked whether `db` leaves `enforceLimit` as well as `checkLimit` (F-231-D).
+The answer is yes and **dropping `db` pays it in full**. I published
+
+    enforceLimit(request: Request, subject: LimitSubject, bucket: string): Promise<Response | undefined>
+
+attaching a **return-type change that answered no question anyone had asked.** `Response |
+undefined` is `payload | Response` — the exact shape T000 rejected for `withSession`, and the shape
+`check.ts:196-206` quotes as the reason `enforceLimit` exists at all: *"a guard that returns a union
+depends on every caller checking the union, and a caller who forgets runs the handler anyway...
+So the enforcing form throws."* **I would have made forgettable the one function whose entire
+purpose is that a refusal cannot be forgotten**, reopening T230's AC2 one call over.
+
+Three consequences neither of them had to speculate about:
+
+* **`RateLimitedError` would be thrown by nothing** — barrel-exported, in the admissible-form
+  block, inside `error-hygiene`'s equality, and with no producer. That is verbatim the state
+  D-230-01 was ruled to end, restored by the repair for its sibling.
+* `withLimitsErrors` ships an arm nothing can reach, in a wrapper whose own test asserts its arms
+  are disjoint and **live** — and `http.ts` is Forbidden to T231, so its implementer could not have
+  removed the dead arm even having seen it.
+* `http.test.ts` asserts **one author for the 429 across BOTH compositions**. Deleting the throwing
+  composition leaves the one-author property true and **deletes half of what the cell measures** —
+  a cell that still passes while covering less.
+
+**This is the fourth instance of one shape: an adjacent quantity substituted for the one the
+sentence is about, INSIDE the repair for the previous instance.** The others today: a docblock
+rewritten to remove a refused spelling that quoted the spelling; a leak instrument widened to
+`getOwnPropertyNames` while its comment still claimed a prototype walk; an AC3 comment pricing a
+grammar boundary that was covering for a clause with no business outside it.
+
+**The cheap countermeasure is the one that worked here: charge the ruling in the same window it
+lands, from both holders.** The blind author marked the affected cells `F-231-E PENDING` **in
+place** rather than guessing or blocking, so the complete list of what moved was known before the
+ruling settled, and the whole exchange cost nothing.
+
 ## Check the DECISION that already read the artefact, not the artefact
 
 **Four instances on 2026-08-22, in two sessions, and it is the dominant failure shape of the day.**
@@ -7330,6 +7370,735 @@ that the old spelling is *described rather than quoted*, and that restoring the 
 **regression, not a clarification** — because the obvious future edit is somebody putting the exact
 name back to be helpful and silently blinding the check again. Its author's note: *"I nearly was
 that person, with the best of intentions and a correction in hand."*
+
+## The Postgres count is NOT a leak detector under concurrency — the rule I propagated all day is wrong
+
+**T100's implementer read `pg=10` after a run and was about to report a leak.** The list attributed
+it: one `t010_bundle_b_*`, six `t090_*`, two `darkprint_test_*`. **Twenty seconds later the count was
+3 and every `darkprint_test_*` was gone.** They were the **live scratch databases of a foreign run**,
+caught mid-flight.
+
+> **The rule as written — "above 3 after is a leak" — assumes my run is the only one.** The count is
+> machine-wide and the databases are shared across worktrees, so ***after* for me is *during* for
+> somebody else**, and a post-run count above 3 cannot distinguish my leak from their live scratch.
+> It is only a leak detector when the host is otherwise quiet, which is exactly when it is least
+> needed.
+
+**The corrected rule composes with T231's implementer's finding, and neither half is sufficient
+alone:**
+
+* **A total count above baseline means nothing** while any other run may be in flight.
+* **A database with a live BACKEND is somebody's live scratch**, not a leak — T231's diagnostic.
+* **A leak is a database with NO backend that SURVIVES a second sample** separated by enough time
+  for a run to finish. One reading at one instant cannot say which it is.
+
+Same shape as the load average: a single number at a single moment describing a machine several
+parties are using. **Sample twice, attribute by backend, and never charge a leak from a count.**
+
+## A handback must state its own REACHABILITY — the one fact invisible from inside the worktree
+
+I dispatched an adversary against `feat/t100-publish` telling it *"in yours the module exists"*. The
+branch had **one reflog entry** — *"branch: Created from backend"* — and was 569 lines **behind** on
+`backend.md` while touching nothing else. **The six implementation files were uncommitted working-tree
+state.** The adversary found it in ten minutes, refused to work around it, and refused its own offer
+to snapshot the live tree, on the grounds that *a measurement against a snapshot of a moving tree has
+a subject nobody can reconstruct.*
+
+**I recorded it as my assumption. Its implementer refused that framing and the refusal is the item:**
+
+> I reported "six files, `tsc` 0, `eslint` 0" in **six consecutive messages** and never once said
+> *uncommitted*, while believing I had communicated my state completely. **Every number I gave you
+> was true and the one fact that made them unreachable was the one I never thought to send** —
+> because from inside this worktree the files simply exist.
+
+**That is not an omission anyone could have noticed from the inside.** It is the same shape as the
+stale signature block that opened the same task: not a wrong statement, **an unstated premise that
+only the other party could see was missing.** Six true reports, and the fact that made all six
+unusable was structurally invisible to their author.
+
+**So the rule is not "remember to say uncommitted" — it is that a handback owes its REACHABILITY as
+a first-class number, beside the gate results.** A sha, or the word *uncommitted*, is what decides
+whether every other figure in the message describes something a second party can obtain. Numbers
+describe a tree; only a sha says whether the tree exists for anyone else.
+
+**Corollary for the dispatcher, since the failure needs both ends: verify the ref before briefing an
+adversary against it.** `git rev-list --count backend..<branch>` is one command and I ran it only
+after being told to.
+
+## Implementing the SENTENCE rather than the THING — the day's dominant failure, named by the session that repeated it
+
+T231's implementer, correcting its own sampler for the second time:
+
+> My own recorded rule is *exclude the RUN's pgid, not the sampler's*, and **I had implemented the
+> sentence rather than the thing.** Holding a rule and applying it are different acts; this is my
+> second instance today.
+
+It had taken the pgid of the **launching shell** — neither the run's nor the sampler's — so its
+first report carried `run=0.0%` for its own run. Fixed by locating the pgid **from the vitest
+processes themselves**: `run pgid=98259, sampler pgid=98589`, distinct, and the run then attributed
+**165–212%**.
+
+**This is the same object as every other instance today**, and the count is now five across two
+sessions and me: a grant declined on a header the ruling had already weighed; a premise re-checked
+as given rather than as a later ruling changed it; a check blinded by quoting the string it looks
+for; a stamp printed inside an unguarded command by the author of *a stamp is only a veto if
+something acts on it*; and a pgid rule implemented as its words. **Naming a rule harder does not
+close the gap between holding it and applying it.**
+
+## The during-run sampler caught an intruder invisible to BOTH edges
+
+The clearest instance yet, from the same run:
+
+```
+demand at the stamp        214–289%
+demand during the run      608–653%
+of which the run itself    165–212%
+```
+
+The difference was a `Virtualization.framework` VM that **arrived after the stamp was taken** and
+climbed **86% → 91% → 174% → 177%** across the window, plus two other `claude` groups. **An intruder
+that arrives after the stamp and leaves before the next one is invisible to both edges.**
+
+It did not corrupt the result — none of the eleven reds is a timeout and all eleven are explained
+mechanically — **and that is exactly why the number is worth having**: had one red been a timeout,
+the session would now know which reading to prefer. That is the whole argument for sampling during
+rather than at the edges, and it took an uncorrupted run to make it cleanly.
+
+**Its Postgres trace is the corrected protocol working:** `4 → 12 → 7 → 11 → 6 → 4` with backends
+`1 → 9 → 5 → 9 → 3 → 1`, ending **byte-identical to the pre-run names.** Live scratch during, nothing
+leaked, and the two pre-existing `t090_attractor` databases recorded **before** the run so a post-run
+4 is not chargeable to it.
+
+## A sampler whose interval exceeds the run measures the host before it started
+
+Same session, same run, reported rather than dressed up. Its during-run sampler fired **once**, at
+t=0 before vitest had spun up, and the run finished in **3.28s inside a 15s sleep.** The pgid
+arithmetic was correct — the background job stayed in the script's group, so it excluded the **run**
+and not the sampler — and the number was still worthless: *"foreign=242% from that line is the host
+before my run started and says nothing about contention during it."*
+
+**An in-flight sampler needs an interval shorter than the run, or the run needs to be long enough to
+sample.** For a three-second scoped run neither holds, and the honest report is that there is no
+contention profile rather than a profile from one edge.
+
+## A stamp printed inside an unguarded command is decoration — and its author had already written the guard
+
+**Reported against itself**, and the detail that makes it worth keeping: it ran an isolation check at
+**demand 714%** with the stamp printed and **no threshold acting on it**, having written the guarded
+version **thirty minutes earlier** and not used it *because the run "was only one file."*
+
+That is *a stamp is only a veto if something acts on it* — the rule this file recorded this morning
+from a different session — failing on the author of the sentence that quotes it. **The exemption was
+not a decision about risk; it was a decision about effort**, and the size of the run is what made it
+feel exempt.
+
+The gate result itself was taken on a clean guarded stamp and stands. **The isolation check's 13.17s
+duration was taken under contention and its author declines to present it as a measurement of
+anything** — which is the right disposition for a number that answered a yes/no question correctly
+while being useless as a timing.
+
+## Distinguish a LEAK from LIVE SCRATCH by the backend count, not by the database count
+
+T231's implementer, stamping Postgres at 4 against a baseline of 3:
+
+> Client backends: **1**, and that one is my own stamp's connection. So the two `t090_attractor`
+> databases are **held open by nothing. Live scratch would have backends on it.**
+
+**The database count alone cannot tell a leak from a run in progress** — both read as *above
+baseline*. The connection count separates them: a scratch database a suite is currently using has a
+backend on it; one that outlived its run has none. Recording it because three sessions have now
+flagged those two databases and each had to re-derive the distinction.
+
+It also declined to drop them — *dropping databases is a standing no, and they are not mine* — and
+flagged the count **so nobody reads 4 during a legitimate run and charges the wrong session.**
+
+## A shell's exit status describes its LAST COMMAND — third instance, third costume
+
+Its stamp script **exited 1** and it diagnosed the cause rather than reporting a broken instrument:
+the loop's last statement is `[ $i -lt 3 ] && sleep 20`, false on the third pass. **All three
+samples printed correctly.** Its own line: *the exit code described the guard on the sleep, not the
+measurement.*
+
+Three instances today, all the same object:
+
+* `npm test 2>&1 | tail` — exit 0 beside a red, because the status was `tail`'s.
+* `psql "$DATABASE_URL" … || echo "unset"` — **one `||` arm answering for two failure modes**, so a
+  missing binary read as a missing variable.
+* `[ $i -lt 3 ] && sleep 20` — the loop guard's status standing in for the loop's result.
+
+**The general form: a status is a fact about one command, and the command it is a fact about is
+almost never the one you care about.** In all three the numbers themselves were correct and present;
+only the status lied. Read the output, not `$?`.
+
+## Demand and the load average pointed in OPPOSITE directions across forty seconds
+
+The sharpest instance of the rule, measured by T231's implementer at three samples 20s apart:
+
+```
+demand  816.70%  →  905.50%  →  934.60%      rising
+load1    134.37  →   127.10  →   125.81      falling
+```
+
+**A `load < 30` watcher would have seen a number improving and armed into a host getting worse.**
+One process group — `pgid 69757`, homebrew Python — was 616% → 745% of it, with everything else on
+the machine under 200% combined. Counted by **pgid, not by name**.
+
+## Automate the REFUSING; never automate the TAKING
+
+Two sessions, eight hours apart, bracketing one rule from opposite sides.
+
+**T230's implementer, on aborting a triple it should not have started:** *"I had automated the
+taking without automating the refusing."* Its script captured a `BEFORE` stamp reading **0.13% idle**
+and walked straight past it — the numbers were correct, present, and **inert**.
+
+**T100's implementer, refusing to wire its monitor to launch the run:**
+
+> A stamp is only a veto if something can act on it, and **an automated take is a stamp nothing can
+> refuse — I would have built a mechanism that can only ever say yes.** The monitor's job is to wake
+> me; the decision stays a decision.
+
+It had every reason to automate it: pre-naming had just removed the round trip, and closing the last
+gap to zero was one line. **It declined because the gap is where the refusal lives.**
+
+**Its first act under pre-naming was a refusal**, which is the design working rather than a
+setback — its own stamp read demand 776/833/633% against my 623–768%, load risen from 42 to 112.
+*The pre-naming did not start me; my own stamp stopped me.*
+
+And it tightened its own bar unprompted, from `<350%` over 20s to **`<300%` sustained over three
+samples 15s apart**, for a reason that is about the measured window rather than about caution: a
+tighter bar buys margin for the window to survive the minute between the monitor firing and the
+stamp, and faster polling makes the evidence behind a fire **30s old instead of 60s**.
+
+## Write the sentence down; do not trust the reader — TWICE in one day, from the same session
+
+**It refused credit for the zero-collection catch and named what actually did the work:**
+
+> It was not vigilance. I went to check the vitest `include` globs **to describe my run accurately
+> to you**, and `find … -name "*.test.ts*" | wc -l` printed `0` on the way past. I was writing a
+> message, not auditing myself. **The reason it registered at all is that this repo's config
+> comments name that exact failure twice, so a zero in that position already had a meaning attached
+> to it before I saw one.**
+
+That is the **second** time this session has traced a save to a written-down sentence rather than to
+its own care — the first was `CardRecord`'s note that `source` round-trips byte-identical while
+`body` round-trips value-identical, which refused a `body` comparison my ruling would have accepted.
+
+**Its conclusion is the one to keep, and it is an argument about what documentation is for:** *that
+is an argument for writing the sentence down, not for trusting the reader.* A comment cannot make
+anyone look. What it can do is ensure that **when they do look, the thing they see already means
+something** — which is a different and much weaker claim than "documentation prevents defects", and
+the only one the evidence supports.
+
+Three askings, three unchecked readings by two parties, caught by an accident with a prepared
+reader. **Not recorded as care.**
+
+## The naming cannot be fresher than the message carrying it — so PRE-NAME and let the holder's stamp decide
+
+**Measured three times on 2026-08-22, and the third made it a rule rather than a coincidence.**
+
+* I granted T230's adversary at demand 293%. It re-stamped at the moment of taking and found
+  **0.79% idle**; the window had shut in the two minutes between my sampling and its reading. It
+  refused itself, correctly, and took the slot later when the host genuinely cleared.
+* T100's implementer sampled **demand 294–336%, load 25–27** and asked to be named. By the time I
+  read the message and sampled, demand was **623 → 709 → 768% and rising.** Neither instrument was
+  wrong. The host moved.
+
+**The round-trip between a stamp and the naming that answers it exceeds the duration of the window
+the stamp describes.** So a grant is a statement about a host that no longer exists by the time it
+arrives, and **the protocol has only ever worked because the holder re-stamps** — every one of the
+day's three refusals was the holder's, and every one was right.
+
+**Corrected form: PRE-NAME.** The orchestrator grants the slot to a named session for a named run,
+in advance; the session takes it **the moment its own stamp agrees**, without a further round trip,
+and reports what it took it on. The naming still serialises — one session pre-named at a time — but
+it stops pretending to carry a measurement it cannot.
+
+## A scoped run over a directory with no test files collects ZERO and exits 0
+
+T100's implementer asked to be named for `vitest run lib/server/publish app/api/bundles` **three
+times**, and I read the request three times, before it checked and found **zero test files under
+either path** — its module's tests are the blind author's and live on the test branch, absent from
+its worktree entirely.
+
+**It would have reported an exit-0 green scoped run.** `vitest.config.ts` records this failure twice
+in its own comments — *an uncollected suite runs zero tests and reads as green* — and neither of us
+looked. Its own line: *a zero is a claim about an instrument until something proves otherwise*, and
+here **the instrument was the collection, not the assertions.**
+
+**Confirm collection before quoting a scoped result**, and prefer a path where a file is known to
+exist. The blind-round partition makes this structural rather than accidental: an implementer's
+worktree frequently contains **no tests for the module it is building**.
+
+**Same session, same message, a second instrument corrected:** it had told me `DATABASE_URL` was
+unset. It was set. It had run `psql "$DATABASE_URL" … || echo "unset"` with `psql` absent from PATH,
+so **one `||` arm answered for two failure modes and it read a missing binary as a missing
+variable.** The consequence it names is the reason it matters: it would then have expected the
+accounts DB suite to skip, and **read those skips as environmental rather than as a defect.**
+
+## Arm a waiter on DEMAND, never on the load average — and a wrong instrument is worse than none
+
+**Measured on two hosts' worth of samples, mine and T100's implementer's, minutes apart:**
+
+```
+load 1-min      83.61   80.20   79.94        falling
+total demand     562%    771%    846%        rising
+```
+
+The **load average is a decaying mean** — a memory of a host that was worse. **Demand is what is
+happening.** T100's implementer had a watcher armed for `load < 30`; it would eventually have fired
+on a host at 846% demand, worse than the 617% I had already refused it on.
+
+**Its own statement of the cost is the item, and it generalises past watchers:**
+
+> Arming on the wrong figure would have been worse than having no watcher at all, because it would
+> have arrived **wearing the authority of a measurement**.
+
+The corrected form, and both halves matter: **total %CPU across all processes below ~350%, held for
+THREE consecutive samples 20s apart.** One dip under the bar is noise, and the whole lesson of the
+surrounding hour is that a single reading at one instant decides nothing.
+
+**Two corollaries this run has now paid for separately.** A watcher killed at a harness cap looks
+exactly like one that has not fired yet — **silence is the same signal for both** — so re-arm rather
+than reading quiet as quiet. And a fired watcher is **evidence about one instant, not a permit**:
+the naming starts you, your own stamp can still stop you, and the watcher can only ever say *maybe*.
+
+**Note the symmetry with the granting side, because the rule cuts both ways and I have used it in
+both directions today.** I granted a slot on demand 293% while the load average read 34, and that
+grant was correct. I refused one on demand 846% while the average read 80, and that refusal was
+correct. Reading the average alone would have inverted both decisions.
+
+## Re-read your own diff after you have declared it done — and recency is not a method
+
+T231's implementer charged my leak scan for deriving its deny set from `Object.values`, and an hour
+later found its own *does not publish a mint* guard was `/resolved|brand|active/i` — **a regex over
+names it could think of.** A mint called `unsafeKey` walked straight through. Its own sentence: *a
+check that covers the spellings its author imagined and reads as coverage for the rest.* Repaired
+as an equality over the barrel's twenty-eight names, then **falsified with `unsafeKey` specifically
+— the name the OLD guard missed**, which is the only way to know a repair is not merely differently
+blind.
+
+**I recorded that as the one instance where the author of a charge caught it in their own work, and
+the implementer refused the framing on accuracy grounds:**
+
+> I did not find it by applying the charge to myself. I found it re-reading my own diff for quality
+> after sending the report, saw the regex, and recognised the shape because I had just typed the
+> words at your leak scan. The charge was fresh in the buffer, which is not the same act as holding
+> the rule and testing myself against it. **Recognition came from recency, and recency is not a
+> method.**
+
+**What is repeatable is the habit that surfaced it: re-read your own diff AFTER you have declared it
+done.** The report had already been sent; the guard was already counted in a number. That is the
+moment the reading has to happen, because it is the moment nobody else is going to do it.
+
+The distinction matters for what this file is for. A rule that reads *apply your own charges to
+yourself* is not actionable — the gap between holding a rule and recognising its instance is exactly
+what this run keeps measuring, and naming it harder does not close it. A rule that reads *re-read the
+diff after the handback* is a step someone can take.
+
+## A comment written by an earlier task prevented a defect today, and the implementer said which artefact did the work
+
+I ruled T100's card comparison as *source bytes, not digests* and **would have accepted a `body`
+comparison as satisfying it**. T100's implementer did not, because `CardRecord`'s docstring — T020's,
+written at merge — records that **`source` is `text` and round-trips BYTE-identical while `body` is
+`jsonb` and round-trips VALUE-identical only.** Comparing `body` reintroduces exactly the blindness
+the ruling rejected, by a different route.
+
+Its own correction of my praise is the item: *"that was not care on my part, it came from
+`CardRecord`'s own docstring. That sentence exists because T020's author wrote down a distinction
+they could have left implicit. Worth knowing which artefact did the work."*
+
+**So the countermeasure that fired here was not an instrument, a guard or a round — it was one
+sentence a session wrote down months earlier about a distinction nothing forced it to mention.**
+Every other defence in this file is something that runs. This one only had to be readable at the
+moment somebody needed it.
+
+The corollary for anyone writing a docstring in this repository: **the distinctions worth recording
+are the ones you can currently keep in your head**, because those are exactly the ones the next
+reader cannot.
+
+## An amendment with TWO holders, told to ONE — `tierOf`, and the blind author bound its inference honestly
+
+**D-231-01 as I sent it to the implementer ended:** *"`tierOf` is why `config.ts` (`tierOf` signature
+only) is in your Owns: the union carries the tier, so the function either becomes trivial or
+disappears. **Your call which, and say which you chose.**" It chose *disappears* and said so.
+
+**D-231-01 as I sent it to the BLIND AUTHOR contained no `tierOf` line at all.** Its transcription is
+faithful to what it received. It then did the correct thing with silence — inferred
+`tierOf(subject): Tier` from the `Owns` clause and **labelled it as that inference**, which is why
+`PUBLISHED.tierOf` is declared and read by no cell. **It bound its inference honestly and the
+inference was wrong because the ruling never reached it.**
+
+**This is D-70-12's shape: an amendment has two holders, and telling only the implementer
+manufactures the defect.** The adversary framed the collision as *an ownership clause read as a
+mandate to preserve, versus silence read as a licence to delete* — and the tiebreak is that **the
+silence was mine to fill and I filled it for one party only.**
+
+## Two findings that looked independent were ONE, and the instrument's own defect is what split them
+
+T100's blind author, after repairing both:
+
+> With the seed in place the four delegation rows should now reach a release rather than dying at
+> `openView` — so if that cell reds again it is **actually** about authorization. Under the old
+> reading you could not have told the two apart, **which is why the sixteen ontology reds and the one
+> delegation red looked like different problems and were one.**
+
+The fixture gap produced an upstream error; the agreement cell's `granted = !thrown` reading **dressed
+that error as an authorization defect** and printed a message asserting the diagnosis. Charged
+separately and correctly by the adversary as F3 and F4 — **and either repair alone would have left
+the other looking like an independent problem.**
+
+**The general form: a mis-diagnosing instrument does not merely mislabel one failure, it PARTITIONS
+one failure into several.** The count of distinct findings is itself an output of the instrument, so
+*how many problems there are* is not safe to read off a run until the instrument reporting them is
+known good.
+
+## A ruling can arrive with zero coverage, and the shape that fixes it asserts AGREEMENT not OUTCOME
+
+I ruled *"T100 honours `can`"* and it became contract with **nothing checking it**. T100's blind
+author measured that against its own finished suite: every actor its 48 cells construct comes from
+one factory as `{ kind: "account", ... }`, so **an implementation that never calls `can` at all —
+that writes `ownerId === actor.accountId` — passes every cell including all three AC7 cells.** The
+delegation the ruling exists to require is precisely what the suite cannot see.
+
+**This is F-230-J's shape arriving at a CONTRACT CLAUSE rather than at a line of code.** There, the
+one line implementing AC4 could be deleted with **0 reds across 164 cells**. Here, the one decision
+implementing the ruling can be omitted entirely with **0 reds across 48**. *A criterion whose
+defending cell is absent* and *a criterion whose defending cell is too weak* are the same failure,
+and this run met both within a day.
+
+**The cell that works asserts AGREEMENT, not an outcome:**
+
+    publish's answer for a given actor matches
+    can(actor, "publish", { kind: "bundle", ownerId, visibility })
+
+**Why the outcome form fails and this one does not:** the operator grant is an **open product
+decision** — `can` currently returns true for an operator publishing into another's namespace, and
+whether it should is unruled. An outcome cell encodes today's answer and must be **rewritten by
+whoever amends T060**, who discovers it by redding. The agreement cell pins **the invariant that was
+actually ruled** — no second opinion about authorization inside a composing task — and stays green
+across that amendment without anyone touching it.
+
+**Write it at the MODULE boundary, not the route.** `actorFrom` mints `kind: "account"`
+unconditionally (D-50-13), so the operator arm is unreachable through HTTP; at the module an `Actor`
+is handed in directly. That closes both halves of the hole — the grant untestable through HTTP, and
+the delegation untested at the module — rather than one.
+
+**Generalised, by the same author, and this version is the one to keep:** *any guard whose fix adds
+noise — the suppressor has to land in the same change, not the next one.* Between the two changes
+the guard is loud and useless, **and that is exactly the window in which somebody tidies it away.**
+The instance was `Exact<>`'s key-set clause needing the `IsAny` short-circuit beside it; the class is
+every repair that makes a guard fire for the wrong reason before it makes it fire for the right one.
+
+## A blind author refused to write a cell I ruled for, and the ruling was false
+
+I ruled: *an operator publishing to a bundle it does not own is `can(actor, "publish", ...)`
+returning false, so `not-owner` -> 404.* **`can` returns TRUE.** Verified on all three legs:
+
+* `can.ts:39` — `ACTIONS` contains `"publish"`.
+* `can.ts:203` — `case "bundle"` is `isOperatorGrant(actor, action) || canOnVisibilityScoped(...)`,
+  so the operator arm **short-circuits before ownership is consulted.**
+* `can.ts`'s own header — the grant is *"exactly as wide as a recognized resource, never wider...
+  **unconditional** once `resource.kind` is one of the five."* B-13's break-glass, working as designed.
+
+**The cell I asked for would have redded an implementation that consulted `can` correctly.** Its
+author wrote neither that cell nor its opposite — which would have encoded a product decision nobody
+has made — and **documented both readings in the file header with line references, so the next
+reader meets the divergence rather than my ruling.**
+
+**RULED: T100 honours `can`.** If the operator grant is too wide for publishing, that is a **T060
+amendment, not a T100 exception** — a second opinion about authorization living inside a composing
+task is the defect this run charges most, and ruling around a module that already decides would
+create one.
+
+**And it is unreachable through HTTP by construction, which is the part worth keeping.** `actorFrom`
+always mints `kind: "account"` (D-50-13: *"no route can mint an operator and `can`'s operator grant
+is unreachable through HTTP rather than merely untested"*), so **a route-level operator cell has no
+way to construct its subject.** The question — should a break-glass operator publish into someone
+else's namespace? — is settleable only at the module boundary, and now has a named site rather than
+being latent.
+
+**Corollary on propagating the `Exact<>` repair, insisted on by the same author and it is right:
+the `IsAny` short-circuit must land in the SAME change as the key-set clause.** Adding key-set
+comparison flips `Exact<any, T>` from `true` to `false`, so every pin starts redding for a reason
+`TS2307` already reports one line above — **the repair arrives as noise, and the next author deletes
+the pin while believing they are cleaning up.** A repair that reds for the wrong reason gets removed.
+
+## A guard whose failure mode is SILENTLY NEVER ARMING cannot be cleared by its own green
+
+T231's adversary charged that `agrees-with-the-document.test.ts` could return `undefined`, report
+"vacuous", and pass forever if the block's marker were spelled differently. When the block landed and
+the guard came back **9 of 9 green**, it refused to accept that as clearance — *"I am the one who
+charged it with being able to pass while blind."*
+
+So it ran the real parser against the real `backend.md` and **printed what the parser actually sees**:
+`BLOCK: string, 5535 bytes` — not `undefined` — and the nine indented lines, enumerated. **A green
+from a guard that might be blind and a green from a guard that is armed are the same green.** The
+only thing that separates them is making the instrument show its input.
+
+**And then it did the part that makes it a measurement rather than a formality: it checked those nine
+lines against the SHIPPED SOURCE, not against the guard.** The guard compares the document to the
+suite's transcription and says nothing about whether either matches the code. Line by line against
+`types.ts`, `check.ts` and `keys.ts` — the brand's declaration and unexported-ness, all three union
+arms, `resolveKey`'s return, `db` absent from both functions with `options` third and defaulted.
+**Document, transcription and implementation are the same object for the first time**, established on
+an axis none of the three could establish about itself.
+
+## "No foreign vitest" is the wrong check — a foreign run does not have to be a vitest run
+
+I named it on **demand 366%, load 53, and "no foreign vitest"**. Its own stamp did not reproduce
+mine, and the reason is my check:
+
+> The reason my first check said "no foreign vitest" is that I **searched by command-line
+> substring**, which is the thing the traps file tells me not to do.
+
+Sampling by process **group** with the top consumer named found what the substring missed: **pgid
+85457 at 128–160%**, **pgid 86322 at 116.5%**, a Virtualization VM at 57%, and later a Python group
+at 93.6%. **None matches `vitest`**, so a name-based check reports a clear host throughout.
+
+**Both node groups were gone by the time it looked them up** — arrived and left between stamps, the
+invisible-intruder shape, **caught only because it sampled six times instead of three.**
+
+The rule this run already holds is *count by process GROUP, never by command-line substring*, and I
+had been applying it to the question *is somebody else running vitest* rather than to the question
+that matters: **how much of this host is not mine.** The demand figure was always the real signal;
+naming the supplementary check "no foreign vitest" made a busy host read as a clear one.
+
+## A tautology dressed as a measurement — the purest instance of the zero that could only ever be zero
+
+T231's adversary built AC3's behavioural cell, got **zero queries on all six paths**, and would have
+sent a green. Its own diagnosis after the mandatory falsifier caught it:
+
+> Because `checkLimit` accepts no pool at all, *"it did not use the pool I handed it"* was very
+> nearly **a tautology dressed as a measurement.**
+
+The first observer wrapped the pool `createDbClient` returns. Mutating `checkLimit` to call
+`getSharedDbClient()` — **a different pool, cached on `globalThis` behind a symbol** — reported
+**zero on all six paths while throwing `DrizzleQueryError` from the driver**, so the query
+demonstrably reached Postgres. Rebuilt at `pg`'s `Client.prototype.query`, which counts every query
+on every pool including one a module reaches for privately: both controls at 1, both falsifiers at
+**6 of 6 FAIL**.
+
+**And the measurement that justifies the cell existing at all**, run against both instruments at
+once on the same evasion — `check.ts` holding its own `new Pool()`:
+
+```
+source cells   (absence of a HANDLE)   8 passed / 0 failed    BLIND
+behavioural    (absence of an EFFECT)  6 of 6 FAIL            CAUGHT
+```
+
+**The behavioural cell catches exactly what the handle cells provably cannot, measured rather than
+argued** — which retires a disclosed caveat instead of merely restating it.
+
+Two further instrument corrections from the same build, both **inflating** counts and therefore
+biased against the module, so neither could have manufactured a false zero: instrumenting
+`pool.query` *and* the checked-out client double-counts, because `pg` implements the former via the
+latter; and `observe()` re-wrapping an already-wrapped pooled client nests the counter.
+
+## A cell that has never once executed, testing the most carefully-reasoned ruling in its task
+
+T100's `transaction.test.ts` card-bytes cell dies in `seedCard` **before `publish` is ever called**:
+it seeds `env.failure.declared`, the variant its own fixture comment describes as *"a patch bump
+carrying a change that requires a major one"* — **built for AC5, un-storable by design.**
+
+**That cell is the only thing testing D-100-02** — source bytes over digest *and* over `body`, the
+ruling whose reasoning the implementer improved by finding that `source` round-trips **byte**-identical
+while `body` round-trips **value**-identical only. **It is testing nothing and has never run.** The
+cell body is correct; only the seed is wrong.
+
+**The general form: a red can hide a cell that never executed, and the two are indistinguishable in
+a summary line.** A cell failing in `beforeAll` reports as a skip; a cell failing in its own setup
+reports as a red — and both look like the criterion was exercised and found wanting.
+
+## Declaring a risk makes a finding CHEAP TO ACT ON; it does not make it FINDABLE
+
+T100's implementer shipped `d3c66f1` saying plainly it was unmeasured and that the AC6 witness had
+not been observed. F5 — a four-parameter function against a three-parameter contract — was in that
+commit. I credited the declaration; **it refused the credit and drew the line better than I had:**
+
+> Declaring the risk did not make the defect less mine. **What the declaration bought was that
+> nobody had to spend a round establishing whether it was known**, so the finding arrived as a fix
+> instead of an argument. That is worth something, and it is smaller than *"the report was correct
+> because I hedged it"*. **The declaration made the finding cheap to act on; it did not make it
+> findable.**
+>
+> The thing that actually caught it was your adversary running a suite I could not, on a commit I
+> had told you was unverified.
+
+**The distinction is worth holding because the failure mode is real**: a session that hedges
+thoroughly can accumulate credit for candour while shipping the same defects, and an orchestrator
+who rewards the hedge stops noticing that the finding still came from somewhere else.
+
+## The mechanism is not the module — verify a handed-down repair against the thing itself
+
+Same session, same fix, and it declined a repair I had handed it as already measured. `?` erases
+while a default expression does not — confirmable with two throwaway functions, and it confirmed it,
+getting 4 and 3.
+
+> **That proves the mechanism and says nothing about `publish`.**
+
+So it ran a probe over the **real export from the barrel**, mutated back to the charged spelling, and
+measured both: `with ?` → exit 1, `expected 4 to be 3`, reproducing the adversary's message exactly;
+`with = undefined` → exit 0. **Red-to-green on the thing itself**, probe removed before committing.
+
+Same family as *a stand-in written by the instrument's author cannot falsify the instrument*, one
+step further out: **a repair verified against the general mechanism is verified against a model of
+the defect, not the defect.** A handed-down fix arrives with someone else's measurement attached,
+and that measurement was taken on someone else's tree.
+
+## `?` does not reduce `Function.length`, and the docstring claimed it did
+
+`publish` grew `storage?: ObjectStorage` and `surface.test.ts`'s arity pin went 5/5 → 4/5.
+**TypeScript's `?` erases to nothing; only a default-value expression or a rest element stops the
+parameter counting.** The docstring read *"Optional and defaulted"* — it was optional and **not**
+defaulted, so **the comment claimed exactly the property that would have made the code correct.**
+
+The fix is `storage: ObjectStorage | undefined = undefined`, which preserves the reason the default
+expression was avoided in the first place: nothing is evaluated on entry, so a refusal still does not
+depend on `S3_*` being configured. **The stated reason for avoiding a default did not apply to
+`= undefined`** — the `?` was standing in for a distinction nobody had made explicit.
+
+## A stand-in written by the instrument's author cannot falsify the instrument
+
+**The co-authored-reference error, one layer lower, and it produced a passing run.**
+
+T231's blind author was told to make `Pin<>` state its vacuity explicitly, on my claim that adding a
+key-set clause flips `Exact<any, T>` to `false`. It built that, **pre-registered 7 typecheck errors,
+measured 6, and did not round the difference away.**
+
+**My claim was wrong.** When an operand is an **unresolved import** the pin collapses to the
+**ERROR type**, not to `any`-the-type — so `Pin<A, Absent>` accepts `true`, accepts `false`, **and
+accepts its own vacuous message**, all three, with no diagnostic. The short-circuit's condition is
+computed over the error type and collapses with it. **No formulation of the guard can report the
+absence from inside the type system.**
+
+**How it found out is the item.** Its first experiment used `type Absent = any` as a stand-in for an
+absent member. **With that stand-in the guard fires perfectly** — it has the passing run. The
+stand-in behaves differently from the real thing, so it had tested the instrument against a **model
+of the problem rather than the problem**, and would have shipped a guard it would have described as
+working, with evidence.
+
+> **A reference written by the author of the assertions cannot falsify their reading. A STAND-IN
+> written by the author of the INSTRUMENT cannot falsify the instrument.**
+
+**The repair is not a type: source cells that read the barrel from disk.** They red today, name what
+is missing, and are the only thing that can tell a reader whether a red typecheck means *a member is
+absent* or *an assertion failed*.
+
+**Scoped correctly by T100's blind author, and the distinction matters when propagating this: a
+barrel's FUNCTIONS have a runtime absence detector for free; its TYPES do not, and only those need
+the source cell.** The runtime binding cells import the barrel and red with the clause that
+published it. Types are erased, so they have no runtime witness at all — which is exactly the gap
+the source cell fills, and the only one.
+
+**Confirmed independently in a second tree, and it is worse than first described.** Pointing a pin at
+a genuinely absent barrel and asserting BOTH verdicts: `Pin<Absent, T> = true` compiles,
+`Pin<Absent, T> = false` **also** compiles, `IsAny<Absent> = true` compiles, `IsAny<Absent> = false`
+**also** compiles. **All four, with only `TS2307` on the import line.** And in the same probe
+`Pin<any, T> = false` under `@ts-expect-error` **consumed the directive** — against `any` the guard
+fires perfectly. The stand-in half reproduces exactly.
+
+That session re-measured rather than accepting the report, and named why: **a finding accepted
+unmeasured is the co-authored-reference error at one more remove.** Its source cells were then
+falsified against six synthetic barrels — passing both-re-exported, both-inline and
+two-separate-lines, redding one-missing and both-missing, and catching **declared but never
+exported**, which a naive `includes()` waves through. **A type-level instrument cannot observe its own blindness;
+something outside it has to.**
+
+Keeping the `any` short-circuit and **labelling it as not covering the absent-member case** is the
+right disposition rather than a compromise — it is real for a genuinely `any` operand, and a reader
+deleting it because "it never fires" would remove a live guard for a false reason.
+
+## `keyof` on a UNION is the INTERSECTION, so the key-set repair misses the shape most likely to be pinned
+
+**A defect in the repair I propagated, not in anyone's application of it.** I sent *"add a key-set
+clause"* to two suites. Followed literally it produces a pin that **still cannot see an added
+optional inside one arm of a union**, because `keyof (A | B | C)` yields only the keys every arm
+shares. Measured: two three-armed unions differing by one `keyId?` compare **exact**.
+
+The clause must **distribute**: `type Keys<T> = T extends unknown ? keyof T : never`.
+
+**A union is the shape most likely to be pinned** — a discriminated subject, a result type, a
+published variant — so the naive repair is blind exactly where the pin matters most. Propagate the
+distribution **with** the repair, never after it.
+
+## `Exact<A, B>` by mutual assignability is BLIND to an added optional member — repo-wide
+
+Found by T100's blind author, in the formulation **every blind suite in this run uses**:
+
+> `Exact<A, B>` by mutual assignability alone reports `{a: string}` and `{a: string; b?: number}`
+> as **EQUAL**, because an optional member is assignable in both directions.
+
+**That is the single divergence a pin on a published interface most needs to catch** — an
+implementer adding a field nobody published sails through a green pin, which is the whole failure a
+type pin exists to prevent.
+
+**The repair has two halves and the second is not optional.** `Exact` must compare **key sets** as
+well as assignability; and `Pin<>` must state the vacuity-while-absent **explicitly** rather than
+inheriting it from `Exact<any, T>` — because once the key-set half is added, **`Exact<any, T>` is
+`false`**, so the old formulation reds for a reason `TS2307` already reports. That is the
+loud-but-unreadable lie arriving through the fix for a different one.
+
+**How it was found is worth as much as the finding: the author predicted four near-miss verdicts and
+let `tsc` disagree with it, and what was wrong was the PREDICTION.** A pin nobody has tried to fool
+is a pin nobody has tested.
+
+**It composes with the third lie into a pair worth stating together**, since they look identical
+from outside: a **negative** pin is falsely green while the target shape does not exist, and an
+**`Exact` positive** is falsely green over an added optional member.
+
+## The digest blindness that a ruling rests on, pinned as a fact rather than assumed
+
+Same session, same run: it wrote *"a changed byte in a CARD moves the digest"*, the cell **failed**,
+and the reason is that `cardDigest` hashes the **parsed** `NodeCard`, so comments are invisible to it.
+
+**That blindness is exactly what D-100-02's source-byte comparison rests on** — the card comparison
+was ruled onto `source` *because* no digest check can see a comment-only edit. So the cell was
+inverted to pin the blindness **as a fact**, with a header saying that a red there means the two
+rulings must be re-read together.
+
+**Neither the ruling nor the suite was designed to do that.** A cell that started as a wrong
+assumption became the thing that makes two independent rulings mutually checkable — found by being
+wrong out loud rather than by being careful.
+
+## A type-level pin lies THREE ways, and all three end at "the pin cannot be read"
+
+Two were documented this morning; T231's blind author measured the third rather than predicting it.
+
+1. **Silently vacuous — absent MODULE.** `tsc` resolves the import to `any`, `Exact<any, T>` is
+   `true`, the check passes and reports nothing.
+2. **Loudly useless — absent MEMBER of a present barrel.** `TS2305` reds the typecheck for a reason
+   unrelated to whether the pin discriminates. *"Not a green that meant nothing, but a red that
+   drowned the signal."*
+3. **FALSELY GREEN — a NEGATIVE pin whose probe matches neither shape.** `bareStringKeyIsRefused`,
+   `aListedKeyCannotBeSpent` and `forgedRecordIsRefused` were all green **not because the criterion
+   held** but because nothing carrying a `tier` field is assignable to the shipped
+   `{accountId; keyId; ip}` either. **Three of four negatives, worth nothing until the union lands.**
+
+The third is the worst of the set because a green negative reads as the criterion holding, while the
+other two announce themselves. Its author put *do not read this file's green cells as coverage* in
+the **file header** rather than in a handback, which is what makes it survive the session.
+
+**The discriminator remains a NEAR-MISS**: green-against-red on two shapes differing by one member.
+And the control for the technique belongs beside the pins, **labelled as a control on the technique
+and not a result about the module** — a check written by the author of the assertions is a
+consistency check and never a second axis.
+
+**Corollary, from the same session, after it broke its own control twice: A CONTROL THAT FAILS
+WHENEVER THE SUBJECT FAILS IS NOT A CONTROL.** Its first paired `isNull(revokedAt)` in `resolveKey`
+against its absence in `listKeys` — which reds under the very mutation it was controlling for. Found
+**by running the mutations, not by reading the cells**, twice, and repaired by discriminating on
+`tokenHash`, which no change in the task can touch.
+
+## The orchestrator is the only party who can misattribute, and it did
+
+T231's blind author raised charges **A through E**. Its implementer raised **C1 through C4**. I wrote
+"two of your charges — C1 and C3" in a message **to the blind author**, having conflated two
+sessions' numbering while relaying between them.
+
+**Neither session can check my attribution — I am the only party who sees both.** The blind author
+caught it only by knowing its own list, and said so plainly. The cost was nothing this time because
+it had not acted on them; the general cost is that a session can be handed another's obligations and
+have no way to tell. **Relay a charge by its content, or quote the sender, never by a number alone.**
 
 ## Absent MODULE and absent MEMBER are one axis with two failure directions, and both end at "unreadable"
 
@@ -9942,6 +10711,7 @@ it does not decide differently inside a worktree.
 | T080 | Registry read model and read API | T010, T020, T030 | `lib/server/registry/**`, `app/api/blueprints/**`, `app/api/cards/**`, `app/api/ontology/**` | `../darkprint-wt-t080-registry` | `feat/t080-registry` | **merged** | round 2: D-80-06 fixed and falsified (10 newly red, 0 green), D-80-08 fixed and falsified (exactly 1), **D-80-07's gate block cleared by implementation** — typecheck 0, lint 0, build 0 on the merged tree; triple pending the gate slot |
 | T081 | Registry store wrapper: D-13 for the read model | T080 | `lib/server/registry/**`, `app/api/{blueprints,cards,ontology}/**` | `../darkprint-wt-t081-registry` (impl), `../darkprint-wt-t081-registry-tests` (blind) | `feat/t081-registry-errors`, `test/t081-registry-errors` | merged | merged at `752721d` as the twelfth task, tagged `t081-verified`. Adversary **PASS**, no defect charged, at `59e727e`. Triple `2 failed, 5562 passed, 0 skipped` of 5564 with identical failing sets; `5444 + 15 + 105 = 5564` as arithmetic, agreeing. 5 mutations, 4 discriminate, 0 newly green, **two MISSes both reported as the suite being right**. Standing: every fault driven was a **closed port** — no live-database fault, no parameterised statement, so D-13's bound-parameter clause is held by construction rather than by witness; **F1** every leak instrument is scoped to the problem document and nothing reads response headers; **F2** `title`'s freedom from driver values is colocated-only, by a contract gap (the string is unpublished) |
 | T090 | Distribution and export artefacts | T010, T020, T030 | `lib/server/export/**`, `app/api/files/**` | `../darkprint-wt-t090-export` | `feat/t090-export` | **merged** | round 2: D-90-A fixed by a **type** — `ExportReadError` is a sibling of `ExportError`, so the route's one `instanceof` is right by construction; the unwrapped `openView`/`resolveCardRef` paths wrapped too, so one outage is one status; falsified through the routes against a database whose read genuinely fails |
+| T091 | The READ half of the frozen artefact | T090, T100 | `lib/server/export/**` (extension), `tests/server/t090/serve.test.ts` (the AC6 message only) | — | — | todo | **Created 2026-08-22 at T100's adversary round, and it is the half that was never anyone's.** `16676` says *"NEITHER verb is T090's to build in this round"* — `persistArtefacts` was deferred to T100 **by name** and `readPersisted` to **nobody**. T100 built the write at `d3c66f1` and **AC6 still did not go green**, measured: `serveFile` calls `buildExport` unconditionally and a grep over `lib/server/export/*.ts` for `readPersisted`, `ObjectStorage` and `storage` returns **zero hits**, so the frozen bytes are written and never read. **Persisting is necessary and NOT SUFFICIENT, and `backend.md:8475`'s claim that the cell *"turns green by itself the day T100 persists"* is FALSE.** Owes: `readPersisted(storage, digest, path)`, `serveFile` preferring the frozen artefact with generate-from-Postgres as fallback, consuming T100's published codec — `storage.get(digest)` → `decodeArtefacts` → `selectArtefact`. **And the AC6 cell's own failure message must stop naming T100**, or it misdirects every future adversary reading that red |
 | T140 | Saves (private bookmarks) | T050, T060 | `lib/server/saves/**`, `app/api/account/saves/**` | `../darkprint-wt-t140-saves` (impl), `../darkprint-wt-t140-saves-tests` (blind) | `feat/t140-saves`, `test/t140-saves` | **merged** | blind suite `3337fb0`: **176 cells over 6 files**, `167 failed, 9 passed, 0 skipped` twice with identical failing sets. **The nine greens measure the DRIVER** — closed port `ECONNREFUSED`, dropped table `42P01`, and **drizzle rendering bound `accountId`/`refId`, which settles D-140-06's premise before implementation.** Reference 176/176 first try, offered as the weaker result. 18 mutations: **four one-red mutations on four rulings**, and **exactly one of seven non-owner shapes reds** under a re-implemented ownership check. **`SaveRecord`'s `Exact<>` is vacuous from a blind tree — `Exact<any,T>` is `true` — and cannot be falsified from there.** Implementation at `3f0f3f9`+ pending its own gate. **Route surface was owed by the orchestrator (D-140-04) and is now PUBLISHED as D-140-07**: four routes under `app/api/account/saves/**` over one request shape, which is `saveTarget`'s own `target`. No 403 (T050's reason, cited not re-derived) and no 404 on a write (the existence oracle AC1 closes), so **AC1's non-owner denial is unreachable from HTTP and route cells must not expect it**. `seams.md`'s SEAM-61/62 and `FavoriteStar.tsx`'s `TODO(SEAM-62)` corrected in the same commit **Implementation at `914e531`, gates and triple measured there; `9345e22` is the same thirteen files with only `backend.md` moved — an acceptance is of an ARTEFACT, not of a tip.** Thirteen files under `lib/server/saves/**` and `app/api/account/saves/**`, built against D-140-01..07. Triple `1 failed`, `5896 passed`, `0 skipped` of 5897, three identical sorted failing sets, the one red T090's `B-08 RE-SCORE`; **0 skipped by ARITHMETIC rather than by a printed column** — `1 + 5896 = 5897` leaves nothing for a silently-skipping `skipIf` file to hide in. Reconciliation `5897 − 5871 = 26`, delta measured in isolation as 9 + 17 and base's 5871 measured independently by me. typecheck 0, lint exit 0 read in full with 0 `warning`/`problems`, build 0 with both routes dynamic. **Six mutations, each pre-registered by IDENTITY and scope, all HIT**: decision arm 2, message leak 2, `can` re-implemented 2 (the second the operator cell, which a bare id comparison refuses), unfiltered count 7 all inside AC3, term filter 2, card half 1. `SaveRecord`'s `Exact<>` falsified in BOTH directions — the guard its blind author correctly reported it could not falsify, since `Exact<any,T>` is `true`. **`impl-done` HERE MEANS ONLY THAT THE LATER HALF ARRIVED. It does NOT mean ready for an adversary, and its implementer flagged that rather than let the field read as an invitation**: the blind suite has never run against this module, the join has not happened, and the acceptance surface is **209, not the 176 this row cites** — 33 route cells sit uncommitted in the blind author's tree. **No number here is an acceptance measurement.** Clause 5 held below the transport at 7 reds and unheld at it; ~~`error-hygiene` 18/19~~ **STALE — the equality is 21 and the merge raise is 21 → 22** (D-140-12) **Verified at `e1a5a60` after D-140-08/09/10: triple `1 failed`, `5898 passed`, `0 skipped` of 5899, three identical sorted failing sets, reconciliation `5899 − 5872 = 27` with base measured independently by me. typecheck 0, lint read in full 0. **All four registered predictions hit**, including the probabilistic one: reverting to `asc(save.id)` reds the witness **28 of 30 runs**, against a predicted 25 on `Binomial(30, 5/6)` — reported as a rate with its n rather than as a red. **Its read-back `sed` errored and it caught that the 28 was printed under a failed check**: a rate consistent with the prediction proves something changed, not that the intended change landed. **Blind suite complete at `b623332`: 215 cells over 9 files**, taken at a release-at-a-stamp reproduced exactly — four per-file digests, a four-path combined digest, a **nine-file suite digest for what the adversary runs**, 5 077 lines, 221 603 bytes, zero discrepancies. **Route half 33 cells asserting membership and length and never order** (verified by grep before D-140-08 was ruled, so the ruling cost it nothing); order cells 4, **and its reference RED for the first time in this run** — 4 of 215 without the ordering, then 215/215 corrected. **JOIN AND ADVERSARY ROUND NOW UNBLOCKED.** **ADVERSARY VERDICT: PASS** at `d2578544`, integration of `e1a5a60` + base + `b623332`, `feat/t140-saves` untouched. **215 of 215 on the first meeting of the halves**, per-file runtime counts equal to its pre-registered expansion arithmetic exactly; full tree `1 failed`, `6113 passed` of 6114, 0 skipped by arithmetic. **`Exact<>` DISCHARGED in both directions** — `refId` optional yields TS2322 at the `saveRecordIsExact` declaration **and** at the implementer's own colocated pin, restored to 0. **Suite reach converted from an inherited claim to a measurement on THIS module**: `asc(save.id)` reds exactly order cells 1 and 2, **10 of 10 deterministically where the reference measured 28 of 30**, because single-statement batches guarantee the tie groups; a `reverse()`ing route reds **exactly one** cell, the transport one. **D-140-11 ruled-and-unobserved** across every run. Census 4 before, 4 after. **MERGED at `174cb0e`, tagged `t140-verified`.** D-140-11 and D-140-12 landed first: its implementer derived the equality from its own tree rather than taking my number, and **checked the thing that mattered instead of picking a domain sha** — base moved three times inside its round and `git diff --name-only e570f40 008894d` filtered to `lib/server|tests` returns nothing, so the guard's domain was invariant across the whole window. It also **ran a whole triple against an uncommitted tree**, caught it by its own porcelain stamp rather than by noticing, committed and re-ran the entire triple. Final: three identical runs at `1 failed`, `5898 passed`, `0 skipped` of 5899, no-movement measured twice at `27 passed`, census 4 before and after. 
 | T230 | Rate limiting and API keys | T000, T050 | `lib/server/limits/**`, `app/api/account/keys/**` | `../darkprint-wt-t230-limits` (impl), `../darkprint-wt-t230-limits-tests` (blind) | `feat/t230-limits`, `test/t230-limits` | **merged** | module `8338951`, 17 files across two trees, four sealed classes so the merge count is **18 → 22**. Gates ITS measurements at `0f23379`, scope TARGETED: `typecheck` 0 unfiltered, `lint` 0 read in full, `vitest lib/server/limits` **84/84** — **not a full suite, not a triple, and the three repo guards it pre-registered green were outside that scope so their green is still a prediction.** **Both pre-registered candidate reds passed and the two real ones were elsewhere**: a lone surrogate walking a control-character check **in the opposite direction from a NUL**, and a refusal test whose input was accepted. Blind suite at `test/t230-limits`, 7 ahead **Implementation `5d79039`**, taken at the standing release-at-a-stamp: `10a8ab1` plus eight modified paths, reproduced here as eight blob ids with zero `fatal` lines and an identical path set. **`T230-gate-2`: three identical runs at `1 failed`, `5963 passed`, `0 skipped` of 5964**, identical sorted failing sets, the one red base's own t090 `B-08 RE-SCORE`; typecheck 0 unfiltered, lint exit 0 read in full. **Reconciliation exact — `5871 + 93 = 5964`**, delta measured, base measured independently by me. **Its FIRST triple was not identical and it chased both extras rather than reporting the disjunction**: `D-40-F` a contention artifact at 102.69 under load 57, and `t010` AC5 a permanent 1-in-230 fixture red — *one moved for load and one moved for a coin*, and the second is fixed on base at `85b2c9e`. **It attributed the two orphan databases to ME by creation time** after three sessions had stopped at *zero connections, cannot attribute*. D-230-11's routes shipped with `listKeys` added, `DELETE` at `200 KeyList`, and **revoked rows LISTED rather than filtered because that is AC4's observation rather than a convenience**. Nine ceiling cells as ruled with `REFUSED` written out rather than absent. `error-hygiene` 21 → 22 at merge — **STALE in both operands, corrected to 24 → 28 as a PREDICTION by the adversary (F-230-L), because `lib/server/limits` is not in the guard's `backend` domain until this task merges.** **ADVERSARY VERDICT: NOT PASS, six findings, at integration `074fb34`.** Triple **identical three times** — `4 failed, 6312 passed, 0 skipped` of 6316, exit 1, failing set diffed at TEST granularity and byte-identical, **no new red at the integration**: base's own T090 `B-08 RE-SCORE`, F-230-F's `routes.test.ts`, and the three cells ruled against the blind suite. Reconciliation `6152 + 71 + 93 = 6316` closed as **measurement plus checked invariance** — 6152 measured at `a903b3d`, carried across one commit verified to touch no test file — rather than as two parties quoting each other, which the adversary raised against its own result and then verified in its own tree. **The implementation is in good shape and the list must not be read otherwise**: 8 of 10 mutations caught, most by BOTH halves independently, all seven attack targets driven from commands and answered correctly, and in both uncaught cases the shipped behaviour was verified CORRECT before a coverage gap was charged. **F-230-J is the round's finding: AC4 has no working test.** Deleting `isNull(revokedAt)` from `resolveKey`'s WHERE — the one line implementing it — scored **0 new failures across all 164 cells of both halves**, non-inertness falsified on two axes, end-to-end a revoked key holds **6000 against 600**. The cell exists, its design is right, and its author's own reasoning emptied it: asserting the INTERSECTION of two readings of "refused immediately" admits a record whose `revokedAt` is set. **Owed before merge: F-230-M only** — an unconfigured bucket renders a 429 at the Unix epoch with `windowMs: 0`, inviting a client that honours the published machine-readable `resetAt` to retry at once, forever, which is the opposite of D-230-04's promise that a bucket without a number is loud rather than free. **F-230-F is also an unbounded resource leak** — one scratch database per run on the Postgres every worktree shares, confirmed three ways: the adversary's accounting by mechanism, its edge stamps across three runs (25→26→27→28), and my own query from outside its session. **28 scratch databases stand for the owner to rule on; the adversary declined to attribute them by creation time and declined to drop them.** Blind-suite corrections F-230-F/G/H/I/J are the orchestrator's to apply at merge; F-230-K stays a coverage gap with shipped behaviour recorded correct; **T231 carries the typed repair and the attribution is mine** |
 | T100 | Publishing and releases | T010, T020, T025, T040, T050, T060, T070, T090 | `lib/server/publish/**`, `app/api/bundles/**` | — | — | todo | — |
@@ -16483,10 +17253,50 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Forbidden:** `lib/server/limits/keys.ts` beyond its return type; every other module.
 - **Goal:** make the resolved-key precondition structural, so an unresolved or revoked key cannot reach `checkLimit` at all.
 - **Contract:** **D-230-05 ruled that `checkLimit` touches `db` on no path and that a non-null `keyId` is a precondition only `resolveKey` can establish.** That ruling stands and this task does not reopen it — it was derived from the clause's own arithmetic, since the alternative reading makes a keyed request issue two reads where the clause licenses one. **What this task fixes is that the precondition is held by CALLER DISCIPLINE rather than by STRUCTURE.** `checkLimit` is exported from the barrel, its subject carries `keyId: string | null`, and any later caller may pass a bare string that no `resolveKey` ever produced.
+- **Published signatures** (checked against `backend` at `3f2ddb5`. D-231-01, amended twice inside the hour it was ruled, and both amendments came from the halves rather than from me.)
+
+        declare const RESOLVED_KEY: unique symbol;          // declared, never exported
+        export type ResolvedKey = ApiKeyRecord & { readonly [RESOLVED_KEY]: true };
+
+        export type LimitSubject =
+          | { readonly tier: "anonymous"; readonly ip: string }
+          | { readonly tier: "account"; readonly accountId: string; readonly ip: string }
+          | { readonly tier: "key"; readonly key: ResolvedKey; readonly ip: string };
+
+        resolveKey(db: Db, secret: string): Promise<ResolvedKey | undefined>
+        checkLimit(subject: LimitSubject, bucket: string, options?: CheckLimitOptions): Promise<LimitVerdict>
+        enforceLimit(subject: LimitSubject, bucket: string, options?: CheckLimitOptions): Promise<LimitVerdict>
+
+  **The brand proves PROVENANCE, not non-revocation, and the first amendment removed a narrowing I had published.** I first wrote `ActiveKey extends ApiKeyRecord` carrying a null `revokedAt` member. T231's implementer refused it: **TypeScript cannot verify non-revocation, so that member could only be produced by a cast nothing checks**, sitting in a Forbidden file and reading to every later reader as a guarantee the type provides — *an instrument describing a walk it is not doing.* **And it would have traded the instrument for the guard**: deleting `isNull(revokedAt)` from `resolveKey`'s WHERE still mints a branded record, so the narrowing would have made F-230-J's mutation **inert rather than red**. Vindicated by measurement at the adversary round: that deletion now reds **3** cells on two independent axes, where F-230-J measured **0 across 164**.
+
+  **The second amendment withdrew `enforceLimit(request, subject, bucket): Promise<Response | undefined>`, and BOTH halves charged it independently within ten minutes**, quoting the same shipped header. `Response | undefined` is `payload | Response` — the shape T000 rejected for `withSession`, and the one `check.ts:196-206` cites as the reason `enforceLimit` exists: *a guard that returns a union depends on every caller checking the union, and a caller who forgets runs the handler anyway.* **It would have made forgettable the one function whose purpose is that a refusal cannot be forgotten.** Dropping `db` answered the question that was asked; the return type answered none, and would have left `RateLimitedError` thrown by nothing while `withLimitsErrors` shipped an arm nothing could reach.
+
+  **`db` leaves BOTH functions, and `checkLimit` cannot reach a connection — it is not a parameter.** That is stronger than D-230-05's *touches `db` on no path*, which describes a discipline; this describes a type, and it is held by an equality on `check.ts`'s import list plus a transitive check that no module it imports reaches `@/lib/db` at any depth.
+
+  **`tierOf` is WITHDRAWN from `config.ts` and from the barrel — and this clause reached only one holder, which is the defect.** I asked the implementer to choose between *trivial* and *gone*; it chose gone, for a better reason than mine: *an identity cannot drift; the problem is that the NAME says derived*, so a reader opening it after the union finds an identity and goes looking for what they missed. **The blind author was never sent this clause**, inferred `tierOf(subject): Tier` from the `Owns` line, and **labelled it as that inference** — which is why `PUBLISHED.tierOf` is declared and read by no cell. An amendment has two holders; telling one manufactures the defect.
+
+  **`options` survives as a defaulted THIRD parameter**, so `checkLimit.length` is **2** and matches the published two-parameter line that `surface.test.ts` pins by arity.
+
+  **What the brand does not buy, stated rather than implied**: accidental misuse is impossible, and **deliberate forgery is one `as` and is greppable** — `rec as ResolvedKey` suffices, without `as unknown as`, because `ResolvedKey` is a subtype of `ApiKeyRecord`. Eleven spellings were tried at the adversary round: six refused, five compile, and all five are casts.
+
 - **Acceptance criteria:** (1) `checkLimit` accepts what `resolveKey` returns rather than a bare `keyId`, so passing an unresolved key is a **compile error**; (2) `db` leaves `checkLimit`'s signature, since D-230-05 already establishes it is never used there; (3) no second database read is introduced on any path — the repair is a type, not a lookup; (4) the 429's published key set (D-230-09) is unchanged.
 - **Out of scope:** re-litigating D-230-05; `resolveKey`'s own WHERE clause; anything in `tests/server/t230/**`.
 - **Log:**
   - 2026-08-22 orchestrator: **created at T230's adversary round, and the attribution is MINE rather than T230's implementer's.** The implementer built exactly what D-230-05 ruled. **F-230-J measured what the choice rests on**: deleting `isNull(revokedAt)` from `resolveKey`'s WHERE — the single line defending the precondition — scored **0 new failures across all 164 cells of both halves**, non-inertness falsified on two axes, and end-to-end a revoked key holds **6000 against 600**. The adversary's framing, which is the one to keep: *`checkLimit` is handed `db` and never uses it, so it had the means to re-check and chose not to.* Deliberately **not** taken inside T230's round, because it amends a published signature on a task already `impl-done` and **a ruling made after a round closes is unimplemented contract**.
+
+### T091, The READ half of the frozen artefact
+
+- **State:** todo
+- **Depends on:** T090, T100
+- **Blocks:** —
+- **Owns:** `lib/server/export/**` (extension), `tests/server/t090/serve.test.ts` (the AC6 failure message only)
+- **Forbidden:** `lib/server/publish/**`; the codec's format, which T100 published and this task consumes rather than redefines.
+- **Goal:** make `serveFile` return the frozen bytes when one exists, so "the bytes of that release" stay the bytes of that release across a re-score.
+- **Contract:** `16676` reads *"**NEITHER** verb is T090's to build in this round"* — `persistArtefacts` was deferred to T100 **by name** and **`readPersisted` to nobody.** T100 built the write at `d3c66f1`; **AC6 still did not go green.** Measured rather than argued: `serveFile` calls `buildExport` unconditionally, and a grep over `lib/server/export/*.ts` for `readPersisted`, `ObjectStorage` and `storage` returns **zero hits** — there is no path in that module that consults a persisted artefact. **The frozen bytes are written and never read.**
+- **Acceptance criteria:** (1) `readPersisted(storage, digest, path)` exists and consumes T100's published codec — `storage.get(digest)` then `decodeArtefacts` then `selectArtefact`; (2) `serveFile` prefers the frozen artefact and falls back to generate-from-Postgres when none exists, so a release predating the freeze still serves; (3) `tests/server/t090/serve.test.ts`'s AC6 cell goes green **without its assertion being weakened**; (4) that cell's failure message stops naming T100 and names this task.
+- **Out of scope:** the container format (T100's, published), `persistArtefacts` (T100's, built), and any change to what `buildExport` computes.
+- **Log:**
+  - 2026-08-22 orchestrator: **created at T100's adversary round, and it is the half that was never anyone's.** `backend.md:8475`'s claim that the cell *"turns green by itself the day T100 persists"* is **FALSE** — persisting is necessary and not sufficient — and the cell's own message repeats it. **Two merge logs booked that red as clearing at T100**: T050's *"the one red T090's known `persistArtefacts` dependency"* and T090's *"96 red to 1"*. It does not clear, so **any T100 merge note reporting "no new reds" measures against a baseline holding a red somebody already counted as spent.** The fixture also cannot persist under its own stated constraint, which its comment records to stop a later reader "fixing" the test into vacuity — so AC3 above is deliberately worded to forbid exactly that.
 
 ### T041, D-40-L: `ToNumber` is `+`, not `Number()`
 
@@ -16854,6 +17664,38 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Contract:** B-06 — one endpoint serves the wizard, the bundle page and the CLI: create if the slug is free for that owner, append a release if it is not. Publishing runs the validator, computes the digest, stores the scorecard with its ontology version, and generates the export artefacts. It does not touch the upstream and the lineage line stays (`components/bundle/Aside.tsx:92-95`). A bundle that does not resolve cannot be published, and the refusal distinguishes *unfinished* from *in error*, because the UI writes three different sentences (`components/upload/UploadFlow.tsx:1176-1201`). Every pinned card version must exist or be published in the same act, each passing its chain check through `T025`. A release carries the author's semver and the computed digest (B-04).
 - **Acceptance criteria:** (1) publishing a bundle with an unresolved node is refused with the unfinished reason and its counts, not an error count; (2) publishing with an error diagnostic is refused with the error count; (3) the stored digest equals the engine's over the submitted bytes; (4) publishing a fork leaves the upstream's bytes, digest and releases untouched; (5) a card version whose bump is too small aborts the whole publish, bundle included; (6) republishing identical bytes is refused as a conflict naming the existing release; (7) a non-owner publishing to an existing `(owner, slug)` is refused; (8) a declared semver lower than the previous release is refused.
 - **Out of scope:** forking (T110), transfer (T120), notification fan-out (T190).
+- **D-100-01, ruled 2026-08-22 on twelve items from T100's implementer, raised BEFORE any code existed.** Five were divergences between this block and the tree; seven were silences. **Recorded here late — see D-100-05.**
+
+  **A1 `resolveOwner` GRANTED.** `PublishInput.ownerHandle` had **no published door to an `ownerId`**: every write needs one, `PublicAuthor` deliberately carries none, and the only resolver in the tree was a direct join D-01 forbids reaching. `lib/server/accounts/{read,index}.ts` joins T100's Owns for one function — `resolveOwner(db, handle): Promise<{ accountId; defaultVisibility } | undefined>` — which also answers B1. **The implementer refused the obvious workaround and its second reason is the one that mattered**: accepting when `ownerHandle === actor.handle` makes `can` trivially true AND **refuses a rightful owner immediately after a rename**, since `changeHandle` updates the row while the cookie keeps the old handle.
+
+  **A2 `openView` REQUIRED.** Publish scores against the shipped core while the export resolves the same bytes against the version the manifest names — **publish accepts and the first export 404s.** `publish` calls `openView(db, manifest.ontologyVersion, terms)` and passes it as `validateBundle`'s `ontology`. T030 joins the composition set. An unpublished version is refused at the write.
+
+  **A3 the chain check is T020's**, not T025's as this block said. Call `addCard`; never `checkDeclaredBump` for cards — a second copy of one refusal with a different class is the defect charged most in this run.
+
+  **A4 — NARROWED at T100's adversary round, and as first written it was decided against the WRONG VERB.** It read *"publish generates nothing; `exportRelease` is a read verb"* — **true and irrelevant.** `exportRelease` is the read verb; **`persistArtefacts` is the WRITE verb**, published at `backend.md:16702` inside T090's block and attributed to T100 in three places, and **A4 did not mention it anywhere.** The contract sentence A4 struck — *"generates the export artefacts"* — pointed at `persistArtefacts`. **A requirement was removed by weighing a different verb than the one it names**, which is *check the decision that already read the artefact, not the artefact*, one level up: A4 read `exportRelease` and never read the artefact its own sentence was about.
+
+  **Corrected: publish does not call `exportRelease` and `checkFactoryDot` stays at the serving edge — AND publish PERSISTS the artefacts it has computed.** That is what `16659` ruled: *persisting the artefacts is not tidiness, it is the only mechanism by which "the bytes of that release" stay the bytes of that release.* **And `16676` was written to prevent exactly this**: *"recorded so the blind author's test has a surface to be true of, and so T100 does not rediscover the requirement at its own adversary round"* — it failed because the ruling that broke it never looked at it.
+
+  **Two consequences, neither visible from inside either half.** With A4 as written, **nothing in this entire run ever writes to object storage**, so B-01's split — *Postgres holds the canonical record, object storage holds the frozen artefact* — is unimplemented rather than deferred. And `t090/serve.test.ts:446`'s red was booked as clearing at T100 by **two** merge logs (T050's `1 failed ... the one red T090's known persistArtefacts dependency`, T090's *96 red to 1*), so under A4 **a T100 merge stamp reporting "no new reds" would measure against a baseline silently holding a red somebody had already counted as spent.** Every number in that arithmetic is true and the conclusion is wrong.
+
+  **The checkable property, proposed by the adversary and better than the guard I offered it:** *a signature published in one task's block and attributed in prose to another task must be reachable from that task's `Owns`, or named as an open gap.* **D-100-05 is a ruling that never reached the document; this is a ruling that reached the document and silently orphaned a signature published elsewhere in it.** Checking that a ruling reaches its own section catches neither. `persistArtefacts` at 16702 is that guard's first witness.
+
+  **A5** `AddReleaseInput.analysis` carries three members; `BlueprintAnalysis` has four and `ontologyVersion` is dropped, read back off `autonomy` by `build.ts`. Pass the analysis through unmodified.
+
+  **B1 `visibility ?? owner.defaultVisibility`, never `"public"`**, ignored on append. **B2** a card pinned at bytes differing from the stored row is refused as `conflict`; pinned refs only. **B3** digest conflict precedes the version comparison. **B4** "previous" is **highest semver**, and "not higher" admits equal, so `ArchiveConflictError("release-version")` is unreachable **sequentially** — see D-100-03. **B5** `bundleProgress` is imported rather than re-derived; **its home is wrong** (a server-consumed pure predicate belongs in `lib/core`) and that is a known gap. **B6** `POST /api/bundles`, `withSession` + `actorFrom`, wire `vocabulary` a plain YAML string joined at the route as `/api/validate/bundle` does. `conflict` 409, `not-owner` **404** (B-03, so existence does not leak), `unfinished`/`in-error`/`version-not-higher` 422, unauthenticated 401 (T000's, not T100's).
+
+- **D-100-02, ruled: the card comparison is on SOURCE BYTES — not digests, and not `body`.** The digest form refuses the case the ruling named and **misses two cards differing only in comments, whitespace or key order**: they compare equal, the stored `source` silently wins, and the published folder is not the author's bytes. `cardDigest` is blind to that by construction. **The implementer then closed a hole in the ruling itself**: `CardRecord.source` is `text` and round-trips **byte**-identical while `body` is `jsonb` and round-trips **value**-identical only, so a `body` comparison reintroduces the same blindness by another route — caught from T020's own docstring rather than from care. A card version is a **content identity**; a comment-only edit needing a version bump is the semantics, not a cost.
+
+  **`conflict` carries TWO admissible message forms, five kinds and six forms.** The existing sentence names a version and a release, neither of which exists in the card case: `publish: conflict — card \`<ref>\` is already published with different content.` **The kind was decidable and the message was not**, which is why the implementer flagged it as the one thing worth interrupting the blind author for.
+
+- **D-100-03, ruled at the implementer's own correction: `ArchiveConflictError` is reachable UNDER CONCURRENCY and is mapped to 409.** `publish` reads the bundle and the release versions **before** opening its transaction, so two callers racing on one free slug both pass and the index raises from inside the write. `statusFor` did not name the class, so **the loser of a race got a 500 for a plain conflict.** Found by re-reading finished code, not by running it. It also **withdrew its own earlier claim** that `("release-version")` was unreachable through publish — true sequentially, false under a race — after that claim had already been relayed to the blind author as licence to assert the class never fires. **Retry-as-append is REFUSED by ruling:** converting a lost create into an append makes `PublishResult.created` a claim about who won a race rather than about what happened to the bundle, and a retry the caller issues is observable where one the server performs is not.
+
+- **D-100-04, ruled AND corrected within the hour: T100 honours `can`, and my first ruling on it was FALSE.** I ruled that an operator publishing to a bundle it does not own gets `can` returning false. **`can` returns TRUE** — `ACTIONS` contains `"publish"` and `case "bundle"` short-circuits on `isOperatorGrant` before ownership is consulted; B-13's break-glass, unconditional by design. **T100's blind author refused to write the cell I asked for**, because it would have redded an implementation consulting `can` correctly, and wrote neither that cell nor its opposite — documenting both readings with line references so the next reader meets the divergence rather than my ruling. **If the operator grant is too wide for publishing that is a T060 amendment, not a T100 exception.** It is also unreachable through HTTP by construction (`actorFrom` mints `kind: "account"`, D-50-13), so the question is settleable only at the module boundary.
+
+  **And the ruling arrived with ZERO COVERAGE, which the same author measured against its own finished suite**: every actor its 48 cells constructed was an account, so **an implementation that never called `can` at all passed every one of them.** The cell that works asserts **agreement** — `publish`'s answer matches `can(actor, "publish", {kind:"bundle", ownerId, visibility})` — not an outcome, because an outcome cell encodes today's answer to an open product decision and must be rewritten by whoever amends T060.
+
+- **D-100-05, and it is an orchestrator defect rather than a task one: D-100-01 through D-100-04 were RULED IN MESSAGES AND NEVER WRITTEN HERE.** T100's adversary grepped `D-100-0` and found **one** hit — a passing reference from another section's prose. Both halves built against decisions that existed only in chat, and the labels I cited in their briefs did not resolve in the document. `rulings-bind.test.ts` cannot see this: it triggers on a `## D-NN-xx` **preamble heading**, and these had none. **The preamble is where a ruling is argued; the criteria and the published block are where it binds** — the rule this file has held since T070, failing at the orchestrator rather than at a task, and caught by the party the failure was about to cost.
+
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-04, B-06.
 
