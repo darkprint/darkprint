@@ -7371,6 +7371,58 @@ that the old spelling is *described rather than quoted*, and that restoring the 
 name back to be helpful and silently blinding the check again. Its author's note: *"I nearly was
 that person, with the best of intentions and a correction in hand."*
 
+## The Postgres count is NOT a leak detector under concurrency — the rule I propagated all day is wrong
+
+**T100's implementer read `pg=10` after a run and was about to report a leak.** The list attributed
+it: one `t010_bundle_b_*`, six `t090_*`, two `darkprint_test_*`. **Twenty seconds later the count was
+3 and every `darkprint_test_*` was gone.** They were the **live scratch databases of a foreign run**,
+caught mid-flight.
+
+> **The rule as written — "above 3 after is a leak" — assumes my run is the only one.** The count is
+> machine-wide and the databases are shared across worktrees, so ***after* for me is *during* for
+> somebody else**, and a post-run count above 3 cannot distinguish my leak from their live scratch.
+> It is only a leak detector when the host is otherwise quiet, which is exactly when it is least
+> needed.
+
+**The corrected rule composes with T231's implementer's finding, and neither half is sufficient
+alone:**
+
+* **A total count above baseline means nothing** while any other run may be in flight.
+* **A database with a live BACKEND is somebody's live scratch**, not a leak — T231's diagnostic.
+* **A leak is a database with NO backend that SURVIVES a second sample** separated by enough time
+  for a run to finish. One reading at one instant cannot say which it is.
+
+Same shape as the load average: a single number at a single moment describing a machine several
+parties are using. **Sample twice, attribute by backend, and never charge a leak from a count.**
+
+## A sampler whose interval exceeds the run measures the host before it started
+
+Same session, same run, reported rather than dressed up. Its during-run sampler fired **once**, at
+t=0 before vitest had spun up, and the run finished in **3.28s inside a 15s sleep.** The pgid
+arithmetic was correct — the background job stayed in the script's group, so it excluded the **run**
+and not the sampler — and the number was still worthless: *"foreign=242% from that line is the host
+before my run started and says nothing about contention during it."*
+
+**An in-flight sampler needs an interval shorter than the run, or the run needs to be long enough to
+sample.** For a three-second scoped run neither holds, and the honest report is that there is no
+contention profile rather than a profile from one edge.
+
+## A stamp printed inside an unguarded command is decoration — and its author had already written the guard
+
+**Reported against itself**, and the detail that makes it worth keeping: it ran an isolation check at
+**demand 714%** with the stamp printed and **no threshold acting on it**, having written the guarded
+version **thirty minutes earlier** and not used it *because the run "was only one file."*
+
+That is *a stamp is only a veto if something acts on it* — the rule this file recorded this morning
+from a different session — failing on the author of the sentence that quotes it. **The exemption was
+not a decision about risk; it was a decision about effort**, and the size of the run is what made it
+feel exempt.
+
+The gate result itself was taken on a clean guarded stamp and stands. **The isolation check's 13.17s
+duration was taken under contention and its author declines to present it as a measurement of
+anything** — which is the right disposition for a number that answered a yes/no question correctly
+while being useless as a timing.
+
 ## Distinguish a LEAK from LIVE SCRATCH by the backend count, not by the database count
 
 T231's implementer, stamping Postgres at 4 against a baseline of 3:
