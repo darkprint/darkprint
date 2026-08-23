@@ -20148,6 +20148,21 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **Named tests that must pass unchanged:** `honesty.test.ts`, `autonomy-surfaces.test.ts` — the second pins the two prohibitions T200 inherits.
 
+- **★ D-260-01 — `components/ontology/TermTable.tsx`'s EXPORTED SURFACE IS FROZEN. TWO ROUTES T260 IS FORBIDDEN TO TOUCH IMPORT FROM A FILE T260 OWNS.** Found by the orchestrator before dispatch, by enumerating every importer of T260's owned component directories rather than by reading the partition:
+
+        app/nodes/[...id]/page.tsx:27      import { formatWeight, markerWeight } from "@/components/ontology/TermTable"
+        app/ontology/[...term]/page.tsx:16 import { … } from "@/components/ontology/TermTable"
+
+  **Both are DETAIL routes, and T260's `Forbidden` names *every detail route* — so T260 can rewrite that module and break two surfaces it may not fix.** This is D-263-05's shape exactly (a merged consumer reaching into a file the cutover owns), and it is the **third instance** in this project.
+
+  **Ruled narrowly rather than read-only, because `app/ontology/page.tsx` IS T260's and legitimately consumes the same module: T260 may change `TermTable.tsx`'s INTERNALS, and may NOT change, rename, remove or alter the signature or semantics of `formatWeight`, `markerWeight` or `termUsageIndex`.** If the cutover needs a different shape from any of the three, **say so and stop** — that is a change to two Forbidden routes and it comes back to me.
+
+- **D-260-02 — TWO MERGED READERS CITE T260's FILES, AND THEY BEHAVE DIFFERENTLY. ONE REDS IF YOU MOVE A FILE; THE OTHER GOES QUIETLY STALE.** `components/ui/autonomy-surfaces.test.ts:259` finds `components/gallery/GalleryBrowser.tsx` **by exact path** and asserts it lacks `value: "downloads"` and `value: "votes"` — **and it carries `expect(gallery).toBeDefined()`, so renaming or moving that file REDS LOUDLY rather than passing vacuously.** That guard is well built and it is right to red: **it is the only instrument in the repository holding D-31/D-57's popularity prohibition, and it is a NAMED must-pass-unchanged for this task.**
+
+  **T200's merged suite is the opposite case and is NOT a runtime coupling: `tests/server/t200/params.test.ts` and `ordering.test.ts` name `GalleryBrowser.tsx` only in COMMENTS and FAILURE MESSAGES** — they import nothing from it, so a rewrite cannot red them. **But those messages assert what that file SAYS** (*"reads `params.get("forks") ?? "rolled"`"*, *"`params.get(k) === "1"`"*), **so a cutover moving those reads to the API leaves five merged failure messages describing a file that no longer says it.** Report the drift; do not edit that suite.
+
+- **★ D-260-03 — `forks` DEFAULTS TO `rolled` ON THE API, AND THIS TASK IS THE REASON THAT WAS RULED.** D-200-37 named T260 by name: T200 originally treated an ABSENT `forks` as `all` while `GalleryBrowser.tsx:194` is `params.get("forks") ?? "rolled"`, **so this cutover would have silently changed which shelf `/blueprints` renders unless it remembered to send the key.** It is fixed on the API side — absent, empty and unrecognised now all resolve to `rolled` — **so the cutover does NOT need to send `forks=rolled`, and a page that sends it explicitly is also correct.** **What must not happen is this page acquiring its own default**: two defaults for one shelf is how they come to disagree, and the API's is now the live one.
+
 - **Goal:** move the three index shelves off build-time archive reads onto the read API and search.
 - **Contract:** the query keys and their `Clear filters` sets are unchanged (`components/ui/useQueryState.ts`, B-12), so existing shared links keep working. Public reads stay static with tag-based revalidation (B-15). Every honesty marker over a figure that has become real comes off in the same change, and every marker over a figure still seeded stays (D-78, and the rule `app/settings/page.tsx:41-58` states).
 - **Acceptance criteria:** (1) a blueprint published after the last deploy appears on `/blueprints` without a rebuild; (2) every filter and the clear control behave as they do today; (3) `honesty.test.ts` and `autonomy-surfaces.test.ts` pass unchanged; (4) no seeded marker remains over a figure now served by the backend; (5) the shelves render without JavaScript for their first paint.
