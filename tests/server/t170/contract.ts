@@ -323,6 +323,23 @@ export const NOTE_BODY_ERROR = "NoteBodyError";
 export const NOTE_STORE_ERROR = "NoteStoreError";
 
 /**
+ * The fourth class, ruled in the adversary phase after this suite charged the silence.
+ *
+ * `listNotes` answered a MALFORMED cursor with `{ notes: [], cursor: null }` — byte-identical
+ * to *this target has no notes* and to *you may not read this parent*. The last two being
+ * indistinguishable is correct and deliberate (B-03, 404 over 403). The third is different
+ * in kind: a reader mid-walk whose token is mangled — truncation, a URL-encoding round
+ * trip, a client bug — is told **the list has ended**, and stops. A silent truncation of a
+ * read, wearing the shape of a legitimate answer.
+ *
+ * The three live answers differ in whether a caller can tell it LOST DATA, and only one of
+ * them is silent. Ruled: `listNotes` REFUSES, with a class, and `error-hygiene` moves
+ * 34 -> 37 at the merge rather than 36. The message names the operation and states the
+ * cursor was not one this module issued, carrying nothing of the caller's value (D-13).
+ */
+export const INVALID_CURSOR_ERROR = "InvalidCursorError";
+
+/**
  * RULED-1's message form, built here and never imported from the module.
  *
  * An expectation built from the module under test asserts that the module agrees with
@@ -492,17 +509,43 @@ export async function outcomeOf(call: () => unknown): Promise<Outcome> {
  * and `deleteNote`'s `Promise<void>` is precisely the signature under which a silent no-op
  * looks like success to every caller (OPEN-1, D-140-02's shape).
  */
-export async function rejection(call: () => unknown, where: string): Promise<unknown> {
+/**
+ * `because` is the criterion-specific sentence, and it exists because the default was
+ * WRONG on a reader.
+ *
+ * The first version explained every non-refusal in terms of `deleteNote`'s `Promise<void>`
+ * and a silent no-op — true of the writers, and nonsense on `listNotes`, where the failure
+ * is an empty page rather than an unwritten row. **A red that reports a plausible wrong
+ * cause sends its reader to the wrong file**, and the reader here is a counterpart who
+ * cannot see this suite. Widen what the failure SAYS; never narrow what the code accepts.
+ */
+export async function rejection(
+  call: () => unknown,
+  where: string,
+  because = WRITER_SILENT_NOOP,
+): Promise<unknown> {
   const outcome = await outcomeOf(call);
   if (outcome.settled === "rejected") return outcome.error;
   throw new Error(
     `${where} RESOLVED with ${describe_(outcome.value)}; the criterion says it is REFUSED.\n` +
-      `  A writer that answers instead of refusing tells its caller the write happened. ` +
-      `\`deleteNote\` is published \`Promise<void>\`, so a silent no-op is indistinguishable ` +
-      `from success at the call site and only the STORE can tell them apart — which is why ` +
-      `every cell raising this also asserts the rows are unchanged.`,
+      `  ${because}`,
   );
 }
+
+/** The default: why a WRITER answering instead of refusing is the defect. */
+export const WRITER_SILENT_NOOP =
+  "A writer that answers instead of refusing tells its caller the write happened. " +
+  "`deleteNote` is published `Promise<void>`, so a silent no-op is indistinguishable from " +
+  "success at the call site and only the STORE can tell them apart — which is why every " +
+  "cell raising this also asserts the rows are unchanged.";
+
+/** Why a READER answering instead of refusing is the defect. Different failure entirely. */
+export const READER_SILENT_TRUNCATION =
+  "A reader that answers instead of refusing tells its caller IT HAS ALL THE DATA. An " +
+  "empty page with a null cursor is byte-identical to \"this target has no notes\", so a " +
+  "reader mid-walk whose token was mangled is told the list has ended, and stops. Nothing " +
+  "is unwritten here — the loss is at the read, and the module is the only party that can " +
+  "tell the two apart.";
 
 /**
  * The decimal integer a refusal states, for AC5 (OPEN-2). `undefined` when the message
