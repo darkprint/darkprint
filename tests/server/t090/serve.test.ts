@@ -537,12 +537,17 @@ describe("AC6 — fetching by digest returns the bytes of that release even afte
         `unchanged. AC6 is "fetching by digest returns the bytes of THAT release": one digest ` +
         `must not serve two answers, and this is the case a newer release cannot exercise because ` +
         `a newer release has a newer digest.\n` +
-        `  THIS RED IS THE NAMED DEPENDENCY, NOT A DEFECT IN T090. The bytes can only be frozen ` +
-        `by \`persistArtefacts\`, which is T100's, and read back by \`readPersisted\`, whose ` +
-        `\`undefined\` is the pre-persistence release. Neither is T090's to build in this round, ` +
-        `and this test turns green once T091 builds the READ half. It does NOT clear at T100: ` +
-        `T100 persists the artefact and \`serveFile\` still generates from Postgres, so the ` +
-        `frozen bytes are written and never read.`,
+        `  THIS IS NOW A DEFECT IN T091. It was the named dependency for as long as the READ ` +
+        `half was unbuilt, and it has stopped being one: T091 made \`serveFile\` consult the ` +
+        `frozen artefact, so a red here is this repository's code and not a task nobody had.\n` +
+        `  Where to look, because the fixture above still freezes NOTHING of its own — it ` +
+        `cannot, the write verb is another task's. The FIRST of the two calls is what freezes ` +
+        `these bytes: on a miss \`serveFile\` generates from Postgres, hands what it generated ` +
+        `to \`persistArtefacts\`, and serves it; the SECOND then has an object to read and ` +
+        `never reaches the re-scored columns. So a red means one of those two links is broken ` +
+        `— either the artefact is not read before \`buildExport\`, or a miss does not freeze ` +
+        `what it generated — and one digest served two answers at the address \`/mcp\` calls ` +
+        `load-bearing precisely because it does not move.`,
     ).toBe(decode(before.bytes));
   }, 120_000);
 

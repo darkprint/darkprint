@@ -49,5 +49,10 @@ export { exportRelease } from "./export-release";
    served file and named no function, so there was nothing to bind to. Same signature
    T150 publishes, so when that task lands only the import path moves. */
 export { recordDownload } from "./downloads";
+/* T091's read half of the frozen artefact. Published because `serveFile` is not the only
+   caller it can ever have — `/mcp` addresses a release by digest for the same reason this
+   verb exists — and because a reader nobody can import is one every later task re-derives,
+   which is the second copy of the container format T100 published its codec to prevent. */
+export { readPersisted } from "./persisted";
 export { serveFile } from "./serve-file";
 export { serveCard } from "./serve-card";
