@@ -869,6 +869,31 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## AN EXPECTED CLASS BOUND FROM THE SUBJECT DEGENERATES WITH THE SUBJECT
+
+**Found by T170's blind author AFTER its suite went 99/99 against the real module — because a green is a claim
+about an instrument.** Its `bindErrorClass` took the **expected** class from the module under test.
+
+**Republish `InvalidCursorError` as `Error` itself and every `toBeInstanceOf(InvalidCursorError)` becomes
+`toBeInstanceOf(Error)` — which EVERY rejection satisfies. Measured: 0 of 99 cells reddened while the
+published surface had lost the class entirely.** Both shapes scored zero — hiding the declaration, and
+republishing it from the barrel as `Error`.
+
+**This is T000's own finding arriving through a door built for it:** *an expectation built from the module
+under test asserts that the module agrees with itself.* Its author **knew the rule, wrote it into three file
+headers, and bound an expected class from the subject anyway** — because **the rule was held as a prohibition
+on message LITERALS and not as a test on its own class bindings.** Recognising a rule and recognising its
+instance are different acts; that is now four tasks in which the same gap has appeared.
+
+**Repair: refuse a bound class that IS `Error`, and one whose prototype is not an `Error`.** And pin what the
+ruling actually turns on rather than the class identity alone — here, that the refusal must **not** be the
+store-fault class, because sealing it turns *your token is not ours*, which tells a client to **restart the
+walk**, into *the store failed*, which tells it to **retry the same token forever.** After the repair, two
+mutations went **0 → 6** each.
+
+**And keep a CONTROL that must not red:** a reworded message that still leaks nothing. Without it, a D-13 cell
+pinning a literal cannot be told from one pinning the absence of a leak.
+
 ## A MUTATION ANCHOR CAN MATCH A DOCBLOCK — AND THIS REPOSITORY'S HOUSE STYLE IS WHAT MAKES THAT LIKELY
 
 **Second harness lie in the same task, in a new way, after the harness had been rebuilt specifically to refuse
