@@ -102,9 +102,24 @@ describe("evidence", () => {
     // The 3-gram channel, which is the only thing the stored vector's derivation buys the
     // reader. `retrival` is not a substring of `retrieval`.
     expect(findWord("retrieval augmented", "retrival")).toBe("retrieval");
-    // And it does not fire on a short token, where the overlap is noise rather than spelling.
-    expect(findWord("planning", "plan")).toBe("planning");
-    expect(findWord("deployment", "plan")).toBeUndefined();
+    // And a word that shares nothing is still not found, so the channel is not a wildcard.
+    expect(findWord("deployment", "planning")).toBeUndefined();
+  });
+
+  it("holds the short-token floor, which a natural pair cannot reach past", () => {
+    /* This pair is SYNTHETIC, and that is the finding rather than a shortcut. A four-letter
+       query has four 3-grams and needs three of them present, which for a real word almost
+       always means the document contains the query outright — so the substring pass answers
+       first and the floor never comes up. `abcd` against `abcxcd` is the boundary made
+       reachable: exactly 0.75, and not a substring.
+
+       It is here because the first version of this cell asserted
+       `findWord("deployment", "plan") === undefined` under a comment saying the floor was
+       what excluded it. The ratio excluded it, at 0.000, and dropping the floor from 5 to 1
+       reddened NOTHING — a mutation the suite could not see, under a comment claiming it
+       could. The cases the floor actually excludes are coincidences rather than spellings,
+       which is the argument for having it and also why it takes a contrived pair to show. */
+    expect(findWord("abcxcd", "abcd")).toBeUndefined();
   });
 
   it("requires every query word, so a common word cannot drag the archive back", () => {
