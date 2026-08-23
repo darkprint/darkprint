@@ -128,6 +128,17 @@ describe("a report against an unknown digest is refused", () => {
    * a reviewer would write. The refusal is only a refusal if the table is untouched, so
    * the row count at the absent digest is asserted after the throw — and asserted as
    * exactly zero rather than as "not more than before", because the digest is fresh.
+   *
+   * **Measured caveat, and it is the honest reading of this cell.** A stand-in mutated to
+   * insert the row and then throw reddened 0 of 41 cells, and the zero was falsified on a
+   * second axis: `run_report_release_exists` raises SQLSTATE 23503 and REFUSES the insert,
+   * so at an absent digest no implementation can leave a row behind whatever it does.
+   * Probed directly against a migrated scratch database — sqlstate `23503`, rows left `0`.
+   *
+   * The guard for this scenario therefore lives in the trigger (D-05-01), one layer below
+   * the module, and this cell is defence in depth rather than coverage. It is kept because
+   * the trigger is T005's and could be dropped by a migration that never mentions T180 —
+   * but it must not be counted as evidence that the module orders its writes correctly.
    */
   it("leaves no row behind", async () => {
     const scratch = setup.require();

@@ -271,6 +271,30 @@ export const MINORITY_COSTS = [500, 510, 520] as const;
  * nearest-rank agree. The contract publishes no percentile convention; a fixture that
  * needed one would charge a defect over a choice nobody made.
  */
+/**
+ * A population that separates ONE PASS from ITERATED-TO-FIXPOINT.
+ *
+ * **Added because a mutation of mine reddened nothing and the zero was the fixture.**
+ * Iterating on `MODAL_COSTS` reaches a fixpoint after the first removal pass — max|z|
+ * falls 3.3100 -> 1.8843 — so one pass and convergence produce the identical answer there
+ * and the ruled semantics was unguarded by a suite that asserted it in a comment.
+ *
+ * Eleven tight values plus two outliers at different distances: removing 400 shrinks the
+ * sd enough that 60 crosses 3 sigma on a second pass. One pass keeps twelve; convergence
+ * keeps eleven.
+ *
+ * Only `runs` and `excluded` are pre-registered. The survivors' median falls BETWEEN two
+ * data points here, so asserting it would charge a defect over a percentile convention the
+ * contract never published — and `runs`/`excluded` are what separate the two readings.
+ */
+export const TWO_PASS_COSTS = [20, 20.5, 21, 21.5, 22, 22.5, 23, 23.5, 24, 24.5, 25, 60, 400] as const;
+
+/** One pass, which is what was ruled. */
+export const ONE_PASS_EXPECTED = { runs: 12, excluded: 1 } as const;
+
+/** Convergence, named so the assertion can EXCLUDE it rather than merely admit the truth. */
+export const ITERATED_WRONG = { runs: 11, excluded: 2 } as const;
+
 export const MODAL_EXPECTED = {
   runs: 11,
   excluded: 1,

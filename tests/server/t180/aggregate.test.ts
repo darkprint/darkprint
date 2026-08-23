@@ -24,6 +24,9 @@ import {
   MODAL_COSTS,
   MODAL_EXPECTED,
   MODAL_MODEL,
+  ITERATED_WRONG,
+  ONE_PASS_EXPECTED,
+  TWO_PASS_COSTS,
   plantReports,
   RecordedSetup,
   scratchDatabase,
@@ -165,6 +168,32 @@ describe("an outlier beyond 3 sigma is excluded and the exclusion is visible", (
     for (const [label, wrong] of Object.entries(WRONG_OUTPUTS)) {
       expect({ runs: result?.runs, excluded: result?.excluded, median: result?.median }, label).not.toEqual(wrong);
     }
+  });
+
+  /**
+   * The filter runs ONCE, and does not iterate to a fixpoint.
+   *
+   * Ruled: one pass. Convergence is a second rule nobody published, and an iterated filter
+   * can empty a small sample. **This cell exists because the criterion was unguarded:** a
+   * mutation replacing one pass with convergence reddened 0 of 40 cells, and falsifying
+   * that zero on a second axis showed the mutation was behaviourally inert on the AC4
+   * fixture rather than the cells being blind — iterating there reaches a fixpoint after
+   * the first removal pass, so both readings agree.
+   *
+   * Here they do not: removing 400 shrinks the sd enough that 60 crosses 3 sigma next
+   * time round. One pass keeps twelve, convergence keeps eleven, and the wrong answer is
+   * excluded by name.
+   */
+  it("runs the filter once and does not iterate", async () => {
+    const scratch = setup.require();
+    const digest = await freshDigest(scratch, "1pass");
+    await plantReports(scratch, TWO_PASS_COSTS.map((costUnits) => ({ costUnits, digest })));
+
+    const result = await aggregateAt(scratch, digest, "the one-pass filter");
+    expect(result).toBeDefined();
+    const observed = { runs: result?.runs, excluded: result?.excluded };
+    expect(observed).toEqual(ONE_PASS_EXPECTED);
+    expect(observed).not.toEqual(ITERATED_WRONG);
   });
 
   /**
