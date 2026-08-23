@@ -90,7 +90,13 @@ function blueprintKey(handle: string, slug: string): string {
 describe("AC1 every key on /blueprints narrows", () => {
   it("`q` narrows to the blueprints carrying the token", async () => {
     setup.check();
-    const all = await keys("searchBlueprints", {});
+    /* `forks: "all"` on the BASELINE, not on the query. The second assertion below is the
+       anti-vacuity control — `q` has to have narrowed something — and under D-200-37's
+       `rolled` default the unqualified shelf is already three, which is what the query
+       answers, so `3 < 3` reddened a correct module. Found by simulating the ruled repair
+       against this suite before the implementer's sha arrived, which is the only reason it
+       was not a red charged to somebody else. */
+    const all = await keys("searchBlueprints", { forks: "all" });
     const hit = await keys("searchBlueprints", { q: w.queryToken });
     const expected = [
       blueprintKey(w.alpha.handle, w.s1.bundle.slug),
