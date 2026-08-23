@@ -17720,8 +17720,10 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         readPersisted(storage: ObjectStorage, digest: string, path: string): Promise<Uint8Array | undefined>       // THIS TASK
 
         // T100's codec, consumed rather than redefined — exported from @/lib/server/publish
-        decodeArtefacts(bytes: Uint8Array): readonly ExportedFile[]
-        selectArtefact(files: readonly ExportedFile[], path: string): ExportedFile | undefined
+        decodeArtefacts(bytes: Uint8Array): readonly ExportedFile[] | undefined
+        selectArtefact(files: readonly ExportedFile[], path: string): Uint8Array | undefined
+
+  **CORRECTED before either half wrote a line — BOTH found it independently, and I had written the block from a MESSAGE about the codec rather than from the codec.** Two lines were wrong. `decodeArtefacts` dropped `| undefined`, whose own header rules it: *"`undefined` rather than a throw... a throw here would turn a servable release into a 500."* And `selectArtefact` returns **`Uint8Array`**, not an `ExportedFile` — which **falsified the block against itself**, since its own derivation composes to `Promise<Uint8Array | undefined>` and that only type-checks against the shipped return. A blind author binding the published line writes `selectArtefact(files, path)?.text`, gets `undefined` on a `Uint8Array` for **every path in a folder that is present**, and lands silently in the pre-freeze fallback — **green against every cell that only tests the fallback.** The exact defect this task exists to prevent, arriving from the contract rather than from the code.
 
   **`readPersisted` is `storage.get(digest)` handed to `decodeArtefacts`, then `selectArtefact`.** The container format is T100's and is **not** this task's to redefine — `keyForDigest` refuses anything that is not `sha256:` + 64 hex, so there is no path component and a folder cannot be stored file-per-key. That is also the only reading under which `readPersisted`'s `path` argument is needed at all, which is what turns the format from a guess into a derivation.
 
@@ -18528,7 +18530,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Blocks:** T190
 - **Owns:** `lib/server/lineage/**`, `app/api/lineage/**`
 - **Forbidden:** `lib/server/publish/**`, `lib/server/archive/**`
-- **Published signatures** (checked against `backend` at `912666e`. Lineage is one optional field on the ordinary bundle record — `{ owner, slug, version }`, already published in T010's `BundleRecord` — and **there is no `Fork` type and no second list** (`lib/data/bundles.ts:1-28`). Barrel: `@/lib/server/lineage`.)
+- **Published signatures** (checked against `backend` at `912666e`. Lineage is one optional field on the ordinary bundle record — `{ ownerId, slug, version }` — **CORRECTED at dispatch: `ownerId`, a uuid, NOT `owner`, a handle.** `BundleRecord.lineage` is `{ ownerId; slug; version }` (`archive/types.ts`), read off `lineage_owner_id uuid references account(id)`. `{ owner, slug, version }` is `lib/data/bundles.ts`'s FRONTEND type, where `owner` is a handle — so a suite binding the block would have redded a correct implementation on every AC1 cell. The asymmetry is already merged and consistent: T100's `PublishInput.lineage` takes `ownerHandle` and resolves it to `ownerId` before the write — already published in T010's `BundleRecord` — and **there is no `Fork` type and no second list** (`lib/data/bundles.ts:1-28`). Barrel: `@/lib/server/lineage`.)
 
         type DriftTone = "ok" | "moved" | "blocked"
         interface Repin { card: string; from: string; to: string; at: Date }
