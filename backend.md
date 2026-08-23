@@ -869,6 +869,31 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## A `rejects`/`resolves` WRAPPER IS A BLIND-POSITION LAUNDERER
+
+**Found by T180's blind author in its OWN suite, against the absent module, and it is the shape the rule it was
+written for warns about.** The cell was `accept.test.ts > leaves no row behind` — the *assert what the writer
+LEFT BEHIND, not only that it threw* discipline — and it was **GREEN against a module that does not exist**:
+
+* the blind-position throw **satisfied `rejects.toThrow()`** — a bare wrapper consumes any error, including the
+  suite's own instrument reporting that the barrel is absent;
+* the empty table **satisfied the row count** — the digest had never been written to by anyone.
+
+**Green while testing nothing, and no mutation of any implementation could ever have reddened it.** Two things
+fix it: **bind the module through a guard that fails OUTSIDE the wrapper**, and assert
+`rejects.toThrow(<the admissible message>)` rather than a bare throw. A sweep of the same suite found **three
+more** cells reporting the blind position as an `AssertionError` about a message mismatch — a plausible wrong
+cause rather than a pass, which is the same defect wearing the other mask.
+
+**GENERAL FORM: any cell whose module bind sits inside a `rejects`/`resolves` wrapper converts *the module is
+absent* into *the criterion passed*.** It is the exact complement of binding the module last (a bind at the top
+of a cell hides every fixture write behind an absent-module red): one hides the writes, the other hides the
+criterion. **Both are invisible in a green count.**
+
+**And the reason it matters beyond one suite: this cell could not be found by a stand-in or by a mutation
+sweep.** It was found by reading the absent-module run — the state a blind suite is in for its whole life and
+the one nobody inspects, because every red there is expected.
+
 ## A mutation run with `skipped > 0` is INVALID, not a zero — and a hook TIMEOUT is not a hook THROW
 
 **Three harness defects, all found by T110's blind author while falsifying its own suite against a
@@ -15025,6 +15050,14 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   * **`toggleStar` performs NO visibility check, and `getSignals` does NOT create the `target` row.** Both negative, which is why neither would ever have landed on its own — **there is nothing to add, so nothing gets added, and the criterion stays untestable.** T140's precedent governs the first (*a save of a target that does not exist is accepted and never listed*). **`Depends on: T080` remains unexplained and cannot be about visibility**: T080 publishes no lookup by `bundle.id` — which is what `target.ref_id` holds — and neither `BlueprintSummary` nor `CardSummary` carries `ownerId` or `visibility`, so `visibleTo` cannot be called from anything it returns.
 
   **A NEGATIVE RULING IS THE KIND THAT NEVER LANDS.** Three of these four are statements that something does not happen, and a document grows by addition — so the rulings most likely to live only in a message are exactly the ones that leave a criterion untestable. Worth stating as a general hazard rather than as four items.
+
+  **D-WAVE-08 — T160's rulings, landed. FOURTH session today to wait on a ruling I made in a message to its counterpart.** I ruled all of these to T160's implementer and to nobody else, having named the defect twice in the same afternoon. **The blind author is blind to the implementer by construction — the document is the ONLY channel between them, and it is the one I keep failing to use.**
+
+  * **F-160-B — T160 WRITES NO AUDIT ROW, and there is no audit acceptance criterion.** The word *audit* does not occur in §T160. `ballot.cast` was withdrawn (see D-240-16): it reds `types.test.ts:65`'s exclusion cell, whose regex names `ballot` literally, and **I had pre-seeded it for a task that charged nothing** — D-240-09's rationale names a *validator-grant* action while §T160 puts the validator-grant workflow **out of scope**. Its implementer supplied the test: **a caller with no criterion behind it is the same object as a member with no caller.** A spelling that slips the regex (`metric.cast`, `assessment.cast`, both measured to pass) is refused as a dodge around the rule rather than a ruling on it.
+  * **F-160-E — `Partial<Ballot>` PATCHES; absent members PRESERVE, they do not blank.** `{ efficacy: 90 }` over a row holding `reliability: 70` leaves reliability at 70. **The natural single-statement `ON CONFLICT DO UPDATE SET reliability = excluded.reliability` BLANKS it**, silently dropping that metric's `sampleSize` by one — observable in the response, and the cell that catches it is the one nobody writes. Both readings were live and a guess either way was a false defect report.
+  * **F-160-F3 — a vote's weight is `account.validator_weight` UNCONDITIONALLY. The `validator` boolean does not gate it.** The boolean is a display fact, never a second source for one quantity. **CONSEQUENCE: AC5's sentence changes from *"granting a validator badge"* to *"raising an account's `validator_weight`"`*** — as written it names an act that changes nothing, so a cell that grants the badge and asserts the aggregate moved **reds a correct module.** Both halves found this fork independently and both held their discriminating cell rather than guessing, which is why nobody built the wrong one.
+  * **F-160-F3b, from the implementer and equally load-bearing: AC5 is observable ONLY with two or more voters on one metric holding DIFFERENT values.** One voter, or agreeing voters, is invariant under any weighted mean. **That belongs in the criterion, not in whether the blind author happened to pick two numbers.**
+  * **F-160-F/F1/F2 — weighted arithmetic mean `Σ(wᵢvᵢ)/Σ(wᵢ)`; `sampleSize` is an UNWEIGHTED count** per metric (if it were `Σw`, two validators at weight 3 clear a five-vote bar with two votes and AC4 is simply wrong); **`value` unrounded**, since rounding is the display type's decision; **zero votes on a metric returns `{ value: 0, sampleSize: 0, isSample: true }`** — `NaN` is the accidental answer 0/0 produces, which is exactly why it needed ruling. **Per metric, not per ballot**: the type and `schema.ts:373-397` agree and only the section's prose was singular.
 
   **D-WAVE-05 — T150's AC1 IS RESTATED AS AN INVARIANT, because as written it is FALSE of a correct toggle and non-deterministic under the concurrency my own ruling demanded.** Found by T150's blind author **while driving it, not while reading it** — this one does not surface until you try.
 
