@@ -27,7 +27,8 @@ export const metadata: Metadata = {
      and the words are now "Upload blueprint". They were "Validate a bundle" for a
      release, and before that this page answered to "Share a blueprint" in 48px display
      type under an eyebrow reading CONTRIBUTE, which was a promise of publishing the site
-     has no backend for.
+     had no backend for at the time. It has one now, which is what T263 changed and why
+     the sentences below it moved.
 
      "Upload blueprint" is the author's name for the route and it is the honest one, and
      since T263 it is honest in the plain way: a bundle IS read in this tab, and pressing

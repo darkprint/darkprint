@@ -45,7 +45,15 @@ import { publishBundle, type PublishOutcome, type PublishRefusedKind } from "./p
 // TODO(SEAM-33) (cited at line 69): POST /api/validate/card, POST /api/validate/ontology
 // TODO(SEAM-34) (cited at line 600): folded into SEAM-27
 // TODO(SEAM-35) (cited at line 720): GET /api/slugs/available?slug=
-// TODO(SEAM-69) (cited at line 1146): POST /api/bundles
+// SEAM-69: POST /api/bundles — **LIVE** since T263. `doPublish` calls it through
+//   `./publish-client`. No TODO: the seam is closed.
+// SEAM-42 (partial): GET /api/auth/session — **LIVE** for this route's read-only use,
+//   in `./session`. The sign-in and sign-out halves are still the header's and unbuilt.
+//   Reported to the orchestrator: `docs/architecture/seams.md` has no id for a session
+//   READ, and inventing one in code would put a document's decision in a component.
+// SEAM-30 stays PLANNED on purpose. `docs/ARCHITECTURE.md` §7 puts the server's
+//   authoritative pass at PUBLISH time and keeps the client-side pass for latency, so the
+//   preview is deliberately not a round trip. See the D-263-01 note in `reportMarkdown`.
 
 /* ------------------------------------------------------------------ */
 /*  Static config                                                      */

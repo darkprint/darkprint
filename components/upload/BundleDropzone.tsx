@@ -21,9 +21,13 @@ import { Button } from "@/components/ui/Button";
 /* ------------------------------------------------------------------ */
 /*  Files in, a Bundle out                                             */
 /*                                                                     */
-/*  Everything here is pure and browser-side: the wizard never sends a  */
-/*  byte anywhere, so the same knowledge the archive reader has about   */
-/*  what a bundle is made of has to live on this side of the wire too.  */
+/*  Everything in THIS file is pure and browser-side, and the reason    */
+/*  survives T263 even though its old phrasing did not. It used to say  */
+/*  the wizard never sends a byte anywhere; the wizard now posts to     */
+/*  /api/bundles at its last step. What is unchanged is that the        */
+/*  classifier decides what a bundle is made of BEFORE anything is      */
+/*  sent, in the tab, so the same knowledge the archive reader has      */
+/*  still has to live on this side of the wire too.                     */
 /* ------------------------------------------------------------------ */
 
 /** One document the browser handed us — a picked file, a dropped file, or a paste. */
@@ -427,8 +431,12 @@ function plural(n: number, word: string): string {
 }
 
 /**
- * Step 1: choose the files, drop them, or paste the source. Nothing leaves the tab —
- * the files are read with `File.text()` and handed straight to the validator.
+ * Step 1: choose the files, drop them, or paste the source.
+ *
+ * Nothing leaves the tab AT THIS STEP — the files are read with `File.text()` and handed
+ * straight to the validator, which is compiled into the page. Since T263 the wizard's last
+ * step does send the bundle, to `POST /api/bundles`, so the old unqualified version of this
+ * sentence became false: selection and validation are still local, publishing is not.
  */
 export function BundleDropzone({
   files,
