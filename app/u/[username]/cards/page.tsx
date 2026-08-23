@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
 
-import { AUTHOR_LIST, getAuthor } from "@/lib/data";
 import { ProfileShell } from "@/components/profile/ProfileShell";
 import { OwnedCards } from "@/components/profile/OwnedCards";
 import { VisibilityFilter } from "@/components/profile/VisibilityFilter";
 import { EmptyState, ShelfToolbar } from "@/components/profile/parts";
-import { nodeSummaryFor, profileView } from "@/components/profile/load";
+import { nodeSummaryFor, profileMetadata, profileView } from "@/components/profile/load";
+import { readSession } from "@/components/profile/session";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // TODO(SEAM-59) (cited at line 48): GET /api/authors/{handle}/cards
@@ -29,16 +29,16 @@ import { nodeSummaryFor, profileView } from "@/components/profile/load";
  * and visitor is which rows exist to show (a visitor's is always `view.cards`, always
  * public) and the toolbar's one live control.
  */
-export const dynamicParams = false;
-
-export function generateStaticParams() {
-  return AUTHOR_LIST.map((a) => ({ username: a.username }));
-}
+/* No `dynamicParams` and no `generateStaticParams`, and the deletion is the criterion
+   rather than tidying: **a prerendered page cannot render a different view per reader**
+   (AC1, D-262-11). Both stood on `AUTHOR_LIST`, a fixed fixture list, which could not
+   have served a registry that grows between deploys either. `readSession` reaches
+   `next/headers`, so these routes are request-time by construction now. */
 
 export async function generateMetadata({ params }: PageProps<"/u/[username]/cards">) {
   const { username } = await params;
-  const author = getAuthor(username);
-  if (!author) return { title: "Builder not found" };
+  const author = await profileMetadata(username);
+  if (author === undefined) return { title: "Builder not found" };
   return {
     title: `${author.displayName} · node cards`,
     description: `Node cards authored by ${author.displayName} on DarkPrint.`,
@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: PageProps<"/u/[username]/card
 
 export default async function Page({ params }: PageProps<"/u/[username]/cards">) {
   const { username } = await params;
-  const view = profileView(username);
+  const view = await profileView(username, await readSession());
   if (view === undefined) notFound();
 
   return (
@@ -103,7 +103,7 @@ export default async function Page({ params }: PageProps<"/u/[username]/cards">)
             }
           />
 
-          <OwnedCards cards={view.cards.map(nodeSummaryFor)} owner={false} />
+          <OwnedCards cards={view.cards.map((tile) => nodeSummaryFor(tile, view.author))} owner={false} />
         </div>
       )}
     </ProfileShell>

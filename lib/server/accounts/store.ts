@@ -26,7 +26,7 @@
    both into a 500.
    ============================================================ */
 
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { schema, type Db } from "@/lib/db";
 import { HandleTakenError, InvalidNameError, NamingStoreError } from "@/lib/server/naming";
 import { AccountError, accountStoreError } from "./errors";
@@ -65,6 +65,21 @@ export async function accountRowById(
 ): Promise<typeof schema.account.$inferSelect | undefined> {
   const [row] = await db.select().from(schema.account).where(eq(schema.account.id, accountId)).limit(1);
   return row;
+}
+
+/**
+ * Whole rows for a set of ids, in ONE statement.
+ *
+ * Beside `accountRowById` rather than looping it: a caller rendering a page of authors
+ * would otherwise issue one query per row, and the loop is what `publicAuthorsByIds`
+ * exists to remove. Rows come back in no guaranteed order and possibly fewer than asked
+ * for; both are the caller's to handle, and `publicAuthorsByIds` does by keying a Map.
+ */
+export async function accountRowsByIds(
+  db: Db,
+  ids: readonly string[],
+): Promise<(typeof schema.account.$inferSelect)[]> {
+  return await db.select().from(schema.account).where(inArray(schema.account.id, ids));
 }
 
 /** The whole row, by handle. `undefined` when no account holds it. */

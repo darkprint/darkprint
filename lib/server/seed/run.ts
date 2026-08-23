@@ -1,0 +1,200 @@
+/* ============================================================
+   DarkPrint backend — seed: the import itself
+   T250 AC2, AC3, AC4, AC5. One `publish` per bundle, through the
+   merged door the wizard and the CLI already go through.
+
+   ── This module composes and owns no storage ──
+   Nothing below decides anything somebody else has ruled. The
+   digest is the engine's, computed during resolution inside
+   `publish` and never recomputed. The card chain check is T020's
+   inside `addCard`. The visibility grant is T060's `can`. The
+   merged ontology view is T030's `openView`. The vocabulary's
+   shape is T010's `parseStoredVocabulary`. The freeze is T090's
+   `exportRelease` plus T100's `persistArtefacts`. The refusal for
+   a release that already exists is T100's, and this file's only
+   use for it is to COUNT it.
+
+   ── Why AC3 and AC5 need no code ──
+   They are negatives satisfied by writing nothing (D-250-07,
+   D-250-14). No door reached from here touches `target`, so
+   `star_count`, `download_count` and `note_count` keep the `'0'`
+   the column defaults to, and the registry prints no figure
+   nobody counted. Adding a write that set them to zero would be
+   this task deciding a product question by shipping.
+   ============================================================ */
+
+import { CORE_ONTOLOGY } from "@/lib/core";
+import { contentVocabulary, readContent } from "@/lib/content/read";
+import type { Db, ObjectStorage } from "@/lib/db";
+import { changeHandle, upsertFromGitHub } from "@/lib/server/accounts";
+import { DuplicateOntologyVersionError, addOntologyVersion } from "@/lib/server/ontology";
+import type { Actor } from "@/lib/server/policy";
+import { PublishRefusedError, publish } from "@/lib/server/publish";
+import { REGISTRY_HANDLE, SEED_RELEASE_VERSION, type ImportPlan } from "./plan";
+
+export interface ImportResult extends ImportPlan {
+  created: number;
+  skipped: number;
+}
+
+/**
+ * The GitHub identity the registry account is created under (D-250-04).
+ *
+ * A sentinel that cannot collide: GitHub ids start at 1, so no real signup can ever reach
+ * this row. `"0"` and not `0` — `upsertFromGitHub` types `githubId` as `string`, which is
+ * the column's type; the ruling writes the number and the tree writes the text, and the
+ * text is what the write takes.
+ *
+ * The handle is unavailable to a real signup afterwards because this account HOLDS it,
+ * which is the outcome; no separate reservation is made or needed.
+ */
+const REGISTRY_GITHUB_ID = "0";
+
+/**
+ * Import the archive under the registry handle, idempotently.
+ *
+ * `created` and `skipped` count BUNDLES (D-250-08). A second run refuses every unchanged
+ * bundle with `PublishRefusedError` kind `"conflict"` — raised before the version check, so
+ * it is cleanly countable — and reports `created: 0, skipped: 9`. Cards do not fold in:
+ * composing `publish` per bundle imports the whole library as a consequence, so counting
+ * them would report the same 57 as new work on every run.
+ *
+ * Every other refusal leaves with its own author's message unaltered, which is the same
+ * rule `publish` follows for the three it passes through (D-50-08): a seed import
+ * re-rendering `UnknownOntologyVersionError` or `CardStoreError` would put a second author
+ * on one sentence, and the operator reading it needs the sentence that names the cause.
+ *
+ * **The bytes come from the loader, not from `plan` (D-250-01).** The plan carries identity
+ * — digests, ids, versions — so AC1 is checkable before a database exists; a plan carrying
+ * bytes would be a second copy of the content tree with its own staleness. `plan` is still
+ * consumed rather than decorative: it names the ontology version to publish and the handle
+ * to publish under, and it is returned so `ImportResult` reports what was planned beside
+ * what happened.
+ */
+export async function runImport(
+  db: Db,
+  plan: ImportPlan,
+  /**
+   * Where the frozen artefacts go, so a caller with an isolated bucket does not have to
+   * reach for `S3_BUCKET` in the environment.
+   *
+   * **`= undefined` and NOT `?`.** TypeScript's `?` erases to nothing, so the optional
+   * parameter would still count in `Function.length` and the published two-argument arity
+   * would read as three. Only a default-value expression stops a parameter counting. Same
+   * reason `publish`'s fourth parameter is spelled this way, and it shipped as `?` there
+   * once and was charged for it.
+   */
+  storage: ObjectStorage | undefined = undefined,
+): Promise<ImportResult> {
+  const registry = await registryActor(db, plan.registryHandle);
+
+  /* Before any bundle: `publish` calls `openView`, which refuses a version nobody has
+     published. The terms are the core's because the core's terms are what this version IS
+     — `asOntology(record.version, record.terms)` is what `openView` hands the engine, and
+     a row holding anything else would score the archive against a vocabulary the site
+     never used.
+
+     The archive's own overlay does NOT go in here. It is a local namespace layered over
+     the core per release (`ontology/extensions.yaml`, doc 3 §7), not a new core version,
+     and it travels on `release.local_vocabulary` below. */
+  try {
+    await addOntologyVersion(db, { version: plan.ontologyVersion, terms: CORE_ONTOLOGY.terms });
+  } catch (err) {
+    /* AC2. The typed refusal for "this version already exists", caught rather than
+       pre-empted with a `SELECT`: the existence check and the insert are not one atomic
+       act, so a read would be a race the unique index has already settled. Every other
+       refusal — malformed input, an invalid vocabulary, a bump too small — leaves. */
+    if (!(err instanceof DuplicateOntologyVersionError)) throw err;
+  }
+
+  /* The archive's vocabulary, as a file rather than as terms (D-90-03): `text` is
+     `content/ontology/extensions.yaml` byte for byte so `exportBundle` re-emits it
+     unaltered, and `terms` is its parse. Handed to every bundle, not only the ones that
+     use a local term, because `readContent` builds ONE view for the whole archive and the
+     analysis stored on each release has to be the one the site computed. The export gates
+     on use on its own — `exportBundle` writes the file only when `localTermsUsed` is
+     non-empty — so a release that pins no local term ships no vocabulary file. */
+  const archiveVocabulary = contentVocabulary();
+  const vocabulary =
+    archiveVocabulary === undefined ? undefined : { text: archiveVocabulary.text, terms: archiveVocabulary.terms };
+
+  let created = 0;
+  let skipped = 0;
+  for (const loaded of readContent()) {
+    try {
+      await publish(
+        db,
+        registry,
+        {
+          ownerHandle: plan.registryHandle,
+          slug: loaded.slug,
+          version: SEED_RELEASE_VERSION,
+          /* Passed through as the loader read it, `author` included. Re-attribution moves
+             OWNERSHIP and invents nobody (AC4, D-250-11); it does not rewrite the archive's
+             prose. The six names in these manifests name no account afterwards, which is
+             the same end state D-250-06 rules for `lupo/pii-handling` — a handle naming no
+             account is honest rather than a gap to be filled. Rewriting the bytes would
+             also be the harm D-90-03 exists to prevent one field over: `addCard` stores
+             `source` verbatim and the export rebuilds the folder from it, so an edited
+             `author:` line would ship a document no author wrote. */
+          manifest: loaded.bundle.manifest,
+          dot: loaded.bundle.dot,
+          cardFiles: { ...loaded.bundle.cardFiles },
+          ...(vocabulary === undefined ? {} : { vocabulary }),
+          /* Explicit, never the account's default. The archive's public-ness is a property
+             of where these documents live — `content/` is what the site reads at build time
+             and treats as published — not of a preference on the registry row, which a
+             later `setDefaultVisibility` could flip and silently take the archive private. */
+          visibility: "public",
+        },
+        storage,
+      );
+      created += 1;
+    } catch (err) {
+      /* AC2's second run, and ONLY the digest conflict. `kind` is checked rather than the
+         message: a conflict is what "this exact release is already here" refuses with, and
+         the four other kinds mean the import did not do what it was asked. Narrowing on the
+         class alone would count an unowned slug or a bundle in error as work skipped. */
+      if (err instanceof PublishRefusedError && err.kind === "conflict") {
+        skipped += 1;
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  return { ...plan, created, skipped };
+}
+
+/**
+ * The registry account, created if it is not there, and the `Actor` that publishes as it.
+ *
+ * `{ kind: "account" }` and never `{ kind: "operator" }` (D-250-05). The seed import is the
+ * registry account publishing its OWN content, not an operator acting on somebody else's
+ * behalf, and `audit_log.actor_kind` is a permanent record of which of those happened
+ * (B-14). Constructed here rather than taken as a parameter for the same reason: a
+ * parameter would let a caller make it the other thing.
+ *
+ * `upsertFromGitHub` is the only door that creates an account, and it is idempotent by
+ * `githubId` — a second run updates the login and returns the same id. `changeHandle` is
+ * what sets `account.handle`; `allocateHandle` writes only `handle_reservation`, and
+ * `resolveOwner` — which `publish` calls — reads the account column.
+ */
+async function registryActor(db: Db, handle: string): Promise<Actor> {
+  const account = await upsertFromGitHub(db, { githubId: REGISTRY_GITHUB_ID, githubLogin: REGISTRY_HANDLE });
+
+  if (account.handle === handle) return { kind: "account", accountId: account.accountId, handle };
+
+  /* `requireAccountOwner` compares the actor's `accountId` to the one being written, so the
+     account claims its own first handle. `handle` may legitimately be `null` here — AC1 of
+     T050 rules a session with no handle signed in and incomplete — and `changeHandle` does
+     not call `requireHandle`, which is what lets a first claim through. */
+  const claimant: Actor = { kind: "account", accountId: account.accountId, handle: account.handle };
+  /* The result is discarded and the actor carries the handle just claimed. `AccountRecord`
+     spells it `author.handle: string | null`, so reading it back would need a non-null
+     assertion here — a claim about a value this call has already made true, written as a
+     cast that would compile whatever the column held. `changeHandle` throws rather than
+     returning a row that disagrees. */
+  await changeHandle(db, claimant, account.accountId, handle);
+  return { kind: "account", accountId: account.accountId, handle };
+}

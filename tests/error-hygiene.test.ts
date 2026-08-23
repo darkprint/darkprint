@@ -249,7 +249,27 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
        `git ls-tree -d backend lib/server/`, the REF, so an unmerged module is hygiene-checked
        and deliberately not counted. Its tree read 32 and its merge moved nothing. The 34 is
        real only here, in the merge commit, which is the whole content of the rule. */
-    ).toBe(34);
+    /* 34 -> 37 at T170's merge: `lib/server/notes` publishes `NoteStoreError`, `NoteBodyError`
+       and `InvalidCursorError`. The third exists because D-WAVE-13 ruled that answering a
+       malformed cursor with an empty page is a SILENT read truncation -- byte-identical to
+       "no notes" and to "you may not read this" -- and a client mid-walk is told the list
+       ended. Derived by this walk at the merge, never carried: its implementer enumerated
+       three off its own barrel by `prototype instanceof Error` and predicted 37, and this
+       is that number measured. */
+    /* 37 -> 39 at T150's merge: `lib/server/counters` publishes `CounterStoreError` and
+       `NotSignedInError`. Derived by this walk, and the second name is the interesting one --
+       both halves reached it independently, and the second axis is not the string but that
+       both REJECTED THE SAME TWO CANDIDATES ON THE SAME GROUNDS: `NotAccountOwnerError` is an
+       ownership sentence and `toggleStar` has no `accountId` to compare against, and
+       `NotPermittedError` hardcodes `listAudit:` into its message. Agreeing on why the
+       alternatives fail survives the name coming out differently. */
+    /* 39 -> 40 at T200's merge: `lib/server/search` publishes `SearchStoreError` and nothing else.
+       ONE class, and the count is the evidence for a claim its author made and I checked — that the
+       module authors no refusal of its own beyond the store fault, because every rejection its inputs
+       produce belongs to a merged module and leaves unaltered under D-50-08. Derived HERE, at the merge
+       commit, against the domain this guard resolves from `backend`: the figure in the handback was a
+       report until this run, and a carried number is somebody else's measurement of a different tree. */
+    ).toBe(40);
 
     const rendered: string[] = [];
     const traceless: string[] = [];
