@@ -171,18 +171,6 @@ const RETIRED: readonly {
       "quoting a paraphrase. It is a faithful quotation of a sentence a reader sees.",
   },
   {
-    file: FAVORITE_STAR,
-    text: "never sent anywhere",
-    where: "comment",
-    seen: 1,
-    ruling:
-      "D-262-09, one of the four false claims no rendered grep can reach. AC4 sends the star to " +
-      "the saves API, so `never sent anywhere` becomes false in the same change. NOTE THE " +
-      "DIRECTION SPLIT INSIDE ONE FILE: this claim goes, while D-262-07 KEEPS the `◐` on the " +
-      "star COUNT, because `app/api/signals/**` does not exist and that figure has not become " +
-      "real. Same file, opposite directions, like §03 and §05.",
-  },
-  {
     file: PROFILE_LOAD,
     text: "There is no session",
     where: "comment",
@@ -211,8 +199,20 @@ const SURVIVORS: readonly { file: string; claim: Claim; ruling: string }[] = [
   {
     file: SETTINGS_ROUTE,
     claim: {
-      claim: "§03 still says nothing sends",
-      anyOf: ["nothing sends", "nothing is sent"],
+      claim: "§03 still says the notification switches are backed by nothing",
+      /* R8. The first list was `["nothing sends", "nothing is sent"]` and the page says
+         "notifications, which nothing stores and which send no mail", with each switch carrying
+         `reason="Nothing sends yet: no column stores this and no mail goes out."` — the claim
+         intact and stated better than the sentence pinned. Widened to the CLAIM's forms, which
+         is what D-263-13 cost its author 29 of 31 cells for. */
+      anyOf: [
+        "nothing sends",
+        "Nothing sends",
+        "nothing is sent",
+        "send no mail",
+        "no mail goes out",
+        "nothing stores",
+      ],
     },
     ruling:
       "D-262-19. The email field gains a route; the three notification switches have no column " +
@@ -277,6 +277,46 @@ describe("AC3: the claims that became false are retired", () => {
       contains(source.raw, text),
       `${file} still carries the docblock claim \`${text}\`. ${ruling}`,
     ).toBe(false);
+  });
+});
+
+describe("R7: a claim D-262-09 CORRECTS cannot be tested by its absence", () => {
+  /* ============================================================
+     `never sent anywhere` was pinned here as a retirement and redded
+     at the join against a correct file. The docblock now reads:
+
+       "This WAS a browser-local bookmark: a key in `localStorage`,
+        one entry per browser, never sent anywhere. A card save now
+        reaches the account through POST/DELETE /api/account/saves..."
+
+     Past tense, quoting the retired claim while naming what replaced
+     it — which is what D-262-09 asks for. **A correction that does
+     not name what changed is a worse comment**, so absence is the
+     wrong test for this class of claim, and I was warned of exactly
+     this shape and built the pin anyway.
+
+     Note the split: the other two D-262-09 comment claims,
+     `There is no account` and `There is no session`, were rewritten
+     WITHOUT quoting and their absence pins pass. So this is a
+     per-claim property, not a blanket flaw — which is why the
+     replacement below is a positive about THIS file rather than a
+     weakening of the absence test everywhere.
+
+     What is asserted instead is the thing that makes the correction
+     true and is not a wording: the docblock names the route the save
+     now takes. A comment still claiming the bookmark goes nowhere
+     cannot also name the endpoint it goes to.
+     ============================================================ */
+  it("`FavoriteStar`'s docblock names what the save now does", () => {
+    const source = read(FAVORITE_STAR);
+    const docblocks = source.raw.slice(0, source.raw.indexOf("import "));
+    expect(
+      contains(docblocks, "/api/account/saves"),
+      "`FavoriteStar`'s header does not name the route a card save now takes. D-262-09 corrects " +
+        "these claims rather than deleting them, so the test is that the correction names what " +
+        "changed — not that the retired sentence is absent, which a correction quoting it in " +
+        "the past tense can never satisfy.",
+    ).toBe(true);
   });
 });
 

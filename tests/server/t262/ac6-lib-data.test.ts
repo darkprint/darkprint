@@ -193,6 +193,10 @@ describe("AC6 as amended by D-262-16: no fixture import beyond the one permitted
     const allowed = PERMITTED.get(path) ?? [];
     const fixtures = importSpecifiers(source)
       .filter((i) => i.spec.startsWith("@/lib/data"))
+      /* D-262-25: a TYPE-ONLY import is outside AC6's domain, and is NOT an allow-list entry —
+         an entry would imply it was a violation somebody forgave. It is erased at build, moves
+         no fixture data and reaches no reader, and D-262-16's reason is about DATA. */
+      .filter((i) => !i.typeOnly)
       .filter((i) => !allowed.includes(i.spec));
     expect(
       fixtures.map((f) => `line ${f.line}: ${f.spec}`),
@@ -215,7 +219,13 @@ describe("AC6 as amended by D-262-16: no fixture import beyond the one permitted
      * it pays for a criterion with a feature and retires `SEAM-55` by making it invisible. That
      * option satisfies every absence assertion above perfectly. Only a positive catches it.
      */
-    const specs = importSpecifiers(read("components/profile/load.ts")).map((i) => i.spec);
+    /* VALUE imports only. D-262-25 puts type-only imports outside AC6's domain because they
+       move no data — and that cuts both ways: converting this one to `import type` would satisfy
+       a spec-name check while leaving the four figures with no source at all, which is option (3)
+       reached by a keyword. The positive has to ask for the thing that actually carries data. */
+    const specs = importSpecifiers(read("components/profile/load.ts"))
+      .filter((i) => !i.typeOnly)
+      .map((i) => i.spec);
     expect(
       specs,
       "`components/profile/load.ts` no longer imports `@/lib/data/profiles`. D-262-16 keeps it " +
@@ -287,7 +297,34 @@ describe("AC6 as amended by D-262-16: no fixture import beyond the one permitted
   });
 });
 
-describe("D-262-10: and no file still PRINTS a fixture path to the reader", () => {
+/* ============================================================
+   D-262-26 — THE CRITERION IS "NO COPY NAMES A FIXTURE THAT NO
+   LONGER FEEDS IT", AND THE SERVED SET IS DERIVED, NOT LISTED
+
+   D-262-10 ruled the rendered mentions not exempt — and it was ruled
+   while `lib/data/**` was still going to be deleted, when every such
+   sentence was about to become false. D-262-01 kept the folder and
+   D-262-16/23 kept the READS, so a sentence naming a fixture that is
+   still the source of the row beside it is TRUE, and D-78 keeps true
+   markers. Charging it is the false-claim direction, the same one
+   already ratified for `FavoriteStar`'s count and `load.ts`'s import.
+
+   The served set is DERIVED from `load.ts`'s surviving value imports
+   rather than hard-coded, because a list stops being edited and a
+   derivation does not. When T080 gives one of those figures a real
+   read and the fixture import goes, the copy naming it becomes false
+   in the same commit and this cell starts charging it — with no
+   ruling needed and nothing to remember to update.
+   ============================================================ */
+function stillServed(): string[] {
+  const load = read("components/profile/load.ts");
+  return importSpecifiers(load)
+    .filter((i) => i.spec.startsWith("@/lib/data") && !i.typeOnly)
+    /* `@/lib/data/bundles` is the module; the copy names the FILE, `lib/data/bundles.ts`. */
+    .map((i) => `${i.spec.replace("@/", "")}.ts`);
+}
+
+describe("D-262-26: no copy names a fixture that no longer feeds it", () => {
   /*
    * The separate cell, because it has a separate repair. AC6's is a rewire; this one is a
    * rewrite under D-78, and D-262-10 rules these are NOT exempt: they are honesty copy that
@@ -299,12 +336,17 @@ describe("D-262-10: and no file still PRINTS a fixture path to the reader", () =
    */
   it.each(scanned())("%s", (path) => {
     const source = read(path);
+    const served = stillServed();
+    const stale = renderedMentions(source).filter(
+      (m) => !served.some((fixture) => m.spec.includes(fixture)),
+    );
     expect(
-      renderedMentions(source).map((m) => `line ${m.line}: ${m.spec}`),
-      `${path} still names \`lib/data\` in text that reaches the reader — a \`<span>\`, a ` +
-        `\`title=\` tooltip or a string that survives comment-stripping. Comments were already ` +
-        `removed before this check, so this red is NOT a docblock: it is copy on the screen ` +
-        `pointing at a fixture file that no longer feeds the page.`,
+      stale.map((m) => `line ${m.line}: ${m.spec}`),
+      `${path} names a fixture in text that reaches the reader — a \`<span>\`, a \`title=\` ` +
+        `tooltip or a string surviving comment-stripping — and that fixture is NO LONGER ` +
+        `imported by \`components/profile/load.ts\`, so the sentence has become false. ` +
+        `Comments are stripped first, so this is not a docblock. Fixtures still feeding the ` +
+        `page, derived from \`load.ts\`: ${served.join(", ") || "(none)"}.`,
     ).toEqual([]);
   });
 });

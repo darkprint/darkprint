@@ -78,37 +78,66 @@ describe("premise: the star is still a component, and it did use `localStorage`"
   });
 });
 
-describe("AC4: the star no longer keeps saves in the browser", () => {
-  it("`FavoriteStar.tsx` does not reference `localStorage`", () => {
-    const source = read(FAVORITE_STAR);
-    const lines = source.code
-      .split("\n")
-      .map((text, i) => ({ text, line: i + 1 }))
-      .filter((l) => l.text.includes("localStorage"));
-    expect(
-      lines.map((l) => `line ${l.line}`),
-      "`FavoriteStar` still reads or writes `localStorage`. AC4 moves it to the saves API with " +
-        "a one-time migration (T140's `migrateLocalSaves`), and the disjointness AC4 closes is " +
-        "exactly that a star kept in the browser cannot appear in an account's Saved tab. " +
-        "Comments are stripped first, so a docblock recalling the old store does not red this.",
-    ).toEqual([]);
-  });
+describe("AC4: a signed-in reader's card star lands on the ACCOUNT", () => {
+  /* ============================================================
+     R2, corrected at the join. THE FIRST VERSION OF THIS CELL WOULD
+     HAVE FORCED A REGRESSION TO PASS.
 
-  it("and it reaches the saves route, which is the half an absence check cannot see", () => {
-    /*
-     * The positive that fails outside the negative. Deleting the star, or leaving it inert,
-     * satisfies the `localStorage` absence above perfectly — and a component that saves nowhere
-     * is not the cutover, it is the feature removed. T262 is among the first clients of the
-     * backend in this repository: zero client-side fetches to `/api/**` exist anywhere in
-     * `app/**` or `components/**` today, so this reds now and is expected to go green.
-     */
+     It asserted `localStorage` appears nowhere in `FavoriteStar`.
+     Measured against the implementation: two real references survive
+     (`readLocal`, `writeLocal`) and the branch at `:246` is
+     `signedIn === true && target !== undefined` -> `POST`/`DELETE
+     /api/account/saves`, ELSE -> `writeLocal`. `targetFor` returns a
+     target only for `node:` ids. So the browser store now holds
+     exactly two populations: SIGNED-OUT readers, and the BLUEPRINT
+     half D-262-04 put out of scope.
+
+     Deleting it would have deleted the signed-out bookmark and the
+     input `migrateLocalSaves` reads at `:163` — the very thing that
+     closes AC4's disjointness on sign-in.
+
+     AC4's criterion is WHERE a signed-in reader's card star lands,
+     not whether a token appears. Pinning the token was pinning an
+     incidental form, which is what cost T263's author 29 of 31 cells.
+     ============================================================ */
+  it("the component reaches the saves route", () => {
     const source = read(FAVORITE_STAR);
     expect(
       source.code.includes("/api/account/saves"),
       "`FavoriteStar` does not reach `/api/account/saves` in code. Checked on comment-stripped " +
-        "text on purpose: the route is named in a `TODO(SEAM-62)` comment today, and a scan " +
-        "that read comments would call that wiring and pass against a component that saves " +
-        "nowhere.",
+        "text on purpose: the route is named in a comment as well, and a scan that read " +
+        "comments would call that wiring and pass against a component that saves nowhere.",
+    ).toBe(true);
+  });
+
+  it("and reaches the MIGRATION route, which is what closes the disjointness", () => {
+    /*
+     * The half that makes AC4 true rather than merely wired. A star kept in the browser before
+     * sign-in has to become an account save afterwards, or the Saved tab still disagrees with
+     * the card page for every reader who starred anything while signed out — which is the
+     * disjointness the code apologised for three times.
+     */
+    const source = read(FAVORITE_STAR);
+    expect(
+      source.code.includes("/api/account/saves/migrate"),
+      "`FavoriteStar` never calls the migration route. T140's `migrateLocalSaves` is what turns " +
+        "a signed-out reader's local bookmarks into account saves on sign-in; without it AC4 " +
+        "holds only for stars made after signing in.",
+    ).toBe(true);
+  });
+
+  it("the account path and the local path are SEPARATE branches, not one store", () => {
+    /*
+     * The discrimination. Both routes could be reached by a component that also wrote every
+     * save to the browser, and the two cells above would pass. What AC4 forbids is a signed-in
+     * card star landing in `localStorage`, so what is asserted is that the account write is
+     * guarded by a signed-in test at all — the branch, not its spelling.
+     */
+    const source = read(FAVORITE_STAR);
+    expect(
+      /signedIn\s*===\s*true/.test(source.code),
+      "no `signedIn === true` guard reaches the account write. Without a branch on session " +
+        "state there is one store for both populations, and whichever it is, one of them is wrong.",
     ).toBe(true);
   });
 });

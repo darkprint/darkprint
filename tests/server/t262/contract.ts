@@ -346,6 +346,8 @@ export function whyClaimFailed(source: Source, c: Claim): string {
 export interface Specifier {
   readonly spec: string;
   readonly line: number;
+  /** `import type` / `export type`. Erased at build, so it moves no data to any reader. */
+  readonly typeOnly: boolean;
 }
 
 export function importSpecifiers(source: Source): Specifier[] {
@@ -364,7 +366,10 @@ export function importSpecifiers(source: Source): Specifier[] {
       n.moduleSpecifier !== undefined &&
       ts.isStringLiteral(n.moduleSpecifier)
     ) {
-      found.push({ spec: n.moduleSpecifier.text, line: at(n) });
+      const typeOnly =
+        (ts.isImportDeclaration(n) && n.importClause?.isTypeOnly === true) ||
+        (ts.isExportDeclaration(n) && n.isTypeOnly);
+      found.push({ spec: n.moduleSpecifier.text, line: at(n), typeOnly });
     }
     /* `await import("@/lib/data/...")` is the obvious way to keep a fixture while passing a check
        that only reads top-level imports, so the dynamic form is collected by the same walk. */
@@ -374,7 +379,7 @@ export function importSpecifiers(source: Source): Specifier[] {
       n.arguments.length > 0 &&
       ts.isStringLiteral(n.arguments[0])
     ) {
-      found.push({ spec: n.arguments[0].text, line: at(n) });
+      found.push({ spec: n.arguments[0].text, line: at(n), typeOnly: false });
     }
     n.forEachChild(visit);
   };
@@ -390,7 +395,7 @@ export function renderedMentions(source: Source, needle = "lib/data"): Specifier
   for (let i = 0; i < lines.length; i++) {
     if (!lines[i].includes(needle)) continue;
     if (importLines.has(i + 1)) continue;
-    out.push({ spec: lines[i].trim(), line: i + 1 });
+    out.push({ spec: lines[i].trim(), line: i + 1, typeOnly: false });
   }
   return out;
 }

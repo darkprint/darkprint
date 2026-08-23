@@ -135,6 +135,12 @@ const BASELINE_COMPONENTS = [
   "components/site/SiteHeader.tsx",
 ] as const;
 
+/** The settings surface's own components. AC2's subject moved here at the join (R1). */
+export function settingsComponents(): string[] {
+  const strip = (p: string) => (ROOT === "." ? p : p.slice(ROOT.length + 1));
+  return walk(at("components/settings")).map(strip);
+}
+
 /** Everything AC6 and D-262-10 scan. Routes first so a red reads top-down like the site does. */
 export function scanned(): string[] {
   const union = new Set<string>([

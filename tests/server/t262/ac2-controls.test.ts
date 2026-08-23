@@ -58,7 +58,19 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import { sources } from "./contract";
-import { SETTINGS_ROUTE, resolved } from "./partition";
+import { SETTINGS_ROUTE, resolved, settingsComponents } from "./partition";
+
+/* ── R1, corrected after the join: THE CONTROLS MOVED AND THE PARTITION DID NOT FOLLOW ──
+   `/settings` became a Server Component delegating its interactive form to a client component,
+   which is the correct shape for AC1 — and it left `app/settings/page.tsx` with ZERO subject
+   elements while `components/settings/AccountForm.tsx` has five. A cell scoped to the page then
+   asserts a biconditional over an empty set, which both clauses satisfy.
+
+   So the subject is the settings SURFACE, not one file. `controls.tsx` stays out: it DEFINES the
+   wrappers, and its own intrinsic `<button>` takes its handler through props, which scores as
+   enabled-and-inert from a scan that cannot see a call site. Measured: including it adds exactly
+   one false positive. */
+const CONTROL_DEFINITIONS = "components/settings/controls.tsx";
 
 /** D-262-20, published. Not derived from the tree. */
 const SUBJECT = new Set([
@@ -108,10 +120,19 @@ function controls(path: string): Control[] {
           offDynamically: false,
         };
         for (const attribute of node.attributes.properties) {
-          if (!ts.isJsxAttribute(attribute) || !ts.isIdentifier(attribute.name)) continue;
-          const prop = attribute.name.text;
+          if (!ts.isJsxAttribute(attribute)) continue;
+          const prop = attribute.name.getText();
           if (/^on[A-Z]/.test(prop)) control.handler = true;
-          if (prop === "disabled" || prop === "readOnly") {
+          /* ── R1b, corrected after the join ──
+             `aria-disabled` is the third way a control refuses, and the residual this file's
+             header already named is exactly how it got here: `Switch` renders
+             `<button role="switch" aria-disabled title={reason}>` with no handler, so the
+             refusal is INSIDE the wrapper and invisible at the call site. Counting the aria
+             form is what lets a usage-site scan see it.
+             Not charged, and deliberately: `aria-disabled` without `disabled` keeps the control
+             focusable so a keyboard reader can reach the `title` reason, and with no handler it
+             is behaviourally inert. That reads as the better choice, not a defect. */
+          if (prop === "disabled" || prop === "readOnly" || prop === "aria-disabled") {
             if (isStaticTrue(attribute)) control.offStatically = true;
             else control.offDynamically = true;
           }
@@ -128,8 +149,64 @@ function controls(path: string): Control[] {
 /** Counted on `backend` at `3f7ea7b`, so a zero below is known to mean something. */
 const SUBJECT_FLOOR = 5;
 
+/* ============================================================
+   A WRAPPER THAT REFUSES INTERNALLY IS REFUSED AT EVERY CALL SITE
+
+   The residual this file's header named, now closed by derivation
+   rather than by an exemption. `Switch` is used as
+   `<Switch on label reason />` — no `disabled` anywhere at the call
+   site — and renders `<button role="switch" aria-disabled
+   title={reason}>` with no handler. Judged from the usage site alone
+   it is enabled-and-inert; it is neither.
+
+   So the parked set is DERIVED from `controls.tsx`: a wrapper whose
+   definition marks its root `disabled`, `readOnly` or `aria-disabled`
+   AND which accepts no `on*` prop cannot be wired by any caller, so
+   it is off wherever it appears. If a wrapper later gains a handler
+   prop it drops out of this set automatically and its call sites
+   start being judged again — nothing to remember to update, and no
+   tag is exempted by name.
+   ============================================================ */
+function parkedWrappers(): Set<string> {
+  const [definitions] = sources([resolved(CONTROL_DEFINITIONS)], 1);
+  const sf = ts.createSourceFile(
+    definitions.path,
+    definitions.code,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const parked = new Set<string>();
+  const visit = (node: ts.Node) => {
+    if (ts.isFunctionDeclaration(node) && node.name !== undefined) {
+      const body = node.getText();
+      const refuses = /\b(aria-disabled|disabled|readOnly)\b/.test(body);
+      const takesHandler = node.parameters.some((param) => /\bon[A-Z]/.test(param.getText()));
+      if (refuses && !takesHandler) parked.add(node.name.text);
+    }
+    node.forEachChild(visit);
+  };
+  visit(sf);
+  return parked;
+}
+
+function surface(): string[] {
+  return [SETTINGS_ROUTE, ...settingsComponents()].filter((p) => p !== CONTROL_DEFINITIONS);
+}
+
+function allControls(): (Control & { file: string })[] {
+  const parked = parkedWrappers();
+  return surface().flatMap((path) =>
+    controls(path).map((c) => ({
+      ...c,
+      file: path,
+      offStatically: c.offStatically || parked.has(c.tag),
+    })),
+  );
+}
+
 describe("premise: `/settings` still has controls to judge", () => {
-  it(`at least ${SUBJECT_FLOOR} subject elements are on the page`, () => {
+  it(`at least ${SUBJECT_FLOOR} subject elements are on the surface`, () => {
     /*
      * Both clauses below are satisfied perfectly by a page with no controls on it. This is the
      * positive that fails outside the negative: a cutover that emptied the page, or a rename
@@ -137,8 +214,8 @@ describe("premise: `/settings` still has controls to judge", () => {
      * twice over.
      */
     expect(
-      controls(SETTINGS_ROUTE).length,
-      `fewer than ${SUBJECT_FLOOR} of D-262-20's subject elements are on \`${SETTINGS_ROUTE}\`. ` +
+      allControls().length,
+      `fewer than ${SUBJECT_FLOOR} of D-262-20's subject elements are on the settings surface. ` +
         `Both AC2 clauses are vacuously true of a page with no controls, so this is the premise ` +
         `rather than a count for its own sake. If the cutover legitimately renamed a wrapper, ` +
         `the PUBLISHED set in D-262-20 needs amending — not this floor.`,
@@ -158,9 +235,9 @@ describe("AC2, first direction: nothing is enabled and inert", () => {
      * today and is expected to go green, rather than being green throughout and measuring
      * nothing.
      */
-    const offenders = controls(SETTINGS_ROUTE)
+    const offenders = allControls()
       .filter((c) => !c.offStatically && !c.offDynamically && !c.handler)
-      .map((c) => `line ${c.line}: <${c.tag}> is enabled and carries no handler`);
+      .map((c) => `${c.file}:${c.line} <${c.tag}> is enabled and carries no handler`);
     expect(
       offenders,
       "a control on `/settings` is enabled and inert. D-262-18: every enabled element carries a " +
@@ -180,9 +257,9 @@ describe("AC2, second direction: nothing is disabled and functional", () => {
      * `disabled={expr}` is excluded deliberately — see the header. Only a refusal written into
      * the source as permanent is a claim about what is not built.
      */
-    const offenders = controls(SETTINGS_ROUTE)
+    const offenders = allControls()
       .filter((c) => c.offStatically && c.handler)
-      .map((c) => `line ${c.line}: <${c.tag}> is statically disabled and carries a handler`);
+      .map((c) => `${c.file}:${c.line} <${c.tag}> is statically disabled and carries a handler`);
     expect(
       offenders,
       "a control on `/settings` is disabled and functional. D-262-18: every element carrying a " +
@@ -201,7 +278,7 @@ describe("D-262-14 G1's disabled-with-reason rows are out of scope BY CONSTRUCTI
      * clause catch these rows, the three notification switches would red for being exactly what
      * D-262-14 ruled them to be, and this cell is what says so first.
      */
-    const parked = controls(SETTINGS_ROUTE).filter((c) => c.offStatically && !c.handler);
+    const parked = allControls().filter((c) => c.offStatically && !c.handler);
     for (const control of parked) {
       expect(
         !control.offStatically || control.handler,
