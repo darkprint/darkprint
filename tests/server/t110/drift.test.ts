@@ -38,6 +38,8 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { ReleaseRecord } from "@/lib/server/archive";
+import { can } from "@/lib/server/policy";
+import type { Actor } from "@/lib/server/policy";
 
 import {
   DRIFT_TONES,
@@ -52,6 +54,7 @@ import {
   warmWith,
 } from "./contract";
 import {
+  ANONYMOUS,
   type Account,
   type Published,
   type Repinned,
@@ -72,6 +75,8 @@ interface Env {
   scratch: Scratch;
   author: Account;
   forker: Account;
+  /** Never the copy's owner and never the upstream's author. */
+  stranger: Account;
   /** Published at 1.0.0, then again at 2.0.0 with exactly one card repinned. */
   moved: Published;
   /** The second release of `moved`, whose createdAt is the `at` every AC4 cell asserts. */
@@ -102,6 +107,7 @@ setup.provide(async () => {
   const scratch = await scratchDatabase("drift");
   const author = await seedAccount(scratch, "t110-drift-author");
   const forker = await seedAccount(scratch, "t110-drift-forker");
+  const stranger = await seedAccount(scratch, "t110-drift-stranger");
   const corpus = resolvingCorpus();
 
   const moved = await publishBundle(scratch, author, corpus, "drift-upstream", "1.0.0", "public");
@@ -127,7 +133,7 @@ setup.provide(async () => {
     "public",
   );
 
-  return { scratch, author, forker, moved, movedRelease, repin, stable };
+  return { scratch, author, forker, stranger, moved, movedRelease, repin, stable };
 });
 
 afterAll(async () => {
@@ -352,6 +358,114 @@ describe("T110: `ok` is the answer where nothing moved", () => {
         `before this cell runs — and drift over it reads ${JSON.stringify(drift.tone)} with ` +
         `${drift.repins.length} repin(s).\n  ${RULINGS.Q4_noLineage}.`,
     ).toEqual({ tone: "ok", repins: [] });
+  });
+});
+
+describe("T110: who driftOf will answer", () => {
+  /**
+   * A PUBLIC copy's drift is readable by a visitor, and this is an AGREEMENT cell.
+   *
+   * The expected verdict is `can(actor, "read", { kind: "bundle", ownerId, visibility })`, computed
+   * per reader rather than written as a literal — a public bundle's page is public, so its drift
+   * panel is too, and an implementation that gated drift on ownership would blank it for every
+   * visitor while every cell in this file that reads as the OWNER stayed green.
+   */
+  it("answers a visitor over a PUBLIC copy exactly as `can` says it may", async () => {
+    const env = await setup.require();
+
+    const copy = await plantCopy(env.scratch, env.forker, "drift-public-copy", env.moved, "public");
+    const readers: readonly { name: string; actor: Actor }[] = [
+      { name: "the copy's owner", actor: env.forker.actor },
+      { name: "a signed-in stranger", actor: env.stranger.actor },
+      { name: "an anonymous visitor", actor: ANONYMOUS },
+    ];
+
+    const driftOf = await boundDriftOf();
+    for (const reader of readers) {
+      const permitted = can(reader.actor, "read", {
+        kind: "bundle",
+        ownerId: env.forker.accountId,
+        visibility: "public",
+      });
+      expect(
+        permitted,
+        `premise: \`can\` must grant ${reader.name} a read of a PUBLIC bundle, or this cell is ` +
+          `asserting something else.`,
+      ).toBe(true);
+
+      const drift = driftResultOf(
+        await driftOf(env.scratch.db, reader.actor, copy.bundle.id),
+        `drift as ${reader.name}`,
+      );
+      expect(
+        drift.tone,
+        `\`${env.moved.slug}\` repinned \`${env.repin.card}\` ${env.repin.from} → ` +
+          `${env.repin.to}, this copy is PUBLIC and still carries \`${env.repin.from}\`, and ` +
+          `${reader.name} is shown ${JSON.stringify(drift.tone)} with ${drift.repins.length} ` +
+          `repin(s).\n` +
+          `  \`can\` grants this read. Every other cell in this file asks as the copy's OWNER, so ` +
+          `an implementation that gates drift on ownership passes all of them and blanks the ` +
+          `panel for every visitor to a public bundle.`,
+      ).toBe("moved");
+    }
+  });
+
+  /**
+   * A PRIVATE copy's drift discloses nothing to a stranger — asserted WITHOUT pinning what it
+   * answers instead.
+   *
+   * **Why the shape is this and not an assertion about the tone.** What `driftOf` should answer a
+   * caller who may not read the bundle is UNRULED: a refusal, an `ok`, or a fourth tone are all
+   * live, and pinning one here would settle in a test file a question the contract has not. What
+   * is NOT live is disclosure — a copy's pinned card versions are content of a private bundle, and
+   * `repins` names two of them per entry.
+   *
+   * So a rejection passes (nothing was disclosed) and a resolution is checked for the one thing no
+   * reading permits. **This cell exists because the suite had no cell passing `driftOf` anything
+   * but the owner** — an implementation ignoring its `actor` parameter entirely would have served a
+   * private copy's pins to anyone and left all thirty-nine other cells green.
+   */
+  it("discloses nothing about a PRIVATE copy to a stranger", async () => {
+    const env = await setup.require();
+
+    const copy = await plantCopy(env.scratch, env.forker, "drift-hidden-copy", env.moved, "private");
+
+    /* The premise: there IS something to disclose. Read as the owner first, so a green below
+       cannot be a copy that had no drift to hide. */
+    const driftOf = await boundDriftOf();
+    const owners = driftResultOf(
+      await driftOf(env.scratch.db, env.forker.actor, copy.bundle.id),
+      "premise: the owner's own view",
+    );
+    expect(
+      owners.tone,
+      "premise: the owner must see `moved` over this copy, or the cell below is asking whether a " +
+        "bundle with nothing to hide hides nothing.",
+    ).toBe("moved");
+
+    let answered: unknown;
+    try {
+      answered = await driftOf(env.scratch.db, env.stranger.actor, copy.bundle.id);
+    } catch {
+      /* A refusal discloses nothing, which is the whole of what this cell asks. Which sentence,
+         and whether a refusal is the right answer at all, is unruled and not pinned here. */
+      return;
+    }
+
+    const rendered = JSON.stringify(answered);
+    for (const secret of [env.repin.from, env.repin.card]) {
+      expect(
+        rendered.includes(secret),
+        `A stranger asked for the drift of a PRIVATE copy they cannot read and was told ` +
+          `${rendered}, which names \`${secret}\`.\n` +
+          `  \`can(stranger, "read", { kind: "bundle", ownerId: ${env.forker.accountId}, ` +
+          `visibility: "private" })\` is false, and a \`Repin\` names two card versions of the ` +
+          `bundle it describes — so a populated \`repins\` here is the content of a private ` +
+          `bundle handed to somebody who may not open it.\n` +
+          `  This cell does not say what the answer SHOULD be; that is unruled. It says the answer ` +
+          `may not be this one.`,
+      ).toBe(false);
+    }
   });
 });
 
