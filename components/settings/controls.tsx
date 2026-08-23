@@ -1,32 +1,46 @@
+"use client";
+
 import { cx } from "@/lib/format";
 
 /* ============================================================
    The chrome `/settings` is built out of.
 
-   Seven numbered panels, each with the same head (a `.label-lead`
+   Six numbered panels, each with the same head (a `.label-lead`
    title on the left, one mono note on the right) and the same
    20px body. The head is where a section says what kind of thing
-   it is — "visible to everyone", "this browser only", "◐ nothing
-   sends" — so it is a required prop rather than an optional one:
-   a settings panel that does not say where its values go is the
-   panel this whole surface exists to avoid.
+   it is — "visible to everyone", "identity", "◐ nothing sends" —
+   so it is a required prop rather than an optional one: a settings
+   panel that does not say where its values go is the panel this
+   whole surface exists to avoid.
 
-   ── Everything here is inert, and that is the design ──
-   Nothing on this site stores an account (`PROJECT.md` §2), so no
-   control below takes a handler and every one of them is `readOnly`
-   or `disabled`. A field a reader can type into and a switch they
-   can flip, both discarded on navigation, would be four lies per
-   screen; the page states the reason once, in the open, above the
-   first panel, and the controls simply do not pretend.
+   ── The controls are live now, and the rule that decides which ──
+   There is an account behind this page (T050), so a control that
+   has a route is enabled and writes; a control whose only effect
+   would be to save something nothing stores is still disabled, and
+   says which of the two it is.
 
-   `readOnly` and not `disabled` for the text fields, on purpose: a
-   read-only input keeps its contrast, its focus ring and its
-   selection, so a reader can still tab to the handle and copy it. A
-   disabled one is skipped by the keyboard and dimmed to the point
-   where the value stops being the thing on screen. The switches and
-   the radios go the other way — there is nothing to read out of them
-   but their state, and the state is already printed as a word beside
-   each one.
+   **A control is never both enabled and inert, or disabled and
+   functional** — that is the criterion, and both directions fail it
+   (T262 AC2). Enabling everything passes a naive "nothing is
+   disabled" check and fails this one.
+
+   What is still off, and why it is off rather than reworded:
+   the notification switches, because `AccountRecord` carries no
+   `notifications` member and T190 has not built the column; and the
+   two danger-zone actions, because no route deletes an account or
+   transfers a bundle. **Their REASONS changed even though their
+   state did not** — "no account to delete" became false the day
+   accounts landed — so each says what is actually missing now
+   (D-262-15). D-78 asks whether the CLAIM is still true, not
+   whether the control still works.
+
+   `readOnly` is gone from the text fields, but the reason it was
+   there survives in what replaced it: an editable input keeps its
+   contrast, its focus ring and its selection, which is what a
+   reader needs to tab to a handle and copy it. The switches stay
+   `aria-disabled` rather than `disabled` for the same reason they
+   always did — it keeps them in the tab order, so a screen-reader
+   reader meets the row and its explanation at all.
    ============================================================ */
 
 /** The four grounds a settings panel can stand on. */
@@ -160,22 +174,32 @@ export function Field({
   );
 }
 
-/** A one-line value. `mono` for anything that is an identifier rather than a name. */
+/**
+ * A one-line value. `mono` for anything that is an identifier rather than a name.
+ *
+ * `onChange` is required rather than optional, and that is the AC2 rule expressed as a
+ * type: a field with no handler is a field that discards what a reader types, and making
+ * it impossible to build one is cheaper than remembering not to.
+ */
 export function TextField({
   id,
   value,
+  onChange,
   mono = false,
+  type = "text",
 }: {
   id: string;
   value: string;
+  onChange: (next: string) => void;
   mono?: boolean;
+  type?: "text" | "email";
 }) {
   return (
     <input
       id={id}
-      type="text"
+      type={type}
       value={value}
-      readOnly
+      onChange={(event) => onChange(event.target.value)}
       className={cx(FIELD, "h-10 px-3 text-sm", mono ? "font-mono" : "font-sans")}
     />
   );
@@ -192,12 +216,17 @@ export function PrefixedField({
   id,
   prefix,
   value,
+  onChange,
   label,
+  placeholder,
 }: {
   id: string;
   prefix: string;
   value: string;
+  onChange: (next: string) => void;
   label: string;
+  /** What an account with no handle yet sees in the empty field (T050 AC1). */
+  placeholder?: string;
 }) {
   return (
     <span className={cx(FIELD, "flex h-10 items-center overflow-hidden")}>
@@ -208,9 +237,10 @@ export function PrefixedField({
         id={id}
         type="text"
         value={value}
-        readOnly
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
         aria-label={`${label}, at ${prefix}`}
-        className="h-full min-w-0 flex-1 bg-transparent pl-1 pr-3 font-mono text-sm text-fg"
+        className="h-full min-w-0 flex-1 bg-transparent pl-1 pr-3 font-mono text-sm text-fg placeholder:text-dim"
       />
     </span>
   );
@@ -222,9 +252,16 @@ export function PrefixedField({
  * `role="switch"` with `aria-checked` rather than a styled checkbox: the state is the
  * whole content of the control, and `aria-disabled` (not `disabled`) keeps it in the tab
  * order so a screen-reader reader meets the row at all. Nothing is bound to it — there is
- * no `onClick`, so a press does nothing and the `title` says why.
+ * no `onClick`, so a press does nothing and `reason` says why.
+ *
+ * **`reason` is required, and that is the point of this prop existing.** The wording used
+ * to be a literal inside this component — "Nothing is stored yet, so this cannot be
+ * changed" — which was true of every control on the page when every control was inert. It
+ * is false now: most of this page saves. A disabled control that explains itself with the
+ * page's old blanket reason is the D-78 failure in miniature, so the reason comes from the
+ * call site, where somebody has to name what is actually missing.
  */
-export function Switch({ on, label }: { on: boolean; label: string }) {
+export function Switch({ on, label, reason }: { on: boolean; label: string; reason: string }) {
   return (
     <span className="flex flex-none items-center gap-3">
       <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
@@ -236,7 +273,7 @@ export function Switch({ on, label }: { on: boolean; label: string }) {
         aria-checked={on}
         aria-disabled
         aria-label={label}
-        title="Nothing is stored yet, so this cannot be changed."
+        title={reason}
         className={cx(
           "relative h-[22px] w-10 shrink-0 cursor-not-allowed rounded-full border",
           on ? "border-cyan/60 bg-cyan/25" : "border-line-bright bg-surface-3",
@@ -260,15 +297,20 @@ export function Switch({ on, label }: { on: boolean; label: string }) {
 /**
  * One of §04's two visibility cards.
  *
- * A radio input, `disabled`, inside its own label, so the card is announced as one option
- * of a group rather than as a paragraph with a dot next to it. The selected one carries
- * the cyan edge the rest of the site uses for "this is the current choice".
+ * A radio input inside its own label, so the card is announced as one option of a group
+ * rather than as a paragraph with a dot next to it. The selected one carries the cyan edge
+ * the rest of the site uses for "this is the current choice".
+ *
+ * `checked` and not `defaultChecked`: the value lives in the form above, which is what
+ * lets Save send it and Discard put it back. A `defaultChecked` radio holds its own state
+ * and would drift from the thing that gets written.
  */
 export function ChoiceCard({
   name,
   id,
   title,
   selected,
+  onSelect,
   aside,
   children,
 }: {
@@ -276,6 +318,7 @@ export function ChoiceCard({
   id: string;
   title: string;
   selected: boolean;
+  onSelect: () => void;
   /** A word at the card's right end — "recommended", and nothing else so far. */
   aside?: string;
   children: React.ReactNode;
@@ -284,8 +327,8 @@ export function ChoiceCard({
     <label
       htmlFor={id}
       className={cx(
-        "flex cursor-not-allowed flex-col gap-2 rounded-md border p-4",
-        selected ? "border-cyan/50 bg-cyan/[0.06]" : "border-line",
+        "flex cursor-pointer flex-col gap-2 rounded-md border p-4 transition-colors",
+        selected ? "border-cyan/50 bg-cyan/[0.06]" : "border-line hoverable:hover:border-line-bright",
       )}
     >
       <span className="flex items-center gap-2.5">
@@ -293,8 +336,8 @@ export function ChoiceCard({
           id={id}
           type="radio"
           name={name}
-          defaultChecked={selected}
-          disabled
+          checked={selected}
+          onChange={onSelect}
           className="h-3.5 w-3.5 accent-cyan"
         />
         <span className="text-sm font-medium text-fg">{title}</span>
