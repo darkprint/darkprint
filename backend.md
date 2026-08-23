@@ -869,6 +869,34 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## `Promise.all` ON ONE `pg` POOL COMPLETES SERIALLY — A CELL THAT LOOKS LIKE CONCURRENCY AND IS NOT
+
+**Measured by T160's blind author when a `SELECT`-then-`INSERT` mutation redded ZERO of 50.** The trace is the
+finding:
+
+```
+select start {20} / select start {90} / select done {20} found 0 / write done {20} / select done {90} found 1
+```
+
+**The second caller's SELECT returns AFTER the first caller's INSERT**, finds the row and updates it. **The
+lost-update race never happens, so the cell written to catch it cannot.**
+
+**This affects every task told to drive concurrent callers, and `Promise.all` on one `db` is the shape the
+instruction invites.** D-WAVE-01 and `schema.ts:384-387` both say *a cell that does not drive two concurrent
+callers has not tested this* — **a cell can look exactly like one and not be one, and no reviewer sees the
+difference.** T150's and T170's concurrency cells were written under the same instruction.
+
+**The repair is N INDEPENDENT CONNECTIONS, not N promises.** After it the mutation reds, and nothing else.
+
+### AND A REFUSAL CAN BE ENFORCED BY POSTGRES AND CREDITED TO THE SUITE
+
+Same round, same family as the NOT NULL constraint that held up T150's `moves nothing` cell. All four of AC6's
+refused actors carried **no usable id**, so `""` reached the store and **the store refused it for a reason of
+its own** — so deleting the module's actor check outright redded **zero of the four**. The repair is an actor
+the DATABASE HAS NO OBJECTION TO: a **real, existing account id under an `anonymous` kind**, so the refusal can
+only come from the module. **Where no error class is published, nothing can separate the module refusing from
+the store refusing** — which turns an open contract question into a measured coverage hole.
+
 ## A REPAIR THAT SILENTLY NARROWS COVERAGE LOOKS EXACTLY LIKE ONE THAT DOES NOT — ONLY RE-RUNNING THE TABLE SEPARATES THEM
 
 **T170's blind author repaired its target-race cell by driving five rounds** — the correct fix for the 40%
@@ -18967,7 +18995,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 - **Goal:** collect and aggregate efficacy, reliability and transparency, with validator votes weighted.
 - **Contract:** B-11 — 0–100 per metric, one ballot per account per blueprint carried across releases; the aggregate is recomputed from stored votes and *current* validator weights, so a badge granted later applies retroactively; below five votes the response says sample rather than figure, mirroring the threshold already configured for run reports (`lib/core/config.ts:171-174`). A ballot may write only these three: autonomy and static risk are `source: "auto"` and the engine's alone, and cost is `reported` (`lib/types.ts:36`). An aggregate never returns without its sample size, because the UI refuses to close the radar with a placeholder.
-- **Acceptance criteria:** (1) a ballot cannot write `autonomy` or `security`; (2) one account voting twice on one metric replaces rather than accumulates; (3) every aggregate response carries the sample size; (4) below five votes the response is marked a sample; (5) granting a validator badge changes an existing aggregate without any vote being recast; (6) an anonymous ballot is refused.
+- **Acceptance criteria:** (1) a ballot cannot write `autonomy` or `security`; (2) one account voting twice on one metric replaces rather than accumulates; (3) every aggregate response carries the sample size; (4) below five votes the response is marked a sample; (5) ~~granting a validator badge~~ **raising an account's `validator_weight`** (D-WAVE-08 restated this and the criteria line was left behind; the ruling governs) changes an existing aggregate without any vote being recast; (6) an anonymous ballot is refused.
 - **Open:** who grants the validator badge, and on what basis — nothing in the code proposes a process.
 - **Out of scope:** stars (T150), the validator grant workflow itself.
 - **Log:**
