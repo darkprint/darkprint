@@ -162,21 +162,94 @@ export function sources(paths: readonly string[], atLeast: number): Source[] {
    deliberately no list-shaped variant to reach for.
    ============================================================ */
 
+/* ============================================================
+   A RENDERED SENTENCE IS NOT A SOURCE LINE, AND A LITERAL MATCHER
+   READS A WRAPPED ONE AS ABSENT
+
+   Measured on this tree: `never sent anywhere` and `stays in this
+   browser` each occur ZERO times literally and ONCE after
+   normalisation. The first wraps across a line break, the second
+   wraps with a `</span>` inside it. Both are single sentences to a
+   reader and three fragments to a scanner.
+
+   The consequence is a FALSE GREEN in the direction that matters
+   most here: a retirement cell asks whether a claim is gone, and a
+   claim that merely WRAPPED reads as gone. The pin passes, the
+   sentence is still on the page, and nothing reds — the same shape
+   as the comment-only defect, reached by a different route.
+
+   This was first diagnosed here as the published quotations being
+   PARAPHRASES, which was wrong and would have led to the opposite
+   repair: distrusting the rulings' text and re-deriving every pin
+   from source, instead of fixing the matcher. Recorded because the
+   measurement was right and the diagnosis was not, and only the
+   diagnosis decides what changes.
+
+   Normalisation drops JSX markup and collapses whitespace. It
+   destroys offsets, so presence is decided on normalised text while
+   the line number is still taken from a literal hit when there is
+   one — and a red says `wrapped` when there is not, because that
+   tells the reader why grepping the file by hand will not find it.
+   ============================================================ */
+export function collapse(text: string): string {
+  return text.replace(/\s+/g, " ");
+}
+
+/* Tags dropped AS WELL as whitespace collapsed. Used only as the third pass, never alone: this
+   also eats JSX ATTRIBUTES, and attribute text is rendered copy — `why="no ownership to move"`
+   and the `title=` tooltip D-262-17 identified are both sentences a reader sees. Stripping tags
+   as the only normalisation made two premise cells red against strings that are plainly there. */
+export function stripTags(text: string): string {
+  return collapse(text.replace(/<\/?[A-Za-z][^>]*>/g, " "));
+}
+
+/**
+ * Three passes, because a rendered sentence can be hidden from a literal matcher three ways and
+ * each pass recovers one without losing what the earlier ones see:
+ *   1. literal      — an attribute value, or any sentence on one line
+ *   2. collapsed    — a sentence broken over a line break
+ *   3. tags dropped — a sentence interrupted by markup, `appearance</span>, which stays in ...`
+ * More permissive is the SAFE direction here: every rendered pin in this suite is an ABSENCE,
+ * so a matcher that finds more is a matcher that lets less through.
+ */
+export function contains(haystack: string, needle: string): boolean {
+  return (
+    haystack.includes(needle) ||
+    collapse(haystack).includes(collapse(needle)) ||
+    stripTags(haystack).includes(stripTags(needle))
+  );
+}
+
+/** Occurrences under whichever pass finds the most, for a premise that must not undercount. */
+export function countIn(haystack: string, needle: string): number {
+  return Math.max(
+    haystack.split(needle).length - 1,
+    collapse(haystack).split(collapse(needle)).length - 1,
+    stripTags(haystack).split(stripTags(needle)).length - 1,
+  );
+}
+
 export function lineOf(source: Source, index: number): number {
   return source.raw.slice(0, index).split("\n").length;
 }
 
-/** Present in the CODE, so a comment naming it cannot satisfy this. That is direction C. */
+/**
+ * Present in the CODE, so a comment naming it cannot satisfy this (direction C), and present
+ * after normalisation, so a sentence broken over two lines or split by a `</span>` is still
+ * found (the wrapped-sentence false green). `line` is -1 when the only match is a wrapped one.
+ */
 export function findInCode(source: Source, needle: string): { line: number } | undefined {
-  const at = source.code.indexOf(needle);
-  return at === -1 ? undefined : { line: lineOf(source, at) };
+  const literal = source.code.indexOf(needle);
+  if (literal !== -1) return { line: lineOf(source, literal) };
+  return contains(source.code, needle) ? { line: -1 } : undefined;
 }
 
 /** Present in a COMMENT and nowhere else. Used to tell C apart from a genuine absence in a red. */
 export function findInCommentOnly(source: Source, needle: string): { line: number } | undefined {
-  if (source.code.includes(needle)) return undefined;
-  const at = source.raw.indexOf(needle);
-  return at === -1 ? undefined : { line: lineOf(source, at) };
+  if (findInCode(source, needle) !== undefined) return undefined;
+  const literal = source.raw.indexOf(needle);
+  if (literal !== -1) return { line: lineOf(source, literal) };
+  return contains(source.raw, needle) ? { line: -1 } : undefined;
 }
 
 /* ============================================================

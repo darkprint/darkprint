@@ -22,6 +22,8 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import {
   BYTE_FLOOR,
+  contains,
+  countIn,
   PartitionError,
   claimHolds,
   findInCode,
@@ -152,5 +154,49 @@ describe("absence is decided on CODE, so a retirement note cannot red a correct 
   it("the sentence still on screen IS found, so the absence check is not simply inert", () => {
     const [s] = sources([write("still.tsx", `const a = <p>nothing is saved</p>;${PAD}`)], 1);
     expect(findInCode(s, "nothing is saved")).toBeDefined();
+  });
+});
+
+describe("the matcher finds a rendered sentence hidden the three ways it can hide", () => {
+  /*
+   * A rendered sentence is not a source line. Measured on this tree, `never sent anywhere` and
+   * `stays in this browser` each occur ZERO times literally and once to a reader — the first
+   * wraps across a line break, the second wraps with a `</span>` inside it.
+   *
+   * For an ABSENCE assertion this is a FALSE GREEN: the retirement cell asks whether a claim is
+   * gone, and a claim that merely wrapped reads as gone. Same failure as the comment-only
+   * defect, reached by a different route.
+   */
+  const SENTENCE = "which stays in this browser";
+
+  it.each([
+    ["on one line", "<p>which stays in this browser</p>"],
+    ["broken over a line break", "<p>which stays in\n        this browser</p>"],
+    ["interrupted by markup", "<p>which stays in <span>this</span> browser</p>"],
+    ["as an attribute value", '<Row why="which stays in this browser" />'],
+  ])("finds it %s", (_what, source) => {
+    expect(contains(source, SENTENCE)).toBe(true);
+    expect(countIn(source, SENTENCE)).toBeGreaterThan(0);
+  });
+
+  it("and still says NO when the sentence is genuinely absent", () => {
+    /*
+     * The pair. Three passes make the matcher more permissive, and more permissive is the safe
+     * direction for an absence — but only while it still discriminates. A matcher that says yes
+     * to everything turns every retirement cell green forever, which is the defect it was built
+     * to remove, restored.
+     */
+    expect(contains("<p>which stays in this tab</p>", SENTENCE)).toBe(false);
+    expect(countIn("<p>which stays in this tab</p>", SENTENCE)).toBe(0);
+  });
+
+  it("stripping tags does not blind it to attribute text", () => {
+    /*
+     * The regression that produced this cell. A first version normalised by dropping whole JSX
+     * tags, which also ate `why="no ownership to move"` and the `title=` tooltip D-262-17 named
+     * as rendered honesty copy — two premise cells redded against strings plainly in the file.
+     * Tag-stripping is the THIRD pass, never the only one.
+     */
+    expect(contains('<DangerRow why="no ownership to move" />', "no ownership to move")).toBe(true);
   });
 });

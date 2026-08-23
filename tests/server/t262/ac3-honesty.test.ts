@@ -43,6 +43,8 @@ import {
   claimHolds,
   findInCode,
   sources,
+  contains,
+  countIn,
   stripComments,
   whyClaimFailed,
 } from "./contract";
@@ -158,6 +160,29 @@ const RETIRED: readonly {
       "Already false independently of the cutover.",
   },
   {
+    file: SETTINGS_ROUTE,
+    text: "stays in this browser",
+    where: "rendered",
+    seen: 1,
+    ruling:
+      "D-262-19, the page-level `◐ seeded` strip, which comes off for handle, email and default " +
+      "visibility. RECOVERED BY THE THREE-PASS MATCHER: it occurs ZERO times literally because " +
+      "it wraps with a `</span>` inside it, and this suite first mis-read that as the ruling " +
+      "quoting a paraphrase. It is a faithful quotation of a sentence a reader sees.",
+  },
+  {
+    file: FAVORITE_STAR,
+    text: "never sent anywhere",
+    where: "comment",
+    seen: 1,
+    ruling:
+      "D-262-09, one of the four false claims no rendered grep can reach. AC4 sends the star to " +
+      "the saves API, so `never sent anywhere` becomes false in the same change. NOTE THE " +
+      "DIRECTION SPLIT INSIDE ONE FILE: this claim goes, while D-262-07 KEEPS the `◐` on the " +
+      "star COUNT, because `app/api/signals/**` does not exist and that figure has not become " +
+      "real. Same file, opposite directions, like §03 and §05.",
+  },
+  {
     file: PROFILE_LOAD,
     text: "There is no session",
     where: "comment",
@@ -216,7 +241,11 @@ describe("premise: every retired claim is in the file TODAY", () => {
        code, a comment claim on raw — otherwise a docblock satisfies a premise and an absence at
        the same time, which is the defect the `where` field exists to close. */
     const subject = where === "rendered" ? stripComments(raw, file) : raw;
-    const count = subject.split(text).length - 1;
+    /* Counted under whichever pass finds the most. A pinned sentence that wraps across a line
+       break, or around a `</span>`, occurs ZERO times literally and once to a reader — and
+       counting literally here called two faithful quotations paraphrases, which is the diagnosis
+       this suite got wrong once and the reason `countIn` takes a maximum. */
+    const count = countIn(subject, text);
     expect(
       count,
       `\`${text}\` was pinned at ${seen} occurrence(s) in \`${file}\` as ${where} text, and ` +
@@ -245,7 +274,7 @@ describe("AC3: the claims that became false are retired", () => {
        what must go is the false sentence; whatever replaces it is not pinned here, because
        pinning a replacement wording is how a correct rewrite gets redded. */
     expect(
-      source.raw.includes(text),
+      contains(source.raw, text),
       `${file} still carries the docblock claim \`${text}\`. ${ruling}`,
     ).toBe(false);
   });

@@ -102,7 +102,7 @@ describe("premise: the partition is real, and it is the cutover's own tree", () 
     const reached = new Set(
       readAll().flatMap((s) => importSpecifiers(s).map((i) => i.spec)),
     );
-    for (const barrel of ["@/lib/server/accounts", "@/lib/server/profiles", "@/lib/server/saves"]) {
+    for (const barrel of PUBLISHED_BARRELS) {
       expect(
         [...reached].some((s) => s === barrel || s.startsWith(`${barrel}/`)),
         `no file in T262's partition imports \`${barrel}\`. The section's published-signatures ` +
@@ -131,8 +131,16 @@ describe("premise: the partition is real, and it is the cutover's own tree", () 
    narrowing being undone by the shape of the check rather than by a
    ruling.
    ============================================================ */
-const PERMITTED: ReadonlyMap<string, string> = new Map([
-  ["components/profile/load.ts", "@/lib/data/profiles"],
+const PERMITTED: ReadonlyMap<string, readonly string[]> = new Map([
+  [
+    "components/profile/load.ts",
+    /* D-262-23 took the residue to option (1): four specifiers, not one. The three beyond
+       `/profiles` feed figures whose READ does not exist yet, and the missing read is recorded
+       as a gap against T080 rather than worked around here. Exact strings, never prefixes and
+       never the barrel `@/lib/data`, which would pull the whole fixture surface back through one
+       import and undo the narrowing by the shape of the check rather than by a ruling. */
+    ["@/lib/data/profiles", "@/lib/data/node-community", "@/lib/data/bundles", "@/lib/data/cards"],
+  ],
 ]);
 
 /* The four figures D-262-16 keeps. Asserted BY NAME below, because option (3) — deleting them and
@@ -140,23 +148,63 @@ const PERMITTED: ReadonlyMap<string, string> = new Map([
    file. A criterion that only forbids cannot tell a completed cutover from a deleted feature. */
 const SEEDED_FIGURES = ["validated", "watchers", "support", "pinned"] as const;
 
+/* The three the published-signatures line commits to. D-262-24 adds four more that the cutover
+   consumes; those are separate cells below, because the section never committed to them and a
+   hard premise built on a ruling's incidental list is how a correct implementer gets redded. */
+const PUBLISHED_BARRELS = [
+  "@/lib/server/accounts",
+  "@/lib/server/profiles",
+  "@/lib/server/saves",
+] as const;
+
+/* D-262-24. NOTE THE ARITHMETIC: the ruling says the cutover consumes SIX and names three plus
+   four, which is seven. Reported rather than resolved here — this suite does not get to pick
+   which of the seven is not really consumed. */
+const D_262_24_ADDITIONS = [
+  "@/lib/server/auth",
+  "@/lib/server/policy",
+  "@/lib/server/registry",
+  "@/lib/db",
+] as const;
+
+describe("D-262-24: the four barrels beyond the published three", () => {
+  it.each(D_262_24_ADDITIONS)("the partition reaches `%s`", (barrel) => {
+    /*
+     * Separate from the premise, and each in its own cell, because a red here is a finding
+     * either way and the two readings need telling apart: either the cutover has not reached a
+     * barrel D-262-24 says it consumes, or D-262-24 named one it does not. Rolled into the
+     * premise, a single miss would have read as "the cutover has not happened".
+     */
+    const reached = readAll().flatMap((s) => importSpecifiers(s).map((i) => i.spec));
+    expect(
+      reached.some((s) => s === barrel || s.startsWith(`${barrel}/`)),
+      `no file in T262's partition imports \`${barrel}\`. D-262-24 names it as one the cutover ` +
+        `consumes — \`auth\` for the session, \`policy\` for the \`Actor\` type and the ` +
+        `anonymous reader, \`registry\` for the settings counts, \`@/lib/db\` for ` +
+        `\`getSharedDbClient\`. If the implementation genuinely does not need it, the RULING is ` +
+        `what needs amending, not the code.`,
+    ).toBe(true);
+  });
+});
+
 describe("AC6 as amended by D-262-16: no fixture import beyond the one permitted", () => {
   it.each(scanned())("%s", (path) => {
     const source = read(path);
-    const allowed = PERMITTED.get(path);
+    const allowed = PERMITTED.get(path) ?? [];
     const fixtures = importSpecifiers(source)
       .filter((i) => i.spec.startsWith("@/lib/data"))
-      .filter((i) => i.spec !== allowed);
+      .filter((i) => !allowed.includes(i.spec));
     expect(
       fixtures.map((f) => `line ${f.line}: ${f.spec}`),
       `${path} still imports the fixtures AC6 retires. This is decided by the PARSER, so a ` +
         `docblock or a rendered sentence naming \`lib/data\` cannot produce this red — only a ` +
         `real module specifier can, static or dynamic.` +
-        (allowed === undefined
+        (allowed.length === 0
           ? ""
-          : ` D-262-16 permits \`${allowed}\` in this file and nothing else, so the barrel ` +
-            `\`@/lib/data\` reds here: it would pull the whole fixture surface back through ` +
-            `one import and undo the narrowing by the shape of the check.`),
+          : ` D-262-16 and D-262-23 permit exactly ${allowed.map((a) => `\`${a}\``).join(", ")} ` +
+            `in this file and nothing else, so the barrel \`@/lib/data\` reds here: it would ` +
+            `pull the whole fixture surface back through one import and undo the narrowing by ` +
+            `the shape of the check rather than by a ruling.`),
     ).toEqual([]);
   });
 
@@ -177,6 +225,21 @@ describe("AC6 as amended by D-262-16: no fixture import beyond the one permitted
         "deleted (rejected option 3) or they were relocated to satisfy the grep (rejected " +
         "option 2), and both are green against an absence check.",
     ).toContain("@/lib/data/profiles");
+  });
+
+  it.each([
+    "@/lib/data/node-community",
+    "@/lib/data/bundles",
+    "@/lib/data/cards",
+  ])("D-262-23: `%s` is permitted in `load.ts` and its read is a gap against T080", (spec) => {
+    /*
+     * Asserted as PERMITTED rather than as required. D-262-23 records the missing read as a gap
+     * against T080, so an implementation that finds a real source for one of these and drops the
+     * fixture is ahead of the ruling, not in breach of it — and must not red. What would be a
+     * breach is the import surviving somewhere it was never permitted, which the per-file cell
+     * above already catches.
+     */
+    expect(PERMITTED.get("components/profile/load.ts")).toContain(spec);
   });
 
   it.each(SEEDED_FIGURES)("the seeded figure `%s` still has its declared source", (figure) => {
