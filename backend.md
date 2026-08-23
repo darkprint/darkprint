@@ -941,12 +941,34 @@ which it did: 60/60 still stripped, 0 byte drift, 0 line drift, 0 new diagnostic
 unchanged. **One number moved and it said so: prose mentions a bare grep would false-charge went from 20 to
 21.** Small, wrong, and its own.
 
-### AND THE ORDER OF THE THREE PASSES IS LOAD-BEARING
+### AND THE ORDER OF THE THREE PASSES IS LOAD-BEARING — **BLANK COMMENTS FIRST**
 
-**Collapse whitespace, strip JSX markup, blank comments — IN THAT ORDER.** *Collapsing before blanking fuses a
-comment's text with the code beside it*, which produces **a third wrong answer neither direction of the
-false-red / false-green pair has hit yet.** A matcher that gets all three passes right and their order wrong is
-still wrong.
+**CORRECTED. The first version of this rule said *collapse, strip markup, blank comments* and then warned that
+collapsing before blanking fuses a comment's text with the code beside it — which is an argument for blanking
+FIRST. The list and its own warning pointed opposite ways.** T262's blind author **measured both orders**
+rather than adopting the one I published, and the failure is worse than the one I described.
+
+```
+const x = 1; // retired: nothing is saved
+const keep = "SENTINEL";
+```
+
+| order | scanned text | `SENTINEL` survives |
+| --- | --- | --- |
+| **blank first** | `const x = 1; const keep = "SENTINEL";` | **yes** |
+| **collapse first** | `const x = 1;` | **NO** |
+
+**Collapsing fuses the two lines, so the line-comment blanker runs to the end of the fused line and DELETES THE
+REAL CODE AFTER IT.** The symptom is not comment text fusing into code — **it is code being CONSUMED by the
+comment.** Rendered copy vanishes from what the scanner reads, **so every absence assertion over it passes: a
+false-GREEN generator, and a third wrong answer distinct from both directions of the 2x2.**
+
+**And on a JSX comment, collapse-first is a silent NO-OP** — after collapsing and tag-stripping, the
+`JsxExpression` no longer parses as one, so the detection stops working entirely and the comment stays in the
+scanned code.
+
+**CORRECT ORDER: blank comments → strip JSX markup → collapse whitespace. Blanking must come first because it
+needs the PARSER and the ORIGINAL OFFSETS.** A cell should red if it is ever inverted.
 
 ### AND A CORRECTION THAT EXPLAINS A RETIREMENT QUOTES THE RETIRED SENTENCE
 
@@ -955,6 +977,56 @@ Measured across the same change: **both wrapped quotations read `literal=0` at b
 charges the corrected file where it did not charge the original: **the correction is what makes it visible.**
 Under a correct matcher the answer is **0 of 8 retired sentences reach a reader**, with 4 of the 8 explained in
 a comment and 3 gone from source entirely because their paragraphs were rewritten wholesale.
+
+## A RESOURCE DIP AND A COLLISION ARE DIFFERENT QUESTIONS, AND ONLY THE SECOND IS A SLOT VETO
+
+**T262's implementer re-stamped at the moment of taking a granted slot and its stamp DISAGREED with the one
+the grant was conditioned on** — swap free **1013 MB against the 1403 MB it had quoted**, load 153 against 137,
+with two arrivals that were not there before. **It did not proceed on my word and did not refuse on one
+reading.**
+
+**It sampled for 90 seconds first: 1013 → 1021 → 1053 → 1053 → 1077 → 1085 → 1093 MB, recovering ~10 MB per
+15s — a DRAINING TRANSIENT, not a new floor.** And separately: **zero foreign vitest or next process groups,
+counted by pgid rather than by command-line substring.**
+
+**The distinction is the rule: the resource dip was real and the collision the slot protects against was
+ABSENT. Those are different questions and only the second is a veto.** A single low reading cannot tell a
+transient from a floor, and **the slot exists to serialise contention, not to wait for a comfortable machine.**
+
+**And it recorded the reasoning unprompted, because *"I proceeded after my stamp disagreed"* is exactly the
+sentence that should never appear without it.**
+
+## THE SCRATCH-DATABASE COUNT PROVES THE DB SUITES RAN — A ZERO-SKIPPED LINE DOES NOT
+
+**Same run: `4 → 11 → 8 → 11 → 4` across in-run samples.** A suite that silently stood down for a missing
+variable **would have left that flat at 4 and reported the same green.** The peak is live scratch; the return
+to 4 is the drain.
+
+**This is the direct instrument for the trap that has bitten this project repeatedly** — vitest **omits the
+failed and skipped lines when they are zero, and an omitted line is not a measurement.** Three checks, and the
+third is the only one that is about the database: **`6923 of 6923` leaves nothing for a silently-skipping file
+to hide in**; zero occurrences of `skipped`/`failed`/`todo`/`×` anywhere in the log; **and the scratch count
+moving.**
+
+**`.env.example` says in its own header to export its variables for `npm test`, and warns that leaving
+`GITHUB_*` empty fails twenty of T000's tests. There are EIGHT, not the five this document has said more than
+once — the file is the authority and the recollection was wrong.**
+
+## A FIX THAT PASSES ITS OWN CRITERION CELL IS STILL UNGUARDED
+
+**T262's blind author mutated the MATCHER FIX ITSELF** — reverting `contains` to literal-only, with a retired
+sentence re-added **wrapped over a line break**.
+
+**The retirement cell scored ZERO. Only the two instrument cells reported the regression.**
+
+So the criterion cell was **blind to a sentence back on the reader's screen**, and the only thing between that
+and a green suite was **the instrument testing itself.** A repair to a matcher is invisible to every cell that
+uses it, because those cells were already passing — **the fix restores what they measure, so they cannot tell
+the fix from its absence.**
+
+**Cells that test the instrument are not overhead beside the criteria. They are the only thing that guards a
+repair to the instrument** — and this is the first case in this project where they caught something no
+criterion could.
 
 ## A FAITHFUL QUOTATION CAN BE UNFINDABLE, BECAUSE SOURCE WRAPS — NORMALISE BEFORE YOU MATCH
 
@@ -19816,7 +19888,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **The real fix is a `visibility` and a `bundleId` on `BlueprintSummary`, which is T080's and closes AC4's blueprint half in the same stroke.** Recorded as a gap. **Option (1) is the one that does not pay for a criterion with a feature.**
 
-- **D-262-24 — THE PUBLISHED-SIGNATURES LINE NAMES THREE BARRELS AND THE CUTOVER CONSUMES SIX.** Add **`@/lib/server/auth`** (the session), **`@/lib/server/policy`** (the `Actor` type and the anonymous reader), **`@/lib/server/registry`** (the settings counts) and **`@/lib/db`** (`getSharedDbClient`). **None is a write and none is a new decision**, and its blind author is building to the same stale three-barrel line. **Two corroborations it found rather than assumed:** `getPublicAuthor`'s own docblock names *"T130 and T262 call this in-process"*, so it is an expected caller; and `lib/server/registry/actor.ts:26-31` **independently documents the `decodeSession` default-parameter hazard it guarded against** — a second SOURCE for the rule rather than a second copy of its own reasoning.
+- **D-262-24 — THE PUBLISHED-SIGNATURES LINE NAMES THREE BARRELS AND THE CUTOVER CONSUMES SEVEN.** **CORRECTED: I wrote *six* and then named three plus four.** Its blind author refused to guess which one was not really consumed and **split the four additions into four separate cells, so a red names WHICH barrel and can be read either way — the cutover has not reached it, or the ruling named one it does not need.** Rolled into one premise, a single miss would have read as *the cutover has not happened*. Add **`@/lib/server/auth`** (the session), **`@/lib/server/policy`** (the `Actor` type and the anonymous reader), **`@/lib/server/registry`** (the settings counts) and **`@/lib/db`** (`getSharedDbClient`). **None is a write and none is a new decision**, and its blind author is building to the same stale three-barrel line. **Two corroborations it found rather than assumed:** `getPublicAuthor`'s own docblock names *"T130 and T262 call this in-process"*, so it is an expected caller; and `lib/server/registry/actor.ts:26-31` **independently documents the `decodeSession` default-parameter hazard it guarded against** — a second SOURCE for the rule rather than a second copy of its own reasoning.
 
 - **D-262-20 — AC2's SUBJECT IS INTRINSIC ELEMENTS PLUS THE SEVEN WRAPPERS `components/settings/controls.tsx` ALREADY PUBLISHES, AND THAT FILE EXISTS TODAY.** T262's blind author asked whether the subject is intrinsic elements only or those plus a wrapper set, **on the premise that `components/settings/**` does not exist in the tree — it does**, at `b22ee53`, in `backend`, predating the cutover. It could not check: that directory is in its forbidden set, so it reasoned from the criterion rather than the tree, **which is the correct failure to have.**
 
