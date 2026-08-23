@@ -46,6 +46,7 @@ import {
   AUDIT_ACTION_NOTE_REMOVE,
   FORBIDDEN_AUDIT_SPELLINGS,
   accountActor,
+  asPage,
   auditRows,
   bind,
   noteRow,
@@ -62,6 +63,7 @@ import {
   premise,
   seedAccount,
   seedBundle,
+  setBundleVisibility,
 } from "./fixtures";
 
 let s: Scratch;
@@ -311,6 +313,13 @@ describe("T170 AC7 — the operator can remove one, audited", () => {
     expect(row?.targetId, `and WHICH note was removed`).toBe(note.id);
   });
 
+  /**
+   * Scoped to the rows THIS delete wrote, by diffing a snapshot.
+   *
+   * The scratch database is per FILE, so `auditRows(s)` returns every row every earlier
+   * cell in this file left behind — including four legitimate operator removals. A cell
+   * reading the whole table is asserting about its neighbours' state as well as its own.
+   */
   it.each(FORBIDDEN_AUDIT_SPELLINGS)("no audit row is written under `%s`", async (spelling) => {
     const author = await seedAccount(s, `spell-${spelling}`);
     const operator = await seedAccount(s, `spell-op-${spelling}`);
@@ -322,11 +331,13 @@ describe("T170 AC7 — the operator can remove one, audited", () => {
       "spelling check",
     );
 
+    const before = await auditRows(s);
     const deleteNote = await bind("deleteNote");
     await deleteNote(s.db, operatorActor(operator.id), note.id);
+    const written = (await auditRows(s)).slice(before.length);
 
     expect(
-      (await auditRows(s)).map((r) => r.action),
+      written.map((r) => r.action),
       `D-240-08 and D-240-16: \`${spelling}\` is not a member of \`AUDIT_ACTIONS\` and must ` +
         `never appear in the log. \`operator.note.remove\` is the one worth spelling out — ` +
         `the dispatch warned that a cell EXPECTING it would red a correct implementation, ` +
@@ -334,21 +345,165 @@ describe("T170 AC7 — the operator can remove one, audited", () => {
     ).not.toContain(spelling);
   });
 
+  /**
+   * SCOPED TO THIS DELETE, and the first draft was not.
+   *
+   * It read the whole `audit` table, and the scratch database is per FILE — so it saw the
+   * four legitimate operator removals the cells above had written and reddened against a
+   * correct module. Found by running the suite against a stand-in built from §T170 alone:
+   * 78 of 80 cells passed and this was one of the two that did not, for a reason that had
+   * nothing to do with the implementation.
+   *
+   * The lesson generalises past this cell. A negative assertion over shared state is a
+   * claim about every neighbour that has ever written to it, and it fails in the direction
+   * that looks like a real defect.
+   */
   it("an author deleting its OWN note is not audited as an operator", async () => {
     const author = await seedAccount(s, "self-del");
     const bundle = await seedBundle(s, { ownerId: author.id });
     const actor = accountActor(author.id, author.handle);
     const note = await postOne(s.db, actor, blueprintTarget(bundle), "my own note");
 
+    const before = await auditRows(s);
     const deleteNote = await bind("deleteNote");
     await deleteNote(s.db, actor, note.id);
+    const written = (await auditRows(s)).slice(before.length);
 
     expect(
-      (await auditRows(s)).map((r) => `${r.action}/${r.actorKind}`),
+      written.map((r) => `${r.action}/${r.actorKind}`),
       `The criterion is about an OPERATOR removal. An author deleting its own note through ` +
         `the same door must not be recorded as a break-glass action — \`actorKind\` is the ` +
         `column that carries the distinction, and a module hard-coding "operator" beside a ` +
-        `hard-coded action satisfies the audit cell above and mislabels every self-delete.`,
+        `hard-coded action satisfies the audit cell above and mislabels every self-delete.\n` +
+        `  Diffed against a snapshot rather than read off the whole table: the scratch ` +
+        `database is per FILE and the cells above it write real operator removals.`,
     ).not.toContain(`${AUDIT_ACTION_NOTE_REMOVE}/operator`);
+  });
+});
+
+describe("T170 — the PARENT gate, reached by an author who does not own the parent", () => {
+  /* ============================================================
+     THE FIXTURE HOLE THIS FILE HAD, AND WHY A MUTATION WOULD NOT
+     HAVE FOUND IT.
+
+     Every other fixture in this suite seeds the bundle with
+     `ownerId: author.id`, so the note's author is also the
+     parent's owner. Under that shape AUTHORSHIP decides every
+     refusal, and a guard that consults the PARENT is never what
+     denies — so removing it reds nothing.
+
+     That zero is not "the guard is redundant". Two guards that
+     look like belt-and-braces are indistinguishable from two
+     guards neither of which is reachable, and a single mutation
+     on either reports the same zero. Only the BOTH-REMOVED cell
+     separates them, and it only separates them if some fixture
+     reaches the second guard at all.
+
+     Reaching it needs an actor who IS the note's author and is
+     NOT the parent's owner — and no fixture in this suite
+     produced one. The fixture set had a hole exactly the shape of
+     the guard.
+
+     So: a stranger owns a public bundle, the author writes a note
+     on it, and the bundle goes private. Authorship still grants,
+     so `can(actor, "write", …)` lets an edit straight through —
+     `canOnNote` returns `author` for write and delete and never
+     reads `parent`. Only the parent gate stands between them.
+     ============================================================ */
+
+  async function orphanedNote(label: string) {
+    const stranger = await seedAccount(s, `${label}-owner`);
+    const author = await seedAccount(s, `${label}-author`);
+    premise(stranger.id !== author.id, `the parent's owner must not be the note's author`);
+
+    const bundle = await seedBundle(s, { ownerId: stranger.id, visibility: "public" });
+    const actor = accountActor(author.id, author.handle);
+    const note = await postOne(s.db, actor, blueprintTarget(bundle), "written while public");
+
+    const stored = await noteRow(s, note.id);
+    premise(
+      stored?.accountId === author.id,
+      `the note must be authored by the non-owner; it was authored by ` +
+        `${String(stored?.accountId)}`,
+    );
+
+    await setBundleVisibility(s, bundle.id, "private");
+    return { author, stranger, bundle, actor, noteId: note.id };
+  }
+
+  it("the author cannot EDIT its own note once the parent has gone private", async () => {
+    const { actor, noteId } = await orphanedNote("gate-edit");
+    const before = await noteRow(s, noteId);
+
+    const editNote = await bind("editNote");
+    await rejection(
+      () => editNote(s.db, actor, noteId, "edited after the parent closed"),
+      "editNote by the author on a now-private parent",
+    );
+
+    expect(
+      (await noteRow(s, noteId))?.body,
+      `\`canOnNote(actor, "write", …)\` returns \`author\` ALONE and never reads ` +
+        `\`parent\`, so a module delegating the whole decision to \`can\` GRANTS here — the ` +
+        `actor really is the author. The parent gate is the only thing that can refuse, and ` +
+        `this is the only fixture in the suite that reaches it.\n` +
+        `  The stored row still carries the body from before the parent closed, which is ` +
+        `what makes the refusal observable rather than merely asserted.`,
+    ).toBe(before?.body);
+  });
+
+  it("the author cannot DELETE its own note once the parent has gone private", async () => {
+    const { actor, noteId } = await orphanedNote("gate-delete");
+
+    const deleteNote = await bind("deleteNote");
+    await rejection(
+      () => deleteNote(s.db, actor, noteId),
+      "deleteNote by the author on a now-private parent",
+    );
+
+    expect(
+      (await noteRow(s, noteId))?.deletedAt,
+      `\`deleteNote\` is \`Promise<void>\`, so the STORE is the only witness to the ` +
+        `difference between a refusal and a silent no-op — and \`canOnNote\` grants ` +
+        `"delete" to the author without consulting the parent, exactly as it grants "write".`,
+    ).toBeNull();
+  });
+
+  it("nobody can VOTE on a note whose parent has gone private", async () => {
+    const { noteId } = await orphanedNote("gate-vote");
+    const outsider = await seedAccount(s, "gate-vote-outsider");
+
+    const voteNote = await bind("voteNote");
+    await rejection(
+      () => voteNote(s.db, accountActor(outsider.id, outsider.handle), noteId),
+      "voteNote on a now-private parent",
+    );
+
+    const votes = await s.query("select count(*) as n from note_vote where note_id = $1", [noteId]);
+    expect(
+      Number(votes[0]?.n),
+      `a vote is a read of the note plus a write of the voter's own row, and the read is ` +
+        `the half the parent governs. \`canOnNote\` has no arm for it at all — "vote" is ` +
+        `not an \`Action\` — so whatever the module asks \`can\`, the parent check is the ` +
+        `call site's.`,
+    ).toBe(0);
+  });
+
+  it("the parent's OWNER can still read the note that a stranger left on it", async () => {
+    const { stranger, bundle, noteId } = await orphanedNote("gate-read");
+
+    const listNotes = await bind("listNotes");
+    const page = asPage(
+      await listNotes(s.db, accountActor(stranger.id, stranger.handle), blueprintTarget(bundle)),
+      "listNotes as the private parent's owner",
+    );
+
+    expect(
+      page.ids,
+      `The gate must not become "a private blueprint has no notes". ` +
+        `\`can(owner, "read", { kind: "note", parent })\` is TRUE for the parent's owner, ` +
+        `and without this cell the three refusals above are satisfied by a module that ` +
+        `refuses everybody once a bundle goes private.`,
+    ).toContain(noteId);
   });
 });

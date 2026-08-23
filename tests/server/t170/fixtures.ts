@@ -138,6 +138,33 @@ export async function seedBundle(
   return { id, ownerId: o.ownerId, slug };
 }
 
+/**
+ * Flips a bundle's visibility, asserting it really changed.
+ *
+ * This exists for one cell and the cell exists because of a hole in every other fixture
+ * here: they all seed the bundle with `ownerId: author.id`, so the note's author is also
+ * the parent's owner and AUTHORSHIP decides every refusal. A guard that consults the
+ * PARENT is never what denies, so removing it reds nothing — and a single mutation on it
+ * reports that zero and reads as *redundant with the authorship check*. Only an actor who
+ * IS the author and is NOT the parent's owner reaches it.
+ */
+export async function setBundleVisibility(
+  s: Scratch,
+  bundleId: string,
+  visibility: "public" | "private",
+): Promise<void> {
+  const rows = await s.query("update bundle set visibility = $2 where id = $1 returning id", [
+    bundleId,
+    visibility,
+  ]);
+  if (rows.length !== 1) {
+    throw new Error(
+      `Setting bundle ${bundleId} to ${visibility} touched ${rows.length} rows, expected 1. ` +
+        `The premise of the parent-gate cell is that the parent really changed state.`,
+    );
+  }
+}
+
 /* --------------------- cards --------------------- */
 
 export const ONTOLOGY_VERSION = "0.1.0";
