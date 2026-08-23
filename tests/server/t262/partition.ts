@@ -32,7 +32,7 @@
    masking shape, and every assertion below is scoped per file.
    ============================================================ */
 
-import { readdirSync } from "node:fs";
+import { type Dirent, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 /* The scan is rooted so the adversary round can run this suite against a STAND-IN tree without
@@ -67,7 +67,18 @@ const isSource = (name: string) =>
 
 function walk(dir: string): string[] {
   const out: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    /* A missing directory is a premise violation, and it must red in a CELL rather than here.
+       Throwing during collection deletes every cell in the file: measured on this suite, one
+       emptied partition produced `Test Files 1 failed` beside `Tests 37 passed (37)` and NOTHING
+       failed on the test line, with 68 cells simply absent. Loud in the exit code and the file
+       count, silent in the number a reader quotes. */
+    return out;
+  }
+  for (const entry of entries) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) out.push(...walk(path));
     else if (isSource(entry.name)) out.push(path);
@@ -88,9 +99,46 @@ export function components(): string[] {
   ].filter((p) => !(EXCLUDED as readonly string[]).includes(p));
 }
 
+/* ============================================================
+   THE CELL LIST CAN GROW AND CANNOT SHRINK
+
+   `it.each(scanned())` decides how many cells exist, so anything
+   that shortens `scanned()` REMOVES assertions silently — an
+   `it.each([])` reports no failures and no tests, which reads as a
+   pass. So the list is the UNION of a named baseline, taken at
+   `24a22c4`, and the live walk.
+
+   A file the cutover deletes keeps its cell and reds inside it as a
+   PartitionError naming the path. A file the cutover adds is picked
+   up by the walk. A file it renames does both: the old name reds,
+   the new name is scanned. None of the three can quietly reduce the
+   suite.
+   ============================================================ */
+const BASELINE_COMPONENTS = [
+  "components/profile/OwnedBundles.tsx",
+  "components/profile/OwnedCards.tsx",
+  "components/profile/Pinned.tsx",
+  "components/profile/ProfileHeader.tsx",
+  "components/profile/ProfileShell.tsx",
+  "components/profile/ProfileTabs.tsx",
+  "components/profile/SavedList.tsx",
+  "components/profile/VisibilityFilter.tsx",
+  "components/profile/load.ts",
+  "components/profile/parts.tsx",
+  "components/ui/FavoriteStar.tsx",
+  "components/site/SiteHeader.tsx",
+] as const;
+
 /** Everything AC6 and D-262-10 scan. Routes first so a red reads top-down like the site does. */
 export function scanned(): string[] {
-  return [...PROFILE_ROUTES, SETTINGS_ROUTE, ...components()];
+  const union = new Set<string>([
+    ...PROFILE_ROUTES,
+    SETTINGS_ROUTE,
+    ...BASELINE_COMPONENTS,
+    ...components(),
+  ]);
+  for (const excluded of EXCLUDED) union.delete(excluded);
+  return [...union];
 }
 
 /** Every scanned path resolved against the scan root. Cells report the REPO-relative path. */
@@ -99,4 +147,4 @@ export function resolved(path: string): string {
 }
 
 /** Below this the walk has lost files and every absence assertion over it has gone vacuous. */
-export const COMPONENT_FLOOR = 6;
+export const COMPONENT_FLOOR = 12;

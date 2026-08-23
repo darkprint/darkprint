@@ -36,6 +36,7 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import { sources } from "./contract";
+import { resolved } from "./partition";
 
 interface Frozen {
   readonly path: string;
@@ -67,7 +68,7 @@ describe("AC5 and D-262-03: the frozen files are byte-identical", () => {
      * `sources()` first, so "the file was deleted" reds as a PartitionError naming the path
      * rather than as a digest mismatch against an empty read. The two have different repairs.
      */
-    const [source] = sources([path], 1);
+    const [source] = sources([resolved(path)], 1);
     const actual = createHash("sha256").update(readFileSync(source.path)).digest("hex");
     expect(
       actual,
@@ -94,7 +95,7 @@ describe("D-262-06: `ACCOUNT_MENU` stays a static, handle-free shape", () => {
    * `SiteHeader.tsx` is T262's under D-262-06 and this author has not read it. It is parsed.
    */
   it("no `href` in the declaration carries a substitution", () => {
-    const [source] = sources(["components/site/SiteHeader.tsx"], 1);
+    const [source] = sources([resolved("components/site/SiteHeader.tsx")], 1);
     const sf = ts.createSourceFile(
       source.path,
       source.raw,

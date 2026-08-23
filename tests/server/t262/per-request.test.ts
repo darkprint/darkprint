@@ -31,9 +31,12 @@ import { PROFILE_ROUTES, SETTINGS_ROUTE, resolved } from "./partition";
 
 const TOKENS = ["dynamicParams", "generateStaticParams"] as const;
 
-const ROUTE_PATHS = [...PROFILE_ROUTES, SETTINGS_ROUTE];
-const routes: Source[] = sources(ROUTE_PATHS.map(resolved), 6);
-const byPath = new Map(ROUTE_PATHS.map((p, i) => [p, routes[i]]));
+/* Per cell rather than at module scope: a throw during collection deletes this file's cells
+   instead of failing them, and the deletion is invisible on the line a reader quotes. */
+function read(path: string): Source {
+  const [source] = sources([resolved(path)], 1);
+  return source;
+}
 
 describe("premise: the five profile routes are still routes", () => {
   /*
@@ -42,7 +45,7 @@ describe("premise: the five profile routes are still routes", () => {
    * default export, which is what makes a file under `app/` a route at all.
    */
   it.each(PROFILE_ROUTES)("%s parses, imports, and default-exports", (path) => {
-    const source = byPath.get(path)!;
+    const source = read(path);
     expect(importSpecifiers(source).length, `${path} yielded no imports`).toBeGreaterThan(0);
     expect(
       /export\s+default\s/.test(source.code),
@@ -62,7 +65,7 @@ describe("D-262-11: the five profile routes go per-request", () => {
   it.each(PROFILE_ROUTES.flatMap((p) => TOKENS.map((t) => [p, t] as const)))(
     "%s carries no `%s`",
     (path, token) => {
-      const source = byPath.get(path)!;
+      const source = read(path);
       const lines = source.code
         .split("\n")
         .map((text, i) => ({ text, line: i + 1 }))
@@ -93,7 +96,7 @@ describe("`/settings`' clause of D-262-11 is VACUOUS and is recorded rather than
    * ruling names six surfaces) or folded in (which inflates the coverage).
    */
   it("carries neither token today, so its absence after the cutover proves nothing", () => {
-    const settings = byPath.get(SETTINGS_ROUTE)!;
+    const settings = read(SETTINGS_ROUTE);
     for (const token of TOKENS) {
       expect(
         settings.code.includes(token),
