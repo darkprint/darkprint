@@ -128,21 +128,32 @@ describe("D-WAVE-01 — `target` is created on demand and stays single", () => {
       const stored = await s.query("select count(*) as n from note where target_id = $1", [
         bundle.id,
       ]);
+      /* `noteCount` is in the round report because dropping it cost real coverage once
+         already: an earlier version of this cell asserted it, the rewrite that added the
+         five rounds did not, and the M6 mutation (note_count derived rather than
+         maintained) went from redding 4 cells to redding 3. A counter incremented outside
+         the transaction that writes the note drifts under exactly this contention and
+         never under a sequential test, so this is the only cell that can see it. */
       report.push(
         `round ${round}: targetRows=${rows} resolved=${outcomes.length - refused.length} ` +
-          `refused=${refused.length} notes=${String(stored[0]?.n)}` +
+          `refused=${refused.length} notes=${String(stored[0]?.n)} ` +
+          `noteCount=${String((await targetRow(s, target))?.noteCount)}` +
           (refused.length > 0 ? ` first refusal: ${refused[0].digest.slice(0, 160)}` : ""),
       );
     }
 
-    const broken = report.filter((r) => !r.includes("targetRows=1 resolved=8 refused=0 notes=8"));
+    const broken = report.filter(
+      (r) => !r.includes("targetRows=1 resolved=8 refused=0 notes=8 noteCount=8"),
+    );
     expect(
       broken,
       `D-WAVE-01: "Both create it with a single insert, ON CONFLICT (kind, ref_id) DO ` +
         `NOTHING, then read. Never SELECT-then-INSERT. A cell that does not drive two ` +
         `concurrent callers has not tested this."\n` +
-        `  Every round must end at one \`target\` row, eight resolved callers and eight ` +
-        `stored notes. THE ROW COUNT ALONE IS BLIND TO THE DEFECT — ` +
+        `  Every round must end at one \`target\` row, eight resolved callers, eight ` +
+        `stored notes AND a \`note_count\` of eight — a counter incremented outside the ` +
+        `transaction that writes the note drifts under exactly this contention and never ` +
+        `under a sequential test. THE ROW COUNT ALONE IS BLIND TO THE DEFECT — ` +
         `\`target_kind_ref_id_key\` holds it at 1 whether the conflict is caught or ` +
         `escapes — so the callers' outcomes and the notes they left are what see it.\n` +
         `  all ${ROUNDS} rounds:\n    ${report.join("\n    ")}`,
