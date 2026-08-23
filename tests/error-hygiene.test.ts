@@ -263,7 +263,13 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
        ownership sentence and `toggleStar` has no `accountId` to compare against, and
        `NotPermittedError` hardcodes `listAudit:` into its message. Agreeing on why the
        alternatives fail survives the name coming out differently. */
-    ).toBe(39);
+    /* 39 -> 40 at T200's merge: `lib/server/search` publishes `SearchStoreError` and nothing else.
+       ONE class, and the count is the evidence for a claim its author made and I checked — that the
+       module authors no refusal of its own beyond the store fault, because every rejection its inputs
+       produce belongs to a merged module and leaves unaltered under D-50-08. Derived HERE, at the merge
+       commit, against the domain this guard resolves from `backend`: the figure in the handback was a
+       report until this run, and a carried number is somebody else's measurement of a different tree. */
+    ).toBe(40);
 
     const rendered: string[] = [];
     const traceless: string[] = [];
