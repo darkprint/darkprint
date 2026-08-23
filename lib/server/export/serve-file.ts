@@ -52,7 +52,7 @@ import { createObjectStorage, type Db, type ObjectStorage } from "@/lib/db";
 import type { ReleaseRecord } from "@/lib/server/archive";
 import type { Actor } from "@/lib/server/policy";
 import { persistArtefacts, selectArtefact } from "@/lib/server/publish";
-import { buildExport } from "./build";
+import { assertPinnedCardsReadable, buildExport } from "./build";
 import { contentTypeFor } from "./content-type";
 import { recordDownload } from "./downloads";
 import { noSuchFile, readFailed } from "./errors";
@@ -136,6 +136,16 @@ async function servedBytes(
   });
 
   if (frozen.files !== undefined) {
+    /* B-07 before a single byte of the frozen folder leaves, because the check that would
+       have refused this caller lives inside `buildExport` and the frozen path skips it.
+       `readableBy` above is the BUNDLE's visibility; a release's pinned cards carry their
+       own, and a private one may not travel inside a public bundle's folder just because
+       the bundle is public. The frozen object is keyed by `bundleDigest`, which covers the
+       DOT and the card digests and NOTHING about who may read them — so without this line a
+       folder frozen by the cards' owner serves those cards to anonymous, which is what the
+       probe that produced this line measured. */
+    await assertPinnedCardsReadable(db, actor, release.cardRefs);
+
     /* The frozen folder is authoritative for its own digest. A path it does not carry is
        `noSuchFile` and NOT a reason to regenerate: falling back here would let a re-scored
        file set answer a path the frozen folder does not have, at an address whose whole
