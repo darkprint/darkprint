@@ -109,17 +109,21 @@ describe("the parse of §T180 agrees with the floor", () => {
   });
 
   /**
-   * The admissible form is parsed and there is exactly one.
+   * All three admissible forms, parsed off the block, delimiter-agnostic.
    *
-   * §T180 writes "Admissible message form:", singular, where §T240 writes "forms:". A
-   * parser that read only the plural returns `[]` here, and every refusal cell that
-   * compared against `forms[0]` would then compare against `undefined` — which
-   * `toBe(undefined)` would happily accept from a module that threw nothing at all.
+   * **This cell has been wrong twice and each time the document was right.** It first
+   * asserted ONE form, which was true when §T180 published one. D-180-06's repair gave the
+   * block all three — written with a different delimiter, `` `...` `` rather than
+   * `` `"..."` `` — and the parse went to ZERO against a block that had just been given
+   * everything, so the cell reported the block publishing none. A reader keyed to one
+   * delimiter answers "absent" for a form it cannot see, which is the same failure as the
+   * message walker's nested backticks and as a case-sensitive grep over a ruling in caps.
+   *
+   * Now the parse runs `submitReport:` to the closing period and reads every Admissible
+   * line, so the delimiter cannot decide the answer.
    */
-  it("parses exactly one admissible message form", () => {
-    const forms = publishedBlock().admissible;
-    expect(forms).toHaveLength(1);
-    expect(forms[0]).toBe("submitReport: no release at digest `<digest>`.");
+  it("parses all three admissible message forms", () => {
+    expect(publishedBlock().admissible).toEqual([...REFUSAL_FORMS_FLOOR]);
   });
 
   it("parses AC6's forbidden words and they match the floor", () => {
@@ -134,23 +138,21 @@ describe("the parse of §T180 agrees with the floor", () => {
    * list still carries only the digest form. Measured, not assumed: the parser's
    * `declarations` is `[]` and its `admissible` has length 1.
    *
-   * So this cell reads the whole section, and the assertion below records what the block
-   * carries rather than hiding it.
+   * So this cell reads the whole section, and asserts the block and the prose now AGREE.
    *
-   * **Updated after D-180-06's repair, which landed the CLASS and not the messages.** The
-   * block now declares `class RunReportRefusedError`, so the `declarations: []` this cell
-   * originally recorded is stale and would have gone on reporting a divergence that had
-   * been fixed. The Admissible line still carries one form against three ruled, which is
-   * the half still owed.
+   * **D-180-06's divergence is closed and this cell is where that is recorded.** It has
+   * tracked three states: `declarations: []` with one message (the original defect), then
+   * the class landed and the messages had not (the half-applied repair), and now both. Each
+   * time the previous assertion was stale rather than wrong — which is the argument for a
+   * cell that pins the CURRENT state loudly instead of tolerating a range.
    */
-  it("rules three refusal forms, of which the block publishes one", () => {
+  it("rules three refusal forms and the block now publishes all three", () => {
     expect(ruledMessages()).toEqual([...REFUSAL_FORMS_FLOOR]);
-    /* The class landed with D-180-06. */
     expect(publishedBlock().declarations.map((d) => `${d.kind} ${d.name}`)).toEqual([
       "class RunReportRefusedError",
     ]);
-    /* The messages did not: one Admissible form against three ruled in prose. */
-    expect(publishedBlock().admissible).toHaveLength(1);
+    /* The whole point of D-180-06: the block and the prose say the same thing. */
+    expect(publishedBlock().admissible).toEqual(ruledMessages());
   });
 });
 

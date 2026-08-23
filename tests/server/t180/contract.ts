@@ -311,10 +311,27 @@ export function publishedBlock(): PublishedBlock {
   /* `D-05-07`, `D-05-09` and `D-WAVE-01` all reach this task, so the shape is not `D-180-nn`. */
   const rulings = [...new Set(section.match(/D-[A-Z0-9]+-\d+/g) ?? [])];
 
-  /* §T180 writes "Admissible message form:", SINGULAR, where §T240 writes "forms". */
-  const admissibleLine = /\*\*Admissible message forms?:\*\*(.*)$/m.exec(section);
-  const admissible =
-    admissibleLine === null ? [] : [...admissibleLine[1].matchAll(/`"([^"]*)"`/g)].map((m) => m[1]);
+  /**
+   * Every `submitReport: ...` form on every Admissible line, delimiter-agnostic.
+   *
+   * **Third formatting variant to defeat one of this suite's derivations, so this one is
+   * built not to care.** The line was singular (`form:`) where §T240 is plural; the forms
+   * were `` `"..."` `` and are now also `` `...` `` with no quotes; and the digest form
+   * carries backticks of its own. A reader keyed to any one delimiter returns [] on the
+   * others — measured: after D-180-06's second repair this parse went to ZERO against a
+   * block that had just been given all three forms, and two floor cells reddened saying
+   * the block published none.
+   *
+   * So the match runs from `submitReport:` to the closing period, exactly as
+   * `ruledMessages()` does, and BOTH Admissible lines are read rather than only the first.
+   */
+  const admissible = [
+    ...new Set(
+      [...section.matchAll(/\*\*Admissible message forms?[^*]*\*\*(.*)$/gm)].flatMap((line) =>
+        [...line[1].matchAll(/submitReport: .*?\.(?=[`"])/g)].map((m) => m[0]),
+      ),
+    ),
+  ].sort();
 
   const pin = createHash("sha256")
     .update(
