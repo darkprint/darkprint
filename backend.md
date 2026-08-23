@@ -894,6 +894,22 @@ mutations went **0 → 6** each.
 **And keep a CONTROL that must not red:** a reworded message that still leaks nothing. Without it, a D-13 cell
 pinning a literal cannot be told from one pinning the absence of a leak.
 
+## A NON-ZERO CAN BE THE MUTATION TOO, AND THAT DIRECTION IS THE ONE NOBODY CHECKS
+
+**T150's blind author designed an INERT CONTROL and it scored NINE.** `bumpStarCount(tx, id, 0)` — meant to
+change nothing — against a function typed `delta: 1 | -1` that branches `delta === 1 ? +1 : -1`. **`0` fell to
+the else arm and DECREMENTED.** It had predicted from an assumed signature instead of reading it.
+
+**Every discipline this project has built points at the zero:** *a zero is a claim about the instrument*,
+*chase the miss*, *falsify on a second axis*. **All of it is aimed one way.** A mutation that reds looks like
+the harness working, so **a spike gets banked as coverage and a wrong mutation gets banked as a strong cell**.
+
+**A mutation table with an unexamined zero OR an unexamined spike is a table that has not been read.** The
+same session's other anomaly went the other way — a `SELECT`-then-`INSERT` mutation scored 0 because it left
+`ON CONFLICT DO NOTHING` in place, so the guard was untouched and the behaviour identical. **Same root: the
+mutation was predicted rather than read.** Derive what a mutation does from the signature it edits, the way a
+count is derived from the constant rather than from arithmetic in your head.
+
 ## A CLAUSE MASKED BY ITS PARTNER: A MUTATION REDS NOTHING BECAUSE THE TOKEN IT REMOVES OCCURS SOMEWHERE ELSE
 
 **Three instances of one defect in a single suite, found only because the mutation table was RE-RUN after the
