@@ -7,9 +7,10 @@
    is no sentence of the form "this ranked above that BECAUSE …"
    the archive can supply for it — so it is the ranking that would
    force `ordered: false`. What this file produces is a LEXICAL
-   vector, and the word `semantic` appears nowhere it can be
-   shipped: in a string, in an `evidence` value, or as a claim
-   about what the number means.
+   vector, and D-200-01's forbidden term for it appears nowhere in
+   this module at all — not in a string, not in an `evidence` value,
+   and not in a docblock denying it, because a grep for the token
+   cannot tell those apart.
 
    ── The derivation, and why it is 3-grams rather than tokens ──
    D-200-11, correcting D-200-01. A hashed bag of WHOLE TOKENS

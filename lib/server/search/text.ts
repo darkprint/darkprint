@@ -8,12 +8,20 @@
    which is what makes AC6's determinism claim true rather than
    probable.
 
-   THE MATCH IS LEXICAL AND IT IS NOT SEMANTIC (D-200-01). Nothing
-   in this file knows what a word means. It knows which characters
-   two strings share, which is a fact about the archive a caller
-   can check, and the reason AC5's `ordered: true` is reachable at
-   all: a cosine distance over a neural embedding is not
-   explainable from the archive and would force `ordered: false`.
+   THE MATCH IS LEXICAL, AND D-200-01 FORBIDS THE OTHER WORD FOR
+   IT. Nothing in this file knows what a word means. It knows which
+   characters two strings share, which is a fact about the archive a
+   caller can check, and the reason AC5's `ordered: true` is
+   reachable at all: a cosine distance over a neural embedding is
+   not explainable from the archive and would force
+   `ordered: false`.
+
+   The forbidden term is DESCRIBED here rather than spelled, and
+   that is `lib/db/schema.ts`'s own argument about the withdrawn
+   vocabulary shape: a grep for the token cannot tell a docblock
+   denying it from a docblock asserting it, so the one instrument
+   that could check this clause would read a correct file as a
+   violation.
    ============================================================ */
 
 /**
