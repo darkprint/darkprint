@@ -15,12 +15,15 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { inArray } from "drizzle-orm";
 import { readFileSync } from "node:fs";
+import { CORE_ONTOLOGY } from "@/lib/core";
 import { schema, type Db, type ObjectStorage } from "@/lib/db";
+import { addOntologyVersion } from "@/lib/server/ontology";
 import { getBundle, listReleases } from "@/lib/server/archive";
-import { resolveOwner } from "@/lib/server/accounts";
+import { changeHandle, resolveOwner, upsertFromGitHub } from "@/lib/server/accounts";
 import { getSignals, recordDownload } from "@/lib/server/counters";
+import { PublishRefusedError, decodeArtefacts, publish } from "@/lib/server/publish";
+import { readContent } from "@/lib/content/read";
 import type { Actor } from "@/lib/server/policy";
-import { decodeArtefacts } from "@/lib/server/publish";
 import { createTestDb, type TestDb } from "@/tests/support/db";
 import { planImport, runImport, type ImportPlan } from "./index";
 
@@ -174,8 +177,15 @@ describe("runImport (AC2, AC4)", () => {
 
     /* The premise, so the emptiness above is a measurement rather than a query that matches
        nothing: exactly one account exists, and it is the registry's. */
-    const all = await db.select({ handle: schema.account.handle }).from(schema.account);
+    const all = await db
+      .select({ handle: schema.account.handle, githubId: schema.account.githubId })
+      .from(schema.account);
     expect(all.map((r) => r.handle)).toEqual(["darkprint"]);
+    /* The sentinel, pinned because nothing else in the tree does: mutating it reddened zero
+       of eleven, so D-250-04's reason — GitHub ids start at 1, therefore no real signup can
+       ever reach this row — was a property nobody held. `"0"` and not `0`: the ruling writes
+       the number and `upsertFromGitHub` types the column's `string`. */
+    expect(all.map((r) => r.githubId)).toEqual(["0"]);
   });
 });
 
@@ -205,6 +215,73 @@ describe("the freeze", () => {
       expect(files!.map((f) => f.path), planned.slug).toContain("README.md");
     }
   }, 60_000);
+});
+
+describe("a refusal that is not a conflict", () => {
+  /**
+   * The one cell that makes `err.kind === "conflict"` load-bearing.
+   *
+   * Measured: dropping the kind check and counting every `PublishRefusedError` as skipped
+   * reddened ZERO of eleven, because no other refusal happens on the archive's happy path.
+   * A criterion nothing can fail is a criterion nobody is holding, so this drives one.
+   *
+   * Reaching `version-not-higher` takes a bundle that holds a HIGHER release and does NOT
+   * hold the archive's digest, and the ORDER is why the first draft of this cell failed:
+   * `publish` checks the digest before the version, so a bundle that already carries the
+   * seeded 1.0.0 release refuses as a conflict however high a second release is. The
+   * modified release has to be the bundle's FIRST, which is why the account and the
+   * ontology version are made here rather than by an import that would also seed 1.0.0.
+   */
+  it("rejects rather than counting a bundle it could not import", async () => {
+    const other = await createTestDb();
+    try {
+      const scratch = other.client.db;
+      const scratchPlan = await planImport();
+      const scratchStore = memoryStorage();
+
+      /* The two preconditions `publish` has, made through the same merged doors
+         `runImport` uses — not a second implementation of them, and deliberately WITHOUT
+         importing, so the target bundle's first release is the modified one below. */
+      await addOntologyVersion(scratch, { version: "0.1.0", terms: CORE_ONTOLOGY.terms });
+      const account = await upsertFromGitHub(scratch, { githubId: "0", githubLogin: "darkprint" });
+      const actor: Actor = { kind: "account", accountId: account.accountId, handle: null };
+      await changeHandle(scratch, actor, account.accountId, "darkprint");
+
+      const target = readContent()[0]!;
+      await publish(
+        scratch,
+        { kind: "account", accountId: account.accountId, handle: "darkprint" },
+        {
+          ownerHandle: "darkprint",
+          slug: target.slug,
+          version: "2.0.0",
+          manifest: target.bundle.manifest,
+          /* One comment line, so the DOT differs and the digest with it. The graph is
+             unchanged, which is what keeps the bundle resolving. */
+          dot: `${target.bundle.dot}\n// a byte the archive does not carry\n`,
+          cardFiles: { ...target.bundle.cardFiles },
+          visibility: "public",
+        },
+        scratchStore,
+      );
+
+      /* The import now meets a bundle whose only release is 2.0.0 at a digest it does not
+         hold, so `publish` refuses with `version-not-higher`. A correct `runImport` lets
+         that leave with T100's own message; the mutant counts it as one more bundle
+         skipped and reports success. */
+      const error = await runImport(scratch, scratchPlan, scratchStore).then(
+        () => undefined,
+        (e: unknown) => e,
+      );
+      /* Not `rejects.toThrow()`. A bare rejection matcher is satisfied by any throw,
+         including one from the fixture above, so the class and the kind are both asserted
+         — the kind is the whole subject and it is the half a class check cannot see. */
+      expect(error).toBeInstanceOf(PublishRefusedError);
+      expect((error as PublishRefusedError).kind).toBe("version-not-higher");
+    } finally {
+      await other.drop();
+    }
+  }, 180_000);
 });
 
 describe("the counters nobody counted (AC3, AC5)", () => {
