@@ -970,6 +970,18 @@ scanned code.
 **CORRECT ORDER: blank comments → strip JSX markup → collapse whitespace. Blanking must come first because it
 needs the PARSER and the ORIGINAL OFFSETS.** A cell should red if it is ever inverted.
 
+**AND THE SEVERITY IS MEASURED RATHER THAN ARGUED. Over 239 real files, collapse-first destroys MORE THAN 10%
+OF THE REAL CODE IN 122 OF THEM — worst case keeping 10% of non-space characters (`app/mcp/page.tsx`: 331 of
+3289).** The mechanism: **collapsing newlines makes a `//` comment run to the end of the FILE rather than the
+end of the line.** So the wrong order is not merely wrong-answered, **it is LOSSY** — and an absence assertion
+over text the scanner never saw passes for a reason unrelated to the tree.
+
+**And the origin is worth recording: the implementer's CODE was right and its PROSE was wrong.** Its handback
+listed the passes in one order and warned against that order one clause later; **the orchestrator published the
+list half of a self-contradicting sentence.** Both of its claims were computed blank-first, so **neither
+measurement needed revising** — but a rule shipped from prose that its own code contradicts is a rule nobody
+had run.
+
 ### AND A CORRECTION THAT EXPLAINS A RETIREMENT QUOTES THE RETIRED SENTENCE
 
 Measured across the same change: **both wrapped quotations read `literal=0` at base and `literal=1` at HEAD** —
@@ -19888,7 +19900,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **The real fix is a `visibility` and a `bundleId` on `BlueprintSummary`, which is T080's and closes AC4's blueprint half in the same stroke.** Recorded as a gap. **Option (1) is the one that does not pay for a criterion with a feature.**
 
-- **D-262-24 — THE PUBLISHED-SIGNATURES LINE NAMES THREE BARRELS AND THE CUTOVER CONSUMES SEVEN.** **CORRECTED: I wrote *six* and then named three plus four.** Its blind author refused to guess which one was not really consumed and **split the four additions into four separate cells, so a red names WHICH barrel and can be read either way — the cutover has not reached it, or the ruling named one it does not need.** Rolled into one premise, a single miss would have read as *the cutover has not happened*. Add **`@/lib/server/auth`** (the session), **`@/lib/server/policy`** (the `Actor` type and the anonymous reader), **`@/lib/server/registry`** (the settings counts) and **`@/lib/db`** (`getSharedDbClient`). **None is a write and none is a new decision**, and its blind author is building to the same stale three-barrel line. **Two corroborations it found rather than assumed:** `getPublicAuthor`'s own docblock names *"T130 and T262 call this in-process"*, so it is an expected caller; and `lib/server/registry/actor.ts:26-31` **independently documents the `decodeSession` default-parameter hazard it guarded against** — a second SOURCE for the rule rather than a second copy of its own reasoning.
+- **D-262-24 — THE PUBLISHED-SIGNATURES LINE NAMES THREE BARRELS AND THE CUTOVER CONSUMES SEVEN.** **The count was the IMPLEMENTER's and it took it back rather than let it stand as mine** — its handback said *six* and listed four additions on three named. **Resolved mechanically: there are SIX `lib/server` barrels — `accounts`, `profiles`, `saves`, `auth`, `policy`, `registry` — and `@/lib/db` is the SEVENTH NAME AND NOT A `lib/server` BARREL AT ALL**, being the driver handle one level below. The accurate sentence is *the line names three of the six `lib/server` barrels this task consumes, and omits `@/lib/db`*. Its blind author refused to guess which one was not really consumed and **split the four additions into four separate cells, so a red names WHICH barrel and can be read either way — the cutover has not reached it, or the ruling named one it does not need.** Rolled into one premise, a single miss would have read as *the cutover has not happened*. Add **`@/lib/server/auth`** (the session), **`@/lib/server/policy`** (the `Actor` type and the anonymous reader), **`@/lib/server/registry`** (the settings counts) and **`@/lib/db`** (`getSharedDbClient`). **None is a write and none is a new decision**, and its blind author is building to the same stale three-barrel line. **Two corroborations it found rather than assumed:** `getPublicAuthor`'s own docblock names *"T130 and T262 call this in-process"*, so it is an expected caller; and `lib/server/registry/actor.ts:26-31` **independently documents the `decodeSession` default-parameter hazard it guarded against** — a second SOURCE for the rule rather than a second copy of its own reasoning.
 
 - **D-262-20 — AC2's SUBJECT IS INTRINSIC ELEMENTS PLUS THE SEVEN WRAPPERS `components/settings/controls.tsx` ALREADY PUBLISHES, AND THAT FILE EXISTS TODAY.** T262's blind author asked whether the subject is intrinsic elements only or those plus a wrapper set, **on the premise that `components/settings/**` does not exist in the tree — it does**, at `b22ee53`, in `backend`, predating the cutover. It could not check: that directory is in its forbidden set, so it reasoned from the criterion rather than the tree, **which is the correct failure to have.**
 
