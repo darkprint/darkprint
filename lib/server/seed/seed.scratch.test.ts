@@ -21,7 +21,7 @@ import { resolveOwner } from "@/lib/server/accounts";
 import { getSignals, recordDownload } from "@/lib/server/counters";
 import type { Actor } from "@/lib/server/policy";
 import { createTestDb, type TestDb } from "@/tests/support/db";
-import { REGISTRY_HANDLE, SEED_RELEASE_VERSION, planImport, runImport, type ImportPlan } from "./index";
+import { planImport, runImport, type ImportPlan } from "./index";
 
 /** The six voices the archive's manifests are written in. None becomes an account (AC4). */
 const INVENTED_AUTHORS = ["hachi", "k0bra", "lupo", "mara-veil", "orin", "sol-antczak"] as const;
@@ -67,8 +67,13 @@ describe("planImport (AC1, no database)", () => {
     expect(new Set(plan.cards.map((c) => c.digest)).size).toBe(57);
   });
 
+  /* Literals, never `REGISTRY_HANDLE` and `SEED_RELEASE_VERSION` off the barrel. Measured:
+     the first draft imported them, and mutating `SEED_RELEASE_VERSION` to `"2.0.0"` reddened
+     ZERO of nine cells — the suite asserted the module agreed with itself and would have
+     passed unchanged whatever the ruling said. The constants are still exported, because a
+     caller needs to name them; they are just not this suite's oracle. */
   it("owns nothing about the database: the handle and the ontology version are named", () => {
-    expect(plan.registryHandle).toBe(REGISTRY_HANDLE);
+    expect(plan.registryHandle).toBe("darkprint");
     expect(plan.ontologyVersion).toBe("0.1.0");
   });
 });
@@ -87,7 +92,7 @@ describe("runImport (AC2, AC4)", () => {
   });
 
   it("stores every bundle under the registry handle, one release each, at the printed digest", async () => {
-    const owner = await resolveOwner(db, REGISTRY_HANDLE);
+    const owner = await resolveOwner(db, "darkprint");
     expect(owner, "the registry account was not created").toBeDefined();
 
     for (const planned of plan.bundles) {
@@ -98,7 +103,7 @@ describe("runImport (AC2, AC4)", () => {
 
       const releases = await listReleases(db, bundle!.id);
       expect(releases.length, `${planned.slug}: a second run appended a release`).toBe(1);
-      expect(releases[0]!.version, planned.slug).toBe(SEED_RELEASE_VERSION);
+      expect(releases[0]!.version, planned.slug).toBe("1.0.0");
       /* AC1 after the write, not only in the plan: `addRelease` recomputes the digest from
          the DOT and the card digests it was handed, so this is the stored identity rather
          than the planned one echoed back. */
@@ -110,11 +115,24 @@ describe("runImport (AC2, AC4)", () => {
   });
 
   it("stores the 57 card versions once, public, owned by the registry account", async () => {
-    const owner = await resolveOwner(db, REGISTRY_HANDLE);
+    const owner = await resolveOwner(db, "darkprint");
     const rows = await db.select().from(schema.cardVersion);
     expect(rows.length, "a card pinned by two bundles was stored twice").toBe(57);
     expect(rows.every((r) => r.ownerId === owner!.accountId)).toBe(true);
-    expect(rows.every((r) => r.visibility === "public")).toBe(true);
+
+    /* Stored against PLANNED, not against the literal `"public"`, and the difference was
+       measured. `runImport` never reads `ImportPlan.cards[].visibility` — a card's
+       visibility is the bundle's and `publishCard` decides it — so mutating the plan's
+       field reddened the plan cell and left this one green: the plan was describing a write
+       nothing held it to. Comparing the two makes the field a claim about the store rather
+       than a value only its author reads. */
+    const stored = new Map(rows.map((r) => [`${r.cardId}@${r.version}`, r.visibility]));
+    expect(stored.size).toBe(57);
+    for (const card of plan.cards) {
+      expect(stored.get(`${card.cardId}@${card.version}`), `${card.cardId}@${card.version}`).toBe(
+        card.visibility,
+      );
+    }
   });
 
   it("creates no account for any of the six invented authors (AC4)", async () => {
@@ -127,13 +145,13 @@ describe("runImport (AC2, AC4)", () => {
     /* The premise, so the emptiness above is a measurement rather than a query that matches
        nothing: exactly one account exists, and it is the registry's. */
     const all = await db.select({ handle: schema.account.handle }).from(schema.account);
-    expect(all.map((r) => r.handle)).toEqual([REGISTRY_HANDLE]);
+    expect(all.map((r) => r.handle)).toEqual(["darkprint"]);
   });
 });
 
 describe("the counters nobody counted (AC3, AC5)", () => {
   it("reads zero for every imported bundle, and the reader can report non-zero", async () => {
-    const owner = await resolveOwner(db, REGISTRY_HANDLE);
+    const owner = await resolveOwner(db, "darkprint");
     const bundles = [];
     for (const planned of plan.bundles) {
       bundles.push((await getBundle(db, owner!.accountId, planned.slug))!);
