@@ -869,6 +869,43 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## A UNIQUE INDEX HOLDS THE COUNT AT 1 WHETHER THE CONFLICT IS CAUGHT OR ESCAPES — SO A COUNT-ONLY CELL IS STRUCTURALLY BLIND
+
+**T170's blind author swept 18 mutations and TWO redded nothing — both on the cells the criteria were said to
+rest on.** `SELECT`-then-`INSERT` in place of a caught conflict, on `note_vote` and on `target`.
+
+**The cause is not the concurrency. It is the assertion.** `note_vote_note_account_key` and
+`target_kind_ref_id_key` hold the row count at **1 either way** — the index does its job whether the module
+catches the duplicate or lets it escape. **What actually changes is that CALLERS LOSE THEIR WRITE** to a
+duplicate-key error: measured at **4 of 8 and 7 of 8** across rounds. And D-WAVE-01 rules the write is *a
+single insert **whose conflict is caught***, **so a caller losing its note IS the criterion failing.**
+
+**Its cells had said in terms that *refusals are counted rather than forbidden, because whether the module
+swallows the conflict or surfaces it is not something the block decides*. That sentence was wrong and it was
+written deliberately** — the ruling does decide it. **Assert that every caller RESOLVES, not only that the
+count is 1.**
+
+### A CONCURRENCY CELL THAT FIRES 40% OF THE TIME IS WORSE THAN NO CELL
+
+**Even with the stronger assertion the mutation still passed the suite**, so it probed directly, five rounds:
+`resolved=8` / `resolved=1,refused=7` / `8` / `1,refused=7` / `8`. Pristine: **0 refusals every round.**
+**One 8-caller round is a coin weighted about 40/60 toward green** — it reports green on a real defect three
+runs in five, **and it reads as covered.** Same object as the `skipped > 0` trap, arriving through timing
+instead of a hook.
+
+**The repair: N rounds, each on its OWN fresh subject** — a second round against the same target finds the row
+already there and races nothing — **and every round must be clean**, with the per-round results printed so a
+red says which ones opened. After it: **5 of 5 on both mutations, pristine green 3 of 3.**
+
+### AND IT MISCLASSIFIED AN EQUIVALENT MUTANT BY THE RULE IT WAS HOLDING
+
+It reported one of the two as an **equivalent mutant** — one probe showed 8 resolved / 0 rejected, identical
+to pristine, and it concluded no cell could distinguish them. **That fitted every observed detail and was a
+hypothesis.** The five-round version reds it **5 of 5**; the window simply never opened in the single round it
+measured. **The orchestrator made the same error on three misattributed reds this morning; this session made
+it four hours later while holding the sentence.** *What made the difference was not thinking harder. It was
+repeating the measurement.*
+
 ## A CELL CAN BE GUARDED BY THE DATABASE RATHER THAN BY THE MODULE, AND READ AS COVERAGE FOR NEITHER
 
 **T150's blind author found the cell it was sent to find: `moves nothing, over every table the schema
