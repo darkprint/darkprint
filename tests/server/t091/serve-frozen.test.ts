@@ -99,6 +99,34 @@ let moving: SeededRelease;
 
 let strangerActor: Actor;
 
+/**
+ * One seeded release with a DOT nothing else can have produced.
+ *
+ * **Module scope rather than inside `beforeAll`, because under freeze-on-miss a release is a
+ * one-shot resource** (D-091-06). Any cell that needs an UNFROZEN subject has to seed its own:
+ * the first `serveFile` against a release generates, freezes what it generated, and serves that,
+ * so the second cell to reach the same fixture is measuring the frozen path under a name that
+ * says otherwise. Two cells here caught that with `expectNoObject` and reddened; three did not
+ * and passed. This helper is what lets each of them hold its own.
+ */
+async function seed(
+  marker: string,
+  account: SeededAccount = owner,
+  extra: {
+    visibility?: "public" | "private";
+    bundleId?: string;
+    version?: string;
+    slug?: string;
+  } = {},
+): Promise<SeededRelease> {
+  const entry = bundleBySlug(SUBJECT);
+  return seedRelease(scratch, account, entry, {
+    dot: uniqueDot(entry.bundle.dot, marker),
+    slug: `${SUBJECT}-${marker}`,
+    ...extra,
+  });
+}
+
 beforeAll(async () => {
   scratch = await scratchDatabase("serve");
   store = storage();
@@ -107,18 +135,6 @@ beforeAll(async () => {
   owner = await seedAccount(scratch, "t091owner");
   stranger = await seedAccount(scratch, "t091stranger");
   strangerActor = { kind: "account", accountId: stranger.accountId, handle: stranger.handle };
-
-  const entry = bundleBySlug(SUBJECT);
-  const seed = async (
-    marker: string,
-    account: SeededAccount = owner,
-    extra: { visibility?: "public" | "private"; bundleId?: string; version?: string } = {},
-  ): Promise<SeededRelease> =>
-    seedRelease(scratch, account, entry, {
-      dot: uniqueDot(entry.bundle.dot, marker),
-      slug: `${SUBJECT}-${marker}`,
-      ...extra,
-    });
 
   pristine = await seed("pristine");
   marked = await seed("marked");
@@ -132,11 +148,10 @@ beforeAll(async () => {
   /* One bundle, two releases, so "digest before version" has an input on which the two orderings
      disagree. The second release differs only in a DOT comment, which moves its digest. */
   pinned = await seed("pinned");
-  moving = await seedRelease(scratch, owner, entry, {
+  moving = await seed("moving", owner, {
     bundleId: pinned.bundleId,
     version: "2.0.0",
     slug: pinned.slug,
-    dot: uniqueDot(entry.bundle.dot, "moving"),
   });
 }, 300_000);
 
@@ -174,6 +189,17 @@ async function generatedFolder(
     release.bundleId,
     release.digest,
   )) as readonly ExportedFile[];
+}
+
+/** One file's text out of a generated folder, so a control can read the generator directly. */
+function textOf(files: readonly ExportedFile[], path: string): string {
+  const file = files.find((candidate) => candidate.path === path);
+  if (file === undefined) {
+    throw new Error(
+      `The generated folder holds no \`${path}\`; it holds ${files.map((f) => f.path).join(", ")}.`,
+    );
+  }
+  return file.text;
 }
 
 function refFor(release: SeededRelease): { ownerHandle: string; slug: string; digest: string } {
@@ -249,12 +275,17 @@ describe("AC2 — a release that predates the freeze still serves", () => {
      * one path — which is a plausible shape for a preference branch bolted onto the front of a
      * function that used to do one thing.
      */
-    await expectNoObject(store, pristine.digest);
-    const folder = await generatedFolder(pristine);
-    expect(folder.length, "The pristine release exported nothing.").toBeGreaterThan(4);
+    /* Its OWN release, not `pristine`. D-091-06: the cell above already served `pristine`, and
+       freeze-on-miss froze it on that serve, so re-using it here asks the frozen path a question
+       whose name says unfrozen. `expectNoObject` caught that and reddened rather than passing
+       quietly, which is what a premise guard is for. */
+    const unfrozen = await seed("every-file");
+    await expectNoObject(store, unfrozen.digest);
+    const folder = await generatedFolder(unfrozen);
+    expect(folder.length, "The release exported nothing.").toBeGreaterThan(4);
 
     for (const file of folder) {
-      const served = await serve(pristine, file.path);
+      const served = await serve(unfrozen, file.path);
       expect(
         decode(served.bytes),
         `\`serveFile\` and \`exportRelease\` disagree about \`${file.path}\` in a release with ` +
@@ -424,7 +455,13 @@ describe("AC6 — one digest serves one answer across a B-08 re-score", () => {
     await freeze(store, rescoredFrozen.digest, folder);
 
     const frozenBefore = decode((await serve(rescoredFrozen, "README.md")).bytes);
-    const plainBefore = decode((await serve(rescoredPlain, "README.md")).bytes);
+    /* THE CONTROL READS THE GENERATOR, NOT `serveFile` (D-091-06). Under freeze-on-miss no
+       `serveFile` call can leave a release unfrozen — the control's own baseline serve froze its
+       subject, so its second serve read back the bytes it had just written and the re-score was
+       invisible for a reason that had nothing to do with the re-score. `exportRelease` is the
+       generate-from-Postgres path with no bucket in it, so it answers the question the control
+       is actually asking: is the re-score visible in freshly generated bytes at all. */
+    const plainBefore = textOf(await generatedFolder(rescoredPlain), "README.md");
 
     for (const release of [rescoredFrozen, rescoredPlain]) {
       const rescored = await scratch.pool.query(
@@ -453,17 +490,21 @@ describe("AC6 — one digest serves one answer across a B-08 re-score", () => {
       ).toBe(1);
     }
 
-    const plainAfter = decode((await serve(rescoredPlain, "README.md")).bytes);
+    const plainAfter = textOf(await generatedFolder(rescoredPlain), "README.md");
     expect(
       plainAfter,
       `THE CONTROL FAILED, AND THIS IS NOT A DEFECT IN T091.\n` +
-        `  \`README.md\` for the UNFROZEN release is byte-identical before and after a re-score ` +
-        `that updated its row. The re-score is therefore invisible in the served bytes, and the ` +
-        `frozen half of this cell would pass against an implementation that never opened the ` +
-        `bucket.\n` +
+        `  \`README.md\` as GENERATED by \`exportRelease\` is byte-identical before and after a ` +
+        `re-score that updated its row. The re-score is therefore invisible in generated bytes, ` +
+        `and the frozen half of this cell would pass against an implementation that never opened ` +
+        `the bucket.\n` +
         `  Look at whether \`bundle-export.ts\` still quotes \`analysis.autonomy\` and ` +
-        `\`analysis.security\` into the README, and whether \`serveFile\` caches. Fix the ` +
-        `instrument before reading anything else in this file.`,
+        `\`analysis.security\` into the README. Fix the instrument before reading anything else ` +
+        `in this file.\n` +
+        `  This control does NOT go through \`serveFile\`, and that is D-091-06 rather than a ` +
+        `convenience: freeze-on-miss means a \`serveFile\` baseline freezes its own subject, so ` +
+        `there is no arm of this cell in which \`serveFile\` can be asked about an unfrozen ` +
+        `release twice.`,
     ).not.toBe(plainBefore);
 
     const frozenAfter = decode((await serve(rescoredFrozen, "README.md")).bytes);
@@ -516,9 +557,12 @@ describe("a path missing from a PRESENT frozen folder refuses", () => {
     ).toBeDefined();
     const path = (victim as ExportedFile).path;
 
-    /* CONTROL: the path is servable when nothing is frozen. */
-    await expectNoObject(store, pristine.digest);
-    const control = await serve(pristine, path);
+    /* CONTROL: the path is servable when nothing is frozen — from a release of this cell's own.
+       D-091-06: `pristine` was frozen by its own first serve three cells ago, so borrowing it
+       here would make the control read the frozen path and prove nothing about the freeze. */
+    const controlRelease = await seed("r2-control");
+    await expectNoObject(store, controlRelease.digest);
+    const control = await serve(controlRelease, path);
     expect(
       control.bytes.length,
       `THE CONTROL FAILED: \`${path}\` does not serve from an UNFROZEN release either, so the ` +
@@ -723,10 +767,16 @@ describe("the frozen path still records exactly one download", () => {
     const folder = await generatedFolder(counted);
     await expectNoObject(store, counted.digest);
 
-    /* Unfrozen first, so both halves are measured on the same counter in the same database. */
-    const plainBefore = await downloadsFor(scratch, counter, pristine.bundleId);
-    await serve(pristine, "README.md");
-    const plainAfter = await downloadsFor(scratch, counter, pristine.bundleId);
+    /* Unfrozen first, so both halves are measured on the same counter in the same database.
+       A release of this cell's own, and GUARDED. D-091-06: this cell used `pristine`, which four
+       earlier cells had already frozen, so its "unfrozen" half was counting a frozen serve — and
+       unlike the two cells that reddened, it had no `expectNoObject` to say so. It passed while
+       measuring the wrong branch, which is the silent half of the same defect. */
+    const unfrozen = await seed("counted-plain");
+    await expectNoObject(store, unfrozen.digest);
+    const plainBefore = await downloadsFor(scratch, counter, unfrozen.bundleId);
+    await serve(unfrozen, "README.md");
+    const plainAfter = await downloadsFor(scratch, counter, unfrozen.bundleId);
     expect(
       plainAfter - plainBefore,
       `A serve with NO frozen artefact moved the download counter by ${plainAfter - plainBefore}, ` +
@@ -788,9 +838,18 @@ describe("a frozen file and a generated file are the same kind of answer", () =>
 
     await expectNoObject(store, typed.digest);
     await freeze(store, typed.digest, folder);
+
+    /* The GENERATED oracle needs a release nothing has frozen, and it needs a fresh one for each
+       path: `serveFile` freezes on a miss, so the first path served through it would freeze the
+       oracle and every later comparison would be frozen against frozen. D-091-06 — this cell used
+       `pristine`, already frozen by four earlier cells, so BOTH sides were the frozen branch and
+       the comparison was a tautology. Falsified: with the frozen branch mutated to a constant
+       content type this cell passed before the repair and reds after it. */
     for (const path of paths) {
       const frozen = await serve(typed, path);
-      const generated = await serve(pristine, path);
+      const oracle = await seed(`typed-oracle-${paths.indexOf(path)}`);
+      await expectNoObject(store, oracle.digest);
+      const generated = await serve(oracle, path);
       expect(
         frozen.contentType,
         `\`${path}\` is served as \`${frozen.contentType}\` from the frozen artefact and ` +
