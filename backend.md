@@ -869,7 +869,45 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
-## `Promise.all` ON ONE `pg` POOL COMPLETES SERIALLY — A CELL THAT LOOKS LIKE CONCURRENCY AND IS NOT
+## A COLD `pg` POOL SERIALISES ITS FIRST CALLERS — WARM IT, OR THE RACE NEVER OPENS
+
+**THIRD AND FINAL FORM OF THIS RULE. The first two were wrong in different directions and the true cause
+explains all three observations.** Found by T170's blind author, which checked its own fixture rather than
+accepting either the warning or the exemption.
+
+**A `pg` Pool holds ZERO connections when it is created and establishes them lazily.** Eight concurrent
+queries on a fresh pool **queue behind the first handshake and complete in order.**
+
+| | callers that raced |
+| --- | --- |
+| cold pool | **1 of 8** |
+| warmed pool | **24 of 24 across three runs** |
+
+**This reconciles everything.** T160's harness was on one connection and never raced. T150's pooled harness
+raced 8 of 8 — **because its pool was already warm from the seeding above it.** And T170's 40/60 flake was
+never scheduler luck: **the window opened when the pool happened to have live connections left over from
+seeding, and not otherwise. Its cells raced by accident.**
+
+**Repair: warm the pool to N before the first round, with the measurement in the docblock so nobody deletes
+the warm-up as a no-op.** Keep the multiple rounds beside it rather than instead of it — the warm-up makes the
+window open, the rounds cover residual variance, and they cost a few hundred milliseconds.
+
+**The question that separates a race from a warm-up artefact is not *how often does the window open* but
+*can it open at all*, and only an interleaving log answers it.** A 7-of-8 refusal rate reads as proof the
+window opens and is not.
+
+### AND AN INSTRUMENT CAN CERTIFY ITS OWN READINESS ON A VALUE THAT MEANS THE OPPOSITE
+
+Same round. A premise guard proving a precision cell could discriminate did `Number(row.sub) ?? 0` and then
+asked `micros.some((m) => m !== 0)`. **`NaN` is not nullish so `??` does not catch it; `NaN` is a `number` to
+`typeof`; and `NaN !== 0` is TRUE — so a single NaN SATISFIES the readiness guard**, and the cell then
+measures nothing while reporting that it can. **Every numeric read off a row must go through a finiteness
+guard that THROWS rather than defaults**, because a default silently weakens the check the cell rests on.
+
+### SUPERSEDED — the first form of this rule, kept because its measurement is still the single-connection case
+
+#### `Promise.all` on one CONNECTION completes serially
+
 
 **Measured by T160's blind author when a `SELECT`-then-`INSERT` mutation redded ZERO of 50.** The trace is the
 finding:
