@@ -576,8 +576,20 @@ export function BundleDropzone({
               <span className="font-mono text-cyan">.dot</span> graph and the{" "}
               <span className="font-mono text-cyan">.yaml</span> cards it pins
             </p>
+            {/* ── D-263-12: this line said "nothing is uploaded" and it had to go ──
+                It was unconditional rendered copy on the upload control itself, and after
+                T263 this route publishes, so it was false about the very gesture it
+                describes. What is still true is the SEQUENCE — dropping a folder reads it
+                and nothing more — so the sentence keeps that and names where publishing
+                actually happens instead of denying that it does.
+
+                Not the same case as the vocabulary note further down this file, which
+                D-263-01 kept: that one's subject is an unreadable overlay, which is not
+                sent anywhere after any cutover, so its claim stayed true. Subject decides
+                it, not which file the sentence lives in. */}
             <p className="text-xs text-dim">
-              or click to browse, the files are read in this tab and nothing is uploaded
+              or click to browse. Selecting a folder reads it here; the last step is where
+              you publish it.
             </p>
             {/* Both folders a reader can arrive with, named at the target itself rather
                 than only in the page header three paragraphs up: this is where somebody
