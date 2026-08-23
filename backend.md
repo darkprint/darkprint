@@ -913,6 +913,28 @@ this one dates a repin at the upstream's latest release rather than the earliest
 coincide on a two-release fixture, so that cell stays unfalsified on that axis and the table says so
 rather than implying past it.
 
+## A FINISHED SESSION IS RELEASED, and the release has a three-point checklist
+
+**Owner's standing rule: once a session's work is done, close it. Do not accumulate stale sessions.**
+Eighteen of them exhausted 15 GB of swap on this host and killed three `next build` runs before
+anyone connected the two, and a session idle for twelve days is fully paged out — **16 KB resident,
+which reads as free and is not.**
+
+**Finished means MERGED, not "reported done".** Before releasing, verify three things and never infer
+them from the session's own last message:
+
+1. **its branch is an ancestor of `backend`** — `git merge-base --is-ancestor`, not a tag, not a
+   report;
+2. **its worktree is clean** — `git status --porcelain` empty. A dead session's uncommitted work is
+   recoverable only if somebody notices before a checkout; one round lost 371 insertions this way
+   and was saved only because the tree was inspected before the process was gone;
+3. **its instruments are swept** — scratch buckets it created, and anything else it asked permission
+   to keep. **Never the shared bucket, never a database.**
+
+**The worktree and the branch SURVIVE a release; only the conversation ends.** That is what makes
+this cheap: everything a resumed session needs is in `backend.md` plus its branch, which is why the
+document is the durable channel and a message never is.
+
 ## `git checkout HEAD -- <path>` REVERTS AN UNCOMMITTED FIX, and every gate after it measures the hole
 
 **Second instance in this project.** The technique is the obvious way to run a base-vs-mine
