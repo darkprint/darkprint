@@ -107,13 +107,27 @@ export async function weightedVotesFor(db: Db, bundleId: string): Promise<readon
  * under two concurrent callers the select-then-insert stores two. The constraint enforces
  * "replaces rather than accumulates"; this statement is what lets it.
  *
- * **Only the metrics the caller sent enter the `SET`, and the omission is the point.**
- * `castBallot` takes a `Partial<Ballot>` because the three columns are nullable and a caller
- * may vote on one metric and not the others (`lib/db/schema.ts:388-392`). The obvious
- * `set: { efficacy, reliability, transparency }` sends `undefined` for the absent two, which
- * drizzle writes as `NULL` — so voting on efficacy would ERASE the reliability score the
- * same account cast last week. An absent member means *no opinion expressed now*, never *no
- * opinion any more*.
+ * **Only the metrics the caller sent enter the `SET`, and what that rests on was measured
+ * rather than assumed.** `castBallot` takes a `Partial<Ballot>` because the three columns
+ * are nullable and a caller may vote on one metric and not the others
+ * (`lib/db/schema.ts:388-392`), so an absent member has to mean *no opinion expressed now*
+ * and never *no opinion any more*: voting on reliability must not erase the efficacy score
+ * the same account cast last week.
+ *
+ * The naive `set: { efficacy, reliability, transparency }` turns out to be SAFE on
+ * drizzle 0.45.2, and the opposite was assumed here first. Rendered through `toSQL()`, an
+ * `undefined` member is dropped from the clause entirely — `{ reliability: 20 }` emits
+ * `do update set "reliability" = $4, "updated_at" = now()`, with no `efficacy` and no
+ * `transparency`. Only an explicit `null` emits `"efficacy" = $4` and blanks the column.
+ *
+ * **So building the set is by-construction rather than a fix, and its falsification is
+ * EMPTY.** Replacing it with the naive form reds nothing in any suite, which is the
+ * signature of a by-construction change and not an objection to one (the same reading
+ * `saves/store.ts` records for D-140-09). It is kept because the property it leans on —
+ * undefined is dropped from a `SET` — is a fact about a driver version that nothing in this
+ * repository pins or documents, where "the object holds exactly the columns to write" is a
+ * fact about this function. A driver that ever wrote `NULL` for an absent member would take
+ * a metric off every ballot that was updated, silently, and no response would show it.
  *
  * `updated_at` is `now()` rather than a JS `Date`: the row's `defaultNow()` sets it on the
  * insert path, and a second clock on the update path would make two rows written in the same

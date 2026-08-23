@@ -138,10 +138,17 @@ describe.skipIf(!hasDb)("lib/server/ballot against Postgres", () => {
 
   describe("an absent metric is no opinion now, never no opinion any more", () => {
     /**
-     * The obvious `set: { efficacy, reliability, transparency }` sends `undefined` for the
-     * two the caller omitted and drizzle writes them as `NULL`, so voting on reliability
-     * would ERASE last week's efficacy score. Nothing about that is visible in the response
-     * unless a cell reads the row back.
+     * **This cell's mutation score is ZERO against the shape it was written for, and that is
+     * recorded rather than left to look like coverage.** The naive
+     * `set: { efficacy, reliability, transparency }` reds nothing here: drizzle 0.45.2 drops
+     * an `undefined` member from the `SET` clause, verified through `toSQL()`, so the naive
+     * form and `store.ts`'s explicit one emit the same statement.
+     *
+     * The cell is alive, which was checked on the second axis rather than assumed: a `set`
+     * built with `?? null` writes the columns as `NULL` and this cell reds. So what it
+     * actually guards is a driver that ever starts sending an absent member as `NULL`, and
+     * an aggregate read alone would never show it — the erased metric simply leaves its
+     * sample, and every other assertion in this file still passes.
      */
     it("voting on one metric leaves the other two standing", async () => {
       await castBallot(db, actorFor(voterA), publicBundle, {
