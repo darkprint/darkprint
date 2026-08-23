@@ -129,8 +129,20 @@ describe("the aggregate reads reports and nothing else", () => {
     const scratch = setup.require();
     await plantReports(scratch, MODAL_COSTS.map((costUnits) => ({ costUnits })));
 
+    /**
+     * The premise, asserted rather than assumed — and the message names BOTH ways it can
+     * fail, because the cells in this file share one scratch database and the cell above
+     * calls `submitReport`. A module that writes an audit row on accept reds here as well
+     * as in its own cell, which is a true positive reporting a plausible wrong cause: the
+     * subject of this cell is the READ, not the write.
+     */
     const log = await auditRows(scratch);
-    expect(log).toEqual([]);
+    expect(
+      log,
+      "the audit log must be empty for this cell's premise to hold: either `submitReport` " +
+        "wrote a row in the cell above (a write defect, see `writes no audit row`), or " +
+        "something else in this suite did",
+    ).toEqual([]);
 
     const state = await barrelExports();
     if (state.state === "module-absent") {
