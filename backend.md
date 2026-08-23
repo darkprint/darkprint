@@ -11237,7 +11237,7 @@ it does not decide differently inside a worktree.
 | T180 | Run-report ingestion and cost aggregation | T010, T050, T080 | `lib/server/runs/**`, `app/api/runs/**` | — | — | todo | — |
 | T200 | Semantic search and ranking | T080 | `lib/server/search/**`, `app/api/search/**` | — | — | todo | — |
 | T210 | Term-usage index and promotion | T030, T060, T080 | `lib/server/terms/**`, `app/api/ontology-usage/**` | — | — | todo | — |
-| T110 | Fork, lineage and drift | T010, T060, T100 | `lib/server/lineage/**`, `app/api/lineage/**` | — | — | todo | — |
+| T110 | Fork, lineage and drift | T010, T060, T100 | `lib/server/lineage/**`, `app/api/lineage/**` | — | — | **merged** | — **MERGED at `60649b8`, tagged `t110-verified`.** Adversary PASS at `f4aa482`, zero conflicts either direction, **39 of 39 blind cells green on FIRST CONTACT**. Its adversary charged three defects against its OWN suite: a cell asking an account whose default already matched the value under test (so the one implementation it existed to catch passed it), a load-dependent red naming a missing export that was present (the first `import()` of a barrel pays the whole graph's transform, which would have been filed against the implementer), and 39 cells that never passed `driftOf` anything but the owner. **D-110-14 came from a real second axis** -- implementer and blind author derived opposite `Repin.at` readings from the same rendered copy, settled by a source neither wrote. **D-110-16: a 1-in-3 flaky cell REPAIRED, not deleted** -- reproduced at 1 red in 6, fixed by temporal separation, 8 of 8 after, falsified by mutating `repinnedAt` to `findLast` which reds exactly that cell; it was the only assertion in either half guarding D-110-14. **`error-hygiene` 30 -> 32 DERIVED by the walk against its own domain sha.** Gates: build 0 with no generated diff, typecheck 0 raw, lint 0, **`npm test` 1 failed, 6560 passed of 6561, 0 skipped by arithmetic**, the one red T090's AC6 (pre-existing, T091's). **D-110-15 ruled and deliberately UNIMPLEMENTED** -- recorded in `docs/ARCHITECTURE.md` 11.2, deferred because `driftOf` has no caller and a contract change authored by its own ruler has no blind check. |
 | T120 | Ownership transfer and account deletion | T010, T050, T060, T100 | `lib/server/lifecycle/**`, `app/api/transfer/**`, `app/api/account/delete/**` | — | — | todo | — |
 | T220 | MCP server surface | T080, T090, T200 | `lib/server/mcp/**`, `packages/mcp/**` | — | — | todo | — |
 | T250 | Seed import and re-attribution | T010, T020, T030, T050, T130 | `scripts/import-seed.ts`, `lib/server/seed/**`, `content/**` | — | — | todo | — |
@@ -18700,7 +18700,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 ### T110, Fork, lineage and drift
 
-- **State:** todo
+- **State:** merged
 - **Depends on:** T010, T060, T100
 - **Blocks:** T190
 - **Owns:** `lib/server/lineage/**` — **`app/api/lineage/**` was REMOVED from this wave (Q6); the route surface is a later task's.**
