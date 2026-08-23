@@ -43,14 +43,32 @@
    number twice, which is the implementation this cell exists to
    catch, and it is excluded by name.
 
-   ── charge F-160-F3, restated where it bites ──
-   `grantValidator` sets `validator = true` AND `validator_weight`
-   together, because §T160 does not say which field carries the
-   weight. This cell therefore proves the aggregate responds to THE
-   GRANT and does not identify WHICH COLUMN it read. That is a real
-   gap, it is reported, and the cell that would close it is not
-   written because either half of it would red a correct module
-   under one of the two live readings.
+   ── D-WAVE-08 RESTATES THIS CRITERION AND THE FIXTURE FOLLOWS ──
+   F-160-F3: a vote's weight is `account.validator_weight`
+   UNCONDITIONALLY and the `validator` boolean does not gate it, so
+   **AC5's sentence changes from "granting a validator badge" to
+   "raising an account's `validator_weight`"** — as written it named
+   an act that changes nothing, and a cell that granted the badge
+   and asserted the aggregate moved would red a correct module.
+
+   `backend.md`'s acceptance-criteria LINE still reads "granting a
+   validator badge". The ruling is later and governs; the divergence
+   is reported rather than worked around, and it is the reason this
+   header quotes the ruling instead of the criterion.
+
+   So `raiseWeight` moves exactly one column and asserts that it
+   moved exactly one, and `the badge alone moves nothing` below is
+   the mirror cell that holds the other half of the ruling — a
+   claim that a field is NEVER READ is only testable by moving it
+   while nothing else moves and requiring the answer to stand still.
+
+   ── F-160-F3b, from T160's implementer, and this fixture already
+      satisfies it ──
+   AC5 is observable ONLY with two or more voters on one metric
+   holding DIFFERENT values: one voter, or agreeing voters, is
+   invariant under any weighted mean. The voters here are at 20 and
+   100, which is stated so the numbers read as a requirement rather
+   than as a choice somebody happened to make.
    ============================================================ */
 
 import { afterAll, describe, expect, it } from "vitest";
@@ -61,10 +79,11 @@ import {
   ballotRows,
   castBallotAsserted,
   closeDatabase,
-  grantValidator,
   openDatabase,
+  raiseWeight,
   seedAccount,
   seedBundle,
+  setBadge,
 } from "./fixtures";
 
 let scratch: Promise<Scratch> | undefined;
@@ -81,7 +100,7 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-describe("AC5 — a badge granted later applies retroactively", () => {
+describe("AC5 — a weight raised later applies retroactively", () => {
   it("changes an existing aggregate with no vote recast", async () => {
     const s = await db();
     const owner = await seedAccount(s, { label: "ac5-owner", weight: 1, validator: false });
@@ -120,7 +139,7 @@ describe("AC5 — a badge granted later applies retroactively", () => {
     const ballotsBefore = await ballotRows(s, bundle.id);
     expect(ballotsBefore.length, "the premise: two stored ballots").toBe(2);
 
-    await grantValidator(s, b.id, 3);
+    await raiseWeight(s, b.id, 3);
 
     /* (1·20 + 3·100) / 4 = 80 */
     const after = assertAggregate(
@@ -130,8 +149,11 @@ describe("AC5 — a badge granted later applies retroactively", () => {
 
     expect(
       after.efficacy.value,
-      `AC5: "granting a validator badge changes an existing aggregate without any vote being ` +
-        `recast." B was granted weight 3, so (1·20 + 3·100)/4 = 80.\n` +
+      `AC5, as D-WAVE-08 restates it: "raising an account's \`validator_weight\` changes an ` +
+        `existing aggregate without any vote being recast." B was raised to weight 3, and its ` +
+        `\`validator\` boolean is still false, so (1·20 + 3·100)/4 = 80.\n` +
+        `  60 here is also what a module reading \`validator ? weight : 1\` answers, and ` +
+        `D-WAVE-08 rules that boolean a display fact that never reaches the arithmetic.\n` +
         `  60 here is a MATERIALISED AGGREGATE — the value stored at cast time and served ` +
         `unchanged — which §T160 names as "the natural optimisation someone will reach for" ` +
         `and which passes every other criterion in this task.`,
@@ -144,7 +166,7 @@ describe("AC5 — a badge granted later applies retroactively", () => {
     ).not.toBeCloseTo(first.efficacy.value, 1);
 
     const ballotsAfter = await ballotRows(s, bundle.id);
-    assertBallotsUntouched(ballotsBefore, ballotsAfter, "AC5's grant");
+    assertBallotsUntouched(ballotsBefore, ballotsAfter, "AC5's weight raise");
   });
 
   /**
@@ -156,7 +178,7 @@ describe("AC5 — a badge granted later applies retroactively", () => {
    * pulls this granted non-voter into the denominator and answers 60·? instead of 60. The
    * numbers are separated below.
    */
-  it("a badge granted to somebody who never voted changes nothing", async () => {
+  it("a weight raised on somebody who never voted changes nothing", async () => {
     const s = await db();
     const owner = await seedAccount(s, { label: "ac5b-owner", weight: 1, validator: false });
     const bundle = await seedBundle(s, { ownerId: owner.id });
@@ -171,20 +193,20 @@ describe("AC5 — a badge granted later applies retroactively", () => {
     const getAggregate = await bind("getAggregate");
     const before = assertAggregate(
       await getAggregate(s.db, reader, bundle.id),
-      "getAggregate before the bystander's grant",
+      "getAggregate before the bystander's raise",
     );
     expect(before.efficacy.value, "(20 + 100) / 2 = 60").toBeCloseTo(60, 6);
     expect(before.efficacy.sampleSize, "two accounts voted").toBe(2);
 
-    await grantValidator(s, bystander.id, 9);
+    await raiseWeight(s, bystander.id, 9);
 
     const after = assertAggregate(
       await getAggregate(s.db, reader, bundle.id),
-      "getAggregate after the bystander's grant",
+      "getAggregate after the bystander's raise",
     );
     expect(
       after.efficacy.value,
-      `a badge granted to an account with no ballot on this bundle moved the aggregate from ` +
+      `a weight raised on an account with no ballot on this bundle moved the aggregate from ` +
         `${before.efficacy.value} to ${after.efficacy.value}.\n` +
         `  AC5 makes the aggregate a function of the STORED VOTES and current weights. An ` +
         `account with no vote contributes neither a numerator term nor a denominator one; ` +
@@ -196,5 +218,60 @@ describe("AC5 — a badge granted later applies retroactively", () => {
       after.efficacy.sampleSize,
       "the bystander cast no ballot, so the sample size is still two.",
     ).toBe(2);
+  });
+
+  /**
+   * THE MIRROR OF THE FIRST CELL, and the only shape in which D-WAVE-08's second half is
+   * testable at all.
+   *
+   * "A vote's weight is `account.validator_weight` UNCONDITIONALLY; the `validator` boolean
+   * does not gate it. The boolean is a display fact, never a second source for one quantity."
+   *
+   * A claim that a field is NEVER READ cannot be held by a cell that moves it alongside
+   * something else — that is what this suite did while F-160-F3 was open, and it is why the
+   * cell was held rather than shipped. It is held by moving the boolean ON ITS OWN and
+   * requiring the answer to stand still.
+   *
+   * `setBadge` flips B from false to true and touches nothing else. Both voters remain at
+   * weight 1, so the aggregate is 60 before and must be 60 after. A module reading
+   * `validator ? weight : 1` also answers 60 here — the boolean multiplies by 1 — so this
+   * cell alone does not catch it; the FIRST cell in this file does, because there B is at
+   * weight 3 with the badge false. The pair is what holds the ruling: one requires the weight
+   * column to be read, the other requires the boolean not to be.
+   */
+  it("the badge alone moves nothing", async () => {
+    const s = await db();
+    const owner = await seedAccount(s, { label: "ac5c-owner", weight: 1, validator: false });
+    const bundle = await seedBundle(s, { ownerId: owner.id });
+    const reader = accountActor(owner.id, owner.handle);
+
+    const a = await seedAccount(s, { label: "ac5c-a", weight: 1, validator: false });
+    const b = await seedAccount(s, { label: "ac5c-b", weight: 1, validator: false });
+    await castBallotAsserted(s, accountActor(a.id, a.handle), a.id, bundle.id, { efficacy: 20 });
+    await castBallotAsserted(s, accountActor(b.id, b.handle), b.id, bundle.id, { efficacy: 100 });
+
+    const getAggregate = await bind("getAggregate");
+    const before = assertAggregate(
+      await getAggregate(s.db, reader, bundle.id),
+      "getAggregate before the badge",
+    );
+    expect(before.efficacy.value, "(1·20 + 1·100) / 2 = 60").toBeCloseTo(60, 6);
+
+    await setBadge(s, b.id, true);
+
+    const after = assertAggregate(
+      await getAggregate(s.db, reader, bundle.id),
+      "getAggregate after the badge",
+    );
+    expect(
+      after.efficacy.value,
+      `flipping \`account.validator\` moved the aggregate from ${before.efficacy.value} to ` +
+        `${after.efficacy.value}, and \`validator_weight\` never changed.\n` +
+        `  D-WAVE-08 F-160-F3: the weight is \`validator_weight\` unconditionally and the ` +
+        `boolean is a display fact. A module multiplying by the badge — say \`validator ? 3 : ` +
+        `1\` — answers 80 here, which is the number the FIRST cell in this file requires and ` +
+        `this one forbids. That is the whole point of the pair.`,
+    ).toBeCloseTo(60, 6);
+    expect(after.efficacy, "nothing about the metric may move").toEqual(before.efficacy);
   });
 });

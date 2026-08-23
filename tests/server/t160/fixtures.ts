@@ -86,10 +86,18 @@ export interface AccountFixture {
  * than left implicit, because a cell asserting a weighted answer against accounts that all
  * happen to sit at the default is a cell no weighting implementation can fail.
  *
- * `validator` is set alongside it and never independently. F-160-F3: whether the badge
- * boolean gates the weight or the weight is read alone is UNRULED, so this suite sets both
- * everywhere and is deliberately unfalsifiable about which field is load-bearing. That is a
- * gap in coverage and it is written here rather than left for a reader to infer.
+ * ── `validator` DEFAULTS TO FALSE AT EVERY WEIGHT, AND THAT IS AN ASSERTION ──
+ * D-WAVE-08 F-160-F3: a vote's weight is `account.validator_weight` UNCONDITIONALLY, and the
+ * `validator` boolean does not gate it — "the boolean is a display fact, never a second
+ * source for one quantity."
+ *
+ * So every heavy voter this suite seeds carries `validator = false`. A module reading
+ * `actor.validator ? weight : 1` then answers the UNWEIGHTED mean in every weighting cell in
+ * the suite, and every one of them reds. Seeding the badge alongside the weight — which is
+ * what this fixture did while F-160-F3 was open — would have made all of them pass against
+ * that module, because the two fields would never have disagreed.
+ *
+ * `setBadge` drives the boolean on its own, for the one cell whose subject IS the boolean.
  */
 export async function seedAccount(
   s: Scratch,
@@ -97,7 +105,7 @@ export async function seedAccount(
 ): Promise<AccountFixture> {
   const handle = mark(o.label ?? "t160");
   const weight = o.weight ?? 1;
-  const validator = o.validator ?? weight !== 1;
+  const validator = o.validator ?? false;
   const [row] = await s.query(
     "insert into account (github_id, github_login, handle, validator, validator_weight) " +
       "values ($1, $2, $3, $4, $5) returning id, validator, validator_weight",
@@ -127,36 +135,69 @@ export async function seedAccount(
 }
 
 /**
- * AC5's grant, applied to an account that already voted.
+ * AC5's act, applied to an account that already voted — and it moves ONE COLUMN.
  *
- * Both fields move together, for F-160-F3's reason. The criterion is "granting a validator
- * badge changes an existing aggregate without any vote being recast", and this function does
- * the granting half; `assertBallotsUntouched` does the without-recasting half, because a
- * module that recomputed by rewriting every ballot would satisfy the visible change and
- * violate the clause that follows it.
+ * D-WAVE-08 restates the criterion: AC5's sentence changes from "granting a validator badge"
+ * to "RAISING AN ACCOUNT'S `validator_weight`", because as written it named an act that
+ * changes nothing. A cell that granted the badge and asserted the aggregate moved would red
+ * a correct module. `backend.md`'s own acceptance-criteria LINE still reads "granting a
+ * validator badge"; the ruling is later and governs, and the divergence is reported.
+ *
+ * `validator` is deliberately NOT touched here. Leaving it false across the raise is what
+ * makes `retroactive.test.ts` a test of the ruled reading rather than of both fields at once.
+ *
+ * This function does the raising half of AC5; `assertBallotsUntouched` does the
+ * without-recasting half, because a module recomputing by rewriting every ballot satisfies
+ * the visible change and violates the clause that follows it.
  */
-export async function grantValidator(
-  s: Scratch,
-  accountId: string,
-  weight: number,
-): Promise<void> {
+export async function raiseWeight(s: Scratch, accountId: string, weight: number): Promise<void> {
   const rows = await s.query(
-    "update account set validator = true, validator_since = now(), validator_weight = $2 " +
-      "where id = $1 returning validator_weight",
+    "update account set validator_weight = $2 where id = $1 returning validator, validator_weight",
     [accountId, String(weight)],
   );
   if (rows.length !== 1) {
     throw new Error(
-      `Granting the badge to ${accountId} touched ${rows.length} rows, expected 1. The premise ` +
-        `of every AC5 cell is that the grant really happened.`,
+      `Raising ${accountId} to weight ${weight} touched ${rows.length} rows, expected 1. The ` +
+        `premise of every AC5 cell is that the raise really happened.`,
     );
   }
   const stored = Number(rows[0]?.validator_weight);
   if (stored !== weight) {
     throw new Error(
-      `The grant stored ${JSON.stringify(rows[0]?.validator_weight)} where ${weight} was asked ` +
+      `The raise stored ${JSON.stringify(rows[0]?.validator_weight)} where ${weight} was asked ` +
         `for; AC5's second read would then be measuring a weight nobody set.`,
     );
+  }
+  if (rows[0]?.validator !== false) {
+    throw new Error(
+      `Raising the weight also moved \`validator\` to ${String(rows[0]?.validator)}. The point ` +
+        `of this fixture is that exactly one column moves, so a red downstream is about the ` +
+        `column D-WAVE-08 ruled load-bearing and not about the pair.`,
+    );
+  }
+}
+
+/**
+ * The `validator` boolean on its own, for the one cell whose subject IS the boolean.
+ *
+ * D-WAVE-08 rules it a display fact that never reaches the arithmetic. That is a claim a
+ * cell can hold only by moving it while nothing else moves and requiring the aggregate to
+ * stand still — the mirror of `raiseWeight`, and the half that catches an implementation
+ * multiplying by the badge.
+ */
+export async function setBadge(s: Scratch, accountId: string, validator: boolean): Promise<void> {
+  const rows = await s.query(
+    "update account set validator = $2, validator_since = case when $2 then now() else null end " +
+      "where id = $1 returning validator, validator_weight",
+    [accountId, validator],
+  );
+  if (rows.length !== 1) {
+    throw new Error(
+      `Setting the badge on ${accountId} touched ${rows.length} rows, expected 1.`,
+    );
+  }
+  if (rows[0]?.validator !== validator) {
+    throw new Error(`The badge stored ${String(rows[0]?.validator)}, not ${validator}.`);
   }
 }
 

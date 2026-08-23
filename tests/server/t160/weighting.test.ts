@@ -8,13 +8,21 @@
    this run wrote — says the three axes "come from weighted
    community and validator votes."
 
-   ── THE READING TAKEN, and it is charge F-160-F ──
-   `value = Σ(wᵢ·vᵢ) / Σ(wᵢ)`, the weighted arithmetic mean. It is
-   the only reading that keeps the aggregate on the 0-100 axis
-   `components/ui/ScoreRadar.tsx` draws, which is the constraint
-   B-11 states for a single ballot and the radar enforces for the
-   aggregate. §T160 does not write the formula down; that is
-   reported, and every number below is derived from this reading.
+   ── THE READING, RULED at D-WAVE-08 after this file charged it ──
+   `value = Σ(wᵢ·vᵢ) / Σ(wᵢ)`, the weighted arithmetic mean,
+   UNROUNDED — "rounding is the display type's decision". The
+   weight is `account.validator_weight` UNCONDITIONALLY and the
+   `validator` boolean does not gate it, so **every heavy voter in
+   this file carries `validator = false`**: a module reading
+   `validator ? weight : 1` answers the unweighted mean in every
+   cell here and every one of them reds. That is not a coincidence
+   of the fixture, it is what `seedAccount` defaults to and why.
+
+   Before the ruling, this file's numbers were derived from the
+   only reading that keeps the aggregate on the 0-100 axis
+   `components/ui/ScoreRadar.tsx` draws. The ruling agrees with it,
+   which is worth nothing as evidence — a reading confirmed is not
+   a reading tested, and the cells are what test it.
 
    ── why a weighting cell is the easiest one in this run to get
       wrong ──
@@ -439,6 +447,59 @@ describe("AC-weighting — each metric is aggregated over its own voters", () =>
     ).toBeCloseTo(20, 6);
     expect(seen.transparency.sampleSize, "one account voted on transparency").toBe(1);
     expect(seen.efficacy.sampleSize, "both accounts voted on efficacy").toBe(2);
+  });
+});
+
+describe("AC-weighting — the value is UNROUNDED", () => {
+  /**
+   * A at 10 (weight 1), B at 50 (weight 2).
+   *
+   *   weighted: (1·10 + 2·50) / 3 = 110 / 3 = 36.666...
+   *
+   * Every other fixture in this file lands on an exact integer, deliberately — that is what
+   * makes them immune to a rounding convention, and it is what made them writable while
+   * F-160-F2 was open. It also means NONE of them can hold the ruling that came back:
+   * "`value` unrounded, since rounding is the display type's decision."
+   *
+   * So one fixture is built the opposite way. The answer is irrational in decimal, and the
+   * two roundings a module would reach for — 37 (nearest) and 36 (floor) — are excluded by
+   * name. A cell that only asserted `toBeCloseTo(36.67, 2)` would admit 36.67 and reject
+   * both, but it would also admit a module rounding to two places, which is a display
+   * decision made in the wrong module.
+   */
+  it("does not round, floor or truncate", async () => {
+    const s = await db();
+    const seen = await efficacyAggregate(
+      s,
+      [
+        { weight: 1, value: 10 },
+        { weight: 2, value: 50 },
+      ],
+      "unrounded",
+    );
+    assertExcludes(
+      seen.value,
+      [
+        { reading: "the unweighted mean — an implementation that ignores weight", answer: 30 },
+        { reading: "Σ(w·v) — a weighted SUM with no denominator", answer: 110 },
+      ],
+      "getAggregate().efficacy.value (unrounded)",
+    );
+    expect(
+      seen.value,
+      `110/3 = 36.666..., and D-WAVE-08 rules \`value\` UNROUNDED because rounding is the ` +
+        `display type's decision.\n` +
+        `  37 is round-half-up, 36 is floor or truncate, and 36.67 is a module deciding on ` +
+        `two decimal places for a caller that has not asked.`,
+    ).toBeCloseTo(110 / 3, 9);
+    expect(seen.value, "37 is round-half-up in the wrong module").not.toBe(37);
+    expect(seen.value, "36 is floor or truncate in the wrong module").not.toBe(36);
+    expect(
+      Number.isInteger(seen.value),
+      `the aggregate is the integer ${seen.value}. Three votes at 10, 50 and 50 cannot ` +
+        `produce a whole number under Σ(w·v)/Σ(w); an integer here is a rounding this module ` +
+        `does not get to make.`,
+    ).toBe(false);
   });
 });
 

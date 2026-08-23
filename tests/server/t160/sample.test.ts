@@ -165,31 +165,28 @@ describe("AC4 — the threshold, driven at the boundary from both sides", () => 
 
 describe("AC3 — a sample size on every metric of every response", () => {
   /**
-   * F-160-G's reading, and it is the ASSERTION-EXCLUDES-THE-BAD-OUTPUT form.
+   * RULED by D-WAVE-08: a metric nobody voted on returns `{ value: 0, sampleSize: 0,
+   * isSample: true }`, and the ruling names why it needed one — "`NaN` is the accidental
+   * answer 0/0 produces."
    *
-   * `getAggregate` is published as `Promise<Aggregate>`, not `| undefined`, so a bundle
-   * nobody has voted on must still produce three `MetricAggregate`s. What `value` holds there
-   * is unstated and is reported as open, so nothing here pins it. What is NOT admissible under
-   * any reading is a mean over the empty set reaching a caller: `0/0` is `NaN`, `typeof NaN`
-   * is `"number"`, and `NaN` renders through JSON as `null` — a placeholder in the one field
-   * §T160 says can never hold one. `assertAggregate` refuses it.
+   * So the exact triple is pinned now, where this cell previously asserted only a range
+   * because F-160-G was open. Both instruments are kept: `assertAggregate` refuses a
+   * non-finite `value` before this line, because `typeof NaN` is `"number"` and `NaN` renders
+   * through JSON as `null` — a placeholder in the one field §T160 says can never hold one —
+   * and the pin below refuses every other number a 0/0 guard might have reached for. A pin
+   * says what the answer is; the finiteness check says what the shape may never be, and only
+   * the second survives a later change to the ruled value.
    */
-  it("a bundle with no votes still answers three metrics, each with a count of 0", async () => {
+  it("a bundle with no votes answers `{ value: 0, sampleSize: 0, isSample: true }`", async () => {
     const s = await db();
     const { seen } = await bundleWithEfficacyVotes(s, 0, "empty");
     for (const metric of METRICS) {
-      expect(seen[metric].sampleSize, `nobody voted on \`${metric}\``).toBe(0);
       expect(
-        seen[metric].isSample,
-        `0 is below ${MIN_VOTES}, so every metric of an unvoted bundle is a sample.`,
-      ).toBe(true);
-      expect(
-        seen[metric].value >= 0 && seen[metric].value <= 100,
-        `\`${metric}.value\` is ${seen[metric].value} with no votes behind it. What it should ` +
-          `hold is charge F-160-G and is deliberately unpinned; what it may not be is off the ` +
-          `0-100 axis, and \`NaN\` — which renders as \`null\` and is the placeholder AC3 ` +
-          `forbids — is refused by \`assertAggregate\` before this line.`,
-      ).toBe(true);
+        seen[metric],
+        `\`${metric}\` on a bundle nobody voted on. D-WAVE-08 pins the triple, and the value ` +
+          `it excludes is \`NaN\` — what \`0/0\` produces, what \`typeof\` calls a number, ` +
+          `and what JSON renders as \`null\` straight into the radar.`,
+      ).toEqual({ value: 0, sampleSize: 0, isSample: true });
     }
     assertFlagAgreesWithCount(seen, "getAggregate on an unvoted bundle");
   });

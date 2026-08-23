@@ -55,54 +55,72 @@
    thing a later reader will cite as coverage.
 
    ── the nine charges filed before a cell was written ──
-   Reported to the orchestrator at `3290981`, and the three that
-   decide what is here:
+   Reported at `3290981`. Six came back as D-WAVE-08 and the block
+   was amended; three are still open and are named at the end.
 
-   F-160-B  §T160 CARRIES NO AUDIT CRITERION. The word "audit" does
-            not occur in the section. D-240-16 grants `ballot.cast`
-            as "T160's vote write" while D-240-09's rationale says
-            T160 needs a VALIDATOR-GRANT action, and §T160 puts the
-            validator grant workflow OUT OF SCOPE. **No audit cell
-            exists anywhere in this suite** until that is ruled: an
-            assertion here would red an implementation that built to
-            the section as written.
-            (And the amendment is not in the tree. `AUDIT_ACTIONS`
-            at `3290981` has twelve members and no `ballot.cast`,
-            and `lib/server/observability/types.test.ts:65` asserts
-            no member matches `/download|star|vote|ballot/i` — so
-            adding it reds a merged cell in a file this task does
-            not own.)
+   THE HELD CELLS, and holding them is why neither half built the
+   wrong one. Three cells in this suite did not exist until the
+   ruling, because each had two live readings and either choice
+   would have been a false defect report against whoever built the
+   other:
 
-   F-160-E  `Partial<Ballot>` IS PATCH-OR-PUT AND NOBODY RULED. Does
-            a second `castBallot(…, {efficacy: 40})` leave a
-            previously cast `reliability` standing, or null it?
-            Both readings are live under AC2, whose text is only
-            about "one metric", and they differ in a PUBLISHED
-            field: under put the second cast silently drops
-            `reliability`'s `sampleSize` by one. **No cell asserts
-            either reading.** What IS asserted is AC2's row-set
-            claim over ONE metric, which is true under both.
+   F-160-B  RULED: T160 WRITES NO AUDIT ROW and there is no audit
+            criterion. `ballot.cast` is WITHDRAWN from
+            `AUDIT_ACTIONS` — it reds `types.test.ts`'s exclusion
+            cell, whose regex names `ballot` literally, and
+            D-240-09's rationale named a VALIDATOR-GRANT action
+            while §T160 puts that workflow out of scope. "A caller
+            with no criterion behind it is the same object as a
+            member with no caller." **There is no audit cell
+            anywhere in this suite and that is now correct rather
+            than pending.**
 
-   F-160-F3 WHICH ACCOUNT FIELD CARRIES THE WEIGHT is unruled.
-            `account.validator` is a boolean and
-            `account.validator_weight` is `numeric(6,3) NOT NULL
-            DEFAULT 1`. If the boolean gates the weight, a cell
-            raising only the weight reds a correct module; if the
-            weight alone is read, a cell flipping only the boolean
-            reds a correct module. Exactly one of the two cells is a
-            false charge and this side cannot tell which. So every
-            grant fixture in this suite sets BOTH, which is
-            deliberately unfalsifiable about which field is
-            load-bearing, and `grantValidator` says so at its
-            definition rather than leaving a later reader to infer
-            that the coverage is there.
+   F-160-E  RULED: `Partial<Ballot>` PATCHES; an absent member
+            PRESERVES. `patch.test.ts` is the cell that holds it,
+            and it carries its own predicted zero: the obvious
+            mutation reds nothing on `drizzle-orm@^0.45.2` because
+            `undefined` is dropped from the `SET` clause, measured
+            through `toSQL()` rather than inferred.
 
-   Also open and NOT asserted: the route surface (`app/api/votes/**`
-   is Owned and no method, path or body is published anywhere — the
-   same shape as D-140-04, so there is no route cell in this suite
-   and the route half of T160 is held by nothing); read visibility
-   of a private bundle's aggregate; and the class and message form
-   of any refusal, since §T160 publishes no error class at all.
+   F-160-F3 RULED: a vote's weight is `account.validator_weight`
+            UNCONDITIONALLY; the `validator` boolean does not gate
+            it. **CONSEQUENCE: AC5's sentence becomes "raising an
+            account's `validator_weight`"** — as written it named an
+            act that changes nothing, and a cell granting the badge
+            and asserting the aggregate moved would have redded a
+            correct module. `backend.md`'s acceptance-criteria LINE
+            still reads "granting a validator badge"; the ruling is
+            later and governs, and that divergence is reported.
+            Every heavy voter this suite seeds now carries
+            `validator = false`, which turns every weighting cell
+            into a test of the ruled reading.
+
+   Also ruled: `sampleSize` is an UNWEIGHTED count per metric;
+   `value` is UNROUNDED; a metric nobody voted on answers
+   `{ value: 0, sampleSize: 0, isSample: true }`; and F-160-F3b,
+   from T160's implementer — AC5 is observable ONLY with two or
+   more voters on one metric holding DIFFERENT values, which is a
+   property of the criterion rather than of whether a blind author
+   happened to pick two numbers.
+
+   ── STILL OPEN, and each is a silence rather than a guess ──
+   * The CLASS and MESSAGE FORM of any refusal. §T160 publishes no
+     error class at all, so nothing here pins one; what is asserted
+     without a name is D-13's hygiene over whatever arrives, and
+     that a refused write LEFT NOTHING BEHIND.
+   * READ VISIBILITY of a private bundle's aggregate, and whether a
+     caller who cannot see a bundle may cast on it.
+   * T060's inherited-authority ruling, which §T160 does not
+     restate and `can` cannot decide. See
+     `inherited-authority.test.ts`, whose header says in as many
+     words that a red there is a contract question.
+
+   ── RESOLVED WITHOUT A CELL ──
+   The route surface. `app/api/**` is DROPPED from this task's
+   `Owns` for this wave (D-WAVE-02, module only), so the absence of
+   a route cell here is the ruling rather than a gap. It was
+   charged as F-160-D when the block still owned `app/api/votes/**`
+   and published no method, path or body for it.
 
    ── why nothing here binds `can` ──
    `Resource` (`lib/server/policy/types.ts:16-20`) has no `ballot`
@@ -342,12 +360,13 @@ function assertMetricAggregate(value: unknown, where: string): SeenMetric {
         `number, and a 0/0 mean over no votes is exactly the placeholder AC3 forbids.`,
     );
   }
-  /* THE READING TAKEN, and it is charge F-160-F1: a sample size is a non-negative whole
-     COUNT OF VOTES, not a sum of weights. Nothing in §T160 says which, and the two differ the
-     moment a weight is not 1 — under the weight-sum reading a badge grant moves AC4's
-     threshold and AC4 stops being independent of AC5. Reported, and this is the reading every
-     cell here is written against; if it is ruled the other way, THIS LINE is the one to
-     strike and `weighting.test.ts`'s fractional-weight cell is the one that reds first. */
+  /* RULED at D-WAVE-08, F-160-F1: `sampleSize` is an UNWEIGHTED count per metric, and the
+     ruling gives the reason this side had only guessed at — "if it were Σw, two validators at
+     weight 3 clear a five-vote bar with two votes and AC4 is simply wrong." So a whole,
+     non-negative number, and a fractional one is the weight-sum implementation showing
+     through. This was charged as open before the cells were written; the reading it took
+     happened to be the ruled one, which is worth nothing as evidence and is recorded only so
+     nobody later reads the agreement as confirmation. */
   if (typeof sampleSize !== "number" || !Number.isInteger(sampleSize) || sampleSize < 0) {
     throw new Error(
       `${where}.sampleSize is ${describe_(sampleSize)} (${String(sampleSize)}); a sample size ` +
