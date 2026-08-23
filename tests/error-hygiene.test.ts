@@ -256,7 +256,14 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
        ended. Derived by this walk at the merge, never carried: its implementer enumerated
        three off its own barrel by `prototype instanceof Error` and predicted 37, and this
        is that number measured. */
-    ).toBe(37);
+    /* 37 -> 39 at T150's merge: `lib/server/counters` publishes `CounterStoreError` and
+       `NotSignedInError`. Derived by this walk, and the second name is the interesting one --
+       both halves reached it independently, and the second axis is not the string but that
+       both REJECTED THE SAME TWO CANDIDATES ON THE SAME GROUNDS: `NotAccountOwnerError` is an
+       ownership sentence and `toggleStar` has no `accountId` to compare against, and
+       `NotPermittedError` hardcodes `listAudit:` into its message. Agreeing on why the
+       alternatives fail survives the name coming out differently. */
+    ).toBe(39);
 
     const rendered: string[] = [];
     const traceless: string[] = [];

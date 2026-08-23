@@ -381,7 +381,13 @@ describe("T240 adversary — what AC1 still does not cover, recorded as a measur
       }
     }
 
-    const KNOWN_CALLERS = ["lib/server/notes/write.ts"];
+    /* Each entry is a COMPOSING layer under D-240-08. This list has moved TWICE, both times
+       at a merge and both times because the cell did its job:
+         T170's `deleteNote`      -> `note.remove`, audited only when the tombstone matched
+         T150's `recordDownload`  -> `counter.write_failed`, the audit of a SWALLOWED fault,
+                                     which is why that member exists at all (D-240-08) and why
+                                     D-WAVE-01's "Nothing else" was corrected. */
+    const KNOWN_CALLERS = ["lib/server/counters/write.ts", "lib/server/notes/write.ts"];
 
     console.log(
       `T240 AC1 whole-corpus half: ${callers.length} call site(s) of writeAudit/listAudit ` +
