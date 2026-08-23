@@ -108,17 +108,6 @@ describe("B-11's range — the output, under every live reading of what happens 
     const outcome = await castRaw(s, `rng${value}`, { efficacy: value });
 
     const rows = await ballotRows(s, outcome.bundleId);
-    const offending = rows.filter(
-      (r) => r.efficacy !== null && (r.efficacy < 0 || r.efficacy > 100),
-    );
-    expect(
-      offending.map((r) => r.efficacy),
-      `a cast of ${label} left ${JSON.stringify(offending.map((r) => r.efficacy))} in the ` +
-        `\`ballot\` row.\n` +
-        `  B-11 is 0-100 per metric. This assertion is true whether \`castBallot\` refuses the ` +
-        `value, clamps it, or lets \`ballot_metric_range\` refuse it — which of the three is ` +
-        `charge F-160-H and is deliberately not asserted here.`,
-    ).toEqual([]);
 
     if (outcome.rejected !== undefined) {
       assertNoDriverProse(outcome.rejected, `the refusal of ${label}`);
@@ -126,15 +115,38 @@ describe("B-11's range — the output, under every live reading of what happens 
         outcome.rejected,
         `the refusal of ${label} is ${String(outcome.rejected)}, not an Error.`,
       ).toBeInstanceOf(Error);
+      /* Nothing left behind. This is the live assertion on this branch and it is NOT implied
+         by the check constraint: a row whose three metrics are all NULL satisfies
+         `ballot_metric_range` perfectly, so an implementation that inserts the ballot and
+         then fails on the value leaves a phantom ballot the constraint cannot see. */
+      expect(
+        rows,
+        `castBallot refused ${label} AND left ${rows.length} ballot row(s): ` +
+          `${JSON.stringify(rows)}.\n` +
+          `  An all-NULL row passes \`ballot_metric_range\`, so the database cannot catch ` +
+          `this one; only reading the table back can. "It threw" is satisfied by an ` +
+          `implementation that wrote first.`,
+      ).toEqual([]);
     } else {
+      /* Accepted. The database cannot have stored the out-of-range value, so the live
+         question is what the RESPONSE carries: a module answering an optimistic aggregate
+         computed from the value it was handed rather than from the row it wrote reports 101
+         here, and nothing in the store would ever show it. */
       const seen = assertAggregate(outcome.resolved, `castBallot's answer to ${label}`);
       for (const metric of METRICS) {
         expect(
           seen[metric].value >= 0 && seen[metric].value <= 100,
           `castBallot ACCEPTED ${label} and the aggregate then reads ` +
-            `${seen[metric].value} on \`${metric}\`, off the 0-100 axis \`ScoreRadar\` plots.`,
+            `${seen[metric].value} on \`${metric}\`, off the 0-100 axis \`ScoreRadar\` plots. ` +
+            `The stored row cannot hold it — \`ballot_metric_range\` forbids that — so this ` +
+            `number came from the caller's own argument and not from the store.`,
         ).toBe(true);
       }
+      expect(
+        rows.filter((r) => r.efficacy !== null && (r.efficacy < 0 || r.efficacy > 100)),
+        "the store, checked for completeness. `ballot_metric_range` makes this unfalsifiable " +
+          "on its own; it is here so a red prints the row beside the response.",
+      ).toEqual([]);
     }
   });
 

@@ -202,11 +202,17 @@ describe("AC1 — a ballot cannot write `autonomy` or `security`", () => {
    * caller can only reach this shape by casting — which is exactly what a route handler
    * spreading an unvalidated JSON body does.
    *
-   * The assertion is about what was LEFT BEHIND and what came back, never about whether it
-   * threw: §T160 makes AC1 structural, so refusing is one admissible answer and silently
-   * dropping the extra is another, and a cell demanding a throw would red the reading the
-   * section itself takes. What is NOT admissible under either is the value reaching storage
-   * or the response.
+   * §T160 makes AC1 structural, so REFUSING the cast and silently dropping the extras are
+   * both admissible and a cell demanding either would red the other. So the cell branches,
+   * and BOTH BRANCHES CARRY A LIVE ASSERTION.
+   *
+   * ── one assertion was removed from this cell for being unfalsifiable ──
+   * It scanned `Object.keys` of the stored row for a forbidden axis. That set is fixed by
+   * `lib/db/schema.ts`, so it could never contain one and the assertion could never fail —
+   * and worse, it sat on the branch a rejection takes, so a module that threw for ANY reason
+   * reached a vacuous check and a skipped `if`, and the cell passed having measured nothing.
+   * The column claim it was trying to make is already held, live, by
+   * `the \`ballot\` table has exactly the seven columns T005 publishes` above.
    */
   it("a forbidden axis passed through a cast reaches neither the row nor the response", async () => {
     const s = await db();
@@ -215,6 +221,7 @@ describe("AC1 — a ballot cannot write `autonomy` or `security`", () => {
     const castBallot = await bind("castBallot");
 
     let answer: unknown;
+    let rejected: unknown;
     try {
       answer = await castBallot(s.db, accountActor(voter.id, voter.handle), bundle.id, {
         efficacy: 60,
@@ -222,22 +229,39 @@ describe("AC1 — a ballot cannot write `autonomy` or `security`", () => {
         security: 99,
         cost: 99,
       });
-    } catch {
-      answer = undefined;
+    } catch (err) {
+      rejected = err;
     }
 
-    const stored = await s.query("select * from ballot where bundle_id = $1", [bundle.id]);
-    const storedKeys = stored.flatMap((row) => Object.keys(row));
-    const intruders = FORBIDDEN_AXES.filter((axis) => storedKeys.includes(axis));
+    const stored = await s.query(
+      "select efficacy, reliability, transparency from ballot where bundle_id = $1",
+      [bundle.id],
+    );
+
+    if (rejected !== undefined) {
+      /* Refused. Then nothing may be left behind — an insert followed by a throw satisfies
+         every `rejects.toThrow()` a reviewer would write. */
+      expect(
+        stored,
+        `castBallot refused a cast carrying ${FORBIDDEN_AXES.join(", ")} AND left ` +
+          `${stored.length} row(s) behind: ${JSON.stringify(stored)}.`,
+      ).toEqual([]);
+      return;
+    }
+
+    /* Accepted. Then the three published metrics carry what was cast — the legitimate 60 in
+       `efficacy` and a NULL where nothing was voted — and the response carries three keys. */
     expect(
-      intruders,
-      `a forbidden axis reached the \`ballot\` row: ${intruders.join(", ")}.`,
-    ).toEqual([]);
+      stored,
+      `castBallot accepted the cast and stored ${JSON.stringify(stored)}. The extras have no ` +
+        `column to land in (D-05-02), so the row must hold the legitimate \`efficacy\` and ` +
+        `nothing else; a row where \`efficacy\` is absent means the whole cast was discarded ` +
+        `because of members the type says cannot be passed.`,
+    ).toEqual([{ efficacy: 60, reliability: null, transparency: null }]);
 
-    if (answer !== undefined) {
-      const seen = assertAggregate(answer, "castBallot's answer to a forbidden axis");
-      expect(Object.keys(seen).sort()).toEqual([...METRICS].sort());
-    }
+    const seen = assertAggregate(answer, "castBallot's answer to a forbidden axis");
+    expect(Object.keys(seen).sort()).toEqual([...METRICS].sort());
+    expect(seen.efficacy.value, "one vote of 60 stands alone").toBeCloseTo(60, 6);
   });
 });
 
