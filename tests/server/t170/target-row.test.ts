@@ -170,7 +170,21 @@ describe("D-WAVE-01 — the partition is BY COLUMN", () => {
     ).toBe(0);
   });
 
-  it("T150's two counters stay at zero across every T170 write", async () => {
+  /**
+   * ASSERTED AGAINST A DISAGREEING BASELINE, and the first draft of this cell was vacuous.
+   *
+   * `star_count` and `download_count` both DEFAULT to `0`, so a cell that writes notes and
+   * then asserts `[0, 0]` is asserting the column defaults. It cannot tell a module that
+   * leaves T150's columns alone from one that writes zero into them — and the second is the
+   * dangerous shape, because a blanket upsert of the whole `target` row
+   * (`set star_count = 0, download_count = 0, note_count = ...`) satisfies every reading of
+   * `note_count` while destroying whatever T150 had counted.
+   *
+   * So T150's columns are planted with values that DISAGREE with the default first, by raw
+   * SQL, standing in for a star and a download that already happened. Neither task imports
+   * the other and no route drives both, so this collision has no other witness.
+   */
+  it("T150's counters survive every T170 write, from a non-default baseline", async () => {
     const author = await seedAccount(s, "tr-cols");
     const voter = await seedAccount(s, "tr-voter");
     const bundle = await seedBundle(s, { ownerId: author.id });
@@ -181,6 +195,26 @@ describe("D-WAVE-01 — the partition is BY COLUMN", () => {
     const record = (await postNote(s.db, actor, target, "counters")) as Record<string, unknown>;
     const noteId = String(record.id);
 
+    /* T150 acts. Raw SQL rather than through T150's module: this suite must not import it
+       (neither task imports the other, and that is what lets them run in one wave), and
+       `target` carries no cross-column invariant a direct update could violate. */
+    const planted = await s.query(
+      "update target set star_count = 7, download_count = 11 where kind = $1 and ref_id = $2 " +
+        "returning id",
+      [target.kind, target.refId],
+    );
+    premise(
+      planted.length === 1,
+      `the baseline must actually be planted, or this cell is asserting the column defaults ` +
+        `again; the update touched ${planted.length} rows`,
+    );
+    const seeded = await targetRow(s, target);
+    premise(
+      seeded?.starCount === 7 && seeded?.downloadCount === 11,
+      `the planted counters must disagree with the defaults; got ` +
+        `${String(seeded?.starCount)} and ${String(seeded?.downloadCount)}`,
+    );
+
     await (await bind("editNote"))(s.db, actor, noteId, "counters, edited");
     await (await bind("voteNote"))(s.db, accountActor(voter.id, voter.handle), noteId);
     await (await bind("deleteNote"))(s.db, actor, noteId);
@@ -188,10 +222,17 @@ describe("D-WAVE-01 — the partition is BY COLUMN", () => {
     const row = await targetRow(s, target);
     expect(
       [row?.starCount, row?.downloadCount],
-      `D-WAVE-01: "T170 writes \`target.note_count\` and nothing else." All four writers are ` +
-        `driven here rather than only \`postNote\`, because a module that touches a T150 ` +
-        `column does it in whichever writer nobody checked — and neither task imports the ` +
-        `other, so nothing but a cell like this one would ever notice.`,
-    ).toEqual([0, 0]);
+      `D-WAVE-01: "T170 writes \`target.note_count\` and nothing else."\n` +
+        `  The baseline is 7 and 11, planted, so this EXCLUDES the bad output rather than ` +
+        `admitting the good one — a module writing zero into T150's columns passes an ` +
+        `assertion of \`[0, 0]\` and fails this.\n` +
+        `  All four writers are driven rather than only \`postNote\`, because a module that ` +
+        `touches a T150 column does it in whichever writer nobody checked.`,
+    ).toEqual([7, 11]);
+    expect(
+      row?.noteCount,
+      `and T170's own column still tracks its own rows: one posted, one deleted, so zero ` +
+        `live. A module that blanks the row would land here too.`,
+    ).toBe(0);
   });
 });

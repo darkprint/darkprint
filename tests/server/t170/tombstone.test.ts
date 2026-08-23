@@ -213,26 +213,41 @@ describe("T170 AC6 — the count stays consistent (D-WAVE-01: maintained, not de
     ).toBe(2);
   });
 
-  it("the other two counters are untouched — T150 owns them (D-WAVE-01)", async () => {
+  /**
+   * The same disagreeing-baseline discipline as `target-row.test.ts`, and for the same
+   * reason: both of T150's columns default to `0`, so `toEqual([0, 0])` after a delete
+   * asserts the defaults and cannot see a writer that zeroes them.
+   */
+  it("a delete leaves T150's counters at their planted values", async () => {
     const author = await seedAccount(s, "ac6-cols");
     const bundle = await seedBundle(s, { ownerId: author.id });
     const target = blueprintTarget(bundle);
     const actor = accountActor(author.id, author.handle);
 
     await seedNotes(s.db, actor, target, 2, "cols");
-    const deleteNote = await bind("deleteNote");
+    await s.query(
+      "update target set star_count = 5, download_count = 9 where kind = $1 and ref_id = $2",
+      [target.kind, target.refId],
+    );
+    const seeded = await targetRow(s, target);
+    premise(
+      seeded?.starCount === 5 && seeded?.downloadCount === 9,
+      `the planted counters must disagree with the defaults before the delete is measured`,
+    );
+
     const ids = (await walk(await bind("listNotes"), s.db, actor, target, "listNotes")).ids;
-    await deleteNote(s.db, actor, ids[0]);
+    await (await bind("deleteNote"))(s.db, actor, ids[0]);
 
     const row = await targetRow(s, target);
     expect(
       [row?.starCount, row?.downloadCount],
       `D-WAVE-01 partitions \`target\` BY COLUMN: T150 writes \`star_count\` and ` +
         `\`download_count\`, T170 writes \`note_count\`, and neither task imports the ` +
-        `other. A note write that moves a counter T150 owns is the collision the ruling ` +
-        `exists to prevent, and it is invisible to every cell that only reads ` +
-        `\`note_count\`.`,
-    ).toEqual([0, 0]);
+        `other. A delete that rewrites the whole row destroys a count T150 owns, and the ` +
+        `baseline is non-default here so the assertion excludes that rather than admitting ` +
+        `the value a fresh row already has.`,
+    ).toEqual([5, 9]);
+    expect(row?.noteCount, `and the tombstone decrements T170's own`).toBe(1);
   });
 });
 

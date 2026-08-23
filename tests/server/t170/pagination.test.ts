@@ -2,27 +2,36 @@
    T170 AC2 — "the list returns at most 10 with a cursor stable
    across a concurrent insert"
 
-   ── WHAT IS HERE, AND WHAT IS HELD ──
-   The order the list reads in is UNPUBLISHED, and it decides one
-   cell. D-WAVE-01's argument for AC2 is that "an offset cursor
-   shifts every row when a note is inserted ABOVE it" — which is
-   only true if the list is newest-first. Under oldest-first a new
-   note always sorts to the END, and B-18's tombstone means no row
-   ever leaves, so **an offset cursor is correct and AC2 cannot
-   tell it from a keyset one**. The three pieces of evidence in the
-   tree point at oldest-first: `note_target_created_idx` is
-   ascending, `lib/data/community.ts`'s seeded `comments` arrays
-   are in ascending date order, and `Comments.tsx` renders
-   `comments.slice(0, VISIBLE_NOTES)` — the FIRST ten.
+   ── THE ORDER IS ASCENDING (D-WAVE-06), AND ONE CELL IS
+      DELIBERATELY ABSENT ──
+   Oldest-first. Charged from here when the order turned out to be
+   unpublished, and ruled after both halves derived it
+   independently from different evidence: this side from
+   `Comments.tsx` rendering `comments.slice(0, VISIBLE_NOTES)` —
+   the FIRST ten — over seeded arrays in ascending date order, and
+   the implementer from `(created_at, id)` matching
+   `note_target_created_idx`'s own column order.
 
-   So the offset-falsification cell and the expected-order pins are
-   HELD, charged upstream, and are NOT in this file. Writing them
-   both ways, or detecting the order at runtime and branching,
-   would assert nothing about which is right — this is exactly
-   where the contract has to bind rather than the suite guess.
+   **The keyset-versus-offset falsification cell is NOT in this
+   file, and its absence is the finding rather than a gap.**
+   D-WAVE-01 argued AC2 from "an offset cursor shifts every row
+   when a note is inserted ABOVE it". That is true only
+   newest-first. Ascending, a new note always sorts to the END so
+   nothing is ever inserted above, and B-18's tombstone means no
+   row ever leaves so nothing shifts up either — **the two
+   properties that would break an offset cursor are both closed by
+   rulings this task already has.** A `page 1, concurrent insert,
+   page 2` cell therefore reds ZERO against an offset
+   implementation. D-WAVE-06 withdraws the justification and says
+   so in as many words.
 
-   Everything below is order-independent and every one of them
-   fires under either reading.
+   Writing it anyway would put a cell that cannot fail into a
+   suite, under a name that reads as coverage. What IS here
+   instead: the ORDER itself, pinned, which a descending
+   implementation reds immediately; the criterion as literally
+   stated, with its non-discriminating clause LABELLED rather than
+   deleted (D-240-11's shape); and the precision gap, which is
+   AC2's real content and is order-independent.
 
    ── THE PRECISION GAP, WHICH IS NOT AN OFFSET AND IS NOT A RACE ──
    `note.created_at` is `timestamptz` at MICROSECOND precision;
@@ -51,6 +60,7 @@ import {
   blueprintTarget,
   closeDatabase,
   openDatabase,
+  postOne,
   premise,
   seedAccount,
   seedBundle,
@@ -284,5 +294,79 @@ describe("T170 AC2 — a cursor is scoped to its own target", () => {
     expect([...page1.ids, ...page2.ids].sort(), `and the first target's list is complete`).toEqual(
       [...firstIds].sort(),
     );
+  });
+});
+
+describe("T170 AC2 — the order is ASCENDING, oldest-first (D-WAVE-06)", () => {
+  it("a page reads oldest-first", async () => {
+    const { actor, target, ids } = await stage("ac2-order", 5);
+    const listNotes = await bind("listNotes");
+    const page = asPage(await listNotes(s.db, actor, target), "listNotes");
+
+    expect(
+      page.ids,
+      `D-WAVE-06: the page order is ASCENDING, oldest-first. \`seedNotes\` posts one at a ` +
+        `time and awaits each, so the seeding order IS the creation order and a descending ` +
+        `implementation reds here immediately.\n` +
+        `  This is the pin the offset-falsification cell could not be: it discriminates, and ` +
+        `that one does not.`,
+    ).toEqual(ids);
+  });
+
+  it("the order holds across a page boundary", async () => {
+    const { actor, target, ids } = await stage("ac2-order-pages", PAGE_SIZE * 2 + 3);
+    const listNotes = await bind("listNotes");
+    const { pages } = await walkPages(listNotes, s.db, actor, target, "listNotes");
+
+    expect(
+      pages.flat(),
+      `A module can sort correctly WITHIN a page and still walk the pages in the wrong ` +
+        `direction — the cursor's comparison is a second place the order lives, and the ` +
+        `single-page cell above cannot see it.`,
+    ).toEqual(ids);
+  });
+
+  /**
+   * AC2 as literally stated, with its uncharged clause labelled rather than deleted.
+   *
+   * The criterion is "a cursor stable across a concurrent insert", and this drives exactly
+   * that. What it does NOT do is separate a keyset cursor from an offset one: ascending,
+   * the new note appends past the end, so both are stable and both pass. D-WAVE-06 is the
+   * ruling and it withdrew the argument that said otherwise.
+   *
+   * Kept because it still reds real things — a cursor that re-reads the whole list, one
+   * that loses the tail when the underlying count changes, an insert that renumbers — and
+   * labelled because a cell whose name promises more than it measures is how a suite
+   * reports coverage it does not have.
+   */
+  it("a note inserted mid-walk appends past the end and disturbs nothing", async () => {
+    const { actor, target, ids } = await stage("ac2-stable", PAGE_SIZE + 4);
+    const listNotes = await bind("listNotes");
+    const page1 = asPage(await listNotes(s.db, actor, target), "listNotes page 1");
+    premise(page1.cursor !== null, `the walk needs a second page for the insert to sit across`);
+
+    const { id: inserted } = await postOne(s.db, actor, target, "arrived mid-walk");
+
+    const page2 = asPage(
+      await listNotes(s.db, actor, target, page1.cursor),
+      "listNotes page 2 after a concurrent insert",
+    );
+    const seen = [...page1.ids, ...page2.ids];
+
+    expect(
+      seen.filter((id) => ids.includes(id)),
+      `AC2: "a cursor stable across a concurrent insert". Every note that existed when the ` +
+        `walk started must appear exactly once, in order.\n` +
+        `  UNCHARGED CLAUSE, stated so this cell is not read as more than it is: ascending, ` +
+        `this does NOT discriminate a keyset cursor from an offset one — the new note ` +
+        `appends past the end and both are stable. D-WAVE-06 withdrew the justification ` +
+        `that claimed it would.`,
+    ).toEqual(ids);
+    expect(new Set(seen).size, `and nothing is returned twice`).toBe(seen.length);
+    expect(
+      seen[seen.length - 1],
+      `the note that arrived mid-walk sorts LAST, because the order is ascending — a ` +
+        `descending implementation puts it first and the reader never sees it at all.`,
+    ).toBe(inserted);
   });
 });
