@@ -48,7 +48,11 @@ export function cmpString(a: string, b: string): number {
  * a concatenation nobody can point at in the archive.
  */
 export interface Field<T> {
-  /** The evidence's left half. A field name, never a caller-supplied value. */
+  /**
+   * The evidence's left half. A FIELD name, never a caller-supplied value and never a URL
+   * parameter name — `category`, not `cat`. The pair and the reason are on `Results.facets`
+   * in `types.ts` (D-200-30).
+   */
   key: string;
   text: (item: T) => string | readonly string[] | undefined;
 }

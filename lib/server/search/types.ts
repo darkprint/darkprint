@@ -44,6 +44,19 @@ export interface Hit<T> {
  * between. It is computed from the vocabulary and never from the hit set (AC3): a facet map
  * derived from the results is empty exactly when the reader most needs it, and that
  * implementation passes every test that searches for something present.
+ *
+ * ── The two spellings are NOT the same spelling, and that is the point (D-200-30) ──
+ *
+ * A facet key is a URL PARAMETER name; an evidence key is a FIELD name. So a response can
+ * carry `facets.cat` and, on a hit, `evidence: ["category:ops"]`, and both are right:
+ *
+ *   * `cat` is what the client sends back, so it has to be the URL's spelling.
+ *   * `category` is what MATCHED, which is a fact about the document rather than about the
+ *     query, and the field is not called `cat` anywhere in the archive.
+ *
+ * They are load-bearing in opposite directions and unifying them breaks whichever one it
+ * is unified onto. This note is here, on the shape that declares both, so the next reader
+ * finds the argument before deciding it is an inconsistency to tidy up.
  */
 export interface Results<T> {
   hits: readonly Hit<T>[];

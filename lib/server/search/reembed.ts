@@ -116,11 +116,21 @@ function cardText(card: NodeCard): string {
  * A pin that does not parse names no row and is dropped. `resolveBundle` reports it as
  * `bundle/unpinned-card` at publish, and there is nothing here to attach a vector to.
  *
- * VISIBILITY IS NOT CONSULTED, and that is deliberate rather than an omission. These tables
- * are storage and not the answer: nothing reads them, and D-200-07's public-only rule is
- * applied at the three searchers, where a caller can actually observe it. Skipping a
- * private bundle here would instead leave a blueprint with no vector on the day it is made
- * public, which is a staleness bug with no trigger to repair it.
+ * VISIBILITY IS NOT CONSULTED, and that is deliberate rather than an omission (D-200-25).
+ * These tables are storage and not the answer: nothing reads them, and D-200-07's
+ * public-only rule is applied at the three searchers, where a caller can actually observe
+ * it. D-82 excludes private content from the SEARCHABLE INDEX, which is not the storage a
+ * vector lives in.
+ *
+ * Two reasons, and the second is the stronger one:
+ *
+ *   * Visibility is FLIPPABLE and re-embedding is triggered by a RELEASE. Skipping a
+ *     private card leaves it with no vector and NOTHING TO TRIGGER ONE on the day it goes
+ *     public — a staleness bug that raises no error and appears in no test.
+ *   * `reembedRelease` takes no actor, deliberately. A visibility check inside it would
+ *     make this table a SECOND AUTHOR of the visibility rule, which is exactly the defect
+ *     D-200-06 corrected in the other direction: one rule, owned by T060 and applied by
+ *     T080, consumed everywhere and restated nowhere.
  */
 async function embedCards(db: Db, pins: readonly string[]): Promise<void> {
   const wanted = new Map<string, { id: string; version: string }>();

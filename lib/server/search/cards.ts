@@ -48,10 +48,20 @@ const UNPHASED = "unphased";
  * The fields a query is looked for in.
  *
  * `NodeBrowser`'s haystack — id, name, action, the type's LABEL, tools, the phases' labels,
- * the risk markers' labels — plus `spec`, which the shelf has no room for and this task's
- * Goal asks for by name: *"which blueprints or cards fit this task, described in prose"*.
- * The spec is the prose, and a search that could not reach it would answer a different
- * question from the one the contract sets.
+ * the risk markers' labels — plus `spec`.
+ *
+ * **`spec` DIVERGES FROM `lib/core/archive/registry.ts`, WHICH PINS IT OUT, AND THE
+ * DIVERGENCE IS DELIBERATE (D-200-29).** That exclusion is right for what it governs: an
+ * unranked client-side substring filter, where one long self-sufficient document makes
+ * every card match and nothing distinguishes the matches from each other. This task's Goal
+ * names the opposite case by hand — *"which blueprints or cards fit this task, described in
+ * prose"* — and the prose is in the spec.
+ *
+ * What makes it safe here is the thing `lib/core`'s filter does not have: a RANK, and a
+ * visible `spec:<token>` evidence item. A card that matched only in its spec ranks below
+ * one that also matched its name, and says so in a line a caller can check. Removing
+ * either of those two would put this field back on the wrong side of `lib/core`'s
+ * argument.
  *
  * The card's `author` is NOT searched, and that is a divergence from the shelf worth
  * naming: `NodeBrowser` matches an author's DISPLAY NAME, which is a join this module would
