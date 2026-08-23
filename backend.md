@@ -19549,10 +19549,10 @@ that a test binding to a module path rather than to behaviour has blocked a buil
           inputSize: number; harnessVersion: string; costUnits: number;
           durationMs: number; occurredAt: Date;
         }
-        interface ReportedCost { runs: number; median: number; spread: { p10: number; p90: number }; model: string; excluded: number; isSample: boolean }
+        interface ReportedCostUnits { runs: number; median: number; spread: { p10: number; p90: number }; model: string; excluded: number; isSample: boolean }  // D-180-01(i): the NAME carries the unit; key set unchanged
 
         submitReport(db: Db, actor: Actor, report: RunReport): Promise<void>
-        reportedCost(db: Db, actor: Actor, releaseDigest: string): Promise<ReportedCost | undefined>
+        reportedCost(db: Db, actor: Actor, releaseDigest: string): Promise<ReportedCostUnits | undefined>
 
         class RunReportRefusedError extends Error   // D-180-03, D-180-04 — ONE class, THREE messages
 
@@ -19568,7 +19568,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **AC5 needed a ruling and now has one: a report on one's own blueprint does not count toward `validated`.** Self-reported runs on one's own release are accepted and aggregated — they are honest data — but `validated` is a claim about *others* having used the thing. `submitReport` records the submitting account and T130's `validated` computation filters on it.
 
-  **Admissible message form:** `"submitReport: no release at digest `<digest>`."` — the caller's own digest, nothing else.
+  **Admissible message forms, all three (D-180-03/04/06):** `"submitReport: no release at digest `<digest>`."` — the caller's own digest, nothing else · `"submitReport: a run report needs an account."` · `"submitReport: the run report is malformed."`
 
 - **★★ D-180-01 (F4) — `reportedCost` RETURNS RAW `costUnits`. IT INVENTS NO NORMALISATION, AND IT MUST NOT LAND ON THE 0–100 AXIS. THE `Open:` LINE IS WITHDRAWN AS UNANSWERABLE BY THIS TASK.** Its implementer is right that *how cost is normalised across models, hardware and currencies* is not an open detail but the definition of the number, and it has been blocked ten hours on it — **that delay is mine.**
 
@@ -20019,6 +20019,12 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **AC3 spans four verbs, so it is one filter through T080/T090's `Actor`-taking readers**, never four checks. Same rule as T080's twelve.
 
   **Inherited read semantics from T080, published here so this task's author binds to the same rules.** These are properties of the barrel this task consumes, ruled at T080's implementation and identical everywhere: `BlueprintSummary.cardRefs` is **filtered to cards the actor may read**, so a partial caller's `cardRefs` does not reproduce `digest`'s input; a card pinned only by an invisible bundle is **not indexed** for that actor; a bundle whose owner has **no handle** is excluded; lists sort **by slug, then owner handle**; `scoresOf` is **all four axes or nothing**; and pins are canonicalised to `id@version`, with an unparseable pin dropped. Raised by T080's implementer, which noticed that ten tasks list it under `Blocks` and that these are read semantics they inherit rather than implementation details they may ignore.
+
+- **D-220-01 — PRE-DISPATCH FACTS, enumerated rather than recalled.** (1) **`packages/` does not exist and `package.json` declares NO workspaces** — so `packages/mcp/**` is a new root directory whose build wiring is part of the task, and inventing a workspace config is a `package.json` change that comes to me first. (2) The published block is stamped `d260c33`, ~900 commits stale — the types it names must be re-verified against the tree, exactly as T200's were (D-200-05's lesson). (3) Nothing anywhere imports the future barrels, so there is no frozen-surface hazard on this task. (4) The four advertised operations at `app/mcp/page.tsx:85-110` are `search`, `read a card`, `inspect provenance`, `fetch a release` — **and both `app/mcp/page.tsx` and `components/mcp/**` are Forbidden, so if the page's copy disagrees with the shipped tool surface, REPORT it; do not edit it.**
+
+- **★ D-220-02 — TWO LIVE FACTS ABOUT THE SEARCH THIS TASK COMPOSES.** (1) **D-260-24: nothing has ever written `release.scored_ontology_version_id`**, so `scoresOf` answers `undefined` for every blueprint. `mcpSearch` takes only a `task` string — no `phase`/`autonomy`/`df` — and `searchBlueprints` pays for scorecards **only when one of those keys is set**, so the composition is CLEAN today; **but a cell asserting any scorecard-driven behaviour through MCP would red a correct module.** (2) **D-300-01: the owner has ruled semantic embeddings (local encoder, hybrid ranking) as T300, which will feed EXACTLY this surface.** B-12: *"MCP ships as the advertised stdio server over the same API"* — so T220 wraps `@/lib/server/search`'s searchers and invents NO second ranking; when T300 lands, MCP gains recall without T220 changing. **`mcpSearch`'s `ordered` is AC5's law composed through, not a new quantity.**
+
+- **D-220-03 — `mcpReadCard` AND `mcpProvenance` COMPOSE MERGED READERS AND INVENT NOTHING**: cards through `@/lib/server/registry` / `@/lib/server/cards`, provenance through T110's lineage and T010's releases, bytes through T090's export. **Every reader is called with `{ kind: "anonymous" }`** — D-200-06/07's rule, same construction, same reason: the MCP surface is a discovery surface and is public-only for every caller.
 
 - **Goal:** let an agent read the registry from inside its own session, over MCP.
 - **Contract:** four operations, named on `/mcp` (`app/mcp/page.tsx:85-110`): `search` (the task in the agent's own words → blueprints and cards with kind, author and digest); `read a card` (a card id → the YAML as published); `inspect provenance` (a bundle → who published it, what it was forked from, every release digest); `fetch a release` (owner, slug and digest → `blueprint.dot`, `cards/*.yaml`, `README.md`, `AGENTS.md`). Scope is read access and nothing else. The slug/digest distinction is load-bearing: by slug you get what the registry holds today, by digest the bytes you tested against. Ships as the advertised stdio server over the same HTTP API (B-12). Rate limits apply and a key raises them (B-17).
