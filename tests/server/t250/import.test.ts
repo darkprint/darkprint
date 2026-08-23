@@ -35,6 +35,7 @@ import {
   bind,
   movedTableNames,
   snapshotAll,
+  snapshotContent,
   type Namespace,
   type Scratch,
 } from "./contract";
@@ -50,18 +51,25 @@ const twice = recorded("the two seed imports", async () => {
      never checked, which is the shape where a comment names a condition and the assertion admits
      its opposite. */
   const before = await snapshotAll(scratch);
+  const beforeContent = await snapshotContent(scratch);
 
   const plan = (await planImport()) as Namespace;
   const first = (await runImport(scratch.db, plan)) as Namespace;
   const afterFirst = await snapshotAll(scratch);
+  const afterFirstContent = await snapshotContent(scratch);
 
   /* The plan is re-derived rather than reused. A second run in production plans again, and
      handing the first plan back would test a path a re-run never takes. */
   const secondPlan = (await planImport()) as Namespace;
   const second = (await runImport(scratch.db, secondPlan)) as Namespace;
   const afterSecond = await snapshotAll(scratch);
+  const afterSecondContent = await snapshotContent(scratch);
 
-  return { scratch, plan, first, second, before, afterFirst, afterSecond };
+  return {
+    scratch, plan, first, second,
+    before, afterFirst, afterSecond,
+    beforeContent, afterFirstContent, afterSecondContent,
+  };
 });
 
 afterAll(async () => {
@@ -118,29 +126,58 @@ describe("AC2: re-running is idempotent", () => {
    * different contents has passed a leak check in this repository.
    */
   it(
-    "leaves the stored rows byte-identical between the two runs",
+    "leaves the imported content byte-identical between the two runs",
     async () => {
-      const { afterFirst, afterSecond } = await twice();
-      const moved = movedTableNames(afterFirst, afterSecond);
+      const { afterFirstContent, afterSecondContent } = await twice();
+      const moved = movedTableNames(afterFirstContent, afterSecondContent);
       expect(
         moved,
         `the second run changed ${moved.join(", ") || "nothing"}.\n` +
-          "  An `audit` row recording a refused publish is defensible and is admitted by the " +
-          "cell below. A row anywhere else is a re-run that wrote, which is what AC2 forbids.",
+          "  Compared with `updated_at` dropped from every table: a provenance timestamp is not " +
+          "imported content, and `upsertFromGitHub` bumps the registry account's on every call " +
+          "(lib/server/accounts/github.ts:75). Everything else is what AC2 forbids a re-run " +
+          "from touching.",
       ).toEqual([]);
     },
     SLOW,
   );
 
+  /**
+   * The timestamp axis, kept as a real assertion rather than abandoned when the cell above
+   * stopped looking at it.
+   *
+   * `account` is expected to move and the reason is another module's: `upsertFromGitHub` sets
+   * `updatedAt` unconditionally on conflict, and D-250-04 names it as the door that creates the
+   * registry account. Nothing else may move. A `bundle` or `release` whose timestamp shifted on
+   * a no-op re-run reds here, and so does a second `account` ROW -- a change to the row list
+   * rather than to a column, which the content snapshot catches as well.
+   *
+   * The COLUMN is named, not just the table. "Something about account changed" and "account's
+   * `updated_at` changed" are different claims, and only the second is what was measured.
+   */
   it(
-    "writes nothing outside audit on the second run, even where a row is defensible",
+    "moves no timestamp but the registry account's, which is T050's write and not this task's",
     async () => {
-      const { afterFirst, afterSecond } = await twice();
+      const { scratch, afterFirst, afterSecond } = await twice();
       const moved = movedTableNames(afterFirst, afterSecond);
-      /* The weaker of the pair, deliberately kept beside the stronger one rather than instead of
-         it. An audit trail of a refused import is a reasonable thing to build and nothing in
-         §T250 forbids it; a second `release`, a second `bundle` or a second `account` is not. */
-      expect(moved.filter((name) => name !== "audit")).toEqual([]);
+      /* `audit` is admitted alongside: a trail of a refused re-import is defensible and nothing
+         in §T250 forbids it. A second `release` or `bundle` is not. */
+      expect(moved.filter((name) => name !== "account" && name !== "audit")).toEqual([]);
+
+      const rows = await scratch.query('select * from "account"');
+      expect(rows, "a re-run added or removed an account row").toHaveLength(1);
+
+      /* And the account row differs in `updated_at` ALONE. Without this the cell admits a
+         re-run that rewrote the handle, the login or the github id and called it a timestamp. */
+      const first = afterFirst.get("account") ?? [];
+      const second = afterSecond.get("account") ?? [];
+      expect([first.length, second.length]).toEqual([1, 1]);
+      const a = JSON.parse(first[0] ?? "{}") as Record<string, unknown>;
+      const b = JSON.parse(second[0] ?? "{}") as Record<string, unknown>;
+      const changed = Object.keys(a)
+        .filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k]))
+        .sort();
+      expect(changed).toEqual(["updated_at"]);
     },
     SLOW,
   );

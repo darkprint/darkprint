@@ -455,12 +455,47 @@ export type Snapshot = Map<string, string[]>;
  * comparison is element-wise or it is not a comparison.
  */
 export async function snapshotAll(s: Scratch): Promise<Snapshot> {
+  return snapshotWith(s, (entries) => entries);
+}
+
+/**
+ * The same snapshot with every `updated_at` column dropped.
+ *
+ * ── why this exists, and it is a correction against this suite ──
+ * The first run of the blind suite against the implementation redded two AC2 cells because
+ * `account` moved between two imports. Measured: the ONLY differing column was
+ * `account.updated_at`, and `lib/server/accounts/github.ts:75` is where it comes from —
+ * `upsertFromGitHub` does `onConflictDoUpdate({ set: { githubLogin, updatedAt: new Date() } })`
+ * and bumps the column on every call. D-250-04 names `upsertFromGitHub` as the door that
+ * creates the registry account, so the timestamp is T050's published behaviour arriving
+ * through the only entrance this task is allowed to use.
+ *
+ * Charging that as a defect would charge T250 for a neighbour's semantics. `updated_at` is a
+ * provenance column rather than content, so it is dropped UNIFORMLY across every table rather
+ * than excepted on `account` — an exception for the one column that happened to red is how a
+ * repair becomes a hole. What AC2 forbids is a re-run that changes what was IMPORTED, and that
+ * is what the content comparison measures.
+ *
+ * The timestamp axis is not abandoned: `import.test.ts` keeps a cell over the FULL snapshot
+ * asserting that `account` is the only table whose timestamp moves. A `bundle` or `release`
+ * timestamp moving on a no-op re-run still reds.
+ */
+export async function snapshotContent(s: Scratch): Promise<Snapshot> {
+  return snapshotWith(s, (entries) => entries.filter(([column]) => column !== "updated_at"));
+}
+
+async function snapshotWith(
+  s: Scratch,
+  pick: (entries: [string, unknown][]) => [string, unknown][],
+): Promise<Snapshot> {
   const snap: Snapshot = new Map();
   for (const name of schemaTableNames()) {
     const rows = await s.query(`select * from "${name}"`);
     snap.set(
       name,
-      rows.map((row) => JSON.stringify(Object.fromEntries(Object.entries(row).sort()))).sort(),
+      rows
+        .map((row) => JSON.stringify(Object.fromEntries(pick(Object.entries(row)).sort())))
+        .sort(),
     );
   }
   return snap;

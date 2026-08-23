@@ -187,6 +187,94 @@ describe("AC4: one registry account, and nobody invented", () => {
   );
 });
 
+describe("D-250-18: re-attribution moves OWNERSHIP, not AUTHORSHIP", () => {
+  /**
+   * The manifest keeps the handle the archive wrote, and it is a different claim from AC4.
+   *
+   * AC4 is about `bundle.owner_id` and says nothing about the manifest, which sits outside
+   * `bundleDigest` and is therefore digest-neutral either way. D-250-18 rules the bytes are
+   * kept: the registry did not write these blueprints, and a manifest saying it did would be a
+   * false claim on the one surface that records who authored a thing.
+   *
+   * The control is the same one AC4 uses in reverse. The nine bundles name six DIFFERENT
+   * authors, none of them the registry handle, so "the manifest kept its author" and "the
+   * manifest was rewritten to darkprint" produce different answers on every row -- and both
+   * halves are asserted, because "author is a non-empty string" would admit either.
+   */
+  it(
+    "keeps each manifest's original author, and it is never the registry handle",
+    async () => {
+      const expected = new Map(
+        bundleSlugs().map((slug) => [
+          slug,
+          /^author:\s*(\S+)\s*$/m.exec(
+            readFileSync(`${REPO_ROOT}content/blueprints/${slug}/blueprint.yaml`, "utf8"),
+          )?.[1],
+        ]),
+      );
+      expect(new Set(expected.values()).size).toBe(EXPECTED_AUTHORS);
+      expect([...expected.values()]).not.toContain(REGISTRY_HANDLE);
+
+      const { scratch } = await imported();
+      const rows = await scratch.query(
+        'select b.slug as slug, r.manifest as manifest from "release" r ' +
+          'join "bundle" b on b.id = r.bundle_id',
+      );
+      expect(rows).toHaveLength(EXPECTED_BUNDLES);
+
+      const wrong = rows
+        .map((r) => ({
+          slug: String(r.slug),
+          author: (r.manifest as { author?: unknown })?.author,
+        }))
+        .filter((r) => r.author !== expected.get(r.slug))
+        .map((r) => `${r.slug}: stored ${String(r.author)}, archive ${expected.get(r.slug)}`);
+      expect(wrong).toEqual([]);
+
+      /* And the bad output named explicitly: not one manifest may say the registry wrote it. */
+      const claimed = rows
+        .filter((r) => (r.manifest as { author?: unknown })?.author === REGISTRY_HANDLE)
+        .map((r) => String(r.slug));
+      expect(claimed).toEqual([]);
+    },
+    SLOW,
+  );
+
+  /**
+   * D-250-22's third ground, which its implementer reached and the ruling did not have:
+   * rewriting a stored `source` is the exact harm D-90-03 exists to prevent, and it would put
+   * the store and `content/` permanently out of agreement.
+   *
+   * So the stored card bytes are compared to the file on disk BYTE FOR BYTE. A card's `author:`
+   * line is inside those bytes, which is what makes this the same ruling one field over.
+   */
+  it(
+    "stores every card's bytes exactly as content/ holds them, author line included",
+    async () => {
+      const { scratch } = await imported();
+      const rows = await scratch.query('select card_id, version, source from "card_version"');
+      expect(rows).toHaveLength(EXPECTED_CARD_FILES);
+
+      const wrong: string[] = [];
+      for (const row of rows) {
+        const ref = `${String(row.card_id)}@${String(row.version)}`;
+        const onDisk = readFileSync(`${REPO_ROOT}content/cards/${ref}.yaml`, "utf8");
+        if (String(row.source) !== onDisk) wrong.push(ref);
+      }
+      expect(wrong).toEqual([]);
+
+      /* The discriminating half: those bytes really do carry an invented author, so a store
+         that agreed with `content/` only because both had been rewritten is excluded. */
+      const authors = new Set(
+        rows.map((r) => /^author:\s*(\S+)\s*$/m.exec(String(r.source))?.[1]).filter(Boolean),
+      );
+      expect(authors.size).toBe(EXPECTED_AUTHORS);
+      expect([...authors]).not.toContain(REGISTRY_HANDLE);
+    },
+    SLOW,
+  );
+});
+
 describe("AC1 after the write: re-attribution did not move a digest", () => {
   /**
    * The plan-level AC1 cells say the PLAN carries the printed digests. This one reads the digest
