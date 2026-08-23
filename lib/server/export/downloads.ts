@@ -1,59 +1,63 @@
 /* ============================================================
-   DarkPrint backend — B-14's download event
+   DarkPrint backend — B-14's download event, delegated
    "Downloads are counted by an explicit event at the serving
-   edge, never derived from logs." This is that edge, and this is
-   the event. T240's request log is operational and short-lived
-   and deriving a count from it is that task's absolute
-   constraint; T150 reads the number this writes.
+   edge, never derived from logs." This is that edge. The event
+   itself is now `@/lib/server/counters`', which is what
+   **SEAM-19's `TODO` asked for and this file discharges**: it
+   read *"written here rather than through
+   `@/lib/server/counters` because T150 is unmerged, and a dynamic
+   `import()` specifier resolves at compile time, so importing an
+   unmerged barrel does not gate green. The signature is the one
+   T150 publishes, so the call site does not change when it lands
+   — only where the name is imported from."* T150 has landed and
+   the name now comes from there.
 
-   Written here rather than through `@/lib/server/counters`
-   because T150 is unmerged, and a dynamic `import()` specifier
-   resolves at compile time, so importing an unmerged barrel does
-   not gate green. The signature is the one T150 publishes, so the
-   call site does not change when it lands — only where the name
-   is imported from.
-   TODO(SEAM-19): fold into T150's counter service once it exists.
+   Two live implementations of one verb writing one column is the
+   shape this run has charged more than any other, so the copy
+   goes rather than being kept in step by hand.
 
-   The grain is the table's own (`lib/db/schema.ts`, `target`): a
-   blueprint counts per `bundle.id`, current-release-independent,
-   so downloading two releases of one bundle is two downloads of
-   that bundle; a card counts per bare `cardId`, never `id@version`
-   (B-10 aggregates card counters per id).
+   ── Why this stays a re-export instead of the call sites moving
+      to `@/lib/server/counters` ──
+   `tests/server/t090/surface.test.ts` and
+   `tests/server/t091/surface.test.ts` both require
+   `recordDownload` to be published **from `@/lib/server/export`**,
+   and T090's contract pins its arity at 2. That is a merged
+   promise about this barrel's surface and it is not T150's to
+   withdraw, so the surface is unchanged and only the author moved.
+
+   It is worth saying that this is the one place the barrel
+   headers' rule against re-exporting another module's name is
+   deliberately overridden. `accounts` and `saves` both decline to
+   re-export a foreign error class, because publishing it under a
+   second name invites the re-rendering D-50-08 forbids. The
+   difference here is that the re-export is the OLDER of the two
+   surfaces: callers were promised this name at this address one
+   wave before the owning module existed.
+
+   ── What the widened parameter does and does not mean ──
+   T150 publishes `kind` as `blueprint | card | term`, where T090
+   published `blueprint | card`. Both call sites — `serve-file.ts`
+   and `serve-card.ts` — pass a literal, so neither moves, and a
+   `term` has no served file: the widening belongs to the counter,
+   not to this edge.
+
+   The grain is unchanged and is the table's own
+   (`lib/db/schema.ts`, `target`): a blueprint counts per
+   `bundle.id`, current-release-independent, so downloading two
+   releases of one bundle is two downloads of that bundle; a card
+   counts per bare `cardId`, never `id@version` (B-10 aggregates
+   card counters per id, and AC7 asserts it directly).
+
+   ── What moved with the author ──
+   The never-rejects guarantee is unchanged and still ruled at
+   `a037587`: a counter write that fails must not deny a legitimate
+   download. What changed is where the failure goes. It was a
+   `console.error`, with a comment saying *"the audit trail it
+   belongs in is T240's and that task is unmerged"* — T240 merged
+   at `a4de281`, `AUDIT_ACTIONS` carries `counter.write_failed`,
+   and T150's `recordDownload` now writes that row. The console
+   line survives there as the last resort for the case where the
+   audit write fails too.
    ============================================================ */
 
-import { sql } from "drizzle-orm";
-import { schema, type Db } from "@/lib/db";
-
-/**
- * One download, counted.
- *
- * Upserted rather than read-then-written: `target_kind_ref_id_key` makes the conflict
- * target exact, and the increment happens inside the statement, so two concurrent serves
- * of the same file cannot both read 4 and both write 5.
- *
- * **Never rejects.** Ruled at `a037587`: a counter write that fails must not deny a
- * legitimate download. A counter outage taking downloads offline is a worse product than
- * an undercount, and B-14 makes this event explicit rather than load-bearing. The failure
- * is logged rather than swallowed silently — the audit trail it belongs in is T240's and
- * that task is unmerged.
- */
-export async function recordDownload(
-  db: Db,
-  target: { kind: "blueprint" | "card"; refId: string },
-): Promise<void> {
-  const { kind, refId } = target;
-  try {
-    await db
-      .insert(schema.target)
-      .values({ kind, refId, downloadCount: "1" })
-      .onConflictDoUpdate({
-        target: [schema.target.kind, schema.target.refId],
-        set: { downloadCount: sql`${schema.target.downloadCount} + 1` },
-      });
-  } catch (err) {
-    // The kind and the ref id are this module's own identifiers, not a driver value, and
-    // this is a log rather than a response body — but the error object itself is passed
-    // whole rather than interpolated, so nothing it carries is stringified into the line.
-    console.error(`recordDownload: the download count for ${kind} ${refId} was not written.`, err);
-  }
-}
+export { recordDownload } from "@/lib/server/counters";
