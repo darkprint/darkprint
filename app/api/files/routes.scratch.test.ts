@@ -18,6 +18,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CORE_ONTOLOGY, type CardRef } from "@/lib/core";
 import { contentVocabulary, readContent } from "@/lib/content/read";
 import { schema } from "@/lib/db";
+import { createObjectStorage } from "@/lib/db/storage";
 import { addRelease, createBundle } from "@/lib/server/archive";
 import { addCard } from "@/lib/server/cards";
 import { addOntologyVersion } from "@/lib/server/ontology";
@@ -223,6 +224,26 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
      * assertion is what makes the next measurement mean anything.
      */
     const breakTable = async (name: string): Promise<void> => {
+      /**
+       * D-091-04. **Every observation in this cell is of the GENERATE path, and under T091's
+       * freeze-on-miss a successful serve WRITES the folder it just built** — so each 200
+       * this cell asserts arms the NEXT outage to read frozen bytes and answer 200 where a
+       * 500 is required. The three outages are each preceded by a 200, so all three were
+       * exposed; `openView` is simply the first and reds before the others are reached.
+       *
+       * Clearing here rather than at each call site makes it an invariant of an outage —
+       * **an outage begins from an unfrozen subject** — instead of three lines somebody can
+       * add a fourth outage without. Not re-pointed at a second release on purpose: two
+       * releases would make the outages observations of DIFFERENT digests, and the point of
+       * the set is that it is the same route over the same bytes failing at different sites.
+       *
+       * `delete` on a key that was never written is a no-op, so this cannot under-clear —
+       * the asymmetry D-091-11 turns on. Before D-091-11 the suite could not even see these
+       * writes: the residue ledger is kept at the write, and the implementation had become
+       * a writer without the ledger learning of it.
+       */
+      const [frozen] = await testDb!.client.db.select().from(schema.release);
+      await createObjectStorage().delete(frozen!.digest);
       await testDb!.client.query(`ALTER TABLE "${name}" RENAME TO "${name}_hidden"`);
     };
     const fixTable = async (name: string): Promise<void> => {

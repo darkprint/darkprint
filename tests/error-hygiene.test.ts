@@ -238,9 +238,18 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
        ruled refusal sentences) and `LineageStoreError` (D-13 over the direct `schema.bundle`
        read `archive` publishes no reader for). Derived by this walk against its own domain
        sha, not carried from a worktree -- T110 and T240 EACH computed 30 -> 32 from base 30,
-       independently and correctly, because neither tree can see the other's module. T240
-       lands second and faces 32 -> 34. */
-    ).toBe(32);
+       independently and correctly, because neither tree can see the other's module.
+
+       T240 landed second and took it 32 -> 34: `lib/server/observability` publishes
+       `AuditStoreError` and `NotPermittedError`. T091 merged alongside and added NOTHING --
+       it reuses the existing eighth message form rather than inventing a ninth, which its
+       implementer reported at the time and this number now confirms independently.
+
+       T240's adversary REFUSED my figure of 34 for ITS tree and was right to: the domain is
+       `git ls-tree -d backend lib/server/`, the REF, so an unmerged module is hygiene-checked
+       and deliberately not counted. Its tree read 32 and its merge moved nothing. The 34 is
+       real only here, in the merge commit, which is the whole content of the rule. */
+    ).toBe(34);
 
     const rendered: string[] = [];
     const traceless: string[] = [];
