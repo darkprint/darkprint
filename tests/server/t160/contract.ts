@@ -136,6 +136,7 @@ import { fileURLToPath } from "node:url";
 
 import { DARKPRINT_CONFIG } from "@/lib/core";
 import type { Actor } from "@/lib/server/policy";
+import { createDbClient, type DbClient } from "@/lib/db";
 import { createTestDb, type TestDb } from "@/tests/support";
 
 export type Namespace = Record<string, unknown>;
@@ -567,7 +568,43 @@ export async function scratchDatabase(): Promise<Scratch> {
   };
 }
 
+/**
+ * A SECOND, INDEPENDENT connection to the same scratch database.
+ *
+ * ── why one `db` cannot drive a concurrency cell, MEASURED ──
+ * `Promise.all([castBallot(s.db, …), castBallot(s.db, …)])` looks like two concurrent
+ * callers and is not. Both calls start together, but a single `pg` pool completes their
+ * statements in order, so a read-then-write implementation sees:
+ *
+ *     select start {20} / select start {90} / select done {20} found 0 /
+ *     write done {20}  / select done {90} found 1 / write done {90}
+ *
+ * — the second caller's SELECT returns after the first caller's INSERT, so it finds the row
+ * and updates it, and the lost-update race never happens. That trace is from this suite's own
+ * `SELECT`-then-`INSERT` mutation, which reddened ZERO of 50 cells until this helper existed.
+ *
+ * Two callers on two pools are two sockets, so their statements really do overlap — which is
+ * also what two concurrent callers ARE in production: two requests, two pooled connections.
+ * `lib/db/schema.ts:384-387` says the unique index IS AC2 and that "a `SELECT`-then-`INSERT`
+ * passes every sequential test and loses under two callers"; this is what makes that
+ * sentence testable rather than quoted.
+ */
+export async function extraClient(url: string): Promise<unknown> {
+  const client = createDbClient(url);
+  extras.push(client);
+  return (client as unknown as Namespace).db;
+}
+
+const extras: DbClient[] = [];
+
 export async function dropScratchDatabases(): Promise<number> {
+  for (const client of extras.splice(0)) {
+    try {
+      await client.close();
+    } catch {
+      /* Teardown is not under test. */
+    }
+  }
   let dropped = 0;
   for (const test of open.splice(0)) {
     await test.drop();
@@ -596,7 +633,8 @@ export interface Refused {
   label: string;
   /** Why this shape is here, so a red says which criterion it is about. */
   because: string;
-  actor: Actor;
+  /** Given a real, existing account id, so a member can carry one without being that account. */
+  actor: (realAccountId: string) => Actor;
 }
 
 /**
@@ -617,19 +655,19 @@ export const NO_IDENTITY: readonly Refused[] = [
   {
     label: "an anonymous caller",
     because: "AC6, literally: `{ kind: \"anonymous\" }` is what a signed-out reader is.",
-    actor: ANONYMOUS,
+    actor: () => ANONYMOUS,
   },
   {
     label: "an account carrying no identity at all",
     because:
       "T060: `\"\"` is what a half-built session row and an unset column both look like, and " +
       "an empty-string id never matches an empty-string id.",
-    actor: accountActor("", null),
+    actor: () => accountActor("", null),
   },
   {
     label: "the missing-session shape `{}`",
     because: "T060: `can` and `visibleTo` fail closed; `{}` is precisely the missing session.",
-    actor: {} as unknown as Actor,
+    actor: () => ({}) as unknown as Actor,
   },
   {
     label: "an operator with no id",
@@ -637,7 +675,29 @@ export const NO_IDENTITY: readonly Refused[] = [
       "T060: possession of a discriminant is not authority — an actor whose `kind` is " +
       "`\"operator\"` must carry a non-empty `accountId` to be one. There is no account to " +
       "attribute this ballot to under any reading.",
-    actor: { kind: "operator" } as unknown as Actor,
+    actor: () => ({ kind: "operator" }) as unknown as Actor,
+  },
+  {
+    /* THE MEMBER THAT MAKES THIS SET AN INSTRUMENT, added after a mutation sweep showed the
+       four above holding nothing.
+
+       Every one of them carries NO usable id, so `""` or `undefined` reaches the store, the
+       store refuses it for a reason of its own — an invalid uuid, a foreign key — and a module
+       that never checked the actor at all passes all four. Measured: with the refusal deleted
+       outright, the four reddened ZERO cells once the stand-in sealed its store faults, because
+       a sealed wrapper renders the database's objection as an ordinary refusal.
+
+       This one carries a REAL, EXISTING account id under an `anonymous` kind, which is exactly
+       what a half-built session and a hand-made payload both look like. The database has no
+       objection to it whatever: a module reading `actor.accountId` without checking `kind`
+       writes a ballot attributed to a real account, and the "no row left behind" assertion is
+       then the only thing between an anonymous caller and a vote in somebody else's name. */
+    label: "an ANONYMOUS caller carrying a real account's id",
+    because:
+      "AC6 with the database's own refusal taken away. T060's rule read the other way round: " +
+      "possession of an id is not identity, and `kind` is the discriminant. Nothing in the " +
+      "store objects to this row, so a module that does not check is caught here or nowhere.",
+    actor: (realAccountId) => ({ kind: "anonymous", accountId: realAccountId }) as unknown as Actor,
   },
 ];
 

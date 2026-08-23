@@ -16,12 +16,27 @@
    carry no account id at all — there is no pair to read back, and
    a scoped read would be a claim about a scope the write never had.
 
-   ── the refused set is NARROW, deliberately ──
-   §T160 says only "an anonymous ballot is refused" and publishes
-   no error class. Every actor in `NO_IDENTITY` is one from whom no
-   `account_id` could be read at all, so a refusal is forced under
-   every live reading of that clause and no cell here can become a
-   false charge against an implementer who built to the section.
+   ── THE FIRST FOUR MEMBERS HELD NOTHING, AND THE SWEEP SAID SO ──
+   Every one of the original four carries no usable id, so `""` or
+   `undefined` reaches the store, the store refuses it for a reason
+   of its own, and a module that never checked the actor passes all
+   four. That is not a hypothesis: deleting the refusal outright
+   reddened ZERO of them once the stand-in sealed its store faults,
+   because a sealed wrapper renders the database's objection as an
+   ordinary refusal — the criterion was being enforced by Postgres
+   and credited to the module.
+
+   The fifth member is what makes the set an instrument. It carries
+   a REAL, EXISTING account id under an `anonymous` kind, which the
+   database has no objection to at all, so the refusal can only come
+   from the module. The first four are kept: they hold the shapes
+   jointly with the store, and their reds are still the right reds
+   when they fire. They are simply not, on their own, evidence.
+
+   §T160 says only "an anonymous ballot is refused" and publishes no
+   error class, so every member is a caller no live reading of that
+   clause could admit, and none can become a false charge against an
+   implementer who built to the section.
 
    The inherited-authority shapes are NOT here. They carry a real
    account id and are refused only under T060's third ruling, which
@@ -86,12 +101,16 @@ describe("AC6 — a caller with no account identity cannot cast", () => {
     const owner = await seedAccount(s, { label: "ac6-owner", weight: 1, validator: false });
     const bundle = await seedBundle(s, { ownerId: owner.id });
     const castBallot = await bind("castBallot");
+    /* A real, existing account, so the last member of the set can carry an id the database
+       has no objection to. `owner.id` is deliberate: a ballot written in the blueprint
+       owner's name by a signed-out caller is the concrete harm AC6 is about. */
+    const built = actor(owner.id);
 
     /* Bound and seeded FIRST, called LAST. An early red masks every write below it while
        being correct about its own subject, and a red in 0ms where I/O was expected is a cell
        that never started. */
     const err = await rejection(
-      () => castBallot(s.db, actor, bundle.id, { efficacy: 60 }),
+      () => castBallot(s.db, built, bundle.id, { efficacy: 60 }),
       `castBallot as ${label}`,
     );
 

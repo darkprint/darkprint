@@ -117,11 +117,12 @@ async function efficacyAggregate(
   const owner = await seedAccount(s, { label: `${label}-owner`, weight: 1, validator: false });
   const bundle = await seedBundle(s, { ownerId: owner.id });
   for (const [i, voter] of voters.entries()) {
-    const account = await seedAccount(s, {
-      label: `${label}-v${i}`,
-      weight: voter.weight,
-      validator: voter.weight !== 1,
-    });
+    /* `validator` is NOT passed, so it stays false at every weight. That is what makes
+       every cell in this file a test of D-WAVE-08 F-160-F3 rather than of the pair of
+       fields together — see the header. This helper used to pass `voter.weight !== 1`,
+       which put the badge on every heavy voter and made the badge-gating implementation
+       invisible in all seven weighting cells; the mutation sweep found it. */
+    const account = await seedAccount(s, { label: `${label}-v${i}`, weight: voter.weight });
     await castBallotAsserted(
       s,
       accountActor(account.id, account.handle),
@@ -275,9 +276,22 @@ describe("AC-weighting — a fractional weight", () => {
    *
    *   70    the unweighted mean — ignores weight.
    *   100   the weight coerced to an integer, so 0.5 becomes 0 and B drops out entirely.
-   *   11.4  the weights CONCATENATED rather than summed. `numeric` comes back from
-   *         node-postgres as a string, `"1" + "0.5"` is `"10.5"`, and 120/10.5 = 11.43 — a
-   *         number in range, plausible, and wrong.
+   *   NaN   the weights CONCATENATED rather than summed.
+   *
+   * ── THE THIRD ONE WAS WRITTEN DOWN WRONG AND THE SWEEP CAUGHT IT ──
+   * This comment used to say the concatenation gives `"1" + "0.5"` = `"10.5"`, so
+   * 120/10.5 = 11.43 — "a number in range, plausible, and wrong" — and the cell excluded
+   * 11.43 by name. MEASURED, `numeric(6,3)` arrives from node-postgres as the string
+   * `"0.500"`, padded to its scale. Two of them concatenate to `"01.0000.500"`, which has
+   * two decimal points and is `NaN`.
+   *
+   * So 11.43 is not reachable and the exclusion naming it was an assertion against a value
+   * nothing could produce. What IS reachable is worse and is now what the cell says: `NaN`
+   * is a `number` to `typeof`, and `JSON.stringify` renders it as `null` — a placeholder
+   * arriving in the field AC3 exists to keep placeholders out of. `assertMetricAggregate`
+   * refuses a non-finite value before any arithmetic assertion runs, which is why this cell
+   * still reds under that mutation; the finiteness check was doing the work the wrong number
+   * was credited with.
    */
   it("reads `numeric(6,3)` as a number and sums the weights rather than concatenating them", async () => {
     const s = await db();
@@ -297,16 +311,21 @@ describe("AC-weighting — a fractional weight", () => {
           reading: "the weight truncated to an integer, so 0.5 becomes 0 and B drops out",
           answer: 100,
         },
-        {
-          reading:
-            "the weights STRING-CONCATENATED rather than summed — `\"1\" + \"0.5\"` is " +
-            "`\"10.5\"`, and `numeric` arrives from node-postgres as a string",
-          answer: 11.43,
-        },
+        /* No entry for the string-concatenation bug: MEASURED, it produces `NaN` and not a
+           finite wrong number, so there is nothing here to exclude. It is held by the
+           explicit finiteness assertion below and by `assertMetricAggregate`. */
         { reading: "Σ(w·v) — a weighted SUM with no denominator", answer: 120 },
       ],
       "getAggregate().efficacy.value (fractional weight)",
     );
+    expect(
+      Number.isFinite(seen.value),
+      `\`efficacy.value\` is ${seen.value}. \`numeric(6,3)\` arrives as the string ` +
+        `\"1.000\", and two weights concatenated rather than summed give \"01.0000.500\" — ` +
+        `two decimal points, so \`Number\` of it is \`NaN\`. \`typeof NaN\` is "number" and ` +
+        `JSON renders it as \`null\`, which is a placeholder reaching the radar through the ` +
+        `one field AC3 exists to protect.`,
+    ).toBe(true);
     expect(seen.value, "(1·100 + 0.5·40) / 1.5 = 80").toBeCloseTo(80, 6);
   });
 });
@@ -380,7 +399,7 @@ describe("AC-weighting — each metric is aggregated over its own voters", () =>
     const bundle = await seedBundle(s, { ownerId: owner.id });
 
     const a = await seedAccount(s, { label: "perm-a", weight: 1, validator: false });
-    const b = await seedAccount(s, { label: "perm-b", weight: 3, validator: true });
+    const b = await seedAccount(s, { label: "perm-b", weight: 3 });
     await castBallotAsserted(s, accountActor(a.id, a.handle), a.id, bundle.id, {
       efficacy: 20,
       reliability: 100,
@@ -518,7 +537,7 @@ describe("AC-weighting — the two published functions answer the same aggregate
     const owner = await seedAccount(s, { label: "agree-owner", weight: 1, validator: false });
     const bundle = await seedBundle(s, { ownerId: owner.id });
     const a = await seedAccount(s, { label: "agree-a", weight: 1, validator: false });
-    const b = await seedAccount(s, { label: "agree-b", weight: 3, validator: true });
+    const b = await seedAccount(s, { label: "agree-b", weight: 3 });
 
     await castBallotAsserted(s, accountActor(a.id, a.handle), a.id, bundle.id, { efficacy: 20 });
     const written = assertAggregate(

@@ -56,6 +56,7 @@ import {
   assertAggregate,
   assertNoDriverProse,
   bind,
+  extraClient,
 } from "./contract";
 import {
   ballotRows,
@@ -153,11 +154,26 @@ describe("AC2 — one account, one ballot per blueprint", () => {
   /**
    * The concurrent pair. A `SELECT`-then-`INSERT` passes every cell above and loses here.
    *
-   * `Promise.all` over two casts on one (account, bundle) with different values. What is
-   * asserted is AC2's own claim — exactly one row survives, carrying one of the two values
-   * and not a blend of them. A rejection is scanned rather than forbidden; see the header.
+   * ── EACH CALLER GETS ITS OWN CONNECTION, AND THAT IS THE WHOLE CELL ──
+   * This cell was written as `Promise.all` over two casts on ONE `db`, which looks like two
+   * concurrent callers and is not. Measured: a single `pg` pool completes the two callers'
+   * statements in order, so the second caller's SELECT returns AFTER the first caller's
+   * INSERT, finds the row, and updates it. The race never happens. The suite's own
+   * `SELECT`-then-`INSERT` mutation reddened ZERO of 50 cells against that version — the
+   * cell resolved, it did not discriminate, and nothing else in the suite would have said so.
+   *
+   * Four callers on four independent pools are four sockets, which is what two concurrent
+   * callers ARE in production: separate requests holding separate pooled connections. Four
+   * rather than two because the interleaving is scheduled by Postgres and the driver rather
+   * than by this file, and one pair failing to overlap is not evidence of anything.
+   *
+   * What is asserted is AC2's own claim — exactly one row survives, carrying one of the
+   * values cast and not a blend of them. A rejection is SCANNED rather than forbidden: §T160
+   * does not say whether a module may surface a conflict or must retry it, and both are
+   * defensible; what neither may do is leave two rows, blend two values, or hand the caller
+   * the driver's own statement.
    */
-  it("two concurrent casts by one account leave exactly one ballot", async () => {
+  it("concurrent casts by one account on separate connections leave exactly one ballot", async () => {
     const s = await db();
     const owner = await seedAccount(s, { label: "ac2c-owner", weight: 1, validator: false });
     const bundle = await seedBundle(s, { ownerId: owner.id });
@@ -165,10 +181,11 @@ describe("AC2 — one account, one ballot per blueprint", () => {
     const actor = accountActor(voter.id, voter.handle);
     const castBallot = await bind("castBallot");
 
-    const settled = await Promise.allSettled([
-      castBallot(s.db, actor, bundle.id, { efficacy: 20 }),
-      castBallot(s.db, actor, bundle.id, { efficacy: 90 }),
-    ]);
+    const VALUES = [20, 40, 70, 90];
+    const connections = await Promise.all(VALUES.map(() => extraClient(s.url)));
+    const settled = await Promise.allSettled(
+      VALUES.map((value, i) => castBallot(connections[i], actor, bundle.id, { efficacy: value })),
+    );
 
     for (const [i, result] of settled.entries()) {
       if (result.status === "rejected") {
@@ -179,7 +196,7 @@ describe("AC2 — one account, one ballot per blueprint", () => {
     const rows = await ballotRows(s, bundle.id);
     expect(
       rows.length,
-      `two concurrent casts left ${rows.length} rows.\n` +
+      `${VALUES.length} concurrent casts on separate connections left ${rows.length} rows.\n` +
         `  ${settled.map((r, i) => `[${i}] ${r.status}`).join(", ")}\n` +
         `  \`ballot_account_bundle_key\` is what makes "twice yields one" true under ` +
         `concurrency; a \`SELECT\`-then-\`INSERT\` passes every sequential cell in this file ` +
@@ -187,9 +204,9 @@ describe("AC2 — one account, one ballot per blueprint", () => {
         `tested this.`,
     ).toBe(1);
     expect(
-      [20, 90],
-      `the surviving row holds ${String(rows[0]?.efficacy)}, which is neither value cast. A ` +
-        `third number is a read-modify-write that blended the two.`,
+      VALUES,
+      `the surviving row holds ${String(rows[0]?.efficacy)}, which is none of the values cast. ` +
+        `A number outside the set is a read-modify-write that blended two of them.`,
     ).toContain(rows[0]?.efficacy);
   });
 });
