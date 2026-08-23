@@ -17717,7 +17717,13 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Published signatures** (checked against `backend` at the merge of T100, and **written late — the third time in one day that a task of mine reached a dispatch queue with nothing published.** D-100-05 charged the first, T231's blind author the second. Both halves of this task would otherwise have inferred the same shapes independently and only met at an adversary round.)
 
         persistArtefacts(storage: ObjectStorage, digest: string, files: readonly ExportedFile[]): Promise<void>   // T100's, SHIPPED
-        readPersisted(storage: ObjectStorage, digest: string, path: string): Promise<Uint8Array | undefined>       // THIS TASK
+        type PersistedRead =
+          | { kind: "bytes"; bytes: Uint8Array }     // the frozen folder has this path
+          | { kind: "no-such-path" }                 // folder PRESENT and decoded, path absent — AUTHORITATIVE
+          | { kind: "no-folder" };                   // no object, or it does not decode — fall back and generate
+
+        readPersisted(storage: ObjectStorage, digest: string, path: string): Promise<PersistedRead>   // THIS TASK
+        serveFile(db, actor, ref, path, storage: ObjectStorage | undefined = undefined)   // AMENDED: `= undefined`, NEVER `storage?:`
 
         // T100's codec, consumed rather than redefined — exported from @/lib/server/publish
         decodeArtefacts(bytes: Uint8Array): readonly ExportedFile[] | undefined
@@ -17726,6 +17732,20 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **CORRECTED before either half wrote a line — BOTH found it independently, and I had written the block from a MESSAGE about the codec rather than from the codec.** Two lines were wrong. `decodeArtefacts` dropped `| undefined`, whose own header rules it: *"`undefined` rather than a throw... a throw here would turn a servable release into a 500."* And `selectArtefact` returns **`Uint8Array`**, not an `ExportedFile` — which **falsified the block against itself**, since its own derivation composes to `Promise<Uint8Array | undefined>` and that only type-checks against the shipped return. A blind author binding the published line writes `selectArtefact(files, path)?.text`, gets `undefined` on a `Uint8Array` for **every path in a folder that is present**, and lands silently in the pre-freeze fallback — **green against every cell that only tests the fallback.** The exact defect this task exists to prevent, arriving from the contract rather than from the code.
 
   **`readPersisted` is `storage.get(digest)` handed to `decodeArtefacts`, then `selectArtefact`.** The container format is T100's and is **not** this task's to redefine — `keyForDigest` refuses anything that is not `sha256:` + 64 hex, so there is no path component and a folder cannot be stored file-per-key. That is also the only reading under which `readPersisted`'s `path` argument is needed at all, which is what turns the format from a guess into a derivation.
+
+  **D-091-01, ruled at dispatch and WRITTEN HERE because a ruling that lives only in a message is a ruling held by nobody.** Charged by T091's blind author against me: I ruled this into a cross-session message, corrected two codec lines in the document, and left the criterion saying the opposite — so an implementer reading only this section would have built the other reading **correctly, from the document**, while the blind suite asserted this one **correctly, from a message it could not see.** Both halves right about their own source, meeting at an adversary round. **That is this task's own defect one layer up**, and the fourth instance in a day.
+
+  **THE FROZEN FOLDER IS AUTHORITATIVE FOR ITS OWN DIGEST.** A decoded artefact that does not carry the requested path throws `` `serveFile: no such file in this release.` `` — it does **not** fall back and generate. Falling back would serve a **mixed folder**: old files frozen, a new one generated off today's re-scored row, which is the thing AC6 exists to forbid. A release is either its frozen bytes or it is not.
+
+  **`Promise<Uint8Array | undefined>` could not carry that, so the return type is the fix rather than the casualty.** `PersistedRead` separates *path absent from a present folder* from *no usable folder*, and deliberately collapses **no object** with **does not decode**, because `artefacts.ts` already rules them the same answer — *"a throw here would turn a servable release into a 500."* Nothing calls `readPersisted` yet, so widening it costs no caller. **The alternative — `readPersisted` throwing a message named for `serveFile` — puts a refusal in a reader whose own header declined to have one, and names it for a function that is not the thrower.**
+
+  **`serveFile` FREEZES ON A MISS** (D-091-02): it generates from Postgres, calls `persistArtefacts` with what it generated, and serves that. Two pieces of evidence, both from authors who could not see this task. `tests/server/t090/fixtures.ts:689-694` says *"T090 is the first task whose implementation **may write** distribution artefacts to object storage, so a run of this suite **can leave bytes in the shared bucket**"* and sets up an out-of-band bucket delta for exactly that — **under a read-only `serveFile` that paragraph describes nothing.** And every release now in the database predates the freeze, so under read-only the fallback is **permanent** and the Goal is never met for a single existing release.
+
+  **Freeze only AFTER `buildExport` returns**, so a release failing AC4 is never frozen — that turns `attractor.test.ts:346` from fixture luck into a property.
+
+  **`serveFile` gains `storage: ObjectStorage | undefined = undefined`, never `storage?:`.** `t090/surface.test.ts` pins `serveFile.length === 4`; `?` erases and still counts, `=` does not. **That is T100's F5 charged a second time** and `publish.ts:114-127` carries the reasoning verbatim, including why the default is `undefined` rather than `createObjectStorage()`: `objectStorageConfigFromEnv()` throws on an unset `S3_*`, and a default evaluated on entry would make **every B-03 `undefined` on this path depend on a bucket being reachable.**
+
+  **STATED CONSEQUENCE, so it is not discovered as a bug in six weeks**: a release frozen before `lib/content/bundle-export.ts` grew a file **404s that file permanently**. No re-freeze verb is published anywhere. That is the ruling working as intended, and it is the price of the folder being authoritative.
 
   **`serveFile` prefers the frozen artefact and falls back to generating from Postgres**, so a release predating the freeze still serves. The fallback is not a convenience: every release currently in the database was written before T100 shipped `persistArtefacts`.
 
