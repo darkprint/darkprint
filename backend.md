@@ -869,6 +869,46 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## WHILE ANOTHER SESSION IS RUNNING, THE POSTGRES POPULATION IS NOT A LEAK CHECK — DRAINAGE IS
+
+**T180's blind author stamped after its sweep, found 22 `darkprint_test_*` against a baseline of 3, and was
+one message from filing a leak against T150.** It re-sampled instead of reporting: **22 -> 18 -> 5 -> 0 in
+ninety seconds.** They were T150's LIVE scratch, mid-sweep, under a grant I had issued myself.
+
+**Element-wise names are not sufficient under concurrency, and that correction is on me** — I have been
+telling every session to stamp by name rather than by count, and by name still cannot tell *somebody leaked*
+from *somebody is still running*. **The discriminators are two:**
+
+1. **does the population DRAIN** on re-sampling, and
+2. **do the names belong to a LIVE pgid** — a leak has no process behind it and survives a second sample.
+
+**A single post-run stamp would have charged a leak against a session doing exactly what it was granted.**
+That is the false-charge-against-a-correct-counterpart failure mode, arriving through the leak instrument
+rather than through a test cell.
+
+## A 2x2 GREEN IN ALL FOUR CELLS IS NOT TWO REDUNDANT GUARDS — IT IS A PROPERTY NOTHING OBSERVES
+
+**T170's implementer widened a guard, had the widening ratified, and then checked whether anything in its
+suite could see it.** Both guards kept: green. Either one removed: green. **BOTH removed: GREEN.**
+
+Two guards that look like belt-and-braces are indistinguishable from two guards **neither of which is
+reachable**, and the 2x2 is what separates them — the **both-removed** cell is the one that carries the
+information, and it is the one nobody runs. A single mutation on either guard reports the same zero and reads
+as *redundant*.
+
+**Why it was unreachable here, and the shape is general: every other refusal in the file was decided by a
+DIFFERENT predicate** — authorship — so the guard under test was never what denied. Reaching it needed an
+actor who **is** the note's author and is **not** the parent's owner, and no fixture produced one because the
+author owned every bundle in them. **The fixture set had a hole exactly the shape of the guard.** The cell that
+reaches it: a stranger owns a public bundle, the author writes a note, **the bundle goes private** — authorship
+still grants, so only the parent gate stands between them. With that cell the 2x2 reads green / green / green /
+**RED**.
+
+**Third zero in one task that was about the instrument rather than the code** — a guard whose domain is the
+ref and excludes an unmerged module, a guard asserting a class is PUBLISHED rather than that it FIRES, and now
+a property nothing observes. **In none of the three was the answer *the code is fine*. In all three it was
+*write the thing that would have seen it*.**
+
 ## A `rejects`/`resolves` WRAPPER IS A BLIND-POSITION LAUNDERER
 
 **Found by T180's blind author in its OWN suite, against the absent module, and it is the shape the rule it was
@@ -7413,6 +7453,30 @@ what is wrong is what goes unreported and what the comment claims about it. **A 
 third of what it can decide is a defective artefact, not a documented limit.**
 
 ## Two guards can be in tension: the shape that satisfies one evades the other
+
+**REDISCOVERED INDEPENDENTLY by T150's blind author, in a different module, with a different
+helper, without having read this section — which is the second axis this finding never had.**
+Its `renderingsOf` scored **24 of 25 discriminating**, and the 25th passed: a driver payload on a
+**non-enumerable own property** was invisible to all four of its channels at once. `message` does
+not see it; `String(err)` is `name: message`; `JSON.stringify` walks enumerable properties only and
+renders `{}`; and the fourth channel held the property **NAME** while the leak was in its **VALUE**
+— *looking in the right place and comparing the wrong half*.
+
+**Its statement of why the shape is not exotic is the sharpest form of this rule so far: it is what
+a module reaches for when it is TRYING to satisfy D-13's hygiene clause**, because burying a driver
+payload where a structured log renders `{}` is precisely what the clause rewards. The clause and the
+scan are in tension and the scan was on the losing side.
+
+**EXTENSION, and it is new: widening the scan opens a FALSE-POSITIVE surface the original finding
+did not price.** A `stack` carries this repository's own paths and frame names, so a deny list that
+is safe over `message` alone can start matching path text once it walks `getOwnPropertyNames`. It
+checked both directions rather than only the one that motivated the widening — a real error thrown
+through frames named after the module's own functions, minted values resembling the test file's own
+path, and a payload nested two levels under `cause` behind a non-enumerable property. **28/28.**
+**A widened detector needs its false-positive axis measured, or the next real leak is buried in
+noise nobody reads.**
+
+
 
 **AC4's leak instrument measures RENDERINGS; D-13's hygiene clause measures ENUMERABILITY; and a
 leak can satisfy the second exactly while defeating the first.** T133's adversary put the caller's
@@ -15050,6 +15114,19 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   * **`toggleStar` performs NO visibility check, and `getSignals` does NOT create the `target` row.** Both negative, which is why neither would ever have landed on its own — **there is nothing to add, so nothing gets added, and the criterion stays untestable.** T140's precedent governs the first (*a save of a target that does not exist is accepted and never listed*). **`Depends on: T080` remains unexplained and cannot be about visibility**: T080 publishes no lookup by `bundle.id` — which is what `target.ref_id` holds — and neither `BlueprintSummary` nor `CardSummary` carries `ownerId` or `visibility`, so `visibleTo` cannot be called from anything it returns.
 
   **A NEGATIVE RULING IS THE KIND THAT NEVER LANDS.** Three of these four are statements that something does not happen, and a document grows by addition — so the rulings most likely to live only in a message are exactly the ones that leave a criterion untestable. Worth stating as a general hazard rather than as four items.
+
+  **D-WAVE-10 — MY *ONE PASS, NOT ITERATED* RULING FOR T180'S OUTLIER FILTER WAS GUARDED BY NOTHING, and its blind author found that by predicting 2 reds and getting 0.** On its AC4 fixture, iterating to fixpoint reaches the fixpoint after the **first** pass — max|z| falls **3.3100 -> 1.8843** once the outlier is gone — **so one pass and convergence produce the identical answer and the mutation changes nothing observable.** The ruling was asserted only in a comment of its own and no cell could tell the two apart.
+
+  **Repaired with a fixture built to separate them: eleven tight values plus outliers at TWO distances**, where removing the far one shrinks the sd enough that the near one crosses 3σ on the next round. **One pass keeps 12; convergence keeps 11.** The mutation now reds.
+
+  **And the cell asserts only `runs` and `excluded`, deliberately** — the survivors' median falls *between* two data points there, so asserting it would charge a defect over a percentile convention this contract never published. **The same discipline as the AC4 fixture, applied where it costs an assertion rather than where it was free.**
+
+  **D-WAVE-09 — THREE MODULES SHARE ONE `(kind, ref_id)` GRAIN AND GIVE TWO DIFFERENT ANSWERS FOR A TARGET THAT DOES NOT EXIST. THE DIVERGENCE IS DELIBERATE.** Found by T170's implementer when its own paging fixture posted to a card with no `card_version` row behind it and **`postNote` refused** — correctly, under D-WAVE-04's read check: a card with no versions has no parent, so there is no pair to ask `can` about.
+
+  * **T140 (`saveTarget`) and T150 (`toggleStar`): ACCEPT AND NEVER LIST.** *A save of a target that does not exist is accepted and never listed*, and `toggleStar` performs **no** visibility check (D-WAVE-07).
+  * **T170 (`postNote`, `editNote`, `deleteNote`, `voteNote`): REFUSE AT THE DOOR.**
+
+  **Each is right for its own criterion — a note has an authorization question a save does not** — and **nothing in either ruling said so.** A blind author holding both precedents can reasonably build *a note on a nonexistent card is accepted*, **which would red a module following D-WAVE-04.** That is the two-halves-right-about-their-own-source shape arriving through two rulings of mine that were each correct alone.
 
   **D-WAVE-08 — T160's rulings, landed. FOURTH session today to wait on a ruling I made in a message to its counterpart.** I ruled all of these to T160's implementer and to nobody else, having named the defect twice in the same afternoon. **The blind author is blind to the implementer by construction — the document is the ONLY channel between them, and it is the one I keep failing to use.**
 
