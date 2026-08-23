@@ -11929,7 +11929,7 @@ it does not decide differently inside a worktree.
 | T270 | The `darkprint` CLI | T040, T090, T100, T180 | `packages/cli/**` | — | — | todo | — |
 | T260 | Cutover: browse routes | T080, T200 | `app/blueprints/page.tsx`, `app/nodes/page.tsx`, `app/ontology/page.tsx`, `components/{gallery,nodes,ontology}/**` | — | — | todo | — |
 | T261 | Cutover: detail routes and the URL migration | T080, T090, T200 | `app/blueprints/[owner]/**`, `app/nodes/[...id]/**`, `app/ontology/[...term]/**`, `lib/href.ts`, `next.config.ts`, `components/{blueprint,bundle,panes}/**` | — | — | todo | — |
-| T262 | Cutover: profile and settings routes | T050, T130, T140 | `app/u/**`, `app/settings/**`, `components/{profile,settings}/**` | — | — | todo | — |
+| T262 | Cutover: profile and settings routes | T050, T130, T140 | `app/u/**`, `app/settings/**`, `components/{profile,settings}/**` | — | — | **merged** | — **MERGED, tagged `t262-verified`.** Adversary PASS over TWO rounds -- 8 reds then 0, **ZERO implementation defects**. Six of the eight were the blind author's own, one a contract gap, and **one a conflict between two orchestrator rulings that the LATER one resolved in the implementation's favour.** Full suite **339 files, 7093 passed, 0 failed, 0 skipped**; build 0 with no generated diff, typecheck 0, lint 0. **`error-hygiene` UNMOVED** -- T262 owns no `lib/server/**`. **Six of six routes `f` Dynamic in the build's own table, with the one route it did not own still SSG as the control.** Its most dangerous own-cell would have **forced a regression to pass**, and **a fully green 170-cell suite hid a cell measuring nothing** because one path string was a prefix of another -- caught only by a mutation run right after six repairs. **AC2 is held by the COMPILER rather than a reviewer**, via required handlers and a required `reason` |
 | T263 | Cutover: upload and publish routes | T040, T100 | `app/upload/**`, `components/upload/**` | — | — | todo | — |
 | T190 | Notifications and email fan-out | T020, T050, T100, T110 | `lib/server/notifications/**`, `app/api/account/notifications/**`, `app/api/internal/events/**` | — | — | todo | — |
 
@@ -19851,7 +19851,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 ### T262, Cutover: profile and settings routes
 
-- **State:** todo
+- **State:** merged
 - **Depends on:** T050, T130, T140
 - **Blocks:** —
 - **Owns:** `app/u/**`, `app/settings/**`, `components/profile/**`, `components/settings/**`, `components/ui/FavoriteStar.tsx`, `lib/data/**`
