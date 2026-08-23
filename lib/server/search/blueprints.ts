@@ -37,7 +37,7 @@ import {
   tags,
   type BlueprintSummary,
 } from "@/lib/server/registry";
-import { flag, sortKey, value } from "./params";
+import { flag, oneOf, sortKey, value } from "./params";
 import { evidenceFor, queryWords, ranked, unranked, type Field, type Scored } from "./rank";
 import { withSearchStore } from "./store";
 import type { Results } from "./types";
@@ -53,6 +53,23 @@ import { PUBLIC_ONLY } from "./visibility";
  * actually deliver. Anything else is ignored and the default applies.
  */
 const SORT_KEYS = ["slug"] as const;
+
+/**
+ * The three fork stances `/blueprints` publishes, and `rolled` is the default — the SHELF's
+ * default and the design's (`GalleryBrowser.tsx:184`), not this module's choice.
+ *
+ * **This was wrong in the first version and the comment three lines away already said so
+ * (D-200-37).** Absence was treated as `all`, so T260's cutover would have silently changed
+ * which shelf `/blueprints` renders unless it remembered to send `forks=rolled` — a
+ * correctness property holding only if the next task remembers.
+ *
+ * `rolled` and `originals` produce the SAME HIT SET at this layer and no cell can
+ * distinguish them: `GalleryBrowser.tsx:242` filters identically for both, and they differ
+ * only in whether a fork is presented under its upstream tile, which is the grid's business
+ * and not something a flat hit list carries. Both stay in the set because the parameter set
+ * is fixed and a client must be able to pass either through untouched.
+ */
+const FORK_STANCES = ["all", "rolled", "originals"] as const;
 
 /**
  * The fields a query is looked for in, and the names that reach the evidence.
@@ -152,13 +169,12 @@ async function search(
     candidates = scored;
   }
 
-  /* `forks=all` leaves every blueprint standing; `rolled` (the shelf's default) and
-     `originals` both take a published fork off the list. They differ only in whether the
-     fork reappears NESTED under its upstream, which is the grid's business and not a flat
-     hit list's — so this surface answers the half it can answer and the two spellings agree
-     here by construction rather than by accident. */
-  const forkStance = value(params, "forks");
-  if (forkStance !== undefined && forkStance !== "all") {
+  /* `forks=all` leaves every blueprint standing; `rolled` and `originals` both take a
+     published fork off the list. Absent, empty and unrecognised all resolve to `rolled`
+     through the one enum rule, so `{}` and `{forks: "banana"}` agree — which they did not
+     before D-200-37. */
+  const forkStance = oneOf(params, "forks", FORK_STANCES, "rolled");
+  if (forkStance !== "all") {
     const forks = await forkedKeys(db, all);
     candidates = candidates.filter((bp) => !forks.has(`${bp.ownerHandle}/${bp.slug}`));
   }

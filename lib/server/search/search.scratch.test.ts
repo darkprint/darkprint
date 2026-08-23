@@ -224,6 +224,47 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
     }
   });
 
+  it("resolves every `forks` spelling to one branch, and absence means `rolled`", async () => {
+    /* The key that had no cell here at all — it was covered only by the blind half, which
+       is the round working, and which is also why the defect it found was mine. */
+    const owner = await account("alice");
+    await publish({ owner, slug: "triage" });
+    await publish({ owner, slug: "triage-fork", lineage: { ownerId: owner, slug: "triage" } });
+
+    const shelved = ["triage"];
+    const everything = ["triage", "triage-fork"];
+
+    /* The half beyond argument: absent and unrecognised MUST agree. Before the repair,
+       omitting the key meant `all` while `banana` meant `rolled`, so a case variation or a
+       trailing space in a pasted link flipped the shelf. */
+    const spellings: Record<string, string>[] = [{}, { forks: "rolled" }, { forks: "originals" }, { forks: "banana" }, { forks: "ALL" }, { forks: "all " }, { forks: "" }];
+    for (const params of spellings) {
+      const results = await searchBlueprints(client.db, ANON, params);
+      expect(results.hits.map((hit) => hit.item.slug), JSON.stringify(params)).toEqual(shelved);
+    }
+
+    /* The control that stops all of that being vacuous: one spelling has to behave
+       DIFFERENTLY, or a filter that dropped every fork unconditionally would pass. */
+    const all = await searchBlueprints(client.db, ANON, { forks: "all" });
+    expect(all.hits.map((hit) => hit.item.slug)).toEqual(everything);
+  });
+
+  it("keeps private content out of the FACET MAP, not only out of the hits", async () => {
+    /* Pointed at by the adversary's AC4 family sweep rather than by my own reading: one of
+       its eight call-site mutations reddened 23 cells through the facet path, which none of
+       my AC4 cells touched. A tag is a fact about a bundle, so a private bundle's tag in the
+       offered vocabulary tells a stranger it exists. */
+    const owner = await account("alice");
+    await publish({ owner, slug: "open", tags: ["open-tag"], category: "open-cat" });
+    await publish({ owner, slug: "secret", visibility: "private", tags: ["secret-tag"], category: "secret-cat" });
+
+    for (const actor of [ANON, { kind: "operator", accountId: owner } as Actor]) {
+      const results = await searchBlueprints(client.db, actor, {});
+      expect(results.facets.tag).toEqual(["open-tag"]);
+      expect(results.facets.cat).toEqual(["open-cat"]);
+    }
+  });
+
   it("explains a rank it claims, and claims none when it did not make one", async () => {
     const owner = await account("alice");
     await publish({ owner, slug: "triage", title: "Frontline triage", tags: ["triage"] });

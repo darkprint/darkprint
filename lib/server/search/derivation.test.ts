@@ -20,7 +20,7 @@
 import { describe, expect, it } from "vitest";
 
 import { EMBEDDING_DIMENSIONS, embed } from "./embed";
-import { flag, searchParams, sortKey, value } from "./params";
+import { flag, oneOf, searchParams, sortKey, value } from "./params";
 import { evidenceFor, ranked, unranked, type Field, type Scored } from "./rank";
 import { findWord, normalise, trigrams } from "./text";
 
@@ -219,6 +219,18 @@ describe("reading params", () => {
     expect(flag({ df: "1" }, "df")).toBe(true);
     expect(flag({ df: "0" }, "df")).toBe(false);
     expect(flag({ df: "true" }, "df")).toBe(false);
+  });
+
+  it("sends every enum key through one branch, absent empty and unrecognised alike", () => {
+    // The rule `forks` did not go through until D-200-37. Exact match, no trimming and no
+    // case folding: the published set is fixed, so a value outside it is not a near miss.
+    const stances = ["all", "rolled", "originals"] as const;
+    const spellings: Record<string, string>[] = [{}, { forks: "" }, { forks: "banana" }, { forks: "ALL" }, { forks: "all " }];
+    for (const params of spellings) {
+      expect(oneOf(params, "forks", stances, "rolled"), JSON.stringify(params)).toBe("rolled");
+    }
+    // The control: a published spelling still reaches its own branch.
+    expect(oneOf({ forks: "all" }, "forks", stances, "rolled")).toBe("all");
   });
 
   it("ignores an unrecognised sort value rather than refusing it", () => {
