@@ -298,3 +298,55 @@ export function calledNames(sf: ts.SourceFile): string[] {
   walk(sf);
   return out;
 }
+
+/**
+ * Every property NAME the file reads or writes, comment-immune by construction.
+ *
+ * A raw-text search for `updatedAt` matches the prose that explains the ordering as
+ * readily as the code that performs it, and these route files carry more prose than code.
+ * Comments never enter the AST, so asking the tree is the only reading that says whether
+ * the CODE changed rather than whether the FILE did.
+ */
+export function propertyNames(sf: ts.SourceFile): Set<string> {
+  const out = new Set<string>();
+  const walk = (node: ts.Node) => {
+    if (ts.isPropertyAccessExpression(node)) out.add(node.name.text);
+    if (ts.isPropertyAssignment(node) && ts.isIdentifier(node.name)) out.add(node.name.text);
+    if (ts.isShorthandPropertyAssignment(node)) out.add(node.name.text);
+    if (ts.isBindingElement(node) && ts.isIdentifier(node.name)) out.add(node.name.text);
+    if (
+      ts.isElementAccessExpression(node) &&
+      node.argumentExpression !== undefined &&
+      ts.isStringLiteral(node.argumentExpression)
+    ) {
+      out.add(node.argumentExpression.text);
+    }
+    node.forEachChild(walk);
+  };
+  walk(sf);
+  return out;
+}
+
+/**
+ * Everything the file actually RENDERS: JSX text and string literals, whitespace collapsed.
+ *
+ * Not the raw source. A marker is copy a reader sees, and `app/blueprints/page.tsx` and
+ * `GalleryBrowser.tsx` each carry the word "seeded" in a COMMENT while rendering it
+ * nowhere — measured, and it is why this returns the tree's text rather than the file's.
+ */
+export function renderedText(sf: ts.SourceFile): string[] {
+  const out: string[] = [];
+  const walk = (node: ts.Node) => {
+    if (ts.isJsxText(node)) {
+      const text = node.text.replace(/\s+/g, " ").trim();
+      if (text !== "") out.push(text);
+    }
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+      const text = node.text.replace(/\s+/g, " ").trim();
+      if (text !== "") out.push(text);
+    }
+    node.forEachChild(walk);
+  };
+  walk(sf);
+  return out;
+}
