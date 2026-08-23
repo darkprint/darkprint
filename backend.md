@@ -14776,15 +14776,19 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
         interface AuditEntry {
           actorId: string | null; actorKind: "owner" | "operator" | "system";
-          action: string; targetKind?: string; targetId?: string;
+          action: AuditAction; targetKind?: string; targetId?: string;
           decision: "allowed" | "denied" | "error";
           detail?: Record<string, string | number | boolean>;
         }
 
-        writeAudit(db: Db, entry: AuditEntry): Promise<void>
-        listAudit(db: Db, actor: Actor, filter: { targetKind?: string; targetId?: string; since?: Date }): Promise<AuditEntry[]>
+        const AUDIT_ACTIONS = [...] as const        // twelve members, ratified in D-240-08
+        type AuditAction = (typeof AUDIT_ACTIONS)[number]
+        class AuditStoreError extends Error {}      // D-240-05, cause non-enumerable
 
-  **`detail` is `Record<string, string | number | boolean>`, not `unknown`, and that is AC3 made structural.** "No log field carries run content or a credential" cannot be enforced by remembering — one caller spreading a request body in and it ships. A scalar-only map cannot hold a nested object, so a DOT source, a card body or a driver error **cannot be passed** rather than merely being discouraged. The type is the guard; the test asserts the type rejects a nested value, which is a compile-time test in the shape T060's `Exact<>` check already established.
+        writeAudit(db: Db, entry: AuditEntry): Promise<void>
+        listAudit(db: Db, actor: Actor, filter: { targetKind?: string; targetId?: string; since?: Date }): Promise<(AuditEntry & { occurredAt: Date })[]>
+
+  **`detail` is `Record<string, string | number | boolean>`, not `unknown`, and that is AC3 made structural.** "No log field carries run content or a credential" cannot be enforced by remembering — one caller spreading a request body in and it ships. A scalar-only map cannot hold a nested object, so a DOT source, a card body or a driver error **cannot be passed** rather than merely being discouraged. The type is the guard; the test asserts the type rejects a nested value, which is a compile-time test in the shape T060's `Exact<>` check already established. **This paragraph overstates and D-240-07 states the limit: the map excludes a nested object and does NOT exclude a flat credential** — `{ key: secret }` typechecks — so the credential half of AC3 remains held by remembering.
 
   **AC2 is `actor_kind`, already in the schema, and AC5 is `decision`.** Neither needs inventing: an operator action is distinguishable because the column exists, and refused-by-policy is `denied` while a fault is `error`. State it so nobody adds a parallel `isOperator` boolean or encodes the distinction in `action` strings.
 
