@@ -234,3 +234,80 @@ export function whyClaimFailed(source: Source, c: Claim): string {
     `to widen it — a survivor pin that keeps an incidental form reds a correct rewrite (D-263-13).`
   );
 }
+
+/* ============================================================
+   MODULE SPECIFIERS, AND WHY AC6 IS NOT A GREP FOR A STRING
+
+   D-262-10 measured three populations of `lib/data` on this route
+   and they need three different verdicts:
+
+     19 REAL IMPORT LINES        AC6's subject. Must reach zero.
+     20 COMMENT-ONLY MENTIONS    Must NOT red anything. A docblock
+                                 explaining a retired fixture is the
+                                 false-red direction of the 2x2.
+     10 LINES SURVIVING STRIPPING and not imports. RENDERED PROSE:
+                                 `<span className="font-mono">` in
+                                 six places, a `title=` tooltip in
+                                 one, a ternary in another. These are
+                                 honesty copy under D-78, and
+                                 D-262-10 rules they are NOT exempt.
+
+   A string grep cannot tell the first from the third, and cannot
+   tell either from the second. So an import is decided by the
+   PARSER — a module specifier is a parse fact — and the rendered
+   half is decided on comment-stripped text with the specifier lines
+   removed. The two assertions are separate cells because they have
+   separate repairs: one is a rewire, the other is a rewrite.
+   ============================================================ */
+
+export interface Specifier {
+  readonly spec: string;
+  readonly line: number;
+}
+
+export function importSpecifiers(source: Source): Specifier[] {
+  const sf = ts.createSourceFile(
+    source.path,
+    source.raw,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const found: Specifier[] = [];
+  const at = (n: ts.Node) => sf.getLineAndCharacterOfPosition(n.getStart()).line + 1;
+  const visit = (n: ts.Node) => {
+    if (
+      (ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) &&
+      n.moduleSpecifier !== undefined &&
+      ts.isStringLiteral(n.moduleSpecifier)
+    ) {
+      found.push({ spec: n.moduleSpecifier.text, line: at(n) });
+    }
+    /* `await import("@/lib/data/...")` is the obvious way to keep a fixture while passing a check
+       that only reads top-level imports, so the dynamic form is collected by the same walk. */
+    if (
+      ts.isCallExpression(n) &&
+      n.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      n.arguments.length > 0 &&
+      ts.isStringLiteral(n.arguments[0])
+    ) {
+      found.push({ spec: n.arguments[0].text, line: at(n) });
+    }
+    n.forEachChild(visit);
+  };
+  visit(sf);
+  return found;
+}
+
+/** Lines that still name `lib/data` after comments go, excluding the import lines themselves. */
+export function renderedMentions(source: Source, needle = "lib/data"): Specifier[] {
+  const importLines = new Set(importSpecifiers(source).map((i) => i.line));
+  const lines = source.code.split("\n");
+  const out: Specifier[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].includes(needle)) continue;
+    if (importLines.has(i + 1)) continue;
+    out.push({ spec: lines[i].trim(), line: i + 1 });
+  }
+  return out;
+}
