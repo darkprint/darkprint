@@ -1,35 +1,38 @@
 "use client";
 
-import { useState } from "react";
-
-import type { Author } from "@/lib/types";
 import { avatarGradient } from "@/lib/format";
 import { Field } from "./controls";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-44) (cited at line 1): PATCH /api/account/profile
+// SEAM-44 is LIVE: PATCH /api/account/profile, sent by `AccountForm` on Save.
 
 /* ============================================================
-   The one part of `/settings` that answers a gesture, and the rule that lets it.
+   §01's three fields and the preview they drive.
 
-   **A control works when its effect is local and immediate; it is disabled when its only
-   effect would be persistence.** Everything else on this page falls on the second side of
-   that line — a handle, an email, a notification switch and a visibility radio all mean
-   nothing until something stores them — and is `readOnly` or `disabled` with the reason
-   stated above the first panel.
+   ── What changed ──
+   These three used to be the ONLY live controls on the page, under a rule that read: *a
+   control works when its effect is local and immediate; it is disabled when its only effect
+   would be persistence.* That rule described a page with no backend behind it. There is one
+   now, so the line has moved — a control works when a route exists for it — and these three
+   are no longer the exception. They are simply the ones with a preview.
 
-   These three are the exception, and they earn it: a display name, a bio and a hue produce
-   a preview, and the preview is the whole point of the section. The handoff asks for "a
-   live preview card showing the generated gradient avatar", and a preview that cannot
-   follow what you type is not one. Nothing here is written anywhere — reload and the seeded
-   values are back — which is exactly what the strip at the top of the page says.
+   The preview is still why the section is shaped this way. The handoff asks for "a live
+   preview card showing the generated gradient avatar", and a preview that cannot follow
+   what you type is not one.
+
+   ── Controlled, not stateful ──
+   The three values live in `AccountForm` rather than here, and that is what makes Save and
+   Discard possible at all: a component holding its own copy would keep showing the typed
+   value after Discard put the record back. The old sentence under the preview — *"Nothing
+   is stored: reload and the seeded values are back"* — came off with the state it described
+   (D-78), because it is now false in both halves.
 
    ── Why the avatar is drawn here rather than mounted from `Avatar` ──
    `Avatar` takes an `Author` and derives everything from it, which is right for every other
-   surface on the site: one record, one drawing. This one has to follow a hue the record
-   does not have yet, so it draws the same geometry off `avatarGradient(hue)` — the same
-   function, the same 64px, the same validator ring — with the number coming from the slider
-   instead of from the row. If the two ever disagree, this is the copy to fix.
+   surface on the site: one record, one drawing. This one has to follow a hue the record does
+   not have yet, so it draws the same geometry off `avatarGradient(hue)` — the same function,
+   the same 64px, the same validator ring — with the number coming from the slider instead of
+   from the row. If the two ever disagree, this is the copy to fix.
    ============================================================ */
 
 /** The bio field's own ceiling. One sentence; the profile header renders it at `max-w-xl`. */
@@ -51,11 +54,26 @@ function initials(name: string): string {
   return letters === "" ? "?" : letters;
 }
 
-export function ProfileFields({ author }: { author: Author }) {
-  const [displayName, setDisplayName] = useState(author.displayName);
-  const [bio, setBio] = useState(author.bio ?? "");
-  const [hue, setHue] = useState(author.avatarHue);
-
+export function ProfileFields({
+  displayName,
+  bio,
+  hue,
+  handle,
+  validator,
+  onDisplayName,
+  onBio,
+  onHue,
+}: {
+  displayName: string;
+  bio: string;
+  hue: number;
+  /** `null` for an account that has not chosen one yet (T050 AC1). */
+  handle: string | null;
+  validator: boolean;
+  onDisplayName: (next: string) => void;
+  onBio: (next: string) => void;
+  onHue: (next: number) => void;
+}) {
   const over = bio.length > BIO_LIMIT;
 
   return (
@@ -66,7 +84,7 @@ export function ProfileFields({ author }: { author: Author }) {
             id="display-name"
             type="text"
             value={displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
+            onChange={(event) => onDisplayName(event.target.value)}
             className="h-10 rounded-md border border-line bg-void px-3 text-sm text-fg transition-colors focus:border-cyan"
           />
         </Field>
@@ -91,7 +109,7 @@ export function ProfileFields({ author }: { author: Author }) {
             id="bio"
             rows={3}
             value={bio}
-            onChange={(event) => setBio(event.target.value)}
+            onChange={(event) => onBio(event.target.value)}
             className="resize-none rounded-md border border-line bg-void px-3 py-2.5 text-sm leading-relaxed text-fg transition-colors focus:border-cyan"
           />
         </Field>
@@ -112,7 +130,7 @@ export function ProfileFields({ author }: { author: Author }) {
             min={0}
             max={359}
             value={hue}
-            onChange={(event) => setHue(Number(event.target.value))}
+            onChange={(event) => onHue(Number(event.target.value))}
             className="w-full accent-cyan"
           />
         </Field>
@@ -122,7 +140,7 @@ export function ProfileFields({ author }: { author: Author }) {
         <span className="label">Preview</span>
         <span
           className={
-            author.validator
+            validator
               ? "inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-void ring-2 ring-cyan/70 ring-offset-2 ring-offset-void"
               : "inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-void"
           }
@@ -139,12 +157,16 @@ export function ProfileFields({ author }: { author: Author }) {
         <span className="text-center font-display text-base font-semibold text-fg">
           {displayName === "" ? "Your name" : displayName}
         </span>
-        <span className="font-mono text-[11px] text-dim">@{author.username}</span>
-        {author.validator && (
+        {/* Omitted rather than printed as `@` with nothing after it: an account can be
+            signed in with no handle yet, and §02 below is where that gets chosen. */}
+        {handle !== null && (
+          <span className="font-mono text-[11px] text-dim">@{handle}</span>
+        )}
+        {validator && (
           <span className="font-mono text-[11px] text-cyan">✦ validator ring</span>
         )}
         <p className="text-center font-mono text-[11px] leading-relaxed text-dim">
-          Follows what you type. Nothing is stored: reload and the seeded values are back.
+          Follows what you type. Save changes writes it to your account.
         </p>
       </div>
     </div>

@@ -101,7 +101,27 @@ describe("a lib/server module that reaches Postgres seals its faults", () => {
       });
       /* `@/lib/db` is the only way to a connection; a module that never names it cannot raise a
          driver error and owes no wrapper. */
-      if (/from\s+["']@\/lib\/db/.test(source)) reachesDb.add(name);
+      /* `import type` is EXCLUDED, and this narrowing is the guard's own justification applied
+         to its own predicate: a module that never names the driver at runtime "cannot raise a
+         driver error and owes no wrapper". A type-only import is ERASED AT BUILD -- it cannot
+         raise anything -- so counting it puts a module in this domain for a line that does not
+         exist in the emitted code.
+
+         Found by T250's blind author, which ran this predicate over an integration tree rather
+         than over `backend` and got `unsealed = ['seed']` for exactly this reason. The module
+         authors no refusal: every rejection an import produces belongs to a merged module and
+         leaves unaltered under D-50-08, so a class of its own would be a SECOND AUTHOR on
+         somebody else's sentence -- and a class nobody raises is a guard that cannot fail,
+         which is the shape this project charges hardest. D-250-17 is withdrawn on that
+         argument.
+
+         Falsified rather than assumed: making the pattern count `import type` again puts
+         `seed` back in `unsealed` and reds this cell. */
+      if (/(?<!import\s+type\s[^;]{0,200})from\s+["']@\/lib\/db/.test(source)) {
+        const typeOnly = /import\s+type\s[^;]*from\s+["']@\/lib\/db/.test(source);
+        const valueImport = /import\s+(?!type\s)[^;]*from\s+["']@\/lib\/db/.test(source);
+        if (valueImport || !typeOnly) reachesDb.add(name);
+      }
       if (/export\s+class\s+\w*Error\b/.test(source)) declaresError.add(name);
     }
 
