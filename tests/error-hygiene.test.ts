@@ -234,7 +234,13 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
         "it changes. Domain resolved from `backend` at " +
         `${domainSha} — if this number disagrees with another run's, compare that sha first: the ` +
         "ref is shared by every worktree and moves under a running suite.",
-    ).toBe(30);
+    /* 30 -> 32 at T110's merge: `lib/server/lineage` publishes `ForkRefusedError` (the four
+       ruled refusal sentences) and `LineageStoreError` (D-13 over the direct `schema.bundle`
+       read `archive` publishes no reader for). Derived by this walk against its own domain
+       sha, not carried from a worktree -- T110 and T240 EACH computed 30 -> 32 from base 30,
+       independently and correctly, because neither tree can see the other's module. T240
+       lands second and faces 32 -> 34. */
+    ).toBe(32);
 
     const rendered: string[] = [];
     const traceless: string[] = [];

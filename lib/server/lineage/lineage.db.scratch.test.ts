@@ -387,6 +387,13 @@ describe.skipIf(!hasDb)("lib/server/lineage against Postgres", () => {
       );
 
       await appendRelease(up, "up", "2.0.0", ["alpha@2.0.0"]);
+      /* D-110-16. `release.created_at` is `defaultNow()` -- Postgres `now()` at microsecond
+         resolution -- and drizzle hands back a millisecond-resolution JS `Date`, so the
+         precision is gone before any assertion sees it. Four measured back-to-back inserts
+         differed in the column and three of four collided after `getTime()`. Without this
+         pause the pair below reds about once in three runs, and it reds MORE on an idle
+         machine, so whoever runs this file alone to check it is the most likely to hit it. */
+      await new Promise((resolve) => setTimeout(resolve, 5));
       await appendRelease(up, "up", "3.0.0", ["alpha@2.0.0"]);
 
       const drift = await driftOf(db, actorFor(forker), fork.id);
@@ -402,8 +409,30 @@ describe.skipIf(!hasDb)("lib/server/lineage against Postgres", () => {
       const releases = await listReleases(db, up);
       const first = releases.find((release) => release.version === "2.0.0")!;
       const current = releases.find((release) => release.version === "3.0.0")!;
-      expect(drift.repins[0]!.at.getTime()).toBe(first.createdAt.getTime());
-      expect(drift.repins[0]!.at.getTime()).not.toBe(current.createdAt.getTime());
+      /* The PRECONDITION, stated loudly rather than asserted blindly. If these two releases
+         are indistinguishable at millisecond resolution then `at` equals both, the identity
+         assertion below cannot separate EARLIEST from LATEST, and this cell has measured
+         nothing. That is a broken FIXTURE and it must not read as a `driftOf` defect, which
+         is exactly how it read before D-110-16.
+
+         Deleting this pair is the repair that must not happen: it is the only assertion in
+         either half of T110 guarding D-110-14's axis, so removing it leaves both suites
+         green forever on either reading. */
+      expect(
+        first.createdAt.getTime(),
+        `the upstream's 2.0.0 and 3.0.0 landed in the same millisecond, so this cell cannot ` +
+          `tell the EARLIEST release carrying the ref from the LATEST (D-110-14). The pause ` +
+          `between the two appendRelease calls above is what prevents it. FIXTURE failure, ` +
+          `not a driftOf defect.`,
+      ).not.toBe(current.createdAt.getTime());
+
+      expect(
+        drift.repins[0]!.at.getTime(),
+        `\`at\` is not the release that FIRST carried \`alpha@2.0.0\` (D-110-14). The panel ` +
+          `prints "repinned ... on <date>", so dating a repin from the upstream's CURRENT ` +
+          `release prints a date the repin did not happen on -- right only when the upstream ` +
+          `has published exactly once since the fork.`,
+      ).toBe(first.createdAt.getTime());
     });
 
     it("reads the upstream's CURRENT release by highest semver, not by newest row", async () => {
