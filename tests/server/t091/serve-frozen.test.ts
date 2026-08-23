@@ -52,6 +52,7 @@ import {
   downloadsFor,
   expectNoObject,
   freeze,
+  mayWriteAt,
   putRaw,
   scratchDatabase,
   seedAccount,
@@ -184,6 +185,15 @@ async function callServeFile(
   path: string,
   actor: Actor = ANONYMOUS,
 ): Promise<unknown> {
+  /* D-091-11: `serveFile` FREEZES ON A MISS, so every call here is a potential write at a key
+     this file did not choose, and the residue ledger cannot see it. Recorded before the call and
+     whether or not it succeeds — `delete` on an unwritten key is a no-op, so over-recording is
+     free and under-recording leaks permanently into a bucket F5 makes a cross-commit cache.
+
+     Here rather than in `serve()`: this is the one funnel every serve goes through, including
+     the cells that call it directly for an outcome rather than for a served file, and those are
+     exactly the refusal cells where a freeze is least expected. */
+  if (ref.digest !== undefined) mayWriteAt(ref.digest);
   const mod = await loadExport();
   return requiredFn(mod, "serveFile")(scratch.db, actor, ref, path);
 }

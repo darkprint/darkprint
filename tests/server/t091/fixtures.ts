@@ -179,6 +179,29 @@ export function storage(): ObjectStorage {
   return createTestObjectStorage();
 }
 
+/**
+ * Record a digest the MODULE UNDER TEST may write at, so teardown removes it (D-091-11).
+ *
+ * **The ledger's design did not break; the set of writers changed underneath it.** It was
+ * written when this fixture was the only thing that put bytes in the bucket. Under T091's
+ * freeze-on-miss `serveFile` writes too — it generates, calls `persistArtefacts` with what it
+ * generated, and serves that — and those keys are chosen inside the implementation, so nothing
+ * here ever saw them. Measured on a brand-new empty bucket: one clean pass of this partition
+ * left **9 objects behind after its own `afterAll` had run**.
+ *
+ * **Recorded unconditionally rather than only when a write is expected**, because the asymmetry
+ * is total: `ObjectStorage.delete` on a key that was never written is a no-op, so over-recording
+ * costs one request and under-recording is a permanent leak. And F5 makes that leak compound —
+ * an unswept key is a cross-commit cache for every later run on this host, so accepting the
+ * residue would be accepting F5's growth rate.
+ *
+ * There is still no `list` verb (T000), so this cannot become a sweep. It stays a ledger, kept
+ * at every point where a write can now originate rather than only at the two this file owns.
+ */
+export function mayWriteAt(digest: string): void {
+  written.add(digest);
+}
+
 /** Freeze a file set at a digest, through T100's published writer, and remember the key. */
 export async function freeze(
   store: ObjectStorage,
