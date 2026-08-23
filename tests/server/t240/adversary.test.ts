@@ -84,6 +84,17 @@ const MALFORMED_ACTORS: readonly [string, unknown][] = [
   ["a number", 7],
   ["an empty object", {}],
   ["an inherited kind/accountId (Object.create)", Object.create({ kind: "operator", accountId: "acc" })],
+  /* **These two exist because a mutation sweep measured that the one above cannot see either
+     `Object.hasOwn` clause on its own.** Removing `Object.hasOwn(actor, "accountId")` from the
+     copy reds NOTHING across all 53 cells, and so does removing `Object.hasOwn(actor, "kind")`:
+     the `Object.create` actor above inherits BOTH fields, so whichever clause survives still
+     refuses it and masks the one that was deleted. Only deleting both together reds.
+
+     T060's third ruling — authority is never inherited — is therefore the one ruling the copy
+     is charged with carrying that no cell could hold it to. Each of these actors inherits
+     exactly ONE field and owns the other, so each clause is independently falsifiable. */
+  ["own kind, INHERITED accountId", Object.assign(Object.create({ accountId: "acc" }), { kind: "operator" })],
+  ["INHERITED kind, own accountId", Object.assign(Object.create({ kind: "operator" }), { accountId: "acc" })],
   ["operator with no accountId", { kind: "operator" }],
   ["operator with an empty-string accountId", { kind: "operator", accountId: "" }],
   ["operator with a non-string accountId", { kind: "operator", accountId: 7 }],

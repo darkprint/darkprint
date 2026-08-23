@@ -841,7 +841,6 @@ export function auditOwnNames(): string[] {
   return [
     config.name,
     ...config.columns.map((c) => c.name),
-    ...config.columns.map((c) => String(c.keyAsName ? c.name : c.name)),
     ...config.indexes.map((i) => i.config.name ?? ""),
   ].filter((n) => n !== "");
 }

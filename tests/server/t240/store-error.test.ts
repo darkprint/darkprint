@@ -65,15 +65,6 @@
    (`JSON.stringify` is `{}`); it does not and cannot assert that
    nothing sensitive hides behind a non-enumerable member. That
    tension is real and it is D-13's, not this suite's to resolve.
-
-   And one thing is stated rather than tested, because it cannot
-   be tested from here: `cause` is required to be
-   NON-ENUMERABLE, and a walk of enumerable properties is blind
-   to it by construction. The sealed-shape cell asserts what
-   ships (`JSON.stringify` is `{}`); it does not and cannot
-   assert that nothing sensitive hides behind a non-enumerable
-   member. That tension is real and it is D-13's, not this
-   suite's to resolve.
    ============================================================ */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
