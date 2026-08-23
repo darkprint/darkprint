@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { ContentKind } from "@/lib/types";
 import {
@@ -8,6 +8,7 @@ import {
   hasErrors,
   loadBundle,
   ontologyView,
+  parseSemver,
   sortDiagnostics,
   summarize,
   type LoadBundleResult,
@@ -29,8 +30,10 @@ import {
   type UploadFile,
 } from "./BundleDropzone";
 import { requiredAgents, requiredTools } from "@/lib/graph-seed";
-import { bundleProgress } from "./progress";
+import { bundleProgress, type BundleProgress } from "./progress";
 import { ValidationReport, verdictLine } from "./ValidationReport";
+import { SIGN_IN_HREF, useUploadSession } from "./session";
+import { publishBundle, type PublishOutcome, type PublishRefusedKind } from "./publish-client";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // TODO(SEAM-26): PUT /api/bundles/{owner}/{slug}/agents-md
@@ -118,6 +121,27 @@ const KIND_NOUN: Record<ContentKind, string> = {
 const inputCls =
   "w-full bg-surface-2 border border-line rounded-md px-3 py-2 text-sm text-fg placeholder:text-dim transition-colors focus:border-cyan focus:outline-none";
 
+/** What a first release is numbered, per D-263-09. Also what `reset` puts back. */
+const FIRST_VERSION = "0.1.0";
+
+/**
+ * Whether the declared version reads as a semver, using `lib/core`'s OWN parser.
+ *
+ * `parseSemver` and never a regex written here: the grammar is `lib/core/version/semver.ts`'s
+ * and it is isomorphic precisely so both sides can ask it. A second pattern beside it is the
+ * duplicated-decision defect this run has charged more than any other.
+ *
+ * **It ADVISES and does not block, and that asymmetry is measured rather than cautious.**
+ * `publish.ts:216` sorts an unparseable version "below every valid one rather than throwing",
+ * so the registry ACCEPTS a version this check dislikes — as a first release it publishes
+ * cleanly. A client gate stricter than the server would refuse a submission the registry
+ * would have taken, which is a worse failure than a note, and it is the failure a validator
+ * written on this side rather than read off that one always produces.
+ */
+function looksLikeSemver(version: string): boolean {
+  return parseSemver(version.trim()) !== undefined;
+}
+
 /* There is no `fieldLabelCls` here any more, and there must not be one again. It held
    `font-mono text-[11px] uppercase tracking-[0.14em] text-dim` — a fourth mono tier,
    identical to `.label` in size, weight and colour and differing only in 0.04em of
@@ -149,6 +173,11 @@ const EMPTY_DETAILS: BundleDetails = {
   description: "",
   category: "",
   tags: [],
+  /* D-263-09's default. It is a real starting value rather than an empty field because
+     every other field on step 2 can be left blank and this one cannot: `publish` requires
+     `version` and refuses a submission without it at the transport layer. A blank that 400s
+     is a worse first experience than a first release numbered the way first releases are. */
+  version: FIRST_VERSION,
 };
 
 /* ------------------------------------------------------------------ */
@@ -162,6 +191,34 @@ const EMPTY_DETAILS: BundleDetails = {
  */
 function dataHref(text: string): string {
   return `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`;
+}
+
+/**
+ * What became of these bytes, for the one sentence at the top of `REPORT.md`.
+ *
+ * A closed union rather than an optional release, because the file is now handed over on
+ * both ends of a publish (AC4) and "no release" is a fact the report has to state, not an
+ * absence it can leave to the reader.
+ */
+type StoredLine =
+  | { published: true; ownerHandle: string; slug: string; version: string; digest: string }
+  | { published: false };
+
+/**
+ * The report's opening claim about where these bytes went.
+ *
+ * Deliberately free of the words this route is no longer allowed to say (AC5): a refusal
+ * means no release was created, which is a fact about ONE submission, and the sentence must
+ * not be readable as the old blanket claim that nothing ever leaves the tab.
+ */
+function storedSentence(stored: StoredLine | undefined): string {
+  if (stored === undefined) {
+    return "This bundle has not been submitted to the registry, so this file is a reading and not a record of a release.";
+  }
+  if (!stored.published) {
+    return "The registry refused this submission, so no release was created and nothing here describes a stored bundle.";
+  }
+  return `Published to the registry as ${stored.ownerHandle}/${stored.slug}, release ${stored.version}, digest ${stored.digest}.`;
 }
 
 /**
@@ -206,8 +263,17 @@ function reportMarkdown(args: {
   title: string;
   slug: string;
   kindNoun: string;
+  /**
+   * What the registry did with these bytes, when it was asked. Absent while the reader is
+   * still on the form.
+   *
+   * The report is handed over on BOTH ends of a publish now (AC4), so its opening sentence
+   * cannot be a constant any more: after a refusal nothing was stored and after a release
+   * something was, and one file claiming the wrong one of those is worse than either.
+   */
+  stored?: StoredLine;
 }): string {
-  const { result, title, slug, kindNoun } = args;
+  const { result, title, slug, kindNoun, stored } = args;
   const { blueprint, analysis } = result;
   const resolved = blueprint !== undefined && analysis !== undefined && !hasErrors(result.diagnostics);
   const progress = bundleProgress(result);
@@ -216,7 +282,7 @@ function reportMarkdown(args: {
   out.push(`# Validation report: ${title}`);
   out.push("");
   out.push(
-    "Produced by DarkPrint inside a browser tab, over the bytes named below. Nothing was uploaded and nothing was saved, so this file is the whole of the record.",
+    `Produced by DarkPrint over the bytes named below. ${storedSentence(stored)}`,
   );
   out.push("");
 
@@ -308,12 +374,76 @@ function reportMarkdown(args: {
     "Two of the six axes are read off the graph and both are above. Efficacy, reliability and transparency come from weighted community and validator votes; cost and time are reported by whoever runs the graph, and the platform never sees the execution.",
   );
   out.push("");
+  /* ── D-263-01, and this sentence is the second of the two the ruling rewrote ──
+     It used to say the wizard resolves against the curated core alone while the archive
+     adds its own namespaced terms. The cutover did not close that gap, it MOVED it, and
+     saying the old thing now would be wrong in a new way.
+
+     What is true after the cutover: the reading above is the tab's, taken against the
+     shipped core plus whatever `ontology/extensions.yaml` the folder brought. The registry
+     takes its own reading at publish against the ontology version the manifest NAMES
+     (`openView`), which for a bundle declaring an older version is a different vocabulary
+     and can be a different verdict in either direction. The client-side pass stays on
+     purpose — it is the fast one — and the server's is the one that decides. */
   out.push(
-    "This bundle was resolved against the curated core vocabulary only. A blueprint in the archive is resolved against the core plus the terms its release adds in its own namespace, so a graph using one of those comes back here with the term unknown and a static risk reading computed without it.",
+    "This reading was taken in your browser, against the curated core vocabulary plus whatever `ontology/extensions.yaml` came with the folder. The registry takes its own reading when you publish, against the ontology version this bundle's manifest names, so a bundle declaring an older version can be judged on different terms there than here. The registry's reading is the one that decides.",
   );
   out.push("");
 
   return out.join("\n");
+}
+
+/**
+ * What a refusal says to the author, chosen by `kind` (AC2).
+ *
+ * ── The `kind` is the whole reason this is a switch and not the server's `detail` ──
+ * All five refusals are one class carrying a `kind` precisely because "the UI writes three
+ * different sentences from them" (`lib/server/publish/errors.ts`), and two of the five —
+ * `unfinished` and `in-error` — share a status code. Printing `detail` alone would collapse
+ * them back into one voice, which is what the `kind` exists to prevent.
+ *
+ * ── AC2, literally ──
+ * `unfinished` never mentions an error count. It has one — an unfinished folder is full of
+ * errors, all of them the shadow of a card nobody has written yet, which `unfinished()`'s own
+ * docblock says in as many words — and reporting that number as a fault is the reading doc 2
+ * §1.1 and `progress.ts` both exist to prevent. The counts it does print are `placed` and
+ * `total`, the same two the disabled note prints, from the same source.
+ *
+ * The server's `detail` is carried for every other kind rather than paraphrased: those
+ * sentences have one author (D-50-08) and re-rendering them here would put a second one on
+ * them. `conflict`, `not-owner` and `version-not-higher` all name values only the caller
+ * already holds, so there is nothing in them this page has to withhold.
+ */
+function refusalSentence(
+  kind: PublishRefusedKind,
+  detail: string,
+  progress: BundleProgress | undefined,
+): ReactNode {
+  if (kind === "unfinished") {
+    return (
+      <>
+        <span className="font-mono text-warn">still being written</span>:{" "}
+        {progress === undefined
+          ? "the registry resolved this bundle against its own vocabulary and some node has no card yet."
+          : `${progress.placed} of ${progress.total} nodes have their card.`}{" "}
+        There is nothing to fix. Write the rest and publish again — the Preview step names
+        the ones still waiting, and the report below travels with you meanwhile.
+      </>
+    );
+  }
+  if (kind === "not-owner") {
+    return (
+      <>
+        <span className="font-mono text-signal">not yours</span>: {detail} A slug belongs to
+        one account, and this one is not on yours. Publish it under a slug you own.
+      </>
+    );
+  }
+  return (
+    <>
+      <span className="font-mono text-signal">{kind}</span>: {detail}
+    </>
+  );
 }
 
 /** A real bundle out of the archive, handed down by the server page (§5 step 1). */
@@ -557,7 +687,32 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
   const [kind, setKind] = useState<ContentKind>("blueprint");
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [details, setDetails] = useState<BundleDetails>(EMPTY_DETAILS);
-  const [submitted, setSubmitted] = useState(false);
+  /**
+   * What the registry said, once it has been asked. Absent while the reader is on the form.
+   *
+   * This replaces the `submitted` boolean, and the widening is the whole of AC2 and AC4: a
+   * flag can only say the wizard ended, and there are now four ways it can end — a release,
+   * a refusal the author can act on, a rejection about something other than the bundle, and
+   * an unreachable registry. Each needs a different sentence, and a boolean was how the old
+   * screen came to state one outcome unconditionally.
+   */
+  const [outcome, setOutcome] = useState<PublishOutcome | undefined>(undefined);
+  /** In flight. The button says so and cannot be pressed twice into two releases. */
+  const [publishing, setPublishing] = useState(false);
+  /**
+   * Public or private, chosen rather than defaulted (D-263-09).
+   *
+   * `PublishInput.visibility` is optional and absence takes the account default, so this
+   * could have been left off the wire entirely. It is sent explicitly because the ledger row
+   * it retires promises "each blueprint public or private the way a repository is" — a
+   * promise a hidden default does not keep — and because a reader who can see the choice on
+   * screen knows what will happen without knowing what their account default is.
+   *
+   * `private` is the starting value. Publishing somebody's first upload to the world because
+   * they did not notice a control is the failure that cannot be undone by editing a setting.
+   */
+  const [visibility, setVisibility] = useState<"public" | "private">("private");
+  const session = useUploadSession();
 
   /* ---------- the whole pipeline, derived ---------- */
 
@@ -635,11 +790,12 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
 
   /** Everything gone: a different project, typed from scratch. */
   function reset() {
-    setSubmitted(false);
+    setOutcome(undefined);
     setStep(1);
     setKind("blueprint");
     setFiles([]);
     setDetails(EMPTY_DETAILS);
+    setVisibility("private");
   }
 
   /**
@@ -652,7 +808,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
    * it lands (see `takeFiles`), so keeping them costs nothing and is never stale.
    */
   function validateAnother() {
-    setSubmitted(false);
+    setOutcome(undefined);
     setStep(1);
     setFiles([]);
   }
@@ -737,13 +893,88 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
   const reportTitle =
     details.title.trim() || bundle?.manifest.title || `Untitled ${KIND_NOUN[kind]}`;
 
-  /** The report the success screen hands over, built only once there is one to hand. */
+  /* ---------- what the registry needs that the bundle does not carry ---------- */
+
+  /** The declared release version. Trimmed here so every reader below sees one value. */
+  const declaredVersion = (details.version ?? "").trim();
+  /** Empty is the one version state that blocks: the route reads it with `readString` and 400s. */
+  const versionMissing = declaredVersion === "";
+  /** Present but not a semver. A note, never a gate — see `looksLikeSemver`. */
+  const versionOdd = !versionMissing && !looksLikeSemver(declaredVersion);
+
+  /**
+   * Everything that has to be true before the button can do what it says.
+   *
+   * `session.state === "ready"` and not merely "not anonymous": a session with no handle
+   * cannot name an owner, and `publish` resolves the owner FROM the handle. Sending a
+   * submission without one would earn a 400 the reader cannot act on.
+   */
+  const canPublish =
+    !blocked && !versionMissing && session.state === "ready" && !publishing && bundle !== undefined;
+
+  /**
+   * What the report should say became of these bytes.
+   *
+   * Derived from the outcome rather than passed at the call site, so the file and the screen
+   * cannot disagree about whether a release exists.
+   */
+  const stored: StoredLine | undefined = useMemo(() => {
+    if (outcome === undefined) return undefined;
+    if (outcome.state !== "published") return { published: false };
+    return {
+      published: true,
+      ownerHandle: session.state === "ready" ? session.handle : "",
+      slug,
+      version: declaredVersion,
+      digest: outcome.release.digest,
+    };
+  }, [outcome, session, slug, declaredVersion]);
+
+  /**
+   * The report, built once there is a reading to hand over.
+   *
+   * **AC4: this is no longer gated on the bundle being publishable.** It used to be reachable
+   * only from the success screen, which sat behind a Publish button `blocked` kept disabled —
+   * so the population that most needed the file was the one population that could never get
+   * it (`reportMarkdown`'s own docblock: "Nobody has read that file"). Every ending renders
+   * this control now, refusals included.
+   */
   const reportHref = useMemo(() => {
     if (result === undefined) return undefined;
     return dataHref(
-      reportMarkdown({ result, title: reportTitle, slug, kindNoun: KIND_NOUN[kind] }),
+      reportMarkdown({
+        result,
+        title: reportTitle,
+        slug,
+        kindNoun: KIND_NOUN[kind],
+        ...(stored === undefined ? {} : { stored }),
+      }),
     );
-  }, [result, reportTitle, slug, kind]);
+  }, [result, reportTitle, slug, kind, stored]);
+
+  /**
+   * Ask the registry, and record whatever it says.
+   *
+   * Every failure is a state rather than a throw (`publishBundle` does not reject), so there
+   * is no `catch` here and no path on which the reader is left looking at a form that did
+   * nothing. `publishing` is cleared in both directions for the same reason.
+   */
+  async function doPublish() {
+    if (!canPublish || bundle === undefined || session.state !== "ready") return;
+    setPublishing(true);
+    const answer = await publishBundle({
+      ownerHandle: session.handle,
+      slug,
+      version: declaredVersion,
+      manifest: bundle.manifest,
+      dot: bundle.dot,
+      cardFiles: { ...bundle.cardFiles },
+      ...(parts.vocabulary === undefined ? {} : { vocabulary: parts.vocabulary.text }),
+      visibility,
+    });
+    setPublishing(false);
+    setOutcome(answer);
+  }
 
   return (
     <div className="panel overflow-hidden">
@@ -927,6 +1158,112 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
               accent="var(--color-cyan)"
             />
 
+            {/* ── The two things the registry needs that a manifest does not carry ──
+                Neither is a manifest field: `BundleManifest` has no version and no
+                visibility, so a dropped `blueprint.yaml` answers neither. They sit under
+                their own rule because they describe the RELEASE rather than the blueprint,
+                and because both are questions a reader has to have answered before the
+                Publish button two steps on can mean anything. */}
+            <div className="flex flex-col gap-5 border-t border-line pt-5">
+              <p className="max-w-xl text-sm leading-relaxed text-muted">
+                <span className="text-fg">The release.</span> A bundle is published as a
+                numbered release you own, and each later release of the same slug has to
+                be numbered above the last.
+              </p>
+
+              <div className="flex flex-col gap-2 sm:max-w-xs">
+                <label className="label" htmlFor="bp-version">
+                  Version
+                </label>
+                <input
+                  id="bp-version"
+                  value={details.version ?? ""}
+                  onChange={(e) => setField("version", e.target.value)}
+                  placeholder={FIRST_VERSION}
+                  className={cx(inputCls, "font-mono")}
+                  aria-describedby="bp-version-note"
+                />
+                {/* Two different sentences, and neither is a rejection. An empty field is
+                    the only one that stops a publish, because the registry reads the field
+                    as required; a version that does not look like a semver is passed on
+                    with a note, because the registry accepts it and sorts it below every
+                    numbered release. Saying "invalid" about a value the server takes would
+                    be this page inventing a rule. */}
+                <p id="bp-version-note" className="text-[11px] leading-relaxed text-dim">
+                  {versionMissing ? (
+                    <>
+                      A release needs a number. {FIRST_VERSION} is the usual first one.
+                    </>
+                  ) : versionOdd ? (
+                    <>
+                      <span className="font-mono text-warn">{declaredVersion}</span> is not
+                      a semantic version. The registry will take it and sort it below every
+                      numbered release, so the next release of this slug cannot be numbered
+                      against it.
+                    </>
+                  ) : (
+                    <>Semantic version. The next release of this slug must be above it.</>
+                  )}
+                </p>
+              </div>
+
+              <fieldset className="flex flex-col gap-2">
+                <legend className="label mb-2">Visibility</legend>
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      {
+                        value: "private" as const,
+                        label: "Private",
+                        hint: "Only you can read it",
+                        color: "var(--color-violet)",
+                      },
+                      {
+                        value: "public" as const,
+                        label: "Public",
+                        hint: "Anyone can read it",
+                        color: "var(--color-cyan)",
+                      },
+                    ] satisfies { value: "public" | "private"; label: string; hint: string; color: string }[]
+                  ).map((choice) => {
+                    const active = visibility === choice.value;
+                    return (
+                      <button
+                        key={choice.value}
+                        type="button"
+                        onClick={() => setVisibility(choice.value)}
+                        aria-pressed={active}
+                        aria-label={`${choice.label}: ${choice.hint}`}
+                        /* Same shape and the same gated hover as the kind selector on step
+                           one, for the reason that one records: an ungated `hover:` latches
+                           on a phone and a two-way selector then reads as both chosen. */
+                        className={cx(
+                          "flex items-center gap-2 rounded-md px-3.5 py-2 text-sm transition-colors",
+                          active
+                            ? "bg-surface-3 text-fg shadow-[inset_0_0_0_1px_var(--color-line-bright)]"
+                            : "text-muted hoverable:hover:text-fg",
+                        )}
+                      >
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{ background: active ? choice.color : "var(--color-line-bright)" }}
+                          aria-hidden
+                        />
+                        <span className="flex flex-col items-start leading-tight">
+                          <span className="font-medium">{choice.label}</span>
+                          <span className="text-[11px] text-dim">{choice.hint}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="max-w-xl text-[11px] leading-relaxed text-dim">
+                  Private is the starting choice. You can publish a private release and
+                  keep working; what a reader of the archive sees is what you make public.
+                </p>
+              </fieldset>
+            </div>
+
             <div className="flex flex-col gap-5 border-t border-line pt-5">
               <p className="max-w-xl text-sm leading-relaxed text-muted">
                 <span className="text-fg">Read off your cards.</span> What the graph
@@ -983,7 +1320,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
           ))}
 
         {step === 4 &&
-          (submitted ? (
+          (outcome !== undefined ? (
             /* ── The handover ──
                This screen used to replace the entire step with a three-line notice and
                two buttons, both of which threw the run away: one left the route and the
@@ -993,36 +1330,92 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                nine downloadable files.
 
                What the engine computed stays mounted, and it leaves with the reader as
-               `REPORT.md`. The demo disclosure below is unchanged in fact and changed in
-               framing: nothing was sent and nothing was saved is still the first thing it
-               says, but it is now the sentence that explains why the file matters rather
-               than an apology for the button. */
+               `REPORT.md`.
+
+               ── AC3, AC4 and what the cutover changed here ──
+               The screen used to have ONE ending, because there was one: the button set a
+               flag and the flag meant "the wizard is over". There are four now, and the
+               heading, the glyph and the sentence under it are all read off the outcome.
+               `REPORT.md` is offered on every one of them — that is AC4, and it is a
+               CHANGE rather than a non-regression: `hasErrors` is the plain count
+               (`lib/core/diagnostics.ts:220-222`), both non-publishable states carry
+               error-severity diagnostics, and the only control offering the file sat
+               behind a button `blocked` kept disabled. The population that most needed the
+               report was precisely the population that could never reach it. */
             <div className="flex flex-col gap-5">
               <div className="flex flex-col items-start gap-4 sm:flex-row">
                 <span
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-emerald/40 bg-emerald/10 text-2xl text-emerald"
+                  className={cx(
+                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-full border text-2xl",
+                    outcome.state === "published"
+                      ? "border-emerald/40 bg-emerald/10 text-emerald"
+                      : outcome.state === "refused"
+                        ? "border-warn/40 bg-warn/10 text-warn"
+                        : "border-signal/40 bg-signal/10 text-signal",
+                  )}
                   aria-hidden
                 >
-                  ✓
+                  {outcome.state === "published" ? "✓" : "!"}
                 </span>
                 <div className="flex min-w-0 flex-col gap-3">
                   <h3 className="font-display text-xl font-semibold text-fg">
-                    Validated. Take it with you.
+                    {outcome.state === "published"
+                      ? outcome.release.created
+                        ? "Published. The registry holds it."
+                        : "Released. The registry holds the new version."
+                      : outcome.state === "refused"
+                        ? "Not published. The registry declined it."
+                        : "Not published."}
                   </h3>
+                  {/* AC3. The success sentence states what was STORED — the owner, the
+                      slug, the release and the digest — rather than what was not sent.
+                      Owner, slug and release are rendered from what this tab submitted and
+                      only the digest comes back, which is D-263-07's ratified reading:
+                      `PublishResult` is `{bundleId, releaseId, digest, created}` and names
+                      neither an owner nor a slug, so a screen waiting for them from the
+                      body would render blanks against a correct route. */}
                   <p className="prose-lane text-sm leading-relaxed text-muted">
-                    <span className="font-mono text-amber">demo</span>: nothing was sent
-                    and nothing was saved, because there is no registry backend yet. That
-                    is exactly why the report downloads instead: it carries the digest,
-                    both computed readings in the engine&rsquo;s own words and every
-                    diagnostic, so the run survives this tab.
+                    {outcome.state === "published" ? (
+                      <>
+                        Stored as{" "}
+                        <span className="font-mono text-cyan">
+                          {session.state === "ready" ? session.handle : "you"}/{slug}
+                        </span>
+                        , release{" "}
+                        <span className="font-mono text-cyan">{declaredVersion}</span>,{" "}
+                        {visibility === "public" ? "public" : "private"}. The registry
+                        recomputed the digest from the bytes it received and recorded{" "}
+                        <span className="break-all font-mono text-[11px] text-muted">
+                          {outcome.release.digest}
+                        </span>
+                        . The report below is the same reading in a file you keep.
+                      </>
+                    ) : outcome.state === "refused" ? (
+                      refusalSentence(outcome.kind, outcome.detail, progress)
+                    ) : (
+                      <>
+                        {outcome.state === "rejected" ? outcome.title : "The registry could not be reached"}
+                        : {outcome.detail} Your bundle is still here and the report below
+                        carries the whole reading.
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
 
               {/* The result, still on the card. It was unmounted here — the digest, the
                   autonomy class and the security level all vanished the moment the
-                  reader pressed the button that produced them. */}
-              {result?.analysis !== undefined && (
+                  reader pressed the button that produced them.
+
+                  ── `!blocked` is new, and it is the gate `reportMarkdown` already keeps ──
+                  This screen used to be reachable only with a clean bundle, so `analysis`
+                  being present was the same question as the bundle resolving. It is not any
+                  more: AC4 lands a REFUSED bundle here, resolution degrades, and a folder
+                  three cards into eight arrives WITH an `analysis` computed over the two
+                  fifths that resolved. Printing an autonomy class off that is the exact
+                  failure `reportMarkdown`'s own header describes — the number this page
+                  refuses to put on screen, put on screen. Both sides withhold together. */}
+              {!blocked && result?.analysis !== undefined && (
                 <dl className="grid gap-3 rounded-lg border border-line bg-surface-2/40 p-5 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-5">
                   <dt className="label self-center">Digest</dt>
                   <dd className="break-all font-mono text-xs text-muted">
@@ -1047,11 +1440,26 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                 </dl>
               )}
 
+              {/* AC4. The download is offered on EVERY ending, refusals included, and the
+                  order changes with the ending: after a release the report is the souvenir,
+                  after a refusal it is the thing the author works from next. */}
               <div className="flex flex-wrap items-center gap-3">
                 {reportHref !== undefined && (
-                  <ButtonLink href={reportHref} download="REPORT.md" prefetch={false}>
+                  <ButtonLink
+                    href={reportHref}
+                    download="REPORT.md"
+                    prefetch={false}
+                    variant={outcome.state === "published" ? "primary" : "outline"}
+                  >
                     Download the report
                   </ButtonLink>
+                )}
+                {/* A refusal is not the end of a run. `version-not-higher` and `conflict`
+                    are both answered by editing one field two steps back, and a reader sent
+                    to "Validate another bundle" would lose the whole selection to fix a
+                    number. This keeps every file, the manifest and the form. */}
+                {outcome.state !== "published" && (
+                  <Button onClick={() => setOutcome(undefined)}>Back to the bundle</Button>
                 )}
                 <Button variant="outline" onClick={validateAnother}>
                   Validate another bundle
@@ -1157,22 +1565,37 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
               <div>
                 <Button
                   size="lg"
-                  onClick={() => setSubmitted(true)}
-                  disabled={blocked}
+                  onClick={() => void doPublish()}
+                  disabled={!canPublish}
                   aria-describedby="publish-note"
                 >
-                  Publish {KIND_NOUN[kind]}
+                  {publishing ? "Publishing\u2026" : `Publish ${KIND_NOUN[kind]}`}
                 </Button>
                 <p
                   id="publish-note"
                   className="mt-2 max-w-xl text-xs leading-relaxed text-muted"
                 >
-                  {/* Three sentences behind one disabled button. A blueprint still being
-                      written cannot be published either, but "blocked by 5 errors" in
-                      signal red is the wrong reason to give somebody who has three cards
-                      of eight down — it names a fault where there is only a middle. The
-                      button stays disabled; what changes is what the page says it is
-                      waiting for. */}
+                  {/* ── The three reasons became two, and the third was DELETED ──
+                      `still being written` and `blocked` with an error count both survive
+                      unchanged: a blueprint mid-draft cannot be published either, but
+                      "blocked by 5 errors" in signal red is the wrong reason to give
+                      somebody who has three cards of eight down — it names a fault where
+                      there is only a middle. `not wired up` is gone rather than reworded,
+                      because it said publishing has no backend and that sentence is now
+                      false; rewording it would leave an explanation of a limitation that no
+                      longer exists, which is the failure D-78 is about.
+
+                      ── What is NOT a rewording of it ──
+                      The two sentences below about a session are new facts, not the old one
+                      in new clothes. Being signed out is a true reason this button cannot
+                      publish, `publish` resolves the owner FROM the handle so an account
+                      without one cannot name a bundle's owner, and both states are reachable
+                      (T050 AC1). A button disabled with nothing said is the failure this
+                      route's whole copy history is about.
+
+                      The bundle's own state is asked FIRST. An author whose graph is half
+                      written should read that before being asked to sign in — the sign-in is
+                      answerable in a click and the folder is the real work. */}
                   {blocked ? (
                     unfinished && progress !== undefined ? (
                       <>
@@ -1191,12 +1614,50 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                             }. The registry does not accept a bundle it cannot resolve; fix them on the Preview step.`}
                       </>
                     )
+                  ) : versionMissing ? (
+                    <>
+                      <span className="font-mono text-warn">no version</span>: a release is
+                      published under a number. Give it one on the Details step;{" "}
+                      <span className="font-mono">{FIRST_VERSION}</span> is the usual first.
+                    </>
+                  ) : session.state === "loading" ? (
+                    <>Checking whether you are signed in&hellip;</>
+                  ) : session.state === "anonymous" ? (
+                    <>
+                      <span className="font-mono text-amber">sign in to publish</span>: a
+                      release belongs to an account.{" "}
+                      <a
+                        href={SIGN_IN_HREF}
+                        className="text-fg underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan"
+                      >
+                        Sign in with GitHub
+                      </a>{" "}
+                      and come back — the bundle and everything you have typed stay where
+                      they are.
+                    </>
+                  ) : session.state === "no-handle" ? (
+                    <>
+                      <span className="font-mono text-amber">no handle yet</span>: your
+                      account has not chosen the name a blueprint is published under, and a
+                      release is stored beneath it. Nothing on this page can set one.
+                    </>
+                  ) : session.state === "unreachable" ? (
+                    <>
+                      <span className="font-mono text-signal">cannot tell</span>:{" "}
+                      {session.detail} Reload the page before publishing, so this does not
+                      fail halfway.
+                    </>
+                  ) : publishing ? (
+                    <>Sending the bundle to the registry. This can take a moment.</>
                   ) : (
                     <>
-                      <span className="font-mono text-amber">not wired up</span>:
-                      publishing has no backend. This button ends the wizard and shows
-                      you what the registry entry would look like. Nothing leaves this
-                      tab.
+                      This sends the bundle to the registry and creates{" "}
+                      <span className="font-mono text-cyan">
+                        {session.handle}/{slug}
+                      </span>{" "}
+                      release <span className="font-mono text-cyan">{declaredVersion}</span>,{" "}
+                      {visibility === "public" ? "public" : "private"}. The registry
+                      resolves it again on its side, and its reading is the one that decides.
                     </>
                   )}
                 </p>
@@ -1214,7 +1675,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
           counter until its steps were deleted, and this flow keeps it because it still has
           steps: four panels, in order, with an advance control at the bottom of each.
           `STEPS.length` rather than a typed 4, so the two can never disagree. */}
-      {!(step === 4 && submitted) && (
+      {!(step === 4 && outcome !== undefined) && (
         <div className="flex items-center justify-between gap-3 border-t border-line bg-surface-2/40 px-5 py-4 sm:px-8">
           <Button variant="ghost" onClick={back} disabled={step === 1}>
             ← Back

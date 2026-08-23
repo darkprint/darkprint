@@ -77,6 +77,22 @@ export interface BundleDetails {
   description: string;
   category: string;
   tags: string[];
+  /**
+   * The release version this submission declares. **Optional, and the `?` is load-bearing
+   * rather than tidy.**
+   *
+   * `BundleManifest` has no version field, so this is the one entry in this interface that
+   * is not "as the manifest sees it": it is `PublishInput.version`, which `publish`
+   * requires and which nothing in a dropped folder is obliged to supply. It is read here
+   * anyway because `detailsFromManifest` is the only reader of a dropped `blueprint.yaml`
+   * in this codebase, and a second one written beside it is how two opinions about a
+   * document start.
+   *
+   * Optional because `dropzone.test.ts` builds a `BundleDetails` literal by hand and is a
+   * must-pass-unchanged test under D-263-06 — a required member would red it at the type
+   * level, which is a test failing for a reason that has nothing to do with what it checks.
+   */
+  version?: string;
 }
 
 const TOPOLOGY_EXT = /\.(dot|gv)$/i;
@@ -287,6 +303,14 @@ export function detailsFromManifest(doc: Record<string, unknown>): Partial<Bundl
   if (category !== undefined) out.category = category;
   const tags = tagList(doc.tags);
   if (tags.length > 0) out.tags = tags;
+  /* `version` is read although `BundleManifest` does not declare it, and that is D-263-09's
+     wording taken literally: prefill "from `doc.version` when a dropped manifest carries the
+     key even though the type does not name it". The archive's own `blueprint.yaml` does not
+     write one today, so this is nearly always absent — it is here so a folder that DOES
+     carry one does not make the author retype it, and never as a claim that the field is
+     part of the manifest format. */
+  const version = field(doc.version);
+  if (version !== undefined) out.version = version;
   return out;
 }
 
