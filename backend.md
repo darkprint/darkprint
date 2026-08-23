@@ -869,6 +869,29 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## A CELL CAN BE GUARDED BY THE DATABASE RATHER THAN BY THE MODULE, AND READ AS COVERAGE FOR NEITHER
+
+**T150's blind author found the cell it was sent to find: `moves nothing, over every table the schema
+declares` was redded by 0 of 24 mutations**, including both written to break it — removing the anonymous
+guard, and moving that guard *after* the row creation.
+
+**The premise pre-created the `target` row.** So `ensureRow` wrote nothing, and the only remaining write
+carried a null `account_id`, **which `target_actor` refuses on its own**. The cell read as coverage for the
+write-then-throw shape while covering none of it — **held up by a NOT NULL constraint, not by the module.**
+Repointed at a target that does not yet exist, with the populated one beside it so the diff still carries both
+claims: both mutations now red it.
+
+### A RED UNDER A MUTATION WITH NO CAUSAL PATH IS A FLAKE ANNOUNCING ITSELF
+
+From the same sweep, and it is the cheapest flake detector anyone has produced here. A racing cell that
+compared each caller's own payload against the **final** table state red **1 in 6 against a correct subject**
+— but what gave it away was not the rate. **It appeared under three mutations that cannot reach it, one of
+which only changes another function's ARITY.** A flake is invisible in a pass/fail count and obvious in the
+mutation table, because a correct mutation table has a causal story for every red.
+
+**Its author wrote that cell AFTER charging D-WAVE-05, which is the same error one layer down.** Recognising
+a rule and holding it are different acts, and authorship buys no protection.
+
 ## A MUTATION HARNESS MUST PROVE IT APPLIED THE MUTATION — A SILENT NO-OP IS FOUR GREENS THAT MEASURE NOTHING
 
 **T170's blind author ran the 2x2 it had been handed, got green / green / green / GREEN — the exact signature
@@ -15148,6 +15171,12 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **Repaired with a fixture built to separate them: eleven tight values plus outliers at TWO distances**, where removing the far one shrinks the sd enough that the near one crosses 3σ on the next round. **One pass keeps 12; convergence keeps 11.** The mutation now reds.
 
   **And the cell asserts only `runs` and `excluded`, deliberately** — the survivors' median falls *between* two data points there, so asserting it would charge a defect over a percentile convention this contract never published. **The same discipline as the AC4 fixture, applied where it costs an assertion rather than where it was free.**
+
+  **D-WAVE-11 — A `SignalState` NEED NOT BE INTERNALLY COHERENT UNDER A RACE. The narrow cell stands and the stronger reading is REFUSED, for D-WAVE-05's reason.** Charged rather than asserted by T150's blind author, which built the stronger cell, found it reds **8 of 8**, and then argued against its own cell.
+
+  The payload it catches is real: **`{ starredByCaller: true, starCount: 0 }`** — a caller seeing the star row its own concurrent call inserted while reading the aggregate before that call's increment commits. **But that is a defensible implementation, not a defect.** Making the two agree under concurrency requires the insert, the increment and the read-back to be **atomic**, and nothing in §T150 asks for that. **It is the same category as D-WAVE-05's refused alternative (b): a real behavioural constraint not derivable from the section.**
+
+  **AC4's purpose survives**: it exists so a client never issues a second read, and the coherence of one payload IS pinned **uncontended**. What is not held is behaviour under a race, and that is **stated in the cell rather than left to be read off a green.**
 
   **D-WAVE-09 — THREE MODULES SHARE ONE `(kind, ref_id)` GRAIN AND GIVE TWO DIFFERENT ANSWERS FOR A TARGET THAT DOES NOT EXIST. THE DIVERGENCE IS DELIBERATE.** Found by T170's implementer when its own paging fixture posted to a card with no `card_version` row behind it and **`postNote` refused** — correctly, under D-WAVE-04's read check: a card with no versions has no parent, so there is no pair to ask `can` about.
 
