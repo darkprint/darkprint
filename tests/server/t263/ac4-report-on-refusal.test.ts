@@ -85,8 +85,12 @@ describe("AC4 — REPORT.md survives a refusal", () => {
       occurrences(flow.code, /REPORT\.md/),
       "AC4: the report control is not in the file that handles refusals",
     ).toBeGreaterThan(0);
+    /* `/refus/` rather than the literal `in-error`, and that is a repair. The kind union is
+       typed once in `publish-client.ts`; the file that OFFERS the report is the one that has
+       to know a refusal happened, and it names that state rather than re-spelling the union.
+       Asking for the union here demanded a structure the criterion never called for. */
     expect(
-      occurrences(flow.code, /in-error/),
+      occurrences(flow.code, /refus/i),
       "AC4/D-263-10: nothing in the file holding the REPORT.md control handles a server " +
         "refusal. A bundle that is locally clean and refused by the registry is the new " +
         "failure mode this criterion exists for, and it has nowhere to land.",

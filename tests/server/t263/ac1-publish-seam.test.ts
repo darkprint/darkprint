@@ -100,11 +100,20 @@ describe("AC1 — a clean bundle publishes", () => {
    */
   it("offers the visibility choice the retired ledger sentence promised", () => {
     premise(files);
-    const code = files.map((f) => f.code).join("\n");
+    /* Two clauses, because "the control exists" and "its value is sent" are different
+       claims and the first was masking the second. Partition-wide, `visibility` occurs in
+       `UploadFlow.tsx` for the step-2 control, so removing it from the request body
+       reddened 0 of 44 — the same masking that hid the `version` clause. The second
+       expectation is scoped to the file that names `/api/bundles`. */
     expect(
-      occurrences(code, /visibility/i),
+      occurrences(files.map((f) => f.code).join("\n"), /visibility/i),
       "D-263-09: no visibility control on the route, but AC5 retires the sentence that " +
         "promised each blueprint would be public or private. Half a claim came true.",
+    ).toBeGreaterThan(0);
+    expect(
+      occurrences(publishBodyText(files), /visibility/i),
+      "D-263-09: the visibility control exists but its value never reaches the request " +
+        "body, so the choice the retired ledger sentence promised does not leave the tab.",
     ).toBeGreaterThan(0);
   });
 
@@ -120,7 +129,11 @@ describe("AC1 — a clean bundle publishes", () => {
    */
   it("reads the session in exactly one file", () => {
     premise(files);
-    const readers = files.filter((f) => /\bsession\b/i.test(f.code)).map((f) => f.path);
+    /* Files that PERFORM the read, not files that mention the word. The first version
+       counted `/\bsession\b/` and found three — the module, its consumer and the publish
+       client — which is what a single well-placed module looks like from the outside. The
+       criterion is where the READ lives, so `/api/auth/session` is what to count. */
+    const readers = files.filter((f) => /\/api\/auth\/session/.test(f.code)).map((f) => f.path);
     expect(
       readers.length,
       "AC1/D-263-09: `ownerHandle` comes from the session and nothing in the route reads one",

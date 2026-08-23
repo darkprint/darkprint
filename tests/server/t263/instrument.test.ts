@@ -112,11 +112,17 @@ describe("axis 2 — stripComments over the real partition", () => {
    * make every absence assertion in this suite pass for free.
    */
   it("keeps tokens that only occur in code", () => {
+    /* `setSubmitted` stood here and was WRONG: the cutover legitimately replaced that
+       boolean with a wider state, so the desync alarm fired on a correct implementation.
+       A canary for "did the scanner eat code?" has to be something no correct change can
+       remove — structure, or copy a ruling protects — never an identifier the task under
+       test is allowed to rename. */
     const keep = [
+      /\bexport\b/,
+      /\breturn\b/,
       /download="REPORT\.md"/,
       /vocabularyProblem/,
-      /setSubmitted/,
-      /nor is there a live push from the editor the skill runs in/i,
+      /live push from the editor the skill runs in/i,
     ];
     for (const pattern of keep) {
       const code = files.reduce((n, f) => n + occurrences(f.code, pattern), 0);

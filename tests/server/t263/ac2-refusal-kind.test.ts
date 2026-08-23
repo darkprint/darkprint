@@ -26,11 +26,24 @@
    which is the criterion, rather than on how they were obtained.
    `in-error` measures 0 on the comment-stripped partition at
    `32274eb`, so this reds in the blind position.
+
+   ── scoped to the PARTITION, not to `UploadFlow.tsx`, and that is a
+   repair ──
+   These cells first asked `UploadFlow.tsx` for the literal. The
+   implementation types the closed union once in
+   `components/upload/publish-client.ts` and has `refusalSentence`
+   switch on the `kind` VALUE, which is one author for the union and
+   is better than what the cell demanded. Asking the folder instead
+   of the file keeps the criterion and drops the structural guess.
+   The mutation table was re-run after this repair, not only after
+   the cell was written: `in-error` still measures 0 across the
+   whole partition at `32274eb`, so the widening cost no
+   discrimination.
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
 
-import { FLOW, fileAt, occurrences, premise, routeFiles } from "./source";
+import { occurrences, premise, publishBodyText, routeFiles } from "./source";
 
 const files = routeFiles();
 
@@ -41,9 +54,9 @@ describe("AC2 — unfinished is distinguished from in-error", () => {
 
   it("names the in-error kind, which no status branch could recover", () => {
     premise(files);
-    const flow = fileAt(files, FLOW);
+    const code = files.map((f) => f.code).join("\n");
     expect(
-      occurrences(flow.code, /in-error/),
+      occurrences(code, /in-error/),
       "AC2: nothing in the route names the `in-error` kind. `unfinished`, `in-error` and " +
         "`version-not-higher` are all 422 in `app/api/bundles/route.ts`, so a branch on the " +
         "status cannot separate them and the unfinished folder gets an error count.",
@@ -58,14 +71,20 @@ describe("AC2 — unfinished is distinguished from in-error", () => {
    */
   it("keeps the unfinished branch it already had beside the new one", () => {
     premise(files);
-    const flow = fileAt(files, FLOW);
+    /* Scoped to the file that names `/api/bundles`, and that is a repair the post-merge
+       mutation table forced. Partition-wide, `unfinished` occurs in `progress.ts` and
+       `ValidationReport.tsx` no matter what the publish path does, so the clause was
+       satisfied by copy that has nothing to do with a refusal and deleting the branch
+       reddened 0 of 44. Both sides of the distinction have to be named where the refusal is
+       actually decoded. */
+    const code = publishBodyText(files);
     expect(
-      occurrences(flow.code, /unfinished/),
-      "AC2: the unfinished state is gone from the route; the distinction has one side left",
+      occurrences(code, /unfinished/),
+      "AC2: the refusal path never names `unfinished`; the distinction has one side left",
     ).toBeGreaterThan(0);
     expect(
-      occurrences(flow.code, /in-error/),
-      "AC2: the unfinished state survives but nothing renders the in-error side",
+      occurrences(code, /in-error/),
+      "AC2: the refusal path names `unfinished` but nothing renders the in-error side",
     ).toBeGreaterThan(0);
   });
 });

@@ -34,7 +34,7 @@ import { describe, expect, it } from "vitest";
 
 import UploadPage from "@/app/upload/page";
 import { openText, plainText } from "@/components/ui/visible-text";
-import { FLOW, PAGE, REPO_ROOT, fileAt, occurrences, premise, routeFiles } from "./source";
+import { FLOW, REPO_ROOT, fileAt, occurrences, premise, routeFiles } from "./source";
 
 const files = routeFiles();
 
@@ -48,6 +48,21 @@ const files = routeFiles();
  * suites. Each one below is non-zero on the comment-stripped partition at `32274eb`, so
  * each RED in the blind position, and each can only go green by the copy actually changing.
  */
+/**
+ * Sentences that MATCH a retired pattern and are nonetheless correct, each with the reason.
+ *
+ * An allow-list rather than a narrower regex, and the difference is auditable: a weakened
+ * pattern hides what it stopped catching, where a line here has to be read and argued with.
+ *
+ * AC5 retires STANDING claims about the route — copy saying this route never sends anything.
+ * A refusal message reporting what happened to ONE submission is a different act, and it is
+ * true: on a 401 the publish did not run and nothing was stored. Retiring it would replace a
+ * true sentence with silence at the one moment a reader needs to know their bundle is safe.
+ */
+const EXEMPT = [
+  "Your session has expired. Sign in again and publish; nothing was stored.",
+] as const;
+
 const RETIRED = [
   { what: "the success screen's nothing-was-sent claim", pattern: /nothing (was|is) (sent|saved|stored|uploaded)/i, atHead: 5 },
   { what: "the page's no-backend claim", pattern: /there are no accounts and no backend/i, atHead: 1 },
@@ -66,7 +81,13 @@ describe("AC5 — no copy on the route still says nothing is sent", () => {
       /* Premise first. An absence found in a file that is not there is not a finding. */
       premise(files);
       const hits = files
-        .map((f) => ({ path: f.path, n: occurrences(f.code, r.pattern) }))
+        .map((f) => ({
+          path: f.path,
+          n: occurrences(
+            EXEMPT.reduce((code, sentence) => code.split(sentence).join(""), f.code),
+            r.pattern,
+          ),
+        }))
         .filter((h) => h.n > 0);
       expect(
         hits,
@@ -119,11 +140,11 @@ describe("D-263-02 — the ledger moves in one direction", () => {
     expect(
       ledger,
       "D-263-02: the live-push row must STAY — T270 is `todo` and removing it is a false claim",
-    ).toContain("nor is there a live push from the editor the skill runs in");
+    ).toContain("live push from the editor the skill runs in");
   });
 
   it("has dropped the row for the account that now exists", () => {
-    expect(ledger).toContain("nor is there a live push from the editor the skill runs in");
+    expect(ledger).toContain("live push from the editor the skill runs in");
     expect(
       ledger.includes(
         "not built yet: an account to upload into, with each blueprint public or private the way a repository is",
@@ -133,7 +154,7 @@ describe("D-263-02 — the ledger moves in one direction", () => {
   });
 
   it("has dropped the row for the backend that now exists", () => {
-    expect(ledger).toContain("nor is there a live push from the editor the skill runs in");
+    expect(ledger).toContain("live push from the editor the skill runs in");
     expect(
       ledger.includes(
         "there are no accounts and no backend: what you upload is read in this tab and stays in it",
@@ -179,11 +200,11 @@ describe("AC5 at the surface — the page a reader opens", () => {
     expect(
       open,
       "D-263-02: the live-push refusal must still be in the OPEN on /upload",
-    ).toContain("nor is there a live push from the editor the skill runs in");
+    ).toContain("live push from the editor the skill runs in");
   });
 
   it("no longer tells the reader the file stays in the tab", () => {
-    expect(open).toContain("nor is there a live push from the editor the skill runs in");
+    expect(open).toContain("live push from the editor the skill runs in");
     expect(
       plain,
       "AC5: /upload still renders the no-backend sentence to the reader",
@@ -191,7 +212,7 @@ describe("AC5 at the surface — the page a reader opens", () => {
   });
 
   it("no longer tells the reader there is no account to upload into", () => {
-    expect(open).toContain("nor is there a live push from the editor the skill runs in");
+    expect(open).toContain("live push from the editor the skill runs in");
     expect(
       plain,
       "AC5/D-263-02: /upload still renders the no-account sentence to the reader",

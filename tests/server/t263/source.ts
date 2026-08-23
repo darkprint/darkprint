@@ -246,9 +246,19 @@ export function occurrences(haystack: string, pattern: RegExp): number {
  */
 export const SURVIVORS = [
   {
-    /* D-263-02: "STAYS. T270 is `todo` and removing it would be a false claim." */
+    /* D-263-02: "STAYS. T270 is `todo` and removing it would be a false claim."
+
+       **The pattern is the CLAIM, not the sentence, and that correction cost 20 false reds.**
+       It first read `/nor is there a live push…/`. "Nor is there" was a coordinating
+       conjunction that only parsed while the two sentences AC5 retires stood in front of it;
+       with those gone the implementer rewrote the survivor to stand alone — "Not built yet: a
+       live push from the editor the skill runs in" — and moved the ledger pin with it in the
+       same commit, which is exactly what D-78 asks for. Pinning the grammar reddened a
+       correct page, and because this is the premise every other cell runs first, it reddened
+       31 of 44 cells for one cause. A survivor pattern must match every wording the claim can
+       honestly take. */
     what: "the skill's live-push refusal",
-    pattern: /nor is there a live push from the editor the skill runs in/i,
+    pattern: /live push from the editor the skill runs in/i,
     file: PAGE,
     ruling: "D-263-02",
   },
