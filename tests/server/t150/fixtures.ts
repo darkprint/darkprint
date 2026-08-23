@@ -47,7 +47,7 @@ import { randomUUID } from "node:crypto";
 import { createDbClient } from "@/lib/db";
 
 import type { Scratch, Target, TargetKind } from "./contract";
-import { dropScratchDatabases, scratchDatabase } from "./contract";
+import { dropScratchDatabases, schemaTableNames, scratchDatabase } from "./contract";
 
 export type { Scratch };
 
@@ -61,16 +61,31 @@ export async function closeDatabase(): Promise<void> {
 }
 
 /**
- * Empty every table this suite writes, plus every table it asserts NOTHING moved in.
+ * Empty every table `lib/db/schema.ts` declares, derived rather than named.
  *
- * `cascade` over the whole set rather than a hand-ordered delete list: this is a scratch
- * database nothing else reaches, and an ordering maintained by hand is one more thing that can
- * drift from the schema. `target` is included even though `target_actor` cascades to it,
- * because a truncate that relied on the cascade would stop being right the day the reference
- * direction changes.
+ * ── this was a hand-written list of five, and the list was the hazard ──
+ * It named `target_actor, target, note_vote, note, account`, which is what this suite writes.
+ * Two things make that wrong rather than merely narrow. The boundary cells assert on the set of
+ * tables that MOVED, and that set is derived from the whole schema — so a row in a table this
+ * list does not reach is invisible to `clean` and visible to the diff. And T150 gained a fourth
+ * write target after this file was written: `recordDownload` writes an `audit` row on a failed
+ * counter write (`counter.write_failed`), which five names do not cover.
+ *
+ * `tests/support/db.ts` records this repository already paying for a hand list once: kept in
+ * child-before-parent order, six tables arrived, and the list named ten. **A list that has to be
+ * edited per table is a list that stops being edited** — and I wrote that sentence into
+ * `contract.ts` about the snapshot domain while leaving this one hand-written.
+ *
+ * One `TRUNCATE` over the derived set: a single statement sees them all at once, so no foreign
+ * key is momentarily violated and there is no order for a new table to be inserted into wrongly.
+ * The clean set and the snapshot domain now come from the same derivation and agree by
+ * construction rather than by being maintained together.
  */
 export async function clean(s: Scratch): Promise<void> {
-  await s.query("truncate target_actor, target, note_vote, note, account cascade");
+  const names = schemaTableNames()
+    .map((n) => `"${n}"`)
+    .join(", ");
+  await s.query(`truncate table ${names} restart identity cascade`);
 }
 
 /** What the published signatures call `db`: `Db = NodePgDatabase<typeof schema>`. */
