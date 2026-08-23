@@ -49,6 +49,7 @@ import {
   asPage,
   auditRows,
   bind,
+  countOf,
   noteRow,
   noteRows,
   operatorActor,
@@ -481,7 +482,7 @@ describe("T170 — the PARENT gate, reached by an author who does not own the pa
 
     const votes = await s.query("select count(*) as n from note_vote where note_id = $1", [noteId]);
     expect(
-      Number(votes[0]?.n),
+      countOf(votes[0]?.n, "count(*) over note_vote"),
       `a vote is a read of the note plus a write of the voter's own row, and the read is ` +
         `the half the parent governs. \`canOnNote\` has no arm for it at all — "vote" is ` +
         `not an \`Action\` — so whatever the module asks \`can\`, the parent check is the ` +

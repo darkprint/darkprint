@@ -52,6 +52,7 @@ import {
   seedAccount,
   seedAccounts,
   seedBundle,
+  warmPool,
 } from "./fixtures";
 
 let s: Scratch;
@@ -130,6 +131,10 @@ describe("T170 AC4 — one account, one vote, at the note's grain", () => {
        length: a single 8-caller round caught the equivalent `SELECT`-then-`INSERT` defect
        on the `target` write only 2 times in 5, measured. A concurrency cell that fires 40%
        of the time reports green on a real defect three runs in five. */
+    /* A cold `pg` pool completes concurrent callers SERIALLY, so the window this cell is
+       about never opens. Measured at 1 of 8 racing cold against 8 of 8 warmed. */
+    await warmPool(s, 8);
+
     const ROUNDS = 5;
     const report: string[] = [];
     for (let round = 0; round < ROUNDS; round += 1) {

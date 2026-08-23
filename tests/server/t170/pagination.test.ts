@@ -52,6 +52,7 @@ import {
   accountActor,
   asPage,
   bind,
+  countOf,
   subMillisecondMicros,
   walkPages,
 } from "./contract";
@@ -255,7 +256,7 @@ describe("T170 AC2 — the cursor carries FULL-PRECISION `created_at`", () => {
       [target.kind, target.refId],
     );
     premise(
-      Number(distinct[0]?.n) === ids.length - tied.length + 1,
+      countOf(distinct[0]?.n, "count(distinct created_at)") === ids.length - tied.length + 1,
       `after collapsing ${tied.length} rows onto one timestamp there must be ` +
         `${ids.length - tied.length + 1} distinct values; there are ${String(distinct[0]?.n)}`,
     );

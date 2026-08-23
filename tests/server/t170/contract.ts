@@ -700,6 +700,20 @@ function asCount(value: unknown, where: string): number {
   return n;
 }
 
+/**
+ * The same guard, exported, because a bare `Number(row.n)` in a cell is a NaN waiting to
+ * be read as a value.
+ *
+ * `NaN` is a `number` to `typeof`, renders as `null` through `JSON.stringify`, and — the
+ * part that bit this file — **`NaN !== 0` is TRUE**. `subMillisecondMicros` guards its own
+ * premise with `micros.some((m) => m !== 0)`, so a single `NaN` would SATISFY the check
+ * that proves the cell can discriminate, and the cell would then measure nothing while
+ * reporting that it could. Every numeric read off a row goes through this.
+ */
+export function countOf(value: unknown, where: string): number {
+  return asCount(value, where);
+}
+
 export interface NoteRow {
   id: string;
   accountId: string;
@@ -976,8 +990,21 @@ export async function subMillisecondMicros(s: Scratch, noteIds: readonly string[
     "select id, (to_char(created_at, 'US')::int % 1000) as sub from note where id = any($1)",
     [[...noteIds]],
   );
-  const bySub = new Map(rows.map((r) => [String(r.id), Number(r.sub)]));
-  return noteIds.map((id) => bySub.get(id) ?? 0);
+  const bySub = new Map(
+    rows.map((r) => [String(r.id), asCount(r.sub, `to_char(created_at,'US') for note ${String(r.id)}`)]),
+  );
+  return noteIds.map((id) => {
+    const sub = bySub.get(id);
+    if (sub === undefined) {
+      throw new Error(
+        `No \`note\` row for ${id} when reading its sub-millisecond microseconds.\n` +
+          `  Returning 0 here would be worse than throwing: the caller's premise is ` +
+          `\`micros.some((m) => m !== 0)\`, so a missing row would silently weaken the ` +
+          `very check that proves the cell can discriminate.`,
+      );
+    }
+    return sub;
+  });
 }
 
 /**

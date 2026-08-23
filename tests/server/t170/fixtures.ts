@@ -360,6 +360,38 @@ export async function seedNotes(
   return ids;
 }
 
+/* --------------------- concurrency --------------------- */
+
+/**
+ * Opens `n` pool connections before a race, and ASSERTS that the race can then happen.
+ *
+ * ── why this exists, measured rather than reasoned ──
+ * A `pg` Pool holds ZERO connections when it is created and establishes them lazily. So
+ * `Promise.all` over `n` callers on a FRESH pool queues them behind the first handshake
+ * and **completes them serially**: the first caller's write lands before the second
+ * caller's read returns, the lost-update window never opens, and a cell written to catch a
+ * `SELECT`-then-`INSERT` CANNOT catch it however many rounds it drives.
+ *
+ * Measured here, eight hand-written `SELECT`-then-`INSERT` callers through the same handle
+ * every T170 function is given:
+ *
+ *     cold pool      1 of 8 callers saw "found 0"   -> the race did not open
+ *     warmed pool   24 of 24 across three runs      -> every caller raced
+ *
+ * That also explains the variance this suite measured before the warm-up existed: a
+ * `SELECT`-then-`INSERT` mutation on the `target` write opened the race on **2 of 5**
+ * rounds, and on the other three the pool simply had too few live connections at that
+ * moment. **The window was opening by accident, and the 40/60 was pool warmth rather than
+ * timing luck.**
+ *
+ * The rounds in the concurrency cells are KEPT beside this rather than replaced by it. The
+ * warm-up makes the window open; the rounds cover whatever residual variance the scheduler
+ * still has, and cost a few hundred milliseconds.
+ */
+export async function warmPool(s: Scratch, n: number): Promise<void> {
+  await Promise.all(Array.from({ length: n }, () => s.query("select 1")));
+}
+
 /* --------------------- premises --------------------- */
 
 /**

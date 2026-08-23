@@ -40,6 +40,7 @@ import {
   premise,
   seedAccount,
   seedBundle,
+  warmPool,
 } from "./fixtures";
 
 let s: Scratch;
@@ -108,6 +109,10 @@ describe("D-WAVE-01 — `target` is created on demand and stays single", () => {
        Each round gets its OWN bundle, so every round is genuinely a FIRST event with no
        `target` row — a second round against the same target would find the row already
        there and race nothing. */
+    /* Before the first round, and once: a cold pool serialises every caller and the race
+       cannot open at all. Measured at 1 of 8 racing cold against 8 of 8 warmed. */
+    await warmPool(s, 8);
+
     const ROUNDS = 5;
     const report: string[] = [];
     for (let round = 0; round < ROUNDS; round += 1) {
