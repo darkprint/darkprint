@@ -7414,6 +7414,30 @@ third of what it can decide is a defective artefact, not a documented limit.**
 
 ## Two guards can be in tension: the shape that satisfies one evades the other
 
+**REDISCOVERED INDEPENDENTLY by T150's blind author, in a different module, with a different
+helper, without having read this section — which is the second axis this finding never had.**
+Its `renderingsOf` scored **24 of 25 discriminating**, and the 25th passed: a driver payload on a
+**non-enumerable own property** was invisible to all four of its channels at once. `message` does
+not see it; `String(err)` is `name: message`; `JSON.stringify` walks enumerable properties only and
+renders `{}`; and the fourth channel held the property **NAME** while the leak was in its **VALUE**
+— *looking in the right place and comparing the wrong half*.
+
+**Its statement of why the shape is not exotic is the sharpest form of this rule so far: it is what
+a module reaches for when it is TRYING to satisfy D-13's hygiene clause**, because burying a driver
+payload where a structured log renders `{}` is precisely what the clause rewards. The clause and the
+scan are in tension and the scan was on the losing side.
+
+**EXTENSION, and it is new: widening the scan opens a FALSE-POSITIVE surface the original finding
+did not price.** A `stack` carries this repository's own paths and frame names, so a deny list that
+is safe over `message` alone can start matching path text once it walks `getOwnPropertyNames`. It
+checked both directions rather than only the one that motivated the widening — a real error thrown
+through frames named after the module's own functions, minted values resembling the test file's own
+path, and a payload nested two levels under `cause` behind a non-enumerable property. **28/28.**
+**A widened detector needs its false-positive axis measured, or the next real leak is buried in
+noise nobody reads.**
+
+
+
 **AC4's leak instrument measures RENDERINGS; D-13's hygiene clause measures ENUMERABILITY; and a
 leak can satisfy the second exactly while defeating the first.** T133's adversary put the caller's
 value on the error as a **non-enumerable own property** — `Object.keys` `[]`, `JSON.stringify`
