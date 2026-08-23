@@ -16,7 +16,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { barrelExports, BARREL, publishedBlock, requiredFn } from "./contract";
+import { barrelExports, BARREL, describe_, refusalForm, required, requiredFn } from "./contract";
 import {
   ABSENT_DIGEST,
   DIGEST,
@@ -47,6 +47,13 @@ interface RunReport {
   costUnits: number;
   durationMs: number;
   occurredAt: Date;
+}
+
+/** A published field removed, without a destructuring binding eslint reads as dead. */
+function without(report: RunReport, field: keyof RunReport): RunReport {
+  const copy: Record<string, unknown> = { ...report };
+  delete copy[field];
+  return copy as unknown as RunReport;
 }
 
 function wellFormed(overrides: Partial<RunReport> = {}): RunReport {
@@ -83,7 +90,12 @@ async function requireModule(criterion: string): Promise<void> {
 }
 
 /** Bound LAST, after every premise and every planting. */
-async function submit(scratch: Scratch, report: RunReport, criterion: string): Promise<void> {
+async function submit(
+  scratch: Scratch,
+  report: RunReport,
+  criterion: string,
+  actor?: unknown,
+): Promise<void> {
   const state = await barrelExports();
   if (state.state === "module-absent") {
     throw new Error(`${criterion} cannot be checked: ${BARREL} is absent (blind position).`);
@@ -92,9 +104,27 @@ async function submit(scratch: Scratch, report: RunReport, criterion: string): P
   const submitReport = requiredFn(mod, "submitReport", "submitReport(db, actor, report)");
   await submitReport(
     scratch.client.db,
-    { kind: "account", accountId: scratch.submitterId, handle: "t180-submitter" },
+    actor ?? { kind: "account", accountId: scratch.submitterId, handle: "t180-submitter" },
     report,
   );
+}
+
+/** D-180-03's published class, bound from the barrel. */
+async function refusedError(criterion: string): Promise<new (...a: never[]) => Error> {
+  const state = await barrelExports();
+  if (state.state === "module-absent") {
+    throw new Error(`${criterion} cannot be checked: ${BARREL} is absent (blind position).`);
+  }
+  const mod = (await import("@/lib/server/runs")) as unknown as Record<string, unknown>;
+  const cls = required(
+    mod,
+    "RunReportRefusedError",
+    "D-180-03: `RunReportRefusedError`, the module's own refusal class",
+  );
+  if (typeof cls !== "function") {
+    throw new Error(`${BARREL} exports \`RunReportRefusedError\` as ${describe_(cls)}, not a class.`);
+  }
+  return cls as new (...a: never[]) => Error;
 }
 
 describe("a report against an unknown digest is refused", () => {
@@ -112,13 +142,17 @@ describe("a report against an unknown digest is refused", () => {
   it("throws the admissible message and nothing else", async () => {
     const scratch = setup.require();
     await requireModule("AC1's refusal");
-    const form = publishedBlock().admissible[0];
-    expect(form, "the admissible form must parse; see surface.test.ts").toBeDefined();
-    const expected = form.replace("<digest>", ABSENT_DIGEST);
+    const expected = refusalForm("no release at digest").replace("<digest>", ABSENT_DIGEST);
+    const Refused = await refusedError("AC1's refusal");
 
     await expect(
       submit(scratch, wellFormed({ releaseDigest: ABSENT_DIGEST }), "AC1's refusal"),
     ).rejects.toThrow(expected);
+    /* D-180-04: the class as well as the message. A message pin alone is satisfied by a
+       driver fault whose text happens to match, which D-13 forbids surfacing at all. */
+    await expect(
+      submit(scratch, wellFormed({ releaseDigest: ABSENT_DIGEST }), "AC1's refusal"),
+    ).rejects.toBeInstanceOf(Refused);
   });
 
   /**
@@ -147,7 +181,7 @@ describe("a report against an unknown digest is refused", () => {
     /* The ADMISSIBLE message, not merely "something threw". A bare `rejects.toThrow()`
        is satisfied by any error at all — including this suite's own blind-position throw,
        which is how this cell was green against an absent module before the guard above. */
-    const expected = publishedBlock().admissible[0].replace("<digest>", ABSENT_DIGEST);
+    const expected = refusalForm("no release at digest").replace("<digest>", ABSENT_DIGEST);
     await expect(
       submit(scratch, wellFormed({ releaseDigest: ABSENT_DIGEST }), "AC1's leaves-nothing-behind"),
     ).rejects.toThrow(expected);
@@ -209,5 +243,108 @@ describe("acceptance claims no verification, and that weakness is the promise", 
     const rows = await reportsAt(scratch, DIGEST);
     const stored = rows.map((r) => Number(r.cost_units));
     expect(stored).toContain(submitted);
+  });
+});
+
+/* ============================================================
+   D-180-03 and D-180-04, ruled after the suite was written
+   ============================================================ */
+
+describe("an anonymous submission is refused before the write", () => {
+  /**
+   * D-180-03. `Actor`'s `anonymous` member carries no `accountId` and
+   * `run_report.account_id` is `NOT NULL`, so the state is structurally unstorable — and
+   * letting the database refuse it would surface a driver fault as a store failure, which
+   * D-13 forbids. The refusal is the module's own class, raised before the write.
+   */
+  it("throws the module's own class with the ruled message", async () => {
+    const scratch = setup.require();
+    await requireModule("D-180-03's anonymous refusal");
+    const expected = refusalForm("needs an account");
+    const Refused = await refusedError("D-180-03's anonymous refusal");
+
+    await expect(
+      submit(scratch, wellFormed(), "D-180-03's anonymous refusal", { kind: "anonymous" }),
+    ).rejects.toThrow(expected);
+    await expect(
+      submit(scratch, wellFormed(), "D-180-03's anonymous refusal", { kind: "anonymous" }),
+    ).rejects.toBeInstanceOf(Refused);
+  });
+
+  /**
+   * "Raised **before** the write" is the half a message pin cannot see.
+   *
+   * A module that attempted the insert and translated the constraint violation would throw
+   * the right class with the right text and still have gone to the database — which is the
+   * exact failure D-180-03 exists to prevent. The digest here EXISTS, so the trigger cannot
+   * do the refusing for the module the way it does at an absent digest: any row that lands
+   * is the module's own.
+   */
+  it("leaves no row behind, at a digest that exists", async () => {
+    const scratch = setup.require();
+    await requireModule("D-180-03's before-the-write ordering");
+    const before = await reportsAt(scratch, DIGEST);
+
+    await expect(
+      submit(scratch, wellFormed(), "D-180-03's before-the-write ordering", { kind: "anonymous" }),
+    ).rejects.toThrow();
+
+    expect(await reportsAt(scratch, DIGEST)).toHaveLength(before.length);
+  });
+});
+
+describe("a malformed report and an unknown digest are one class", () => {
+  /**
+   * D-180-04's well-formedness half.
+   *
+   * **The malformed PREDICATE is unruled and this cell does not invent one.** §T180 says a
+   * report is accepted "on well-formedness" without saying what that excludes, so the
+   * input here is the least ambiguous instance available: a required published field of
+   * `RunReport` is absent entirely. Anything subtler — a negative `inputSize`, an empty
+   * `provider` — would be this suite guessing a boundary the contract never drew, and
+   * `accepts a well-formed report it has every reason to disbelieve` above is the cell
+   * that keeps that guess from creeping in.
+   */
+  it("refuses a report missing a published field", async () => {
+    const scratch = setup.require();
+    await requireModule("D-180-04's well-formedness half");
+    const expected = refusalForm("malformed");
+    const Refused = await refusedError("D-180-04's well-formedness half");
+
+    const malformed = without(wellFormed(), "model");
+
+    await expect(submit(scratch, malformed, "D-180-04's well-formedness half")).rejects.toThrow(expected);
+    await expect(submit(scratch, malformed, "D-180-04's well-formedness half")).rejects.toBeInstanceOf(Refused);
+  });
+
+  /**
+   * The ruling's actual content: a caller must NOT be able to tell them apart by `instanceof`.
+   *
+   * Both cells above pin a class each, and both would pass against a module publishing two
+   * sibling classes with those two messages. This is the cell that forbids it — the two
+   * refusals are caught and their constructors compared to each other, so a split reds here
+   * and nowhere else. It is the difference between "each refusal has a class" and "a caller
+   * distinguishing them would be distinguishing two things it must handle identically".
+   */
+  it("gives both refusals the same constructor, not two siblings", async () => {
+    const scratch = setup.require();
+    await requireModule("D-180-04's one-class rule");
+
+    const caught: unknown[] = [];
+    for (const report of [
+      wellFormed({ releaseDigest: ABSENT_DIGEST }),
+      without(wellFormed(), "model"),
+    ]) {
+      try {
+        await submit(scratch, report, "D-180-04's one-class rule");
+        throw new Error("expected a refusal and got none");
+      } catch (e) {
+        caught.push(e);
+      }
+    }
+
+    const [unknownDigest, malformed] = caught as Error[];
+    expect(unknownDigest.message).not.toBe(malformed.message);
+    expect(malformed.constructor).toBe(unknownDigest.constructor);
   });
 });

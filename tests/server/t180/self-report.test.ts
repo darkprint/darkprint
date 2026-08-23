@@ -9,7 +9,39 @@
    account. The not-incremented half is T131's, per the ruling,
    and is not asserted here: a blind suite charging a criterion
    its module does not own produces a defect report against
-   somebody who followed the contract.
+   somebody who followed the contract. D-180-05 confirms it —
+   AC5's reference to T130's `validated` is withdrawn and
+   D-130-06 moved it to T131.
+
+   ── DECLARED GAP (D-180-05), in D-260-18's form ──
+
+   **NOT HELD: AC5 through T180's published surface.** D-180-05
+   rules it unobservable there and it is right. `submitReport`
+   returns `void` and `reportedCost` carries no submitter, so no
+   published return value carries the attribution. Every cell
+   below reaches PAST the barrel into `run_report.account_id`
+   with raw SQL. They drive the criterion, but they are coupled
+   to T005's schema rather than to T180's contract, and a
+   correct module that stored the submitter under another column
+   name would red them.
+
+   **Both escapes are refused, for reasons already on the record.**
+   Adding a submitter to `ReportedCost` would make the response
+   carry a fact about an individual run — the exact thing
+   `telemetry-boundary.test.ts`'s load-bearing cell forbids, and
+   the reading that keeps `Aside.tsx`'s copy true after T180.
+   Returning the row id from `submitReport` changes a published
+   `Promise<void>` for a test's convenience, which is the move
+   D-260-18 refused.
+
+   **WHAT IS HELD, so the gap is not mistaken for the whole:** the
+   column is written with the ACTOR's account and not the release
+   owner's, driven by a fixture where the two DISAGREE — the
+   stranger reports on the submitter's own release — so "wrote
+   the owner" and "hardcoded the submitter" are both excluded.
+   Under the mutation that writes the release owner instead of
+   the actor, both cells red. What is unheld is the coupling,
+   not the criterion.
    ============================================================ */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

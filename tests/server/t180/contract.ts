@@ -363,6 +363,72 @@ export function fieldNames(iface: PublishedInterface): string[] {
 }
 
 /* ============================================================
+   the refusal vocabulary, DERIVED from the whole section
+
+   **Not from the Published signatures block, and that is a
+   measured decision.** D-180-03 publishes `RunReportRefusedError`
+   and the message `submitReport: a run report needs an account.`;
+   D-180-04 adds `submitReport: the run report is malformed.` and
+   rules that both refusals share ONE class. None of the three
+   reached the signatures block — it still declares two
+   interfaces and two functions, and its admissible list still
+   carries only the digest form.
+
+   So a parse over the block alone reports ONE message where the
+   contract now rules THREE, and would make every new refusal
+   cell compare against `undefined`. Scanning the whole section
+   for `submitReport: ...` forms reads them wherever the
+   orchestrator writes them, and keeps reading them when the
+   block is updated. Same lesson as the inline-interface repair:
+   a derivation is only a derivation over the forms it can read.
+   ============================================================ */
+
+export const REFUSAL_FORMS_FLOOR = [
+  "submitReport: a run report needs an account.",
+  "submitReport: no release at digest `<digest>`.",
+  "submitReport: the run report is malformed.",
+] as const;
+
+/** Every `submitReport: ...` message form §T180 rules, in the block or in prose, sorted. */
+export function ruledMessages(): string[] {
+  const section = sectionOf(readFileSync(BACKEND_MD, "utf8"), "T180,");
+  const found = new Set<string>();
+  /**
+   * Two spellings, and the first version of this walker read only one.
+   *
+   * The Admissible block writes `` `"submitReport: ..."` `` — backticks around a quoted
+   * string — while D-180-03 and D-180-04 write `` `submitReport: ...` `` bare. And the
+   * digest form CONTAINS backticks of its own around `<digest>`, so a `[^`]*` body stops
+   * inside it and drops the one message that was already ruled. Measured: that regex
+   * returned the two new forms and lost the digest one entirely.
+   *
+   * So the match runs to the first `.` that closes the form — the character before the
+   * delimiter — rather than trying to find the delimiter itself.
+   */
+  for (const m of section.matchAll(/submitReport: .*?\.(?=[`"])/g)) found.add(m[0]);
+  const out = [...found].sort();
+  if (out.length === 0) {
+    throw new Error(
+      "§T180 rules no `submitReport: ...` message form. Every refusal cell compares against " +
+        "one of these, and an empty set makes them vacuous. Broken test, not a failed criterion.",
+    );
+  }
+  return out;
+}
+
+/** The one ruled form containing `needle`, or a broken-test throw naming what was found. */
+export function refusalForm(needle: string): string {
+  const hits = ruledMessages().filter((m) => m.includes(needle));
+  if (hits.length !== 1) {
+    throw new Error(
+      `§T180 rules ${hits.length} \`submitReport\` message forms containing "${needle}"; ` +
+        `this suite is written against exactly one. Parsed: ${JSON.stringify(ruledMessages())}.`,
+    );
+  }
+  return hits[0];
+}
+
+/* ============================================================
    AC6's naming rule, DERIVED from the section
 
    §T180: "a test asserts no key in the response shape contains

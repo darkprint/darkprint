@@ -20,7 +20,10 @@ import {
   MEASUREMENT_WORDS_FLOOR,
   published,
   publishedBlock,
+  REFUSAL_FORMS_FLOOR,
+  required,
   requiredFn,
+  ruledMessages,
   signature,
 } from "./contract";
 
@@ -107,6 +110,24 @@ describe("the parse of §T180 agrees with the floor", () => {
   it("parses AC6's forbidden words and they match the floor", () => {
     expect(measurementWords()).toEqual([...MEASUREMENT_WORDS_FLOOR]);
   });
+
+  /**
+   * Three refusal forms, and the block publishes ONE of them.
+   *
+   * D-180-03 and D-180-04 rule two more messages and a class, in PROSE — the Published
+   * signatures block still declares two interfaces and two functions, and its admissible
+   * list still carries only the digest form. Measured, not assumed: the parser's
+   * `declarations` is `[]` and its `admissible` has length 1.
+   *
+   * So this cell reads the whole section, and the assertion below records the divergence
+   * rather than hiding it: the block is owed an update, and until it lands a suite that
+   * parsed only the block would compare every new refusal against `undefined`.
+   */
+  it("rules three refusal forms, of which the block publishes one", () => {
+    expect(ruledMessages()).toEqual([...REFUSAL_FORMS_FLOOR]);
+    expect(publishedBlock().admissible).toHaveLength(1);
+    expect(publishedBlock().declarations).toEqual([]);
+  });
 });
 
 /* ============================================================
@@ -158,6 +179,27 @@ describe("the barrel publishes what §T180 declares", () => {
       expect(typeof requiredFn(mod, name, clause)).toBe("function");
     });
   }
+
+  /**
+   * D-180-03's class, which the signatures block does not declare.
+   *
+   * Its own cell rather than folded into the two function cells: an absent refusal class
+   * is a different failure from an absent `submitReport`, and the barrel could publish
+   * both functions and neither error.
+   */
+  it("exports `RunReportRefusedError`", async () => {
+    const state = await barrelExports();
+    if (state.state === "module-absent") {
+      throw new Error(
+        `\`RunReportRefusedError\` cannot be checked: ${BARREL} is absent (blind position).\n` +
+          `  the contract rules: D-180-03, the module's own refusal class`,
+      );
+    }
+    const mod = (await import("@/lib/server/runs")) as unknown as Record<string, unknown>;
+    const cls = required(mod, "RunReportRefusedError", "D-180-03: the module's own refusal class");
+    expect(typeof cls).toBe("function");
+    expect(Object.create((cls as { prototype: object }).prototype)).toBeInstanceOf(Error);
+  });
 
   /**
    * Arity, and the two ways it can be wrong are named because they read alike.
