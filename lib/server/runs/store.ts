@@ -82,33 +82,15 @@ function isMissingReleaseFault(err: unknown): boolean {
 }
 
 /**
- * Whether any release carries this digest.
- *
- * **The check is here as well as in the trigger, and the trigger is not the redundant
- * half.** AC1's refusal is `RunReportRefusedError` (D-180-04), so the answer has to be a
- * decision this module makes rather than a driver error a caller has to decode. Asking
- * first is what makes the ordinary case a refusal with the ruled message; the trigger stays
- * as the backstop for the race, where a release is deleted between this read and the
- * insert, and `insertRunReport` converts that too.
- *
- * `limit(1)` and a single column: nothing here needs the release, only whether one exists.
- */
-export async function releaseExistsAtDigest(db: Db, digest: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: schema.release.id })
-    .from(schema.release)
-    .where(eq(schema.release.digest, digest))
-    .limit(1);
-  return row !== undefined;
-}
-
-/**
  * Writes one accepted report.
  *
- * `costUnits` is stringified rather than passed as a number: the column is `numeric` and
- * the driver's parameter for it is text. `String(0.1)` is `"0.1"` — JavaScript's shortest
- * round-trip decimal — so what is stored is what the caller expressed, not a widened
- * binary approximation of it.
+ * `costUnits` is stringified because the column is `numeric` and drizzle types its
+ * parameter as `string` — the conversion is required to COMPILE, and removing it needs a
+ * cast. **It is not load-bearing at runtime and this comment says so rather than implying
+ * otherwise**: passing the number through a cast reds 0 of 40 cells, because `pg`
+ * serialises it with the same `toString` that `String` calls and `1e-7` round-trips either
+ * way. What keeps the decimal intact is the column being unqualified `numeric` (D-05-09),
+ * not this line.
  *
  * `created_at` is left to the column default. It is the registry's clock and the registry
  * is the only party entitled to set it; `occurredAt` is the caller's and goes to

@@ -14,7 +14,8 @@ import { describe, expect, it } from "vitest";
 import { DARKPRINT_CONFIG } from "@/lib/core/config";
 import { aggregateReports, modalGroup, percentile, withoutOutliers } from "./aggregate";
 import { RunReportRefusedError } from "./errors";
-import { wellFormed } from "./guards";
+import { submittingAccountId, wellFormed } from "./guards";
+import type { Actor } from "@/lib/server/policy";
 import type { RunReport } from "./types";
 
 const { minRuns, outlierZScore } = DARKPRINT_CONFIG.telemetry;
@@ -228,5 +229,41 @@ describe("well-formedness is structural, and stops exactly there (AC1)", () => {
     expect(() => wellFormed({ ...good, model: "" })).toThrow(
       "submitReport: the run report is malformed.",
     );
+  });
+});
+
+describe("who may submit (D-180-03)", () => {
+  it("refuses an anonymous caller", () => {
+    expect(() => submittingAccountId({ kind: "anonymous" })).toThrow(RunReportRefusedError);
+    expect(() => submittingAccountId({ kind: "anonymous" })).toThrow(
+      "submitReport: a run report needs an account.",
+    );
+  });
+
+  it("returns the account an ordinary caller is acting as", () => {
+    expect(submittingAccountId({ kind: "account", accountId: "acc-1", handle: "h" })).toBe("acc-1");
+  });
+
+  /**
+   * The one shape that separates DELEGATING to `can` from a hand-written
+   * `actor.kind !== "anonymous"`, and the reason `guards.ts` delegates.
+   *
+   * T140's `guards.ts` records the measurement: of seven non-owner actor shapes, exactly one
+   * reds under an identity check written by hand — an actor that INHERITS `accountId` from a
+   * prototype rather than carrying it as its own property. `can` reads every field through
+   * `Object.hasOwn` (T060's never-inherit ruling), so an inherited id never survives to the
+   * insert; a bare discriminant test reads whatever the prototype supplies and would write
+   * that id into `run_report.account_id`.
+   *
+   * Without this cell, replacing the whole `can` call with `claimed === null` reds nothing —
+   * measured, 0 of 40. The zero was a hole in this instrument rather than a fact about the
+   * guard.
+   */
+  it("refuses an actor whose accountId arrives from a prototype", () => {
+    const polluted = Object.create({ accountId: "borrowed" }) as Actor;
+    Object.assign(polluted, { kind: "account", handle: "h" });
+    expect(polluted.kind === "account" && polluted.accountId).toBe("borrowed");
+    expect(Object.hasOwn(polluted, "accountId")).toBe(false);
+    expect(() => submittingAccountId(polluted)).toThrow(RunReportRefusedError);
   });
 });

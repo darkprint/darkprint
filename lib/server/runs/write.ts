@@ -37,9 +37,8 @@
 
 import type { Db } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
-import { refusedForUnknownDigest } from "./errors";
 import { submittingAccountId, wellFormed } from "./guards";
-import { insertRunReport, releaseExistsAtDigest, withStore } from "./store";
+import { insertRunReport, withStore } from "./store";
 import type { RunReport } from "./types";
 
 /**
@@ -71,21 +70,26 @@ import type { RunReport } from "./types";
  * caller actually takes, so that arm has a witness instead of being a branch nothing
  * reaches. `withStore` opens no connection of its own.
  *
- * ── Why the digest is checked and the trigger is still there ──
- * The read answers the ordinary case with the ruled refusal. The trigger answers the race,
- * where a release is deleted between the read and the insert, and `insertRunReport`
- * converts that to the same refusal — so the two paths are indistinguishable to a caller,
- * which is what makes the check safe to add rather than a second source of truth.
+ * ── There is ONE existence check and it is the trigger's, which was MEASURED ──
+ * This function shipped a `releaseExistsAtDigest` read before the insert, on the reasoning
+ * that AC1's refusal should be a decision this module makes rather than a driver error a
+ * caller decodes. **Deleting that read reds nothing**: 0 of 40 cells, against a suite that
+ * drives the refusal through the published surface and asserts its exact sentence. Deleting
+ * the trigger's conversion in `store.ts` reds 1. So the conversion is the load-bearing half
+ * and the read was a second source for one decision — the shape the brief charges more than
+ * any other — costing a round trip on every accepted report to answer a question the
+ * database was already answering.
+ *
+ * D-05-01 put the enforcement in `run_report_release_exists` deliberately, because
+ * `release.digest` cannot carry a foreign key: an unchanged T110 fork yields a second
+ * release at the same digest, and uniqueness would make that fork unpublishable. The
+ * trigger raises SQLSTATE 23503 — the code a real foreign key raises — and `store.ts` turns
+ * exactly that into the published sentence.
  */
 export async function submitReport(db: Db, actor: Actor, report: RunReport): Promise<void> {
   return await withStore("submitReport", async () => {
     const accountId = submittingAccountId(actor);
     const checked = wellFormed(report);
-
-    if (!(await releaseExistsAtDigest(db, checked.releaseDigest))) {
-      throw refusedForUnknownDigest(checked.releaseDigest);
-    }
-
     await insertRunReport(db, accountId, checked);
   });
 }
