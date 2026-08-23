@@ -839,6 +839,24 @@ it. **Corroborating a good measurement with a bad one does not strengthen it.**
 
 It also corrected the figure: 3h36m, not four hours. I had rounded a number I had not read.
 
+## `git checkout HEAD -- <path>` REVERTS AN UNCOMMITTED FIX, and every gate after it measures the hole
+
+**Second instance in this project.** The technique is the obvious way to run a base-vs-mine
+comparison: `git checkout <base> -- <path>`, measure, `git checkout HEAD -- <path>` to restore.
+**`HEAD` is the last COMMIT, so it is older than any fix you have not committed.** The restore does
+not restore; it reverts.
+
+T091's implementer measured a security fix green, then ran that pair to attribute an unrelated red,
+and **the restore silently deleted the fix.** typecheck passed, lint passed, the suite went 29/29 —
+**all of it on code with the hole open**, and every one of those greens would have shipped as
+evidence for a fix that was not in the tree. It was caught by `git diff --stat` showing one changed
+file where there should have been three, not by anything failing.
+
+**RULE: commit a verified fix BEFORE measuring anything else.** *"I verified it earlier"* does not
+survive a checkout, and a green measured after one is a claim about a tree you no longer have.
+Prefer `git stash` or a second worktree for baselines; if you use checkout, **diff before you
+believe any number that follows it.**
+
 ## The shared S3 bucket is a CROSS-COMMIT, CROSS-WORKTREE CACHE, and it can serve one tenant's bytes to another
 
 **Measured by T091's implementer, twice, with controls.** `bundleDigest({dot, cardDigests})`
@@ -14868,6 +14886,8 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **`counter.write_failed` is the stated EDGE of exclusion 2, added at ratification.** T090's `serveFile` ruling audits a **failed** download-counter write through this module — *the serve succeeds, the failure is audited, the count is lost* — and every spelling naming a download collides with the exclusion. **This names the counter fault, not the download.** It records failures only, never volume, so no download is ever counted here. Without it that ruling had nowhere to write, which its finder charged rather than working around.
 
   **`save.add` and `save.remove` are DROPPED, and this is a product call I am making narrow and surfacing rather than settling.** Their finder put it exactly: *"an operator can enumerate every private bookmark any account ever made... and it is being made by whether two strings are in a constant."* A save is deliberately private and separate from a star (B-10), `listAudit` is operator-only (D-240-04), and including them converts a private surface into a break-glass-readable **reading history** — a privacy cost with no accountability benefit, since a bookmark affects nobody but its owner. **B-14's "every state change" is narrowed here deliberately**, which is a narrowing the owner may overturn.
+
+  **D-240-10 — `listAudit`'s operator check is a CHARGED COPY of `lib/server/policy`'s `isOperator`, and one line on T060's barrel deletes it.** `isOperator` is module-private: the policy barrel publishes `can`, `visibleTo` and three types. `can` genuinely cannot decide this — `Resource` has no `audit` kind — which is why D-240-04 put the permission here, and that left a deep import (D-01 forbids it) or a copy. **Copied WITH the attribution and carrying all three of T060's rulings**, on `naming/pg-error.ts`'s precedent against `cards/pg-error.ts`, because a weakened copy is worse than none: `can.ts:189` says in as many words that possession of the discriminant is not authority. **Recorded as a debt on T060 rather than absorbed silently — its own implementer asked for it to be charged.** Whoever next owns `lib/server/policy/**` publishes `isOperator` and the copy goes.
 
   **D-240-09 — the AMENDMENT PATH, which its finder identified as having no owner.** A closed set in `lib/server/observability/**` must grow — T170's AC7 already promises *"the operator can remove one, audited"*, T160 needs a validator-grant action, T250 needs re-attribution — and **every one of those tasks is Forbidden from editing the file that holds it.** So: **`AUDIT_ACTIONS` is amended by the ORCHESTRATOR at a task's dispatch, on that task's charge, exactly as an `Owns` grant is.** Pre-seeding members for callers that do not exist is refused for the reason the implementer gave: **a member no caller exists for is a guard that cannot fail.**
 
