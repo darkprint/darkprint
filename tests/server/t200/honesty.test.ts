@@ -158,7 +158,10 @@ describe("AC5 the two states are reachable, and each is reached where it belongs
 
   it("a listing with no `q` declares itself unordered and carries no evidence", async () => {
     setup.check();
-    const results = await search("searchBlueprints", s.db, anonymous, {});
+    /* `forks: "all"` because D-200-37 makes `rolled` the default, which hides the published
+       fork: this cell is about what an UNRANKED listing declares, not about a fork stance,
+       so the stance is named rather than inherited. */
+    const results = await search("searchBlueprints", s.db, anonymous, { forks: "all" });
     expect(results.hits.length, "the control: the shelf is not empty").toBe(4);
     expect(
       results.ordered,
@@ -174,7 +177,10 @@ describe("AC5 the two states are reachable, and each is reached where it belongs
 
   it("an explicitly sorted listing declares itself unordered too", async () => {
     setup.check();
-    const results = await search("searchBlueprints", s.db, anonymous, { sort: "slug" });
+    const results = await search("searchBlueprints", s.db, anonymous, {
+      forks: "all",
+      sort: "slug",
+    });
     expect(results.hits.length, "the control: the shelf is not empty").toBe(4);
     expect(
       results.ordered,

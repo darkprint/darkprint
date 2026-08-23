@@ -72,8 +72,21 @@ function levelsByKey(): Map<string, number> {
   ]);
 }
 
+/**
+ * Every AC2 probe carries `forks: "all"`, and it is not decoration.
+ *
+ * D-200-37 makes `rolled` the default, so an unqualified listing hides the published fork
+ * and the level sequence loses its fourth term. The criterion here is about ORDER and has
+ * no stake in the fork stance, so the stance is stated explicitly rather than inherited:
+ * `forks=all` means the same shelf whatever the default is ruled to be, which is what keeps
+ * these cells from moving the next time that ruling does.
+ *
+ * The fourth term matters. Three levels can be non-monotone; four make the ascending and
+ * descending orders further from the slug order, so a partial autonomy sort has less room
+ * to look like the default by accident.
+ */
 async function levelSequence(params: Record<string, string>): Promise<number[]> {
-  const results = await search("searchBlueprints", s.db, anonymous, params);
+  const results = await search("searchBlueprints", s.db, anonymous, { forks: "all", ...params });
   const levels = levelsByKey();
   return results.hits.map((hit) => levels.get(itemKey(hit.item)) ?? Number.NaN);
 }
@@ -106,7 +119,7 @@ describe("the shelf is arranged so that an autonomy ordering would be visible", 
 
   it("D-200-09 an unsorted listing is the registry's key order", async () => {
     setup.check();
-    const results = await search("searchBlueprints", s.db, anonymous, {});
+    const results = await search("searchBlueprints", s.db, anonymous, { forks: "all" });
     expect(
       results.hits.map((h) => (h.item as { slug: string }).slug),
       "D-200-09: a listing with no `q`, or one under an explicit `sort`, is the registry's " +
@@ -164,8 +177,10 @@ describe("AC2 popularity sorting stays out until event semantics are defined", (
   for (const value of POPULARITY) {
     it(`\`sort=${value}\` answers exactly what no \`sort\` answers`, async () => {
       setup.check();
-      const bare = fingerprint(await search("searchBlueprints", s.db, anonymous, {}));
-      const sorted = fingerprint(await search("searchBlueprints", s.db, anonymous, { sort: value }));
+      const bare = fingerprint(await search("searchBlueprints", s.db, anonymous, { forks: "all" }));
+      const sorted = fingerprint(
+        await search("searchBlueprints", s.db, anonymous, { forks: "all", sort: value }),
+      );
       expect(
         bare.keys.length,
         "the control: the unsorted shelf is four blueprints, so 'the two agree' is a claim " +
@@ -223,8 +238,10 @@ describe("D-200-23 a published `sort` value must be HONOURED, not merely tolerat
 
   it("`/blueprints` publishes one `sort` value, which is also its default", async () => {
     setup.check();
-    const bare = fingerprint(await search("searchBlueprints", s.db, anonymous, {}));
-    const sorted = fingerprint(await search("searchBlueprints", s.db, anonymous, { sort: "slug" }));
+    const bare = fingerprint(await search("searchBlueprints", s.db, anonymous, { forks: "all" }));
+    const sorted = fingerprint(
+      await search("searchBlueprints", s.db, anonymous, { forks: "all", sort: "slug" }),
+    );
 
     /* Said out loud rather than left as a gap a reader would mistake for coverage. D-200-10
        gives `/blueprints` exactly `sort=slug`, and D-200-09 makes an unsorted listing the

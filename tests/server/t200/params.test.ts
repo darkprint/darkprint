@@ -159,7 +159,10 @@ describe("AC1 every key on /blueprints narrows", () => {
 
   it("D-200-21 `q` does NOT reach `manifest.author`, and that distinction is the point", async () => {
     setup.check();
-    const all = await keys("searchBlueprints", {});
+    /* `forks: "all"` so this control counts the whole shelf under either answer to what the
+       `forks` default is (D-200-37 made it `rolled`). The cell is about a corpus field and
+       has no stake in the fork stance. */
+    const all = await keys("searchBlueprints", { forks: "all" });
     const hit = await keys("searchBlueprints", { q: w.authorToken });
     expect(
       all.length,
@@ -190,7 +193,10 @@ describe("AC1 every key on /blueprints narrows", () => {
 
   it("`cat` narrows to the blueprints in the category", async () => {
     setup.check();
-    const hit = await keys("searchBlueprints", { cat: w.catB });
+    /* `forks: "all"` because one of the two blueprints in this category IS the published
+       fork, and D-200-37's default would hide it — which would make this cell about the
+       fork stance rather than about `cat`. */
+    const hit = await keys("searchBlueprints", { forks: "all", cat: w.catB });
     expect([...hit].sort(), "AC1 `cat` did not narrow.").toEqual(
       [
         blueprintKey(w.alpha.handle, w.s2.bundle.slug),
