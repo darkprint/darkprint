@@ -404,15 +404,29 @@ describe("T110 AC1: forking a public bundle", () => {
     ).toEqual({ public: "public", private: "private" });
   });
 
-  /** `to.visibility` is honoured in the other direction too, so neither value is a default. */
-  it("honours an explicit public visibility", async () => {
+  /**
+   * `to.visibility` honoured in the other direction, and **asked of the forker whose account
+   * default CONTRADICTS it.**
+   *
+   * That detail is the cell, and it was found by mutation rather than by reading. Written against
+   * `forker`, whose default is already `public`, this cell was **vacuous against the one
+   * implementation it exists to catch**: a `forkBundle` that ignores `to.visibility` entirely and
+   * always takes the account default produced `public` here and passed. Measured — the mutation
+   * that drops the field reddened three other cells and not this one.
+   *
+   * Asked of `privateByDefault`, an explicit `"public"` is a value only an honoured `to.visibility`
+   * can produce. The `private` direction is already asked of `forker`, whose default is `public`,
+   * so each explicit value is now asserted against an actor whose default disagrees with it and
+   * neither cell can be satisfied by the default path.
+   */
+  it("honours an explicit public visibility, against a private-by-default forker", async () => {
     const env = await setup.require();
 
     const forkBundle = await boundForkBundle();
     const record = bundleRecordOf(
       await forkBundle(
         env.scratch.db,
-        env.forker.actor,
+        env.privateByDefault.actor,
         { ownerHandle: env.author.handle, slug: env.upstream.slug, version: "1.0.0" },
         { slug: "ac1-public", visibility: "public" },
       ),
@@ -420,10 +434,13 @@ describe("T110 AC1: forking a public bundle", () => {
     );
     expect(
       record.visibility,
-      "AC1: `to.visibility` was `public` and the fork came back " +
-        `${JSON.stringify(record.visibility)}. Asserted in both directions on purpose: a cell ` +
-        `that only ever asks for \`private\` passes against an implementation that ignores the ` +
-        `field and hard-codes one value.`,
+      `AC1: @${env.privateByDefault.handle} has \`default_visibility = private\`, asked for ` +
+        `\`public\` explicitly, and the fork came back ` +
+        `${JSON.stringify(record.visibility)}.\n` +
+        `  The actor is the private-by-default one deliberately: asked of a forker whose default ` +
+        `is already \`public\`, this cell cannot separate an honoured \`to.visibility\` from an ` +
+        `implementation that ignores the field and returns the account default — which is exactly ` +
+        `what it failed to separate before a mutation showed it.`,
     ).toBe("public");
   });
 });
