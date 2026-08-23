@@ -244,6 +244,7 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
 
     const rendered: string[] = [];
     const traceless: string[] = [];
+    const chained: string[] = [];
     for (const { barrel, name, ctor } of classes) {
       for (const args of SHAPES) {
         let instance: Error;
@@ -287,7 +288,7 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
         const inherited: string[] = [];
         for (const key in instance) if (key !== "name") inherited.push(key);
         if (inherited.length > 0) {
-          rendered.push(
+          chained.push(
             `${barrel}/${name} with ${args.length} arg(s): for-in=${JSON.stringify(inherited)} ` +
               `(inherited and enumerable — invisible to Object.keys and JSON.stringify)`,
           );
@@ -329,6 +330,28 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
         "{ enumerable: false })`; a plain `this.x =` in a constructor is always enumerable. The " +
         "field stays readable and `instanceof` is unaffected: only its appearance in a rendering " +
         "changes, which is the entire point of the clause.",
+    ).toEqual([]);
+
+    /* The THIRD list, and it is separate for the reason the paragraph below already gives about the
+       second. While this shared `rendered`'s assertion, an inherited enumerable property printed
+       under a message saying "enumerable OWN property" — which it is not — and advising "assign on
+       the prototype", **which is exactly what causes it**. A reader following that remedy makes the
+       red worse. Found by T240's adversary, reading the message against the clause rather than
+       against the code.
+
+       The remedy really is the opposite one, and the asymmetry is the whole point: an OWN property
+       is fixed by moving it to the prototype, an INHERITED one by making the prototype write
+       non-enumerable. One message cannot carry both without pointing half its readers the wrong way. */
+    expect(
+      chained,
+      "A published error class has an enumerable property on its PROTOTYPE CHAIN — not an own " +
+        "property, so `Object.keys` and `JSON.stringify` cannot see it and the two assertions " +
+        "above pass. `for...in` walks the chain, and so does anything that copies an object by " +
+        "iterating it. Do NOT 'assign on the prototype' to fix this: a plain " +
+        "`X.prototype.foo = ...` IS enumerable and is how this red is usually produced. Use " +
+        "`Object.defineProperty(X.prototype, 'foo', { value })`, which defaults to " +
+        "`enumerable: false`. `name` is excluded from this walk deliberately — 20 merged classes " +
+        "set it by plain assignment and a class name is public API, which is what `err.name` is for.",
     ).toEqual([]);
 
     /* Reported separately, and not because two lists are tidier. While these shared one assertion,
