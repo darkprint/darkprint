@@ -869,6 +869,32 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## A MUTATION ANCHOR CAN MATCH A DOCBLOCK — AND THIS REPOSITORY'S HOUSE STYLE IS WHAT MAKES THAT LIKELY
+
+**Second harness lie in the same task, in a new way, after the harness had been rebuilt specifically to refuse
+a mutation it could not prove applied.** A whitespace mutation reported **0 reds**, apparently saying five
+cells were vacuous against a real module.
+
+**The anchor `.trim().length === 0` appears in `body.ts`'s DOCBLOCK, not its code.** The gate reads
+`const trimmed = body.trim(); if (trimmed.length === 0)`. **The patch rewrote a sentence of prose, the file
+changed, and the harness passed it as applied.** Re-run against a code anchor it reds 4.
+
+**The guard verified that the FILE changed, not that CODE changed** — the same failure one level in from the
+regex that could not cross a `}`. **Strip comments before matching**, and audit every anchor: of twelve,
+exactly one was prose-only.
+
+**And the reason this is not a freak accident here: THIS REPOSITORY'S COMMENTS QUOTE THEIR OWN PREDICATES.**
+Explaining *why* a line is the way it is means naming the line, so the most carefully documented predicate is
+the one whose anchor is most likely to match its own explanation. **The house style that makes the code
+readable is the one that makes a mutation harness lie.**
+
+### AND A DEFAULT FAILURE MESSAGE CAN BE TRUE OF FOUR CALLERS AND NONSENSE ON THE FIFTH
+
+Same round. A shared `rejection()` helper explained every non-refusal in terms of `deleteNote`'s
+`Promise<void>` and a silent no-op — **true of the four writers, nonsense on `listNotes`**, where nothing is
+unwritten and the loss is at the read. **A red that reports a plausible wrong cause sends its reader to the
+wrong file, and that reader is a counterpart who cannot see the suite.** Two named sentences; the caller picks.
+
 ## A COLD `pg` POOL SERIALISES ITS FIRST CALLERS — WARM IT, OR THE RACE NEVER OPENS
 
 **THIRD AND FINAL FORM OF THIS RULE. The first two were wrong in different directions and the true cause
