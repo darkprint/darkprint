@@ -40,7 +40,16 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import { sources } from "./contract";
-import { BROWSERS, ROUTES, importsOf, parse, propertyNames } from "./partition";
+import {
+  BROWSERS,
+  ROUTES,
+  SHELVES,
+  importedFrom,
+  importsOf,
+  parse,
+  propertyNames,
+  readersCalledPerItem,
+} from "./partition";
 
 const REGISTRY_BARREL = "lib/server/registry/index.ts";
 
@@ -183,6 +192,90 @@ describe("T260's dependency: the batch graph reader `/blueprints` needs", () => 
         `"the defect this run has charged more than any other".\n\n` +
         `If \`graphsOf\` is not ready, the correct state is a red — this cell and the ones ` +
         `above — not a route that fills the gap locally.`,
+    ).toEqual([]);
+  });
+
+  /* ============================================================
+     D-260-21 — THE DEFECT THE BATCH READERS PREVENT, ASSERTED AS
+     A DEFECT RATHER THAN AS A SIGNATURE
+
+     The ruling says the batch readers are owed in the plural and
+     land together. It does NOT publish their signatures, and a
+     cell pinning a signature the orchestrator has not published
+     would red a correct T080 — so this asserts the shape of the
+     defect instead, which is decidable now and stays decidable
+     whatever the readers end up being called.
+
+     `scoresOf(db, actor, ownerHandle, slug)` is per blueprint and
+     costs three `db.select` calls; counted, not recalled. T200's
+     module pays that willingly because it only fetches scorecards
+     when `phase`, `autonomy` or `df` is set, AFTER the cheap
+     filters have narrowed the candidates. **This page cannot use
+     that escape**: under D-260-06 it filters client-side, so every
+     tile needs its scorecard on every request — and `df` is
+     `scores.autonomy.isDarkFactory`, so a tile is not even
+     filterable without one.
+
+     A batch call over an array of keys is invisible to this cell.
+     A per-item reader called once, for one blueprint, is invisible
+     too. What it finds is one round trip per tile, on a page whose
+     premise under AC1 is that the number of tiles grows between
+     deploys — correct and slow, with the slowness invisible on the
+     nine bundles the store holds.
+     ============================================================ */
+  it.each(SHELVES)("`/%s` does not read the registry once per row", (shelf) => {
+    const [source] = sources([ROUTES[shelf]], 1);
+    const sf = parse(source.path, source.raw);
+
+    /*
+     * THE READER LIST IS WHAT THIS FILE IMPORTS, NOT WHAT THE BARREL PUBLISHES.
+     *
+     * The first version of this cell matched bare call names against the barrel's exports
+     * and reddened `app/nodes/page.tsx` before the cutover had touched it. The match was
+     * `usersOf() inside .map()` — and it was real, and it was not a defect: `usersOf` is a
+     * method on `lib/core/archive/registry.ts`'s IN-MEMORY archive (SEAM-12) as well as a
+     * published reader on `lib/server/registry`. Same name, no cost in common. One is a
+     * property lookup on an object already in memory; the other is a query.
+     *
+     * A bare-name matcher cannot tell them apart, and after the cutover it would have been
+     * right for the wrong reason — which is worse than being wrong, because nobody rechecks
+     * a red that turns out to be correct. Gating on the import makes the two distinguishable
+     * and costs nothing: a call is only a database read if the name came from the barrel.
+     */
+    const imported = importedFrom(sf, "@/lib/server/registry");
+    const published = barrelExports();
+    const readers = imported.filter(
+      (name) => published.has(name) && !name.startsWith("with") && name !== "actorFrom",
+    );
+
+    /*
+     * THE PREMISE THAT STOPS THIS GOING VACUOUS FOREVER, and it fails outside the negative.
+     *
+     * Before the cutover the route imports no reader, so `readers` is empty and the check
+     * below is free. That is correct TODAY and would be a silent hole once the route stops
+     * reading `content/` — a cell measuring nothing while reporting green. So the two states
+     * are tied together: a route that has dropped the archive must have picked up a reader.
+     */
+    const stillOnTheArchive = importsOf(sf).some(
+      (specifier) => specifier === "@/lib/content" || specifier.startsWith("@/lib/content/"),
+    );
+    expect(
+      stillOnTheArchive || readers.length > 0,
+      `${ROUTES[shelf]} imports neither the build-time archive nor any published registry ` +
+        `reader, so this cell has nothing to measure and would report green forever. ` +
+        `Whichever source the shelf reads from, it reads from one of them.`,
+    ).toBe(true);
+
+    const perItem = readersCalledPerItem(sf, readers);
+    expect(
+      perItem,
+      `${ROUTES[shelf]} calls a published registry reader once per row: ${perItem.join(", ")}.\n\n` +
+        `D-260-21: the batch readers are owed precisely so this is not necessary. ` +
+        `\`scoresOf\` alone is three queries per blueprint, and this route renders per ` +
+        `request (D-260-05) over every row (D-260-06), so a per-tile read is one round trip ` +
+        `per tile on every load — growing with a registry that AC1 exists to let grow.\n\n` +
+        `If the batch readers are not ready, the correct state is the reds above, not a ` +
+        `loop that works on nine bundles.`,
     ).toEqual([]);
   });
 });

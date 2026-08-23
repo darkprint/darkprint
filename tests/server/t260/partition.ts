@@ -350,3 +350,95 @@ export function renderedText(sf: ts.SourceFile): string[] {
   walk(sf);
   return out;
 }
+
+/** The iteration constructs a per-item database read hides inside. */
+const ITERATORS = ["map", "forEach", "flatMap", "filter", "reduce", "some", "every", "find"];
+
+/**
+ * Calls to any of `readers` that sit inside a loop or an iterator callback.
+ *
+ * This is the N+1 shape and nothing else: a batch reader called once over an array of keys
+ * is invisible here, and a per-item reader called once for a single blueprint is too. What
+ * it finds is a reader invoked once per row — which on a page that renders per request
+ * (D-260-05) and holds every row (D-260-06) is one round trip per tile, growing with a
+ * registry whose whole premise under AC1 is that it grows.
+ *
+ * Returns `<reader> inside <construct>` strings so a red names both halves.
+ */
+export function readersCalledPerItem(
+  sf: ts.SourceFile,
+  readers: readonly string[],
+): string[] {
+  const out: string[] = [];
+
+  const enclosingIteration = (node: ts.Node): string | undefined => {
+    for (let cursor = node.parent; cursor !== undefined; cursor = cursor.parent) {
+      if (
+        ts.isForStatement(cursor) ||
+        ts.isForOfStatement(cursor) ||
+        ts.isForInStatement(cursor) ||
+        ts.isWhileStatement(cursor) ||
+        ts.isDoStatement(cursor)
+      ) {
+        return ts.SyntaxKind[cursor.kind];
+      }
+      /* An arrow or function expression is only an iteration if something ITERATES with it.
+         A callback handed to `Promise.all` is not a loop; `rows.map(...)` is. */
+      if (ts.isArrowFunction(cursor) || ts.isFunctionExpression(cursor)) {
+        const call = cursor.parent;
+        if (
+          call !== undefined &&
+          ts.isCallExpression(call) &&
+          ts.isPropertyAccessExpression(call.expression) &&
+          ITERATORS.includes(call.expression.name.text)
+        ) {
+          return `.${call.expression.name.text}()`;
+        }
+      }
+    }
+    return undefined;
+  };
+
+  const walk = (node: ts.Node) => {
+    if (ts.isCallExpression(node)) {
+      const callee = node.expression;
+      const name = ts.isIdentifier(callee)
+        ? callee.text
+        : ts.isPropertyAccessExpression(callee)
+          ? callee.name.text
+          : undefined;
+      if (name !== undefined && readers.includes(name)) {
+        const construct = enclosingIteration(node);
+        if (construct !== undefined) out.push(`${name}() inside ${construct}`);
+      }
+    }
+    node.forEachChild(walk);
+  };
+  walk(sf);
+  return out;
+}
+
+/** The named bindings a file imports from `specifier`. Empty when it imports nothing from it. */
+export function importedFrom(sf: ts.SourceFile, specifier: string): string[] {
+  const out: string[] = [];
+  const walk = (node: ts.Node) => {
+    if (
+      ts.isImportDeclaration(node) &&
+      ts.isStringLiteral(node.moduleSpecifier) &&
+      node.moduleSpecifier.text === specifier
+    ) {
+      const clause = node.importClause;
+      if (clause?.namedBindings !== undefined) {
+        if (ts.isNamedImports(clause.namedBindings)) {
+          for (const element of clause.namedBindings.elements) out.push(element.name.text);
+        }
+        /* `import * as registry` binds every export under one name, so every call through
+           it is a call to a reader. Reported as the namespace so a red says which shape. */
+        if (ts.isNamespaceImport(clause.namedBindings)) out.push(`*:${clause.namedBindings.name.text}`);
+      }
+    }
+    node.forEachChild(walk);
+  };
+  walk(sf);
+  return out;
+}
