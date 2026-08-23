@@ -101,9 +101,16 @@ describe("AC4: a signed-in reader's card star lands on the ACCOUNT", () => {
      incidental form, which is what cost T263's author 29 of 31 cells.
      ============================================================ */
   it("the component reaches the saves route", () => {
+    /*
+     * TERMINATED, not a substring. `"/api/account/saves/migrate"` CONTAINS
+     * `"/api/account/saves"`, so a plain `includes` was satisfied by the migration constant
+     * alone — the two cells below were not independent, and a component that only migrated and
+     * never saved would have passed both. Found by mutation: unwiring `SAVES_PATH` reddened
+     * ZERO of 170, a false zero produced by one string being a prefix of the other.
+     */
     const source = read(FAVORITE_STAR);
     expect(
-      source.code.includes("/api/account/saves"),
+      /["'`]\/api\/account\/saves["'`]/.test(source.code),
       "`FavoriteStar` does not reach `/api/account/saves` in code. Checked on comment-stripped " +
         "text on purpose: the route is named in a comment as well, and a scan that read " +
         "comments would call that wiring and pass against a component that saves nowhere.",
