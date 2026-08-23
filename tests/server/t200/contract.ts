@@ -75,6 +75,18 @@ export type PublishedName = keyof typeof PUBLISHED;
 /** Four, in the order the block publishes them. */
 export const PUBLISHED_NAMES = Object.keys(PUBLISHED) as PublishedName[];
 
+/**
+ * D-200-32's two additions to the published block, approved and recorded there rather than
+ * left as undeclared exports "because the published block is what the next task binds to".
+ *
+ * Bound here for exactly that reason and no more: T220, T260 and T261 list this task under
+ * Depends on, and a name the block publishes is a name a consumer may reach for. Nothing in
+ * this suite asserts what they DO — they are transport, their behaviour is exercised through
+ * the routes, and a blind cell pinning the shape of a helper it has never seen would be
+ * pinning its own guess.
+ */
+export const PUBLISHED_ADDITIONS = ["searchParams", "withSearchErrors"] as const;
+
 /** The three readers. `reembedRelease` is the writer and takes no actor. */
 export const READER_NAMES: readonly PublishedName[] = [
   "searchBlueprints",

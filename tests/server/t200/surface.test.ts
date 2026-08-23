@@ -17,6 +17,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   PUBLISHED,
+  PUBLISHED_ADDITIONS,
   PUBLISHED_NAMES,
   ROUTES,
   ROUTE_NAMES,
@@ -46,6 +47,24 @@ describe("the four published functions", () => {
          wrong kind without a second assertion here. */
       const fn = await bind(name);
       expect(typeof fn, PUBLISHED[name]).toBe("function");
+    });
+  }
+});
+
+describe("D-200-32 the two approved additions to the block", () => {
+  for (const name of PUBLISHED_ADDITIONS) {
+    it(`\`${name}\` is exported`, async () => {
+      const mod = await loadSearch();
+      expect(
+        typeof mod[name],
+        `D-200-32 records \`searchParams\` and \`withSearchErrors\` as additions to the ` +
+          `published block: three routes need ONE first-wins reading of a query string, and ` +
+          `three copies is three places for it to stop being first-wins. Both are transport ` +
+          `and both are this task's own.\n` +
+          `  Recorded in the block rather than left undeclared, because the block is what the ` +
+          `next task binds to — T220, T260 and T261 all list this task under Depends on.\n` +
+          `  found: ${Object.keys(mod).sort().join(", ") || "(nothing)"}`,
+      ).toBe("function");
     });
   }
 });

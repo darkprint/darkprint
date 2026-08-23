@@ -241,15 +241,35 @@ describe("D-200-09 the evidence grammar", () => {
       "the premise: the tag actually narrowed the query's own hit set",
     ).toBeLessThan(withoutFilter.hits.length);
 
-    const fields = evidenceFields(withFilter);
+    const withFields = evidenceFields(withFilter);
+    const withoutFields = evidenceFields(withoutFilter);
+
+    /* Asserted as a SUBSET rather than as "the string `tag` is absent", and the difference
+       is D-200-30: evidence keys are FIELD names while facet keys are URL PARAMETER names,
+       deliberately not unified. The URL says `tag` and the field is `manifest.tags`, so a
+       cell excluding the literal `"tag"` would pass against evidence citing `tags:` — the
+       assertion would admit exactly the output its comment names. The subset form needs no
+       spelling at all. */
+    const introduced = withFields.filter((f) => !withoutFields.includes(f));
     expect(
-      fields,
+      introduced,
       `D-200-09: \`evidence\` is rank-affecting matches only — "a filter does not appear, ` +
         `because it did not move the order". That clause is what stops \`evidence\` ` +
-        `degenerating into a restatement of the query. \`tag\` narrowed this shelf and ` +
-        `changed no hit's position relative to the others that survived.\n` +
-        `  Fields cited: ${JSON.stringify(fields)}`,
-    ).not.toContain("tag");
+        `degenerating into a restatement of the query. The tag narrowed this shelf and moved ` +
+        `no surviving hit relative to another, so adding it may REMOVE evidence, never ` +
+        `introduce a field the same query without it did not cite.\n` +
+        `  with the filter:    ${JSON.stringify(withFields)}\n` +
+        `  without the filter: ${JSON.stringify(withoutFields)}`,
+    ).toEqual([]);
+
+    /* And the spelling-specific half kept beside it, covering both spellings D-200-30
+       distinguishes, so a red says which one arrived. */
+    expect(
+      withFields.filter((f) => ["tag", "tags"].includes(f.toLowerCase())),
+      `the same clause, said the other way: neither the URL's spelling (\`tag\`, the facet ` +
+        `key) nor the field's (\`tags\`, the manifest member) may appear as an evidence ` +
+        `field here. D-200-30 keeps the two spellings distinct on purpose.`,
+    ).toEqual([]);
   });
 });
 

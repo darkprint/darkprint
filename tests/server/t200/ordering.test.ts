@@ -186,6 +186,66 @@ describe("AC2 popularity sorting stays out until event semantics are defined", (
   }
 });
 
+/* --------------------- the positive obligation, which nothing had ruled --------------------- */
+
+describe("D-200-23 a published `sort` value must be HONOURED, not merely tolerated", () => {
+  it("`sort=name` and `sort=phase` answer different orders on /cards", async () => {
+    setup.check();
+    const byName = await search("searchCards", s.db, anonymous, { sort: "name" });
+    const byPhase = await search("searchCards", s.db, anonymous, { sort: "phase" });
+
+    const nameOrder = byName.hits.map((h) => itemKey(h.item));
+    const phaseOrder = byPhase.hits.map((h) => itemKey(h.item));
+
+    /* Both premises. The same SET under both, or one of them has quietly become a filter;
+       and more than two hits, or "different orders" is a coin flip. */
+    expect(nameOrder.length, "the premise: the card shelf is four").toBe(4);
+    expect(
+      [...phaseOrder].sort(),
+      "the premise: `sort` reorders a shelf and never changes what is on it",
+    ).toEqual([...nameOrder].sort());
+
+    expect(
+      nameOrder,
+      `D-200-23, and this cell exists because nothing published REQUIRED it. D-200-19 exempts ` +
+        `\`sort\` from AC1's filter clause; D-200-10 publishes the value sets and the ` +
+        `fallback for an unrecognised one — and between them a module that ignores \`sort\` ` +
+        `entirely satisfied every ruling and every other cell in this file.\n` +
+        `  A published value set whose values need not do anything is a decoration, and ` +
+        `publishing one while leaving it inert is worse than not publishing it, because a ` +
+        `client builds a control on it.\n` +
+        `  The four cards are named "Fetch the input", "Plan the work", "Run the suite" and ` +
+        `"Write the code", and their phases are none, planning, testing and implementation — ` +
+        `so name order and lifecycle order genuinely disagree.\n` +
+        `  by name:  ${JSON.stringify(nameOrder)}\n  by phase: ${JSON.stringify(phaseOrder)}`,
+    ).not.toEqual(phaseOrder);
+  });
+
+  it("`/blueprints` publishes one `sort` value, which is also its default", async () => {
+    setup.check();
+    const bare = fingerprint(await search("searchBlueprints", s.db, anonymous, {}));
+    const sorted = fingerprint(await search("searchBlueprints", s.db, anonymous, { sort: "slug" }));
+
+    /* Said out loud rather than left as a gap a reader would mistake for coverage. D-200-10
+       gives `/blueprints` exactly `sort=slug`, and D-200-09 makes an unsorted listing the
+       registry's key order — which T080 sorts by slug. So the published value and the
+       default are the same order, no fixture can distinguish "honoured" from "ignored" on
+       this surface, and this cell asserts only that they agree. The positive obligation is
+       measured on `/cards`, above, which has four values. */
+    expect(
+      sorted,
+      "`sort=slug` is `/blueprints`'s only published value and its default order, so this " +
+        "asserts agreement rather than obedience.",
+    ).toEqual(bare);
+    expect(
+      SORT_VALUES.searchBlueprints,
+      "if a second value is ever published for this surface, D-200-23's obligation becomes " +
+        "measurable here and this cell must grow a discriminating pair the way the /cards " +
+        "one has.",
+    ).toEqual(["slug"]);
+  });
+});
+
 /* --------------------- the same rule, held to the evidence --------------------- */
 
 describe("AC2 no hit cites autonomy or a popularity counter as the reason for its rank", () => {

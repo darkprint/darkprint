@@ -74,11 +74,33 @@ export interface World {
   cardPlan: CardFixture;
   cardImpl: CardFixture;
   cardTest: CardFixture;
+  /**
+   * A card declaring NO phase, so `phase=unphased` has something to select.
+   *
+   * D-200-31: `unphased` is `NodeBrowser`'s sentinel for "cards that declare no phase"
+   * (`const UNPHASED = "unphased"`, and `passes()` reads it as `node.phases.length > 0`).
+   * It is accepted as a filter VALUE and is deliberately absent from the `phase` facet,
+   * because a sentinel in the offered vocabulary makes that list neither a vocabulary nor a
+   * projection of the hits — the same third thing D-200-24 refused for the five core phases.
+   */
+  cardUnphased: CardFixture;
 
   /** In s1.title, s2.title and s3.summary. Three hits, two sharing one field. */
   queryToken: string;
   /** In s2's summary and nowhere else. */
   soloToken: string;
+  /** In s1's manifest `description` and nowhere else. D-200-21 puts `description` in scope. */
+  descToken: string;
+  /**
+   * In s2's manifest `author` and nowhere else, and it must match NOTHING.
+   *
+   * D-200-21 keeps `manifest.author` out of the corpus while `ownerHandle` is in, and the
+   * distinction is the whole point: `ownerHandle` is the registry's answer to who owns
+   * this, and `manifest.author` is the bundle's own stale claim, which T250's
+   * re-attribution deliberately left unrewritten. Searching the second matches handles
+   * that hold no accounts.
+   */
+  authorToken: string;
   /** In nothing at all, and not a substring of anything seeded. */
   missToken: string;
 
@@ -142,6 +164,44 @@ function autonomy(level: number, autonomyClass: string, isDarkFactory: boolean):
   };
 }
 
+/**
+ * No search token may be a substring of anything else the world plants, and no two may
+ * overlap.
+ *
+ * A blacklist asserted with `includes` answers "do these characters appear" where the claim
+ * is "did this match", and the two differ exactly when a token is a substring of admissible
+ * content. `mark()` makes a collision very unlikely and "very unlikely" is not the claim a
+ * filter cell makes, so it is checked rather than trusted — and a collision is a broken
+ * fixture, raised here, not a red charged to somebody else's module.
+ */
+function assertTokensAreDiscriminating(
+  tokens: Record<string, string>,
+  others: readonly string[],
+): void {
+  const collisions: string[] = [];
+  const entries = Object.entries(tokens);
+  for (const [name, token] of entries) {
+    for (const other of others) {
+      if (other.includes(token)) {
+        collisions.push(`${name} ${JSON.stringify(token)} is inside ${JSON.stringify(other)}`);
+      }
+    }
+    for (const [otherName, otherToken] of entries) {
+      if (otherName === name) continue;
+      if (otherToken.includes(token)) {
+        collisions.push(`${name} ${JSON.stringify(token)} is inside ${otherName}`);
+      }
+    }
+  }
+  if (collisions.length > 0) {
+    throw new Error(
+      `A T200 search token is a substring of other fixture content, so a filter cell would ` +
+        `match for the wrong reason.\n  ${collisions.join("\n  ")}\n` +
+        `  This is a broken fixture. Re-mint the identifier; do not relax the cell.`,
+    );
+  }
+}
+
 export async function buildWorld(s: Scratch): Promise<World> {
   /* The published core vocabulary, seeded as rows rather than assumed.
      D-200-14 takes `/cards`'s `type` and `risk` facets and `/terms`'s `kind` facet from
@@ -161,6 +221,8 @@ export async function buildWorld(s: Scratch): Promise<World> {
 
   const queryToken = mark("qtok");
   const soloToken = mark("stok");
+  const descToken = mark("dtok");
+  const authorToken = mark("atok");
   const missToken = mark("mtok");
   const tagA = mark("taga");
   const tagB = mark("tagb");
@@ -195,6 +257,18 @@ export async function buildWorld(s: Scratch): Promise<World> {
     riskMarkers: ["irreversible-action"],
     name: "Run the suite",
   });
+  /* No phase at all, which is the normal state for an intake or a retrieval step and is
+     never a gap (`lib/core/analysis/phase-coverage.ts`). It declares `agent` and carries no
+     risk marker, so it changes no other filter cell's expected set. */
+  const cardUnphased = await insertCard(s, {
+    ownerId: alpha.id,
+    id: mark("card-unphased"),
+    phases: [],
+    type: "agent",
+    requiresHuman: false,
+    riskMarkers: [],
+    name: "Fetch the input",
+  });
 
   const shelf = async (
     slug: string,
@@ -202,6 +276,8 @@ export async function buildWorld(s: Scratch): Promise<World> {
       owner: AccountFixture;
       title: string;
       summary: string;
+      description?: string;
+      author?: string;
       tags: readonly string[];
       category: string;
       cards: readonly CardFixture[];
@@ -227,6 +303,8 @@ export async function buildWorld(s: Scratch): Promise<World> {
         slug,
         title: o.title,
         summary: o.summary,
+        description: o.description,
+        author: o.author,
         tags: o.tags,
         category: o.category,
       }),
@@ -253,6 +331,7 @@ export async function buildWorld(s: Scratch): Promise<World> {
     owner: alpha,
     title: `First shelf ${queryToken}`,
     summary: "A blueprint that plans.",
+    description: `A longer account of the first shelf, ${descToken}.`,
     tags: [tagA],
     category: catA,
     cards: [cardPlan],
@@ -267,6 +346,7 @@ export async function buildWorld(s: Scratch): Promise<World> {
     summary: `A blueprint that implements, ${soloToken}.`,
     tags: [tagB],
     category: catB,
+    author: authorToken,
     cards: [cardImpl],
     covered: ["implementation"],
     level: 1,
@@ -291,13 +371,44 @@ export async function buildWorld(s: Scratch): Promise<World> {
     summary: "A blueprint forked from the first.",
     tags: [],
     category: catB,
-    cards: [cardPlan],
+    cards: [cardPlan, cardUnphased],
     covered: ["planning"],
     level: 2,
     autonomyClass: "supervised",
     isDarkFactory: false,
     lineage: { ownerId: alpha.id, slug: slug1, version: "1.0.0" },
   });
+
+  /* Proved rather than assumed, and it became necessary at D-200-21: the blueprint corpus
+     now includes `slug` AND `ownerHandle`, so a query token that happened to be a substring
+     of a minted slug or handle would make a filter cell green for the wrong reason. Each
+     search token is checked against every other string this world plants. */
+  assertTokensAreDiscriminating(
+    { queryToken, soloToken, descToken, authorToken, missToken },
+    [
+      slug1,
+      slug2,
+      slug3,
+      slug4,
+      alpha.handle,
+      beta.handle,
+      tagA,
+      tagB,
+      tagC,
+      catA,
+      catB,
+      cardPlan.cardId,
+      cardImpl.cardId,
+      cardTest.cardId,
+      cardUnphased.cardId,
+      cardPlan.ref,
+      cardImpl.ref,
+      cardTest.ref,
+      cardUnphased.ref,
+      CORE_ONTOLOGY.version,
+      ...CORE_ONTOLOGY.terms.map((term) => term.id),
+    ],
+  );
 
   return {
     ontology,
@@ -310,8 +421,11 @@ export async function buildWorld(s: Scratch): Promise<World> {
     cardPlan,
     cardImpl,
     cardTest,
+    cardUnphased,
     queryToken,
     soloToken,
+    descToken,
+    authorToken,
     missToken,
     tagA,
     tagB,

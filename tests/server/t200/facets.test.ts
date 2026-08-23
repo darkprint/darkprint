@@ -172,19 +172,30 @@ describe("D-200-14 /cards facets are T030's vocabulary and not the hit set", () 
     ).toBe(true);
   });
 
-  it("`phase` offers every phase the indexed cards declare, at least", async () => {
+  it("`phase` is exactly T080's `phases()` — the phases present, not the five core terms", async () => {
     setup.check();
+    const expected = await phases(db(), anonymous);
     const results = await search("searchCards", s.db, anonymous, {});
+    expect([...expected].sort(), "the control: T080 answers the three the cards declare").toEqual([
+      "implementation",
+      "planning",
+      "testing",
+    ]);
     expect(
-      [...(results.facets.phase ?? [])].sort(),
-      `AC3: the three indexed cards declare \`planning\`, \`implementation\` and \`testing\`, ` +
-        `and every one of them has to be offered as a filter value.\n` +
-        `  Asserted as a superset rather than as equality on purpose: D-200-14 names \`type\` ` +
-        `and \`risk\` as coming from T030's vocabulary and is silent about \`phase\`, so ` +
-        `both the five core phases and the three present ones are live readings and this ` +
-        `cell must not pick one. The distinction that matters to AC3 — vocabulary, not ` +
-        `projection — is asserted below instead.`,
-    ).toEqual(expect.arrayContaining(["implementation", "planning", "testing"]));
+      sameSet(results.facets.phase ?? [], expected),
+      `D-200-24 pins this to the DESCRIPTIVE reading, and T080's own docblock rules it for ` +
+        `the whole tree: "the set of phases that are here, not a fraction of five". Offering ` +
+        `all five when three are present reports a fraction of five by the back door — which ` +
+        `is doc 2 §1.1's prohibition arriving through a filter panel.\n` +
+        `  It answered ${JSON.stringify([...(results.facets.phase ?? [])].sort())}.`,
+    ).toBe(true);
+    expect(
+      results.facets.phase ?? [],
+      `D-200-31: \`unphased\` is \`NodeBrowser\`'s SENTINEL, not a term. It is accepted as a ` +
+        `filter value and is deliberately NOT offered here — a sentinel in the list makes ` +
+        `the facet neither a vocabulary nor a projection of the hits, which is the third ` +
+        `thing D-200-24 just refused for the five core phases.`,
+    ).not.toContain("unphased");
   });
 });
 
@@ -271,16 +282,33 @@ describe("AC3 the facets are a vocabulary, not a projection of the hit set", () 
 
   it("filtering /cards to one phase still offers the other phases", async () => {
     setup.check();
+    const expected = await phases(db(), anonymous);
     const results = await search("searchCards", s.db, anonymous, { phase: "testing" });
     expect(
       results.hits.map((h) => itemKey(h.item)),
       "the premise: `phase=testing` narrows to the single card declaring it",
     ).toEqual([`card:${w.cardTest.ref}`]);
     expect(
-      [...(results.facets.phase ?? [])].sort(),
-      "AC3: the surviving card declares only `testing`, and the other two phases must " +
-        "still be offered — this holds under either reading of where `phase`'s vocabulary " +
-        "comes from, which is why it is the cell that carries the criterion for this key.",
-    ).toEqual(expect.arrayContaining(["implementation", "planning", "testing"]));
+      sameSet(results.facets.phase ?? [], expected),
+      "AC3: the surviving card declares only `testing`, and the vocabulary does not shrink " +
+        "with the shelf. This is the same equality as above, asserted where the hit set can " +
+        "no longer produce it.",
+    ).toBe(true);
+  });
+
+  it("filtering /cards to `unphased` still offers the whole phase vocabulary", async () => {
+    setup.check();
+    const expected = await phases(db(), anonymous);
+    const results = await search("searchCards", s.db, anonymous, { phase: "unphased" });
+    expect(
+      results.hits.map((h) => itemKey(h.item)),
+      "the premise: the sentinel selects the one card that declares no phase",
+    ).toEqual([`card:${w.cardUnphased.ref}`]);
+    expect(
+      sameSet(results.facets.phase ?? [], expected),
+      `D-200-31's asymmetry, held at the one place it is observable: the value was ACCEPTED ` +
+        `and it is still not OFFERED. A module that resolved the asymmetry by adding ` +
+        `\`unphased\` to the facet passes the AC1 cell for this value and fails here.`,
+    ).toBe(true);
   });
 });

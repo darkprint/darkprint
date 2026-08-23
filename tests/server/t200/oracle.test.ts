@@ -171,7 +171,7 @@ describe("the vocabularies the AC3 cells compare against are non-empty", () => {
     expect([...found].sort()).toEqual([w.catA, w.catB].sort());
   });
 
-  it("`phases()` carries the three the world's cards declare", async () => {
+  it("`phases()` carries the three the world's cards declare, and nothing else", async () => {
     setup.check();
     const found = await phases(db(), anonymous);
     expect([...found].sort()).toEqual(["implementation", "planning", "testing"]);
@@ -225,12 +225,29 @@ describe("the merged vocabulary the /cards and /terms facets come from is publis
 });
 
 describe("the three cards are indexed", () => {
-  it("`cards()` returns exactly the three this suite planted", async () => {
+  it("`cards()` returns exactly the four this suite planted", async () => {
     setup.check();
     const found = await cards(db(), anonymous);
     expect(found.map((c) => c.ref).sort()).toEqual(
-      [w.cardPlan.ref, w.cardImpl.ref, w.cardTest.ref].sort(),
+      [w.cardPlan.ref, w.cardImpl.ref, w.cardTest.ref, w.cardUnphased.ref].sort(),
     );
+  });
+
+  it("the fourth card declares no phase, which is what `phase=unphased` selects", async () => {
+    setup.check();
+    const found = await cards(db(), anonymous);
+    const unphased = found.find((c) => c.ref === w.cardUnphased.ref);
+    expect(
+      (unphased?.card as { phases?: unknown } | undefined)?.phases,
+      "D-200-31: `unphased` is `NodeBrowser`'s sentinel and `passes()` reads it as " +
+        "`node.phases.length > 0`. A card with no phase is the normal state for an intake " +
+        "or a retrieval step and is never a gap.",
+    ).toEqual([]);
+    expect(
+      (await phases(db(), anonymous)).includes("unphased"),
+      "and it must not put a phase called `unphased` into T080's vocabulary, or the facet " +
+        "equality cell would pass for the wrong reason",
+    ).toBe(false);
   });
 
   it("each card sits in exactly the phase its filter cell expects", async () => {

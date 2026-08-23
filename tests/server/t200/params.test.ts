@@ -118,6 +118,64 @@ describe("AC1 every key on /blueprints narrows", () => {
     ).toEqual([blueprintKey(w.alpha.handle, w.s2.bundle.slug)]);
   });
 
+  it("D-200-21 `q` reaches `description`, which the pinned corpus makes searchable", async () => {
+    setup.check();
+    const hit = await keys("searchBlueprints", { q: w.descToken });
+    expect(
+      hit,
+      "D-200-21 pins the blueprint corpus at `manifest.title`, `summary`, `description`, " +
+        "`category`, `tags`, plus `cardRefs`, `slug` and `ownerHandle`. `description` is " +
+        "optional on `BundleManifest` and only one blueprint here carries one.",
+    ).toEqual([blueprintKey(w.alpha.handle, w.s1.bundle.slug)]);
+  });
+
+  it("D-200-21 `q` reaches `slug`, so an address a caller already knows finds its blueprint", async () => {
+    setup.check();
+    const hit = await keys("searchBlueprints", { q: w.s3.bundle.slug });
+    expect(
+      hit,
+      "D-200-21 puts `slug` in the corpus on the argument that a caller searching for an " +
+        "address they know and getting nothing back is the worse answer.",
+    ).toEqual([blueprintKey(w.alpha.handle, w.s3.bundle.slug)]);
+  });
+
+  it("D-200-21 `q` reaches `ownerHandle`, which `/blueprints` publishes no filter for", async () => {
+    setup.check();
+    const hit = await keys("searchBlueprints", { q: w.alpha.handle });
+    expect(
+      [...hit].sort(),
+      "D-200-21: the objection to matching `q` against the owner — that it turns a text " +
+        "search into an owner filter — does not survive the fact that `/blueprints` " +
+        "publishes no owner filter for it to duplicate. Three of the four blueprints here " +
+        "are alpha's and the fourth is beta's.",
+    ).toEqual(
+      [
+        blueprintKey(w.alpha.handle, w.s1.bundle.slug),
+        blueprintKey(w.alpha.handle, w.s2.bundle.slug),
+        blueprintKey(w.alpha.handle, w.s3.bundle.slug),
+      ].sort(),
+    );
+  });
+
+  it("D-200-21 `q` does NOT reach `manifest.author`, and that distinction is the point", async () => {
+    setup.check();
+    const all = await keys("searchBlueprints", {});
+    const hit = await keys("searchBlueprints", { q: w.authorToken });
+    expect(
+      all.length,
+      "the control: the shelf is not empty, so an empty answer below is about this token",
+    ).toBe(4);
+    expect(
+      hit,
+      "D-200-21 keeps `manifest.author` OUT while `ownerHandle` is IN: `ownerHandle` is the " +
+        "registry's answer to who owns this, and `manifest.author` is the bundle's own stale " +
+        "claim, which T250's re-attribution deliberately left unrewritten. Searching the " +
+        "second matches handles that hold no accounts.\n" +
+        "  One blueprint here carries this token in `manifest.author` and nowhere else. It " +
+        "must find nothing, and the control above proves the shelf is not simply empty.",
+    ).toEqual([]);
+  });
+
   it("`tag` narrows to the blueprints carrying the tag", async () => {
     setup.check();
     const all = await keys("searchBlueprints", {});
@@ -210,13 +268,13 @@ describe("AC1 every key on /cards narrows", () => {
     expect(hit, `AC1 \`q\` did not narrow on cards; the shelf is ${all.length}.`).toEqual([
       `card:${w.cardTest.ref}`,
     ]);
-    expect(all.length, "the card shelf is empty, so `q` narrowing it proves nothing").toBeGreaterThan(1);
+    expect(all.length, "the card shelf is empty, so `q` narrowing it proves nothing").toBe(4);
   });
 
   it("`type` narrows to the cards of that node type", async () => {
     setup.check();
     const hit = await keys("searchCards", { type: "tool" });
-    expect(hit, "AC1 `type` did not narrow. One of the three cards declares `type: tool`.").toEqual([
+    expect(hit, "AC1 `type` did not narrow. One of the four cards declares `type: tool`.").toEqual([
       `card:${w.cardImpl.ref}`,
     ]);
   });
@@ -227,12 +285,24 @@ describe("AC1 every key on /cards narrows", () => {
     expect(hit, "AC1 `phase` did not narrow on cards.").toEqual([`card:${w.cardImpl.ref}`]);
   });
 
+  it("`phase=unphased` selects the cards declaring no phase at all", async () => {
+    setup.check();
+    const hit = await keys("searchCards", { phase: "unphased" });
+    expect(
+      hit,
+      "D-200-31: `unphased` is `NodeBrowser`'s sentinel — `const UNPHASED = \"unphased\"`, " +
+        "and `passes()` reads it as `node.phases.length > 0`. It is a VALUE of a listed key, " +
+        "so AC1 binds to it, and it is deliberately absent from the `phase` FACET, which " +
+        "`facets.test.ts` holds separately.",
+    ).toEqual([`card:${w.cardUnphased.ref}`]);
+  });
+
   it("`human=1` narrows to the cards where a person acts", async () => {
     setup.check();
     const hit = await keys("searchCards", { human: "1" });
     expect(
       hit,
-      "AC1 `human=1` did not narrow. One of the three cards carries `requiresHuman: true`.",
+      "AC1 `human=1` did not narrow. One of the four cards carries `requiresHuman: true`.",
     ).toEqual([`card:${w.cardImpl.ref}`]);
   });
 
@@ -241,7 +311,7 @@ describe("AC1 every key on /cards narrows", () => {
     const hit = await keys("searchCards", { risk: "1" });
     expect(
       hit,
-      "AC1 `risk=1` did not narrow. One of the three cards carries a non-empty `riskMarkers`.",
+      "AC1 `risk=1` did not narrow. One of the four cards carries a non-empty `riskMarkers`.",
     ).toEqual([`card:${w.cardTest.ref}`]);
   });
 });

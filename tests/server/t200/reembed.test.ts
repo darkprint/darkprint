@@ -334,11 +334,29 @@ describe("AC6 unchanged content re-embeds to the same vector", () => {
 /* --------------------- the absent release --------------------- */
 
 describe("D-200-13 an absent release is a no-op, and the state proves it", () => {
+  /**
+   * Both cells START FROM AN EMPTY TABLE, and that is the whole design.
+   *
+   * The obvious shape — embed, then call with a bad argument, then assert nothing changed —
+   * is VACUOUS against the two resolvers it is supposed to catch. A resolver that ignores
+   * the digest finds the release by `bundleId` and sees its row already there; one that
+   * ignores `bundleId` finds it by digest and sees the same. Either writes nothing, and the
+   * cell passes against exactly the defect it names.
+   *
+   * Emptying the table first removes the alibi: under a resolver keyed on only one half of
+   * the pair, the bad call now WRITES. And each cell ends by driving the good call, so a red
+   * cannot be explained by a writer this suite broke with its own `delete`.
+   */
+  async function emptyTheVectors(): Promise<void> {
+    await s.query("delete from release_embedding");
+    await s.query("delete from card_version_embedding");
+  }
+
   it("a digest nothing carries writes no row", async () => {
     setup.check();
-    await reembed(c.bundleId, c.alone.digest);
+    await emptyTheVectors();
     const before = { releases: await releaseEmbeddings(s), cards: await cardVersionEmbeddings(s) };
-    expect(before.releases.length, "the premise: there is state to leave alone").toBeGreaterThan(0);
+    expect(before.releases, "the premise: the table is empty, so a row appearing is the probe's").toEqual([]);
 
     let threw: unknown;
     try {
@@ -353,9 +371,13 @@ describe("D-200-13 an absent release is a no-op, and the state proves it", () =>
       `D-200-13: an absent release is a NO-OP returning \`void\`, not a throw — it matches the ` +
         `registry's value-not-refusal convention, and a typed refusal would change this ` +
         `barrel's published class list, which a blind author cannot bind to until it exists.\n` +
-        `  Asserted on what the writer LEFT BEHIND, element-wise and column by column, rather ` +
-        `than on whether it threw: a call that inserts a row and THEN throws satisfies every ` +
-        `\`rejects.toThrow()\` a reviewer would write.` +
+        `  The bundle id here is REAL and the digest is not, so a resolver keyed on ` +
+        `\`bundleId\` alone writes a row here and one keyed on the pair does not. The table ` +
+        `was emptied first for exactly that reason: with the row already present, both ` +
+        `resolvers write nothing and this cell measures neither.\n` +
+        `  Asserted on what the writer LEFT BEHIND rather than on whether it threw: a call ` +
+        `that inserts a row and THEN throws satisfies every \`rejects.toThrow()\` a reviewer ` +
+        `would write.` +
         (threw === undefined ? "" : `\n  It also threw: ${String(threw)}`),
     ).toEqual(before);
 
@@ -363,17 +385,27 @@ describe("D-200-13 an absent release is a no-op, and the state proves it", () =>
       threw,
       `D-200-13 makes this a no-op returning \`void\`. It threw ${String(threw)}.`,
     ).toBeUndefined();
+
+    /* The control, inside the cell: the good call still works, so the emptiness above is
+       the probe declining to write rather than this suite having broken the writer. */
+    await reembed(c.bundleId, c.alone.digest);
+    expect(
+      (await releaseEmbeddings(s)).length,
+      "the control: the same writer, given the pair it resolves, writes",
+    ).toBe(1);
   });
 
   it("a bundle id nothing carries writes no row", async () => {
     setup.check();
-    await reembed(c.bundleId, c.alone.digest);
+    await emptyTheVectors();
     const before = { releases: await releaseEmbeddings(s), cards: await cardVersionEmbeddings(s) };
+    expect(before.releases, "the premise: the table is empty").toEqual([]);
 
     let threw: unknown;
     try {
-      /* A well-formed uuid that names no bundle: the resolution fails on the row rather
-         than on the type, which is the state a stale trigger actually produces. */
+      /* A well-formed uuid that names no bundle, so the resolution fails on the ROW rather
+         than on the type — the state a stale trigger actually produces. The digest is real
+         and belongs to another bundle, so a resolver keyed on the digest alone writes here. */
       await reembed("00000000-0000-4000-8000-000000000000", c.alone.digest);
     } catch (cause) {
       threw = cause;
@@ -383,10 +415,17 @@ describe("D-200-13 an absent release is a no-op, and the state proves it", () =>
     expect(
       after,
       `D-200-13: \`(bundleId, digest)\` resolves a release or it does not, and not resolving ` +
-        `is a value rather than a refusal. The digest here IS a real one — it just belongs to ` +
-        `another bundle — so a resolver keyed on the digest alone writes a row here and a ` +
-        `resolver keyed on the pair does not.` +
+        `is a value rather than a refusal. D-200-03 warns that the pair is NOT unique — the ` +
+        `unique index is \`(bundle_id, version)\` and \`bundleDigest\` carries no version — ` +
+        `so \`getRelease\` takes the first row of the pair, and a resolver that reached for ` +
+        `the digest alone would answer a release belonging to a different bundle.` +
         (threw === undefined ? "" : `\n  It also threw: ${String(threw)}`),
     ).toEqual(before);
+
+    await reembed(c.bundleId, c.alone.digest);
+    expect(
+      (await releaseEmbeddings(s)).length,
+      "the control: the same writer, given the pair it resolves, writes",
+    ).toBe(1);
   });
 });
