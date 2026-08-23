@@ -869,6 +869,29 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## A 2x2 GREEN IN ALL FOUR CELLS IS NOT TWO REDUNDANT GUARDS — IT IS A PROPERTY NOTHING OBSERVES
+
+**T170's implementer widened a guard, had the widening ratified, and then checked whether anything in its
+suite could see it.** Both guards kept: green. Either one removed: green. **BOTH removed: GREEN.**
+
+Two guards that look like belt-and-braces are indistinguishable from two guards **neither of which is
+reachable**, and the 2x2 is what separates them — the **both-removed** cell is the one that carries the
+information, and it is the one nobody runs. A single mutation on either guard reports the same zero and reads
+as *redundant*.
+
+**Why it was unreachable here, and the shape is general: every other refusal in the file was decided by a
+DIFFERENT predicate** — authorship — so the guard under test was never what denied. Reaching it needed an
+actor who **is** the note's author and is **not** the parent's owner, and no fixture produced one because the
+author owned every bundle in them. **The fixture set had a hole exactly the shape of the guard.** The cell that
+reaches it: a stranger owns a public bundle, the author writes a note, **the bundle goes private** — authorship
+still grants, so only the parent gate stands between them. With that cell the 2x2 reads green / green / green /
+**RED**.
+
+**Third zero in one task that was about the instrument rather than the code** — a guard whose domain is the
+ref and excludes an unmerged module, a guard asserting a class is PUBLISHED rather than that it FIRES, and now
+a property nothing observes. **In none of the three was the answer *the code is fine*. In all three it was
+*write the thing that would have seen it*.**
+
 ## A `rejects`/`resolves` WRAPPER IS A BLIND-POSITION LAUNDERER
 
 **Found by T180's blind author in its OWN suite, against the absent module, and it is the shape the rule it was
@@ -15074,6 +15097,13 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   * **`toggleStar` performs NO visibility check, and `getSignals` does NOT create the `target` row.** Both negative, which is why neither would ever have landed on its own — **there is nothing to add, so nothing gets added, and the criterion stays untestable.** T140's precedent governs the first (*a save of a target that does not exist is accepted and never listed*). **`Depends on: T080` remains unexplained and cannot be about visibility**: T080 publishes no lookup by `bundle.id` — which is what `target.ref_id` holds — and neither `BlueprintSummary` nor `CardSummary` carries `ownerId` or `visibility`, so `visibleTo` cannot be called from anything it returns.
 
   **A NEGATIVE RULING IS THE KIND THAT NEVER LANDS.** Three of these four are statements that something does not happen, and a document grows by addition — so the rulings most likely to live only in a message are exactly the ones that leave a criterion untestable. Worth stating as a general hazard rather than as four items.
+
+  **D-WAVE-09 — THREE MODULES SHARE ONE `(kind, ref_id)` GRAIN AND GIVE TWO DIFFERENT ANSWERS FOR A TARGET THAT DOES NOT EXIST. THE DIVERGENCE IS DELIBERATE.** Found by T170's implementer when its own paging fixture posted to a card with no `card_version` row behind it and **`postNote` refused** — correctly, under D-WAVE-04's read check: a card with no versions has no parent, so there is no pair to ask `can` about.
+
+  * **T140 (`saveTarget`) and T150 (`toggleStar`): ACCEPT AND NEVER LIST.** *A save of a target that does not exist is accepted and never listed*, and `toggleStar` performs **no** visibility check (D-WAVE-07).
+  * **T170 (`postNote`, `editNote`, `deleteNote`, `voteNote`): REFUSE AT THE DOOR.**
+
+  **Each is right for its own criterion — a note has an authorization question a save does not** — and **nothing in either ruling said so.** A blind author holding both precedents can reasonably build *a note on a nonexistent card is accepted*, **which would red a module following D-WAVE-04.** That is the two-halves-right-about-their-own-source shape arriving through two rulings of mine that were each correct alone.
 
   **D-WAVE-08 — T160's rulings, landed. FOURTH session today to wait on a ruling I made in a message to its counterpart.** I ruled all of these to T160's implementer and to nobody else, having named the defect twice in the same afternoon. **The blind author is blind to the implementer by construction — the document is the ONLY channel between them, and it is the one I keep failing to use.**
 
