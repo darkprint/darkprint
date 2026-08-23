@@ -1362,6 +1362,25 @@ measured. **The orchestrator made the same error on three misattributed reds thi
 it four hours later while holding the sentence.** *What made the difference was not thinking harder. It was
 repeating the measurement.*
 
+## A CONTENT-ADDRESSED SHARED STORE CANNOT BE THE INSTRUMENT FOR *DID THIS RUN WRITE IT*
+
+**T250's implementer found its freeze cell GREEN against a storage that kept nothing.** It read the shared
+`S3_BUCKET`, **which already held objects at those digests from other runs** — F5's cross-commit cache — and
+**content-addressed keys are precisely what makes a shared store unable to answer *did THIS run write it*.**
+An earlier run's bytes are byte-identical to this one's by construction.
+
+**And the sentence it wrote about its own cell is the one to keep: *the comment I had written beside the
+assertion named that hazard while the assertion admitted it.*** A hazard named in prose beside an assertion
+that does not exclude it **reads as coverage to everyone downstream** — third instance of that shape in this
+project. **Import into a store that begins EMPTY.**
+
+### AND A DIGEST CHECK BEFORE A VERSION CHECK MAKES A VERSION MUTATION UNREACHABLE
+
+Same round. A cell driving `version-not-higher` failed on its first draft **because `publish` checks the DIGEST
+before the VERSION** — so a bundle already carrying the seeded release **refuses as a `conflict` however high a
+second release is.** The modified release has to be the bundle's **first**. **The order of two guards decides
+which one a mutation can reach.**
+
 ## A CELL CAN BE GUARDED BY THE DATABASE RATHER THAN BY THE MODULE, AND READ AS COVERAGE FOR NEITHER
 
 **T150's blind author found the cell it was sent to find: `moves nothing, over every table the schema
@@ -19808,6 +19827,18 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **D-250-17 — T250 PUBLISHES `SeedStoreError`, sealed, form `` `<operation>: the seed store failed.` ``.** `runImport(db, plan)` takes a `Db`, so `tests/store-modules-seal-their-faults.test.ts` puts the module in its domain the day it merges — **and its domain is a git REF, so it says nothing until then, and `error-hygiene`'s count moves in the MERGE COMMIT and must be DERIVED there rather than carried.** Its blind author deliberately does **not** assert barrel exhaustiveness, **because that would forbid the very class the repository's own guard requires** — the correct call, and the reason is worth keeping.
 
 - **D-250-18 — `release.manifest.author` KEEPS THE ORIGINAL HANDLE. Re-attribution moves OWNERSHIP, not AUTHORSHIP.** Raised as unruled rather than asserted, and it is digest-neutral either way since the manifest sits outside `bundleDigest`. **But the registry did not write these blueprints, and a manifest saying it did would be a false claim on the one surface that records who authored a thing.** AC4 is about `bundle.owner_id` and says nothing about the manifest. **This is the same direction as D-250-06 and D-250-11: a handle naming no account is the honest end state, not a gap to be filled** — the site prints `lupo` as the author of a bundle the registry owns, and both facts are true.
+
+- **D-250-19 — `ImportPlan.cards[].visibility` IS AN OUTPUT, NOT AN INPUT.** Measured rather than read: **`runImport` never consumes it** — a card's visibility is the bundle's and `publishCard` decides it. **The published block reads as though the plan DRIVES the write, so a blind author would reasonably assert the plan can make a card private.** The field **DESCRIBES what the write will produce.**
+
+- **D-250-20 — `githubId` IS THE STRING `"0"`.** D-250-04 wrote a number and **`upsertFromGitHub` types it `string`** over a text column. **Spelled here so both halves agree**; the sentinel argument is unchanged, since GitHub ids start at 1 and no real signup reaches this row.
+
+- **D-250-21 — `runImport` MAY TAKE AN OPTIONAL THIRD PARAMETER `storage: ObjectStorage | undefined = undefined`, and `Function.length` STAYS 2.** It mirrors `publish`'s fourth for the same reason, and **it is pinned by a cell: spelling it `?` reds that cell** (an optional parameter still counts in `Function.length`; `= undefined` is the form that does not). **Kept, because the freeze cell is unmeasurable without it** — see D-250-22.
+
+- **D-250-22 — RE-ATTRIBUTION IS OWNERSHIP-ONLY, CONFIRMED, AND ITS IMPLEMENTER REACHED D-250-18 INDEPENDENTLY WITH A STRONGER THIRD GROUND THAN MINE.** Manifest `author:` and card `author:` bytes are untouched. Its grounds: D-250-11 invents nobody; D-250-06 already rules an orphaned namespace the honest end state and **a manifest `author: lupo` is the same object one field over**; and — the one I did not have — **D-90-03's byte preservation plus `publishCard`'s byte-for-byte comparison make rewriting a stored `source` the exact harm that ruling exists to prevent.** Re-attributing the text would also **put the store and `content/` permanently out of agreement.**
+
+- **D-250-23 — `scripts/module-hook.ts` IS GRANTED TO T250, and `package.json` gains `"seed:import"`.** Its implementer found ~60 lines of `registerHooks` plumbing duplicated from `scripts/generate-bundles.ts` **because `scripts/` holds no module either file may import** — Node resolution plumbing with no decision in it. **It did not create one and asked instead**, which is right: a shared file invented mid-task is how two owners appear on one path.
+
+- **★ D-250-24 — ON THIS TASK, FOUR MUTATIONS PRODUCE SKIPS RATHER THAN REDS, AND `skipped > 0` IS THE INTERESTING NUMBER.** Dropping the vocabulary, rethrowing `DuplicateOntologyVersionError`, naming an unpublished ontology version, and skipping the `changeHandle` claim **all break the import as a whole** — and the import is all-or-nothing through one hook, **so a broken import SILENCES all eleven cells rather than redding one.** **A driver reading failed-counts alone scores every one of those as *nothing objected*.** Baseline skipped is 0, which is the only thing that makes it legible. **This is the `skipped > 0` rule arriving as a property of the SUBJECT rather than of a harness.**
 
 - **Acceptance criteria:** (1) after import each of the nine bundles hashes to the digest the site prints today; (2) re-running is idempotent; (3) no counted figure is written as a stored counter; (4) every imported bundle is owned by the registry handle and no fictional account exists; (5) all imported counters read zero; (6) the two private cards import as private and are not published into the library.
 - **Open:** the twelve seeded community notes are written in six invented voices — are they imported under the registry handle, rewritten, or dropped? And the six profiles are the only demonstration of the social surface; `/u/{handle}` has one page after this.
