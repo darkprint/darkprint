@@ -8,22 +8,28 @@
    measurement T140's blind author made against a live driver on
    `save`, on tables bound the same way.
 
-   ── Three classes, and why each is this module's own ──
+   ── TWO classes here, and one consumed from elsewhere ──
    D-140-02 ruled T140's single decision belonged to another module
    because `NotAccountOwnerError` was *precisely* that decision.
-   None of the three below is:
+   **D-WAVE-04 rules the same for AC3 and AC7**, and this file
+   originally minted a `NoteDeniedError` for them — the synonym the
+   precedent forbids. It is gone; `guards.ts` consumes the accounts
+   class and says why.
+
+   What remains is what this module genuinely authors:
 
    * **`NoteStoreError`** — the fault boundary every module has.
-   * **`NoteDeniedError`** — AC3's anonymous post and AC7's wrong
-     author. `NotAccountOwnerError` is about an ACCOUNT's owner and
-     an anonymous poster owns no account, so borrowing it would
-     render a refusal about authority as one about identity. The
-     decision itself is still T060's: this class carries `can`'s
-     answer out, and never re-derives it.
    * **`NoteBodyError`** — AC5, which requires the limit be STATED.
      A refusal a caller cannot act on fails the criterion, so the
      number travels in the message rather than in a caller's memory
-     of the documentation.
+     of the documentation. D-WAVE-04 pins the spelling, and pins it
+     against `InvalidNoteError`, which a dispatch had named and the
+     document never did.
+
+   Neither is re-exported from anywhere and neither re-exports:
+   `tests/error-hygiene.test.ts` counts every error class exported
+   from every barrel, so a re-export would be counted twice and the
+   equality would move by two for one new class.
 
    ── The message form, and the one place it admits a number ──
    The convention has shipped four times — `archive/errors.ts` is
@@ -64,24 +70,6 @@
 export class NoteStoreError extends Error {
   constructor(operation: string, cause: unknown) {
     super(`${operation}: the notes store failed.`, { cause });
-  }
-}
-
-/**
- * The actor may not do this to this note (AC3, AC7).
- *
- * **It is also what an absent note answers, and that is deliberate.** A caller that could
- * tell "no such note" from "not yours" could walk note ids to learn which exist — including
- * ids under a private blueprint it may not read, which is the oracle AC1 closes at the
- * listing and would reopen here. The two cases are one answer, so neither is distinguishable
- * from the other by the shape of the refusal or by how long it takes to arrive.
- *
- * Carries no note id and no account id: naming the note in a refusal would hand back the
- * existence fact the shared answer exists to withhold.
- */
-export class NoteDeniedError extends Error {
-  constructor(operation: string) {
-    super(`${operation}: denied.`);
   }
 }
 
@@ -127,7 +115,6 @@ export class NoteBodyError extends Error {
    itself be an own enumerable property, which `Object.keys(err) === []` does not allow. */
 for (const [ctor, name] of [
   [NoteStoreError, "NoteStoreError"],
-  [NoteDeniedError, "NoteDeniedError"],
   [NoteBodyError, "NoteBodyError"],
 ] as const) {
   Object.defineProperty(ctor.prototype, "name", {

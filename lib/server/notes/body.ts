@@ -5,37 +5,47 @@
    function, so the rule has one site rather than two that can
    drift apart.
 
-   ── TBD: THE NUMBER IS NOT THIS TASK'S TO CHOOSE ──
-   TBD: what is the note body limit? Nothing in the tree states
-   one. Grepped `lib`, `app`, `components` and `tests` at
-   `3290981`: `lib/server/limits/config.ts` publishes
-   `MAX_UPLOAD_KB` and `MAX_PARAM_DEPTH` and no body cap;
+   ── THE NUMBER WAS NOT THIS TASK'S TO CHOOSE, AND IS PENDING ──
+   Nothing in the tree stated one. Grepped `lib`, `app`,
+   `components` and `tests` at `3290981`:
+   `lib/server/limits/config.ts` publishes `MAX_UPLOAD_KB` and
+   `MAX_PARAM_DEPTH` and no body cap;
    `components/blueprint/Comments.tsx` publishes `VISIBLE_NOTES`
    and no length; `lib/types.ts:182` types `body` as a bare
    `string`. T170's block states the criterion and never the
    number.
 
-   This is D-230-02's shape one term over: T230's block ruled its
+   That is D-230-02's shape one term over — T230's block ruled its
    ceilings a PRODUCT decision and said in terms that the task must
-   not invent them. `MAX_NOTE_BODY` below is therefore
-   **provisional, reported as provisional, and is one line to
-   change** — it is here because the criterion cannot compile
-   without a number, not because the number was decided. Every
-   other property of the gate is falsifiable against whatever value
-   the owner picks: that the refusal STATES the limit, that empty
-   is refused, that the boundary is inclusive, and that the count
-   is over code points.
+   not invent them — so it was charged rather than guessed. **2000
+   is the orchestrator's answer and is marked
+   PENDING-OWNER-REVIEW**: a ceiling is a product decision and the
+   owner has not seen it. It is one constant, and every other
+   property of the gate holds against whatever value replaces it —
+   that the refusal STATES the limit, that empty is refused, that
+   the boundary is inclusive, and the unit below.
 
-   ── The count is over CODE POINTS, and that is a decision ──
-   `"x".length` is UTF-16 code UNITS, so an emoji costs 2 and an
-   author is refused at half the limit they were shown.
-   `[...body]` iterates code points, which is the unit the number
-   in the message describes. It is not grapheme clusters: a family
-   emoji is several code points and would still cost several, and
+   ── The count is UTF-16 CODE UNITS, and the cost is stated ──
+   `.length`, which is code units, so **an emoji costs 2 and an
+   author is refused at half the limit the message showed them.**
+   `[...body].length` counts code points and is the more honest
+   number; it was written that way first and reverted.
+
+   The reason is the blind round rather than the character set.
+   `.trim().length === 0` is the spelling the ruling published for
+   the empty half of this same criterion, and the two halves of one
+   gate must not count in two units. A blind author derives from
+   the published spelling, so a module counting code points and a
+   cell counting code units would disagree on astral input about a
+   criterion neither half disputes — a false red on a correct
+   implementation, which is the one failure this round exists to
+   avoid. Charged and reported; it is one line if it is ruled the
+   other way.
+
+   Not grapheme clusters under either reading: a family emoji is
+   several code points and would still cost several, and
    `Intl.Segmenter` would make the limit depend on a locale nobody
-   passed. **Code points is the honest middle, and the message says
-   "characters", so the two agree to the precision a reader cares
-   about.**
+   passed.
 
    Nothing here is normalised. T070 normalises names because a
    handle is an IDENTIFIER and two spellings of one name must not
@@ -47,11 +57,12 @@
 import { NoteBodyError } from "./errors";
 
 /**
- * The longest note body this module accepts, in code points.
+ * The longest note body this module accepts, in UTF-16 code units.
  *
- * **Provisional — see the TBD above.** Exported so a caller can render the limit before a
- * request rather than only after a refusal, and so the two writers and any route share one
- * number instead of three.
+ * **PENDING-OWNER-REVIEW — see above.** Published from this barrel rather than kept private
+ * so AC5's criterion can be quantified over it: a cell asserting the refusal STATES the
+ * limit reads `message.includes(String(MAX_NOTE_BODY))` and keeps saying something the day
+ * the number changes, where one asserting `2000` would be pinning the pending value.
  */
 export const MAX_NOTE_BODY = 2000;
 
@@ -75,7 +86,7 @@ export const MAX_NOTE_BODY = 2000;
 export function checkNoteBody(operation: string, body: unknown): string {
   if (typeof body !== "string") throw new NoteBodyError(operation, MAX_NOTE_BODY, 0);
   const trimmed = body.trim();
-  const length = [...trimmed].length;
+  const length = trimmed.length;
   if (length === 0) throw new NoteBodyError(operation, MAX_NOTE_BODY, 0);
   if (length > MAX_NOTE_BODY) throw new NoteBodyError(operation, MAX_NOTE_BODY, length);
   return trimmed;
