@@ -869,6 +869,111 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## A UNIQUE INDEX HOLDS THE COUNT AT 1 WHETHER THE CONFLICT IS CAUGHT OR ESCAPES — SO A COUNT-ONLY CELL IS STRUCTURALLY BLIND
+
+**T170's blind author swept 18 mutations and TWO redded nothing — both on the cells the criteria were said to
+rest on.** `SELECT`-then-`INSERT` in place of a caught conflict, on `note_vote` and on `target`.
+
+**The cause is not the concurrency. It is the assertion.** `note_vote_note_account_key` and
+`target_kind_ref_id_key` hold the row count at **1 either way** — the index does its job whether the module
+catches the duplicate or lets it escape. **What actually changes is that CALLERS LOSE THEIR WRITE** to a
+duplicate-key error: measured at **4 of 8 and 7 of 8** across rounds. And D-WAVE-01 rules the write is *a
+single insert **whose conflict is caught***, **so a caller losing its note IS the criterion failing.**
+
+**Its cells had said in terms that *refusals are counted rather than forbidden, because whether the module
+swallows the conflict or surfaces it is not something the block decides*. That sentence was wrong and it was
+written deliberately** — the ruling does decide it. **Assert that every caller RESOLVES, not only that the
+count is 1.**
+
+### A CONCURRENCY CELL THAT FIRES 40% OF THE TIME IS WORSE THAN NO CELL
+
+**Even with the stronger assertion the mutation still passed the suite**, so it probed directly, five rounds:
+`resolved=8` / `resolved=1,refused=7` / `8` / `1,refused=7` / `8`. Pristine: **0 refusals every round.**
+**One 8-caller round is a coin weighted about 40/60 toward green** — it reports green on a real defect three
+runs in five, **and it reads as covered.** Same object as the `skipped > 0` trap, arriving through timing
+instead of a hook.
+
+**The repair: N rounds, each on its OWN fresh subject** — a second round against the same target finds the row
+already there and races nothing — **and every round must be clean**, with the per-round results printed so a
+red says which ones opened. After it: **5 of 5 on both mutations, pristine green 3 of 3.**
+
+### AND IT MISCLASSIFIED AN EQUIVALENT MUTANT BY THE RULE IT WAS HOLDING
+
+It reported one of the two as an **equivalent mutant** — one probe showed 8 resolved / 0 rejected, identical
+to pristine, and it concluded no cell could distinguish them. **That fitted every observed detail and was a
+hypothesis.** The five-round version reds it **5 of 5**; the window simply never opened in the single round it
+measured. **The orchestrator made the same error on three misattributed reds this morning; this session made
+it four hours later while holding the sentence.** *What made the difference was not thinking harder. It was
+repeating the measurement.*
+
+## A CELL CAN BE GUARDED BY THE DATABASE RATHER THAN BY THE MODULE, AND READ AS COVERAGE FOR NEITHER
+
+**T150's blind author found the cell it was sent to find: `moves nothing, over every table the schema
+declares` was redded by 0 of 24 mutations**, including both written to break it — removing the anonymous
+guard, and moving that guard *after* the row creation.
+
+**The premise pre-created the `target` row.** So `ensureRow` wrote nothing, and the only remaining write
+carried a null `account_id`, **which `target_actor` refuses on its own**. The cell read as coverage for the
+write-then-throw shape while covering none of it — **held up by a NOT NULL constraint, not by the module.**
+Repointed at a target that does not yet exist, with the populated one beside it so the diff still carries both
+claims: both mutations now red it.
+
+### A RED UNDER A MUTATION WITH NO CAUSAL PATH IS A FLAKE ANNOUNCING ITSELF
+
+From the same sweep, and it is the cheapest flake detector anyone has produced here. A racing cell that
+compared each caller's own payload against the **final** table state red **1 in 6 against a correct subject**
+— but what gave it away was not the rate. **It appeared under three mutations that cannot reach it, one of
+which only changes another function's ARITY.** A flake is invisible in a pass/fail count and obvious in the
+mutation table, because a correct mutation table has a causal story for every red.
+
+**Its author wrote that cell AFTER charging D-WAVE-05, which is the same error one layer down.** Recognising
+a rule and holding it are different acts, and authorship buys no protection.
+
+## A MUTATION HARNESS MUST PROVE IT APPLIED THE MUTATION — A SILENT NO-OP IS FOUR GREENS THAT MEASURE NOTHING
+
+**T170's blind author ran the 2x2 it had been handed, got green / green / green / GREEN — the exact signature
+of an unobservable property — and was one keystroke from writing up *"the parent gate is unreachable in my
+suite too"*.**
+
+**It was the regex.** The guard was removed with `if \(!can\(actor, "read"[^}]*\}`, and **`[^}]*` cannot cross
+the `}` that closes `{ kind: "note", authorId, parent }`.** No mutation applied in any of the four runs.
+**All four "greens" were the same unmutated module.**
+
+**The tell was an accident**: those two cells had reddened five minutes earlier, before the guard existed.
+Without it, four zeros entirely of its own instrument would have been reported as a finding about the code —
+the *nine mutations scored 0 because a reporter flag stopped the FAIL lines* shape, arriving by a new route.
+
+**THE HARNESS MUST REFUSE TO RUN A MUTATION IT CANNOT PROVE IT APPLIED.** Remove the block by counting
+braces rather than by a character class; **assert the removal count equals the pre-registered number**; exit
+`MUTATION DID NOT APPLY` rather than reporting a zero; and **refuse to start over a non-green baseline.**
+**A mutation table whose failures are silent measures the harness, not the suite** — and a regex over source
+is exactly where that silence lives, because a pattern that matches nothing and a pattern that matches
+everything both exit 0.
+
+### A NEGATIVE ASSERTION OVER SHARED STATE IS A CLAIM ABOUT EVERY NEIGHBOUR THAT EVER WROTE TO IT
+
+From the same round. A cell asserting *an author deleting its own note is not audited as an operator* read the
+**whole** `audit` table — and the scratch database is per FILE, so it saw the legitimate operator removals the
+cells above it had written. **It reddened against a correct module, and it failed in the direction that looks
+like a real defect.** The repair is a before-snapshot and a diff, never a table-wide count.
+
+## WHILE ANOTHER SESSION IS RUNNING, THE POSTGRES POPULATION IS NOT A LEAK CHECK — DRAINAGE IS
+
+**T180's blind author stamped after its sweep, found 22 `darkprint_test_*` against a baseline of 3, and was
+one message from filing a leak against T150.** It re-sampled instead of reporting: **22 -> 18 -> 5 -> 0 in
+ninety seconds.** They were T150's LIVE scratch, mid-sweep, under a grant I had issued myself.
+
+**Element-wise names are not sufficient under concurrency, and that correction is on me** — I have been
+telling every session to stamp by name rather than by count, and by name still cannot tell *somebody leaked*
+from *somebody is still running*. **The discriminators are two:**
+
+1. **does the population DRAIN** on re-sampling, and
+2. **do the names belong to a LIVE pgid** — a leak has no process behind it and survives a second sample.
+
+**A single post-run stamp would have charged a leak against a session doing exactly what it was granted.**
+That is the false-charge-against-a-correct-counterpart failure mode, arriving through the leak instrument
+rather than through a test cell.
+
 ## A 2x2 GREEN IN ALL FOUR CELLS IS NOT TWO REDUNDANT GUARDS — IT IS A PROPERTY NOTHING OBSERVES
 
 **T170's implementer widened a guard, had the widening ratified, and then checked whether anything in its
@@ -15098,6 +15203,18 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **A NEGATIVE RULING IS THE KIND THAT NEVER LANDS.** Three of these four are statements that something does not happen, and a document grows by addition — so the rulings most likely to live only in a message are exactly the ones that leave a criterion untestable. Worth stating as a general hazard rather than as four items.
 
+  **D-WAVE-10 (T180 — filed here rather than in §T180, which its blind author charged as the same defect it had already charged once) — MY *ONE PASS, NOT ITERATED* RULING FOR T180'S OUTLIER FILTER WAS GUARDED BY NOTHING, and its blind author found that by predicting 2 reds and getting 0.** On its AC4 fixture, iterating to fixpoint reaches the fixpoint after the **first** pass — max|z| falls **3.3100 -> 1.8843** once the outlier is gone — **so one pass and convergence produce the identical answer and the mutation changes nothing observable.** The ruling was asserted only in a comment of its own and no cell could tell the two apart.
+
+  **Repaired with a fixture built to separate them: eleven tight values plus outliers at TWO distances**, where removing the far one shrinks the sd enough that the near one crosses 3σ on the next round. **One pass keeps 12; convergence keeps 11.** The mutation now reds.
+
+  **And the cell asserts only `runs` and `excluded`, deliberately** — the survivors' median falls *between* two data points there, so asserting it would charge a defect over a percentile convention this contract never published. **The same discipline as the AC4 fixture, applied where it costs an assertion rather than where it was free.**
+
+  **D-WAVE-11 — A `SignalState` NEED NOT BE INTERNALLY COHERENT UNDER A RACE. The narrow cell stands and the stronger reading is REFUSED, for D-WAVE-05's reason.** Charged rather than asserted by T150's blind author, which built the stronger cell, found it reds **8 of 8**, and then argued against its own cell.
+
+  The payload it catches is real: **`{ starredByCaller: true, starCount: 0 }`** — a caller seeing the star row its own concurrent call inserted while reading the aggregate before that call's increment commits. **But that is a defensible implementation, not a defect.** Making the two agree under concurrency requires the insert, the increment and the read-back to be **atomic**, and nothing in §T150 asks for that. **It is the same category as D-WAVE-05's refused alternative (b): a real behavioural constraint not derivable from the section.**
+
+  **AC4's purpose survives**: it exists so a client never issues a second read, and the coherence of one payload IS pinned **uncontended**. What is not held is behaviour under a race, and that is **stated in the cell rather than left to be read off a green.**
+
   **D-WAVE-09 — THREE MODULES SHARE ONE `(kind, ref_id)` GRAIN AND GIVE TWO DIFFERENT ANSWERS FOR A TARGET THAT DOES NOT EXIST. THE DIVERGENCE IS DELIBERATE.** Found by T170's implementer when its own paging fixture posted to a card with no `card_version` row behind it and **`postNote` refused** — correctly, under D-WAVE-04's read check: a card with no versions has no parent, so there is no pair to ask `can` about.
 
   * **T140 (`saveTarget`) and T150 (`toggleStar`): ACCEPT AND NEVER LIST.** *A save of a target that does not exist is accepted and never listed*, and `toggleStar` performs **no** visibility check (D-WAVE-07).
@@ -18898,7 +19015,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         submitReport(db: Db, actor: Actor, report: RunReport): Promise<void>
         reportedCost(db: Db, actor: Actor, releaseDigest: string): Promise<ReportedCost | undefined>
 
-  **AC6 — "no response field is named as a measurement" — is a naming constraint on the published type and it is the whole architectural promise.** The platform never observes a run; the word is **`reported`** and never `measured`. So the type is `ReportedCost`, the field is `costUnits` submitted by the caller, and **a test asserts no key in the response shape contains `measured`, `observed`, `actual` or `verified`.** Checkable mechanically over `Object.keys`, which is the only way a naming rule survives a later contributor.
+  **AC6 — "no response field is named as a measurement" — is a naming constraint on the published type and it is the whole architectural promise.** The platform never observes a run; the word is **`reported`** and never `measured`. So the type is `ReportedCost`, the field is `costUnits` submitted by the caller, and **a test asserts no key in the response shape contains `measured`, `observed`, `actual` or `verified`.** ~~Checkable mechanically over `Object.keys`~~ — **AMENDED: over EVERY key in the response, NESTED KEYS INCLUDED.** A flat `Object.keys` walk is **vacuous over `spread`**, the one published shape with a nested object and the likeliest place a later contributor ever breaks this rule. **Measured** by T180's blind author: a planted `spread.measuredP50` returns `[]` from the flat filter and is caught only by a recursive walker, and its mutation M12 reds `returns no such field` against it. **My original sentence called a vacuous instrument "the only way a naming rule survives a later contributor". A RECURSIVE WALK is.**
 
   **AC4 makes `excluded` a published field rather than an internal detail.** "An outlier beyond 3σ is excluded **and the exclusion is visible in the count**" — `runs` is what survived, `excluded` is what did not, and a response carrying only `runs` satisfies the aggregate while failing the criterion. `isSample` is derived from `runs` against `minRuns`, as in T160.
 
@@ -18910,6 +19027,8 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 - **Goal:** accept a CLI-submitted report about a run that happened on somebody else's machine, and aggregate accepted reports into the `reported` cost axis.
 - **Contract:** B-16 — the CLI submits, keyed by the release digest, carrying model, provider, hardware, input size, harness version, cost units, duration and timestamp; a report is accepted on well-formedness and the digest existing, with **no verification claimed**. The aggregate is `ReportedCost { runs, median, spread { p10, p90 }, model }` (`lib/data/community.ts:34-43`), with outliers beyond `telemetry.outlierZScore` (3) dropped and an aggregate below `minRuns` (5) presented as a sample. The architectural constraint is absolute: the platform never observes a run, the word is `reported` and never `measured` (`lib/types.ts:27-36`), and no field may be named or documented otherwise. `Profile.validated` counts a handle's accepted reports for *other* accounts' blueprints and never adds a run to any blueprint's own evidence layer.
+- **Rulings that govern this task and live in OTHER sections** — charged twice by T180's blind author, which found all of them by going looking: **D-05-01, D-05-07 and D-05-09 in §T005** (the `run_report` table: `release_digest` is deliberately NOT a foreign key and existence is enforced by the `run_report_release_exists` trigger raising SQLSTATE **23503**, which decides whether AC1's refusal is a module throw or a driver error; `account_id NOT NULL`, which is what makes AC5 implementable; and `cost_units` shipping unqualified `numeric`, which feeds the median). **D-WAVE-02** (no route surface this wave). **D-WAVE-10 in the wave block** (the one-pass outlier ruling and the n>=11 bound). **A section citing one ruling while four govern it is how a blind author writes AC1 against the wrong failure mode.**
+- **AC4's filter is INERT BELOW n=11, and this is arithmetic rather than a defect.** max|z| in a sample of n is bounded by **sqrt(n-1)** for population sd, so **no fixture of ten or fewer reports can EVER produce `excluded > 0`, whatever the values** — 5 gives 2.00, 8 gives 2.65, 10 gives 3.00, and 11 is the first that clears 3. **Consequences: AC4 and AC2 never co-fire; every aggregate `isSample` marks has `excluded: 0` NECESSARILY rather than contingently; and an AC4 cell built on the natural `minRuns = 5` fixture is a cell NO MUTATION CAN RED** — it passes against a correct module, a module with the filter deleted, and a module that never had one. Computed by T180's blind author before it built the fixture it would otherwise have used.
 - **Acceptance criteria:** (1) a report against an unknown digest is refused; (2) an aggregate below five runs is marked a sample; (3) no aggregate returns without its run count and model; (4) an outlier beyond 3σ is excluded and the exclusion is visible in the count; (5) a report for one's own blueprint does not increment `validated`; (6) no response field is named as a measurement.
 - **Open:** how cost is normalised across models, hardware and currencies before landing on the 0–100 axis.
 - **Out of scope:** the CLI command itself (T270), the evidence-layer UI.
