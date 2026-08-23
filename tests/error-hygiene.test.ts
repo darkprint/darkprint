@@ -249,7 +249,14 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
        `git ls-tree -d backend lib/server/`, the REF, so an unmerged module is hygiene-checked
        and deliberately not counted. Its tree read 32 and its merge moved nothing. The 34 is
        real only here, in the merge commit, which is the whole content of the rule. */
-    ).toBe(34);
+    /* 34 -> 37 at T170's merge: `lib/server/notes` publishes `NoteStoreError`, `NoteBodyError`
+       and `InvalidCursorError`. The third exists because D-WAVE-13 ruled that answering a
+       malformed cursor with an empty page is a SILENT read truncation -- byte-identical to
+       "no notes" and to "you may not read this" -- and a client mid-walk is told the list
+       ended. Derived by this walk at the merge, never carried: its implementer enumerated
+       three off its own barrel by `prototype instanceof Error` and predicted 37, and this
+       is that number measured. */
+    ).toBe(37);
 
     const rendered: string[] = [];
     const traceless: string[] = [];
