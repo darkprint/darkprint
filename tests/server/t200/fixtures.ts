@@ -131,6 +131,43 @@ export function mark(prefix: string): string {
   return `${prefix}-${process.pid}-${counter}`;
 }
 
+/**
+ * A search token: ONE alphabetic word, unique per process and per call, with no digit and
+ * no separator anywhere in it.
+ *
+ * `mark()` is wrong for this and the adversary round is what proved it. Its output
+ * `qtok-87169-3` NORMALISES to three words — `qtok`, `87169`, `3` — because
+ * `lib/server/search/text.ts` collapses every run of non-letter non-digit to a space. Every
+ * identifier this file mints shares the pid, so `87169` matched EVERY blueprint in every
+ * field, and the one-character word `3` matched any document word containing a `3`:
+ * `card:13`, `slug:s3`, `title:3`. A cell asserting that a `tag` field is not cited as
+ * evidence then reds against a correct module, because `q` really had matched a tag — the
+ * fixture had planted the collision.
+ *
+ * A substring guard could not have caught it: `qtok-87169-3` is not a substring of
+ * `taga-87169-8`. The collision is at the WORD level, below the identifier, which is why
+ * `assertTokensAreDiscriminating` in `world.ts` now splits both sides the way the matcher
+ * does instead of comparing whole strings.
+ *
+ * Letters only, so it survives normalisation as exactly one word and cannot share a word
+ * with an identifier that carries digits.
+ */
+const LETTERS = "abcdefghijklmnopqrstuvwxyz";
+function base26(n: number): string {
+  let out = "";
+  let value = n;
+  do {
+    out = LETTERS[value % 26] + out;
+    value = Math.floor(value / 26);
+  } while (value > 0);
+  return out;
+}
+
+export function word(prefix: string): string {
+  counter += 1;
+  return `${prefix}${base26(process.pid)}q${base26(counter)}`;
+}
+
 /* --------------------- rows --------------------- */
 
 export interface CardOptions {

@@ -42,6 +42,7 @@ import {
   insertRelease,
   manifest,
   mark,
+  word,
   type AccountFixture,
   type BundleFixture,
   type CardFixture,
@@ -178,18 +179,39 @@ function assertTokensAreDiscriminating(
   tokens: Record<string, string>,
   others: readonly string[],
 ): void {
+  /* Split the way the matcher splits, not the way a reader reads. `normalise` lowercases
+     and collapses every run of non-letter non-digit to a space, and `findWord` then asks
+     `documentWord.includes(queryWord)` — so the unit that can collide is the WORD inside an
+     identifier, never the identifier. Checking whole strings for containment is what let
+     `qtok-87169-3` and `taga-87169-8` both pass while sharing the word `87169`. */
+  const split = (text: string): string[] =>
+    text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim().split(" ").filter((x) => x !== "");
+
   const collisions: string[] = [];
   const entries = Object.entries(tokens);
+  const otherWords = new Set(others.flatMap(split));
   for (const [name, token] of entries) {
-    for (const other of others) {
-      if (other.includes(token)) {
-        collisions.push(`${name} ${JSON.stringify(token)} is inside ${JSON.stringify(other)}`);
+    for (const part of split(token)) {
+      for (const other of otherWords) {
+        /* Both directions. `other.includes(part)` is the query word found in a document
+           word; `part.includes(other)` is a document word found inside the query word,
+           which is how a short identifier fragment reaches a long token. */
+        if (other.includes(part) || part.includes(other)) {
+          collisions.push(
+            `${name} ${JSON.stringify(token)} shares the word ${JSON.stringify(part)} with ` +
+              `${JSON.stringify(other)}`,
+          );
+        }
       }
     }
     for (const [otherName, otherToken] of entries) {
       if (otherName === name) continue;
-      if (otherToken.includes(token)) {
-        collisions.push(`${name} ${JSON.stringify(token)} is inside ${otherName}`);
+      for (const part of split(token)) {
+        for (const otherPart of split(otherToken)) {
+          if (otherPart.includes(part) || part.includes(otherPart)) {
+            collisions.push(`${name} ${JSON.stringify(token)} shares a word with ${otherName}`);
+          }
+        }
       }
     }
   }
@@ -219,11 +241,16 @@ export async function buildWorld(s: Scratch): Promise<World> {
   const alpha = await insertAccount(s, mark("t200a"));
   const beta = await insertAccount(s, mark("t200b"));
 
-  const queryToken = mark("qtok");
-  const soloToken = mark("stok");
-  const descToken = mark("dtok");
-  const authorToken = mark("atok");
-  const missToken = mark("mtok");
+  /* `word()` and not `mark()`, and the adversary round is what forced it: `mark()` embeds
+     the pid, `lib/server/search/text.ts` splits on every non-alphanumeric, and every
+     identifier in this world therefore SHARED the word `87169`. A query token built that
+     way matches every blueprint in every field, and its one-character tail matches any
+     document word containing that digit. See `word()`'s docblock. */
+  const queryToken = word("qtok");
+  const soloToken = word("stok");
+  const descToken = word("dtok");
+  const authorToken = word("atok");
+  const missToken = word("mtok");
   const tagA = mark("taga");
   const tagB = mark("tagb");
   const tagC = mark("tagc");
