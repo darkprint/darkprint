@@ -869,6 +869,26 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## A REPAIR THAT SILENTLY NARROWS COVERAGE LOOKS EXACTLY LIKE ONE THAT DOES NOT — ONLY RE-RUNNING THE TABLE SEPARATES THEM
+
+**T170's blind author repaired its target-race cell by driving five rounds** — the correct fix for the 40%
+flake — **and the repair silently dropped the cell's `note_count` check.** Nothing failed. The cell was
+greener, longer and more rigorous. **The only thing that moved was a mutation count: M6 went from 4 reds to
+3.**
+
+**A repair is a change to an instrument, and an instrument that changed is one whose reach is unmeasured
+until it is re-measured.** Re-run the table after repairing a cell, not only after writing one — the
+difference between a repair that preserved coverage and one that traded it away is invisible in every
+pass/fail number and visible only in the per-mutation counts.
+
+### AND A COLUMN DEFAULT IS AN AGREEING ACTOR
+
+From the same round: two cells asserted `toEqual([0, 0])` over `star_count` and `download_count`, **both of
+which DEFAULT to 0** — so the cells could not separate a module that leaves another task's columns alone from
+one that writes zero into them. **The same shape as a two-valued criterion asserted against an actor whose
+default already matches**, arriving through a schema default instead of a fixture. **Plant a non-default
+baseline, or the assertion is satisfied by the state that was already there.**
+
 ## A UNIQUE INDEX HOLDS THE COUNT AT 1 WHETHER THE CONFLICT IS CAUGHT OR ESCAPES — SO A COUNT-ONLY CELL IS STRUCTURALLY BLIND
 
 **T170's blind author swept 18 mutations and TWO redded nothing — both on the cells the criteria were said to
