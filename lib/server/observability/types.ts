@@ -13,7 +13,7 @@
  * Closed, an action naming a run **cannot be passed**, which is the same move the block
  * already makes for `detail`.
  *
- * Twelve members, derived from the published writers of the eight merged state-changing
+ * Thirteen members. Twelve derived from the published writers of the eight merged state-changing
  * modules rather than from recall. **No member encodes the operator**: an operator
  * removing a note writes the note's action with `actorKind: "operator"`, because the
  * distinction is the column and a second spelling of it is two sources for one quantity.
@@ -48,6 +48,7 @@ export const AUDIT_ACTIONS = [
   "key.issue",
   "key.revoke",
   "counter.write_failed",
+  "note.remove",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];

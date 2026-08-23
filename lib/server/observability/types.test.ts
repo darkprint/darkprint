@@ -12,14 +12,15 @@ import { AUDIT_ACTIONS, type AuditEntry } from "./types";
 
 describe("AUDIT_ACTIONS", () => {
   /**
-   * An EQUALITY over the ratified twelve, not a floor.
+   * An EQUALITY over the ratified thirteen, not a floor. `note.remove` was added under D-240-09's
+   * amendment path at T170's dispatch, on a charge from the task that has the caller.
    *
    * D-240-09 puts amendment with the orchestrator at a task's dispatch, precisely because
    * T170, T160 and T250 each need a member and each is Forbidden from editing this file.
    * A floor would absorb a member added here on spec and say nothing; this reds, which is
    * what makes the amendment path a path rather than a preference.
    */
-  it("is exactly the twelve ratified members", () => {
+  it("is exactly the thirteen ratified members", () => {
     expect([...AUDIT_ACTIONS]).toEqual([
       "account.create",
       "account.update",
@@ -33,6 +34,7 @@ describe("AUDIT_ACTIONS", () => {
       "key.issue",
       "key.revoke",
       "counter.write_failed",
+      "note.remove",
     ]);
   });
 
