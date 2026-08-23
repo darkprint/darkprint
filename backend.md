@@ -894,6 +894,28 @@ mutations went **0 → 6** each.
 **And keep a CONTROL that must not red:** a reworded message that still leaks nothing. Without it, a D-13 cell
 pinning a literal cannot be told from one pinning the absence of a leak.
 
+## A SOURCE-LEVEL COPY CHECK MUST STRIP COMMENTS — AND THE FAILURE RUNS BOTH WAYS
+
+**T263's implementer's own AC5 guard redded on its own prose** — a comment explaining that a retired sentence
+had been deleted contained the sentence. **Without the strip it reds a correct page.** And the converse is
+the half that matters: **a check that READS comments can be satisfied by deleting a comment while the sentence
+stays on screen.** It proved both with a 2x2 — the retired sentence back in rendered JSX **reds**; the same
+sentence in a comment **stays green.**
+
+**This is the docblock-anchor finding from the other direction.** There, a mutation anchor matched a comment
+and the harness reported a change it had not made. Here, a copy guard matched a comment and reported a
+violation that was not on screen. **Same cause — this repository's comments quote the code and the copy they
+are about — and it costs a false red in one direction and a false green in the other.**
+
+### AND A RENDERED-OUTPUT GREP CANNOT SEE AN INSTRUCTION TO THE NEXT AUTHOR
+
+The same round found **three claims that no AC5 grep over rendered output would ever have reached**: a file
+header saying the wizard *"never sends a byte anywhere"*, a component docblock saying *"Nothing leaves the
+tab"*, and a page comment calling the old title a promise the site *"has no backend for"*, present tense.
+**All three are instructions to the next author, and each would now be read as a constraint on a route where
+it no longer holds.** Corrected rather than deleted, each naming what changed. **A cutover retires claims in
+the comments as well as on the page, and only one of those two surfaces has a criterion pointed at it.**
+
 ## A MUTATION ANCHOR CAN MATCH A DOCBLOCK — AND THIS REPOSITORY'S HOUSE STYLE IS WHAT MAKES THAT LIKELY
 
 **Second harness lie in the same task, in a new way, after the harness had been rebuilt specifically to refuse
@@ -19656,6 +19678,16 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **Ruled: AC4 mandates a behaviour change and the section now says so.** The change is right, and the reason is the blind author's: **the report states outright when autonomy and risk were NOT computed rather than omitting the headings** (SEAM-32's error-state column), **which is what makes handing it over on a failed publish honest rather than misleading.** One consequence to carry: SEAM-69 says the success screen *"hands over `REPORT.md` instead"* — **once publishing is real there is no "instead" left, and AC4 re-purposes that control for the REFUSAL path.**
 
 - **D-263-10 — AC4's *"still"* is FALSE of the tree and the FORWARD-LOOKING reading is ratified.** `REPORT.md` does not download today for a bundle that cannot publish: the only control offering it is on the `submitted` screen and the Publish button is `disabled={blocked}`, so that bundle never reaches the screen the download is on — `reportMarkdown`'s own docblock says *"Nobody has read that file."* **The criterion is about the NEW failure mode: after the cutover a bundle can be locally clean and SERVER-refused** (`not-owner`, `conflict`, `version-not-higher`, or `in-error`/`unfinished` under the stored ontology per D-263-01) **and the reader must land somewhere that still hands over `REPORT.md`.**
+
+- **D-263-12 — THREE JUDGEMENT CALLS FROM T263's IMPLEMENTER, ALL RATIFIED, EACH FLAGGED RATHER THAN ASSUMED.**
+
+  **SEAM-30 STAYS PLANNED; only SEAM-69 flips LIVE.** The Goal reads as licence to call `/api/validate/bundle` on Preview, and it did not — **because D-263-01 establishes that route resolves against the same vocabulary the tab already builds, so a preview round trip adds latency, a loading state and a *your bundle is now sent at Preview* copy obligation, and CHANGES NO VERDICT.** Annotated in the anchor block with that reason rather than left looking unfinished.
+
+  **Visibility DEFAULTS TO PRIVATE and is always sent explicitly**, overriding the account default rather than deferring to it: **the ledger row being retired promises the choice, and a hidden default does not keep that promise.** Its reason is the decisive one — **publishing someone's first upload to the world because they missed a control is the failure that cannot be undone by editing a setting.**
+
+  **The version shape check ADVISES rather than BLOCKS.** `publish.ts:216` sorts unparseable versions **below** every valid one rather than throwing, **so a client gate would refuse a submission the registry accepts.** Only an EMPTY version blocks, because the route 400s on it. **A client-side guard stricter than the server it guards is a guard that invents a refusal.**
+
+  **And `BundleDetails.version` is OPTIONAL, with the `?` load-bearing rather than stylistic:** `dropzone.test.ts:58` builds a `BundleDetails` literal by hand, **so a required member reds a must-pass-unchanged suite at the TYPE level — a failure with nothing to do with what that suite checks.**
 
 - **Acceptance criteria:** (1) a clean bundle publishes and the response names the owner, slug, release and digest; (2) an unfinished bundle is refused with the unfinished wording, not an error count; (3) the success screen states what was stored, and `honesty.test.ts` pins the new sentence; (4) `REPORT.md` still downloads for a bundle that cannot publish; (5) no copy anywhere on the route still says nothing is sent.
 - **Out of scope:** the bundle page's own publish control (T261).
