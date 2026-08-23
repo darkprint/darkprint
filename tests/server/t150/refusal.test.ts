@@ -245,50 +245,88 @@ describe("no visibility check, which is ruled and is a negative", () => {
 });
 
 describe("D-13: the store fault is sealed", () => {
-  it.each(["getSignals", "toggleStar"] as const)(
-    "wraps a dead store in `CounterStoreError` from `%s`",
-    async (name) => {
-      /*
-       * Port 1 is reserved and never listening, so `connect` fails with ECONNREFUSED before any
-       * statement is sent — the one fault shape a SQLSTATE-keyed catch cannot classify, because
-       * there IS no SQLSTATE. A module that maps faults by reading `cause.code` and falls
-       * through to a re-throw leaks the driver here and nowhere else.
-       */
-      const fn = await bind(name);
-      const CounterStoreError = await bindCounterStoreError();
-      const dead = deadDb();
-      const target = freeTarget("card");
-      const accountId = await createAccount(t);
+  /*
+   * ── THREE cells, not one, and the split is a repair ──
+   * These were one cell asserting the class, then the exact message, then the two scans, in
+   * that order. **Paired clauses behind one assertion order mask each other**: the message
+   * assertion runs first, so a module whose wording differs by one word hides whatever the
+   * scans would have said about the same error — and that is exactly what happened at the
+   * join, where the published form and the shipped form differ by a single letter.
+   *
+   * Split so each claim is measured on its own. They are genuinely independent: a module can
+   * seal perfectly and word the message differently, or word it exactly and leak through a
+   * channel the message never touches.
+   *
+   * `dead()` is per-cell rather than shared. A dead pool is cheap, and a fixture shared across
+   * cells that each need a fault is one read that writes.
+   */
+  const KINDS = ["getSignals", "toggleStar"] as const;
 
-      try {
-        const err = await rejection(
-          fn(dead.db, accountActor(accountId), target),
-          `${name} against a dead store`,
-        );
-        expect(
-          err,
-          `${name} refused a dead store with ${String(err).slice(0, 200)}. D-WAVE-07 publishes ` +
-            `\`CounterStoreError\`, and \`tests/store-modules-seal-their-faults.test.ts\` puts ` +
-            `this module in its domain the day it imports \`@/lib/db\` — AN ABSENT CLASS LEAKS ` +
-            `BY NOT EXISTING.`,
-        ).toBeInstanceOf(CounterStoreError);
+  /** The one fault shape a SQLSTATE-keyed catch cannot classify: there is no SQLSTATE. */
+  async function faultFrom(name: (typeof KINDS)[number]): Promise<{
+    err: unknown;
+    refId: string;
+    accountId: string;
+  }> {
+    const fn = await bind(name);
+    const dead = deadDb();
+    const target = freeTarget("card");
+    const accountId = await createAccount(t);
+    try {
+      const err = await rejection(
+        fn(dead.db, accountActor(accountId), target),
+        `${name} against a dead store`,
+      );
+      return { err, refId: target.refId, accountId };
+    } finally {
+      await dead.close();
+    }
+  }
 
-        /* The exact form, as a literal built in `contract.ts` and never imported from the
-           module. An expectation built from the module asserts only that it agrees with itself
-           and survives the day the template starts interpolating a driver value. */
-        expect(
-          (err as Error).message,
-          `the published form is ${counterStoreFailedMessage("<operation>")}`,
-        ).toBe(counterStoreFailedMessage(name));
+  it.each(KINDS)("refuses a dead store with `CounterStoreError` from `%s`", async (name) => {
+    const CounterStoreError = await bindCounterStoreError();
+    const { err } = await faultFrom(name);
+    expect(
+      err,
+      `${name} refused a dead store with ${String(err).slice(0, 200)}. D-WAVE-07 publishes ` +
+        `\`CounterStoreError\`, and \`tests/store-modules-seal-their-faults.test.ts\` puts this ` +
+        `module in its domain the day it imports \`@/lib/db\` — AN ABSENT CLASS LEAKS BY NOT ` +
+        `EXISTING.`,
+    ).toBeInstanceOf(CounterStoreError);
+  }, 120_000);
 
-        assertSealed(err, `${name}'s store fault`);
-        assertNoValue(err, [target.refId, accountId], `${name}'s store fault`);
-      } finally {
-        await dead.close();
-      }
-    },
-    120_000,
-  );
+  it.each(KINDS)("renders the PUBLISHED message form from `%s`", async (name) => {
+    /*
+     * An exact match against a literal built in `contract.ts` and never imported from the
+     * module: an expectation built from the module under test asserts only that the module
+     * agrees with itself, and survives the day the template starts interpolating a driver value.
+     *
+     * The literal is D-WAVE-07's, verbatim. If this reds on a wording difference it is a
+     * DOCUMENT question and not an implementation defect — check whether the ruling was an
+     * ancestor of the branch that built the module before charging anyone.
+     */
+    const { err } = await faultFrom(name);
+    expect(
+      (err as Error).message,
+      `D-WAVE-07 publishes the form ${counterStoreFailedMessage("<operation>")}`,
+    ).toBe(counterStoreFailedMessage(name));
+  }, 120_000);
+
+  it.each(KINDS)("carries no statement and no bound value out of `%s`", async (name) => {
+    /*
+     * D-13's own clause, measured independently of the wording above.
+     *
+     * `assertSealed` walks `getOwnPropertyNames` VALUES and follows `cause`, because the shape
+     * this clause is most often satisfied by — a driver error stashed non-enumerably — is
+     * invisible to `message`, to `String(err)`, to `JSON.stringify` and to a scan over property
+     * NAMES. `assertNoValue` is the provenance half: `refId` and `accountId` are minted here and
+     * handed to the module, so the only route either has into a rendering is the module putting
+     * it there.
+     */
+    const { err, refId, accountId } = await faultFrom(name);
+    assertSealed(err, `${name}'s store fault`);
+    assertNoValue(err, [refId, accountId], `${name}'s store fault`);
+  }, 120_000);
 });
 
 describe("`recordDownload` never rejects, and the counter is unchanged", () => {
