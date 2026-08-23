@@ -49,18 +49,19 @@ const MIN_SAMPLE = DARKPRINT_CONFIG.telemetry.minRuns;
  * a defect in this function: an implementation that DID move a lone voter's aggregate when
  * their weight changed would be reporting something other than their vote.
  *
- * `undefined` rather than `NaN` for the empty case. `0/0` is what the division produces if
- * the guard is skipped, it typechecks as a `number`, and it survives every assertion that
- * only checks the field is present — so the empty case is answered explicitly and the caller
- * decides what an unscored metric looks like.
+ * `undefined` rather than `NaN`. `0/0` is what the division produces if the guard is
+ * skipped, it typechecks as a `number`, and it survives every assertion that only checks the
+ * field is present — so the empty case is answered explicitly and the caller decides what an
+ * unscored metric looks like.
  *
- * **A zero-weight denominator answers `undefined` too, and that is a real reachable state
- * rather than defensive padding.** `account.validator_weight` is `numeric(6,3) NOT NULL
- * DEFAULT 1` with no positivity constraint (`lib/db/schema.ts:80`), so `0` is storable, and
- * a sample of voters all weighted `0` divides by zero.
+ * **ONE guard for two states, because the first subsumes the second.** No votes gives a
+ * denominator of zero, so a separate `votes.length === 0` arm could never fire and would be
+ * a branch nothing reaches. The other state is not hypothetical either:
+ * `account.validator_weight` is `numeric(6,3) NOT NULL DEFAULT 1` with no positivity
+ * constraint (`lib/db/schema.ts:80`), so `0` is storable and a sample of voters all weighted
+ * `0` reaches this line with votes in hand.
  */
 function weightedMean(votes: readonly { weight: number; value: number }[]): number | undefined {
-  if (votes.length === 0) return undefined;
   let weighted = 0;
   let total = 0;
   for (const { weight, value } of votes) {
@@ -111,5 +112,5 @@ function aggregateOf(votes: readonly WeightedVote[], metric: MetricKey): MetricA
 export function aggregateFrom(votes: readonly WeightedVote[]): Aggregate {
   const out = {} as Record<MetricKey, MetricAggregate>;
   for (const metric of METRICS) out[metric] = aggregateOf(votes, metric);
-  return Object.freeze(out) as Aggregate;
+  return Object.freeze(out);
 }

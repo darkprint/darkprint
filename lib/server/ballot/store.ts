@@ -25,7 +25,7 @@
    from being wrong silently.
    ============================================================ */
 
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { schema, type Db } from "@/lib/db";
 import { BallotRefusedError, BallotStoreError } from "./errors";
 import type { Ballot, WeightedVote } from "./types";
@@ -138,13 +138,4 @@ export async function upsertBallot(
       target: [schema.ballot.accountId, schema.ballot.bundleId],
       set: { ...written, updatedAt: sql`now()` },
     });
-}
-
-/** Whether this account has already voted on this blueprint. Read only where the answer changes a decision. */
-export async function hasBallot(db: Db, accountId: string, bundleId: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: schema.ballot.id })
-    .from(schema.ballot)
-    .where(and(eq(schema.ballot.accountId, accountId), eq(schema.ballot.bundleId, bundleId)));
-  return row !== undefined;
 }
