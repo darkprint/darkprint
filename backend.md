@@ -14998,6 +14998,13 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **F-240-A is RESOLVED and the GAP cell should be deleted at the merge.** The Published signatures block was behind its own rulings on all four counts the blind author measured, and it was amended at `43ceb9a`: `AuditAction` in the interface, the `occurredAt` return, `AUDIT_ACTIONS` and — **as of F-240-E, and not before it** — both error classes named. **The amendment claimed both and shipped one:** `NotPermittedError` appeared twice in this section in PROSE and never in the block, so an implementer reading the block built a surface the document did not describe, **which is the exact shape F-240-A was raised about.** Found by T240's adversary by PARSING the block rather than reading it. **Its pins were bound to the rulings as the later and governing text, which was the correct call** — and it raised the divergence as a red against the DOCUMENT rather than against the implementer, which is what kept it from becoming a false defect report at the hand-off.
 
+  **D-240-16 — `AUDIT_ACTIONS` AMENDED under D-240-09, at the dispatch of the tasks that need the members. Fourteen.** Two added, each on a charge from the task that has the caller, which is the path D-240-09 exists to provide:
+
+  * **`note.remove`** — T170's AC7 promises *"the operator can remove one, audited"*, so the member has a caller the moment T170 ships. **T240's implementer deliberately refused to pre-seed this one** on the ground that a member no caller exists for is a guard that cannot fail; that reasoning holds and is why it arrives now rather than then.
+  * **`ballot.cast`** — T160's vote write. Same test: a caller exists in the task being dispatched.
+
+  **Neither is an `operator.*` member.** An operator removing a note writes `note.remove` with `actorKind: "operator"` — the distinction is the column, per D-240-08, and a second spelling of it is the two-sources shape D-230-10 forecloses. **T240's twelve-member equality moves to fourteen in whichever wave merges these**, derived at that merge and never carried.
+
   **D-240-10 — `listAudit`'s operator check is a CHARGED COPY of `lib/server/policy`'s `isOperator`, and one line on T060's barrel deletes it.** `isOperator` is module-private: the policy barrel publishes `can`, `visibleTo` and three types. `can` genuinely cannot decide this — `Resource` has no `audit` kind — which is why D-240-04 put the permission here, and that left a deep import (D-01 forbids it) or a copy. **Copied WITH the attribution and carrying all three of T060's rulings**, on `naming/pg-error.ts`'s precedent against `cards/pg-error.ts`, because a weakened copy is worse than none: `can.ts:189` says in as many words that possession of the discriminant is not authority. **Recorded as a debt on T060 rather than absorbed silently — its own implementer asked for it to be charged.** Whoever next owns `lib/server/policy/**` publishes `isOperator` and the copy goes.
 
   **D-240-09 — the AMENDMENT PATH, which its finder identified as having no owner.** A closed set in `lib/server/observability/**` must grow — T170's AC7 already promises *"the operator can remove one, audited"*, T160 needs a validator-grant action, T250 needs re-attribution — and **every one of those tasks is Forbidden from editing the file that holds it.** So: **`AUDIT_ACTIONS` is amended by the ORCHESTRATOR at a task's dispatch, on that task's charge, exactly as an `Owns` grant is.** Pre-seeding members for callers that do not exist is refused for the reason the implementer gave: **a member no caller exists for is a guard that cannot fail.**
@@ -18626,6 +18633,18 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         toggleStar(db: Db, actor: Actor, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<SignalState>
         recordDownload(db: Db, target: { kind: "blueprint" | "card" | "term"; refId: string }): Promise<void>
 
+  **D-WAVE-01 — `target` AND `target_actor` ARE PARTITIONED BY COLUMN AND BY KIND. Neither task owns either table wholesale, and READING IS NOT OWNING.** T150 and T170 both write `target_actor` and both carry the paragraph below verbatim, so without this the two halves collide on a table each believes is its own.
+
+  * **T150 WRITES `target.star_count`, `target.download_count`, and `target_actor` rows with `kind = "star"`. Nothing else.**
+  * **T170 WRITES `target.note_count` and `target_actor` rows with `kind = "note_vote"`. Nothing else.**
+  * **`getSignals` READS the whole `target` row, `note_count` included.** A read is not a claim of ownership, and `SignalState.noteCount` stays published.
+
+  **T150 must NOT compute `noteCount` and must NOT count `note` rows.** B-18 makes deletion a **tombstone**, so the count excludes deleted notes — and that rule has exactly one author, T170. A second party counting rows reintroduces the tombstone question in a module that has never heard of notes, which is the two-authors shape D-240-10 and D-091-01 are both about. **T170 maintains the column; T150 reads it.**
+
+  **Neither task imports the other**, which is what lets them run in the same wave. The partition is in the schema already — three counter columns, two `target_actor` kinds — so this ruling names a boundary rather than inventing one.
+
+  **The `target` ROW ITSELF is a race both tasks can lose.** A star and a note can be the first event for a given `(kind, ref_id)`. **Both create it the same way: a single insert with `ON CONFLICT (kind, ref_id) DO NOTHING`, then read** — never `SELECT`-then-`INSERT`, for the identical reason the paragraph below gives about `target_actor`. **A cell that does not drive two concurrent callers has not tested this.**
+
   **The `target_actor` unique index IS the idempotency guarantee, not an index on top of one.** `target_actor_target_account_kind_key` on `(target_id, account_id, kind)` is what makes "twice yields one" true under concurrency; a `SELECT`-then-`INSERT` passes every sequential test and loses under two callers. So the write is a **single insert whose conflict is caught**, and the criterion is **tested with concurrent callers or it is not tested**. Same shape as T070's AC5 and T050's AC6 — this is now the third place in the run where a criterion is satisfied by an index and would otherwise be satisfied by code that only looks right.
 
   **`target` is created on demand and `target_kind_ref_id_key` is what keeps it single.** Two callers acting on a target that has no row yet must not create two; upsert on the unique key rather than checking existence first.
@@ -18684,7 +18703,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Blocks:** —
 - **Owns:** `lib/server/notes/**`, `app/api/notes/**`
 - **Forbidden:** `lib/server/ballot/**`, `components/blueprint/Comments.tsx`
-- **Published signatures** (checked against `backend` at `acaf8ff`. The note row is `{ id, author, body, createdAt, votes }` keyed `(target, id)` (`lib/types.ts:182`), and votes use `target_actor.kind = "note_vote"`. **No `note` table exists in `lib/db/schema.ts`** — this task needs one and cannot add it, since that file is Forbidden. Reported as a dependency on T000's owner, not worked around. Barrel: `@/lib/server/notes`.)
+- **Published signatures** (checked against `backend` at `acaf8ff`. The note row is `{ id, author, body, createdAt, votes }` keyed `(target, id)` (`lib/types.ts:182`), and votes use `target_actor.kind = "note_vote"`. ~~**No `note` table exists in `lib/db/schema.ts`**~~ — **STALE, and it was the reason this task read as blocked for a whole wave. T005 merged and `note`, `note_vote`, `ballot` and `run_report` ALL EXIST.** `note_vote` is a `target_actor.kind`, not a table of its own. The block contradicted its own `Depends on` line, which already named T005 for exactly these tables — **a section disagreeing with itself, which is this run's most-charged defect, in the field that decides whether a task can start.** Barrel: `@/lib/server/notes`.)
 
         interface NoteRecord { id: string; author: PublicAuthor; body: string; createdAt: Date; votes: number; deleted: boolean }
         interface NotePage { notes: readonly NoteRecord[]; cursor: string | null }
@@ -18694,6 +18713,18 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         editNote(db: Db, actor: Actor, noteId: string, body: string): Promise<NoteRecord>
         deleteNote(db: Db, actor: Actor, noteId: string): Promise<void>
         voteNote(db: Db, actor: Actor, noteId: string): Promise<NoteRecord>
+
+  **D-WAVE-01 — `target` AND `target_actor` ARE PARTITIONED BY COLUMN AND BY KIND. Neither task owns either table wholesale, and READING IS NOT OWNING.** T150 and T170 both write `target_actor` and both carry the paragraph below verbatim, so without this the two halves collide on a table each believes is its own.
+
+  * **T150 WRITES `target.star_count`, `target.download_count`, and `target_actor` rows with `kind = "star"`. Nothing else.**
+  * **T170 WRITES `target.note_count` and `target_actor` rows with `kind = "note_vote"`. Nothing else.**
+  * **`getSignals` READS the whole `target` row, `note_count` included.** A read is not a claim of ownership, and `SignalState.noteCount` stays published.
+
+  **T150 must NOT compute `noteCount` and must NOT count `note` rows.** B-18 makes deletion a **tombstone**, so the count excludes deleted notes — and that rule has exactly one author, T170. A second party counting rows reintroduces the tombstone question in a module that has never heard of notes, which is the two-authors shape D-240-10 and D-091-01 are both about. **T170 maintains the column; T150 reads it.**
+
+  **Neither task imports the other**, which is what lets them run in the same wave. The partition is in the schema already — three counter columns, two `target_actor` kinds — so this ruling names a boundary rather than inventing one.
+
+  **The `target` ROW ITSELF is a race both tasks can lose.** A star and a note can be the first event for a given `(kind, ref_id)`. **Both create it the same way: a single insert with `ON CONFLICT (kind, ref_id) DO NOTHING`, then read** — never `SELECT`-then-`INSERT`, for the identical reason the paragraph below gives about `target_actor`. **A cell that does not drive two concurrent callers has not tested this.**
 
   **The `target_actor` unique index IS the idempotency guarantee, not an index on top of one.** `target_actor_target_account_kind_key` on `(target_id, account_id, kind)` is what makes "twice yields one" true under concurrency; a `SELECT`-then-`INSERT` passes every sequential test and loses under two callers. So the write is a **single insert whose conflict is caught**, and the criterion is **tested with concurrent callers or it is not tested**. Same shape as T070's AC5 and T050's AC6 — this is now the third place in the run where a criterion is satisfied by an index and would otherwise be satisfied by code that only looks right.
 
