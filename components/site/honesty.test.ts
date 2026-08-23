@@ -31,7 +31,8 @@
    same commit and the reason goes in the message.
    ============================================================ */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -663,10 +664,58 @@ function withoutComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
 }
 
+/**
+ * The sentences `/upload` is no longer allowed to say, now that pressing Publish publishes.
+ *
+ * Each is a claim the cutover made FALSE, not merely dated. `not wired up` is in the list
+ * because D-263-02 says it is deleted rather than reworded — a rewording keeps the phrase
+ * and changes what follows it, and this catches that.
+ *
+ * What is deliberately NOT here: "not built yet", which still stands over the editor push
+ * (T270 is `todo`), and the vocabulary note's "read against the curated core alone", whose
+ * subject is an unreadable overlay and is therefore still true after any cutover. **Subject
+ * decides whether a sentence retires, never which file it lives in** (D-263-01, D-263-12).
+ */
+const RETIRED_CLAIMS = [
+  "nothing was sent",
+  "nothing was saved",
+  "nothing was uploaded",
+  "nothing is uploaded",
+  "nothing is sent",
+  "not wired up",
+  "there is no registry backend",
+  "nothing leaves this tab",
+] as const;
+
+/**
+ * Every source file that can put copy on `/upload`, with its commentary removed.
+ *
+ * Enumerated off the filesystem rather than listed, so the sweep covers a file somebody adds
+ * to the route next year without that person having to know this guard exists.
+ */
+function ROUTE_SOURCES(): { path: string; copy: string }[] {
+  const out: { path: string; copy: string }[] = [];
+  for (const dir of ["app/upload", "components/upload"]) {
+    for (const entry of readdirSync(join(ROOT, dir), { withFileTypes: true, recursive: true })) {
+      if (!entry.isFile()) continue;
+      if (!/\.tsx?$/.test(entry.name) || /\.test\.tsx?$/.test(entry.name)) continue;
+      const path = join(entry.parentPath ?? dir, entry.name);
+      out.push({ path, copy: withoutComments(readFileSync(path, "utf8")) });
+    }
+  }
+  return out;
+}
+
 describe("/upload step 4 states what was stored", () => {
-  const FLOW = readFileSync(`${ROOT}/components/upload/UploadFlow.tsx`, "utf8");
-  /** What a reader can actually be shown: the source with its commentary taken out. */
-  const COPY = withoutComments(FLOW);
+  /**
+   * The wizard with its commentary taken out — used by EVERY cell below, not just the copy
+   * one. A structural cell reading raw source can be satisfied by a comment that mentions
+   * the binding it looks for while the branch that rendered it is gone, which is the same
+   * class of blindness as the copy cell's and was live here until D-263-12.
+   */
+  const FLOW = withoutComments(
+    readFileSync(`${ROOT}/components/upload/UploadFlow.tsx`, "utf8"),
+  );
 
   /**
    * AC5, and it is the check that the cutover was COMPLETE rather than mostly done.
@@ -680,19 +729,28 @@ describe("/upload step 4 states what was stored", () => {
    * reworded version would keep the phrase while changing what follows it, and this catches
    * that.
    */
-  it("no longer says the bundle is not sent, saved or wired up", () => {
-    for (const forbidden of [
-      "nothing was sent",
-      "nothing was saved",
-      "nothing was uploaded",
-      "not wired up",
-      "there is no registry backend",
-      "nothing leaves this tab",
-    ]) {
-      expect(
-        COPY.toLowerCase(),
-        `the wizard still says "${forbidden}", which the Publish button made false`,
-      ).not.toContain(forbidden);
+  it("no longer says the bundle is not sent, saved or wired up, on ANY file that renders the route", () => {
+    /* **Every file that renders `/upload`, not the one the criterion cites.**
+       D-263-12, and this widening is the finding rather than the line that provoked it.
+       The first version of this cell read `UploadFlow.tsx` alone, because that is the file
+       AC5's own prose points at — and it passed while `BundleDropzone.tsx` rendered "the
+       files are read in this tab and nothing is uploaded" on the upload control itself.
+       Holding the rule and recognising its instance are different acts, and a guard scoped
+       to the file the rule is written about cannot tell you about the other four.
+
+       The domain is built by READING THE DIRECTORIES rather than from a list, so a file
+       added to the route later is swept without anybody remembering to add it here. That
+       is the whole difference between this and what it replaces. */
+    const surfaces = ROUTE_SOURCES();
+    expect(surfaces.length, "the route's source files could not be read").toBeGreaterThan(3);
+
+    for (const { path, copy } of surfaces) {
+      for (const forbidden of RETIRED_CLAIMS) {
+        expect(
+          copy.toLowerCase(),
+          `${path} still says "${forbidden}", which the Publish button made false`,
+        ).not.toContain(forbidden);
+      }
     }
   });
 
