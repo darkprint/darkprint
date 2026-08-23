@@ -839,6 +839,95 @@ it. **Corroborating a good measurement with a bad one does not strengthen it.**
 
 It also corrected the figure: 3h36m, not four hours. I had rounded a number I had not read.
 
+## A mutation run with `skipped > 0` is INVALID, not a zero — and a hook TIMEOUT is not a hook THROW
+
+**Three harness defects, all found by T110's blind author while falsifying its own suite against a
+stand-in, and all of them repo-wide.**
+
+**1. A driver that reads failed-counts cannot tell *"nothing objected"* from *"nothing ran"*.** A
+sweep returned `Tests 24 passed | 15 skipped (39), zero failed` and the driver recorded `failed=0`
+— **fifteen cells silent, scored as a mutation nothing catches.** `RecordedSetup` defends against a
+hook that THROWS; it does nothing about vitest killing a hook at `hookTimeout`. **Treat any run with
+`skipped > 0` as invalid and re-run it. Never read its failed count.** This is the second form of
+the 127-cells trap: the first was a throwing writer, this one is a timing-out one, and the existing
+guard watches only the first door.
+
+**2. THE FIRST DYNAMIC IMPORT OF A BARREL PAYS THE WHOLE TRANSFORM, and the bill lands on whichever
+cell imports first.** `import("@/lib/server/lineage")` makes vite transform the entire graph behind
+the barrel; at `transform 21.13s` that crosses the 20s `testTimeout`, and **the cell reds saying the
+barrel does not export the function — which is present.** Against a correct implementation that is
+a false defect report aimed at the implementer, and it is **load-dependent, so it does not reproduce
+on demand.** Ten of nineteen runs in one sweep carried it, on mutations that could not touch it.
+
+**The fix is NOT a fixture hook** — moving the transform into `beforeAll` is what produced defect 1.
+Register with `provide()`, build on first use **inside the cell**, memoise with the rejection so the
+clock is `testTimeout` and crossing it reds against the criterion under test. `warmWith(setup)`
+starts the fixture **without awaiting it** — `void`, never `await`, because an awaited fixture is
+one that can time out the hook again. Widen the clock with `vi.setConfig({ testTimeout, hookTimeout })`
+**per FILE**, never in `vitest.config.ts`: that file is shared, its 20s exists because nine worktrees
+compete for ten cores, and widening it for everybody is not one task's to do.
+
+**3. A two-valued criterion asserted against ONE actor is satisfiable by the default path.** Its
+`honours an explicit public visibility` cell asked an account whose default was already `public`, so
+**the single implementation the cell exists to catch — one ignoring `to.visibility` entirely — passed
+it.** The repair: **assert each explicit value against an actor whose default DISAGREES with it**, so
+neither direction can be satisfied by the default. Same shape as T140's `Exact<any,T>` and T100's
+`Pin<>` short-circuit — an assertion admitting the exact output it was written to forbid — and **it
+was found only by chasing the one prediction miss in a 26-mutation sweep.** A miss is where the
+information is; a table that matches everywhere has told you nothing you did not already believe.
+
+**A stand-in is a WEAK axis and the table must say so.** Green proves the cells are satisfiable,
+never that they are right, because the stand-in carries its author's reading. The red-against-mutated
+column is the half that carries information. **Name the readings the stand-in did not separate** —
+this one dates a repin at the upstream's latest release rather than the earliest introducing it, both
+coincide on a two-release fixture, so that cell stays unfalsified on that axis and the table says so
+rather than implying past it.
+
+## `git checkout HEAD -- <path>` REVERTS AN UNCOMMITTED FIX, and every gate after it measures the hole
+
+**Second instance in this project.** The technique is the obvious way to run a base-vs-mine
+comparison: `git checkout <base> -- <path>`, measure, `git checkout HEAD -- <path>` to restore.
+**`HEAD` is the last COMMIT, so it is older than any fix you have not committed.** The restore does
+not restore; it reverts.
+
+T091's implementer measured a security fix green, then ran that pair to attribute an unrelated red,
+and **the restore silently deleted the fix.** typecheck passed, lint passed, the suite went 29/29 —
+**all of it on code with the hole open**, and every one of those greens would have shipped as
+evidence for a fix that was not in the tree. It was caught by `git diff --stat` showing one changed
+file where there should have been three, not by anything failing.
+
+**RULE: commit a verified fix BEFORE measuring anything else.** *"I verified it earlier"* does not
+survive a checkout, and a green measured after one is a claim about a tree you no longer have.
+Prefer `git stash` or a second worktree for baselines; if you use checkout, **diff before you
+believe any number that follows it.**
+
+## The shared S3 bucket is a CROSS-COMMIT, CROSS-WORKTREE CACHE, and it can serve one tenant's bytes to another
+
+**Measured by T091's implementer, twice, with controls.** `bundleDigest({dot, cardDigests})`
+(`lib/core/hash/digest.ts:61`) covers the DOT and the card digests and **not** the export template,
+the manifest, the analysis columns, the owner, the slug or the version — while `bundle-export.ts`
+quotes the analysis into `README.md`. So **one key holds different bytes across two commits**, in a
+bucket that outlives every run and every worktree.
+
+Before freeze-on-miss this was nearly inert: only `publish()` wrote. **Freeze-on-miss makes every
+serve a writer**, so every t090/T091 run now seeds the bucket for every later run everywhere.
+
+**Two consequences, both observed rather than predicted:**
+
+* **A FALSE RED, armed now.** A run after a commit that changes the README template reads stale
+  bytes and reds with a message pointing at `serveFile`. **A t090/T091-shaped red is worth a bucket
+  check before it is worth a code change.**
+* **A CROSS-TENANT READ.** Its first F6 probe showed an anonymous caller served at step 1, which
+  looked like a pre-existing leak on `backend`. It was not: **that digest already held a folder the
+  same session's earlier runs had frozen when those cards were PUBLIC**, and it was served into a
+  fresh scratch database for a release whose cards are now private. The cache crossed a tenancy
+  boundary that no test's fixture isolation can see, because the fixture isolates Postgres and the
+  bucket is not Postgres.
+
+`fixtures.ts:689-694` names this as **residue to COUNT**. Under freeze-on-miss it is a cache later
+runs **READ** — the paragraph is not wrong, it is describing a different object than the one that
+now exists. **Nobody clears the bucket unilaterally: it is shared and worktrees are live.**
+
 ## `error-hygiene` over a task with no module is vacuous, not thin
 
 Its sharpening of my own warning, and it is stronger than what I sent. I told it that a green from
@@ -11148,7 +11237,7 @@ it does not decide differently inside a worktree.
 | T180 | Run-report ingestion and cost aggregation | T010, T050, T080 | `lib/server/runs/**`, `app/api/runs/**` | — | — | todo | — |
 | T200 | Semantic search and ranking | T080 | `lib/server/search/**`, `app/api/search/**` | — | — | todo | — |
 | T210 | Term-usage index and promotion | T030, T060, T080 | `lib/server/terms/**`, `app/api/ontology-usage/**` | — | — | todo | — |
-| T110 | Fork, lineage and drift | T010, T060, T100 | `lib/server/lineage/**`, `app/api/lineage/**` | — | — | todo | — |
+| T110 | Fork, lineage and drift | T010, T060, T100 | `lib/server/lineage/**`, `app/api/lineage/**` | — | — | **merged** | — **MERGED at `60649b8`, tagged `t110-verified`.** Adversary PASS at `f4aa482`, zero conflicts either direction, **39 of 39 blind cells green on FIRST CONTACT**. Its adversary charged three defects against its OWN suite: a cell asking an account whose default already matched the value under test (so the one implementation it existed to catch passed it), a load-dependent red naming a missing export that was present (the first `import()` of a barrel pays the whole graph's transform, which would have been filed against the implementer), and 39 cells that never passed `driftOf` anything but the owner. **D-110-14 came from a real second axis** -- implementer and blind author derived opposite `Repin.at` readings from the same rendered copy, settled by a source neither wrote. **D-110-16: a 1-in-3 flaky cell REPAIRED, not deleted** -- reproduced at 1 red in 6, fixed by temporal separation, 8 of 8 after, falsified by mutating `repinnedAt` to `findLast` which reds exactly that cell; it was the only assertion in either half guarding D-110-14. **`error-hygiene` 30 -> 32 DERIVED by the walk against its own domain sha.** Gates: build 0 with no generated diff, typecheck 0 raw, lint 0, **`npm test` 1 failed, 6560 passed of 6561, 0 skipped by arithmetic**, the one red T090's AC6 (pre-existing, T091's). **D-110-15 ruled and deliberately UNIMPLEMENTED** -- recorded in `docs/ARCHITECTURE.md` 11.2, deferred because `driftOf` has no caller and a contract change authored by its own ruler has no blind check. |
 | T120 | Ownership transfer and account deletion | T010, T050, T060, T100 | `lib/server/lifecycle/**`, `app/api/transfer/**`, `app/api/account/delete/**` | — | — | todo | — |
 | T220 | MCP server surface | T080, T090, T200 | `lib/server/mcp/**`, `packages/mcp/**` | — | — | todo | — |
 | T250 | Seed import and re-attribution | T010, T020, T030, T050, T130 | `scripts/import-seed.ts`, `lib/server/seed/**`, `content/**` | — | — | todo | — |
@@ -14776,15 +14865,19 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
         interface AuditEntry {
           actorId: string | null; actorKind: "owner" | "operator" | "system";
-          action: string; targetKind?: string; targetId?: string;
+          action: AuditAction; targetKind?: string; targetId?: string;
           decision: "allowed" | "denied" | "error";
           detail?: Record<string, string | number | boolean>;
         }
 
-        writeAudit(db: Db, entry: AuditEntry): Promise<void>
-        listAudit(db: Db, actor: Actor, filter: { targetKind?: string; targetId?: string; since?: Date }): Promise<AuditEntry[]>
+        const AUDIT_ACTIONS = [...] as const        // twelve members, ratified in D-240-08
+        type AuditAction = (typeof AUDIT_ACTIONS)[number]
+        class AuditStoreError extends Error {}      // D-240-05, cause non-enumerable
 
-  **`detail` is `Record<string, string | number | boolean>`, not `unknown`, and that is AC3 made structural.** "No log field carries run content or a credential" cannot be enforced by remembering — one caller spreading a request body in and it ships. A scalar-only map cannot hold a nested object, so a DOT source, a card body or a driver error **cannot be passed** rather than merely being discouraged. The type is the guard; the test asserts the type rejects a nested value, which is a compile-time test in the shape T060's `Exact<>` check already established.
+        writeAudit(db: Db, entry: AuditEntry): Promise<void>
+        listAudit(db: Db, actor: Actor, filter: { targetKind?: string; targetId?: string; since?: Date }): Promise<(AuditEntry & { occurredAt: Date })[]>
+
+  **`detail` is `Record<string, string | number | boolean>`, not `unknown`, and that is AC3 made structural.** "No log field carries run content or a credential" cannot be enforced by remembering — one caller spreading a request body in and it ships. A scalar-only map cannot hold a nested object, so a DOT source, a card body or a driver error **cannot be passed** rather than merely being discouraged. The type is the guard; the test asserts the type rejects a nested value, which is a compile-time test in the shape T060's `Exact<>` check already established. **This paragraph overstates and D-240-07 states the limit: the map excludes a nested object and does NOT exclude a flat credential** — `{ key: secret }` typechecks — so the credential half of AC3 remains held by remembering.
 
   **AC2 is `actor_kind`, already in the schema, and AC5 is `decision`.** Neither needs inventing: an operator action is distinguishable because the column exists, and refused-by-policy is `denied` while a fault is `error`. State it so nobody adds a parallel `isOperator` boolean or encodes the distinction in `action` strings.
 
@@ -14798,6 +14891,62 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 - **Contract:** B-14 — every state change writes an audit row of actor, action, target and time; request logs are operational and expire at about 90 days; downloads are counted by an explicit event at the serving edge and never derived from logs, so logs never become product data. One constraint is absolute and comes from the product's own copy: the registry holds the bundle and who owns it, and not "a run, a key, or any telemetry about either" (`components/bundle/Aside.tsx:33-36`). Error responses carry no stack, no query and no internal path (B-03).
 - **Acceptance criteria:** (1) each state-changing operation writes exactly one audit row naming actor, action, target and time; (2) an operator action is audited and distinguishable from an owner's; (3) no log field carries run content or a credential; (4) a `problem+json` body contains no internal path or stack; (5) a refused-by-policy operation is distinguishable in the log from one that errored.
 - **Out of scope:** an operator UI, alerting, rate limiting (T230).
+- **D-240-01 through D-240-06, ruled at dispatch. BOTH HALVES charged four of these independently, within minutes, from opposite partitions — which is the strongest signal this arrangement produces and it fired before either wrote a line.**
+
+  **D-240-01 — AC1 NARROWS to what this task can own and be tested on.** *"Each state-changing operation writes exactly one audit row"* was unreachable: T240 owns `lib/server/observability/**`, every route file is Forbidden, and a grep for `writeAudit|listAudit|observability` across the tree returns **zero call sites**. The eight merged modules that write state are all outside this task, and **T100 sharpens it — a publish is ONE operation writing through archive several times, so "exactly one row" has to be decided at the composing layer.** AC1 now reads: **one `writeAudit` call inserts exactly one row and nothing else, anywhere**; and **`writeAudit` handed a transaction handle participates in it**, so an operation failing partway leaves **zero** rows and its caller writes the single `error` row — rather than an `allowed` and an `error`. The whole-corpus half is **unowned** and recorded in §11 as a cross-task obligation on those eight owners.
+
+  **D-240-02 — `listAudit` returns `(AuditEntry & { occurredAt: Date })[]`.** AC1 names *"actor, action, target **and time**"* and `AuditEntry` carries no time, while the same signature takes `since?: Date` — **a filter over a quantity its own return type cannot expose.** That is the shape T060's AC4 was withdrawn for. Writers still leave the column to its DB default; only the read shape gains it.
+
+  **D-240-03 — `AUDIT_ACTIONS` is PUBLISHED as a closed set and `action` is typed as that union.** The block promised *"a test asserts no `action` value in the enum's live set refers to a run"* — **there is no enum**: `action` is `text` in `schema.ts`, and over an open string the assertion is unfalsifiable, so the product's absolute constraint (*a run, a key, or any telemetry about either*) is held by memory rather than by the type. Closed, an action naming a run **cannot be passed**. **Its initial membership is the implementer's to propose in one message before it codes, and mine to ratify** — naming it here myself would be the guess this ruling exists to prevent.
+
+  **D-240-04 — `listAudit` permits OPERATOR only.** B-13's break-glass. `can()` cannot decide it — `Resource` has no `audit` kind and `Action` has no member meaning *read the audit log*, and adding one is `lib/server/policy/**`, another task's file. **Anonymous and account are both refused with the published sentence.** Whether an account may read its own `actorId` rows is a product decision nobody has made; `filter` has no `actorId` member to express it with, and that absence is now deliberate rather than accidental.
+
+  **D-240-05 — `writeAudit` PROPAGATES a driver fault, wrapped.** *"This module writes rows rather than raising"* means it makes no policy decision, **not** that it swallows faults: `actor_id` is a real FK, an entry naming a missing account is a 23503, and **swallowing it violates AC1 in the direction nobody checks — zero rows, silently.** `AuditStoreError` carries the operation alone, `cause` non-enumerable, `name` on the prototype, on `NamingStoreError`'s and `LimitsStoreError`'s precedent — both of which added exactly this beyond their published blocks and reported it.
+
+  **D-240-06 — AC4 is WITHDRAWN from T240**, as T060's audit half was. `problem()` serialises what its callers pass, its callers are route files Forbidden here, and the module itself is T000's — **nothing in `lib/server/observability/**` sits on that path.** It becomes an obligation over `lib/server/http`, recorded rather than assigned.
+
+  **D-240-07 — `detail`'s type holds ONE of AC3's two clauses, and the block claims both.** The argument is that `Record<string, string | number | boolean>` cannot hold a nested object, so *"a DOT source, a card body or a driver error **cannot be passed**"*. **True, and a good guard.** But AC3 also says *"or a credential"* — **and a credential is a flat string.** `detail: { key: secret }` typechecks; so does spreading a validated flat body, and **the block's own example (old handle, new handle) is that exact shape**, so the shape cannot be refused without refusing the example. So half of AC3 is held by **remembering**, which is the thing the block says the type replaces.
+
+  **Ruled: the type is not widened and the claim is.** The module comment must say **which clause the type holds and which is a caller's discipline** — otherwise a cell asserting *"the type rejects a nested value"* reads as covering AC3 whole while covering one of its two clauses, and the next reader inherits the stronger claim. Charged by T240's implementer, which **declined to propose a fix it would have to invent** and asked only that the comment stop overstating. That is the right disposition for a gap with no cheap structural close.
+
+  **COLLISION, and it is the orchestrator's to hold: T110 and T240 EACH derived `error-hygiene` 30 → 32 from base 30, independently and correctly, in the same wave.** T110 publishes `ForkRefusedError` and `LineageStoreError`; T240 publishes `AuditStoreError` and `NotPermittedError`. Each figure is right for a tree where that task merges alone and **both are wrong for the second merge, which faces 32 → 34.** Neither half can see this — a task's worktree excludes the other's module by construction, which is the same blindness that makes the guard unable to fire before a merge. **The merge order decides the numbers and I own it: first task to merge asserts 30 → 32, second asserts 32 → 34.** I have shipped a stale `error-hygiene` figure into this document three times, every time by carrying a number instead of deriving one; **both implementers are instructed to derive it from their own tree at their merge and to treat my figure as the stale operand.**
+
+  **`error-hygiene`'s equality moves 30 → 32 for whichever of the two merges FIRST, in the MERGE COMMIT and nowhere else.** That guard's domain is `git ls-tree -d backend lib/server/`, so an unmerged module is excluded from the count and checked for hygiene only — **it cannot fire in the implementer's worktree**, which is why it was reported before code rather than discovered at the merge.
+
+  **TWO classes, corrected from one by the implementer against its own earlier report.** `AuditStoreError` is D-240-05's; **`NotPermittedError` is D-240-04's, and it exists because a refusal a caller cannot NAME is a refusal a caller cannot branch on** — the rule the saves and limits barrels both state in their own headers, and `NotAccountOwnerError`, `NotKeyOwnerError` and `HandleRequiredError` are three merged precedents for publishing the decision class rather than throwing a bare `Error`. **It takes no argument at all**, on `rateLimitedError`'s precedent: a parameter that exists is a parameter somebody interpolates later, and the published sentence says nothing about the target by design (B-03's 404-not-403, one layer down). **31 with an un-branchable refusal was the alternative and it is refused.**
+
+  **D-240-08 — `AUDIT_ACTIONS` ratified at TWELVE members**, proposed by T240's implementer and derived mechanically from the published writers of the eight merged state-changing modules rather than from recall. Shape `noun.verb`, lowercase, dotted, short enough that nobody packs a second fact into the string:
+
+        account.create   account.update   handle.allocate   handle.release
+        bundle.create    release.add      bundle.publish    card.add
+        ontology.release key.issue        key.revoke        counter.write_failed
+
+  **No member encodes the operator.** An operator removing a note writes the note's action with `actorKind: "operator"`, never an `operator.*` member — the distinction is the column, and a second spelling of it is the two-sources shape D-230-10 forecloses.
+
+  **`bundle.publish` overlaps `bundle.create`/`release.add` deliberately, and the rule is stated rather than left to be inferred: THE COMPOSING LAYER WRITES THE ROW, A MODULE UNDERNEATH DOES NOT.** A publish *is* a create-or-append, so both writing would make one operation two rows — and **AC1 as narrowed does not catch that**, because it counts one `writeAudit` call and this would be two. `bundle.create` and `release.add` survive for direct archive writes that do not go through publish; the seed import is the live example.
+
+  **Three exclusions, each with its reason.** No action naming a **blueprint run**, of any spelling — that is what closing the set buys, an absolute constraint that cannot be passed rather than one a caller remembers. No `download.*` — B-14 counts downloads by an explicit event at the serving edge, and a per-download audit row is that derivation with the arrow reversed, turning the audit log into product data. No `star.*` or ballot member — T150 and T160 own counted figures and neither has merged.
+
+  **`counter.write_failed` is the stated EDGE of exclusion 2, added at ratification.** T090's `serveFile` ruling audits a **failed** download-counter write through this module — *the serve succeeds, the failure is audited, the count is lost* — and every spelling naming a download collides with the exclusion. **This names the counter fault, not the download.** It records failures only, never volume, so no download is ever counted here. Without it that ruling had nowhere to write, which its finder charged rather than working around.
+
+  **`save.add` and `save.remove` are DROPPED, and this is a product call I am making narrow and surfacing rather than settling.** Their finder put it exactly: *"an operator can enumerate every private bookmark any account ever made... and it is being made by whether two strings are in a constant."* A save is deliberately private and separate from a star (B-10), `listAudit` is operator-only (D-240-04), and including them converts a private surface into a break-glass-readable **reading history** — a privacy cost with no accountability benefit, since a bookmark affects nobody but its owner. **B-14's "every state change" is narrowed here deliberately**, which is a narrowing the owner may overturn.
+
+  **D-240-11 — `Aside.tsx`'s "a key" is the key used in a RUN, not an API key, so a vocabulary guard charges `run` and must NOT charge `key`.** T240's blind author parsed the three forbidden nouns out of the component rather than transcribing them, so all three arrived, and it charged only `run` — correctly. §T230 AC7 already routes key issue and revocation through `writeAudit`, so `key.issue`/`key.revoke` are legitimate members and **a cell charging `key` would red a correct implementation.** Same ruling as D-240-08's: the copy is scoped to what a bundle page holds about a bundle. **Labelling the uncharged clause in the cell and printing the live set rather than deleting the clause is the right shape** — it rules against a measurement instead of against a memory.
+
+  **D-240-12 — `writeAudit` APPENDS; it never upserts.** Flagged as an inference rather than shipped silently, and the inference is right. **A writer upserting on (actor, action, target) passes every one-call-one-row cell and destroys the log**, which is AC1 satisfied in the direction nobody checks — the same shape as D-240-05's swallowed fault. Two operations, two rows. The blind cell writing one entry twice and asserting two distinct rows is the discriminating form.
+
+  **D-240-13 — `AuditStoreError`'s `cause` clause is SCOPED to the propagation path, not to every construction.** D-240-05 says non-enumerable, which presumes one exists; an implementation that pre-checks the FK itself and throws without a driver error underneath is not wrong and would red an otherwise correct module. **Assert that a `cause`, WHERE PRESENT, is non-enumerable, and assert its presence only on the wrapped-driver-fault path**, which is the only path D-240-05 is about.
+
+  **F-240-A is RESOLVED and the GAP cell should be deleted at the merge.** The Published signatures block was behind its own rulings on all four counts the blind author measured, and it was amended at `43ceb9a`: `AuditAction` in the interface, the `occurredAt` return, `AUDIT_ACTIONS` and both error classes named. **Its pins were bound to the rulings as the later and governing text, which was the correct call** — and it raised the divergence as a red against the DOCUMENT rather than against the implementer, which is what kept it from becoming a false defect report at the hand-off.
+
+  **D-240-10 — `listAudit`'s operator check is a CHARGED COPY of `lib/server/policy`'s `isOperator`, and one line on T060's barrel deletes it.** `isOperator` is module-private: the policy barrel publishes `can`, `visibleTo` and three types. `can` genuinely cannot decide this — `Resource` has no `audit` kind — which is why D-240-04 put the permission here, and that left a deep import (D-01 forbids it) or a copy. **Copied WITH the attribution and carrying all three of T060's rulings**, on `naming/pg-error.ts`'s precedent against `cards/pg-error.ts`, because a weakened copy is worse than none: `can.ts:189` says in as many words that possession of the discriminant is not authority. **Recorded as a debt on T060 rather than absorbed silently — its own implementer asked for it to be charged.** Whoever next owns `lib/server/policy/**` publishes `isOperator` and the copy goes.
+
+  **D-240-09 — the AMENDMENT PATH, which its finder identified as having no owner.** A closed set in `lib/server/observability/**` must grow — T170's AC7 already promises *"the operator can remove one, audited"*, T160 needs a validator-grant action, T250 needs re-attribution — and **every one of those tasks is Forbidden from editing the file that holds it.** So: **`AUDIT_ACTIONS` is amended by the ORCHESTRATOR at a task's dispatch, on that task's charge, exactly as an `Owns` grant is.** Pre-seeding members for callers that do not exist is refused for the reason the implementer gave: **a member no caller exists for is a guard that cannot fail.**
+
+  **`key.issue`/`key.revoke` are KEPT.** `Aside.tsx`'s *"a run, a key, or any telemetry about either"* is scoped to what a **bundle page** holds about a bundle, and D-230-08 anticipates an audit row for key operations in terms. `detail` never carries the secret, its prefix, or anything from which it could be reconstructed.
+
+  **Two schema DEFAULTS are the AC5 hazard and the blind author found them before any cell existed**: `actor_kind` defaults to `owner` and `decision` to `allowed`, so **an implementation that drops either on the floor writes a plausible row rather than failing.** Cells must EXCLUDE those outputs rather than admit the good one.
+
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-14.
 
@@ -17717,7 +17866,13 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Published signatures** (checked against `backend` at the merge of T100, and **written late — the third time in one day that a task of mine reached a dispatch queue with nothing published.** D-100-05 charged the first, T231's blind author the second. Both halves of this task would otherwise have inferred the same shapes independently and only met at an adversary round.)
 
         persistArtefacts(storage: ObjectStorage, digest: string, files: readonly ExportedFile[]): Promise<void>   // T100's, SHIPPED
-        readPersisted(storage: ObjectStorage, digest: string, path: string): Promise<Uint8Array | undefined>       // THIS TASK
+        type PersistedRead =
+          | { kind: "bytes"; bytes: Uint8Array }     // the frozen folder has this path
+          | { kind: "no-such-path" }                 // folder PRESENT and decoded, path absent — AUTHORITATIVE
+          | { kind: "no-folder" };                   // no object, or it does not decode — fall back and generate
+
+        readPersisted(storage: ObjectStorage, digest: string, path: string): Promise<PersistedRead>   // THIS TASK
+        serveFile(db, actor, ref, path, storage: ObjectStorage | undefined = undefined)   // AMENDED: `= undefined`, NEVER `storage?:`
 
         // T100's codec, consumed rather than redefined — exported from @/lib/server/publish
         decodeArtefacts(bytes: Uint8Array): readonly ExportedFile[] | undefined
@@ -17726,6 +17881,36 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **CORRECTED before either half wrote a line — BOTH found it independently, and I had written the block from a MESSAGE about the codec rather than from the codec.** Two lines were wrong. `decodeArtefacts` dropped `| undefined`, whose own header rules it: *"`undefined` rather than a throw... a throw here would turn a servable release into a 500."* And `selectArtefact` returns **`Uint8Array`**, not an `ExportedFile` — which **falsified the block against itself**, since its own derivation composes to `Promise<Uint8Array | undefined>` and that only type-checks against the shipped return. A blind author binding the published line writes `selectArtefact(files, path)?.text`, gets `undefined` on a `Uint8Array` for **every path in a folder that is present**, and lands silently in the pre-freeze fallback — **green against every cell that only tests the fallback.** The exact defect this task exists to prevent, arriving from the contract rather than from the code.
 
   **`readPersisted` is `storage.get(digest)` handed to `decodeArtefacts`, then `selectArtefact`.** The container format is T100's and is **not** this task's to redefine — `keyForDigest` refuses anything that is not `sha256:` + 64 hex, so there is no path component and a folder cannot be stored file-per-key. That is also the only reading under which `readPersisted`'s `path` argument is needed at all, which is what turns the format from a guess into a derivation.
+
+  **D-091-05 — UNDER FREEZE-ON-MISS THERE IS NO "UNFROZEN RELEASE" AFTER ANYONE READS IT ONCE, INCLUDING A CONTROL'S OWN SETUP CALL. The unfrozen arm passes `storage: undefined`.** Measured at a trial merge of `feat/t091-persisted` + `test/t091-persisted`: zero conflicts, T090's AC6 goes GREEN, and **three cells of `serve-frozen.test.ts` red**, the first of them the blind suite's own control — *"THE CONTROL FAILED, AND THIS IS NOT A DEFECT IN T091 … `README.md` for the UNFROZEN release is byte-identical before and after a re-score that updated its row."*
+
+  **The cause is NOT F5, and the way that was established matters more than the ruling.** The control's message names caching, F5 is a caching hazard, and **32 artefact folders were sitting in the shared bucket written between 07:37 and 10:52 — exactly the window those suites ran.** Every detail fitted. Re-running the same tree against a **fresh empty bucket** produced **the same three reds**, and left **18 objects in it**: the control's own first serve freezes the release it then calls unfrozen, the re-score lands, and the second serve reads back the frozen bytes. **A plausible cause that fits every observed detail is still a hypothesis until the discriminating run is made**, and here the discriminating run cost one empty bucket.
+
+  **This is D-091's own origin arriving one layer up:** T091 exists because AC2 and AC3 could not both hold once the contract moved, and freeze-on-miss has now done the same thing to the blind suite's control. **The suite is not wrong; it was written against pre-freeze-on-miss semantics, which is the only thing it could have been written against.**
+
+  **The repair: the unfrozen arm calls `serveFile` with `storage: undefined`** — the fifth parameter's published default (D-091-02), which is exactly the pre-T091 path, so it generates every time and cannot freeze. The differential the cell exists to prove becomes **frozen-with-a-handle against generated-without-one**, which is honest about what "unfrozen" now means and keeps the control's real job: without it, **the frozen half passes against an implementation that never opens the bucket.**
+
+  **The other two reds — `serves EVERY file of an unfrozen release` and `throws the published no such file form rather than generating` — are UNCHARACTERISED and are the adversary's to attribute.** Both plausibly share this mechanism and neither has been measured, so **nobody may book them against it**: classify by cause, not by neighbourhood, and a shared plausible explanation for three reds is exactly the shape that just cost one wrong attribution above.
+
+  **D-091-03 — F6 ACCEPTED at `6aef142`: freeze-on-miss BYPASSED B-07's per-pinned-card check, and the fix restores it on the frozen path.** Measured with a working control, not argued. A public bundle whose seven pinned cards are private and owned by a different account: anonymous THREW at steps 1–2 on both refs, the card owner's read at step 3 froze the folder, and **anonymous then SERVED the private card's 1398 bytes at step 5.** The refusal was not weakened, **it was skipped** — `serveFile` returns from the frozen folder and never reaches `buildExport`, where `pinnedCards` does the `can(actor, "read", …)` check. `readableBy(actor, bundle)` survives and checks the BUNDLE's visibility; the per-CARD one is lost. Underneath it, `bundleDigest` carries nothing about who may read a folder, so two bundles pinning the same card versions share one frozen object regardless of the cards' owner.
+
+  **The fix is `assertPinnedCardsReadable`, exported from `build.ts` and DELEGATING to `pinnedCards` rather than restating its condition** — one author for *"may this actor have this folder"*, called from both paths, which is the opposite of the duplication D-091-01 charges. A restatement would have been a second reading of B-07 and would have passed every test written for it. **Step 3 still serves, so the guard is not over-broad: it refuses the actor B-07 refuses and nobody else.** Two consequences ruled and both accepted: the frozen path depends on Postgres again for card rows (**AC6 was never about avoiding Postgres, it was about not re-deriving the bytes**), and a release pinning a card later made private stops serving publicly, **which is what B-07 wants** — the alternative is a bundle whose privacy depends on when somebody first read it.
+
+  **D-091-04 — F7: `app/api/files/routes.scratch.test.ts`'s driver-failure cell FREEZES ITS OWN SUBJECT, and the fix is to move the control, not the assertion.** Its control call at line 207 serves successfully and therefore freezes; `breakTable("ontology_version")` then breaks a path the cell no longer takes, so `serveFile` answers 200 from the frozen folder and the cell loses two of its three D-90-A observations. **Establish the control against a DIFFERENT release from the one that is then broken**, so `breakTable` applies to an unfrozen subject and `openView` is still reached. That cell only, no assertion moves, falsified by confirming it reds again if `openView`'s classification regresses. **The comment must say what the cell can no longer observe** — a cell quietly measuring two things where it advertised three is how this returns.
+
+  **D-091-01, ruled at dispatch and WRITTEN HERE because a ruling that lives only in a message is a ruling held by nobody.** Charged by T091's blind author against me: I ruled this into a cross-session message, corrected two codec lines in the document, and left the criterion saying the opposite — so an implementer reading only this section would have built the other reading **correctly, from the document**, while the blind suite asserted this one **correctly, from a message it could not see.** Both halves right about their own source, meeting at an adversary round. **That is this task's own defect one layer up**, and the fourth instance in a day.
+
+  **THE FROZEN FOLDER IS AUTHORITATIVE FOR ITS OWN DIGEST.** A decoded artefact that does not carry the requested path throws `` `serveFile: no such file in this release.` `` — it does **not** fall back and generate. Falling back would serve a **mixed folder**: old files frozen, a new one generated off today's re-scored row, which is the thing AC6 exists to forbid. A release is either its frozen bytes or it is not.
+
+  **`Promise<Uint8Array | undefined>` could not carry that, so the return type is the fix rather than the casualty.** `PersistedRead` separates *path absent from a present folder* from *no usable folder*, and deliberately collapses **no object** with **does not decode**, because `artefacts.ts` already rules them the same answer — *"a throw here would turn a servable release into a 500."* Nothing calls `readPersisted` yet, so widening it costs no caller. **The alternative — `readPersisted` throwing a message named for `serveFile` — puts a refusal in a reader whose own header declined to have one, and names it for a function that is not the thrower.**
+
+  **`serveFile` FREEZES ON A MISS** (D-091-02): it generates from Postgres, calls `persistArtefacts` with what it generated, and serves that. Two pieces of evidence, both from authors who could not see this task. `tests/server/t090/fixtures.ts:689-694` says *"T090 is the first task whose implementation **may write** distribution artefacts to object storage, so a run of this suite **can leave bytes in the shared bucket**"* and sets up an out-of-band bucket delta for exactly that — **under a read-only `serveFile` that paragraph describes nothing.** And every release now in the database predates the freeze, so under read-only the fallback is **permanent** and the Goal is never met for a single existing release.
+
+  **Freeze only AFTER `buildExport` returns**, so a release failing AC4 is never frozen — that turns `attractor.test.ts:346` from fixture luck into a property.
+
+  **`serveFile` gains `storage: ObjectStorage | undefined = undefined`, never `storage?:`.** `t090/surface.test.ts` pins `serveFile.length === 4`; `?` erases and still counts, `=` does not. **That is T100's F5 charged a second time** and `publish.ts:114-127` carries the reasoning verbatim, including why the default is `undefined` rather than `createObjectStorage()`: `objectStorageConfigFromEnv()` throws on an unset `S3_*`, and a default evaluated on entry would make **every B-03 `undefined` on this path depend on a bucket being reachable.**
+
+  **STATED CONSEQUENCE, so it is not discovered as a bug in six weeks**: a release frozen before `lib/content/bundle-export.ts` grew a file **404s that file permanently**. No re-freeze verb is published anywhere. That is the ruling working as intended, and it is the price of the folder being authoritative.
 
   **`serveFile` prefers the frozen artefact and falls back to generating from Postgres**, so a release predating the freeze still serves. The fallback is not a convenience: every release currently in the database was written before T100 shipped `persistArtefacts`.
 
@@ -18525,10 +18710,10 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 ### T110, Fork, lineage and drift
 
-- **State:** todo
+- **State:** merged
 - **Depends on:** T010, T060, T100
 - **Blocks:** T190
-- **Owns:** `lib/server/lineage/**`, `app/api/lineage/**`
+- **Owns:** `lib/server/lineage/**` — **`app/api/lineage/**` was REMOVED from this wave (Q6); the route surface is a later task's.**
 - **Forbidden:** `lib/server/publish/**`, `lib/server/archive/**`
 - **Published signatures** (checked against `backend` at `912666e`. Lineage is one optional field on the ordinary bundle record — `{ ownerId, slug, version }` — **CORRECTED at dispatch: `ownerId`, a uuid, NOT `owner`, a handle.** `BundleRecord.lineage` is `{ ownerId; slug; version }` (`archive/types.ts`), read off `lineage_owner_id uuid references account(id)`. `{ owner, slug, version }` is `lib/data/bundles.ts`'s FRONTEND type, where `owner` is a handle — so a suite binding the block would have redded a correct implementation on every AC1 cell. The asymmetry is already merged and consistent: T100's `PublishInput.lineage` takes `ownerHandle` and resolves it to `ownerId` before the write — already published in T010's `BundleRecord` — and **there is no `Fork` type and no second list** (`lib/data/bundles.ts:1-28`). Barrel: `@/lib/server/lineage`.)
 
@@ -18540,7 +18725,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         driftOf(db: Db, actor: Actor, bundleId: string): Promise<Drift>
         forksOf(db: Db, actor: Actor, bundleId: string): Promise<readonly BundleRecord[]>
 
-  **AC2 and AC3 are one property and it is the hardest thing in this task: a private fork is invisible upstream in every direction.** Not in the count, not in the list, not in the upstream author's notifications. `forksOf` filters through `visibleTo`, and the count is `forksOf(...).length` **from the same filtered query** rather than a separate aggregate — the T140 rule again, because a count that forgets the filter is the standard way this leaks. The discriminating test forks privately, asserts the upstream count is unchanged, publishes, and asserts it increments.
+  **AC2 and AC3 are one property and it is the hardest thing in this task: a private fork is invisible upstream in every direction.** Not in the count, not in the list, not in the upstream author's notifications. ~~`forksOf` filters through `visibleTo`~~ — **CORRECTED by Q1: `forksOf` returns PUBLIC rows only, for everyone, always, including the upstream's own author.** Filtering through `visibleTo` would make the count a property of the VIEWER rather than of the upstream, so two callers would see two different fork counts for one bundle and AC2's "unchanged while private" would hold for a stranger and fail for the author. The count is `forksOf(...).length` **from the same query** rather than a separate aggregate — the T140 rule again, because a count that forgets the filter is the standard way this leaks. The discriminating test forks privately, asserts the upstream count is unchanged, publishes, and asserts it increments.
 
   **`blocked` describes this bundle's own problem and never frames it as falling behind.** That is a copy constraint, not an engineering one, and it is why `Drift` carries `reason?` separately from `repins`: a `blocked` drift must be renderable **without naming the upstream at all** (AC5). A single message string would make it impossible to satisfy that without string surgery at the call site.
 
@@ -18548,10 +18733,34 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **AC1 records the release taken, not the bundle.** A fork copies the upstream **release's** bytes and lineage carries `version`, so a fork of a bundle that later publishes again still names what it actually took.
 
-  **Admissible message forms:** `"forkBundle: no such bundle."` for an unreadable upstream (AC6, 404 not 403), and `"forkBundle: `<slug>` is already yours."` for a slug collision in the forker's own namespace — the caller's own slug, which is theirs to see.
+  **Admissible message forms:** `"forkBundle: no such bundle."` for an unreadable upstream (AC6, 404 not 403), `"forkBundle: `<slug>` is already yours."` for a slug collision in the forker's own namespace — the caller's own slug, which is theirs to see — and the two added by D-110-10 and D-110-11 below.
+
+  **D-110-14 — `Repin.at` is the EARLIEST upstream release carrying the new version. RULED, not left as a documented choice.** The implementation's argument is quoted off the surface and beats the alternative: the panel prints *"repinned `card@from → to` **on** `<date>`"*, so dating from the upstream's current release is right **only when the upstream has published exactly once since the fork.** This is a genuine SECOND AXIS rather than a second mutation — its implementer derived *earliest* from the rendered copy, T110's blind author's stand-in took *latest* from the same section, **and the disagreement was resolved by a source neither of them wrote.** It is ruled rather than documented because D-110-16 shows the axis currently has exactly one guard and that guard is unreliable.
+
+  **D-110-15 — `driftOf` returns `Promise<Drift | undefined>`; `undefined` means "not yours to ask".** As shipped it answers `{ tone: "ok", repins: [] }` to a caller who may not read the bundle — measured across four actors, and isolated against visibility by flipping one copy public then private under the same reader. **The gate is correct and leaks nothing; the charge is that `ok` is a POSITIVE CLAIM where `forksOf`'s `[]` is a genuine empty.** `ok` renders as the emerald *up to date* badge, so a caller passing the wrong actor gets a drift panel asserting a bundle is current when it has drifted, and **no value in `Drift` means "not yours"**.
+
+  **This is D-091-01's defect exactly one module over**, and that precedent decides the shape: a return type collapsing *absent* and *refused* forces the caller to guess, which is why `readPersisted` was widened to `PersistedRead` rather than given a sentinel. **A fourth tone is refused** — the copy constraint fixes three — and a throw is refused because `driftOf` is a read verb under B-03. **Q4 is untouched: a bundle with NO LINEAGE still reports `ok`**, because *nothing to compare* is a real answer where *you may not ask* is not; Q4 ruled a different condition and did not consider this one.
+
+  **D-110-16 — the flaky `Repin.at` cell is REPAIRED, never deleted, and the repair is a three-release fixture.** `lineage.db.scratch.test.ts:406` reds about twice in seven runs: the fixture appends two releases back to back, `release.created_at` is `defaultNow()` at microsecond resolution, and **`Date.getTime()` truncates to milliseconds** — four measured back-to-back inserts differ in the column and three of four collide after truncation. Drizzle hands back a JS `Date`, so the precision is gone before any assertion sees it and no JS-side fix exists.
+
+  **Deleting the line is the repair that must not happen.** It is the ONLY assertion in either half separating *earliest* from *latest*, so removing it leaves both suites green forever on either reading — **a `Pin<>` short-circuit arriving as a maintenance decision rather than as a type.** And its correlation is inverted: **it reds when the machine is IDLE and passes under load**, so the person running that file alone to check it is the most likely to hit it, and a single green is the least trustworthy reading.
+
+  **The repair that discharges both this and D-110-14: a THREE-release upstream, asserting `at` by RELEASE IDENTITY — which release's `createdAt` it equals — rather than by inequality of two adjacent timestamps.** Earliest and latest coincide on a two-release fixture, which is why the blind half never discriminated here either. A three-release fixture separates them by construction and **cannot be defeated by a millisecond collision**, because it names the release rather than comparing two clocks. The cell must also **say loudly that two releases were indistinguishable at millisecond resolution** rather than reporting that as a wrong answer.
+
+  **D-110-17 — Q1's "for everyone, always" was too absolute and is AMENDED.** `forksOf` splits the question and the implementation is right to: **`actor` gates WHETHER THIS CALLER MAY ASK; Q1 governs WHAT THE ANSWER IS.** Over a private upstream a stranger correctly gets 0 and the upstream's author gets 1, so the count does vary by viewer *for a private upstream*. Over a PUBLIC upstream — the only case AC2 concerns — the answer is identical for all five readers. **What Q1 forbids is a per-viewer filter on the CONTENT** (public rows only, never "public plus the ones you happen to own"), which is what makes the count a property of the upstream. It never meant that an unreadable upstream owes a stranger its fork list. Its adversary declined to charge this and flagged the wording instead, which is the right call: **a later reader binding "for everyone, always" off this document would have been surprised.**
+
+  **D-110-12 — `lib/server/lineage/http.ts` STAYS in T110's Owns, published, with no caller in this tree.** Q6 removed the route FILES; it did not move the DECISION. AC6 says a fork of an unreadable upstream *"returns 404"* and the Admissible message forms pin *404 not 403*, so the `kind` → status map is T110's finding either way. **The alternative is the route task re-deriving a status map from a union it did not author, which is the second-copy defect this run charges most** — D-240-10 charges one, D-091-01 exists to prevent another, and this would be a third. Four exports of dead surface is the cheaper error, and **its header already states that it has no caller**, which is what stops a reader mistaking absence of callers for absence of a rule. Its implementer raised this as a judgment call inviting an overrule rather than shipping it silently; it is ratified as shipped.
+
+  **D-110-13 — the T110/T240 `error-hygiene` collision is settled by MERGE ORDER and the walk is re-derived in the tree it lands in.** Neither worktree can see the other's module, so neither number is checkable where it was computed. **First to merge asserts 30 → 32; second re-derives in its own merge tree and asserts 32 → 34.** No figure of mine is authority for either.
+
+  **D-110-09 — an OMITTED `to.visibility` takes the forker's own `default_visibility`, never a module constant.** D-100-01 settled the analogous question for `publish` and the argument transfers with more force here: *somebody who set their account to private must not have something published publicly by a default that was not theirs* — and AC2's entire property is that a fork can be invisible, so a module constant of `"public"` would defeat the criterion at the default path while every explicit-value cell stayed green. **Its blind author wrote no cell for the omitted case and asserted both explicit values in both directions instead**, which catches a hard-coded constant without binding a default nobody had ruled. Add the cell now.
+
+  **D-110-10 — an ANONYMOUS caller forking a PUBLIC upstream is REFUSED, and this is where `can` and the operation disagree.** `can(anonymous, "read", publicBundle)` is `true`, so an agreement-with-`can` cell would predict success — **and success means a `bundle` row owned by nobody**, because a fork is an ownership change and `bundle.owner_id` is not nullable. The read half and the ownership half of this operation answer differently and neither the block nor T080 settles it. Refused, with a third form: **`"forkBundle: not signed in."`** — **the implementer's spelling, adopted over my own `"not permitted."` because it was already written and its blind counterpart deliberately pinned no sentence, so the choice was free and the shipped one is more actionable.** It carries nothing about the target. **Through HTTP this arm is unreachable** — T000's `withSession` answers 401 first — so it is reachable only at the module boundary, on T140's AC1 precedent, and a route cell must not expect it. Its blind author asserted the refusal without pinning the sentence, which was the right call while the sentence was unowned; it is owned now.
+
+  **D-110-11 — forking at a release the upstream never published is REFUSED, and the sentence must name the RELEASE.** `"forkBundle: no such bundle."` would be false: the bundle exists and is readable. **`"forkBundle: no such release."`** — the fourth form, 404, **BARE and uninterpolated.** T110's implementer had shipped `` "forkBundle: `<slug>` has no release `<version>`." `` and asked which was meant, having taken the literal because **that is what a blind author pins.** It is right: the literal is the contract, a gloss beside it is not, and `"forkBundle: no such bundle."` is bare for the same reason. The version leaks nothing — the caller supplied it — so this is consistency, not secrecy. The hazard its finder named is the reason this cannot be left silent: **a fallback to the latest release records a provenance the caller never asked for**, and AC1 makes lineage name *the release taken*, so the fallback satisfies AC1 by writing a true statement about the wrong release. **A wrong provenance is invisible where a refusal is loud**, which is the whole direction of this task.
 
 - **Goal:** let an account copy somebody else's bundle, record where it came from, and report when the upstream moved past it.
-- **Contract:** lineage is one optional field on the ordinary bundle record, `{ owner, slug, version }`, not an entity: there is no `Fork` type and no second list (`lib/data/bundles.ts:1-28`). Fork counts and lists are computed over public rows only, and a private fork is never announced on its upstream nor to its author (`:508-526`, `components/bundle/Aside.tsx:262-265`). Drift is one of three tones, `ok`, `moved`, `blocked`, where `blocked` describes this bundle's own problem and never frames it as falling behind, and `moved` names the exact repin `{ card, from, to, at }`. A fork copies the upstream release's bytes and records the release taken.
+- **Contract:** lineage is one optional field on the ordinary bundle record, `{ owner, slug, version }` — **that is `lib/data/bundles.ts`'s FRONTEND shape and it is quoted here as the product contract, not as the type to bind; the record this task writes is `{ ownerId, slug, version }`, per the corrected signature block above** — not an entity: there is no `Fork` type and no second list (`lib/data/bundles.ts:1-28`). Fork counts and lists are computed over public rows only, and a private fork is never announced on its upstream nor to its author (`:508-526`, `components/bundle/Aside.tsx:262-265`). Drift is one of three tones, `ok`, `moved`, `blocked`, where `blocked` describes this bundle's own problem and never frames it as falling behind, and `moved` names the exact repin `{ card, from, to, at }`. A fork copies the upstream release's bytes and records the release taken.
 - **Acceptance criteria:** (1) forking a public bundle produces one owned by the forker with lineage naming owner, slug and release; (2) the upstream's fork count is unchanged while the fork is private and increases when it is published public; (3) the upstream author gets no notification for a private fork; (4) drift over a copy pinning an older card reports `moved` and names both versions; (5) drift over a copy with an unresolvable node reports `blocked` without mentioning the upstream; (6) forking a bundle the caller cannot read returns 404.
 - **Open:** does a fork's semver continue the upstream's numbering or reset (shared with T025)?
 - **Out of scope:** the notification itself (T190), publishing the fork (T100).
