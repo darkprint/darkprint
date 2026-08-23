@@ -15,11 +15,12 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { inArray } from "drizzle-orm";
 import { readFileSync } from "node:fs";
-import { schema, type Db } from "@/lib/db";
+import { schema, type Db, type ObjectStorage } from "@/lib/db";
 import { getBundle, listReleases } from "@/lib/server/archive";
 import { resolveOwner } from "@/lib/server/accounts";
 import { getSignals, recordDownload } from "@/lib/server/counters";
 import type { Actor } from "@/lib/server/policy";
+import { decodeArtefacts } from "@/lib/server/publish";
 import { createTestDb, type TestDb } from "@/tests/support/db";
 import { planImport, runImport, type ImportPlan } from "./index";
 
@@ -28,8 +29,36 @@ const INVENTED_AUTHORS = ["hachi", "k0bra", "lupo", "mara-veil", "orin", "sol-an
 
 const ANONYMOUS: Actor = { kind: "anonymous" };
 
+/**
+ * An `ObjectStorage` that starts EMPTY, and that is the whole reason it exists.
+ *
+ * The freeze cell below first read the shared `S3_BUCKET`, and it was green against a
+ * storage that kept nothing: the bucket is a cross-commit cache, so objects already sat at
+ * these digests from other runs and the cell passed whether or not this import wrote a
+ * byte. Measured — swapping `publish`'s storage for a stub that discards every put reddened
+ * ZERO of ten. A key that can only have been written by this run is the only instrument
+ * that can tell those apart, and content-addressed keys make a shared bucket unable to be
+ * one.
+ */
+function memoryStorage(): ObjectStorage & { size(): number } {
+  const objects = new Map<string, Uint8Array>();
+  return {
+    async put(digest, body) {
+      objects.set(digest, typeof body === "string" ? new TextEncoder().encode(body) : body);
+    },
+    async get(digest) {
+      return objects.get(digest);
+    },
+    async delete(digest) {
+      objects.delete(digest);
+    },
+    size: () => objects.size,
+  };
+}
+
 let testDb: TestDb;
 let db: Db;
+let storage: ReturnType<typeof memoryStorage>;
 let plan: ImportPlan;
 let first: Awaited<ReturnType<typeof runImport>>;
 let second: Awaited<ReturnType<typeof runImport>>;
@@ -37,9 +66,10 @@ let second: Awaited<ReturnType<typeof runImport>>;
 beforeAll(async () => {
   testDb = await createTestDb();
   db = testDb.client.db;
+  storage = memoryStorage();
   plan = await planImport();
-  first = await runImport(db, plan);
-  second = await runImport(db, plan);
+  first = await runImport(db, plan, storage);
+  second = await runImport(db, plan, storage);
 }, 180_000);
 
 afterAll(async () => {
@@ -147,6 +177,34 @@ describe("runImport (AC2, AC4)", () => {
     const all = await db.select({ handle: schema.account.handle }).from(schema.account);
     expect(all.map((r) => r.handle)).toEqual(["darkprint"]);
   });
+});
+
+describe("the published surface", () => {
+  it("takes two arguments, so the storage override does not move the published arity", () => {
+    /* `= undefined` and not `?` on the third parameter. TypeScript erases `?` to nothing,
+       so the optional spelling would report `length === 3` against a published two. */
+    expect(runImport.length).toBe(2);
+    expect(planImport.length).toBe(0);
+  });
+});
+
+describe("the freeze", () => {
+  it("leaves a decodable artefact at every imported digest", async () => {
+    /* `publish` throws if `persistArtefacts` does, so `created: 9` already implies nine
+       puts — implies, by reading the code. This reads them back, out of a store that began
+       this suite empty. Decoded rather than merely present, because an object of the wrong
+       shape and no object are the same to a length check. */
+    expect(storage.size(), "nothing was frozen at all").toBe(9);
+    for (const planned of plan.bundles) {
+      const bytes = await storage.get(planned.digest);
+      expect(bytes, `${planned.slug}: nothing frozen at its digest`).toBeDefined();
+      const files = decodeArtefacts(bytes!);
+      /* `decodeArtefacts` answers `undefined` for anything it cannot read rather than
+         throwing, so the absence has to be excluded before the file list is read. */
+      expect(files, `${planned.slug}: the frozen object did not decode`).toBeDefined();
+      expect(files!.map((f) => f.path), planned.slug).toContain("README.md");
+    }
+  }, 60_000);
 });
 
 describe("the counters nobody counted (AC3, AC5)", () => {
