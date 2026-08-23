@@ -869,6 +869,34 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## A MUTATION HARNESS MUST PROVE IT APPLIED THE MUTATION — A SILENT NO-OP IS FOUR GREENS THAT MEASURE NOTHING
+
+**T170's blind author ran the 2x2 it had been handed, got green / green / green / GREEN — the exact signature
+of an unobservable property — and was one keystroke from writing up *"the parent gate is unreachable in my
+suite too"*.**
+
+**It was the regex.** The guard was removed with `if \(!can\(actor, "read"[^}]*\}`, and **`[^}]*` cannot cross
+the `}` that closes `{ kind: "note", authorId, parent }`.** No mutation applied in any of the four runs.
+**All four "greens" were the same unmutated module.**
+
+**The tell was an accident**: those two cells had reddened five minutes earlier, before the guard existed.
+Without it, four zeros entirely of its own instrument would have been reported as a finding about the code —
+the *nine mutations scored 0 because a reporter flag stopped the FAIL lines* shape, arriving by a new route.
+
+**THE HARNESS MUST REFUSE TO RUN A MUTATION IT CANNOT PROVE IT APPLIED.** Remove the block by counting
+braces rather than by a character class; **assert the removal count equals the pre-registered number**; exit
+`MUTATION DID NOT APPLY` rather than reporting a zero; and **refuse to start over a non-green baseline.**
+**A mutation table whose failures are silent measures the harness, not the suite** — and a regex over source
+is exactly where that silence lives, because a pattern that matches nothing and a pattern that matches
+everything both exit 0.
+
+### A NEGATIVE ASSERTION OVER SHARED STATE IS A CLAIM ABOUT EVERY NEIGHBOUR THAT EVER WROTE TO IT
+
+From the same round. A cell asserting *an author deleting its own note is not audited as an operator* read the
+**whole** `audit` table — and the scratch database is per FILE, so it saw the legitimate operator removals the
+cells above it had written. **It reddened against a correct module, and it failed in the direction that looks
+like a real defect.** The repair is a before-snapshot and a diff, never a table-wide count.
+
 ## WHILE ANOTHER SESSION IS RUNNING, THE POSTGRES POPULATION IS NOT A LEAK CHECK — DRAINAGE IS
 
 **T180's blind author stamped after its sweep, found 22 `darkprint_test_*` against a baseline of 3, and was
