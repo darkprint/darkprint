@@ -108,3 +108,56 @@ describe("`/settings`' clause of D-262-11 is VACUOUS and is recorded rather than
     }
   });
 });
+
+describe("D-262-11's other door: a route can be pinned static WITHOUT `generateStaticParams`", () => {
+  /*
+   * `dynamicParams` and `generateStaticParams` are not the only way to prerender a page. Next's
+   * route segment config also has `export const dynamic = "force-static"`, `revalidate` and
+   * `fetchCache`, and `force-static` alone would defeat AC1 with both of D-262-11's tokens
+   * absent — the route would render once and serve every reader the same HTML.
+   *
+   * Checked against this version's own docs rather than from memory, since this repository
+   * warns that its Next is not the one in training data: `export const dynamic = 'force-static'`
+   * is current here and carries no deprecation notice.
+   *
+   * ── THIS CLAUSE IS VACUOUS TODAY AND IS RECORDED AS SUCH, NOT BANKED ──
+   * Measured across the six routes AND repository-wide: `dynamic`, `revalidate` and
+   * `fetchCache` occur ZERO times in `app/**`. So this cell passes now, before any work, and
+   * cannot distinguish a correct cutover from an absent one — the same shape as the `/settings`
+   * clause above, and it is written for the same reason: the gap is real even though the
+   * measurement is not yet discriminating.
+   *
+   * What it guards is a FORWARD regression with a plausible cause. An implementer silencing a
+   * build warning with `export const dynamic = "force-static"` would satisfy every other cell in
+   * this file — both D-262-11 tokens stay absent — and silently make the owner view a page
+   * again, which is precisely the assumption AC1 exists to break.
+   */
+  /* Word-boundaried. `export const dynamic` as a plain substring also matches
+     `export const dynamicParams`, so the first version of this cell redded all five profile
+     routes for carrying the token the cell ABOVE already owns — a second cell re-reporting the
+     first one's finding, which inflates a count and hides that this clause is really vacuous. */
+  const PINS = [
+    /export\s+const\s+dynamic\s*[:=]/,
+    /export\s+const\s+revalidate\s*[:=]/,
+    /export\s+const\s+fetchCache\s*[:=]/,
+  ];
+
+  it.each([...PROFILE_ROUTES, SETTINGS_ROUTE])("%s pins no static segment config", (path) => {
+    const source = read(path);
+    const found = PINS.flatMap((pin) =>
+      source.code
+        .split("\n")
+        .map((text, i) => ({ text, line: i + 1 }))
+        .filter((l) => pin.test(l.text))
+        .map((l) => `line ${l.line}: ${l.text.trim()}`),
+    );
+    expect(
+      found,
+      `${path} declares route segment config that can prerender it. D-262-11: a prerendered ` +
+        `page cannot render a different view per reader, which is AC1 — and \`force-static\` ` +
+        `reaches that with \`generateStaticParams\` absent, so the cells above would all pass. ` +
+        `If a value here is deliberately dynamic (\`dynamic = "force-dynamic"\`), this cell is ` +
+        `too broad and should test the VALUE rather than the export: widen it, do not delete it.`,
+    ).toEqual([]);
+  });
+});
