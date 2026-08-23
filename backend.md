@@ -869,6 +869,23 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## WHILE ANOTHER SESSION IS RUNNING, THE POSTGRES POPULATION IS NOT A LEAK CHECK — DRAINAGE IS
+
+**T180's blind author stamped after its sweep, found 22 `darkprint_test_*` against a baseline of 3, and was
+one message from filing a leak against T150.** It re-sampled instead of reporting: **22 -> 18 -> 5 -> 0 in
+ninety seconds.** They were T150's LIVE scratch, mid-sweep, under a grant I had issued myself.
+
+**Element-wise names are not sufficient under concurrency, and that correction is on me** — I have been
+telling every session to stamp by name rather than by count, and by name still cannot tell *somebody leaked*
+from *somebody is still running*. **The discriminators are two:**
+
+1. **does the population DRAIN** on re-sampling, and
+2. **do the names belong to a LIVE pgid** — a leak has no process behind it and survives a second sample.
+
+**A single post-run stamp would have charged a leak against a session doing exactly what it was granted.**
+That is the false-charge-against-a-correct-counterpart failure mode, arriving through the leak instrument
+rather than through a test cell.
+
 ## A 2x2 GREEN IN ALL FOUR CELLS IS NOT TWO REDUNDANT GUARDS — IT IS A PROPERTY NOTHING OBSERVES
 
 **T170's implementer widened a guard, had the widening ratified, and then checked whether anything in its
@@ -15097,6 +15114,12 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   * **`toggleStar` performs NO visibility check, and `getSignals` does NOT create the `target` row.** Both negative, which is why neither would ever have landed on its own — **there is nothing to add, so nothing gets added, and the criterion stays untestable.** T140's precedent governs the first (*a save of a target that does not exist is accepted and never listed*). **`Depends on: T080` remains unexplained and cannot be about visibility**: T080 publishes no lookup by `bundle.id` — which is what `target.ref_id` holds — and neither `BlueprintSummary` nor `CardSummary` carries `ownerId` or `visibility`, so `visibleTo` cannot be called from anything it returns.
 
   **A NEGATIVE RULING IS THE KIND THAT NEVER LANDS.** Three of these four are statements that something does not happen, and a document grows by addition — so the rulings most likely to live only in a message are exactly the ones that leave a criterion untestable. Worth stating as a general hazard rather than as four items.
+
+  **D-WAVE-10 — MY *ONE PASS, NOT ITERATED* RULING FOR T180'S OUTLIER FILTER WAS GUARDED BY NOTHING, and its blind author found that by predicting 2 reds and getting 0.** On its AC4 fixture, iterating to fixpoint reaches the fixpoint after the **first** pass — max|z| falls **3.3100 -> 1.8843** once the outlier is gone — **so one pass and convergence produce the identical answer and the mutation changes nothing observable.** The ruling was asserted only in a comment of its own and no cell could tell the two apart.
+
+  **Repaired with a fixture built to separate them: eleven tight values plus outliers at TWO distances**, where removing the far one shrinks the sd enough that the near one crosses 3σ on the next round. **One pass keeps 12; convergence keeps 11.** The mutation now reds.
+
+  **And the cell asserts only `runs` and `excluded`, deliberately** — the survivors' median falls *between* two data points there, so asserting it would charge a defect over a percentile convention this contract never published. **The same discipline as the AC4 fixture, applied where it costs an assertion rather than where it was free.**
 
   **D-WAVE-09 — THREE MODULES SHARE ONE `(kind, ref_id)` GRAIN AND GIVE TWO DIFFERENT ANSWERS FOR A TARGET THAT DOES NOT EXIST. THE DIVERGENCE IS DELIBERATE.** Found by T170's implementer when its own paging fixture posted to a card with no `card_version` row behind it and **`postNote` refused** — correctly, under D-WAVE-04's read check: a card with no versions has no parent, so there is no pair to ask `can` about.
 
