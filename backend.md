@@ -839,6 +839,36 @@ it. **Corroborating a good measurement with a bad one does not strengthen it.**
 
 It also corrected the figure: 3h36m, not four hours. I had rounded a number I had not read.
 
+## An UNREACHABLE decision arm is not dead code — it is a guard waiting for the placement that needs it, and only a 2x2 tells them apart
+
+**T240's adversary predicted a mutation would red 4 cells and it red 0.** It chased the miss to
+`read.ts:82` throwing the refusal and `read.ts:84` entering `withStore` — **two lines apart, refusal
+first** — and grepped every throw site rather than reasoning about it. `store.ts`'s decision arm,
+the one branch the module actually authors, **was unreachable from the published surface.**
+
+**Neither single mutation says anything. The pair does:**
+
+| | arm KEPT | arm REMOVED |
+| --- | --- | --- |
+| **check OUTSIDE** | 1 red | 1 red — **the arm is INVISIBLE even to a mutation aimed at it** |
+| **check INSIDE** | **all green** | **4 reds — the arm is LOAD-BEARING** |
+
+Removing the arm reds nothing, so it reads as dead code. Moving the check reds nothing, so it reads
+as an equivalent placement. **Both readings are wrong, and each is wrong only because of the other.**
+The arm becomes load-bearing **exactly** at the placement that fixes the bug, and **nothing about the
+arm changed** — the placement did. The two halves were built for each other and wired so neither did
+its job.
+
+**Delete-and-see is the wrong instrument for a guard with a reachability question.** A zero from it
+means *unreached*, which is not *untested* and is not *unnecessary*: that arm was directly tested in
+its own `store.test.ts` the whole time. **State it as unreached rather than untested** — the
+distinction is what keeps it a finding instead of a charge against its author.
+
+**Baseline the module's own colocated suite BEFORE the edit, not after.** Moving that line could have
+broken `read.test.ts`, which has two cells asserting the refusal's class, and a scoped run over the
+task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
+once is not.**
+
 ## A mutation run with `skipped > 0` is INVALID, not a zero — and a hook TIMEOUT is not a hook THROW
 
 **Three harness defects, all found by T110's blind author while falsifying its own suite against a
@@ -14933,6 +14963,10 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
   **`counter.write_failed` is the stated EDGE of exclusion 2, added at ratification.** T090's `serveFile` ruling audits a **failed** download-counter write through this module — *the serve succeeds, the failure is audited, the count is lost* — and every spelling naming a download collides with the exclusion. **This names the counter fault, not the download.** It records failures only, never volume, so no download is ever counted here. Without it that ruling had nowhere to write, which its finder charged rather than working around.
 
   **`save.add` and `save.remove` are DROPPED, and this is a product call I am making narrow and surfacing rather than settling.** Their finder put it exactly: *"an operator can enumerate every private bookmark any account ever made... and it is being made by whether two strings are in a constant."* A save is deliberately private and separate from a star (B-10), `listAudit` is operator-only (D-240-04), and including them converts a private surface into a break-glass-readable **reading history** — a privacy cost with no accountability benefit, since a bookmark affects nobody but its owner. **B-14's "every state change" is narrowed here deliberately**, which is a narrowing the owner may overturn.
+
+  **D-240-14 — F-240-G: `listAudit`'s permission check MOVES INSIDE `withStore`'s callback, and that is what makes `store.ts`'s decision arm reachable at all.** Its implementer had reported moving it as **equivalent rather than a gap**, and T240's adversary corrected the conclusion without correcting the measurement: *"the placements are identical for every actor the predicate ANSWERS about, and differ for the two it THROWS on, which were not in the set it measured over."* `listAudit(db, undefined, {})` and `(db, null, {})` rejected with a raw `TypeError` out of `Object.hasOwn` — **through the one door `store.ts`'s header says is closed.** Applied at `36a30d7` on `test/t240-audit` after the 2x2 above; `feat/t240-audit` stays at `eefd0bb` and **is an ancestor of `test`, so the merge carries the fix and no order can drop it** — verified rather than assumed. Its author declined to commit to `feat` on a grant it read as scoped to its own branch, which was the right reading.
+
+  **D-240-15 — F-240-F: the copy's inherited-authority clause had NO cell that could hold it.** Deleting `Object.hasOwn(actor, "accountId")` reds nothing; deleting `Object.hasOwn(actor, "kind")` reds nothing; **deleting both reds.** One `Object.create` fixture inherited *both* fields, so whichever clause survived still refused it and masked the deletion — **so T060's third ruling, that authority is never inherited, was the one ruling D-240-10's copy is charged with carrying that nothing could hold it to.** Both zeros were confirmed on a second axis by the both-clauses mutation, so neither was an inert cell. Repaired with **two actors, each inheriting exactly one field and owning the other**; M2 and M3 each red after it.
 
   **D-240-11 — `Aside.tsx`'s "a key" is the key used in a RUN, not an API key, so a vocabulary guard charges `run` and must NOT charge `key`.** T240's blind author parsed the three forbidden nouns out of the component rather than transcribing them, so all three arrived, and it charged only `run` — correctly. §T230 AC7 already routes key issue and revocation through `writeAudit`, so `key.issue`/`key.revoke` are legitimate members and **a cell charging `key` would red a correct implementation.** Same ruling as D-240-08's: the copy is scoped to what a bundle page holds about a bundle. **Labelling the uncharged clause in the cell and printing the live set rather than deleting the clause is the right shape** — it rules against a measurement instead of against a memory.
 
