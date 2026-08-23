@@ -37,13 +37,27 @@
    is public (B-10), so there is nothing an anonymous reader may
    not see.
 
-   ── The message form ──
-   `` `${operation}: the counters store failed.` ``, on the
-   convention shipped by `archive/errors.ts`
-   (`${operation}: the write failed.`), T050's
-   (`${operation}: the account store failed.`), T081's
-   (`${operation}: the registry store failed.`) and T140's
-   (`${operation}: the saves store failed.`).
+   ── The message form, which is RULED and not derived ──
+   **D-WAVE-12: `` `${operation}: the counter store failed.` `` —
+   SINGULAR.** It shipped here in the plural, because this module
+   was built before D-WAVE-07 existed: that ruling published the
+   form at a blind author's charge and landed after this branch's
+   point, so the shipped convention was the only text there was.
+
+   **And the convention does not settle it**, which is why it took
+   a ruling rather than a correction. `accounts/errors.ts` ships
+   `` `${operation}: the account store failed.` `` — a SINGULAR
+   noun from a plural module name — while `limits/errors.ts` ships
+   `` `${operation}: the limits store failed.` ``, plural. Two
+   shipped modules, opposite rules, and reading either one as the
+   house habit is reading half the evidence. The rest give no help:
+   `archive`'s is `` `${operation}: the write failed.` ``, T081's
+   is `registry`, T140's is `saves`.
+
+   The document's form wins because it was published so that two
+   halves which cannot speak to each other would agree without
+   contact. A ruling made for that purpose losing to a convention
+   that contradicts itself would mean the charge bought nothing.
 
    `operation` is the published function that was running, always a
    literal this module supplies at the call site. **Never a
@@ -62,7 +76,7 @@
 /**
  * A `target` or `target_actor` read or write against Postgres failed.
  *
- * `message` is `` `${operation}: the counters store failed.` `` and nothing else. The
+ * `message` is `` `${operation}: the counter store failed.` `` and nothing else. The
  * driver error travels on `cause`, which carries the statement, the bound `kind`, the
  * bound `ref_id`, the bound `account_id` and the SQLSTATE — all of it, and all of it
  * non-enumerable.
@@ -75,7 +89,7 @@
  */
 export class CounterStoreError extends Error {
   constructor(operation: string, cause: unknown) {
-    super(`${operation}: the counters store failed.`, { cause });
+    super(`${operation}: the counter store failed.`, { cause });
   }
 }
 
