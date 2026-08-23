@@ -869,7 +869,45 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
-## `Promise.all` ON ONE `pg` POOL COMPLETES SERIALLY — A CELL THAT LOOKS LIKE CONCURRENCY AND IS NOT
+## A COLD `pg` POOL SERIALISES ITS FIRST CALLERS — WARM IT, OR THE RACE NEVER OPENS
+
+**THIRD AND FINAL FORM OF THIS RULE. The first two were wrong in different directions and the true cause
+explains all three observations.** Found by T170's blind author, which checked its own fixture rather than
+accepting either the warning or the exemption.
+
+**A `pg` Pool holds ZERO connections when it is created and establishes them lazily.** Eight concurrent
+queries on a fresh pool **queue behind the first handshake and complete in order.**
+
+| | callers that raced |
+| --- | --- |
+| cold pool | **1 of 8** |
+| warmed pool | **24 of 24 across three runs** |
+
+**This reconciles everything.** T160's harness was on one connection and never raced. T150's pooled harness
+raced 8 of 8 — **because its pool was already warm from the seeding above it.** And T170's 40/60 flake was
+never scheduler luck: **the window opened when the pool happened to have live connections left over from
+seeding, and not otherwise. Its cells raced by accident.**
+
+**Repair: warm the pool to N before the first round, with the measurement in the docblock so nobody deletes
+the warm-up as a no-op.** Keep the multiple rounds beside it rather than instead of it — the warm-up makes the
+window open, the rounds cover residual variance, and they cost a few hundred milliseconds.
+
+**The question that separates a race from a warm-up artefact is not *how often does the window open* but
+*can it open at all*, and only an interleaving log answers it.** A 7-of-8 refusal rate reads as proof the
+window opens and is not.
+
+### AND AN INSTRUMENT CAN CERTIFY ITS OWN READINESS ON A VALUE THAT MEANS THE OPPOSITE
+
+Same round. A premise guard proving a precision cell could discriminate did `Number(row.sub) ?? 0` and then
+asked `micros.some((m) => m !== 0)`. **`NaN` is not nullish so `??` does not catch it; `NaN` is a `number` to
+`typeof`; and `NaN !== 0` is TRUE — so a single NaN SATISFIES the readiness guard**, and the cell then
+measures nothing while reporting that it can. **Every numeric read off a row must go through a finiteness
+guard that THROWS rather than defaults**, because a default silently weakens the check the cell rests on.
+
+### SUPERSEDED — the first form of this rule, kept because its measurement is still the single-connection case
+
+#### `Promise.all` on one CONNECTION completes serially
+
 
 **Measured by T160's blind author when a `SELECT`-then-`INSERT` mutation redded ZERO of 50.** The trace is the
 finding:
@@ -887,6 +925,39 @@ callers has not tested this* — **a cell can look exactly like one and not be o
 difference.** T150's and T170's concurrency cells were written under the same instruction.
 
 **The repair is N INDEPENDENT CONNECTIONS, not N promises.** After it the mutation reds, and nothing else.
+
+**SCOPED — and the scoping is measured, by T150's blind author, which checked rather than accepting the
+warning I broadcast to it.** The finding is real for a harness built on **one connection** and **does NOT apply
+to a POOLED one.** Its fixture is `createTestDb()` → `createDbClient(url)` → a `pg` **Pool**, and drizzle checks
+out a connection per query and per transaction. Eight callers each holding a 250 ms `pg_sleep`, instrumented
+with `pg_backend_pid()`:
+
+```
+DISTINCT BACKEND PIDS, plain execute: 8 of 8      all eight start within 27 ms
+DISTINCT BACKEND PIDS, transaction:   8 of 8      all eight end within 20 ms
+```
+
+**Eight 250 ms sleeps spanning 285 ms, not two seconds. They genuinely race.** And its sweep had already
+falsified the hypothesis independently: **a read-modify-write mutation redded the lost-update cell, which is
+impossible under serialisation.**
+
+**So: ask what the handle IS before applying the repair.** *Use N connections, not N promises* is the right fix
+on a single connection and **a no-op on a pool**. I broadcast the warning to two sessions without scoping it;
+one measured its own fixture and sent the scope back.
+
+### AND D-13's `cause` EXEMPTION WAS ALREADY RULED — IN A FILE THE CHARGE COULD HAVE READ FIRST
+
+The same round nearly charged the hygiene-vs-leak tension as live between two halves. **It is not, and the
+decision was already made**: `lib/server/registry/errors.ts:12-15` states the clause as five merged modules
+apply it — *`Object.keys(err)` empty, `JSON.stringify(err)` exactly `"{}"`, **`cause` present but
+non-enumerable** (the ES2022 option makes it so by spec), `stack` retained; whitelist not blacklist, the only
+thing any rendering carries is the operation.* **D-13 governs what a RENDERING carries, and `cause` is the one
+sanctioned carrier.** Descending into it charges a module for a convention a merged guard already weighed —
+**check the decision that already read the artefact, not the artefact.**
+
+**The exemption must not be indistinguishable from deleting the check**, so both sides are pinned: the
+sanctioned `cause` chain accepted with statement and params present, **and a payload stashed on the error
+ITSELF still reds**, in both the prose and bound-value directions. Two hazards, kept separable.
 
 ### AND A REFUSAL CAN BE ENFORCED BY POSTGRES AND CREDITED TO THE SUITE
 
