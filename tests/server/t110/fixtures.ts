@@ -30,9 +30,25 @@
    that ignored its connection string would leave the suite on the
    shared `darkprint` with every assertion still passing, which is
    D-08 reproduced with the fix in place. One name per file per
-   process, so two files in parallel workers cannot see each other,
-   and a run that dies before teardown leaves a database the next
-   run of the same file drops on sight. Nothing sweeps other names.
+   process, so two files in parallel workers cannot see each other.
+
+   **What a killed run leaves behind, stated accurately.** An earlier
+   version of this comment claimed "a run that dies before teardown
+   leaves a database the next run of the same file drops on sight".
+   That is FALSE across processes and it was measured: two runs of
+   this suite were killed mid-sweep and left
+   `darkprint_t110_drift_74927` and `darkprint_t110_drift_75773`,
+   which no later run reclaims — the next run has a different pid and
+   drops a different name. The `drop database if exists` at the top of
+   `scratchDatabase` only protects against a collision with the SAME
+   pid, which is a re-run inside one process.
+
+   Nothing here sweeps by prefix, and that is deliberate rather than
+   an omission: a sweep of `darkprint_t110_%` would drop a database
+   belonging to a concurrently running worker of this same suite.
+   A killed run therefore leaks, visibly, under a name that says whose
+   it is — which is the trade this file takes over a sweep that can
+   delete live state.
 
    ── the upstream is PUBLISHED, not hand-assembled ──
    Every upstream below goes in through T100's `publish`, over a
