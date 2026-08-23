@@ -925,6 +925,42 @@ each clause to the FILE that must carry it**, not to the partition.
 **And the third instance is the argument for re-running the table after a repair rather than after writing:**
 two of the three surfaced only in the post-repair round, on cells that had looked fine in the first.
 
+## A FAITHFUL QUOTATION CAN BE UNFINDABLE, BECAUSE SOURCE WRAPS — NORMALISE BEFORE YOU MATCH
+
+**T262's blind author measured two quotations the orchestrator published as survivor text and found each
+occurring ZERO times, and reported them as PARAPHRASES.** Its measurement was right and its diagnosis was
+wrong — **both strings are in the source, split across a line break:**
+
+```
+favorite is a key in `localStorage`, one entry per browser, never sent
+anywhere. It does not survive a cleared browser, ...
+```
+
+```
+'never sent anywhere'      literal=0   normalised=1
+'stays in this browser'    literal=0   normalised=1
+```
+
+**The distinction matters because the two diagnoses lead to opposite repairs.** If a published quotation is a
+paraphrase, the fix is to stop trusting published text and re-derive every pin from source. **If it is
+faithful and merely wrapped, the fix is in the MATCHER** — collapse whitespace, and for JSX **strip
+intervening markup**, since `appearance</span>, which stays in this browser` is one sentence to a reader and
+three fragments to a scanner. **The wrong diagnosis would have hardened the suite against the document rather
+than against the tree.**
+
+**An absence assertion for a string that cannot be found is green today, green after a correct change and
+green after a wrong one** — that part of the finding stands whichever cause it has, and it is why the premise
+must assert the pin was VALID before asserting the claim is gone.
+
+### AND THE PREMISE MUST READ THE SAME TEXT THE ASSERTION READS
+
+Same round, and the defect that surfaced all of it. **Its premise counted RAW text while its assertion checked
+COMMENT-STRIPPED text — so a claim living only in a docblock satisfied BOTH: present in raw forever, absent
+from code forever.** The cell was **permanently green and looked exactly like coverage**, and surfaced only
+because a pin failed to red against a tree that still said it. **One `where: "rendered" | "comment"` field now
+picks the subject text for the premise and the assertion together, so there is no path through the file where
+the two read different text.**
+
 ## A PREMISE GATE AT MODULE SCOPE DELETES CELLS INSTEAD OF FAILING THEM, AND THE COUNT A READER QUOTES SAYS ALL PASSED
 
 **T262's blind author built `sources()` as its anti-launderer — the gate that makes every absence in the suite
@@ -19738,6 +19774,18 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **A2: D-262-11 names SIX surfaces and only FIVE carry the tokens. The `/settings` clause is VACUOUS.** Measured per file: the five profile routes are 1 and 1 each; **`app/settings/page.tsx` is 0 and 0.** So *"come off all five profile routes and `/settings`"* asks for the removal of something `/settings` never had, **and an absence cell over it passes today, before any work, and would go on passing if the cutover never happened** — a cell whose subject's default already agrees with it.
 
   **Its blind author did not bank it and did not drop it.** Written once as a **recorded vacuity carrying the measurement that makes it so, and INVERTED** — so if the cutover ever adds a token to `/settings` it reds and says the five-route cell should become six. **Leaving it out would have hidden that the ruling names six; folding it in would have inflated the coverage by one.**
+
+- **D-262-23 — AC6's RESIDUE: OPTION (1). The exception extends to `@/lib/data/node-community`, `/bundles` and `/cards`, and the missing READ is recorded as a gap against T080.** Its implementer took 12 import lines to 4 and was precise about why the easy answer is wrong.
+
+  **`starsFor` is D-262-07 in a second file** — the same seeded figure, the same absent `app/api/signals/**`, the same D-78 direction. **Carve-out extended on the ruling already made.**
+
+  **`bundlesOwnedBy` and `privateCardsOwnedBy` are a DIFFERENT case and the difference is the finding: these figures DO have columns.** `bundle.visibility`, `bundle.lineage` and `card_version.visibility` all exist. **What is missing is a published READ**: `BlueprintSummary` carries no `visibility` and no `id`, so `blueprints(db, actor)` says *which* bundles a reader may see and never *which of them are private* — which is what the owner's tab needs for its badge and its filter. `driftOf` and `forksOf` both take a `bundleId` nothing published returns.
+
+  **A path exists and it was correctly refused.** `resolveOwner(handle) → accountId` then `getBundle(db, accountId, slug)` returns `id`, `visibility` and `lineage` — **but `getBundle` applies NO POLICY AT ALL: it is a raw archive read with no `Actor`.** Using it from a page means **this task deciding who may see a private row**, which is the one thing every ruling here tells a cutover not to do. **Labelling rows T080 has ALREADY authorised would be defensible, and it is an N+1 and a judgement about someone else's module** — so it is the orchestrator's, and the answer is no.
+
+  **The real fix is a `visibility` and a `bundleId` on `BlueprintSummary`, which is T080's and closes AC4's blueprint half in the same stroke.** Recorded as a gap. **Option (1) is the one that does not pay for a criterion with a feature.**
+
+- **D-262-24 — THE PUBLISHED-SIGNATURES LINE NAMES THREE BARRELS AND THE CUTOVER CONSUMES SIX.** Add **`@/lib/server/auth`** (the session), **`@/lib/server/policy`** (the `Actor` type and the anonymous reader), **`@/lib/server/registry`** (the settings counts) and **`@/lib/db`** (`getSharedDbClient`). **None is a write and none is a new decision**, and its blind author is building to the same stale three-barrel line. **Two corroborations it found rather than assumed:** `getPublicAuthor`'s own docblock names *"T130 and T262 call this in-process"*, so it is an expected caller; and `lib/server/registry/actor.ts:26-31` **independently documents the `decodeSession` default-parameter hazard it guarded against** — a second SOURCE for the rule rather than a second copy of its own reasoning.
 
 - **D-262-20 — AC2's SUBJECT IS INTRINSIC ELEMENTS PLUS THE SEVEN WRAPPERS `components/settings/controls.tsx` ALREADY PUBLISHES, AND THAT FILE EXISTS TODAY.** T262's blind author asked whether the subject is intrinsic elements only or those plus a wrapper set, **on the premise that `components/settings/**` does not exist in the tree — it does**, at `b22ee53`, in `backend`, predating the cutover. It could not check: that directory is in its forbidden set, so it reasoned from the criterion rather than the tree, **which is the correct failure to have.**
 
