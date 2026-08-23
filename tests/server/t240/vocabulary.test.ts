@@ -154,18 +154,21 @@ describe("T240 D-240-03 — `AUDIT_ACTIONS` is a closed set worth quantifying ov
    * document commits to, and a cell that reddened on a reordering would be asserting a
    * property nobody published.
    */
-  it("is EXACTLY the twelve members D-240-08 ratified, no more and no fewer", async () => {
+  it("is EXACTLY the thirteen members D-240-08 ratified, no more and no fewer", async () => {
     const ratified = ratifiedActions();
 
-    /* The derivation checked before it is used. Twelve is the count the ruling states in
-       words — "Twelve members, derived from the published writers of the eight merged
-       state-changing modules" — so a parse answering anything else has misread the grid,
-       and the equality below would be enforcing my parse rather than the ruling. */
+    /* The derivation checked before it is used. THIRTEEN since D-240-16 added `note.remove`
+       under D-240-09's amendment path, on a charge from T170 -- the task that has the caller.
+       `ballot.cast` was proposed in the same amendment and WITHDRAWN: the orchestrator
+       pre-seeded it for T160, which had charged nothing and whose section carries no audit
+       criterion at all, and it would have redded the exclusion cell below, whose regex names
+       `ballot` literally. Three sessions found that independently. A parse answering anything
+       else has misread the grid, and the equality would be enforcing the parse not the ruling. */
     expect(
       ratified.length,
-      `D-240-08 says twelve members and the parse of its grid found ${ratified.length}: ` +
+      `D-240-08 says thirteen members and the parse of its grid found ${ratified.length}: ` +
         `${ratified.join(", ")}. This is a broken test until the two agree.`,
-    ).toBe(12);
+    ).toBe(13);
 
     const actions = await boundAuditActions();
     expect(
