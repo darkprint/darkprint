@@ -869,6 +869,32 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## A MUTATION ANCHOR CAN MATCH A DOCBLOCK — AND THIS REPOSITORY'S HOUSE STYLE IS WHAT MAKES THAT LIKELY
+
+**Second harness lie in the same task, in a new way, after the harness had been rebuilt specifically to refuse
+a mutation it could not prove applied.** A whitespace mutation reported **0 reds**, apparently saying five
+cells were vacuous against a real module.
+
+**The anchor `.trim().length === 0` appears in `body.ts`'s DOCBLOCK, not its code.** The gate reads
+`const trimmed = body.trim(); if (trimmed.length === 0)`. **The patch rewrote a sentence of prose, the file
+changed, and the harness passed it as applied.** Re-run against a code anchor it reds 4.
+
+**The guard verified that the FILE changed, not that CODE changed** — the same failure one level in from the
+regex that could not cross a `}`. **Strip comments before matching**, and audit every anchor: of twelve,
+exactly one was prose-only.
+
+**And the reason this is not a freak accident here: THIS REPOSITORY'S COMMENTS QUOTE THEIR OWN PREDICATES.**
+Explaining *why* a line is the way it is means naming the line, so the most carefully documented predicate is
+the one whose anchor is most likely to match its own explanation. **The house style that makes the code
+readable is the one that makes a mutation harness lie.**
+
+### AND A DEFAULT FAILURE MESSAGE CAN BE TRUE OF FOUR CALLERS AND NONSENSE ON THE FIFTH
+
+Same round. A shared `rejection()` helper explained every non-refusal in terms of `deleteNote`'s
+`Promise<void>` and a silent no-op — **true of the four writers, nonsense on `listNotes`**, where nothing is
+unwritten and the loss is at the read. **A red that reports a plausible wrong cause sends its reader to the
+wrong file, and that reader is a counterpart who cannot see the suite.** Two named sentences; the caller picks.
+
 ## A COLD `pg` POOL SERIALISES ITS FIRST CALLERS — WARM IT, OR THE RACE NEVER OPENS
 
 **THIRD AND FINAL FORM OF THIS RULE. The first two were wrong in different directions and the true cause
@@ -15334,6 +15360,12 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **Its implementer's reasoning was defensible and I let it stand unruled**: *a cursor is this module's output, so one that did not come from here names a position in a list that does not exist, and everything after a position that does not exist is nothing.* **That argument is sound about the SET and wrong about the CALLER.** *"An empty page rather than a 500"* undersells the trade — the real choice is between *you have all the data* and *something went wrong*, and the module is the only party that can tell them apart.
 
+  **A PRESENT-BUT-EMPTY cursor — `listNotes(db, actor, target, "")` — ALSO REFUSES.** Flagged as a genuine coin-flip by T170's implementer rather than assumed, since neither half can see the other's file. **Ruled refuse, on its own argument: the parameter is optional, so ABSENT already means page one, and a client that passes `""` has built a token out of nothing.** Treating it as absent is precisely the *resuming at the start silently re-serves page one* failure D-WAVE-13 exists to prevent, one argument over. **The counter-case is real — `cursor ?? ""` is idiomatic enough that a blind author could reasonably assert it behaves as absent — and it resolves the same way: a client that writes `?? ""` gets a LOUD refusal instead of a silent restart, which is the better failure.**
+
+  **`InvalidCursorError` passes `withStore` as a DECISION, not a fault.** Sealing it would turn *your token is not ours* — which tells a client to restart the walk — into *the store failed*, which tells it to retry the same token forever.
+
+  **And its implementer named its own error better than I did: *I reasoned about what the answer DENOTES and never about what a CLIENT DOES on receiving it*.** The reason is now in `errors.ts` including what the old answer was, **so the next reader gets the argument rather than the conclusion.**
+
   **A FOURTH published class, `InvalidCursorError`, and the cost is accepted:** `error-hygiene` moves 34 → **37** at T170's merge rather than 36, derived at that merge and never carried. The message names the operation and states that the cursor was not one this module issued, **carrying nothing of the caller's value** (D-13). A silent read truncation is worth one class.
 
   **D-WAVE-12 — `CounterStoreError`'s form is `` `<operation>: the counter store failed.` `` — SINGULAR, the document's form. The implementer changes one word.** T150's blind author found the divergence by reading, **then checked the attribution before writing it down because the finding flattered its own half**: `git merge-base --is-ancestor 99a1e8d d9950cb` is **FALSE** and `git show d9950cb:backend.md` has no such string, **so D-WAVE-07 is not in the implementer's tree at all.** It built without the form, derived the class from the shipped convention, and landed one word away. **Neither half is defective; the ruling landed after the branch point.**
@@ -19003,7 +19035,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T150, Counters: stars and downloads
 
 - **State:** todo
-- **Depends on:** T050, T060, T080, T090
+- **Depends on:** T050, T060, ~~T080~~, T090 — **T080 STRUCK: neither module imports it, and both implementers reached that independently from the same evidence.** T080 publishes no lookup by `bundle.id` — which is what `target.ref_id` and `note.target_id` hold — and neither `BlueprintSummary` nor `CardSummary` carries `ownerId` or `visibility`, so nothing it returns can reach `visibleTo`. Both read `schema.bundle` directly, as `lib/server/saves` does.
 - **Blocks:** —
 - **Owns:** `lib/server/counters/**` — **`app/api/**` DROPPED for this wave (D-WAVE-02); module only**
 - **Forbidden:** `lib/server/saves/**`, `lib/server/ballot/**`
@@ -19083,7 +19115,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T170, Notes and note votes
 
 - **State:** todo
-- **Depends on:** T050, T060, T080, **T005** (the `note` and `note_vote` tables; `lib/db/schema.ts` is Forbidden here)
+- **Depends on:** T050, T060, ~~T080~~, **T005** (the `note` and `note_vote` tables; `lib/db/schema.ts` is Forbidden here) — **T080 STRUCK: neither module imports it, and both implementers reached that independently from the same evidence.** T080 publishes no lookup by `bundle.id` — which is what `target.ref_id` and `note.target_id` hold — and neither `BlueprintSummary` nor `CardSummary` carries `ownerId` or `visibility`, so nothing it returns can reach `visibleTo`. Both read `schema.bundle` directly, as `lib/server/saves` does.
 - **Blocks:** —
 - **Owns:** `lib/server/notes/**` — **`app/api/**` DROPPED for this wave (D-WAVE-02); module only**
 - **Forbidden:** `lib/server/ballot/**`, `components/blueprint/Comments.tsx`
