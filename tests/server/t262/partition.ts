@@ -86,12 +86,16 @@ function walk(dir: string): string[] {
   return out;
 }
 
-/* `components/settings/**` is not walked: it does not exist in the tree this suite was written
-   against, and a walk over a missing directory throws where a floor check would have reported it
-   more usefully. If the cutover creates it, it joins `COMPONENTS` here and the floor moves. */
+/* `components/settings/**` IS walked. An earlier version of this file skipped it on the premise
+   that it did not exist — a premise this author could not check, because the directory is in the
+   forbidden set. It exists in `backend` at `b22ee53`, PREDATING the cutover, and it holds the four
+   interactive wrappers D-262-20 names. Reasoning from the criterion instead of the tree is the
+   right failure to have here, but the cost was a partition that silently did not cover two files. */
 export function components(): string[] {
+  const strip = (p: string) => (ROOT === "." ? p : p.slice(ROOT.length + 1));
   return [
-    ...walk(at("components/profile")).map((p) => (ROOT === "." ? p : p.slice(ROOT.length + 1))),
+    ...walk(at("components/profile")).map(strip),
+    ...walk(at("components/settings")).map(strip),
     "components/ui/FavoriteStar.tsx",
     /* D-262-06 granted this to T262: it was in nobody's `Owns`, AC1 reaches it as the most
        visible signed-in-versus-signed-out surface, and AC6 reaches its import. */
@@ -125,6 +129,8 @@ const BASELINE_COMPONENTS = [
   "components/profile/VisibilityFilter.tsx",
   "components/profile/load.ts",
   "components/profile/parts.tsx",
+  "components/settings/ProfileFields.tsx",
+  "components/settings/controls.tsx",
   "components/ui/FavoriteStar.tsx",
   "components/site/SiteHeader.tsx",
 ] as const;
@@ -147,4 +153,4 @@ export function resolved(path: string): string {
 }
 
 /** Below this the walk has lost files and every absence assertion over it has gone vacuous. */
-export const COMPONENT_FLOOR = 12;
+export const COMPONENT_FLOOR = 14;

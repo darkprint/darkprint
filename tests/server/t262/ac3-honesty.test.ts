@@ -33,11 +33,22 @@
    retired sentences stood in front of it.
    ============================================================ */
 
+import { execFileSync } from "node:child_process";
+
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { type Claim, claimHolds, findInCode, sources, whyClaimFailed } from "./contract";
+import {
+  type Claim,
+  claimHolds,
+  findInCode,
+  sources,
+  stripComments,
+  whyClaimFailed,
+} from "./contract";
 import { SETTINGS_ROUTE, resolved } from "./partition";
+
+const PROFILE_LOAD = "components/profile/load.ts";
 
 const FAVORITE_STAR = "components/ui/FavoriteStar.tsx";
 
@@ -46,12 +57,74 @@ function read(path: string) {
   return source;
 }
 
-/* Retired by ruling. `seen` is the count on `backend` at `24a22c4`, and it is asserted as the
-   premise of each cell: a pin whose subject was already absent is not a criterion. */
-const RETIRED: readonly { file: string; text: string; seen: number; ruling: string }[] = [
+/* ============================================================
+   THE PREMISE READS THE BASE BLOB, NOT THE TREE UNDER TEST
+
+   The first version asked "is this string in the file now?", which
+   is the wrong question twice over. It is green before the cutover
+   for the right reason and RED AFTER A CORRECT ONE — the retirement
+   succeeding is exactly what empties it — so the suite could never
+   go green, and the cell would have been read as a defect in the
+   implementation rather than in itself.
+
+   The question the premise actually needs to ask is *was this pin
+   valid in the tree this suite was written against*. That subject is
+   immutable, so it is read from git at a pinned SHA. A pinned sha
+   rather than a ref: `tests/error-hygiene.test.ts:113` dereferences
+   `backend` at run time, and a mutable global can move what a guard
+   compares against between two runs. `3f7ea7b` cannot.
+
+   What this catches is the thing worth catching: a pin written
+   against text that was never there. Two of the quotations published
+   in the rulings ARE paraphrases — `stays in this browser` and
+   `never sent anywhere` both occur zero times — and a retirement
+   cell built on either would be green forever and look like coverage.
+   ============================================================ */
+const BASE_SHA = "3f7ea7b";
+
+function baseText(path: string): string {
+  return execFileSync("git", ["show", `${BASE_SHA}:${path}`], {
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024,
+  });
+}
+
+/* ============================================================
+   `where` EXISTS BECAUSE THE PREMISE AND THE ASSERTION MUST READ
+   THE SAME TEXT, AND IN THE FIRST VERSION OF THIS FILE THEY DID NOT
+
+   The premise counted occurrences in `raw`; the retirement asserted
+   absence in `code`. A claim living only in a docblock therefore
+   satisfied BOTH — present in raw forever, absent from code forever —
+   so the cell was permanently green and looked exactly like coverage.
+   It was caught because `There is no account` failed to red against a
+   tree that still says it.
+
+   Measured, and it is not an edge case: **both sentences D-262-12
+   published as the survivor text are COMMENT-ONLY.** `There is no
+   account` (`app/settings/page.tsx`) and `There is no session`
+   (`components/profile/load.ts`) are docblocks, which is what
+   D-262-09 means by "four false claims NO RENDERED GREP CAN REACH".
+   D-262-09 corrects them rather than deleting them, so their
+   retirement is a comment edit and must be asserted on raw text.
+
+   So `where` picks the text, and it picks it for the premise and the
+   assertion together. There is no path through this file where the
+   two disagree.
+   ============================================================ */
+type Where = "rendered" | "comment";
+
+const RETIRED: readonly {
+  file: string;
+  text: string;
+  where: Where;
+  seen: number;
+  ruling: string;
+}[] = [
   {
     file: SETTINGS_ROUTE,
     text: "There is no account",
+    where: "comment",
     seen: 1,
     ruling:
       "D-262-09 and D-262-12. The claim the Contract itself cites as the assumption T262 breaks: " +
@@ -61,6 +134,7 @@ const RETIRED: readonly { file: string; text: string; seen: number; ruling: stri
   {
     file: SETTINGS_ROUTE,
     text: "no account to delete",
+    where: "rendered",
     seen: 1,
     ruling:
       "D-262-15, and it is REWRITTEN rather than deleted: there is an account, what is missing " +
@@ -69,17 +143,29 @@ const RETIRED: readonly { file: string; text: string; seen: number; ruling: stri
   {
     file: SETTINGS_ROUTE,
     text: "no ownership to move",
+    where: "rendered",
     seen: 1,
     ruling: "D-262-15, the second `DangerRow` reason, same direction as the first.",
   },
   {
     file: SETTINGS_ROUTE,
     text: "appearance",
+    where: "rendered",
     seen: 1,
     ruling:
       "D-262-09. The page-level strip names a section that is NOT ON THE PAGE — §06 Appearance " +
       "was deleted, with the note recording its removal and six entries in `SETTINGS_SECTIONS`. " +
       "Already false independently of the cutover.",
+  },
+  {
+    file: PROFILE_LOAD,
+    text: "There is no session",
+    where: "comment",
+    seen: 1,
+    ruling:
+      "D-262-09 and D-262-12. The Contract cites this docblock as the assumption T262 breaks — " +
+      "the owner view is a *page*, not a state, and both variants ship in the build. After the " +
+      "cutover there IS a session, and D-262-09 corrects the comment rather than deleting it.",
   },
 ];
 
@@ -124,31 +210,44 @@ describe("premise: every retired claim is in the file TODAY", () => {
    * there — permanently green, and indistinguishable from coverage. This is the cell that makes
    * the four retirements measurements rather than decorations.
    */
-  it.each(RETIRED)("$text occurs $seen time(s) in $file", ({ file, text, seen }) => {
-    const source = read(file);
-    const count = source.raw.split(text).length - 1;
+  it.each(RETIRED)("$text occurred $seen time(s) in $file at the base ($where)", ({ file, text, where, seen }) => {
+    const raw = baseText(file);
+    /* The SAME text the assertion will read. A rendered claim is counted on comment-stripped
+       code, a comment claim on raw — otherwise a docblock satisfies a premise and an absence at
+       the same time, which is the defect the `where` field exists to close. */
+    const subject = where === "rendered" ? stripComments(raw, file) : raw;
+    const count = subject.split(text).length - 1;
     expect(
       count,
-      `\`${text}\` was counted ${seen} time(s) on \`backend\` at \`24a22c4\` and is now ` +
-        `${count}. If it is 0 because the cutover retired it, this premise has done its job and ` +
-        `moves to the pinned count; if it was never there, the retirement cell below was ` +
-        `vacuous and must be rewritten against text that exists.`,
-    ).toBeGreaterThan(0);
+      `\`${text}\` was pinned at ${seen} occurrence(s) in \`${file}\` as ${where} text, and ` +
+        `at \`${BASE_SHA}\` it occurs ${count} times. A retirement cell whose subject was never ` +
+        `there is green today, green after a correct cutover and green after a wrong one — it ` +
+        `measures nothing and looks exactly like coverage. Two quotations in the rulings are ` +
+        `paraphrases rather than source text for this reason, and are deliberately not pinned.`,
+    ).toBe(seen);
   });
 });
 
 describe("AC3: the claims that became false are retired", () => {
-  it.each(RETIRED)("$file no longer says `$text`", ({ file, text, ruling }) => {
+  it.each(RETIRED)("$file no longer says `$text` ($where)", ({ file, text, where, ruling }) => {
     const source = read(file);
-    /*
-     * Decided on comment-stripped code. A docblock explaining the retirement is the false-red
-     * direction of the 2x2 and would charge a correct implementer with the work they did.
-     */
-    const found = findInCode(source, text);
+    if (where === "rendered") {
+      /* Comment-stripped, so a docblock explaining the retirement is not charged as the claim —
+         the false-red direction, which would bill a correct implementer for the work they did. */
+      const found = findInCode(source, text);
+      expect(
+        found === undefined ? [] : [`line ${found.line}`],
+        `${file} still says \`${text}\` in text that reaches the reader. ${ruling}`,
+      ).toEqual([]);
+      return;
+    }
+    /* A comment claim is asserted on RAW. D-262-09 corrects these rather than deleting them, so
+       what must go is the false sentence; whatever replaces it is not pinned here, because
+       pinning a replacement wording is how a correct rewrite gets redded. */
     expect(
-      found === undefined ? [] : [`line ${found.line}`],
-      `${file} still says \`${text}\` in text that reaches the reader. ${ruling}`,
-    ).toEqual([]);
+      source.raw.includes(text),
+      `${file} still carries the docblock claim \`${text}\`. ${ruling}`,
+    ).toBe(false);
   });
 });
 
