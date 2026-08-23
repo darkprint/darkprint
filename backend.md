@@ -925,6 +925,76 @@ each clause to the FILE that must carry it**, not to the partition.
 **And the third instance is the argument for re-running the table after a repair rather than after writing:**
 two of the three surfaced only in the post-repair round, on cells that had looked fine in the first.
 
+## A FAITHFUL QUOTATION CAN BE UNFINDABLE, BECAUSE SOURCE WRAPS — NORMALISE BEFORE YOU MATCH
+
+**T262's blind author measured two quotations the orchestrator published as survivor text and found each
+occurring ZERO times, and reported them as PARAPHRASES.** Its measurement was right and its diagnosis was
+wrong — **both strings are in the source, split across a line break:**
+
+```
+favorite is a key in `localStorage`, one entry per browser, never sent
+anywhere. It does not survive a cleared browser, ...
+```
+
+```
+'never sent anywhere'      literal=0   normalised=1
+'stays in this browser'    literal=0   normalised=1
+```
+
+**The distinction matters because the two diagnoses lead to opposite repairs.** If a published quotation is a
+paraphrase, the fix is to stop trusting published text and re-derive every pin from source. **If it is
+faithful and merely wrapped, the fix is in the MATCHER** — collapse whitespace, and for JSX **strip
+intervening markup**, since `appearance</span>, which stays in this browser` is one sentence to a reader and
+three fragments to a scanner. **The wrong diagnosis would have hardened the suite against the document rather
+than against the tree.**
+
+**An absence assertion for a string that cannot be found is green today, green after a correct change and
+green after a wrong one** — that part of the finding stands whichever cause it has, and it is why the premise
+must assert the pin was VALID before asserting the claim is gone.
+
+### AND THE PREMISE MUST READ THE SAME TEXT THE ASSERTION READS
+
+Same round, and the defect that surfaced all of it. **Its premise counted RAW text while its assertion checked
+COMMENT-STRIPPED text — so a claim living only in a docblock satisfied BOTH: present in raw forever, absent
+from code forever.** The cell was **permanently green and looked exactly like coverage**, and surfaced only
+because a pin failed to red against a tree that still said it. **One `where: "rendered" | "comment"` field now
+picks the subject text for the premise and the assertion together, so there is no path through the file where
+the two read different text.**
+
+## A PREMISE GATE AT MODULE SCOPE DELETES CELLS INSTEAD OF FAILING THEM, AND THE COUNT A READER QUOTES SAYS ALL PASSED
+
+**T262's blind author built `sources()` as its anti-launderer — the gate that makes every absence in the suite
+discriminating — and CALLED IT AT MODULE SCOPE. So a premise violation was not a red, it was a COLLECTION
+ERROR, and a collection error deletes a file's cells rather than failing them.** Measured, emptying three
+component files:
+
+```
+EXIT=1   Test Files 1 failed | 3 passed (4)   Tests 37 passed (37)
+```
+
+**`Tests 37 passed (37)`. Zero failed. 68 cells simply absent.** Loud in the exit code and the failed-FILE
+count, **silent in the number a reader quotes** — and worse than a throwing `beforeAll`, which at least leaves
+a skipped column to notice. **The guard written to stop a vacuous green was itself producing one.**
+
+**Two fixes, and the second is the one nobody writes:**
+
+1. **Read the premise PER CELL**, so a violation reds the cell it belongs to and names the path.
+2. **The cell list must be MONOTONIC.** `it.each(scanned())` lets the scan decide how many cells exist, so
+   **anything shortening it removes assertions silently — `it.each([])` reports no failures and no tests.**
+   Take the union of a **named baseline** and the live walk, and have the walk return empty rather than throw
+   on a missing directory. **A deleted file keeps its cell and reds inside it; an added file is picked up; a
+   rename does both.**
+
+| mutation | before | after |
+| --- | --- | --- |
+| 3 files emptied | **37 passed, 0 failed, 68 cells gone** | 14 failed, 91 passed, **105** |
+| 3 files deleted | — | 15 failed, 90 passed, **105** |
+| whole directory removed | — | 41 failed, 64 passed, **105** |
+
+**And building the baseline caught a second error: it was enumerated from an earlier scan rather than from the
+DIRECTORY, and was missing two files.** *Enumerate mechanically, never from recall* — a rule its author held
+and still broke, by deriving from a previous measurement instead of from the tree.
+
 ## THE PRESENCE PREMISE NEEDS STRIPPING AS MUCH AS THE ABSENCE DOES — AND THAT IS THE FALSE-GREEN DIRECTION
 
 **T262's blind author built the 2x2 and found a third quadrant nobody had named.** Retired sentence asserted
@@ -19694,6 +19764,47 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **And one that is ALREADY FALSE IN THE SHIPPED TREE: the `/settings` honesty strip at `page.tsx:220-224` names *"appearance, which stays in this browser"* — and §06 Appearance WAS DELETED**, with the note recording its removal at `:409-421` and six entries in `SETTINGS_SECTIONS`. **The strip names a section that is not on the page.** Three stale comments ride along: the file docblock and `SideRail` both say *"Seven sections"* over six, and `DangerRow` says *"One row of §07"* over §06. **Fix it, and its implementer was right to report it rather than fix it quietly, since a blind author may be pinning the current wording.**
 
 - **D-262-10 — AC6's CHECK MUST STRIP COMMENTS, AND THIS ROUTE ADDS A RENDERED TWIST.** Inside `Owns`: **18 real import lines, and 29 more that mention `lib/data` in a docblock, a comment, or as RENDERED JSX PROSE** — `app/settings/page.tsx:215` and `app/u/[username]/[slug]/page.tsx:216` print `lib/data/account.ts` **on screen** inside a `<span className="font-mono">`. **A check that does not strip reds a correct tree on 29 lines; a check that strips still hits the two JSX ones, and those must NOT be exempted** — they are honesty copy that has to be rewritten under D-78 anyway, `BundleDropzone.tsx:580`'s shape exactly. **Run the 2x2 before claiming AC6 anywhere.**
+
+- **D-262-17 — TWO AMENDMENTS TO MY OWN RULINGS, BOTH FOUND BY MEASURING THEM RATHER THAN READING THEM.**
+
+  **A1: D-262-10 said *"the two JSX ones"*. There are TEN lines surviving comment-stripping, across seven files** — seven `<span className="font-mono">` printing a path, plus **`blueprints/page.tsx:57`, a `title=` TOOLTIP** (*"Nothing sorts this list yet: it is five rows in `lib/data/bundles.ts`."*), `settings:201` in backticked prose, and `[slug]:204`, a ternary `{published ? "the archive" : "lib/data"}`. **The `title=` one is the finding: rendered honesty copy invisible to any scan looking for a `<span>` — D-263-13's shape again, the sweep going where the criterion was written down rather than where the copy was.**
+
+  **And D-262-08 interacts with D-262-10 in a way nothing reconciled: two of the ten leave with `app/u/[username]/[slug]/page.tsx`, so T262's rendered population is EIGHT lines over SIX files — and one of D-262-10's two named exemplars is no longer T262's at all.** The import/comment/rendered split otherwise reconciles exactly: **19 real imports, 20 comment-only, 10 surviving-stripping non-imports**, and the earlier 29 was 30 minus `SiteHeader.tsx`, which D-262-06 added after that count was taken.
+
+  **A2: D-262-11 names SIX surfaces and only FIVE carry the tokens. The `/settings` clause is VACUOUS.** Measured per file: the five profile routes are 1 and 1 each; **`app/settings/page.tsx` is 0 and 0.** So *"come off all five profile routes and `/settings`"* asks for the removal of something `/settings` never had, **and an absence cell over it passes today, before any work, and would go on passing if the cutover never happened** — a cell whose subject's default already agrees with it.
+
+  **Its blind author did not bank it and did not drop it.** Written once as a **recorded vacuity carrying the measurement that makes it so, and INVERTED** — so if the cutover ever adds a token to `/settings` it reds and says the five-route cell should become six. **Leaving it out would have hidden that the ruling names six; folding it in would have inflated the coverage by one.**
+
+- **D-262-23 — AC6's RESIDUE: OPTION (1). The exception extends to `@/lib/data/node-community`, `/bundles` and `/cards`, and the missing READ is recorded as a gap against T080.** Its implementer took 12 import lines to 4 and was precise about why the easy answer is wrong.
+
+  **`starsFor` is D-262-07 in a second file** — the same seeded figure, the same absent `app/api/signals/**`, the same D-78 direction. **Carve-out extended on the ruling already made.**
+
+  **`bundlesOwnedBy` and `privateCardsOwnedBy` are a DIFFERENT case and the difference is the finding: these figures DO have columns.** `bundle.visibility`, `bundle.lineage` and `card_version.visibility` all exist. **What is missing is a published READ**: `BlueprintSummary` carries no `visibility` and no `id`, so `blueprints(db, actor)` says *which* bundles a reader may see and never *which of them are private* — which is what the owner's tab needs for its badge and its filter. `driftOf` and `forksOf` both take a `bundleId` nothing published returns.
+
+  **A path exists and it was correctly refused.** `resolveOwner(handle) → accountId` then `getBundle(db, accountId, slug)` returns `id`, `visibility` and `lineage` — **but `getBundle` applies NO POLICY AT ALL: it is a raw archive read with no `Actor`.** Using it from a page means **this task deciding who may see a private row**, which is the one thing every ruling here tells a cutover not to do. **Labelling rows T080 has ALREADY authorised would be defensible, and it is an N+1 and a judgement about someone else's module** — so it is the orchestrator's, and the answer is no.
+
+  **The real fix is a `visibility` and a `bundleId` on `BlueprintSummary`, which is T080's and closes AC4's blueprint half in the same stroke.** Recorded as a gap. **Option (1) is the one that does not pay for a criterion with a feature.**
+
+- **D-262-24 — THE PUBLISHED-SIGNATURES LINE NAMES THREE BARRELS AND THE CUTOVER CONSUMES SIX.** Add **`@/lib/server/auth`** (the session), **`@/lib/server/policy`** (the `Actor` type and the anonymous reader), **`@/lib/server/registry`** (the settings counts) and **`@/lib/db`** (`getSharedDbClient`). **None is a write and none is a new decision**, and its blind author is building to the same stale three-barrel line. **Two corroborations it found rather than assumed:** `getPublicAuthor`'s own docblock names *"T130 and T262 call this in-process"*, so it is an expected caller; and `lib/server/registry/actor.ts:26-31` **independently documents the `decodeSession` default-parameter hazard it guarded against** — a second SOURCE for the rule rather than a second copy of its own reasoning.
+
+- **D-262-20 — AC2's SUBJECT IS INTRINSIC ELEMENTS PLUS THE SEVEN WRAPPERS `components/settings/controls.tsx` ALREADY PUBLISHES, AND THAT FILE EXISTS TODAY.** T262's blind author asked whether the subject is intrinsic elements only or those plus a wrapper set, **on the premise that `components/settings/**` does not exist in the tree — it does**, at `b22ee53`, in `backend`, predating the cutover. It could not check: that directory is in its forbidden set, so it reasoned from the criterion rather than the tree, **which is the correct failure to have.**
+
+  **So the set is publishable rather than inferable, which was its actual objection.** `controls.tsx` exports **`SettingsSection`, `SectionNote`, `Field`, `TextField`, `PrefixedField`, `Switch`, `ChoiceCard`** — and the four carrying interactivity are **`TextField`, `PrefixedField`, `Switch`, `ChoiceCard`**. **AC2's subject is those four plus intrinsic `button`, `input`, `select`, `textarea`.** Publishing it closes the shape it named: **inferring the set from what the cutover happens to create is what reds a correct implementer.**
+
+- **D-262-21 — D-262-06's PREMISE WAS WRONG AND THE CELL PINS THE PROPERTY RATHER THAN MY SPELLING.** I ruled *"keep the rows static and handle-free"* as though describing the status quo; measured, **4 of 5 `ACCOUNT_MENU` hrefs are ALREADY module-scope `TemplateExpression`s with substitutions.** So that ruling describes a **change**, not a preservation — **and that module-scope interpolation is exactly where D-262-14 G2's `/u/null` comes from.** Its cell pins **static, not a spelling**: a backtick string with no `${}` passes, only a computed href reds. **Otherwise it would have redded a correct rewrite over an incidental form**, which is the defect this wave has charged more than any other.
+
+- **D-262-22 — D-262-16's EXCEPTION IS PAIRED WITH A POSITIVE, BECAUSE BOTH REJECTED OPTIONS ARE GREEN AGAINST A PURE ABSENCE CHECK.** Deleting the four figures and relocating them each satisfy *"no fixture import"* perfectly. **So `load.ts` must still IMPORT the permitted specifier, and each figure must still have its declared source** — the exception is only meaningful with the thing it excepts asserted present. The allowance is the **exact specifier `@/lib/data/profiles`, never the barrel**: `@/lib/data` would pull the whole fixture surface back through one import and **undo the narrowing by the shape of the check rather than by a ruling.** Five of `load.ts`'s six fixture specifiers still go.
+
+  **One clause could not be scoped to a file and is labelled as a cost rather than hidden.** The four figures are **not co-located** — `validated`/`watchers` are in `ProfileShell.tsx` and `ProfileHeader.tsx`, `pinned` in `load.ts` and `Pinned.tsx`, `support` across eight files — and **no ruling says which component owes which figure after the cutover.** Scoping all four to `load.ts` redded two, **and the cell was wrong rather than the tree.** Set-wide, with the gap stated in the test: **what it alone cannot catch is a figure MOVING between two covered files.** A per-section mapping would close it, as D-262-19 closed AC3's.
+
+- **D-262-18 — AC2's SUBJECT IS INTERACTIVE ELEMENTS WITH A HANDLER, so a disabled-with-reason row is OUT OF SCOPE BY CONSTRUCTION.** D-262-14's three notification switches are **deliberately** disabled and inert with a true reason, and must not red AC2. **The biconditional is: every element carrying a handler is enabled, and every enabled element carries one.** A `readOnly` input or a `<button disabled>` with a printed reason is a statement about what is not built, not a control that lies about what it does.
+
+- **D-262-19 — AC3's PAIRING, PUBLISHED PER SECTION so the biconditional's right-hand side is not invented.** Read off `app/settings/page.tsx` by the orchestrator, since both halves are forbidden it:
+
+  * **`:208` `◐ seeded` + `:210` `<ComingSoonBadge />` on the page-level strip — COMES OFF** for handle, email and default visibility, which have merged routes (`PATCH /api/account/{handle,email,default-visibility}`). **And its text is ALREADY FALSE independently of the cutover** (D-262-09): it names *"appearance, which stays in this browser"* and **§06 Appearance was deleted.**
+  * **`:307` `◐ nothing sends` on §03 Email & notifications — STAYS.** The email field gains a route; **the three switches have no column and no owner** (D-262-14 G1), so the section-level marker remains true of the switches even as the field beside them goes live. **One section, two directions.**
+  * **`:384` `<ComingSoonBadge />` on §05 Validator status — COMES OFF.** `AccountRecord` carries `validatorSince` and `validatorWeight`, so the badge and the `granted <month> · weight ×N` line become real reads. **The paragraph beneath it — *"Validator voting is not built"* — STAYS**, because T160 is `todo`. **Same section, opposite directions, which is D-262-15.**
+  * **`:466` `<ComingSoonBadge />` on the danger section — STAYS**, with its two `why=` reasons **rewritten** rather than deleted (D-262-15): there is an account and there is ownership; **what is missing is the route.**
 
 - **D-262-16 — `load.ts` KEEPS ITS `lib/data/profiles.ts` IMPORT, AND AC6 IS AMENDED TO SAY SO. Option (1), on its implementer's own argument.** Four figures — **`validated`, `watchers`, `support`, `pinned`** — are rendered today, each already under a `◐` marker with honesty copy beside it, and **`ProfileRecord` carries none of them.** `lib/server/profiles/types.ts:40-44`'s own header, measured over all 125 columns across 16 tables, says why: three have **no column at all**, and `validated` is a count depending on **T180**, which is `todo`. **By D-78 all four STAY** — not one has become real, so removing a marker is the false-claim direction, exactly as ratified for `FavoriteStar`'s count in D-262-07. **But their only source is `lib/data/profiles.ts`, so AC6 fails on T262's own file.**
 
