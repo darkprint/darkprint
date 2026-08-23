@@ -213,6 +213,37 @@ describe("AC5 hits carrying identical evidence occupy a contiguous block of rank
   });
 });
 
+describe("AC5 the evidence VARIES with what was matched", () => {
+  it("two hits matched in different fields do not carry the same evidence", async () => {
+    setup.check();
+    const results = await search("searchBlueprints", s.db, anonymous, { q: w.queryToken });
+
+    /* The premise, and it is a claim about the fixture rather than about the module.
+       D-200-21 pins the blueprint corpus, so `title` and `summary` are both in it and are
+       different fields; the world puts this token in s1's TITLE, s2's SUMMARY and s3's
+       TITLE. Two hits therefore matched somewhere a third did not. */
+    expect(results.hits.length, "the premise: three hits, matched in two different fields").toBe(3);
+    expect(results.ordered, "the premise: this is the ranked state, so evidence is present").toBe(
+      true,
+    );
+
+    const distinct = new Set(results.hits.map((hit) => JSON.stringify(hit.evidence)));
+    expect(
+      distinct.size,
+      `AC5, and this is the cell that closes the hole the contiguity check leaves open. ` +
+        `Contiguity cannot catch a CONSTANT explanation — one group spanning every rank is ` +
+        `contiguous — and the grammar cell only catches a constant that happens to be ` +
+        `malformed, so a module answering \`["title:x"]\` for every hit passes both. It was ` +
+        `pre-registered as a zero and measured as one: a constant evidence value reddened ` +
+        `neither of them.\n` +
+        `  What a constant cannot survive is having to VARY with the archive. These three ` +
+        `hits matched in two different fields, so at least two different explanations have ` +
+        `to come back.\n` +
+        `  Evidence groups: ${evidenceGroups(results)}`,
+    ).toBeGreaterThan(1);
+  });
+});
+
 /* --------------------- the grammar, and what may be in it --------------------- */
 
 describe("D-200-09 the evidence grammar", () => {

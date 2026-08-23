@@ -238,7 +238,41 @@ describe("AC1 every key on /blueprints narrows", () => {
         "`rolled` and an absent `forks` are the same instruction and a shared link carrying " +
         "either must render the same shelf.\n" +
         "  Inferred from the merged UI rather than from the contract, which names the key and " +
-        "not its default — the same label D-200-19 ratified for the `=1` flags.",
+        "not its default — the same label D-200-19 ratified for the `=1` flags.\n" +
+        "  THIS CELL ENCODES THE CONTESTED HALF OF THE `forks` FINDING and is reported as " +
+        "such: if the ruling makes the API's default `all` rather than the shelf's `rolled`, " +
+        "this cell is the one that is wrong and it should be deleted rather than argued " +
+        "with. The half that is NOT contested is the cell above it — an unrecognised value " +
+        "must reach the same shelf as an absent key, whichever shelf that is.",
+    ).toEqual(bare);
+  });
+
+  it("an unrecognised `forks` value answers what no `forks` answers", async () => {
+    setup.check();
+    const bare = fingerprint(await search("searchBlueprints", s.db, anonymous, {}));
+    const nonsense = fingerprint(
+      await search("searchBlueprints", s.db, anonymous, { forks: mark("no-such-stance") }),
+    );
+    const shouted = fingerprint(await search("searchBlueprints", s.db, anonymous, { forks: "ALL" }));
+
+    /* This cell is true under EITHER answer to what the absent default is, which is what
+       makes it the one worth writing. D-200-10 rules that an unrecognised VALUE falls back
+       to the default rather than erroring, "the same rule AC1 gives an unknown KEY — and
+       for the same reason, which is that both break a shared link". Whatever the default
+       for `forks` turns out to be, an unrecognised value has to reach it.
+
+       `ALL` is in here beside the nonsense because a case variation is what a hand-typed or
+       hand-edited shared link actually carries, and it is the same question. */
+    expect(
+      nonsense,
+      "D-200-10, generalised: an unrecognised `forks` value must fall back to whatever an " +
+        "absent `forks` means. If the two disagree, one of them is wrong however the " +
+        "default is ruled.",
+    ).toEqual(bare);
+    expect(
+      shouted,
+      "`forks=ALL` differs from `forks=all` only in case, and from an absent `forks` not at " +
+        "all under the fallback rule.",
     ).toEqual(bare);
   });
 

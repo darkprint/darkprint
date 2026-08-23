@@ -22,13 +22,18 @@
    has not, which is the whole reason the levels are not 1, 2, 3, 4.
 
    ── the token that makes the AC5 cells discriminate ──
-   `queryToken` appears in **s1's title, s2's title, and s3's
-   summary**. Two hits therefore share one field-level fact and a
-   third does not, so a response with `ordered: true` has at least
-   one pair whose evidence can legitimately be identical — which is
-   what gives the contiguity check something to measure. A token
-   present once per blueprint would make every evidence value
-   distinct and the check vacuous.
+   `queryToken` appears in **s1's title, s2's SUMMARY and s3's
+   title**, and that order is load-bearing. Two hits share one
+   field-level fact so the contiguity check has an equal-evidence
+   group, and the third sits BETWEEN them in slug order so a
+   ranking that dropped the evidence tiebreak would split it.
+
+   The obvious spread — title, title, summary — measures nothing,
+   and the adversary round proved it: under `(score, identity)` the
+   equal pair already sits at ranks 0 and 1, so deleting the
+   evidence tiebreak from the real implementation reddened 0 of 227
+   cells. A group has to be SPLITTABLE before "it was not split" is
+   a finding.
    ============================================================ */
 
 import { CORE_ONTOLOGY, CORE_PHASE_IDS } from "@/lib/core";
@@ -369,8 +374,8 @@ export async function buildWorld(s: Scratch): Promise<World> {
   });
   const s2 = await shelf(slug2, {
     owner: alpha,
-    title: `Second shelf ${queryToken}`,
-    summary: `A blueprint that implements, ${soloToken}.`,
+    title: "Second shelf",
+    summary: `A blueprint that implements, ${queryToken}, ${soloToken}.`,
     tags: [tagB],
     category: catB,
     author: authorToken,
@@ -382,8 +387,8 @@ export async function buildWorld(s: Scratch): Promise<World> {
   });
   const s3 = await shelf(slug3, {
     owner: alpha,
-    title: "Third shelf",
-    summary: `A blueprint that tests, ${queryToken}.`,
+    title: `Third shelf ${queryToken}`,
+    summary: "A blueprint that tests.",
     tags: [tagA, tagC],
     category: catA,
     cards: [cardTest],

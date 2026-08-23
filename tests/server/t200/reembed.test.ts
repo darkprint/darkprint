@@ -323,6 +323,16 @@ describe("AC6 unchanged content re-embeds to the same vector", () => {
     const secondCards = byId(await cardVersionEmbeddings(s));
     for (const card of c.aloneCards) {
       const before = firstCards.find((r) => r.subjectId === card.rowId);
+      /* The premise, and the adversary round is what put it here. Without it both sides are
+         `undefined` when no card row was ever written, `undefined === undefined` passes, and
+         the card half of this cell is green against a `reembedRelease` that writes no card
+         vectors at all — which is exactly the mutation D-200-12 exists to catch. Measured:
+         removing the card writer reddened 3 cells and this was not one of them. */
+      expect(
+        before?.embedding,
+        `the premise: the first call wrote a vector for \`${card.ref}\`. With no row on ` +
+          `either side this comparison is \`undefined === undefined\` and proves nothing.`,
+      ).toBeDefined();
       expect(
         secondCards.get(card.rowId)?.embedding,
         `the same claim for the card half: \`${card.ref}\` re-embedded to a different vector.`,
