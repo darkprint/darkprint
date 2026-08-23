@@ -839,6 +839,50 @@ it. **Corroborating a good measurement with a bad one does not strengthen it.**
 
 It also corrected the figure: 3h36m, not four hours. I had rounded a number I had not read.
 
+## A mutation run with `skipped > 0` is INVALID, not a zero — and a hook TIMEOUT is not a hook THROW
+
+**Three harness defects, all found by T110's blind author while falsifying its own suite against a
+stand-in, and all of them repo-wide.**
+
+**1. A driver that reads failed-counts cannot tell *"nothing objected"* from *"nothing ran"*.** A
+sweep returned `Tests 24 passed | 15 skipped (39), zero failed` and the driver recorded `failed=0`
+— **fifteen cells silent, scored as a mutation nothing catches.** `RecordedSetup` defends against a
+hook that THROWS; it does nothing about vitest killing a hook at `hookTimeout`. **Treat any run with
+`skipped > 0` as invalid and re-run it. Never read its failed count.** This is the second form of
+the 127-cells trap: the first was a throwing writer, this one is a timing-out one, and the existing
+guard watches only the first door.
+
+**2. THE FIRST DYNAMIC IMPORT OF A BARREL PAYS THE WHOLE TRANSFORM, and the bill lands on whichever
+cell imports first.** `import("@/lib/server/lineage")` makes vite transform the entire graph behind
+the barrel; at `transform 21.13s` that crosses the 20s `testTimeout`, and **the cell reds saying the
+barrel does not export the function — which is present.** Against a correct implementation that is
+a false defect report aimed at the implementer, and it is **load-dependent, so it does not reproduce
+on demand.** Ten of nineteen runs in one sweep carried it, on mutations that could not touch it.
+
+**The fix is NOT a fixture hook** — moving the transform into `beforeAll` is what produced defect 1.
+Register with `provide()`, build on first use **inside the cell**, memoise with the rejection so the
+clock is `testTimeout` and crossing it reds against the criterion under test. `warmWith(setup)`
+starts the fixture **without awaiting it** — `void`, never `await`, because an awaited fixture is
+one that can time out the hook again. Widen the clock with `vi.setConfig({ testTimeout, hookTimeout })`
+**per FILE**, never in `vitest.config.ts`: that file is shared, its 20s exists because nine worktrees
+compete for ten cores, and widening it for everybody is not one task's to do.
+
+**3. A two-valued criterion asserted against ONE actor is satisfiable by the default path.** Its
+`honours an explicit public visibility` cell asked an account whose default was already `public`, so
+**the single implementation the cell exists to catch — one ignoring `to.visibility` entirely — passed
+it.** The repair: **assert each explicit value against an actor whose default DISAGREES with it**, so
+neither direction can be satisfied by the default. Same shape as T140's `Exact<any,T>` and T100's
+`Pin<>` short-circuit — an assertion admitting the exact output it was written to forbid — and **it
+was found only by chasing the one prediction miss in a 26-mutation sweep.** A miss is where the
+information is; a table that matches everywhere has told you nothing you did not already believe.
+
+**A stand-in is a WEAK axis and the table must say so.** Green proves the cells are satisfiable,
+never that they are right, because the stand-in carries its author's reading. The red-against-mutated
+column is the half that carries information. **Name the readings the stand-in did not separate** —
+this one dates a repin at the upstream's latest release rather than the earliest introducing it, both
+coincide on a two-release fixture, so that cell stays unfalsified on that axis and the table says so
+rather than implying past it.
+
 ## `git checkout HEAD -- <path>` REVERTS AN UNCOMMITTED FIX, and every gate after it measures the hole
 
 **Second instance in this project.** The technique is the obvious way to run a base-vs-mine
