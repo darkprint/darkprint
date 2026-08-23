@@ -14818,6 +14818,26 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **`AuditStoreError` moves `error-hygiene`'s equality 30 → 31, in the MERGE COMMIT and nowhere else.** That guard's domain is `git ls-tree -d backend lib/server/`, so an unmerged module is excluded from the count and checked for hygiene only — **it cannot fire in the implementer's worktree**, which is why it was reported now rather than discovered at the merge.
 
+  **D-240-08 — `AUDIT_ACTIONS` ratified at TWELVE members**, proposed by T240's implementer and derived mechanically from the published writers of the eight merged state-changing modules rather than from recall. Shape `noun.verb`, lowercase, dotted, short enough that nobody packs a second fact into the string:
+
+        account.create   account.update   handle.allocate   handle.release
+        bundle.create    release.add      bundle.publish    card.add
+        ontology.release key.issue        key.revoke        counter.write_failed
+
+  **No member encodes the operator.** An operator removing a note writes the note's action with `actorKind: "operator"`, never an `operator.*` member — the distinction is the column, and a second spelling of it is the two-sources shape D-230-10 forecloses.
+
+  **`bundle.publish` overlaps `bundle.create`/`release.add` deliberately, and the rule is stated rather than left to be inferred: THE COMPOSING LAYER WRITES THE ROW, A MODULE UNDERNEATH DOES NOT.** A publish *is* a create-or-append, so both writing would make one operation two rows — and **AC1 as narrowed does not catch that**, because it counts one `writeAudit` call and this would be two. `bundle.create` and `release.add` survive for direct archive writes that do not go through publish; the seed import is the live example.
+
+  **Three exclusions, each with its reason.** No action naming a **blueprint run**, of any spelling — that is what closing the set buys, an absolute constraint that cannot be passed rather than one a caller remembers. No `download.*` — B-14 counts downloads by an explicit event at the serving edge, and a per-download audit row is that derivation with the arrow reversed, turning the audit log into product data. No `star.*` or ballot member — T150 and T160 own counted figures and neither has merged.
+
+  **`counter.write_failed` is the stated EDGE of exclusion 2, added at ratification.** T090's `serveFile` ruling audits a **failed** download-counter write through this module — *the serve succeeds, the failure is audited, the count is lost* — and every spelling naming a download collides with the exclusion. **This names the counter fault, not the download.** It records failures only, never volume, so no download is ever counted here. Without it that ruling had nowhere to write, which its finder charged rather than working around.
+
+  **`save.add` and `save.remove` are DROPPED, and this is a product call I am making narrow and surfacing rather than settling.** Their finder put it exactly: *"an operator can enumerate every private bookmark any account ever made... and it is being made by whether two strings are in a constant."* A save is deliberately private and separate from a star (B-10), `listAudit` is operator-only (D-240-04), and including them converts a private surface into a break-glass-readable **reading history** — a privacy cost with no accountability benefit, since a bookmark affects nobody but its owner. **B-14's "every state change" is narrowed here deliberately**, which is a narrowing the owner may overturn.
+
+  **D-240-09 — the AMENDMENT PATH, which its finder identified as having no owner.** A closed set in `lib/server/observability/**` must grow — T170's AC7 already promises *"the operator can remove one, audited"*, T160 needs a validator-grant action, T250 needs re-attribution — and **every one of those tasks is Forbidden from editing the file that holds it.** So: **`AUDIT_ACTIONS` is amended by the ORCHESTRATOR at a task's dispatch, on that task's charge, exactly as an `Owns` grant is.** Pre-seeding members for callers that do not exist is refused for the reason the implementer gave: **a member no caller exists for is a guard that cannot fail.**
+
+  **`key.issue`/`key.revoke` are KEPT.** `Aside.tsx`'s *"a run, a key, or any telemetry about either"* is scoped to what a **bundle page** holds about a bundle, and D-230-08 anticipates an audit row for key operations in terms. `detail` never carries the secret, its prefix, or anything from which it could be reconstructed.
+
   **Two schema DEFAULTS are the AC5 hazard and the blind author found them before any cell existed**: `actor_kind` defaults to `owner` and `decision` to `allowed`, so **an implementation that drops either on the floor writes a plausible row rather than failing.** Cells must EXCLUDE those outputs rather than admit the good one.
 
 - **Log:**
