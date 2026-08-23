@@ -18,7 +18,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { AUDIT_ACTIONS } from "@/lib/server/observability";
 
-import { barrelExports, BARREL, fieldNames, published, requiredFn } from "./contract";
+import { BARREL, barrelExports, fieldNames, published, requiredFn, responseInterface } from "./contract";
 import {
   auditRows,
   DIGEST,
@@ -182,9 +182,9 @@ describe("no fact about any single run is readable from the response", () => {
    * one sample and a field can be absent from it by accident. Both directions are
    * checked below; this one fixes the domain.
    */
-  it("publishes no per-run field in `ReportedCost`", () => {
+  it("publishes no per-run field in the response type", () => {
     const submitted = fieldNames(published("RunReport"));
-    const returned = fieldNames(published("ReportedCost"));
+    const returned = fieldNames(responseInterface());
 
     /* `model` is the one field that legitimately crosses: the aggregate is per model, so
        naming the group is naming the population and not a member of it. */

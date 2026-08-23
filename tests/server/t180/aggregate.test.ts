@@ -24,8 +24,13 @@ import {
   MODAL_COSTS,
   MODAL_EXPECTED,
   MODAL_MODEL,
+  DIGEST_LEVEL_WRONG,
+  GROUPED_EXPECTED,
+  GROUPED_MODELS,
   ITERATED_WRONG,
   ONE_PASS_EXPECTED,
+  TIE_EXPECTED_WINNER,
+  TIE_FIRST_PLANTED,
   TWO_PASS_COSTS,
   plantReports,
   RecordedSetup,
@@ -330,5 +335,72 @@ describe("no aggregate returns without its run count and model", () => {
     expect(result).toBeDefined();
     expect(result?.model).toBe(MODAL_MODEL);
     expect(result?.model).not.toBe(MINORITY_MODEL);
+  });
+});
+
+/* ============================================================
+   D-180-02's two consequences, ruled after the suite was written
+   ============================================================ */
+
+describe("`runs` and `isSample` are the modal GROUP's, not the digest's", () => {
+  /**
+   * Sixteen reports at one digest, and the answer is a sample over four.
+   *
+   * D-180-02: `n` in the n>=11 bound is the modal group's size, not the report count at the
+   * digest, and `runs`/`isSample` are the group's. **A fixture built to clear the bound at
+   * the digest level does not clear it** — 15 reports split 8/7 have a modal group of 8 and
+   * the filter is still inert.
+   *
+   * The wrong output is excluded by name: a module reading the digest-level count returns
+   * `runs: 16, isSample: false`, which differs from the truth in both fields. And the
+   * models are planted with the modal group LAST, so first-written does not coincide with
+   * the answer.
+   */
+  it("returns the group's count over a digest carrying four times as many", async () => {
+    const scratch = setup.require();
+    const digest = await freshDigest(scratch, "grp");
+    await plantReports(
+      scratch,
+      GROUPED_MODELS.flatMap((g) => g.costs.map((costUnits) => ({ costUnits, digest, model: g.model }))),
+    );
+
+    const result = await aggregateAt(scratch, digest, "D-180-02's group-scoped runs");
+    expect(result).toBeDefined();
+    expect({
+      runs: result?.runs,
+      excluded: result?.excluded,
+      model: result?.model,
+      isSample: result?.isSample,
+    }).toEqual(GROUPED_EXPECTED);
+    expect({ runs: result?.runs, isSample: result?.isSample }).not.toEqual(DIGEST_LEVEL_WRONG);
+  });
+
+  /**
+   * A tie resolves to the lexicographically smallest model name.
+   *
+   * D-180-02 rules it so the return is deterministic. `zulu-model` is planted FIRST and
+   * both groups carry six reports, so first-written, last-written and insertion order all
+   * point away from the answer; only the ruled rule returns `alpha-model`.
+   *
+   * The median is asserted by RANGE rather than by value — the two cost sets are disjoint,
+   * so a range says which group answered without pinning a percentile convention the
+   * contract never published.
+   */
+  it("resolves a tie to the lexicographically smallest model name", async () => {
+    const scratch = setup.require();
+    const digest = await freshDigest(scratch, "tie");
+    await plantReports(scratch, [
+      ...TIE_FIRST_PLANTED.costs.map((costUnits) => ({ costUnits, digest, model: TIE_FIRST_PLANTED.model })),
+      ...TIE_EXPECTED_WINNER.costs.map((costUnits) => ({ costUnits, digest, model: TIE_EXPECTED_WINNER.model })),
+    ]);
+
+    const result = await aggregateAt(scratch, digest, "D-180-02's tie-break");
+    expect(result).toBeDefined();
+    expect(result?.model).toBe(TIE_EXPECTED_WINNER.model);
+    expect(result?.runs).toBe(TIE_EXPECTED_WINNER.costs.length);
+    /* The winning group's population answered, not merely its label. */
+    expect(result?.median).toBeGreaterThanOrEqual(Math.min(...TIE_EXPECTED_WINNER.costs));
+    expect(result?.median).toBeLessThanOrEqual(Math.max(...TIE_EXPECTED_WINNER.costs));
+    expect(result?.median).toBeLessThan(Math.min(...TIE_FIRST_PLANTED.costs));
   });
 });

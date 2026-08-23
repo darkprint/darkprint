@@ -256,6 +256,62 @@ export const MODAL_COSTS = [10, 12, 14, 15, 17, 19, 21, 23, 26, 29, 33, 400] as 
 /** Three costs on `MINORITY_MODEL`, far from the modal group so a mixed read is visible. */
 export const MINORITY_COSTS = [500, 510, 520] as const;
 
+/* ============================================================
+   D-180-02's two consequences, as fixtures
+
+   `n` in the n>=11 bound is the MODAL GROUP's size, not the
+   report count at the digest, and `runs`/`isSample` are the
+   group's. So a digest can carry many reports and still return
+   a sample — and a fixture built to clear the bound at the
+   digest level does not clear it.
+   ============================================================ */
+
+/** Four models at three reports, one at four: sixteen at the digest, modal group of FOUR. */
+export const GROUPED_MODELS = [
+  { model: "model-a", costs: [11, 13, 15] },
+  { model: "model-b", costs: [21, 23, 25] },
+  { model: "model-c", costs: [31, 33, 35] },
+  { model: "model-d", costs: [41, 43, 45] },
+  { model: "model-e", costs: [51, 53, 55, 57] },
+] as const;
+
+/**
+ * The modal group is `model-e` with four, so the aggregate is a SAMPLE over sixteen reports.
+ *
+ * `excluded: 0` here is arithmetic and not measurement — max|z| at n=4 is sqrt(3) = 1.73,
+ * so nothing can be filtered. Recorded so this cell is never read as covering AC4.
+ */
+export const GROUPED_EXPECTED = {
+  runs: 4,
+  excluded: 0,
+  model: "model-e",
+  isSample: true,
+} as const;
+
+/**
+ * `median` and `spread` are deliberately NOT pre-registered here.
+ *
+ * Over `[51, 53, 55, 57]` the median falls between two data points — 54 by linear
+ * interpolation, 55 by nearest-rank — and p10/p90 land at 51.6/56.4 or 51/57 by the same
+ * split. The contract publishes no percentile convention, so pinning either would charge a
+ * defect over a choice nobody made. `runs`, `excluded`, `isSample` and `model` are what
+ * D-180-02 is about and all four are convention-free. Same discipline as `ONE_PASS_EXPECTED`.
+ */
+
+/** What a module reading the DIGEST-level count returns instead: sixteen runs, not a sample. */
+export const DIGEST_LEVEL_WRONG = { runs: 16, isSample: false } as const;
+
+/**
+ * Two models at equal counts, planted `zulu` FIRST so first-written and first-sorted differ.
+ *
+ * D-180-02 resolves a tie to the lexicographically smallest model name. Planting the
+ * larger name first means a module taking the first row, the last row, or an arbitrary
+ * map entry lands on `zulu-model` and reds; only the ruled rule returns `alpha-model`.
+ * The two cost sets are disjoint so the median says which group answered.
+ */
+export const TIE_FIRST_PLANTED = { model: "zulu-model", costs: [90, 92, 94, 96, 98, 100] } as const;
+export const TIE_EXPECTED_WINNER = { model: "alpha-model", costs: [10, 12, 14, 16, 18, 20] } as const;
+
 /**
  * What `reportedCost` must return over `MODAL_COSTS` + `MINORITY_COSTS` at one digest.
  *

@@ -20,6 +20,9 @@ import {
   MEASUREMENT_WORDS_FLOOR,
   published,
   publishedBlock,
+  responseInterface,
+  responseTypeName,
+  RESPONSE_TYPE_NAMES,
   REFUSAL_FORMS_FLOOR,
   required,
   requiredFn,
@@ -38,7 +41,8 @@ import {
    ============================================================ */
 
 const SIGNATURE_FLOOR = ["submitReport", "reportedCost"] as const;
-const INTERFACE_FLOOR = ["RunReport", "ReportedCost"] as const;
+/** The submitted type, plus WHICHEVER response name the block currently carries. */
+const SUBMITTED_FLOOR = "RunReport";
 const CRITERIA_FLOOR = 6;
 
 const REPORTED_COST_FLOOR = [
@@ -67,8 +71,19 @@ describe("the parse of §T180 agrees with the floor", () => {
     expect(publishedBlock().signatures.map((s) => s.name)).toEqual([...SIGNATURE_FLOOR]);
   });
 
-  it("declares exactly the two published interfaces", () => {
-    expect(publishedBlock().interfaces.map((i) => i.name)).toEqual([...INTERFACE_FLOOR]);
+  /**
+   * Two interfaces: the submitted one by name, the response one by ROLE.
+   *
+   * D-180-01 ratifies `ReportedCostUnits` as the published type and the block still writes
+   * `ReportedCost`. Pinning either name reds a correct module over a rename the contract
+   * has already settled, so the name is tolerated and the KEY SET — which D-180-01 says is
+   * unchanged — is what gets pinned, below.
+   */
+  it("declares the submitted type and exactly one response type", () => {
+    const names = publishedBlock().interfaces.map((i) => i.name);
+    expect(names).toContain(SUBMITTED_FLOOR);
+    expect(names).toHaveLength(2);
+    expect(RESPONSE_TYPE_NAMES).toContain(responseTypeName());
   });
 
   /**
@@ -79,8 +94,8 @@ describe("the parse of §T180 agrees with the floor", () => {
    * key set this section never published. Asserted as an equality over the whole list, in
    * document order, because a `toContain` would admit exactly that corruption.
    */
-  it("reads `ReportedCost` as six fields with `spread` intact", () => {
-    const iface = published("ReportedCost");
+  it("reads the response type as six fields with `spread` intact", () => {
+    const iface = responseInterface();
     expect(fieldNames(iface)).toEqual([...REPORTED_COST_FLOOR]);
     expect(iface.fields).toContain("spread: { p10: number; p90: number }");
   });
@@ -119,14 +134,23 @@ describe("the parse of §T180 agrees with the floor", () => {
    * list still carries only the digest form. Measured, not assumed: the parser's
    * `declarations` is `[]` and its `admissible` has length 1.
    *
-   * So this cell reads the whole section, and the assertion below records the divergence
-   * rather than hiding it: the block is owed an update, and until it lands a suite that
-   * parsed only the block would compare every new refusal against `undefined`.
+   * So this cell reads the whole section, and the assertion below records what the block
+   * carries rather than hiding it.
+   *
+   * **Updated after D-180-06's repair, which landed the CLASS and not the messages.** The
+   * block now declares `class RunReportRefusedError`, so the `declarations: []` this cell
+   * originally recorded is stale and would have gone on reporting a divergence that had
+   * been fixed. The Admissible line still carries one form against three ruled, which is
+   * the half still owed.
    */
   it("rules three refusal forms, of which the block publishes one", () => {
     expect(ruledMessages()).toEqual([...REFUSAL_FORMS_FLOOR]);
+    /* The class landed with D-180-06. */
+    expect(publishedBlock().declarations.map((d) => `${d.kind} ${d.name}`)).toEqual([
+      "class RunReportRefusedError",
+    ]);
+    /* The messages did not: one Admissible form against three ruled in prose. */
     expect(publishedBlock().admissible).toHaveLength(1);
-    expect(publishedBlock().declarations).toEqual([]);
   });
 });
 

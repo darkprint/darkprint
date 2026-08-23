@@ -24,7 +24,7 @@ import {
   measurementNamed,
   measurementWords,
   nestedKeys,
-  published,
+  responseInterface,
   requiredFn,
 } from "./contract";
 import {
@@ -85,9 +85,9 @@ describe("no response field is named as a measurement", () => {
    * publishes a `measuredMedian` is a contract defect whether or not any implementation
    * has been written yet, and this cell reds on the document.
    */
-  it("publishes no such field in `ReportedCost`", () => {
+  it("publishes no such field in the response type", () => {
     const words = measurementWords();
-    const iface = published("ReportedCost");
+    const iface = responseInterface();
 
     const offenders = fieldNames(iface).filter((f) =>
       words.some((w) => f.toLowerCase().includes(w.toLowerCase())),

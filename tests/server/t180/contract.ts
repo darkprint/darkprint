@@ -357,7 +357,42 @@ export function published(name: string): PublishedInterface {
   return found;
 }
 
-/** `field` off a `field: type` entry, so a cell can quantify over names alone. */
+/**
+ * The response interface, by ROLE rather than by a hardcoded name.
+ *
+ * **D-180-01 ratifies the published type as `ReportedCostUnits`, and the signatures block
+ * still writes `interface ReportedCost`.** Measured at `0484452`, not assumed. So a suite
+ * that hardcoded either name reds on a document that is mid-rename — the old name today,
+ * the new name the moment the block catches up — and in both cases it would red a correct
+ * module over a name the contract had already settled.
+ *
+ * The key set is what D-180-01 says is unchanged ("the KEY SET above is unchanged; the
+ * TYPE NAME carries the unit"), so the key set is what this suite pins and the name is
+ * what it tolerates. A THIRD name, or both present at once, is a real contract change and
+ * throws rather than picking one.
+ */
+export const RESPONSE_TYPE_NAMES = ["ReportedCostUnits", "ReportedCost"] as const;
+
+export function responseInterface(): PublishedInterface {
+  const declared = publishedBlock().interfaces;
+  const hits = declared.filter((i) => (RESPONSE_TYPE_NAMES as readonly string[]).includes(i.name));
+  if (hits.length !== 1) {
+    throw new Error(
+      `backend.md §T180's block declares ${hits.length} of ${JSON.stringify(RESPONSE_TYPE_NAMES)} ` +
+        `(found: ${declared.map((i) => i.name).join(", ") || "nothing"}). This suite pins the ` +
+        `response KEY SET and tolerates the rename D-180-01 ratified; it cannot tolerate two ` +
+        `response types or none. Broken test, not a failed criterion.`,
+    );
+  }
+  return hits[0];
+}
+
+/** Which of the two names the block currently carries, for a cell that records the rename. */
+export function responseTypeName(): string {
+  return responseInterface().name;
+}
+
+/** `field` off a `field: type` entry, so a cell can quantify over names alone. *//** `field` off a `field: type` entry, so a cell can quantify over names alone. */
 export function fieldNames(iface: PublishedInterface): string[] {
   return iface.fields.map((f) => f.split(":")[0].trim().replace(/\?$/, ""));
 }
