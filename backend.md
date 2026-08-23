@@ -869,6 +869,122 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## A CELL CAN BE GUARDED BY THE DATABASE RATHER THAN BY THE MODULE, AND READ AS COVERAGE FOR NEITHER
+
+**T150's blind author found the cell it was sent to find: `moves nothing, over every table the schema
+declares` was redded by 0 of 24 mutations**, including both written to break it — removing the anonymous
+guard, and moving that guard *after* the row creation.
+
+**The premise pre-created the `target` row.** So `ensureRow` wrote nothing, and the only remaining write
+carried a null `account_id`, **which `target_actor` refuses on its own**. The cell read as coverage for the
+write-then-throw shape while covering none of it — **held up by a NOT NULL constraint, not by the module.**
+Repointed at a target that does not yet exist, with the populated one beside it so the diff still carries both
+claims: both mutations now red it.
+
+### A RED UNDER A MUTATION WITH NO CAUSAL PATH IS A FLAKE ANNOUNCING ITSELF
+
+From the same sweep, and it is the cheapest flake detector anyone has produced here. A racing cell that
+compared each caller's own payload against the **final** table state red **1 in 6 against a correct subject**
+— but what gave it away was not the rate. **It appeared under three mutations that cannot reach it, one of
+which only changes another function's ARITY.** A flake is invisible in a pass/fail count and obvious in the
+mutation table, because a correct mutation table has a causal story for every red.
+
+**Its author wrote that cell AFTER charging D-WAVE-05, which is the same error one layer down.** Recognising
+a rule and holding it are different acts, and authorship buys no protection.
+
+## A MUTATION HARNESS MUST PROVE IT APPLIED THE MUTATION — A SILENT NO-OP IS FOUR GREENS THAT MEASURE NOTHING
+
+**T170's blind author ran the 2x2 it had been handed, got green / green / green / GREEN — the exact signature
+of an unobservable property — and was one keystroke from writing up *"the parent gate is unreachable in my
+suite too"*.**
+
+**It was the regex.** The guard was removed with `if \(!can\(actor, "read"[^}]*\}`, and **`[^}]*` cannot cross
+the `}` that closes `{ kind: "note", authorId, parent }`.** No mutation applied in any of the four runs.
+**All four "greens" were the same unmutated module.**
+
+**The tell was an accident**: those two cells had reddened five minutes earlier, before the guard existed.
+Without it, four zeros entirely of its own instrument would have been reported as a finding about the code —
+the *nine mutations scored 0 because a reporter flag stopped the FAIL lines* shape, arriving by a new route.
+
+**THE HARNESS MUST REFUSE TO RUN A MUTATION IT CANNOT PROVE IT APPLIED.** Remove the block by counting
+braces rather than by a character class; **assert the removal count equals the pre-registered number**; exit
+`MUTATION DID NOT APPLY` rather than reporting a zero; and **refuse to start over a non-green baseline.**
+**A mutation table whose failures are silent measures the harness, not the suite** — and a regex over source
+is exactly where that silence lives, because a pattern that matches nothing and a pattern that matches
+everything both exit 0.
+
+### A NEGATIVE ASSERTION OVER SHARED STATE IS A CLAIM ABOUT EVERY NEIGHBOUR THAT EVER WROTE TO IT
+
+From the same round. A cell asserting *an author deleting its own note is not audited as an operator* read the
+**whole** `audit` table — and the scratch database is per FILE, so it saw the legitimate operator removals the
+cells above it had written. **It reddened against a correct module, and it failed in the direction that looks
+like a real defect.** The repair is a before-snapshot and a diff, never a table-wide count.
+
+## WHILE ANOTHER SESSION IS RUNNING, THE POSTGRES POPULATION IS NOT A LEAK CHECK — DRAINAGE IS
+
+**T180's blind author stamped after its sweep, found 22 `darkprint_test_*` against a baseline of 3, and was
+one message from filing a leak against T150.** It re-sampled instead of reporting: **22 -> 18 -> 5 -> 0 in
+ninety seconds.** They were T150's LIVE scratch, mid-sweep, under a grant I had issued myself.
+
+**Element-wise names are not sufficient under concurrency, and that correction is on me** — I have been
+telling every session to stamp by name rather than by count, and by name still cannot tell *somebody leaked*
+from *somebody is still running*. **The discriminators are two:**
+
+1. **does the population DRAIN** on re-sampling, and
+2. **do the names belong to a LIVE pgid** — a leak has no process behind it and survives a second sample.
+
+**A single post-run stamp would have charged a leak against a session doing exactly what it was granted.**
+That is the false-charge-against-a-correct-counterpart failure mode, arriving through the leak instrument
+rather than through a test cell.
+
+## A 2x2 GREEN IN ALL FOUR CELLS IS NOT TWO REDUNDANT GUARDS — IT IS A PROPERTY NOTHING OBSERVES
+
+**T170's implementer widened a guard, had the widening ratified, and then checked whether anything in its
+suite could see it.** Both guards kept: green. Either one removed: green. **BOTH removed: GREEN.**
+
+Two guards that look like belt-and-braces are indistinguishable from two guards **neither of which is
+reachable**, and the 2x2 is what separates them — the **both-removed** cell is the one that carries the
+information, and it is the one nobody runs. A single mutation on either guard reports the same zero and reads
+as *redundant*.
+
+**Why it was unreachable here, and the shape is general: every other refusal in the file was decided by a
+DIFFERENT predicate** — authorship — so the guard under test was never what denied. Reaching it needed an
+actor who **is** the note's author and is **not** the parent's owner, and no fixture produced one because the
+author owned every bundle in them. **The fixture set had a hole exactly the shape of the guard.** The cell that
+reaches it: a stranger owns a public bundle, the author writes a note, **the bundle goes private** — authorship
+still grants, so only the parent gate stands between them. With that cell the 2x2 reads green / green / green /
+**RED**.
+
+**Third zero in one task that was about the instrument rather than the code** — a guard whose domain is the
+ref and excludes an unmerged module, a guard asserting a class is PUBLISHED rather than that it FIRES, and now
+a property nothing observes. **In none of the three was the answer *the code is fine*. In all three it was
+*write the thing that would have seen it*.**
+
+## A `rejects`/`resolves` WRAPPER IS A BLIND-POSITION LAUNDERER
+
+**Found by T180's blind author in its OWN suite, against the absent module, and it is the shape the rule it was
+written for warns about.** The cell was `accept.test.ts > leaves no row behind` — the *assert what the writer
+LEFT BEHIND, not only that it threw* discipline — and it was **GREEN against a module that does not exist**:
+
+* the blind-position throw **satisfied `rejects.toThrow()`** — a bare wrapper consumes any error, including the
+  suite's own instrument reporting that the barrel is absent;
+* the empty table **satisfied the row count** — the digest had never been written to by anyone.
+
+**Green while testing nothing, and no mutation of any implementation could ever have reddened it.** Two things
+fix it: **bind the module through a guard that fails OUTSIDE the wrapper**, and assert
+`rejects.toThrow(<the admissible message>)` rather than a bare throw. A sweep of the same suite found **three
+more** cells reporting the blind position as an `AssertionError` about a message mismatch — a plausible wrong
+cause rather than a pass, which is the same defect wearing the other mask.
+
+**GENERAL FORM: any cell whose module bind sits inside a `rejects`/`resolves` wrapper converts *the module is
+absent* into *the criterion passed*.** It is the exact complement of binding the module last (a bind at the top
+of a cell hides every fixture write behind an absent-module red): one hides the writes, the other hides the
+criterion. **Both are invisible in a green count.**
+
+**And the reason it matters beyond one suite: this cell could not be found by a stand-in or by a mutation
+sweep.** It was found by reading the absent-module run — the state a blind suite is in for its whole life and
+the one nobody inspects, because every red there is expected.
+
 ## A mutation run with `skipped > 0` is INVALID, not a zero — and a hook TIMEOUT is not a hook THROW
 
 **Three harness defects, all found by T110's blind author while falsifying its own suite against a
@@ -7388,6 +7504,30 @@ what is wrong is what goes unreported and what the comment claims about it. **A 
 third of what it can decide is a defective artefact, not a documented limit.**
 
 ## Two guards can be in tension: the shape that satisfies one evades the other
+
+**REDISCOVERED INDEPENDENTLY by T150's blind author, in a different module, with a different
+helper, without having read this section — which is the second axis this finding never had.**
+Its `renderingsOf` scored **24 of 25 discriminating**, and the 25th passed: a driver payload on a
+**non-enumerable own property** was invisible to all four of its channels at once. `message` does
+not see it; `String(err)` is `name: message`; `JSON.stringify` walks enumerable properties only and
+renders `{}`; and the fourth channel held the property **NAME** while the leak was in its **VALUE**
+— *looking in the right place and comparing the wrong half*.
+
+**Its statement of why the shape is not exotic is the sharpest form of this rule so far: it is what
+a module reaches for when it is TRYING to satisfy D-13's hygiene clause**, because burying a driver
+payload where a structured log renders `{}` is precisely what the clause rewards. The clause and the
+scan are in tension and the scan was on the losing side.
+
+**EXTENSION, and it is new: widening the scan opens a FALSE-POSITIVE surface the original finding
+did not price.** A `stack` carries this repository's own paths and frame names, so a deny list that
+is safe over `message` alone can start matching path text once it walks `getOwnPropertyNames`. It
+checked both directions rather than only the one that motivated the widening — a real error thrown
+through frames named after the module's own functions, minted values resembling the test file's own
+path, and a payload nested two levels under `cause` behind a non-enumerable property. **28/28.**
+**A widened detector needs its false-positive axis measured, or the next real leak is buried in
+noise nobody reads.**
+
+
 
 **AC4's leak instrument measures RENDERINGS; D-13's hygiene clause measures ENUMERABILITY; and a
 leak can satisfy the second exactly while defeating the first.** T133's adversary put the caller's
@@ -15026,6 +15166,33 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **A NEGATIVE RULING IS THE KIND THAT NEVER LANDS.** Three of these four are statements that something does not happen, and a document grows by addition — so the rulings most likely to live only in a message are exactly the ones that leave a criterion untestable. Worth stating as a general hazard rather than as four items.
 
+  **D-WAVE-10 (T180 — filed here rather than in §T180, which its blind author charged as the same defect it had already charged once) — MY *ONE PASS, NOT ITERATED* RULING FOR T180'S OUTLIER FILTER WAS GUARDED BY NOTHING, and its blind author found that by predicting 2 reds and getting 0.** On its AC4 fixture, iterating to fixpoint reaches the fixpoint after the **first** pass — max|z| falls **3.3100 -> 1.8843** once the outlier is gone — **so one pass and convergence produce the identical answer and the mutation changes nothing observable.** The ruling was asserted only in a comment of its own and no cell could tell the two apart.
+
+  **Repaired with a fixture built to separate them: eleven tight values plus outliers at TWO distances**, where removing the far one shrinks the sd enough that the near one crosses 3σ on the next round. **One pass keeps 12; convergence keeps 11.** The mutation now reds.
+
+  **And the cell asserts only `runs` and `excluded`, deliberately** — the survivors' median falls *between* two data points there, so asserting it would charge a defect over a percentile convention this contract never published. **The same discipline as the AC4 fixture, applied where it costs an assertion rather than where it was free.**
+
+  **D-WAVE-11 — A `SignalState` NEED NOT BE INTERNALLY COHERENT UNDER A RACE. The narrow cell stands and the stronger reading is REFUSED, for D-WAVE-05's reason.** Charged rather than asserted by T150's blind author, which built the stronger cell, found it reds **8 of 8**, and then argued against its own cell.
+
+  The payload it catches is real: **`{ starredByCaller: true, starCount: 0 }`** — a caller seeing the star row its own concurrent call inserted while reading the aggregate before that call's increment commits. **But that is a defensible implementation, not a defect.** Making the two agree under concurrency requires the insert, the increment and the read-back to be **atomic**, and nothing in §T150 asks for that. **It is the same category as D-WAVE-05's refused alternative (b): a real behavioural constraint not derivable from the section.**
+
+  **AC4's purpose survives**: it exists so a client never issues a second read, and the coherence of one payload IS pinned **uncontended**. What is not held is behaviour under a race, and that is **stated in the cell rather than left to be read off a green.**
+
+  **D-WAVE-09 — THREE MODULES SHARE ONE `(kind, ref_id)` GRAIN AND GIVE TWO DIFFERENT ANSWERS FOR A TARGET THAT DOES NOT EXIST. THE DIVERGENCE IS DELIBERATE.** Found by T170's implementer when its own paging fixture posted to a card with no `card_version` row behind it and **`postNote` refused** — correctly, under D-WAVE-04's read check: a card with no versions has no parent, so there is no pair to ask `can` about.
+
+  * **T140 (`saveTarget`) and T150 (`toggleStar`): ACCEPT AND NEVER LIST.** *A save of a target that does not exist is accepted and never listed*, and `toggleStar` performs **no** visibility check (D-WAVE-07).
+  * **T170 (`postNote`, `editNote`, `deleteNote`, `voteNote`): REFUSE AT THE DOOR.**
+
+  **Each is right for its own criterion — a note has an authorization question a save does not** — and **nothing in either ruling said so.** A blind author holding both precedents can reasonably build *a note on a nonexistent card is accepted*, **which would red a module following D-WAVE-04.** That is the two-halves-right-about-their-own-source shape arriving through two rulings of mine that were each correct alone.
+
+  **D-WAVE-08 — T160's rulings, landed. FOURTH session today to wait on a ruling I made in a message to its counterpart.** I ruled all of these to T160's implementer and to nobody else, having named the defect twice in the same afternoon. **The blind author is blind to the implementer by construction — the document is the ONLY channel between them, and it is the one I keep failing to use.**
+
+  * **F-160-B — T160 WRITES NO AUDIT ROW, and there is no audit acceptance criterion.** The word *audit* does not occur in §T160. `ballot.cast` was withdrawn (see D-240-16): it reds `types.test.ts:65`'s exclusion cell, whose regex names `ballot` literally, and **I had pre-seeded it for a task that charged nothing** — D-240-09's rationale names a *validator-grant* action while §T160 puts the validator-grant workflow **out of scope**. Its implementer supplied the test: **a caller with no criterion behind it is the same object as a member with no caller.** A spelling that slips the regex (`metric.cast`, `assessment.cast`, both measured to pass) is refused as a dodge around the rule rather than a ruling on it.
+  * **F-160-E — `Partial<Ballot>` PATCHES; absent members PRESERVE, they do not blank.** `{ efficacy: 90 }` over a row holding `reliability: 70` leaves reliability at 70. **The natural single-statement `ON CONFLICT DO UPDATE SET reliability = excluded.reliability` BLANKS it**, silently dropping that metric's `sampleSize` by one — observable in the response, and the cell that catches it is the one nobody writes. Both readings were live and a guess either way was a false defect report.
+  * **F-160-F3 — a vote's weight is `account.validator_weight` UNCONDITIONALLY. The `validator` boolean does not gate it.** The boolean is a display fact, never a second source for one quantity. **CONSEQUENCE: AC5's sentence changes from *"granting a validator badge"* to *"raising an account's `validator_weight`"`*** — as written it names an act that changes nothing, so a cell that grants the badge and asserts the aggregate moved **reds a correct module.** Both halves found this fork independently and both held their discriminating cell rather than guessing, which is why nobody built the wrong one.
+  * **F-160-F3b, from the implementer and equally load-bearing: AC5 is observable ONLY with two or more voters on one metric holding DIFFERENT values.** One voter, or agreeing voters, is invariant under any weighted mean. **That belongs in the criterion, not in whether the blind author happened to pick two numbers.**
+  * **F-160-F/F1/F2 — weighted arithmetic mean `Σ(wᵢvᵢ)/Σ(wᵢ)`; `sampleSize` is an UNWEIGHTED count** per metric (if it were `Σw`, two validators at weight 3 clear a five-vote bar with two votes and AC4 is simply wrong); **`value` unrounded**, since rounding is the display type's decision; **zero votes on a metric returns `{ value: 0, sampleSize: 0, isSample: true }`** — `NaN` is the accidental answer 0/0 produces, which is exactly why it needed ruling. **Per metric, not per ballot**: the type and `schema.ts:373-397` agree and only the section's prose was singular.
+
   **D-WAVE-05 — T150's AC1 IS RESTATED AS AN INVARIANT, because as written it is FALSE of a correct toggle and non-deterministic under the concurrency my own ruling demanded.** Found by T150's blind author **while driving it, not while reading it** — this one does not surface until you try.
 
   **Sequentially, *"starring twice from one account yields 1"* yields ZERO.** The published write is `toggleStar` and there is no `star`: two calls are star-then-unstar. **Concurrently it is genuinely non-deterministic and not because of a defect.** A toggle cannot be one statement — it must know its own prior state to choose a direction — so N callers at a cold target end at **1** when every read lands before any commit, and at **0** when one commits before a later read and that caller deletes what it found. **Both are a correct toggle honouring the unique index**, so `expect(starCount).toBe(1)` passes on a quiet host and reds on a loaded one **against an implementation that is right** — and this host has already produced a ~29% flake from an adjacent timing assumption.
@@ -18811,7 +18978,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
         submitReport(db: Db, actor: Actor, report: RunReport): Promise<void>
         reportedCost(db: Db, actor: Actor, releaseDigest: string): Promise<ReportedCost | undefined>
 
-  **AC6 — "no response field is named as a measurement" — is a naming constraint on the published type and it is the whole architectural promise.** The platform never observes a run; the word is **`reported`** and never `measured`. So the type is `ReportedCost`, the field is `costUnits` submitted by the caller, and **a test asserts no key in the response shape contains `measured`, `observed`, `actual` or `verified`.** Checkable mechanically over `Object.keys`, which is the only way a naming rule survives a later contributor.
+  **AC6 — "no response field is named as a measurement" — is a naming constraint on the published type and it is the whole architectural promise.** The platform never observes a run; the word is **`reported`** and never `measured`. So the type is `ReportedCost`, the field is `costUnits` submitted by the caller, and **a test asserts no key in the response shape contains `measured`, `observed`, `actual` or `verified`.** ~~Checkable mechanically over `Object.keys`~~ — **AMENDED: over EVERY key in the response, NESTED KEYS INCLUDED.** A flat `Object.keys` walk is **vacuous over `spread`**, the one published shape with a nested object and the likeliest place a later contributor ever breaks this rule. **Measured** by T180's blind author: a planted `spread.measuredP50` returns `[]` from the flat filter and is caught only by a recursive walker, and its mutation M12 reds `returns no such field` against it. **My original sentence called a vacuous instrument "the only way a naming rule survives a later contributor". A RECURSIVE WALK is.**
 
   **AC4 makes `excluded` a published field rather than an internal detail.** "An outlier beyond 3σ is excluded **and the exclusion is visible in the count**" — `runs` is what survived, `excluded` is what did not, and a response carrying only `runs` satisfies the aggregate while failing the criterion. `isSample` is derived from `runs` against `minRuns`, as in T160.
 
@@ -18823,6 +18990,8 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 - **Goal:** accept a CLI-submitted report about a run that happened on somebody else's machine, and aggregate accepted reports into the `reported` cost axis.
 - **Contract:** B-16 — the CLI submits, keyed by the release digest, carrying model, provider, hardware, input size, harness version, cost units, duration and timestamp; a report is accepted on well-formedness and the digest existing, with **no verification claimed**. The aggregate is `ReportedCost { runs, median, spread { p10, p90 }, model }` (`lib/data/community.ts:34-43`), with outliers beyond `telemetry.outlierZScore` (3) dropped and an aggregate below `minRuns` (5) presented as a sample. The architectural constraint is absolute: the platform never observes a run, the word is `reported` and never `measured` (`lib/types.ts:27-36`), and no field may be named or documented otherwise. `Profile.validated` counts a handle's accepted reports for *other* accounts' blueprints and never adds a run to any blueprint's own evidence layer.
+- **Rulings that govern this task and live in OTHER sections** — charged twice by T180's blind author, which found all of them by going looking: **D-05-01, D-05-07 and D-05-09 in §T005** (the `run_report` table: `release_digest` is deliberately NOT a foreign key and existence is enforced by the `run_report_release_exists` trigger raising SQLSTATE **23503**, which decides whether AC1's refusal is a module throw or a driver error; `account_id NOT NULL`, which is what makes AC5 implementable; and `cost_units` shipping unqualified `numeric`, which feeds the median). **D-WAVE-02** (no route surface this wave). **D-WAVE-10 in the wave block** (the one-pass outlier ruling and the n>=11 bound). **A section citing one ruling while four govern it is how a blind author writes AC1 against the wrong failure mode.**
+- **AC4's filter is INERT BELOW n=11, and this is arithmetic rather than a defect.** max|z| in a sample of n is bounded by **sqrt(n-1)** for population sd, so **no fixture of ten or fewer reports can EVER produce `excluded > 0`, whatever the values** — 5 gives 2.00, 8 gives 2.65, 10 gives 3.00, and 11 is the first that clears 3. **Consequences: AC4 and AC2 never co-fire; every aggregate `isSample` marks has `excluded: 0` NECESSARILY rather than contingently; and an AC4 cell built on the natural `minRuns = 5` fixture is a cell NO MUTATION CAN RED** — it passes against a correct module, a module with the filter deleted, and a module that never had one. Computed by T180's blind author before it built the fixture it would otherwise have used.
 - **Acceptance criteria:** (1) a report against an unknown digest is refused; (2) an aggregate below five runs is marked a sample; (3) no aggregate returns without its run count and model; (4) an outlier beyond 3σ is excluded and the exclusion is visible in the count; (5) a report for one's own blueprint does not increment `validated`; (6) no response field is named as a measurement.
 - **Open:** how cost is normalised across models, hardware and currencies before landing on the 0–100 axis.
 - **Out of scope:** the CLI command itself (T270), the evidence-layer UI.
