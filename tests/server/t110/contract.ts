@@ -115,6 +115,25 @@ export async function warmLineage(): Promise<void> {
   );
 }
 
+/**
+ * Starts the fixture WITHOUT awaiting it, then pays the module transform.
+ *
+ * The two are independent work and they overlap: the fixture's publishes proceed while vite
+ * transforms the graph behind the barrel, so the first cell awaits a promise that has already had
+ * the transform's duration to run. `void` and not `await` is the point — an awaited fixture is
+ * one that can time out the HOOK, and a hook that times out SKIPS its file's cells, which is the
+ * silence this whole arrangement exists to prevent.
+ */
+export function warmWith<T>(setup: { require(): Promise<T> }): () => Promise<void> {
+  return async () => {
+    void setup.require().then(
+      () => undefined,
+      () => undefined,
+    );
+    await warmLineage();
+  };
+}
+
 /* --------------------- what the contract publishes --------------------- */
 
 /**
@@ -500,52 +519,68 @@ export function forkListOf(value: unknown, criterion: string): readonly unknown[
 /* --------------------- setup that reds rather than skips --------------------- */
 
 /**
- * A `beforeAll` result that fails IN THE CELLS.
+ * A shared fixture built LAZILY, on first use, inside a cell.
  *
- * **A throw in `beforeAll` produces SKIPS, not reds** — the run stands down instead of failing,
- * and this run measured the difference: under one broken writer, 127 merged cells went silent
- * while thirteen cells in a suite that recorded its setup failure and re-raised it per cell went
- * red. Same defect, same hook, opposite visibility. A skipped criterion reads as "not applicable"
- * to a reviewer and as a passing gate to anyone reading the totals.
+ * **Two separate failure modes put it here, and the second was found the hard way.**
  *
- * So the hook records rather than throws, and every cell calls `require()` first. A scratch
- * database that cannot be created then costs one red per acceptance criterion, which is what the
- * hand-off protocol asks for.
+ * First: **a throw in `beforeAll` produces SKIPS, not reds.** Measured in this run at 127 merged
+ * cells going silent under one broken writer while thirteen cells that recorded the setup failure
+ * and re-raised it per cell went red. Same defect, opposite visibility. A skipped criterion reads
+ * as "not applicable" to a reviewer and as a passing gate to anyone reading the totals.
+ *
+ * Second, and this is why the hook is gone entirely rather than merely made to swallow: **a hook
+ * that TIMES OUT skips its file's cells too, and nothing inside the callback can catch that.**
+ * Recording the failure and re-raising it per cell defends against a throw and not against
+ * vitest killing the hook at `hookTimeout`. This suite's fixtures publish two or three bundles
+ * through T100 — cards, releases, object-storage artefacts — and under a loaded machine that
+ * crossed 30s. Measured, in a mutation sweep: one run came back
+ * `Tests 24 passed | 15 skipped (39)`, **zero failed**, which a harness reading failed-counts
+ * scores as "no cell objects to this mutation". It is the 127-cells trap arriving through a door
+ * `RecordedSetup` could not watch.
+ *
+ * So the work happens on first `require()`, inside a cell, where the clock is `testTimeout` and
+ * where crossing it is a RED against that criterion. The promise is memoised, rejection included:
+ * the first cell pays for the fixture and every later cell gets the same answer, so a fixture that
+ * cannot be built costs one red per acceptance criterion — which is what the hand-off protocol
+ * asks for — and never a silence.
  */
 export class RecordedSetup<T> {
-  private value: T | undefined;
-  private failure: unknown;
-  private ran = false;
+  private pending: Promise<T> | undefined;
+  private built: T | undefined;
+  private make: (() => Promise<T>) | undefined;
 
   constructor(private readonly what: string) {}
 
-  async run(make: () => Promise<T>): Promise<void> {
-    this.ran = true;
-    try {
-      this.value = await make();
-    } catch (cause) {
-      this.failure = cause;
-    }
+  /** Registers how to build the fixture. Runs nothing; called at module scope, not in a hook. */
+  provide(make: () => Promise<T>): void {
+    this.make = make;
   }
 
-  /** The set-up value, or a red carrying the setup failure. Call this first in every cell. */
-  require(): T {
-    if (this.failure !== undefined) {
-      throw new Error(
-        `${this.what} could not be set up, so this criterion was never exercised.\n` +
-          `  Re-raised per cell on purpose: a throw in \`beforeAll\` skips, and a skipped ` +
-          `criterion is invisible in the totals.\n` +
-          `  Cause: ${this.failure instanceof Error ? this.failure.stack : String(this.failure)}`,
-      );
+  /** The fixture, built on first call. Await this FIRST in every cell. */
+  async require(): Promise<T> {
+    if (this.make === undefined) {
+      throw new Error(`${this.what} was never provided: \`provide()\` was not called.`);
     }
-    if (!this.ran || this.value === undefined) {
-      throw new Error(`${this.what} was never set up: the \`beforeAll\` did not run.`);
-    }
-    return this.value;
+    this.pending ??= this.make().then(
+      (value) => {
+        this.built = value;
+        return value;
+      },
+      (cause: unknown) => {
+        throw new Error(
+          `${this.what} could not be built, so this criterion was never exercised.\n` +
+            `  Built lazily and re-raised per cell on purpose: a \`beforeAll\` that throws OR ` +
+            `times out skips, and a skipped criterion is invisible in the totals.\n` +
+            `  Cause: ${cause instanceof Error ? cause.stack : String(cause)}`,
+        );
+      },
+    );
+    return await this.pending;
   }
 
-  /** For teardown, which must not itself throw when setup never produced anything. */
+  /** For teardown, which must not itself throw when the fixture was never built. */
   optional(): T | undefined {
-    return this.failure === undefined ? this.value : undefined;
+    return this.built;
   }
 }
+

@@ -23,7 +23,7 @@
    After the premises and after the planting. See `contract.ts`.
    ============================================================ */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { getBundle } from "@/lib/server/archive";
 
@@ -32,7 +32,7 @@ import {
   PUBLISHED,
   RULINGS,
   RecordedSetup,
-  warmLineage,
+  warmWith,
   boundForkBundle,
   bundleRecordOf,
   refusalFrom,
@@ -69,44 +69,54 @@ interface Env {
 const setup = new RecordedSetup<Env>("the T110 fork fixture");
 
 /* Before the fixture hook, so the transform cost is paid where there is headroom for it. */
-beforeAll(warmLineage);
+/* This suite's cells build their own fixture — see `RecordedSetup` — and a fixture here publishes
+   two or three bundles through T100, which is engine work, database writes and object storage.
+   The shared `testTimeout` is 20s (`vitest.config.ts`), raised there from vitest's 5s default
+   because "with nine worktree sessions competing for ten cores, one of them crossed 5s and
+   reported a timeout for a test that was never wrong". The same argument reaches further here:
+   with the planting inside the cell, four cells crossed 20s on a loaded machine and reported
+   `Test timed out` in place of the cause they exist to report.
 
-beforeAll(async () => {
-  await setup.run(async () => {
-    const scratch = await scratchDatabase("fork");
-    const author = await seedAccount(scratch, "t110-author");
-    const forker = await seedAccount(scratch, "t110-forker", "public");
-    const privateByDefault = await seedAccount(scratch, "t110-forker-priv", "private");
-    const corpus = resolvingCorpus();
+   Raised per FILE rather than in `vitest.config.ts`, which is shared and is not this task's to
+   widen for everybody. A genuine hang still fails, four times later. */
+vi.setConfig({ testTimeout: 80_000, hookTimeout: 80_000 });
 
-    const upstream = await publishBundle(
-      scratch,
-      author,
-      corpus,
-      "t110-upstream",
-      "1.0.0",
-      "public",
-    );
-    /* The second release, so every cell below forks at a version that is NOT the latest. */
-    await publishBundle(
-      scratch,
-      author,
-      revisionOf(corpus, "the upstream moved on after the fork was taken"),
-      "t110-upstream",
-      "2.0.0",
-      "public",
-    );
+beforeAll(warmWith(setup));
 
-    return {
-      scratch,
-      author,
-      forker,
-      privateByDefault,
-      corpus,
-      upstream,
-      latestVersion: "2.0.0",
-    };
-  });
+setup.provide(async () => {
+  const scratch = await scratchDatabase("fork");
+  const author = await seedAccount(scratch, "t110-author");
+  const forker = await seedAccount(scratch, "t110-forker", "public");
+  const privateByDefault = await seedAccount(scratch, "t110-forker-priv", "private");
+  const corpus = resolvingCorpus();
+
+  const upstream = await publishBundle(
+    scratch,
+    author,
+    corpus,
+    "t110-upstream",
+    "1.0.0",
+    "public",
+  );
+  /* The second release, so every cell below forks at a version that is NOT the latest. */
+  await publishBundle(
+    scratch,
+    author,
+    revisionOf(corpus, "the upstream moved on after the fork was taken"),
+    "t110-upstream",
+    "2.0.0",
+    "public",
+  );
+
+  return {
+    scratch,
+    author,
+    forker,
+    privateByDefault,
+    corpus,
+    upstream,
+    latestVersion: "2.0.0",
+  };
 });
 
 afterAll(async () => {
@@ -119,7 +129,7 @@ describe("T110 AC1: forking a public bundle", () => {
    * so `forkBundle` writes a new `bundle` row rather than touching one that exists.
    */
   it("produces a bundle owned by the forker at the slug they asked for", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const forkBundle = await boundForkBundle();
     const record = bundleRecordOf(
@@ -156,7 +166,7 @@ describe("T110 AC1: forking a public bundle", () => {
    * `lib/data/bundles.ts`'s frontend type, where `owner` is a handle.
    */
   it("records lineage naming the upstream's owner id, slug and release", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const forkBundle = await boundForkBundle();
     const record = bundleRecordOf(
@@ -194,7 +204,7 @@ describe("T110 AC1: forking a public bundle", () => {
    * instead of the one it was handed — and its message says so in those words.
    */
   it("names the release it took, not the release the upstream has since published", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const forkBundle = await boundForkBundle();
     const record = bundleRecordOf(
@@ -227,7 +237,7 @@ describe("T110 AC1: forking a public bundle", () => {
    * `getBundle` answers whether the write happened at all.
    */
   it("leaves the fork readable through the archive's own reader", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const forkBundle = await boundForkBundle();
     const returned = bundleRecordOf(
@@ -277,7 +287,7 @@ describe("T110 AC1: forking a public bundle", () => {
    * question touches.
    */
   it("copies the upstream release's bytes", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const upstreamReleases = await releasesOf(env.scratch, env.upstream.bundleId);
     const taken = upstreamReleases.find((r) => r.version === "1.0.0");
@@ -342,7 +352,7 @@ describe("T110 AC1: forking a public bundle", () => {
    * green, which is precisely the shape D-100-01 refused for `publish`.
    */
   it("falls back to the forker's own account default when `to.visibility` is omitted", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     /* The premise: the two accounts really do differ on the column the ruling names. Read off the
        row rather than off `seedAccount`'s argument, so a schema default that silently overrode it
@@ -396,7 +406,7 @@ describe("T110 AC1: forking a public bundle", () => {
 
   /** `to.visibility` is honoured in the other direction too, so neither value is a default. */
   it("honours an explicit public visibility", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const forkBundle = await boundForkBundle();
     const record = bundleRecordOf(
@@ -428,7 +438,7 @@ describe("T110: a slug the forker already holds", () => {
    * upstream-read check.
    */
   it("is refused with the published sentence, naming the caller's own slug", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     await publishBundle(
       env.scratch,
@@ -471,7 +481,7 @@ describe("T110: a slug the forker already holds", () => {
    * suite does not know about is caught the same way.
    */
   it("writes nothing at all when it refuses", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     await publishBundle(
       env.scratch,

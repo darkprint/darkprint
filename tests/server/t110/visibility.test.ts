@@ -33,7 +33,7 @@
    T100 already made and wrote down.
    ============================================================ */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { Actor } from "@/lib/server/policy";
 
@@ -43,7 +43,7 @@ import {
   boundForksOf,
   bundleRecordOf,
   forkListOf,
-  warmLineage,
+  warmWith,
 } from "./contract";
 import {
   ANONYMOUS,
@@ -75,29 +75,39 @@ interface Env {
 const setup = new RecordedSetup<Env>("the T110 visibility fixture");
 
 /* Before the fixture hook, so the transform cost is paid where there is headroom for it. */
-beforeAll(warmLineage);
+/* This suite's cells build their own fixture — see `RecordedSetup` — and a fixture here publishes
+   two or three bundles through T100, which is engine work, database writes and object storage.
+   The shared `testTimeout` is 20s (`vitest.config.ts`), raised there from vitest's 5s default
+   because "with nine worktree sessions competing for ten cores, one of them crossed 5s and
+   reported a timeout for a test that was never wrong". The same argument reaches further here:
+   with the planting inside the cell, four cells crossed 20s on a loaded machine and reported
+   `Test timed out` in place of the cause they exist to report.
 
-beforeAll(async () => {
-  await setup.run(async () => {
-    const scratch = await scratchDatabase("visibility");
-    const author = await seedAccount(scratch, "t110-vis-author");
-    const forker = await seedAccount(scratch, "t110-vis-forker");
-    const stranger = await seedAccount(scratch, "t110-vis-stranger");
-    const operator = await seedAccount(scratch, "t110-vis-operator");
-    const corpus = resolvingCorpus();
+   Raised per FILE rather than in `vitest.config.ts`, which is shared and is not this task's to
+   widen for everybody. A genuine hang still fails, four times later. */
+vi.setConfig({ testTimeout: 80_000, hookTimeout: 80_000 });
 
-    const upstream = await publishBundle(scratch, author, corpus, "vis-upstream", "1.0.0", "public");
-    const otherUpstream = await publishBundle(
-      scratch,
-      author,
-      revisionOf(corpus, "a second upstream, so a fork list can be shown to be scoped"),
-      "vis-other",
-      "1.0.0",
-      "public",
-    );
+beforeAll(warmWith(setup));
 
-    return { scratch, author, forker, stranger, operator, upstream, otherUpstream };
-  });
+setup.provide(async () => {
+  const scratch = await scratchDatabase("visibility");
+  const author = await seedAccount(scratch, "t110-vis-author");
+  const forker = await seedAccount(scratch, "t110-vis-forker");
+  const stranger = await seedAccount(scratch, "t110-vis-stranger");
+  const operator = await seedAccount(scratch, "t110-vis-operator");
+  const corpus = resolvingCorpus();
+
+  const upstream = await publishBundle(scratch, author, corpus, "vis-upstream", "1.0.0", "public");
+  const otherUpstream = await publishBundle(
+    scratch,
+    author,
+    revisionOf(corpus, "a second upstream, so a fork list can be shown to be scoped"),
+    "vis-other",
+    "1.0.0",
+    "public",
+  );
+
+  return { scratch, author, forker, stranger, operator, upstream, otherUpstream };
 });
 
 afterAll(async () => {
@@ -147,7 +157,7 @@ describe("T110 AC2: the upstream's fork count", () => {
    * Exercises the empty-result path.
    */
   it("is zero, for every reader, before anyone forks", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const answers = await forkIdsPerReader(env, env.upstream.bundleId, "AC2 baseline");
     for (const [who, ids] of answers) {
@@ -167,7 +177,7 @@ describe("T110 AC2: the upstream's fork count", () => {
    * "`forkBundle` never wrote anything" cannot produce the same green.
    */
   it("is unchanged while the fork is private", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const forkBundle = await boundForkBundle();
     const fork = bundleRecordOf(
@@ -221,7 +231,7 @@ describe("T110 AC2: the upstream's fork count", () => {
    * which is the criterion. Two bundles in two states would measure two adjacent facts instead.
    */
   it("increases when that same fork becomes public", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const forkBundle = await boundForkBundle();
     const fork = bundleRecordOf(
@@ -274,7 +284,7 @@ describe("T110 AC2: the upstream's fork count", () => {
    * AC2 over a fixture with one upstream, which is the fixture anybody writes first.
    */
   it("lists forks of the bundle asked about and no others", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const forkBundle = await boundForkBundle();
     const scoped = bundleRecordOf(
@@ -323,7 +333,7 @@ describe("T110 AC3: a private fork announces nothing to the upstream's author", 
    * identity into a table because of a fork they were never to be told about.
    */
   it("writes no row anywhere that carries the upstream author's id", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const before = await snapshotRows(env.scratch);
 
@@ -383,7 +393,7 @@ describe("T110 AC3: a private fork announces nothing to the upstream's author", 
    * author on their own dashboard.
    */
   it("does not touch the upstream's own bundle row", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const columns = "id, owner_id, slug, visibility, lineage_owner_id, lineage_slug, " +
       "lineage_version, created_at, updated_at";

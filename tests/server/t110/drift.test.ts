@@ -35,7 +35,7 @@
    not state.
    ============================================================ */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { ReleaseRecord } from "@/lib/server/archive";
 
@@ -49,7 +49,7 @@ import {
   bundleRecordOf,
   describe as describeValue,
   driftResultOf,
-  warmLineage,
+  warmWith,
 } from "./contract";
 import {
   type Account,
@@ -84,40 +84,50 @@ interface Env {
 const setup = new RecordedSetup<Env>("the T110 drift fixture");
 
 /* Before the fixture hook, so the transform cost is paid where there is headroom for it. */
-beforeAll(warmLineage);
+/* This suite's cells build their own fixture — see `RecordedSetup` — and a fixture here publishes
+   two or three bundles through T100, which is engine work, database writes and object storage.
+   The shared `testTimeout` is 20s (`vitest.config.ts`), raised there from vitest's 5s default
+   because "with nine worktree sessions competing for ten cores, one of them crossed 5s and
+   reported a timeout for a test that was never wrong". The same argument reaches further here:
+   with the planting inside the cell, four cells crossed 20s on a loaded machine and reported
+   `Test timed out` in place of the cause they exist to report.
 
-beforeAll(async () => {
-  await setup.run(async () => {
-    const scratch = await scratchDatabase("drift");
-    const author = await seedAccount(scratch, "t110-drift-author");
-    const forker = await seedAccount(scratch, "t110-drift-forker");
-    const corpus = resolvingCorpus();
+   Raised per FILE rather than in `vitest.config.ts`, which is shared and is not this task's to
+   widen for everybody. A genuine hang still fails, four times later. */
+vi.setConfig({ testTimeout: 80_000, hookTimeout: 80_000 });
 
-    const moved = await publishBundle(scratch, author, corpus, "drift-upstream", "1.0.0", "public");
-    const repin = repinOneCard(corpus);
-    await publishBundle(scratch, author, repin.corpus, "drift-upstream", "2.0.0", "public");
+beforeAll(warmWith(setup));
 
-    const releases = await releasesOf(scratch, moved.bundleId);
-    const movedRelease = releases.find((r) => r.version === "2.0.0");
-    if (movedRelease === undefined) {
-      throw new Error(
-        `The drift fixture published \`drift-upstream@2.0.0\` and \`listReleases\` reports ` +
-          `${releases.map((r) => r.version).join(", ") || "(nothing)"}. Every AC4 cell asserts ` +
-          `\`Repin.at\` against this release's createdAt and cannot be written without it.`,
-      );
-    }
+setup.provide(async () => {
+  const scratch = await scratchDatabase("drift");
+  const author = await seedAccount(scratch, "t110-drift-author");
+  const forker = await seedAccount(scratch, "t110-drift-forker");
+  const corpus = resolvingCorpus();
 
-    const stable = await publishBundle(
-      scratch,
-      author,
-      revisionOf(corpus, "an upstream that never repins anything"),
-      "drift-stable",
-      "1.0.0",
-      "public",
+  const moved = await publishBundle(scratch, author, corpus, "drift-upstream", "1.0.0", "public");
+  const repin = repinOneCard(corpus);
+  await publishBundle(scratch, author, repin.corpus, "drift-upstream", "2.0.0", "public");
+
+  const releases = await releasesOf(scratch, moved.bundleId);
+  const movedRelease = releases.find((r) => r.version === "2.0.0");
+  if (movedRelease === undefined) {
+    throw new Error(
+      `The drift fixture published \`drift-upstream@2.0.0\` and \`listReleases\` reports ` +
+        `${releases.map((r) => r.version).join(", ") || "(nothing)"}. Every AC4 cell asserts ` +
+        `\`Repin.at\` against this release's createdAt and cannot be written without it.`,
     );
+  }
 
-    return { scratch, author, forker, moved, movedRelease, repin, stable };
-  });
+  const stable = await publishBundle(
+    scratch,
+    author,
+    revisionOf(corpus, "an upstream that never repins anything"),
+    "drift-stable",
+    "1.0.0",
+    "public",
+  );
+
+  return { scratch, author, forker, moved, movedRelease, repin, stable };
 });
 
 afterAll(async () => {
@@ -141,7 +151,7 @@ describe("T110 AC4: a copy pinning an older card reports `moved`", () => {
    * T110 write is involved, so a red here is about `driftOf` and cannot be about `forkBundle`.
    */
   it("names the card, both versions, and the release that moved it", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const copy = await plantCopy(env.scratch, env.forker, "drift-planted-copy", env.moved);
 
@@ -198,7 +208,7 @@ describe("T110 AC4: a copy pinning an older card reports `moved`", () => {
    * the createdAt Postgres stamped on the upstream's second release.
    */
   it("dates the repin at the upstream release that carries the new pin", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const copy = await plantCopy(env.scratch, env.forker, "drift-at-copy", env.moved);
 
@@ -248,7 +258,7 @@ describe("T110 AC4: a copy pinning an older card reports `moved`", () => {
    * green, the defect is in what `forkBundle` writes, not in what `driftOf` reads.
    */
   it("reports the same `moved` over a copy forkBundle produced", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const forkBundle = await boundForkBundle();
     const fork = bundleRecordOf(
@@ -291,7 +301,7 @@ describe("T110: `ok` is the answer where nothing moved", () => {
    * implementation that answers `moved` for every bundle with lineage passes every cell above.
    */
   it("a copy of an upstream that has not moved reports `ok` with no repins", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const copy = await plantCopy(env.scratch, env.forker, "drift-stable-copy", env.stable);
 
@@ -320,7 +330,7 @@ describe("T110: `ok` is the answer where nothing moved", () => {
    * callers branch on a condition the type does not express."
    */
   it("a bundle that is nobody's copy reports `ok` with no repins", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const own = await bundleWithoutLineage(
       env.scratch,
@@ -354,7 +364,7 @@ describe("T110 AC5: a copy with an unresolvable node reports `blocked`", () => {
    * here cannot be a precedence accident.
    */
   it("says what is wrong with this bundle without naming the upstream", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const planted = await plantUnresolvableCopy(
       env.scratch,

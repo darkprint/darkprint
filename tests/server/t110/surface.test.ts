@@ -23,13 +23,25 @@
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import { LINEAGE, PUBLISHED, RULINGS, loadLineage, warmLineage } from "./contract";
 
 /* Before any cell awaits the import. The cold transform of the graph behind this barrel was
    measured at 21.13s against a 20s `testTimeout`, and the cell it timed out was this file's
    first — reporting a missing export that was present. See `warmLineage`. */
+/* This suite's cells build their own fixture — see `RecordedSetup` — and a fixture here publishes
+   two or three bundles through T100, which is engine work, database writes and object storage.
+   The shared `testTimeout` is 20s (`vitest.config.ts`), raised there from vitest's 5s default
+   because "with nine worktree sessions competing for ten cores, one of them crossed 5s and
+   reported a timeout for a test that was never wrong". The same argument reaches further here:
+   with the planting inside the cell, four cells crossed 20s on a loaded machine and reported
+   `Test timed out` in place of the cause they exist to report.
+
+   Raised per FILE rather than in `vitest.config.ts`, which is shared and is not this task's to
+   widen for everybody. A genuine hang still fails, four times later. */
+vi.setConfig({ testTimeout: 80_000, hookTimeout: 80_000 });
+
 beforeAll(warmLineage);
 
 const BARREL = fileURLToPath(new URL("../../../lib/server/lineage/index.ts", import.meta.url));

@@ -30,7 +30,7 @@
    thing an implementer adds while being helpful.
    ============================================================ */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { getBundle } from "@/lib/server/archive";
 import { can } from "@/lib/server/policy";
@@ -43,7 +43,7 @@ import {
   boundForkBundle,
   bundleRecordOf,
   refusalFrom,
-  warmLineage,
+  warmWith,
 } from "./contract";
 import {
   ANONYMOUS,
@@ -73,35 +73,45 @@ interface Env {
 const setup = new RecordedSetup<Env>("the T110 authorization fixture");
 
 /* Before the fixture hook, so the transform cost is paid where there is headroom for it. */
-beforeAll(warmLineage);
+/* This suite's cells build their own fixture — see `RecordedSetup` — and a fixture here publishes
+   two or three bundles through T100, which is engine work, database writes and object storage.
+   The shared `testTimeout` is 20s (`vitest.config.ts`), raised there from vitest's 5s default
+   because "with nine worktree sessions competing for ten cores, one of them crossed 5s and
+   reported a timeout for a test that was never wrong". The same argument reaches further here:
+   with the planting inside the cell, four cells crossed 20s on a loaded machine and reported
+   `Test timed out` in place of the cause they exist to report.
 
-beforeAll(async () => {
-  await setup.run(async () => {
-    const scratch = await scratchDatabase("authz");
-    const author = await seedAccount(scratch, "t110-owner");
-    const stranger = await seedAccount(scratch, "t110-stranger");
-    const operator = await seedAccount(scratch, "t110-operator");
-    const corpus = resolvingCorpus();
+   Raised per FILE rather than in `vitest.config.ts`, which is shared and is not this task's to
+   widen for everybody. A genuine hang still fails, four times later. */
+vi.setConfig({ testTimeout: 80_000, hookTimeout: 80_000 });
 
-    const publicUpstream = await publishBundle(
-      scratch,
-      author,
-      corpus,
-      "authz-public",
-      "1.0.0",
-      "public",
-    );
-    const privateUpstream = await publishBundle(
-      scratch,
-      author,
-      revisionOf(corpus, "a private upstream, so its bytes differ from the public one"),
-      "authz-private",
-      "1.0.0",
-      "private",
-    );
+beforeAll(warmWith(setup));
 
-    return { scratch, author, stranger, operator, publicUpstream, privateUpstream };
-  });
+setup.provide(async () => {
+  const scratch = await scratchDatabase("authz");
+  const author = await seedAccount(scratch, "t110-owner");
+  const stranger = await seedAccount(scratch, "t110-stranger");
+  const operator = await seedAccount(scratch, "t110-operator");
+  const corpus = resolvingCorpus();
+
+  const publicUpstream = await publishBundle(
+    scratch,
+    author,
+    corpus,
+    "authz-public",
+    "1.0.0",
+    "public",
+  );
+  const privateUpstream = await publishBundle(
+    scratch,
+    author,
+    revisionOf(corpus, "a private upstream, so its bytes differ from the public one"),
+    "authz-private",
+    "1.0.0",
+    "private",
+  );
+
+  return { scratch, author, stranger, operator, publicUpstream, privateUpstream };
 });
 
 afterAll(async () => {
@@ -153,7 +163,7 @@ const CASES = [
 describe("T110 AC6: forkBundle agrees with `can`, it does not re-decide", () => {
   for (const testCase of CASES) {
     it(`${testCase.name}`, async () => {
-      const env = setup.require();
+      const env = await setup.require();
       const upstream =
         testCase.upstream === "public" ? env.publicUpstream : env.privateUpstream;
       const actor = testCase.actorOf(env);
@@ -214,7 +224,7 @@ describe("T110 AC6: an unreadable upstream and an absent one are one sentence", 
    * sentence, since it goes on holding whatever the sentence becomes.
    */
   it("a private upstream, an unknown handle and an unknown slug all answer identically", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const forkBundle = await boundForkBundle();
 
@@ -278,7 +288,7 @@ describe("T110 AC6: an unreadable upstream and an absent one are one sentence", 
    * read. A write that happens on one path is not evidence about the other.
    */
   it("writes nothing at all when it refuses an unreadable upstream", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const before = await snapshotRows(env.scratch);
 
@@ -325,7 +335,7 @@ describe("T110: two refusals the contract does not give a sentence for", () => {
    * it excludes is the one outcome no reading admits: an anonymous fork that resolves.
    */
   it("an anonymous caller cannot fork a public upstream", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const readable = can(ANONYMOUS, "read", {
       kind: "bundle",
@@ -370,7 +380,7 @@ describe("T110: two refusals the contract does not give a sentence for", () => {
    * holding if the sentence is ever amended.
    */
   it("the anonymous refusal discloses nothing about the upstream", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const forkBundle = await boundForkBundle();
     const refusal = await refusalFrom(
@@ -412,7 +422,7 @@ describe("T110: two refusals the contract does not give a sentence for", () => {
    * caller never asked for.
    */
   it("forking at a release the upstream never published is refused", async () => {
-    const env = setup.require();
+    const env = await setup.require();
 
     const forkBundle = await boundForkBundle();
     const refusal = await refusalFrom(
