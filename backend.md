@@ -869,7 +869,133 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
-## `Promise.all` ON ONE `pg` POOL COMPLETES SERIALLY — A CELL THAT LOOKS LIKE CONCURRENCY AND IS NOT
+## AN EXPECTED CLASS BOUND FROM THE SUBJECT DEGENERATES WITH THE SUBJECT
+
+**Found by T170's blind author AFTER its suite went 99/99 against the real module — because a green is a claim
+about an instrument.** Its `bindErrorClass` took the **expected** class from the module under test.
+
+**Republish `InvalidCursorError` as `Error` itself and every `toBeInstanceOf(InvalidCursorError)` becomes
+`toBeInstanceOf(Error)` — which EVERY rejection satisfies. Measured: 0 of 99 cells reddened while the
+published surface had lost the class entirely.** Both shapes scored zero — hiding the declaration, and
+republishing it from the barrel as `Error`.
+
+**This is T000's own finding arriving through a door built for it:** *an expectation built from the module
+under test asserts that the module agrees with itself.* Its author **knew the rule, wrote it into three file
+headers, and bound an expected class from the subject anyway** — because **the rule was held as a prohibition
+on message LITERALS and not as a test on its own class bindings.** Recognising a rule and recognising its
+instance are different acts; that is now four tasks in which the same gap has appeared.
+
+**Repair: refuse a bound class that IS `Error`, and one whose prototype is not an `Error`.** And pin what the
+ruling actually turns on rather than the class identity alone — here, that the refusal must **not** be the
+store-fault class, because sealing it turns *your token is not ours*, which tells a client to **restart the
+walk**, into *the store failed*, which tells it to **retry the same token forever.** After the repair, two
+mutations went **0 → 6** each.
+
+**And keep a CONTROL that must not red:** a reworded message that still leaks nothing. Without it, a D-13 cell
+pinning a literal cannot be told from one pinning the absence of a leak.
+
+## A CLAUSE MASKED BY ITS PARTNER: A MUTATION REDS NOTHING BECAUSE THE TOKEN IT REMOVES OCCURS SOMEWHERE ELSE
+
+**Three instances of one defect in a single suite, found only because the mutation table was RE-RUN after the
+repairs.** A cell asserting a request body names `version`, `ownerHandle`, `visibility` — remove any one from
+the body and the cell stays green, **because that word already occurs elsewhere in the scanned partition** and
+its partner clause matches it. `version` occurs in `BundleDropzone.tsx`; `visibility` and `unfinished` occur
+elsewhere in the same folder.
+
+**Each clause was individually satisfiable by a file that has nothing to do with the criterion**, and no
+single-clause mutation could show it — the cell was green for a reason unrelated to what it asserts. **Scope
+each clause to the FILE that must carry it**, not to the partition.
+
+**And the third instance is the argument for re-running the table after a repair rather than after writing:**
+two of the three surfaced only in the post-repair round, on cells that had looked fine in the first.
+
+## A SOURCE-LEVEL COPY CHECK MUST STRIP COMMENTS — AND THE FAILURE RUNS BOTH WAYS
+
+**T263's implementer's own AC5 guard redded on its own prose** — a comment explaining that a retired sentence
+had been deleted contained the sentence. **Without the strip it reds a correct page.** And the converse is
+the half that matters: **a check that READS comments can be satisfied by deleting a comment while the sentence
+stays on screen.** It proved both with a 2x2 — the retired sentence back in rendered JSX **reds**; the same
+sentence in a comment **stays green.**
+
+**This is the docblock-anchor finding from the other direction.** There, a mutation anchor matched a comment
+and the harness reported a change it had not made. Here, a copy guard matched a comment and reported a
+violation that was not on screen. **Same cause — this repository's comments quote the code and the copy they
+are about — and it costs a false red in one direction and a false green in the other.**
+
+### AND A RENDERED-OUTPUT GREP CANNOT SEE AN INSTRUCTION TO THE NEXT AUTHOR
+
+The same round found **three claims that no AC5 grep over rendered output would ever have reached**: a file
+header saying the wizard *"never sends a byte anywhere"*, a component docblock saying *"Nothing leaves the
+tab"*, and a page comment calling the old title a promise the site *"has no backend for"*, present tense.
+**All three are instructions to the next author, and each would now be read as a constraint on a route where
+it no longer holds.** Corrected rather than deleted, each naming what changed. **A cutover retires claims in
+the comments as well as on the page, and only one of those two surfaces has a criterion pointed at it.**
+
+## A MUTATION ANCHOR CAN MATCH A DOCBLOCK — AND THIS REPOSITORY'S HOUSE STYLE IS WHAT MAKES THAT LIKELY
+
+**Second harness lie in the same task, in a new way, after the harness had been rebuilt specifically to refuse
+a mutation it could not prove applied.** A whitespace mutation reported **0 reds**, apparently saying five
+cells were vacuous against a real module.
+
+**The anchor `.trim().length === 0` appears in `body.ts`'s DOCBLOCK, not its code.** The gate reads
+`const trimmed = body.trim(); if (trimmed.length === 0)`. **The patch rewrote a sentence of prose, the file
+changed, and the harness passed it as applied.** Re-run against a code anchor it reds 4.
+
+**The guard verified that the FILE changed, not that CODE changed** — the same failure one level in from the
+regex that could not cross a `}`. **Strip comments before matching**, and audit every anchor: of twelve,
+exactly one was prose-only.
+
+**And the reason this is not a freak accident here: THIS REPOSITORY'S COMMENTS QUOTE THEIR OWN PREDICATES.**
+Explaining *why* a line is the way it is means naming the line, so the most carefully documented predicate is
+the one whose anchor is most likely to match its own explanation. **The house style that makes the code
+readable is the one that makes a mutation harness lie.**
+
+### AND A DEFAULT FAILURE MESSAGE CAN BE TRUE OF FOUR CALLERS AND NONSENSE ON THE FIFTH
+
+Same round. A shared `rejection()` helper explained every non-refusal in terms of `deleteNote`'s
+`Promise<void>` and a silent no-op — **true of the four writers, nonsense on `listNotes`**, where nothing is
+unwritten and the loss is at the read. **A red that reports a plausible wrong cause sends its reader to the
+wrong file, and that reader is a counterpart who cannot see the suite.** Two named sentences; the caller picks.
+
+## A COLD `pg` POOL SERIALISES ITS FIRST CALLERS — WARM IT, OR THE RACE NEVER OPENS
+
+**THIRD AND FINAL FORM OF THIS RULE. The first two were wrong in different directions and the true cause
+explains all three observations.** Found by T170's blind author, which checked its own fixture rather than
+accepting either the warning or the exemption.
+
+**A `pg` Pool holds ZERO connections when it is created and establishes them lazily.** Eight concurrent
+queries on a fresh pool **queue behind the first handshake and complete in order.**
+
+| | callers that raced |
+| --- | --- |
+| cold pool | **1 of 8** |
+| warmed pool | **24 of 24 across three runs** |
+
+**This reconciles everything.** T160's harness was on one connection and never raced. T150's pooled harness
+raced 8 of 8 — **because its pool was already warm from the seeding above it.** And T170's 40/60 flake was
+never scheduler luck: **the window opened when the pool happened to have live connections left over from
+seeding, and not otherwise. Its cells raced by accident.**
+
+**Repair: warm the pool to N before the first round, with the measurement in the docblock so nobody deletes
+the warm-up as a no-op.** Keep the multiple rounds beside it rather than instead of it — the warm-up makes the
+window open, the rounds cover residual variance, and they cost a few hundred milliseconds.
+
+**The question that separates a race from a warm-up artefact is not *how often does the window open* but
+*can it open at all*, and only an interleaving log answers it.** A 7-of-8 refusal rate reads as proof the
+window opens and is not.
+
+### AND AN INSTRUMENT CAN CERTIFY ITS OWN READINESS ON A VALUE THAT MEANS THE OPPOSITE
+
+Same round. A premise guard proving a precision cell could discriminate did `Number(row.sub) ?? 0` and then
+asked `micros.some((m) => m !== 0)`. **`NaN` is not nullish so `??` does not catch it; `NaN` is a `number` to
+`typeof`; and `NaN !== 0` is TRUE — so a single NaN SATISFIES the readiness guard**, and the cell then
+measures nothing while reporting that it can. **Every numeric read off a row must go through a finiteness
+guard that THROWS rather than defaults**, because a default silently weakens the check the cell rests on.
+
+### SUPERSEDED — the first form of this rule, kept because its measurement is still the single-connection case
+
+#### `Promise.all` on one CONNECTION completes serially
+
 
 **Measured by T160's blind author when a `SELECT`-then-`INSERT` mutation redded ZERO of 50.** The trace is the
 finding:
@@ -887,6 +1013,39 @@ callers has not tested this* — **a cell can look exactly like one and not be o
 difference.** T150's and T170's concurrency cells were written under the same instruction.
 
 **The repair is N INDEPENDENT CONNECTIONS, not N promises.** After it the mutation reds, and nothing else.
+
+**SCOPED — and the scoping is measured, by T150's blind author, which checked rather than accepting the
+warning I broadcast to it.** The finding is real for a harness built on **one connection** and **does NOT apply
+to a POOLED one.** Its fixture is `createTestDb()` → `createDbClient(url)` → a `pg` **Pool**, and drizzle checks
+out a connection per query and per transaction. Eight callers each holding a 250 ms `pg_sleep`, instrumented
+with `pg_backend_pid()`:
+
+```
+DISTINCT BACKEND PIDS, plain execute: 8 of 8      all eight start within 27 ms
+DISTINCT BACKEND PIDS, transaction:   8 of 8      all eight end within 20 ms
+```
+
+**Eight 250 ms sleeps spanning 285 ms, not two seconds. They genuinely race.** And its sweep had already
+falsified the hypothesis independently: **a read-modify-write mutation redded the lost-update cell, which is
+impossible under serialisation.**
+
+**So: ask what the handle IS before applying the repair.** *Use N connections, not N promises* is the right fix
+on a single connection and **a no-op on a pool**. I broadcast the warning to two sessions without scoping it;
+one measured its own fixture and sent the scope back.
+
+### AND D-13's `cause` EXEMPTION WAS ALREADY RULED — IN A FILE THE CHARGE COULD HAVE READ FIRST
+
+The same round nearly charged the hygiene-vs-leak tension as live between two halves. **It is not, and the
+decision was already made**: `lib/server/registry/errors.ts:12-15` states the clause as five merged modules
+apply it — *`Object.keys(err)` empty, `JSON.stringify(err)` exactly `"{}"`, **`cause` present but
+non-enumerable** (the ES2022 option makes it so by spec), `stack` retained; whitelist not blacklist, the only
+thing any rendering carries is the operation.* **D-13 governs what a RENDERING carries, and `cause` is the one
+sanctioned carrier.** Descending into it charges a module for a convention a merged guard already weighed —
+**check the decision that already read the artefact, not the artefact.**
+
+**The exemption must not be indistinguishable from deleting the check**, so both sides are pinned: the
+sanctioned `cause` chain accepted with statement and params present, **and a payload stashed on the error
+ITSELF still reds**, in both the prose and bound-value directions. Two hazards, kept separable.
 
 ### AND A REFUSAL CAN BE ENFORCED BY POSTGRES AND CREDITED TO THE SUITE
 
@@ -1149,7 +1308,7 @@ and **the restore silently deleted the fix.** typecheck passed, lint passed, the
 evidence for a fix that was not in the tree. It was caught by `git diff --stat` showing one changed
 file where there should have been three, not by anything failing.
 
-**RULE: commit a verified fix BEFORE measuring anything else.** *"I verified it earlier"* does not
+**RULE: commit a verified fix BEFORE measuring anything else.** **THIRD INSTANCE, and it names the moment of maximum danger: T150's implementer hit it while undoing a deliberate mutation, in the same afternoon it read this rule.** `git checkout HEAD -- <file>` reverted its *uncommitted* word change because HEAD was the merge commit. **It is most dangerous IMMEDIATELY AFTER A MERGE, when HEAD has just moved and the working tree holds the only copy of the correction.** *"I verified it earlier"* does not
 survive a checkout, and a green measured after one is a claim about a tree you no longer have.
 Prefer `git stash` or a second worktree for baselines; if you use checkout, **diff before you
 believe any number that follows it.**
@@ -11510,7 +11669,7 @@ it does not decide differently inside a worktree.
 | T041 | D-40-L: `ToNumber` is `+`, not `Number()` | T040 | `lib/server/engine/limits.ts` | — | — | todo | **Created at T040's merge (`ad44537`), charged and measured by its round-7 adversary and NOT fixed there.** `limits.ts:468` reads `Number((container).length)` where `LengthOfArrayLike` is `ToLength` is `ToNumber`; `Number(v)` is `ToNumeric` then BigInt→Number, **so it accepts a BigInt where `ToNumber` refuses one and the walk ANSWERS where the ruled formula REFUSES.** Repair is one line — `+(...)` — **measured at 4 divergences closing, 6 controls holding, 10 of 10 agreeing, D-40-K's own halves untouched**, after which the walk throws the same bare `TypeError` the formula does and lands inside D-40-24's already-numbered class. **Barrel-only**, sixth in the transcription sequence. **Owes a witness BEFORE the fix**: coverage is zero in both suites and no cell reaches the `ToNumber` half |
 | T150 | Counters: stars and downloads | T050, T060, T080, T090 | `lib/server/counters/**`, `~~app/api/signals/**`  (dropped, D-WAVE-02)~~ | — | — | todo | — |
 | T160 | Community ballot and vote weighting | T050, T060, T080 | `lib/server/ballot/**`, `~~app/api/votes/**`  (dropped, D-WAVE-02)~~ | — | — | todo | — |
-| T170 | Notes and note votes | T050, T060, T080 | `lib/server/notes/**`, `~~app/api/notes/**`  (dropped, D-WAVE-02)~~ | — | — | todo | — |
+| T170 | Notes and note votes | T050, T060, T080 | `lib/server/notes/**`, `~~app/api/notes/**`  (dropped, D-WAVE-02)~~ | — | — | **merged** | — **MERGED at the T170 merge commit, tagged `t170-verified`.** Adversary PASS: **99 of 99, ZERO defects found in the module**, and its blind author charged **TEN against its own suite** -- four cells that could not fail, three harness faults manufacturing confident zeros, one assertion that would have redded a correct module, one repair that narrowed coverage while looking like a repair, one premise guard certifying its own readiness on a NaN. **The tenth was found AFTER 99/99**: its expected error class was bound from the subject, so republishing it as `Error` left **0 of 99 cells redding while the published surface had lost the class**. Full suite **324 files, 6813 passed, 0 failed, 0 skipped**; build 0 with no generated diff, typecheck 0, lint 0. **`error-hygiene` 34 -> 37 derived.** **T240's zero-callers cell fired as designed** and is now an equality over known callers. Its own summary: *not one was found by reading; every one was found by running something against something else, and the three that mattered most were found only because the thing I ran it against was not written by me.* |
 | T180 | Run-report ingestion and cost aggregation | T010, T050, T080 | `lib/server/runs/**`, `~~app/api/runs/**`  (dropped, D-WAVE-02)~~ | — | — | todo | — |
 | T200 | Semantic search and ranking | T080 | `lib/server/search/**`, `app/api/search/**` | — | — | todo | — |
 | T210 | Term-usage index and promotion | T030, T060, T080 | `lib/server/terms/**`, `app/api/ontology-usage/**` | — | — | todo | — |
@@ -15257,11 +15416,27 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **And the cell asserts only `runs` and `excluded`, deliberately** — the survivors' median falls *between* two data points there, so asserting it would charge a defect over a percentile convention this contract never published. **The same discipline as the AC4 fixture, applied where it costs an assertion rather than where it was free.**
 
+  **D-WAVE-13 — `listNotes` REFUSES a malformed cursor. It must not answer an empty page.** Raised as contract silence rather than charged as a defect by T170's blind author, and the distinction it drew is what decides it: *the three live answers — refuse, ignore-and-restart, or empty — differ in whether a caller can tell it LOST DATA, and only one of them is silent.*
+
+  **As shipped, `{ notes: [], cursor: null }` is byte-identical to *this target has no notes* and to *you may not read this parent*.** The last two being identical is correct and deliberate (B-03). **The third is different in kind: a reader mid-walk whose token is mangled — truncation, a URL-encoding round trip, a client bug — is told THE LIST HAS ENDED, and stops.** Silent truncation of a read, wearing the shape of a legitimate answer.
+
+  **Its implementer's reasoning was defensible and I let it stand unruled**: *a cursor is this module's output, so one that did not come from here names a position in a list that does not exist, and everything after a position that does not exist is nothing.* **That argument is sound about the SET and wrong about the CALLER.** *"An empty page rather than a 500"* undersells the trade — the real choice is between *you have all the data* and *something went wrong*, and the module is the only party that can tell them apart.
+
+  **A PRESENT-BUT-EMPTY cursor — `listNotes(db, actor, target, "")` — ALSO REFUSES.** Flagged as a genuine coin-flip by T170's implementer rather than assumed, since neither half can see the other's file. **Ruled refuse, on its own argument: the parameter is optional, so ABSENT already means page one, and a client that passes `""` has built a token out of nothing.** Treating it as absent is precisely the *resuming at the start silently re-serves page one* failure D-WAVE-13 exists to prevent, one argument over. **The counter-case is real — `cursor ?? ""` is idiomatic enough that a blind author could reasonably assert it behaves as absent — and it resolves the same way: a client that writes `?? ""` gets a LOUD refusal instead of a silent restart, which is the better failure.**
+
+  **`InvalidCursorError` passes `withStore` as a DECISION, not a fault.** Sealing it would turn *your token is not ours* — which tells a client to restart the walk — into *the store failed*, which tells it to retry the same token forever.
+
+  **And its implementer named its own error better than I did: *I reasoned about what the answer DENOTES and never about what a CLIENT DOES on receiving it*.** The reason is now in `errors.ts` including what the old answer was, **so the next reader gets the argument rather than the conclusion.**
+
+  **A FOURTH published class, `InvalidCursorError`, and the cost is accepted:** `error-hygiene` moves 34 → **37** at T170's merge rather than 36, derived at that merge and never carried. The message names the operation and states that the cursor was not one this module issued, **carrying nothing of the caller's value** (D-13). A silent read truncation is worth one class.
+
   **D-WAVE-12 — `CounterStoreError`'s form is `` `<operation>: the counter store failed.` `` — SINGULAR, the document's form. The implementer changes one word.** T150's blind author found the divergence by reading, **then checked the attribution before writing it down because the finding flattered its own half**: `git merge-base --is-ancestor 99a1e8d d9950cb` is **FALSE** and `git show d9950cb:backend.md` has no such string, **so D-WAVE-07 is not in the implementer's tree at all.** It built without the form, derived the class from the shipped convention, and landed one word away. **Neither half is defective; the ruling landed after the branch point.**
 
   **The convention genuinely does not settle it and the counter-example is the one that matters:** `accounts` ships *"the account store failed"* — **singular noun from a plural module name** — while `limits` ships *"the limits store failed"*. Two shipped modules, opposite rules. **The document's form wins because it was published AT A BLIND AUTHOR'S CHARGE, precisely so two halves that cannot speak would agree** — if a ruling made for that purpose loses to a convention that contradicts itself, the charge bought nothing.
 
-  **★ AND THE SAME MODULE SUPPLIES A SECOND AXIS FOR THE OTHER HALF OF D-WAVE-07.** The implementer independently minted **`CounterStoreError` and `NotSignedInError`** — the exact two class names the ruling publishes — **without having the ruling.** Two sources, no contact, same names. **That is worth more than the mutation that would otherwise have tested it**, and it is the second time in this wave that two blind halves converged on a ruling neither could see.
+  **★ AND THE SAME MODULE SUPPLIES A SECOND AXIS FOR THE OTHER HALF OF D-WAVE-07.** **REFINED BY ITS OWN AUTHOR, AND THE REFINEMENT IS THE POINT: `CounterStoreError` was NOT independent** — `<Module>StoreError` is shipped five times and the module's name is given, so that name was determined. **`NotSignedInError` WAS**, and the real second axis is not the string: **both parties went looking for an existing class to consume, and REJECTED THE SAME TWO CANDIDATES ON THE SAME GROUNDS** — `NotAccountOwnerError` is an ownership sentence and `toggleStar` has no `accountId` to compare against; `NotPermittedError` hardcodes `listAudit:` into its message. **That is a stronger fact than arriving at the same string, and it is what would still hold if the name had come out `NotAuthenticatedError`.** *Agreeing on a conclusion is weaker evidence than agreeing on why the alternatives fail.*
+
+  **And on the negatives: three of D-WAVE-07's four say something does NOT happen, and its implementer built all three correctly WITHOUT having the ruling — because each was reachable from something else.** The never-rejects clause from `downloads.ts`'s own header, the no-visibility-check from T140's precedent, the no-row-on-read from the race that was ruled. **A negative that is not derivable from anything else in the tree is the one that would have gone the other way**, which is a sharper statement of the hazard than *negatives never land*. The implementer independently minted **`CounterStoreError` and `NotSignedInError`** — the exact two class names the ruling publishes — **without having the ruling.** Two sources, no contact, same names. **That is worth more than the mutation that would otherwise have tested it**, and it is the second time in this wave that two blind halves converged on a ruling neither could see.
 
   **D-WAVE-11 — A `SignalState` NEED NOT BE INTERNALLY COHERENT UNDER A RACE. The narrow cell stands and the stronger reading is REFUSED, for D-WAVE-05's reason.** Charged rather than asserted by T150's blind author, which built the stronger cell, found it reds **8 of 8**, and then argued against its own cell.
 
@@ -18924,7 +19099,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 ### T150, Counters: stars and downloads
 
 - **State:** todo
-- **Depends on:** T050, T060, T080, T090
+- **Depends on:** T050, T060, ~~T080~~, T090 — **T080 STRUCK: neither module imports it, and both implementers reached that independently from the same evidence.** T080 publishes no lookup by `bundle.id` — which is what `target.ref_id` and `note.target_id` hold — and neither `BlueprintSummary` nor `CardSummary` carries `ownerId` or `visibility`, so nothing it returns can reach `visibleTo`. Both read `schema.bundle` directly, as `lib/server/saves` does.
 - **Blocks:** —
 - **Owns:** `lib/server/counters/**` — **`app/api/**` DROPPED for this wave (D-WAVE-02); module only**
 - **Forbidden:** `lib/server/saves/**`, `lib/server/ballot/**`
@@ -19003,8 +19178,8 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 ### T170, Notes and note votes
 
-- **State:** todo
-- **Depends on:** T050, T060, T080, **T005** (the `note` and `note_vote` tables; `lib/db/schema.ts` is Forbidden here)
+- **State:** merged
+- **Depends on:** T050, T060, ~~T080~~, **T005** (the `note` and `note_vote` tables; `lib/db/schema.ts` is Forbidden here) — **T080 STRUCK: neither module imports it, and both implementers reached that independently from the same evidence.** T080 publishes no lookup by `bundle.id` — which is what `target.ref_id` and `note.target_id` hold — and neither `BlueprintSummary` nor `CardSummary` carries `ownerId` or `visibility`, so nothing it returns can reach `visibleTo`. Both read `schema.bundle` directly, as `lib/server/saves` does.
 - **Blocks:** —
 - **Owns:** `lib/server/notes/**` — **`app/api/**` DROPPED for this wave (D-WAVE-02); module only**
 - **Forbidden:** `lib/server/ballot/**`, `components/blueprint/Comments.tsx`
@@ -19481,6 +19656,64 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 - **Goal:** wire the wizard's validation to the server and make its Publish button do what it says.
 - **Contract:** the client-side validation stays and the server adds its authoritative pass at publish (`docs/ARCHITECTURE.md` §7). The three disabled reasons already written — `still being written`, `blocked` with an error count, `not wired up` — collapse to two, and the third is deleted rather than reworded (`components/upload/UploadFlow.tsx:1176-1201`). The success screen currently states that nothing was sent and nothing was saved, pinned verbatim by `honesty.test.ts`; it now states what was published, and the pin moves with it. The core-versus-overlay divergence the route discloses three times (`app/upload/page.tsx:195-200`) is resolved once the server resolves against published overlays, so those three disclosures come off together.
+- **D-263-01 — THE DISCLOSURES DO NOT COME OFF, AND THE PREMISE FOR REMOVING THEM IS FALSE. BOTH HALVES CHARGED THIS INDEPENDENTLY, FROM DIFFERENT EVIDENCE, AND THEIR TWO REASONS COMPOSE.** The Contract says the core-versus-overlay divergence *"is resolved once the server resolves against published overlays"*. It is not.
+
+  **The implementer's evidence — it RELOCATES.** `validateBundle` (`lib/server/engine/validate.ts:137`) does `input.ontology ?? ontologyView(CORE_ONTOLOGY, input.extensions)` and `app/api/validate/bundle/route.ts` **never calls T030's `openView`** — so the preview resolves against the shipped core plus the caller's own overlay, bit-for-bit what the tab already builds. **`publish` opens the STORED ontology at `manifest.ontologyVersion`.** So a bundle can **PREVIEW CLEAN and be REFUSED `in-error` AT PUBLISH**, and the reverse. A new user-visible failure mode, not a resolved one.
+
+  **The blind author's evidence — the CLIENT-SIDE VALIDATION STAYS, which the same Contract line says.** If the client keeps resolving against core alone, the wizard still shows 4 where the page shows 2 (SEAM-31's `frontline-triage`). **The divergence is unchanged; only the AUTHORITATIVE verdict moves to the server.** By D-78's own direction rule the disclosures are therefore still true and **must stay.**
+
+  **Ruled: the two real disclosures are REWRITTEN to state the preview-versus-publish divergence. The citation is short by one file** — the section says `app/upload/page.tsx:195-200`; SEAM-31 says `app/upload/page.tsx:178-197` **and `UploadFlow.tsx:299-301`**, three disclosures across **two** files, so an AC5 grep must cover both or it misses one. **`BundleDropzone.tsx:436-439` is NOT the same sentence and is UNTOUCHED**: it fires only when `parts.vocabularyProblem` is set, it stays true after any cutover, and it is the only surface where a reader learns their overlay was unreadable — a gap `app/api/validate/bundle/route.ts:55-62` records as owed to T263. **Routing the preview through `openView` would fix it properly and needs a server change outside T263's `Owns` — out of scope, recorded as a gap rather than smuggled in.**
+
+- **D-263-02 — WHICH LEDGER ROWS COME OFF, since the section states D-78's direction rule and never applies it. TWO come off, ONE stays.** *"an account to upload into, with each blueprint public or private the way a repository is"* — **off**, accounts are T050 and per-bundle visibility is merged. *"there are no accounts and no backend: what you upload is read in this tab and stays in it"* — **off**, it is AC5's literal target. **"nor is there a live push from the editor the skill runs in" — STAYS. T270 is `todo` and removing it would be a false claim.** Removing all three or keeping all three are both plausible misreads of *"those three disclosures come off together"*, and **the section has THREE different triples** — the honesty rows, the disabled reasons, and the core-versus-overlay disclosures — which that sentence conflates.
+
+- **D-263-03 — AC3's PREMISE IS FALSE, AND ITS MECHANISM IS RULED RATHER THAN LEFT TO BE INVENTED.** `honesty.test.ts` does not pin the success screen's *"nothing was sent and nothing was saved"* verbatim, or anywhere: it imports `UploadPage` alone, never `UploadFlow`, and builds one surface with `renderToStaticMarkup` at `step === 1, submitted === false`. **The success screen is never in that HTML.** Both halves measured this independently.
+
+  **And it may not be constructible as a verbatim pin at all:** `vitest.config.ts` sets `environment: "node"`, there is no jsdom and no testing-library, and the success screen is step 4 of a stateful client component reached by `setSubmitted(true)`. **A static render cannot reach it.** The two escapes are adding a DOM environment or lifting the sentence into a pure export — **and `honesty.test.ts:139-140` explicitly refuses the second: *"lifting it into a component to make it testable would move a sentence for a test's convenience."***
+
+  **Ruled: AC3 becomes a SOURCE-LEVEL assertion over `components/upload/UploadFlow.tsx`, in T262-AC6's own idiom — greppable, not rendered. The verbatim-pin wording is withdrawn.** Adding a DOM environment to satisfy one criterion is a change to shared config for a test's convenience, which is the same objection `honesty.test.ts` already records.
+
+- **D-263-04 — `components/site/honesty.test.ts` IS GRANTED TO THE IMPLEMENTER AND IS EXPLICITLY NOT THE BLIND AUTHOR'S.** It is in nobody's `Owns`, AC3 and AC5 both require it to change in the same commit as the copy, and **both halves asked for it in the same hour** — which is exactly the collision neither could have seen coming.
+
+- **D-263-05 — `components/upload/progress.ts` IS FROZEN. This is the sharpest finding of the round and only the blind author saw it.** **`lib/server/publish/publish.ts:48` imports `bundleProgress` from `@/components/upload/progress`**, and `publish.ts:163-176` consumes `progress.state` / `placed` / `total` directly — **so a MERGED, VERIFIED module's AC1/AC2 distinction is decided by a file T263 owns and may rewrite.** The rule *"do not weaken, skip or rewrite a named test"* has no external enforcement here because the implementer owns its own regression tests and the blind author may not read them. **`components/upload/progress.ts` and `components/upload/progress.test.ts` are carved OUT of T263's `Owns` for this task: read-only.** A change there is a T100 change and comes back to me.
+
+- **D-263-06 — NAMED TESTS THAT MUST PASS UNCHANGED, which T263 was the only cutover lacking.** T260, T261 and T262 each carry such a line and a matching criterion; T263 carried neither while its own prose called existing tests *"the strongest form available"*. **The list is: `components/site/honesty.test.ts` (as amended under D-263-04), `components/site/nav.test.ts`, `components/upload/progress.test.ts`, `components/upload/dropzone.test.ts`, `app/api/validate/routes.test.ts`.** **An unnamed must-pass-unchanged set is unenforceable by anyone.**
+
+- **D-263-07 — SEAM-69's SHAPES ARE STALE AGAINST MERGED T100 IN BOTH DIRECTIONS, AND AC1 IS ABOUT THE SCREEN RATHER THAN THE BODY.** Merged `publish` returns `PublishResult = { bundleId, releaseId, digest, created }` — **no `owner`, no `slug`, and `releaseId` is an id rather than a version string** — while SEAM-69 publishes `{ owner, slug, digest, release }`. SEAM-69's request also omits **two fields the route requires**: `ownerHandle` and `version`, both `readString`, both 400 when absent. **Ruled reading (1) of the blind author's three: AC1 is satisfied by what the PAGE renders from what it submitted, with only `digest` coming back — never by the response body.** Widening `PublishResult` is a change to a merged module and to T100's published block; **it is not T263's to make and not a suite's to assume.** `PublishRefusedError.kind` does not travel as a body field: **recovering it from the problem `type` suffix is the ratified surfacing.**
+
+- **D-263-08 — THE PUBLISHED-SIGNATURES LINE NAMES BARRELS A CLIENT CANNOT IMPORT.** It says T263 consumes `@/lib/server/engine` and `@/lib/server/publish` — **but `publish.ts:49` reaches `pg`/drizzle through `@/lib/db`, so it cannot be in a client bundle**, and the publish control is a client component. **The real seams are HTTP: `POST /api/bundles` (T100) and `POST /api/validate/bundle` (T040).** This decides whether a wiring cell imports a barrel or asserts an HTTP call, and **a cell built on the barrel reading would red a correct route.**
+
+- **D-263-09 — `PublishInput.version` HAS NO SOURCE IN THE WIZARD, and the fix is inside `Owns`.** Neither `BundleDetails` nor `BundleManifest` carries a version, so a dropped `blueprint.yaml` cannot supply one. **Ratified as proposed: a `version` input on step 2, defaulting to `0.1.0`, prefilled from `doc.version` when a dropped manifest carries the key even though the type does not name it. Client-side SHAPE check only** — `compareVersionStrings` and the semver refusal stay T100's, and **no default may be invented for a value `versionNotHigher` makes load-bearing on every second publish.**
+
+  **VISIBILITY: add the public/private control on step 2.** Omitting it would work — absent takes the account default — but the ledger sentence *"an account to upload into, **with each blueprint public or private the way a repository is**"* would then be **one claim that became real and one that did not, in a single sentence**, and D-78 moves a marker in one direction only.
+
+  **`ownerHandle` comes from the session, and T263 IS THE FIRST CLIENT OF THE BACKEND IN THIS REPOSITORY** — there is no client-side `fetch` to any `/api/**` route anywhere in `components/**` or `app/**` today, **so whatever session-reading shape T263 writes becomes the pattern.** Three states are all reachable and the contract mentions none: **not signed in** (the route 401s), **signed in with no handle yet** (`SessionPayload.handle` is `string | null`, reachable by T050 AC1), and signed in with a handle. **Keep the session read in ONE file under `components/upload/**` so a later task can lift it whole.**
+
+- **D-263-11 — AC4 IS A CHANGE TO THE WITHHOLDING CONDITION, NOT A NON-REGRESSION, AND THE MEASUREMENT THAT SETTLES IT IS ONE LINE INSIDE THE BLIND AUTHOR'S FORBIDDEN PARTITION.** It raised F8 as a **hypothesis with a named gap** rather than a finding, because it could not read `UploadFlow.tsx:212`. **Read by the orchestrator: `hasErrors` is `lib/core/diagnostics.ts:220-222`, `ds.some((d) => d.severity === "error")` — the PLAIN COUNT.**
+
+  So SEAM-32 withholds `REPORT.md` unless `blueprint && analysis && !hasErrors`, and **a bundle that cannot publish is in exactly one of two states, both of which carry error-severity diagnostics**: `progress.state === "unfinished"` → `unfinished(placed, total)`, otherwise → `inError(summarize(...).error)` which is reached only on a non-zero count. **And `unfinished()`'s own docblock says it in terms: *"an unfinished folder HAS ERRORS, they are all the shadow of a card nobody has written yet."*** **`REPORT.md` is therefore withheld TODAY for every bundle that cannot publish — precisely the population AC4 names.**
+
+  **Ruled: AC4 mandates a behaviour change and the section now says so.** The change is right, and the reason is the blind author's: **the report states outright when autonomy and risk were NOT computed rather than omitting the headings** (SEAM-32's error-state column), **which is what makes handing it over on a failed publish honest rather than misleading.** One consequence to carry: SEAM-69 says the success screen *"hands over `REPORT.md` instead"* — **once publishing is real there is no "instead" left, and AC4 re-purposes that control for the REFUSAL path.**
+
+- **D-263-10 — AC4's *"still"* is FALSE of the tree and the FORWARD-LOOKING reading is ratified.** `REPORT.md` does not download today for a bundle that cannot publish: the only control offering it is on the `submitted` screen and the Publish button is `disabled={blocked}`, so that bundle never reaches the screen the download is on — `reportMarkdown`'s own docblock says *"Nobody has read that file."* **The criterion is about the NEW failure mode: after the cutover a bundle can be locally clean and SERVER-refused** (`not-owner`, `conflict`, `version-not-higher`, or `in-error`/`unfinished` under the stored ontology per D-263-01) **and the reader must land somewhere that still hands over `REPORT.md`.**
+
+- **D-263-12 — THREE JUDGEMENT CALLS FROM T263's IMPLEMENTER, ALL RATIFIED, EACH FLAGGED RATHER THAN ASSUMED.**
+
+  **SEAM-30 STAYS PLANNED; only SEAM-69 flips LIVE.** The Goal reads as licence to call `/api/validate/bundle` on Preview, and it did not — **because D-263-01 establishes that route resolves against the same vocabulary the tab already builds, so a preview round trip adds latency, a loading state and a *your bundle is now sent at Preview* copy obligation, and CHANGES NO VERDICT.** Annotated in the anchor block with that reason rather than left looking unfinished.
+
+  **Visibility DEFAULTS TO PRIVATE and is always sent explicitly**, overriding the account default rather than deferring to it: **the ledger row being retired promises the choice, and a hidden default does not keep that promise.** Its reason is the decisive one — **publishing someone's first upload to the world because they missed a control is the failure that cannot be undone by editing a setting.**
+
+  **The version shape check ADVISES rather than BLOCKS.** `publish.ts:216` sorts unparseable versions **below** every valid one rather than throwing, **so a client gate would refuse a submission the registry accepts.** Only an EMPTY version blocks, because the route 400s on it. **A client-side guard stricter than the server it guards is a guard that invents a refusal.**
+
+  **And `BundleDetails.version` is OPTIONAL, with the `?` load-bearing rather than stylistic:** `dropzone.test.ts:58` builds a `BundleDetails` literal by hand, **so a required member reds a must-pass-unchanged suite at the TYPE level — a failure with nothing to do with what that suite checks.**
+
+- **D-263-13 — `BundleDropzone.tsx:580` IS REWRITTEN, NOT DELETED, AND NOT EXEMPT.** *"or click to browse, the files are read in this tab and nothing is uploaded"* — rendered JSX, survives comment-stripping, and the only two reds in T263's suite. Its blind author leaned (2) and declined to settle it because **D-263-01 had already carved out a dropzone sentence that stays true.**
+
+  **The two are not the same sentence and the distinction is the subject.** `436-439`'s subject is **an unreadable overlay** — a fact about one dropped file that is true before and after the cutover. **`580`'s subject is THE WHOLE GESTURE, and it sits on the route's PRIMARY CONTROL**, where a reader meets it first and carries it forward through four steps. **Step 4 now uploads.** That is D-78's shape exactly: a true statement that has become a lie about the product.
+
+  **But it is true AT STEP 1, so deleting it replaces a true sentence with silence** — the same objection that kept `436-439`. **Ruled: rewrite so the true half survives and the false implication does not** — the files are read in this tab, and **nothing is sent until you publish**. **Retiring a claim is not the same act as deleting it, and D-78 asks for the first.**
+
+  **★ AND THE SHAPE THIS LEAVES FOR EVERY LATER CUTOVER: AC5's OWN FILE IS THE ONE FILE ITS AUTHOR DID NOT APPLY IT TO.** `UploadFlow.tsx:218` says in as many words *"Deliberately free of the words this route is no longer allowed to say (AC5)"* — a careful, documented sweep — **and `BundleDropzone.tsx` was not swept.** The attention went where the criterion was written down, not where the copy was.
+
 - **Acceptance criteria:** (1) a clean bundle publishes and the response names the owner, slug, release and digest; (2) an unfinished bundle is refused with the unfinished wording, not an error count; (3) the success screen states what was stored, and `honesty.test.ts` pins the new sentence; (4) `REPORT.md` still downloads for a bundle that cannot publish; (5) no copy anywhere on the route still says nothing is sent.
 - **Out of scope:** the bundle page's own publish control (T261).
 - **Log:**
