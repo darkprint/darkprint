@@ -14812,6 +14812,12 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **D-240-06 — AC4 is WITHDRAWN from T240**, as T060's audit half was. `problem()` serialises what its callers pass, its callers are route files Forbidden here, and the module itself is T000's — **nothing in `lib/server/observability/**` sits on that path.** It becomes an obligation over `lib/server/http`, recorded rather than assigned.
 
+  **D-240-07 — `detail`'s type holds ONE of AC3's two clauses, and the block claims both.** The argument is that `Record<string, string | number | boolean>` cannot hold a nested object, so *"a DOT source, a card body or a driver error **cannot be passed**"*. **True, and a good guard.** But AC3 also says *"or a credential"* — **and a credential is a flat string.** `detail: { key: secret }` typechecks; so does spreading a validated flat body, and **the block's own example (old handle, new handle) is that exact shape**, so the shape cannot be refused without refusing the example. So half of AC3 is held by **remembering**, which is the thing the block says the type replaces.
+
+  **Ruled: the type is not widened and the claim is.** The module comment must say **which clause the type holds and which is a caller's discipline** — otherwise a cell asserting *"the type rejects a nested value"* reads as covering AC3 whole while covering one of its two clauses, and the next reader inherits the stronger claim. Charged by T240's implementer, which **declined to propose a fix it would have to invent** and asked only that the comment stop overstating. That is the right disposition for a gap with no cheap structural close.
+
+  **`AuditStoreError` moves `error-hygiene`'s equality 30 → 31, in the MERGE COMMIT and nowhere else.** That guard's domain is `git ls-tree -d backend lib/server/`, so an unmerged module is excluded from the count and checked for hygiene only — **it cannot fire in the implementer's worktree**, which is why it was reported now rather than discovered at the merge.
+
   **Two schema DEFAULTS are the AC5 hazard and the blind author found them before any cell existed**: `actor_kind` defaults to `owner` and `decision` to `allowed`, so **an implementation that drops either on the floor writes a plausible row rather than failing.** Cells must EXCLUDE those outputs rather than admit the good one.
 
 - **Log:**
