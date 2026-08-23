@@ -8,11 +8,15 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Logo } from "./Logo";
 import { ButtonLink } from "@/components/ui/Button";
 import { SPEC_SEQUENCE, SANDBOX } from "@/components/spec/sequence";
-import { ACCOUNT } from "@/lib/data/account";
+import { authorFor, profileHref } from "@/components/profile/author";
+import type { AccountRecord } from "@/lib/server/accounts";
 import { cx } from "@/lib/format";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-42) (cited at line 373): POST /api/auth/session, DELETE /api/auth/session, GET /api/auth/me
+// SEAM-42 is LIVE: GET /api/account behind the session cookie, GET /api/auth/github/login
+// to start the OAuth dance, POST /api/auth/logout to end it. The planned shapes were
+// `POST /api/auth/session`, `DELETE /api/auth/session` and `GET /api/auth/me`; none of the
+// three was built under those names and all three are answered by the routes above.
 
 /* ============================================================
    Five targets, not seven.
@@ -128,16 +132,43 @@ export const LEARN = SPEC_SEQUENCE.map((page) => ({
  *
  * `nav.test.ts` reads this table: these are header destinations the same way `LEARN`'s are,
  * which is what lets `/settings` be held to the same completeness rule as every other
- * top-level route instead of sitting in an exemption. `Sign out` is not in it, because it
- * is not a route and there is nothing to sign out of — the panel says so under the rows.
+ * top-level route instead of sitting in an exemption.
+ *
+ * ── Why the four profile rows name a ROUTE and not a reader (D-262-06) ──
+ * These hrefs used to interpolate the seeded handle, which made the whole table a function
+ * of `lib/data/account.ts`. There is a session now, so the handle is per-request — and
+ * `nav.test.ts:47` imports this array at MODULE SCOPE and reads `.href` off every row,
+ * which is exactly what a per-request value cannot be. So the row carries the route
+ * pattern, the way `app/u/[username]` is spelled on disk, and `accountMenuHref` below
+ * substitutes the reader at render. The table stays static, the test stays unchanged, and
+ * no row claims to know who is reading.
+ *
+ * `Sign out` is not a row here because it is not a route: it is a `POST` to
+ * `/api/auth/logout`, and it renders as a control under the rows rather than beside them.
  */
 export const ACCOUNT_MENU = [
-  { href: `/u/${ACCOUNT.author.username}`, label: "Your profile" },
-  { href: `/u/${ACCOUNT.author.username}/blueprints`, label: "Your blueprints" },
-  { href: `/u/${ACCOUNT.author.username}/cards`, label: "Your cards" },
-  { href: `/u/${ACCOUNT.author.username}/saved`, label: "Saved" },
-  { href: "/settings", label: "Settings" },
+  { href: "/u/[username]", segment: "", label: "Your profile" },
+  { href: "/u/[username]/blueprints", segment: "blueprints", label: "Your blueprints" },
+  { href: "/u/[username]/cards", segment: "cards", label: "Your cards" },
+  { href: "/u/[username]/saved", segment: "saved", label: "Saved" },
+  { href: "/settings", segment: undefined, label: "Settings" },
 ] as const;
+
+/**
+ * One account-menu row's destination for one reader, or `undefined` when there is nowhere
+ * to send them.
+ *
+ * `/settings` has no `segment` and is the same URL for everybody, so it passes through. The
+ * four profile rows go through `profileHref`, which answers `undefined` for an account with
+ * no handle yet — the state D-263-09 established is reachable by T050 AC1. A row that
+ * cannot resolve is not rendered as a dead link; the panel omits it and says why.
+ */
+function accountMenuHref(
+  item: (typeof ACCOUNT_MENU)[number],
+  handle: string | null,
+): string | undefined {
+  return item.segment === undefined ? item.href : profileHref(handle, item.segment);
+}
 
 /**
  * The collapsed panel's four groups, and its headings now match the bar exactly.
@@ -155,9 +186,23 @@ const MOBILE_GROUPS = [
 
 function mobileLinks(
   group: (typeof MOBILE_GROUPS)[number]["id"],
+  account: AccountRecord | null | undefined,
 ): readonly { href: string; label: string; step?: string }[] {
   if (group === "learn") return LEARN;
-  if (group === "you") return ACCOUNT_MENU;
+  if (group === "you") {
+    /* The whole account state, not just the handle, because a null handle means two
+       different things here: nobody is signed in, or somebody is and has not chosen one
+       yet. The first gets a sign-in and the second gets Settings, which is where the
+       choosing happens — collapsing them would offer a signed-in reader a second sign-in
+       and hide the one row that would fix their account. */
+    if (account === undefined || account === null) {
+      return [{ href: "/api/auth/github/login", label: "Sign in" }];
+    }
+    return ACCOUNT_MENU.flatMap((item) => {
+      const href = accountMenuHref(item, account.author.handle);
+      return href === undefined ? [] : [{ href, label: item.label }];
+    });
+  }
   return NAV.filter((item) => item.group === group);
 }
 
@@ -199,6 +244,45 @@ export function SiteHeader() {
   const menus = useRef<HTMLElement>(null);
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+
+  /**
+   * Who is reading, read from the browser rather than from the server.
+   *
+   * `undefined` while the answer is outstanding, `null` for a signed-out reader, the record
+   * for a signed-in one. Three states rather than two because the first paint genuinely
+   * knows nothing: rendering the signed-out control during it would flash `Sign in` at
+   * somebody who is signed in on every page they open.
+   *
+   * ── Why a fetch, and not `readSession()` ──
+   * This component is in the ROOT layout. A server-side session read here is a request-time
+   * API on every route in the repository, which would opt T260's browse shelves out of the
+   * static rendering B-15 keeps them in — the chrome would decide the caching policy for
+   * pages it has nothing to do with. So the header pays one request for itself and the
+   * pages stay static. `components/profile/session.ts` carries the other half of this
+   * decision, for the routes whose CONTENT is per-reader.
+   *
+   * `/api/account` rather than `/api/auth/session`: the menu needs a display name and a hue
+   * as well as a handle, and `SessionPayload` is `{ accountId, handle }`. One request that
+   * answers both is one request. A 401 is the ordinary signed-out answer, not an error.
+   */
+  const [account, setAccount] = useState<AccountRecord | null | undefined>(undefined);
+
+  useEffect(() => {
+    const cancelled = new AbortController();
+    void (async () => {
+      try {
+        const response = await fetch("/api/account", { signal: cancelled.signal });
+        setAccount(response.ok ? ((await response.json()) as AccountRecord) : null);
+      } catch {
+        /* An aborted or failed request is not evidence of being signed out, but the menu
+           has to draw something. Signed-out is the safe wrong answer: it offers a sign-in
+           that works, where a signed-in menu drawn on no evidence offers profile links
+           built from a handle this component does not have. */
+        if (!cancelled.signal.aborted) setAccount(null);
+      }
+    })();
+    return () => cancelled.abort();
+  }, []);
 
   useEffect(() => {
     if (openAt === null) return;
@@ -362,70 +446,116 @@ export function SiteHeader() {
               primary button reads as part of the button, and the two are the least related
               controls in the row — one is the site's single ask, the other is who you are.
               The 12px is the `tight` tier of the vertical scale, spent horizontally. */}
-          <details
-            open={isOpen("account")}
-            onToggle={(event) =>
-              setOpenAt(event.currentTarget.open ? { menu: "account", at: pathname } : null)
-            }
-            className="group relative ml-3"
-          >
-            <summary
-              className="flex cursor-pointer list-none items-center gap-1.5 rounded-md p-1 [&::-webkit-details-marker]:hidden"
-              aria-label="Account menu"
+          {account === undefined ? (
+            /* The outstanding answer. A dimmed disc the same size as the avatar, so the row
+               does not reflow when the account arrives, and `aria-hidden` because there is
+               nothing here for a screen reader to act on yet. */
+            <span
+              aria-hidden
+              className="ml-3 inline-flex h-8 w-8 shrink-0 animate-pulse rounded-full bg-surface-2"
+            />
+          ) : account === null ? (
+            <ButtonLink href="/api/auth/github/login" variant="outline" size="sm" className="ml-3">
+              Sign in
+            </ButtonLink>
+          ) : (
+            <details
+              open={isOpen("account")}
+              onToggle={(event) =>
+                setOpenAt(event.currentTarget.open ? { menu: "account", at: pathname } : null)
+              }
+              className="group relative ml-3"
             >
-              <Avatar author={ACCOUNT.author} size="md" />
-              <span className="text-dim">
-                <Caret />
-              </span>
-            </summary>
-            <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-line-bright bg-surface-2 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.85)]">
-              <div className="flex items-center gap-3 border-b border-line p-4">
-                <Avatar author={ACCOUNT.author} size="md" />
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-sm text-fg">
-                    {ACCOUNT.author.displayName}
-                  </span>
-                  <span className="font-mono text-[11px] text-dim">
-                    @{ACCOUNT.author.username}
-                  </span>
+              <summary
+                className="flex cursor-pointer list-none items-center gap-1.5 rounded-md p-1 [&::-webkit-details-marker]:hidden"
+                aria-label="Account menu"
+              >
+                <Avatar author={authorFor(account.author)} size="md" />
+                <span className="text-dim">
+                  <Caret />
                 </span>
-              </div>
-
-              <div className="flex flex-col py-2">
-                {ACCOUNT_MENU.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cx(
-                      "px-4 py-2 text-sm transition-colors hoverable:hover:bg-cyan/5 hoverable:hover:text-cyan",
-                      /* Settings is the one row that is not under `/u/`, and the divider
-                         above it is what the design uses to separate what you have made
-                         from how the account behaves. */
-                      item.href === "/settings" && "mt-2 border-t border-line pt-4",
-                      isActive(item.href) ? "text-cyan" : "text-muted",
+              </summary>
+              <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-line-bright bg-surface-2 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.85)]">
+                <div className="flex items-center gap-3 border-b border-line p-4">
+                  <Avatar author={authorFor(account.author)} size="md" />
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate text-sm text-fg">
+                      {authorFor(account.author).displayName}
+                    </span>
+                    {/* The handle line is omitted rather than printed as `@null` for an
+                        account that has not chosen one yet — a state T050 AC1 makes legal.
+                        Settings is where it gets chosen, and that row is still below. */}
+                    {account.author.handle !== null && (
+                      <span className="font-mono text-[11px] text-dim">
+                        @{account.author.handle}
+                      </span>
                     )}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
+                  </span>
+                </div>
 
-              {/* No `Sign out` row. There is nothing to sign out of, and a menu item that
-                  cannot do the one thing its verb names is worse than its absence — this
-                  says why instead. */}
-              <div className="flex flex-col gap-1.5 border-t border-line bg-surface-2/60 px-4 py-3">
-                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-amber">
-                  ◐ seeded
-                </span>
-                <p className="text-xs leading-relaxed text-muted">
-                  There is no sign-in. This menu always names the handle{" "}
-                  <span className="font-mono text-fg">lib/data/account.ts</span> seeds, and
-                  downloads, stars, validated and the three community metrics behind it
-                  stay seeded: there is no telemetry, no ballot and no verified run report.
-                </p>
+                <div className="flex flex-col py-2">
+                  {ACCOUNT_MENU.map((item) => {
+                    const href = accountMenuHref(item, account.author.handle);
+                    if (href === undefined) return null;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={href}
+                        className={cx(
+                          "px-4 py-2 text-sm transition-colors hoverable:hover:bg-cyan/5 hoverable:hover:text-cyan",
+                          /* Settings is the one row that is not under `/u/`, and the divider
+                             above it is what the design uses to separate what you have made
+                             from how the account behaves. */
+                          item.href === "/settings" && "mt-2 border-t border-line pt-4",
+                          isActive(href) ? "text-cyan" : "text-muted",
+                        )}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* The four profile rows resolve to nothing until a handle exists, so the
+                    menu would otherwise be a single Settings row with no explanation. */}
+                {account.author.handle === null && (
+                  <p className="border-t border-line px-4 py-3 text-xs leading-relaxed text-muted">
+                    Your profile lives at a handle, and this account does not have one yet.
+                    Choose one in <span className="text-fg">Settings</span> and these rows
+                    appear.
+                  </p>
+                )}
+
+                {/* Sign out is a `POST`, so it is a form and not a menu row: a `GET` link
+                    that ends a session is reachable by a prefetch and by anything that
+                    walks links. It was absent entirely until there was a session to end,
+                    and the panel that stood here saying so has come off with it (D-78). */}
+                <form action="/api/auth/logout" method="post" className="border-t border-line">
+                  <button
+                    type="submit"
+                    className="w-full px-4 py-3 text-left text-sm text-muted transition-colors hoverable:hover:bg-cyan/5 hoverable:hover:text-cyan"
+                  >
+                    Sign out
+                  </button>
+                </form>
+
+                {/* What is still seeded, narrowed to what is still true. The sign-in half of
+                    this panel has come off because it became false; these three have not
+                    moved — there is no telemetry (T180), no ballot (T160) and no verified
+                    run report, so every figure resting on them is still illustrative. */}
+                <div className="flex flex-col gap-1.5 border-t border-line bg-surface-2/60 px-4 py-3">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-amber">
+                    ◐ seeded
+                  </span>
+                  <p className="text-xs leading-relaxed text-muted">
+                    Your account and handle are real. Downloads, stars, validated and the
+                    three community metrics are not: there is no telemetry, no ballot and no
+                    verified run report behind them yet.
+                  </p>
+                </div>
               </div>
-            </div>
-          </details>
+            </details>
+          )}
         </nav>
 
         <ButtonLink href="/blueprints" variant="primary" size="sm" className="lg:hidden">
@@ -450,7 +580,7 @@ export function SiteHeader() {
                 <p className="px-3 pb-1 font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
                   {group.title}
                 </p>
-                {mobileLinks(group.id).map((item) => (
+                {mobileLinks(group.id, account).map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}

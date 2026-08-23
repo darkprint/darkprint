@@ -13,7 +13,7 @@ import { can, type Actor } from "@/lib/server/policy";
 import { validateNamespace } from "@/lib/server/naming";
 import type { Db } from "@/lib/db";
 import { accountRecordOf, publicAuthorOf } from "./records";
-import { accountRowByHandle, accountRowById, withStore } from "./store";
+import { accountRowByHandle, accountRowById, accountRowsByIds, withStore } from "./store";
 import type { AccountRecord, PublicAuthor } from "./types";
 
 /**
@@ -51,6 +51,38 @@ export async function getAccount(
  * about a name nobody typed. T070's argument, at the one other door into the same
  * column.
  */
+/**
+ * Public authors for a set of account ids, in ONE query.
+ *
+ * D-WAVE-03. `getPublicAuthor` is keyed by HANDLE, and a page of rows carries account
+ * ids — so a caller rendering ten authors had two moves and both were bad: ten lookups
+ * for handles it does not have, or a second construction of `PublicAuthor` in its own
+ * module. That second one is the inline join D-100-01 retired and the two-authors shape
+ * this run charges hardest, so the reader is published here instead, where
+ * `publicAuthorOf` already lives.
+ *
+ * Returns a `Map` rather than an array because a caller needs it keyed, and building the
+ * index at the call site is where an author gets attached to the wrong row. **An id with
+ * no account is ABSENT from the map rather than mapped to `undefined`** — `has` and `get`
+ * then answer the same question, and a caller cannot mistake "no such account" for "an
+ * account with no fields".
+ *
+ * A non-string or duplicate id is dropped rather than refused: this is a reader, the ids
+ * come from rows the caller already holds, and there is no caller-supplied string here to
+ * validate the way a handle is. An empty input short-circuits without touching the driver.
+ */
+export async function publicAuthorsByIds(
+  db: Db,
+  ids: readonly string[],
+): Promise<Map<string, PublicAuthor>> {
+  const unique = [...new Set(ids.filter((id) => typeof id === "string" && id.length > 0))];
+  if (unique.length === 0) return new Map();
+  return await withStore("publicAuthorsByIds", async () => {
+    const rows = await accountRowsByIds(db, unique);
+    return new Map(rows.map((row) => [row.id, publicAuthorOf(row)]));
+  });
+}
+
 export async function getPublicAuthor(db: Db, handle: string): Promise<PublicAuthor | undefined> {
   /* `typeof` first, and the reason is the two-front-doors rule rather than paranoia:
      `validateNamespace` reaches `isNameSegment`, which reads `.length` off its argument
