@@ -87,6 +87,16 @@ export function stripComments(text: string, fileName = "f.tsx"): string {
   const visit = (node: ts.Node) => {
     for (const r of ts.getLeadingCommentRanges(text, node.getFullStart()) ?? []) blank(r.pos, r.end);
     for (const r of ts.getTrailingCommentRanges(text, node.getEnd()) ?? []) blank(r.pos, r.end);
+    /* ── A JSX COMMENT IS NOT TRIVIA, AND THE TWO CALLS ABOVE CANNOT SEE ONE ──
+       `{/* ... *\/}` parses as a JsxExpression with NO expression; the comment sits inside the
+       braces, so it is never leading or trailing trivia of any node and both range calls miss it
+       entirely. Measured before this line existed: `app/settings/page.tsx` holds 12 and
+       `SiteHeader.tsx` 7, and a stripper that leaves them behind leaves the FALSE-RED direction
+       wide open on the exact files this suite scans — a `{/* the ... line was retired here *\/}`
+       would be read as the sentence itself and charge a correct implementer with the removal
+       they performed. Blanked as a whole node, which is safe: a JsxExpression with no expression
+       carries nothing but the comment. */
+    if (ts.isJsxExpression(node) && node.expression === undefined) blank(node.getStart(), node.getEnd());
     node.forEachChild(visit);
   };
   visit(sf);

@@ -200,3 +200,60 @@ describe("the matcher finds a rendered sentence hidden the three ways it can hid
     expect(contains('<DangerRow why="no ownership to move" />', "no ownership to move")).toBe(true);
   });
 });
+
+describe("a JSX comment is a THIRD shape, and neither comment-range API can see it", () => {
+  /*
+   * `{/* ... *\/}` parses as a JsxExpression with NO expression: the comment sits inside the
+   * braces, so it is leading or trailing trivia of nothing and both `getLeadingCommentRanges`
+   * and `getTrailingCommentRanges` miss it entirely.
+   *
+   * This suite's original probe set did not catch it, and the reason is worth recording: the
+   * JSX probe was a `/*` inside JSX TEXT, which is a different shape. A `<span>` is markup, a
+   * `title=` is an attribute, and `{/* *\/}` is a third thing. Measured on the files this suite
+   * scans, `app/settings/page.tsx` holds 12 of them and `SiteHeader.tsx` 7 — in a repository
+   * that writes most of its JSX prose that way, this is not an edge case.
+   *
+   * Re-running every stripper-dependent measurement after the fix moved exactly one number:
+   * `lib/data` comment-only mentions 20 -> 21, rendered 10 -> 9, imports unchanged at 19.
+   * `app/settings/page.tsx:201` had been counted as rendered prose and is a JSX comment.
+   */
+  it("is removed", () => {
+    const src = 'const a = (<div>{/* the "nothing is saved" line was retired */}<p>hi</p></div>);';
+    expect(stripComments(src, "f.tsx")).not.toContain("nothing is saved");
+  });
+
+  it("and the JSX around it is not", () => {
+    /* The pair. Blanking the whole node is safe only while it takes nothing else with it. */
+    const src = 'const a = (<div>{/* gone */}<p>KEEP ME</p></div>);';
+    const out = stripComments(src, "f.tsx");
+    expect(out).toContain("KEEP ME");
+    expect(out).toHaveLength(src.length);
+  });
+});
+
+describe("comments are blanked BEFORE whitespace is collapsed, and the order is load-bearing", () => {
+  /*
+   * Measured, and the failure is worse than it first looks. Collapsing whitespace first turns
+   *   `const x = 1; // retired\nconst keep = "SENTINEL";`
+   * into one line, so a line-comment blanker run afterwards runs to the end of that line and
+   * DELETES THE REAL CODE — `SENTINEL` disappears from the scanned text entirely.
+   *
+   * That is a false-GREEN generator, and a third wrong answer distinct from the two directions
+   * of the 2x2: rendered copy vanishes from what the scanner reads, so every absence assertion
+   * over it passes. Getting the three passes right and their order wrong is still wrong.
+   *
+   * `stripComments` runs first and `contains` normalises what it returns, so the order is
+   * structural here rather than conventional. This cell is what reds if that is ever inverted.
+   */
+  it("code following a line comment survives", () => {
+    const src = 'const x = 1; // retired: nothing is saved\nconst keep = "SENTINEL";';
+    const code = stripComments(src, "f.ts");
+    expect(code).not.toContain("nothing is saved");
+    expect(
+      contains(code, "SENTINEL"),
+      "the code after a line comment was consumed. Whitespace was collapsed before comments " +
+        "were blanked, which fuses the following line into the comment and deletes it — real " +
+        "copy disappears from the scanned text and every absence over it goes green.",
+    ).toBe(true);
+  });
+});
