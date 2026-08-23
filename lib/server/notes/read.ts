@@ -9,7 +9,7 @@ import type { Db } from "@/lib/db";
 import { publicAuthorsByIds, type PublicAuthor } from "@/lib/server/accounts";
 import type { Actor } from "@/lib/server/policy";
 import { decodeCursor, encodeCursor } from "./cursor";
-import { NoteStoreError } from "./errors";
+import { InvalidCursorError, NoteStoreError } from "./errors";
 import { parentFor } from "./parent";
 import { notePageRows, voteCounts, withStore, type NoteRow } from "./store";
 import type { NotePage, NoteRecord, NoteTarget } from "./types";
@@ -53,11 +53,15 @@ function recordOf(row: NoteRow, author: PublicAuthor, votes: number): NoteRecord
  * be used to learn which private slugs are real — AC1's oracle, closed at the listing, which
  * is where T140's AC3 closes the same one.
  *
- * **An undecodable cursor also answers an empty page.** A cursor is this module's own
- * output; one that did not come from here names a position in a list that does not exist,
- * and *everything after a position that does not exist* is nothing. Resuming at the start
- * instead would silently re-serve page one to a client with a bug, which is the answer that
- * looks correct.
+ * **An undecodable cursor is REFUSED, and this is the one place the two empty answers above
+ * must not be joined by a third** (D-WAVE-13). *This target has no notes* and *you may not
+ * read this parent* are deliberately identical — that is B-03. A mangled token is different
+ * in kind: **a reader mid-walk is told the list ENDED, and stops.** The empty page was this
+ * module's first answer, on the reasoning that a position which does not exist has nothing
+ * after it — sound about the SET and wrong about the CALLER, since the choice a client
+ * actually faces is between *you have all the data* and *something went wrong*, and only
+ * this module can tell them apart. Resuming at the start silently re-serves page one, which
+ * is the same failure wearing a different shape.
  *
  * **Tombstones are IN the page**, with `deleted: true` and the emptied body the column
  * holds. B-18 keeps the row so counts and cursors stay honest, and omitting it here would
@@ -72,8 +76,12 @@ export async function listNotes(
   return await withStore("listNotes", async () => {
     const empty: NotePage = { notes: [], cursor: null };
 
-    if (cursor !== undefined && decodeCursor(cursor) === undefined) return empty;
+    /* D-WAVE-13: REFUSED, not answered empty. Asked first, before the parent is loaded,
+       because the token is the caller's own input and its validity says nothing about the
+       target — the same refusal is raised for a public parent and a private one, so ordering
+       it here leaks nothing that ordering it later would hide. */
     const from = cursor === undefined ? undefined : decodeCursor(cursor);
+    if (cursor !== undefined && from === undefined) throw new InvalidCursorError("listNotes");
 
     /* The read gate, and it is asked BEFORE the notes are fetched: a listing the actor may
        not have should cost one query about the parent, not one about every note under it. */

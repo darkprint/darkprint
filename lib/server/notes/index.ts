@@ -70,9 +70,10 @@
 
 export type { NotePage, NoteRecord, NoteTarget, NoteTargetKind } from "./types";
 
-/* D-13's boundary. TWO classes, because this module authors two decisions and its third was
-   another module's all along — the reasoning is in `errors.ts` and `guards.ts`. */
-export { NoteBodyError, NoteStoreError } from "./errors";
+/* D-13's boundary. THREE classes: the store fault, AC5's refused body, and D-WAVE-13's
+   refused cursor. The fourth decision this module makes — the denial — was another module's
+   all along. The reasoning is in `errors.ts` and `guards.ts`. */
+export { InvalidCursorError, NoteBodyError, NoteStoreError } from "./errors";
 
 /* AC5's number, published so the criterion can be quantified over it rather than pinned. */
 export { MAX_NOTE_BODY } from "./body";

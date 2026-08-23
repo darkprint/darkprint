@@ -29,7 +29,16 @@ import { schema, type Db } from "@/lib/db";
 import { NotAccountOwnerError } from "@/lib/server/accounts";
 import type { Actor } from "@/lib/server/policy";
 import { createTestDb, type TestDb } from "@/tests/support/db";
-import { MAX_NOTE_BODY, NoteBodyError, deleteNote, editNote, listNotes, postNote, voteNote } from "./index";
+import {
+  InvalidCursorError,
+  MAX_NOTE_BODY,
+  NoteBodyError,
+  deleteNote,
+  editNote,
+  listNotes,
+  postNote,
+  voteNote,
+} from "./index";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 
@@ -279,8 +288,44 @@ describe.skipIf(!hasDb)("lib/server/notes published surface against Postgres", (
     expect(stored?.deletedAt).toBeNull();
   });
 
-  it("answers an undecodable cursor with an empty page rather than a fault", async () => {
-    const page = await listNotes(db, account(author), open(), "not-a-cursor-anyone-issued");
-    expect(page).toEqual({ notes: [], cursor: null });
+  /**
+   * D-WAVE-13, and this cell asserted the OPPOSITE until the ruling landed.
+   *
+   * The refusal has to be distinguishable from the two legitimate empty answers, so the cell
+   * drives all three and asserts they are not alike — a `rejects` alone would pass on a
+   * module that refused every cursor, including the ones it just issued.
+   */
+  it("REFUSES a cursor it did not issue, and still answers empty for the two cases that are empty", async () => {
+    const refused = await listNotes(db, account(author), open(), "not-a-cursor-anyone-issued").catch((e: unknown) => e);
+    expect(refused).toBeInstanceOf(InvalidCursorError);
+    /* Names the operation, and carries nothing the caller sent. */
+    expect((refused as Error).message).toContain("listNotes");
+    expect((refused as Error).message).not.toContain("not-a-cursor-anyone-issued");
+    expect(Object.keys(refused as object)).toEqual([]);
+    expect(JSON.stringify(refused)).toBe("{}");
+
+    /* A target with no notes, and a parent the actor may not read: both still empty, and
+       both still identical to each other, which is B-03 and is deliberate. */
+    const bare = { kind: "blueprint" as const, refId: "00000000-0000-4000-8000-00000000dead" };
+    expect(await listNotes(db, account(author), bare)).toEqual({ notes: [], cursor: null });
+    expect(await listNotes(db, account(stranger), shut())).toEqual({ notes: [], cursor: null });
+
+    /* And a cursor this module DID issue is still honoured, so the refusal is not blanket. */
+    const first = await listNotes(db, account(author), { kind: "card", refId: "paged-card" });
+    expect(first.cursor).not.toBeNull();
+    const second = await listNotes(db, account(author), { kind: "card", refId: "paged-card" }, first.cursor!);
+    expect(second.notes.length).toBeGreaterThan(0);
+  });
+
+  it("refuses a cursor mangled the way a real client mangles one", async () => {
+    const first = await listNotes(db, account(author), { kind: "card", refId: "paged-card" });
+    const token = first.cursor!;
+    /* Truncation, the case D-WAVE-13 names: a reader mid-walk whose token was cut short must
+       not be told the list ended. */
+    await expect(listNotes(db, account(author), { kind: "card", refId: "paged-card" }, token.slice(0, -4)))
+      .rejects.toBeInstanceOf(InvalidCursorError);
+    /* An empty string is not "no cursor": the parameter is optional and absent means page one,
+       where present-and-empty is a client that built a token out of nothing. */
+    await expect(listNotes(db, account(author), open(), "")).rejects.toBeInstanceOf(InvalidCursorError);
   });
 });
