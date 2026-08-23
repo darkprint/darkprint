@@ -25,6 +25,9 @@ import { schema, type Db } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
 import { createTestDb, resetTestDb, type TestDb } from "@/tests/support/db";
 import { CounterStoreError, getSignals, NotSignedInError, recordDownload, toggleStar } from "./index";
+/* The one internal this file reaches for, and the comment on the cell that uses it says why:
+   the third toggle arm is only deterministically reachable at the statement. */
+import { deleteStar } from "./store";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 
@@ -133,6 +136,61 @@ describe.skipIf(!hasDb)("lib/server/counters against Postgres", () => {
        Asserting only `<= 1` on the count would pass for an implementation that lost the
        row and kept the count. */
     expect(state.starCount).toBe(rows);
+    expect(state.starredByCaller).toBe(rows === 1);
+  });
+
+  /**
+   * **The third arm, and it had no witness until a mutation said so.** The toggle has three
+   * outcomes — the insert landed; the insert conflicted and the delete removed a row; and
+   * the insert conflicted and the delete found NOTHING, because a concurrent toggle got
+   * there first. Only the third proves `deleteStar`'s `RETURNING` is load-bearing, and
+   * making it claim a deletion unconditionally reddened **zero** of the twenty-two cells
+   * that existed before this one.
+   *
+   * **It is tested at the statement rather than through the toggle, and that is not the
+   * lazy choice — it is the only deterministic one.** Two concurrent toggles from one
+   * account against an already-starred target reach the third arm ONLY on the interleaving
+   * where both transactions take the delete arm before either commits; on the other
+   * interleaving the second caller re-stars, which is equally correct and detects nothing.
+   * A cell that asserts a fixed count there is asserting an interleaving, and it would red
+   * against a correct implementation roughly half the time.
+   */
+  it("deleteStar answers false when there was no row to delete", async () => {
+    const account = await makeAccount("third-arm");
+    const target = { kind: "blueprint", refId: "b-third-arm" } as const;
+    await toggleStar(db, actorFor(account), target);
+
+    const [row] = await db
+      .select({ id: schema.target.id })
+      .from(schema.target)
+      .where(and(eq(schema.target.kind, target.kind), eq(schema.target.refId, target.refId)));
+
+    expect(await deleteStar(db, row!.id, account)).toBe(true);
+    /* The same call again. Nothing is there, nothing is deleted, and the answer has to say
+       so — a `true` here is a `star_count - 1` for a row that never existed, which is a
+       count that has stopped agreeing with the rows it counts and cannot recover. */
+    expect(await deleteStar(db, row!.id, account)).toBe(false);
+    expect(await deleteStar(db, row!.id, await makeAccount("third-arm-other"))).toBe(false);
+  });
+
+  /**
+   * And the invariant that holds under EVERY interleaving of the race above: the aggregate
+   * agrees with the rows, and never goes negative. Both settlements are legal — the second
+   * caller re-stars (1 and 1) or both unstar (0 and 0) — so this asserts the relation
+   * rather than either outcome.
+   */
+  it("concurrent toggles from one account on a STARRED target leave the count agreeing with the rows", async () => {
+    const account = await makeAccount("ac1-starred");
+    const actor = actorFor(account);
+    const target = { kind: "blueprint", refId: "b-ac1-starred" } as const;
+
+    await toggleStar(db, actor, target);
+    await Promise.all([toggleStar(db, actor, target), toggleStar(db, actor, target)]);
+
+    const rows = await starRows(target.kind, target.refId);
+    const state = await getSignals(db, actor, target);
+    expect(state.starCount).toBe(rows);
+    expect(state.starCount).toBeGreaterThanOrEqual(0);
     expect(state.starredByCaller).toBe(rows === 1);
   });
 
