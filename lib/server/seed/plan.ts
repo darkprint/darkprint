@@ -90,7 +90,13 @@ export async function planImport(): Promise<ImportPlan> {
   const byRef = new Map<string, { cardId: string; version: string; digest: string; visibility: "public" | "private" }>();
   for (const bundle of loaded) {
     for (const node of bundle.blueprint.nodes) {
-      if (byRef.has(node.ref)) continue;
+      /* The map KEY is the dedup, and there is no `if (has) continue` above this line. It
+         was there and a mutation sweep reddened zero of nine cells removing it: setting an
+         existing key to an equal value changes nothing, so the guard read as the dedup
+         while the map did the work. Equal because the nine bundles carry no `cards/` folder
+         of their own — every ref resolves out of the one shared `content/cards/` library,
+         measured as 57 distinct refs over 57 files with no ref naming no file — so one ref
+         names exactly one document and last-write-wins cannot pick between two. */
       byRef.set(node.ref, {
         cardId: node.card.id,
         version: node.card.version,
