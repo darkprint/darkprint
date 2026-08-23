@@ -869,6 +869,31 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## A `rejects`/`resolves` WRAPPER IS A BLIND-POSITION LAUNDERER
+
+**Found by T180's blind author in its OWN suite, against the absent module, and it is the shape the rule it was
+written for warns about.** The cell was `accept.test.ts > leaves no row behind` — the *assert what the writer
+LEFT BEHIND, not only that it threw* discipline — and it was **GREEN against a module that does not exist**:
+
+* the blind-position throw **satisfied `rejects.toThrow()`** — a bare wrapper consumes any error, including the
+  suite's own instrument reporting that the barrel is absent;
+* the empty table **satisfied the row count** — the digest had never been written to by anyone.
+
+**Green while testing nothing, and no mutation of any implementation could ever have reddened it.** Two things
+fix it: **bind the module through a guard that fails OUTSIDE the wrapper**, and assert
+`rejects.toThrow(<the admissible message>)` rather than a bare throw. A sweep of the same suite found **three
+more** cells reporting the blind position as an `AssertionError` about a message mismatch — a plausible wrong
+cause rather than a pass, which is the same defect wearing the other mask.
+
+**GENERAL FORM: any cell whose module bind sits inside a `rejects`/`resolves` wrapper converts *the module is
+absent* into *the criterion passed*.** It is the exact complement of binding the module last (a bind at the top
+of a cell hides every fixture write behind an absent-module red): one hides the writes, the other hides the
+criterion. **Both are invisible in a green count.**
+
+**And the reason it matters beyond one suite: this cell could not be found by a stand-in or by a mutation
+sweep.** It was found by reading the absent-module run — the state a blind suite is in for its whole life and
+the one nobody inspects, because every red there is expected.
+
 ## A mutation run with `skipped > 0` is INVALID, not a zero — and a hook TIMEOUT is not a hook THROW
 
 **Three harness defects, all found by T110's blind author while falsifying its own suite against a
