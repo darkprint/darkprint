@@ -839,6 +839,33 @@ it. **Corroborating a good measurement with a bad one does not strengthen it.**
 
 It also corrected the figure: 3h36m, not four hours. I had rounded a number I had not read.
 
+## The shared S3 bucket is a CROSS-COMMIT, CROSS-WORKTREE CACHE, and it can serve one tenant's bytes to another
+
+**Measured by T091's implementer, twice, with controls.** `bundleDigest({dot, cardDigests})`
+(`lib/core/hash/digest.ts:61`) covers the DOT and the card digests and **not** the export template,
+the manifest, the analysis columns, the owner, the slug or the version — while `bundle-export.ts`
+quotes the analysis into `README.md`. So **one key holds different bytes across two commits**, in a
+bucket that outlives every run and every worktree.
+
+Before freeze-on-miss this was nearly inert: only `publish()` wrote. **Freeze-on-miss makes every
+serve a writer**, so every t090/T091 run now seeds the bucket for every later run everywhere.
+
+**Two consequences, both observed rather than predicted:**
+
+* **A FALSE RED, armed now.** A run after a commit that changes the README template reads stale
+  bytes and reds with a message pointing at `serveFile`. **A t090/T091-shaped red is worth a bucket
+  check before it is worth a code change.**
+* **A CROSS-TENANT READ.** Its first F6 probe showed an anonymous caller served at step 1, which
+  looked like a pre-existing leak on `backend`. It was not: **that digest already held a folder the
+  same session's earlier runs had frozen when those cards were PUBLIC**, and it was served into a
+  fresh scratch database for a release whose cards are now private. The cache crossed a tenancy
+  boundary that no test's fixture isolation can see, because the fixture isolates Postgres and the
+  bucket is not Postgres.
+
+`fixtures.ts:689-694` names this as **residue to COUNT**. Under freeze-on-miss it is a cache later
+runs **READ** — the paragraph is not wrong, it is describing a different object than the one that
+now exists. **Nobody clears the bucket unilaterally: it is shared and worktrees are live.**
+
 ## `error-hygiene` over a task with no module is vacuous, not thin
 
 Its sharpening of my own warning, and it is stronger than what I sent. I told it that a green from
@@ -18624,7 +18651,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **D-110-10 — an ANONYMOUS caller forking a PUBLIC upstream is REFUSED, and this is where `can` and the operation disagree.** `can(anonymous, "read", publicBundle)` is `true`, so an agreement-with-`can` cell would predict success — **and success means a `bundle` row owned by nobody**, because a fork is an ownership change and `bundle.owner_id` is not nullable. The read half and the ownership half of this operation answer differently and neither the block nor T080 settles it. Refused, with a third form: **`"forkBundle: not signed in."`** — **the implementer's spelling, adopted over my own `"not permitted."` because it was already written and its blind counterpart deliberately pinned no sentence, so the choice was free and the shipped one is more actionable.** It carries nothing about the target. **Through HTTP this arm is unreachable** — T000's `withSession` answers 401 first — so it is reachable only at the module boundary, on T140's AC1 precedent, and a route cell must not expect it. Its blind author asserted the refusal without pinning the sentence, which was the right call while the sentence was unowned; it is owned now.
 
-  **D-110-11 — forking at a release the upstream never published is REFUSED, and the sentence must name the RELEASE.** `"forkBundle: no such bundle."` would be false: the bundle exists and is readable. **`"forkBundle: no such release."`** — the fourth form, 404 with the upstream's own version string, which the caller supplied and may therefore see. The hazard its finder named is the reason this cannot be left silent: **a fallback to the latest release records a provenance the caller never asked for**, and AC1 makes lineage name *the release taken*, so the fallback satisfies AC1 by writing a true statement about the wrong release. **A wrong provenance is invisible where a refusal is loud**, which is the whole direction of this task.
+  **D-110-11 — forking at a release the upstream never published is REFUSED, and the sentence must name the RELEASE.** `"forkBundle: no such bundle."` would be false: the bundle exists and is readable. **`"forkBundle: no such release."`** — the fourth form, 404, **BARE and uninterpolated.** T110's implementer had shipped `` "forkBundle: `<slug>` has no release `<version>`." `` and asked which was meant, having taken the literal because **that is what a blind author pins.** It is right: the literal is the contract, a gloss beside it is not, and `"forkBundle: no such bundle."` is bare for the same reason. The version leaks nothing — the caller supplied it — so this is consistency, not secrecy. The hazard its finder named is the reason this cannot be left silent: **a fallback to the latest release records a provenance the caller never asked for**, and AC1 makes lineage name *the release taken*, so the fallback satisfies AC1 by writing a true statement about the wrong release. **A wrong provenance is invisible where a refusal is loud**, which is the whole direction of this task.
 
 - **Goal:** let an account copy somebody else's bundle, record where it came from, and report when the upstream moved past it.
 - **Contract:** lineage is one optional field on the ordinary bundle record, `{ owner, slug, version }` — **that is `lib/data/bundles.ts`'s FRONTEND shape and it is quoted here as the product contract, not as the type to bind; the record this task writes is `{ ownerId, slug, version }`, per the corrected signature block above** — not an entity: there is no `Fork` type and no second list (`lib/data/bundles.ts:1-28`). Fork counts and lists are computed over public rows only, and a private fork is never announced on its upstream nor to its author (`:508-526`, `components/bundle/Aside.tsx:262-265`). Drift is one of three tones, `ok`, `moved`, `blocked`, where `blocked` describes this bundle's own problem and never frames it as falling behind, and `moved` names the exact repin `{ card, from, to, at }`. A fork copies the upstream release's bytes and records the release taken.

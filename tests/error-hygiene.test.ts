@@ -261,6 +261,32 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
           );
         }
 
+        /* `Object.keys` and `JSON.stringify` read OWN properties. `for...in` walks the prototype
+           chain, and every one of these classes puts `name` on its prototype via `defineProperty`
+           with `enumerable: false` — a flag the two readings above cannot see either way. So until
+           this loop existed, that flag was decorative: flipping it to `true` changed observable
+           behaviour (`for-in` yields `["name"]`) and redded nothing here.
+
+           Found by T240's implementer, which mutated the flag in its own module, scored zero, and
+           checked the second axis instead of accepting the zero as inertness. It is the inverse of
+           the leak this file already knows: there a non-enumerable property evaded a walker, here
+           an own-only walker missed an inherited one. Same seam, opposite direction.
+
+           `name` is EXCLUDED, and the exclusion is the whole calibration. Two patterns coexist in
+           this repo — `defineProperty` (non-enumerable) and plain `X.prototype.name = "..."`
+           (enumerable) — and 20 merged classes use the second. A walker that flagged them would
+           red the whole guard over a class name, which is public API and is what `err.name` is FOR.
+           What D-13 protects is `cause`, a driver statement, a credential: anything else reaching
+           the prototype enumerably is invisible to both readings above and is what this catches. */
+        const inherited: string[] = [];
+        for (const key in instance) if (key !== "name") inherited.push(key);
+        if (inherited.length > 0) {
+          rendered.push(
+            `${barrel}/${name} with ${args.length} arg(s): for-in=${JSON.stringify(inherited)} ` +
+              `(inherited and enumerable — invisible to Object.keys and JSON.stringify)`,
+          );
+        }
+
         /* The clause's fourth part, and the only one that is not a statement about enumerability.
            The first three are satisfiable by deleting `stack` — which is precisely how the
            *previous* wording of this clause ("own properties exactly [message, cause]") could be
