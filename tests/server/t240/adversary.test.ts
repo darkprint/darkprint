@@ -335,13 +335,22 @@ describe("T240 adversary — what AC1 still does not cover, recorded as a measur
    * A `grep` over `lib`, `app`, `components` and `scripts` for the two published functions
    * finds zero call sites outside this module's own folder and this suite.
    *
-   * **This cell is deliberately not a red.** Zero call sites is the correct state today —
-   * D-240-09 refuses to pre-seed members for callers that do not exist, and the same logic
-   * refuses a guard for a call graph that does not either. What it does is make the claim
-   * rest on a measurement, and turn into a red the day the first caller lands without a
-   * guard arriving with it.
+   * **UPDATED AT T170's MERGE, WHICH IS THE EVENT THIS CELL WAS BUILT TO CATCH.** It read
+   * "zero call sites" and turned red the moment the first one landed — `lib/server/notes`,
+   * whose `deleteNote` writes `note.remove`. **That is the cell working, not failing.**
+   *
+   * It is now an EQUALITY over the known callers rather than a zero. Each entry is a
+   * COMPOSING layer under D-240-08's rule — *the composing layer writes the row, a module
+   * underneath does not* — and a new caller reds this until somebody states which side of
+   * that rule it sits on. A floor would absorb the next one silently, which is the whole
+   * reason D-240's action set is an equality too.
+   *
+   * What is still unowned is unchanged: AC1's whole-corpus half asserts one row per
+   * state-changing OPERATION across eight merged writers, and this cell cannot see whether
+   * a caller that audits does so exactly once. It measures WHO calls, never HOW MANY rows
+   * one operation leaves.
    */
-  it("records that AC1's whole-corpus half has no call site to be tested against", async () => {
+  it("holds AC1's whole-corpus half against the call sites that now exist", async () => {
     const { readFileSync, readdirSync, statSync } = await import("node:fs");
     const { fileURLToPath } = await import("node:url");
     const root = fileURLToPath(new URL("../../../", import.meta.url));
@@ -372,21 +381,31 @@ describe("T240 adversary — what AC1 still does not cover, recorded as a measur
       }
     }
 
+    /* Each entry is a COMPOSING layer under D-240-08. This list has moved TWICE, both times
+       at a merge and both times because the cell did its job:
+         T170's `deleteNote`      -> `note.remove`, audited only when the tombstone matched
+         T150's `recordDownload`  -> `counter.write_failed`, the audit of a SWALLOWED fault,
+                                     which is why that member exists at all (D-240-08) and why
+                                     D-WAVE-01's "Nothing else" was corrected. */
+    const KNOWN_CALLERS = ["lib/server/counters/write.ts", "lib/server/notes/write.ts"];
+
     console.log(
       `T240 AC1 whole-corpus half: ${callers.length} call site(s) of writeAudit/listAudit ` +
         `outside lib/server/observability/**: ${callers.join(", ") || "(none)"}`,
     );
 
     expect(
-      callers,
-      `D-240-08's composing-layer rule now has ${callers.length} call site(s) to bind:\n` +
-        callers.map((c) => `  - ${c}`).join("\n") +
-        `\n  The rule is "THE COMPOSING LAYER WRITES THE ROW, A MODULE UNDERNEATH DOES NOT", ` +
-        `and AC1 as narrowed cannot enforce it — it counts ONE writeAudit call and a ` +
-        `double-write is two. D-240-01 records the whole-corpus half as UNOWNED; this cell ` +
-        `reds the day that stops being free, so the obligation surfaces with its first ` +
-        `caller instead of after it.`,
-    ).toEqual([]);
+      [...callers].sort(),
+      `The set of modules calling writeAudit/listAudit has changed. This is an EQUALITY, not a ` +
+        `floor: every caller must be a COMPOSING layer under D-240-08 — "the composing layer ` +
+        `writes the row, a module underneath does not" — and a new one reds here until somebody ` +
+        `states which side of that rule it sits on. If a caller was added, add it to ` +
+        `KNOWN_CALLERS in the same commit and say why it composes. If one was removed, say why ` +
+        `the operation it audited no longer needs a row.\n\n` +
+        `Still unowned and unchanged by this cell: AC1's whole-corpus half is one row per ` +
+        `state-changing OPERATION across eight merged writers. This measures WHO calls, never ` +
+        `HOW MANY rows one operation leaves.`,
+    ).toEqual([...KNOWN_CALLERS].sort());
   });
 
   /**

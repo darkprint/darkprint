@@ -37,6 +37,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  vector,
 } from "drizzle-orm/pg-core";
 
 /** B-07: cards may be private; ontology terms stay public. Shared by three tables. */
@@ -573,3 +574,52 @@ export const apiKey = pgTable("api_key", {
   uniqueIndex("api_key_token_hash_key").on(t.tokenHash),
   index("api_key_account_id_idx").on(t.accountId),
 ]);
+
+/**
+ * T200's vectors (B-12), and the reason they are TABLES rather than a column on `release`
+ * and `card_version`.
+ *
+ * The first version of this put a nullable `embedding` on each of those two directly. Both
+ * are in T005's `BASE_TABLES`, and `tests/server/t005/existing.test.ts` holds the delta over
+ * those ten to exactly one licensed cell — *"an alteration to a table eight merged tasks
+ * already query, and nothing downstream would find out until it broke"*. It redded, and
+ * widening the licence would have been negotiating with the instrument.
+ *
+ * **The separate table is better on its own terms, which is how you can tell the guard was
+ * right rather than merely in the way.** `embedding` is `NOT NULL` here, so a row exists **if
+ * and only if** that release has been embedded: *never embedded* is the ABSENCE of a row
+ * rather than a null inside one, and the state is representable exactly once. As a column it
+ * was a nullable field whose null carried that meaning by convention. Nothing eight merged
+ * tasks already `select` from gains a field. And `onDelete: "cascade"` makes a stale vector
+ * unrepresentable rather than something a sweep has to remember.
+ *
+ * **AC6's idempotency reads the row's presence and needs no second column.** A `release` row
+ * is content-addressed — `digest` is derived from the bytes, so it cannot change — therefore
+ * a row here is already a vector for that digest. An `embedded_digest` column would be a
+ * second source for one quantity, which is how two sources come to disagree.
+ *
+ * **384 is a decision, not a default:** pgvector refuses an index on a column declared
+ * without a dimension, so the width had to be chosen before anything could be indexed, and
+ * changing it later rewrites every row. It is the width of the common small sentence
+ * encoders, which is what keeps swapping the derivation for a real provider a drop-in.
+ *
+ * Indexed `vector_cosine_ops` in `0003_search.up.sql`. **`vector_l2_ops` would rank by
+ * magnitude, which for token counts is document LENGTH** — an ordering that looks plausible
+ * and puts a long document above a relevant one.
+ */
+export const releaseEmbedding = pgTable("release_embedding", {
+  releaseId: uuid("release_id")
+    .primaryKey()
+    .references(() => release.id, { onDelete: "cascade" }),
+  embedding: vector("embedding", { dimensions: 384 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** The card half of T200's vectors. Same shape and same reasons as `releaseEmbedding`. */
+export const cardVersionEmbedding = pgTable("card_version_embedding", {
+  cardVersionId: uuid("card_version_id")
+    .primaryKey()
+    .references(() => cardVersion.id, { onDelete: "cascade" }),
+  embedding: vector("embedding", { dimensions: 384 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

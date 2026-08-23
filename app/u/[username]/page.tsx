@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { AUTHOR_LIST, getAuthor } from "@/lib/data";
 import { ProfileShell } from "@/components/profile/ProfileShell";
 import { Pinned } from "@/components/profile/Pinned";
 import { EmptyState, SectionTitle } from "@/components/profile/parts";
-import { profileView } from "@/components/profile/load";
+import { profileMetadata, profileView } from "@/components/profile/load";
+import { readSession } from "@/components/profile/session";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // TODO(SEAM-53) (cited at line 40): GET /api/authors/{handle}
@@ -39,23 +39,22 @@ import { profileView } from "@/components/profile/load";
    falls back to talking about the registry when `published` really is zero too.
    ============================================================ */
 
-/** The author table is a fixed list; an unknown handle is a 404, not an on-demand render. */
-export const dynamicParams = false;
-
-export function generateStaticParams() {
-  return AUTHOR_LIST.map((a) => ({ username: a.username }));
-}
+/* No `dynamicParams` and no `generateStaticParams`, and the deletion is the criterion
+   rather than tidying: **a prerendered page cannot render a different view per reader**
+   (AC1, D-262-11). Both stood on `AUTHOR_LIST`, a fixed fixture list, which could not
+   have served a registry that grows between deploys either. `readSession` reaches
+   `next/headers`, so these routes are request-time by construction now. */
 
 export async function generateMetadata({ params }: PageProps<"/u/[username]">) {
   const { username } = await params;
-  const author = getAuthor(username);
-  if (!author) return { title: "Builder not found" };
-  return { title: author.displayName, description: author.bio };
+  const author = await profileMetadata(username);
+  if (author === undefined) return { title: "Builder not found" };
+  return { title: author.displayName, ...(author.bio === undefined ? {} : { description: author.bio }) };
 }
 
 export default async function Page({ params }: PageProps<"/u/[username]">) {
   const { username } = await params;
-  const view = profileView(username);
+  const view = await profileView(username, await readSession());
   if (view === undefined) notFound();
 
   const { author, blueprints, cards, pinned, terms } = view;
