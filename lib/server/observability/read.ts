@@ -79,9 +79,23 @@ export async function listAudit(
   actor: Actor,
   filter: { targetKind?: string; targetId?: string; since?: Date },
 ): Promise<AuditRecord[]> {
-  if (!isOperatorActor(actor)) throw new NotPermittedError();
-
   return withStore("listAudit", async () => {
+    /* INSIDE the wrapper rather than before it, and the placement was measured rather than
+       chosen. `isOperatorActor` reads `actor` with `Object.hasOwn`, which THROWS on `undefined`
+       and `null` instead of answering about them, so with this check outside those two callers
+       received a raw `TypeError` carrying a stack and an internal path — through the one door
+       store.ts's header says is closed, and the B-03 rendering the wrapper exists to prevent.
+       Here that throw is sealed as an `AuditStoreError` like any other fault.
+
+       The refusal itself is unaffected: store.ts recognises `NotPermittedError` by IDENTITY and
+       lets it through unwrapped, so AC5's authority-versus-availability distinction survives the
+       move. That arm was unreachable while this line sat outside the wrapper; it is what makes
+       the move safe, and the two were built for each other.
+
+       Reported once as equivalent to the outside placement. It is equivalent for every actor the
+       predicate ANSWERS about, and differs for the two it THROWS on. */
+    if (!isOperatorActor(actor)) throw new NotPermittedError();
+
     const conditions: SQL[] = [];
     if (filter.targetKind !== undefined) {
       conditions.push(eq(schema.audit.targetKind, filter.targetKind));
