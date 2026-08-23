@@ -27,12 +27,13 @@
 import { describe, expect, it } from "vitest";
 
 import { type Source, importSpecifiers, sources } from "./contract";
-import { PROFILE_ROUTES, SETTINGS_ROUTE } from "./partition";
+import { PROFILE_ROUTES, SETTINGS_ROUTE, resolved } from "./partition";
 
 const TOKENS = ["dynamicParams", "generateStaticParams"] as const;
 
-const routes: Source[] = sources([...PROFILE_ROUTES, SETTINGS_ROUTE], 6);
-const byPath = new Map(routes.map((s) => [s.path, s]));
+const ROUTE_PATHS = [...PROFILE_ROUTES, SETTINGS_ROUTE];
+const routes: Source[] = sources(ROUTE_PATHS.map(resolved), 6);
+const byPath = new Map(ROUTE_PATHS.map((p, i) => [p, routes[i]]));
 
 describe("premise: the five profile routes are still routes", () => {
   /*

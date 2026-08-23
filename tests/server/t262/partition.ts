@@ -35,6 +35,13 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
+/* The scan is rooted so the adversary round can run this suite against a STAND-IN tree without
+   editing the worktree it is measuring. It defaults to the repository, and it is safe to expose
+   because `sources()` refuses a root whose partition is missing, emptied or short — pointing this
+   at nothing produces a PartitionError, never a vacuous green. */
+const ROOT = process.env.T262_SCAN_ROOT ?? ".";
+const at = (p: string) => (ROOT === "." ? p : join(ROOT, p));
+
 /** D-262-11 takes `dynamicParams`/`generateStaticParams` off these five. */
 export const PROFILE_ROUTES = [
   "app/u/[username]/page.tsx",
@@ -73,7 +80,7 @@ function walk(dir: string): string[] {
    more usefully. If the cutover creates it, it joins `COMPONENTS` here and the floor moves. */
 export function components(): string[] {
   return [
-    ...walk("components/profile"),
+    ...walk(at("components/profile")).map((p) => (ROOT === "." ? p : p.slice(ROOT.length + 1))),
     "components/ui/FavoriteStar.tsx",
     /* D-262-06 granted this to T262: it was in nobody's `Owns`, AC1 reaches it as the most
        visible signed-in-versus-signed-out surface, and AC6 reaches its import. */
@@ -84,6 +91,11 @@ export function components(): string[] {
 /** Everything AC6 and D-262-10 scan. Routes first so a red reads top-down like the site does. */
 export function scanned(): string[] {
   return [...PROFILE_ROUTES, SETTINGS_ROUTE, ...components()];
+}
+
+/** Every scanned path resolved against the scan root. Cells report the REPO-relative path. */
+export function resolved(path: string): string {
+  return at(path);
 }
 
 /** Below this the walk has lost files and every absence assertion over it has gone vacuous. */

@@ -39,12 +39,12 @@ import {
   renderedMentions,
   sources,
 } from "./contract";
-import { COMPONENT_FLOOR, EXCLUDED, components, scanned } from "./partition";
+import { COMPONENT_FLOOR, EXCLUDED, components, resolved, scanned } from "./partition";
 
 /* Bound LAST is the rule for a module under test; these are files on disk, so the read happens
    here and a failure to read is a PartitionError naming the path rather than a silent empty set. */
-const partition: Source[] = sources(scanned(), 10);
-const byPath = new Map(partition.map((s) => [s.path, s]));
+const partition: Source[] = sources(scanned().map(resolved), 10);
+const byPath = new Map(scanned().map((p, i) => [p, partition[i]]));
 
 describe("premise: the partition is real, and it is the cutover's own tree", () => {
   it(`the component walk found at least ${COMPONENT_FLOOR} files`, () => {
@@ -137,7 +137,7 @@ describe("the three exclusions are recorded, not silently dropped", () => {
   it.each(EXCLUDED)("%s is excluded by ruling and still present", (path) => {
     expect(scanned()).not.toContain(path);
     expect(
-      sources([path], 1),
+      sources([resolved(path)], 1),
       `${path} is excluded from T262's scan by D-262-03 or D-262-08, which makes it read-only ` +
         `rather than absent. If it is gone, a frozen file was deleted.`,
     ).toHaveLength(1);
