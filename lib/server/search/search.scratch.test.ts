@@ -202,6 +202,13 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
     for (const actor of kinds) {
       const results = await searchBlueprints(client.db, actor, {});
       expect(results.hits.map((hit) => hit.item.slug)).toEqual(["open"]);
+
+      /* The CARD half, and it is here because its absence was INVISIBLE. Widening only the
+         card universe reddened 0 of 30 while the blueprint and the term halves each
+         reddened 1 — so this criterion had two thirds of a guard and read as a whole one.
+         B-07 makes a private card exactly as invisible as a private bundle. */
+      const cards = await searchCards(client.db, actor, {});
+      expect(cards.hits.map((hit) => hit.item.id)).toEqual(["open-solver"]);
     }
 
     /* The control that stops the assertion above being vacuous: a search returning nothing
@@ -212,6 +219,8 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
     for (const actor of kinds) {
       const results = await searchBlueprints(client.db, actor, {});
       expect(results.hits.map((hit) => hit.item.slug)).toEqual(["open", "secret"]);
+      const cards = await searchCards(client.db, actor, {});
+      expect(cards.hits.map((hit) => hit.item.id)).toEqual(["open-solver", "secret-solver"]);
     }
   });
 
