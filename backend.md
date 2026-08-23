@@ -925,6 +925,40 @@ each clause to the FILE that must carry it**, not to the partition.
 **And the third instance is the argument for re-running the table after a repair rather than after writing:**
 two of the three surfaced only in the post-repair round, on cells that had looked fine in the first.
 
+## A PREMISE GATE AT MODULE SCOPE DELETES CELLS INSTEAD OF FAILING THEM, AND THE COUNT A READER QUOTES SAYS ALL PASSED
+
+**T262's blind author built `sources()` as its anti-launderer — the gate that makes every absence in the suite
+discriminating — and CALLED IT AT MODULE SCOPE. So a premise violation was not a red, it was a COLLECTION
+ERROR, and a collection error deletes a file's cells rather than failing them.** Measured, emptying three
+component files:
+
+```
+EXIT=1   Test Files 1 failed | 3 passed (4)   Tests 37 passed (37)
+```
+
+**`Tests 37 passed (37)`. Zero failed. 68 cells simply absent.** Loud in the exit code and the failed-FILE
+count, **silent in the number a reader quotes** — and worse than a throwing `beforeAll`, which at least leaves
+a skipped column to notice. **The guard written to stop a vacuous green was itself producing one.**
+
+**Two fixes, and the second is the one nobody writes:**
+
+1. **Read the premise PER CELL**, so a violation reds the cell it belongs to and names the path.
+2. **The cell list must be MONOTONIC.** `it.each(scanned())` lets the scan decide how many cells exist, so
+   **anything shortening it removes assertions silently — `it.each([])` reports no failures and no tests.**
+   Take the union of a **named baseline** and the live walk, and have the walk return empty rather than throw
+   on a missing directory. **A deleted file keeps its cell and reds inside it; an added file is picked up; a
+   rename does both.**
+
+| mutation | before | after |
+| --- | --- | --- |
+| 3 files emptied | **37 passed, 0 failed, 68 cells gone** | 14 failed, 91 passed, **105** |
+| 3 files deleted | — | 15 failed, 90 passed, **105** |
+| whole directory removed | — | 41 failed, 64 passed, **105** |
+
+**And building the baseline caught a second error: it was enumerated from an earlier scan rather than from the
+DIRECTORY, and was missing two files.** *Enumerate mechanically, never from recall* — a rule its author held
+and still broke, by deriving from a previous measurement instead of from the tree.
+
 ## THE PRESENCE PREMISE NEEDS STRIPPING AS MUCH AS THE ABSENCE DOES — AND THAT IS THE FALSE-GREEN DIRECTION
 
 **T262's blind author built the 2x2 and found a third quadrant nobody had named.** Retired sentence asserted
@@ -19704,6 +19738,16 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **A2: D-262-11 names SIX surfaces and only FIVE carry the tokens. The `/settings` clause is VACUOUS.** Measured per file: the five profile routes are 1 and 1 each; **`app/settings/page.tsx` is 0 and 0.** So *"come off all five profile routes and `/settings`"* asks for the removal of something `/settings` never had, **and an absence cell over it passes today, before any work, and would go on passing if the cutover never happened** — a cell whose subject's default already agrees with it.
 
   **Its blind author did not bank it and did not drop it.** Written once as a **recorded vacuity carrying the measurement that makes it so, and INVERTED** — so if the cutover ever adds a token to `/settings` it reds and says the five-route cell should become six. **Leaving it out would have hidden that the ruling names six; folding it in would have inflated the coverage by one.**
+
+- **D-262-20 — AC2's SUBJECT IS INTRINSIC ELEMENTS PLUS THE SEVEN WRAPPERS `components/settings/controls.tsx` ALREADY PUBLISHES, AND THAT FILE EXISTS TODAY.** T262's blind author asked whether the subject is intrinsic elements only or those plus a wrapper set, **on the premise that `components/settings/**` does not exist in the tree — it does**, at `b22ee53`, in `backend`, predating the cutover. It could not check: that directory is in its forbidden set, so it reasoned from the criterion rather than the tree, **which is the correct failure to have.**
+
+  **So the set is publishable rather than inferable, which was its actual objection.** `controls.tsx` exports **`SettingsSection`, `SectionNote`, `Field`, `TextField`, `PrefixedField`, `Switch`, `ChoiceCard`** — and the four carrying interactivity are **`TextField`, `PrefixedField`, `Switch`, `ChoiceCard`**. **AC2's subject is those four plus intrinsic `button`, `input`, `select`, `textarea`.** Publishing it closes the shape it named: **inferring the set from what the cutover happens to create is what reds a correct implementer.**
+
+- **D-262-21 — D-262-06's PREMISE WAS WRONG AND THE CELL PINS THE PROPERTY RATHER THAN MY SPELLING.** I ruled *"keep the rows static and handle-free"* as though describing the status quo; measured, **4 of 5 `ACCOUNT_MENU` hrefs are ALREADY module-scope `TemplateExpression`s with substitutions.** So that ruling describes a **change**, not a preservation — **and that module-scope interpolation is exactly where D-262-14 G2's `/u/null` comes from.** Its cell pins **static, not a spelling**: a backtick string with no `${}` passes, only a computed href reds. **Otherwise it would have redded a correct rewrite over an incidental form**, which is the defect this wave has charged more than any other.
+
+- **D-262-22 — D-262-16's EXCEPTION IS PAIRED WITH A POSITIVE, BECAUSE BOTH REJECTED OPTIONS ARE GREEN AGAINST A PURE ABSENCE CHECK.** Deleting the four figures and relocating them each satisfy *"no fixture import"* perfectly. **So `load.ts` must still IMPORT the permitted specifier, and each figure must still have its declared source** — the exception is only meaningful with the thing it excepts asserted present. The allowance is the **exact specifier `@/lib/data/profiles`, never the barrel**: `@/lib/data` would pull the whole fixture surface back through one import and **undo the narrowing by the shape of the check rather than by a ruling.** Five of `load.ts`'s six fixture specifiers still go.
+
+  **One clause could not be scoped to a file and is labelled as a cost rather than hidden.** The four figures are **not co-located** — `validated`/`watchers` are in `ProfileShell.tsx` and `ProfileHeader.tsx`, `pinned` in `load.ts` and `Pinned.tsx`, `support` across eight files — and **no ruling says which component owes which figure after the cutover.** Scoping all four to `load.ts` redded two, **and the cell was wrong rather than the tree.** Set-wide, with the gap stated in the test: **what it alone cannot catch is a figure MOVING between two covered files.** A per-section mapping would close it, as D-262-19 closed AC3's.
 
 - **D-262-18 — AC2's SUBJECT IS INTERACTIVE ELEMENTS WITH A HANDLER, so a disabled-with-reason row is OUT OF SCOPE BY CONSTRUCTION.** D-262-14's three notification switches are **deliberately** disabled and inert with a true reason, and must not red AC2. **The biconditional is: every element carrying a handler is enabled, and every enabled element carries one.** A `readOnly` input or a `<button disabled>` with a printed reason is a statement about what is not built, not a control that lies about what it does.
 
