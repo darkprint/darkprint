@@ -869,6 +869,54 @@ broken `read.test.ts`, which has two cells asserting the refusal's class, and a 
 task's own test directory would never have seen it. **39 before and 39 after is a number; 39 measured
 once is not.**
 
+## `Promise.all` ON ONE `pg` POOL COMPLETES SERIALLY — A CELL THAT LOOKS LIKE CONCURRENCY AND IS NOT
+
+**Measured by T160's blind author when a `SELECT`-then-`INSERT` mutation redded ZERO of 50.** The trace is the
+finding:
+
+```
+select start {20} / select start {90} / select done {20} found 0 / write done {20} / select done {90} found 1
+```
+
+**The second caller's SELECT returns AFTER the first caller's INSERT**, finds the row and updates it. **The
+lost-update race never happens, so the cell written to catch it cannot.**
+
+**This affects every task told to drive concurrent callers, and `Promise.all` on one `db` is the shape the
+instruction invites.** D-WAVE-01 and `schema.ts:384-387` both say *a cell that does not drive two concurrent
+callers has not tested this* — **a cell can look exactly like one and not be one, and no reviewer sees the
+difference.** T150's and T170's concurrency cells were written under the same instruction.
+
+**The repair is N INDEPENDENT CONNECTIONS, not N promises.** After it the mutation reds, and nothing else.
+
+### AND A REFUSAL CAN BE ENFORCED BY POSTGRES AND CREDITED TO THE SUITE
+
+Same round, same family as the NOT NULL constraint that held up T150's `moves nothing` cell. All four of AC6's
+refused actors carried **no usable id**, so `""` reached the store and **the store refused it for a reason of
+its own** — so deleting the module's actor check outright redded **zero of the four**. The repair is an actor
+the DATABASE HAS NO OBJECTION TO: a **real, existing account id under an `anonymous` kind**, so the refusal can
+only come from the module. **Where no error class is published, nothing can separate the module refusing from
+the store refusing** — which turns an open contract question into a measured coverage hole.
+
+## A REPAIR THAT SILENTLY NARROWS COVERAGE LOOKS EXACTLY LIKE ONE THAT DOES NOT — ONLY RE-RUNNING THE TABLE SEPARATES THEM
+
+**T170's blind author repaired its target-race cell by driving five rounds** — the correct fix for the 40%
+flake — **and the repair silently dropped the cell's `note_count` check.** Nothing failed. The cell was
+greener, longer and more rigorous. **The only thing that moved was a mutation count: M6 went from 4 reds to
+3.**
+
+**A repair is a change to an instrument, and an instrument that changed is one whose reach is unmeasured
+until it is re-measured.** Re-run the table after repairing a cell, not only after writing one — the
+difference between a repair that preserved coverage and one that traded it away is invisible in every
+pass/fail number and visible only in the per-mutation counts.
+
+### AND A COLUMN DEFAULT IS AN AGREEING ACTOR
+
+From the same round: two cells asserted `toEqual([0, 0])` over `star_count` and `download_count`, **both of
+which DEFAULT to 0** — so the cells could not separate a module that leaves another task's columns alone from
+one that writes zero into them. **The same shape as a two-valued criterion asserted against an actor whose
+default already matches**, arriving through a schema default instead of a fixture. **Plant a non-default
+baseline, or the assertion is satisfied by the state that was already there.**
+
 ## A UNIQUE INDEX HOLDS THE COUNT AT 1 WHETHER THE CONFLICT IS CAUGHT OR ESCAPES — SO A COUNT-ONLY CELL IS STRUCTURALLY BLIND
 
 **T170's blind author swept 18 mutations and TWO redded nothing — both on the cells the criteria were said to
@@ -15209,6 +15257,12 @@ caught it. The cost is thirty seconds and the alternative is a closed question t
 
   **And the cell asserts only `runs` and `excluded`, deliberately** — the survivors' median falls *between* two data points there, so asserting it would charge a defect over a percentile convention this contract never published. **The same discipline as the AC4 fixture, applied where it costs an assertion rather than where it was free.**
 
+  **D-WAVE-12 — `CounterStoreError`'s form is `` `<operation>: the counter store failed.` `` — SINGULAR, the document's form. The implementer changes one word.** T150's blind author found the divergence by reading, **then checked the attribution before writing it down because the finding flattered its own half**: `git merge-base --is-ancestor 99a1e8d d9950cb` is **FALSE** and `git show d9950cb:backend.md` has no such string, **so D-WAVE-07 is not in the implementer's tree at all.** It built without the form, derived the class from the shipped convention, and landed one word away. **Neither half is defective; the ruling landed after the branch point.**
+
+  **The convention genuinely does not settle it and the counter-example is the one that matters:** `accounts` ships *"the account store failed"* — **singular noun from a plural module name** — while `limits` ships *"the limits store failed"*. Two shipped modules, opposite rules. **The document's form wins because it was published AT A BLIND AUTHOR'S CHARGE, precisely so two halves that cannot speak would agree** — if a ruling made for that purpose loses to a convention that contradicts itself, the charge bought nothing.
+
+  **★ AND THE SAME MODULE SUPPLIES A SECOND AXIS FOR THE OTHER HALF OF D-WAVE-07.** The implementer independently minted **`CounterStoreError` and `NotSignedInError`** — the exact two class names the ruling publishes — **without having the ruling.** Two sources, no contact, same names. **That is worth more than the mutation that would otherwise have tested it**, and it is the second time in this wave that two blind halves converged on a ruling neither could see.
+
   **D-WAVE-11 — A `SignalState` NEED NOT BE INTERNALLY COHERENT UNDER A RACE. The narrow cell stands and the stronger reading is REFUSED, for D-WAVE-05's reason.** Charged rather than asserted by T150's blind author, which built the stronger cell, found it reds **8 of 8**, and then argued against its own cell.
 
   The payload it catches is real: **`{ starredByCaller: true, starCount: 0 }`** — a caller seeing the star row its own concurrent call inserted while reading the aggregate before that call's increment commits. **But that is a defensible implementation, not a defect.** Making the two agree under concurrency requires the insert, the increment and the read-back to be **atomic**, and nothing in §T150 asks for that. **It is the same category as D-WAVE-05's refused alternative (b): a real behavioural constraint not derivable from the section.**
@@ -18884,7 +18938,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **D-WAVE-01 — `target` AND `target_actor` ARE PARTITIONED BY COLUMN AND BY KIND. Neither task owns either table wholesale, and READING IS NOT OWNING.** T150 and T170 both write `target_actor` and both carry the paragraph below verbatim, so without this the two halves collide on a table each believes is its own.
 
-  * **T150 WRITES `target.star_count`, `target.download_count`, and `target_actor` rows with `kind = "star"`. Nothing else.**
+  * **T150 WRITES `target.star_count`, `target.download_count`, and `target_actor` rows with `kind = "star"`.** **"Nothing else" was FALSE and is corrected (PR5, T150's blind author): `recordDownload` also writes an `audit` row on a failed counter write** — `counter.write_failed`, ratified in D-240-08 and the reason that member exists. **Both are right and the sentence was not.** The partition is about the COUNTER TABLES; the audit row is authorised elsewhere. **A reader of this bullet alone builds the wrong boundary, and a derived moved-table assertion written off it would red a correct module on the fault path.**
   * **T170 WRITES `note`, `note_vote` and `target.note_count`. It writes NO `target_actor` row at all.**
     **CORRECTED — the original bullet was false about the tree and FOUR sessions found it independently.** `schema.ts:278-285` rules it in terms: *"`kind = "note_vote"` cannot serve T170 and the original wording of this comment claimed it could"* — `target_actor.target_id` references `target`, whose kind is `blueprint|card|term` with no `note`, **so a note vote recorded there is keyed per BLUEPRINT: it refuses an account's vote on a second note under the same blueprint and never notices two votes on one note.** AC4's index is `note_vote_note_account_key` on `(note_id, account_id)` (D-05-02, ruled). The enum member survives only because T005 alters no existing type — **it is dead, and I read it as a live partition boundary.**
     **Consequence: T150 is the SOLE writer of `target_actor`, and the only surface these two tasks share is the `target` ROW ITSELF** — its `(kind, ref_id)` upsert and its distinct counter columns.
@@ -18941,7 +18995,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 - **Goal:** collect and aggregate efficacy, reliability and transparency, with validator votes weighted.
 - **Contract:** B-11 — 0–100 per metric, one ballot per account per blueprint carried across releases; the aggregate is recomputed from stored votes and *current* validator weights, so a badge granted later applies retroactively; below five votes the response says sample rather than figure, mirroring the threshold already configured for run reports (`lib/core/config.ts:171-174`). A ballot may write only these three: autonomy and static risk are `source: "auto"` and the engine's alone, and cost is `reported` (`lib/types.ts:36`). An aggregate never returns without its sample size, because the UI refuses to close the radar with a placeholder.
-- **Acceptance criteria:** (1) a ballot cannot write `autonomy` or `security`; (2) one account voting twice on one metric replaces rather than accumulates; (3) every aggregate response carries the sample size; (4) below five votes the response is marked a sample; (5) granting a validator badge changes an existing aggregate without any vote being recast; (6) an anonymous ballot is refused.
+- **Acceptance criteria:** (1) a ballot cannot write `autonomy` or `security`; (2) one account voting twice on one metric replaces rather than accumulates; (3) every aggregate response carries the sample size; (4) below five votes the response is marked a sample; (5) ~~granting a validator badge~~ **raising an account's `validator_weight`** (D-WAVE-08 restated this and the criteria line was left behind; the ruling governs) changes an existing aggregate without any vote being recast; (6) an anonymous ballot is refused.
 - **Open:** who grants the validator badge, and on what basis — nothing in the code proposes a process.
 - **Out of scope:** stars (T150), the validator grant workflow itself.
 - **Log:**
@@ -18967,7 +19021,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
   **D-WAVE-01 — `target` AND `target_actor` ARE PARTITIONED BY COLUMN AND BY KIND. Neither task owns either table wholesale, and READING IS NOT OWNING.** T150 and T170 both write `target_actor` and both carry the paragraph below verbatim, so without this the two halves collide on a table each believes is its own.
 
-  * **T150 WRITES `target.star_count`, `target.download_count`, and `target_actor` rows with `kind = "star"`. Nothing else.**
+  * **T150 WRITES `target.star_count`, `target.download_count`, and `target_actor` rows with `kind = "star"`.** **"Nothing else" was FALSE and is corrected (PR5, T150's blind author): `recordDownload` also writes an `audit` row on a failed counter write** — `counter.write_failed`, ratified in D-240-08 and the reason that member exists. **Both are right and the sentence was not.** The partition is about the COUNTER TABLES; the audit row is authorised elsewhere. **A reader of this bullet alone builds the wrong boundary, and a derived moved-table assertion written off it would red a correct module on the fault path.**
   * **T170 WRITES `note`, `note_vote` and `target.note_count`. It writes NO `target_actor` row at all.**
     **CORRECTED — the original bullet was false about the tree and FOUR sessions found it independently.** `schema.ts:278-285` rules it in terms: *"`kind = "note_vote"` cannot serve T170 and the original wording of this comment claimed it could"* — `target_actor.target_id` references `target`, whose kind is `blueprint|card|term` with no `note`, **so a note vote recorded there is keyed per BLUEPRINT: it refuses an account's vote on a second note under the same blueprint and never notices two votes on one note.** AC4's index is `note_vote_note_account_key` on `(note_id, account_id)` (D-05-02, ruled). The enum member survives only because T005 alters no existing type — **it is dead, and I read it as a live partition boundary.**
     **Consequence: T150 is the SOLE writer of `target_actor`, and the only surface these two tasks share is the `target` ROW ITSELF** — its `(kind, ref_id)` upsert and its distinct counter columns.
