@@ -497,7 +497,7 @@ describe.skipIf(!hasDb)("lib/server/counters against Postgres", () => {
       );
       expect(err).toBeInstanceOf(CounterStoreError);
       const message = (err as Error).message;
-      expect(message).toBe("getSignals: the counters store failed.");
+      expect(message).toBe("getSignals: the counter store failed.");
       expect(message).not.toContain(refId);
       expect(message).not.toContain("select");
       expect(Object.keys(err as object)).toEqual([]);
@@ -518,7 +518,7 @@ describe.skipIf(!hasDb)("lib/server/counters against Postgres", () => {
         refId: "b-seal",
       }).catch((e: unknown) => e);
       expect(err).toBeInstanceOf(CounterStoreError);
-      expect((err as Error).message).toBe("toggleStar: the counters store failed.");
+      expect((err as Error).message).toBe("toggleStar: the counter store failed.");
     } finally {
       await testDb.client.pool.query(`alter table "target_actor_hidden" rename to "target_actor"`);
     }
