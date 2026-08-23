@@ -42,24 +42,46 @@ export function flag(params: Record<string, string>, key: string): boolean {
 }
 
 /**
+ * An enum-valued key, resolved against the values this surface publishes.
+ *
+ * **THE ONE RULE FOR EVERY ENUM KEY, AND IT IS HERE BECAUSE HAVING IT IN ONE PLACE IS THE
+ * FINDING (D-200-37).** `sort` had an exact-match whitelist and `forks` did not, so
+ * `sort=SLUG` fell back while `forks=banana`, `forks=ALL` and `forks=all ` each behaved
+ * like `rolled` and OMITTING `forks` behaved like `all`. A case variation or a trailing
+ * space in a pasted link flipped the shelf — which is precisely the shared link the fixed
+ * parameter set exists to protect.
+ *
+ * Absent, empty and unrecognised all reach `fallback`, in one branch. Exact match and not a
+ * case-insensitive or trimmed one: the published set is fixed, so a value that is not in it
+ * is not a near miss to be repaired, and repairing it here would be this module inventing a
+ * spelling the live URLs do not have.
+ *
+ * D-200-10 is why an unrecognised value falls back rather than erroring — "the same rule
+ * AC1 gives an unknown KEY", and AC1's rule for an unknown key is that it is ignored. Both
+ * break a shared link if they 400.
+ */
+export function oneOf<K extends string, F extends K | undefined>(
+  params: Record<string, string>,
+  key: string,
+  allowed: readonly K[],
+  fallback: F,
+): K | F {
+  return allowed.find((candidate) => candidate === params[key]) ?? fallback;
+}
+
+/**
  * The caller's explicit ordering instruction, or `undefined`.
  *
- * `undefined` covers both "no `sort` key" and "a `sort` key whose value this surface does
- * not publish" — D-200-10 rules an unrecognised VALUE falls back to the default rather than
- * erroring, "the same rule AC1 gives an unknown KEY", and AC1's rule for an unknown key is
- * that it is ignored. Both break a shared link if they 400, which is the whole reason the
- * two are ruled together.
- *
- * The consequence is deliberate and is the one thing to notice here: an unrecognised sort
- * leaves a `q` free to rank, because ignoring the key is exactly what would have happened
- * if it had never been sent.
+ * `sort` is the one enum key whose fallback is `undefined` rather than a value, and that is
+ * a real difference rather than an inconsistency: "no sort" is a STATE — it leaves a `q`
+ * free to rank (D-200-09) — whereas "no forks" is not, because the shelf is always in one
+ * stance or another. So this is `oneOf` with the fallback that says *nothing was asked*.
  */
 export function sortKey<K extends string>(
   params: Record<string, string>,
   allowed: readonly K[],
 ): K | undefined {
-  const raw = params.sort;
-  return allowed.find((key) => key === raw);
+  return oneOf(params, "sort", allowed, undefined);
 }
 
 /**
