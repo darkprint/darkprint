@@ -115,18 +115,32 @@ describe("AC3: an anonymous star is refused", () => {
      * The half that catches the mutation `rejects.toThrow()` cannot see: a write followed by a
      * throw satisfies the cell above and is caught here.
      *
-     * The premise is a target that ALREADY EXISTS with a non-zero count and somebody else's
-     * star on it, so "moves nothing" is a claim about a populated row rather than about an empty
-     * table. Nothing-happened-to-nothing is the vacuous version of this cell.
+     * ── the premise was WRONG, and a 24-mutation sweep is what showed it ──
+     * It planted the target row and called anonymously on that same target. Redded by **0 of
+     * 24 mutations**, including the two written to break exactly this — removing the anonymous
+     * guard, and moving it AFTER the row creation. The reason is that with the row already
+     * present `ensureRow` writes nothing, and the only remaining write carries a null
+     * `account_id`, which `target_actor` refuses on its own. **The cell was guarded by the
+     * database rather than by the module**, and it read as coverage for the write-then-throw
+     * shape while covering none of it.
+     *
+     * So the anonymous call now goes at a target that does NOT yet exist, where a row creation
+     * IS observable — and the populated target sits beside it, untouched, so the diff still
+     * carries the second claim. One call, one snapshot, both hazards.
      */
     const toggleStar = await bind("toggleStar");
-    const target = freeTarget("card");
+    const populated = freeTarget("card");
+    const fresh = freeTarget("card");
     const other = await createAccount(t);
-    const planted = await plantTarget(t, target, { starCount: 1, downloadCount: 6, noteCount: 2 });
+    const planted = await plantTarget(t, populated, {
+      starCount: 1,
+      downloadCount: 6,
+      noteCount: 2,
+    });
     await plantStar(t, planted.targetId, other);
 
     const before = await snapshotAll(t);
-    await outcomeOf(() => toggleStar(db(t), ANONYMOUS, target));
+    await outcomeOf(() => toggleStar(db(t), ANONYMOUS, fresh));
     const after = await snapshotAll(t);
 
     expect(
@@ -136,10 +150,15 @@ describe("AC3: an anonymous star is refused", () => {
         `write. What moved:\n${renderDeltas(movedTables(before, after))}`,
     ).toEqual([]);
 
-    const rows = await targetRows(t, target);
+    expect(
+      await targetRows(t, fresh),
+      "a refused anonymous caller created the row it was refused on",
+    ).toEqual([]);
+
+    const rows = await targetRows(t, populated);
     expect(
       { star: rows[0]?.starCount, download: rows[0]?.downloadCount, note: rows[0]?.noteCount },
-      "the row's three counters, unmoved",
+      "and the populated target beside it, three counters unmoved",
     ).toEqual({ star: "1", download: "6", note: "2" });
     expect(
       (await starsFor(t, planted.targetId)).map((s) => s.accountId),

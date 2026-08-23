@@ -180,14 +180,35 @@ describe("AC1: the unique index is the idempotency guarantee", () => {
     }
   }, 180_000);
 
-  it("answers every racing caller a SignalState whose counts match the rows", async () => {
+  it("answers every racing caller a count no state of the target ever exceeded", async () => {
     /*
-     * The state each caller is HANDED, not only the state left in the table. AC4 exists so a
-     * client never issues a second read, which makes a returned aggregate that disagrees with
-     * storage worse than no aggregate at all: the client renders it.
+     * The state each caller is HANDED, not only the state left in the table.
      *
-     * Asserted as "matches one of the legal end states" rather than as a fixed number, for the
-     * F10 reason in the header. What is excluded is a caller told a count the table never held.
+     * ── this cell was wrong TWICE, and both were the same mistake ──
+     * Round 1 compared each caller's `starredByCaller` against the FINAL table state. That is
+     * D-WAVE-05's own error committed inside the suite that charged it: caller A can be told
+     * `true` because its insert won while a later caller B deletes the row, and both were told
+     * the truth at their own moment. Measured against a correct stand-in, **1 red in 6 baseline
+     * runs (~17%)** — and it also surfaced under three mutations that cannot reach it,
+     * including one that only changes `recordDownload`'s arity, which is what gave it away.
+     *
+     * Round 2 asserted that each payload is COHERENT WITH ITSELF — `starredByCaller` true if
+     * and only if `starCount` is 1, since one account racing alone can only ever carry its own
+     * star. That reds **8 runs out of 8**, and the payload it catches is real:
+     * `{ starredByCaller: true, starCount: 0 }`, where a caller sees the star row its own
+     * concurrent call inserted and reads the aggregate before that call's increment commits.
+     *
+     * **That is a defensible implementation, not a defect.** Making the flag and the count
+     * agree under concurrency requires the insert and the increment to be atomic and the
+     * read-back to happen inside the same transaction, and **nothing in §T150 asks for that.**
+     * It is the same category as D-WAVE-05's refused alternative (b): a real behavioural
+     * constraint that does not follow from the section. So it is CHARGED and not asserted.
+     *
+     * Open question, and it is a product one: may a client be handed *"you starred it, 0
+     * stars"*? Until it is ruled, this cell asserts only what holds under every interleaving
+     * without imposing atomicity. **The coherence of one payload IS pinned, uncontended, by
+     * `signals.test.ts`'s one-exchange cell** — so the criterion is held; what is not held is
+     * its behaviour under a race, and that is stated rather than left to be read off a green.
      */
     const toggleStar = await bind("toggleStar");
     const accountId = await createAccount(t);
@@ -195,24 +216,22 @@ describe("AC1: the unique index is the idempotency guarantee", () => {
     const target = freeTarget("card");
 
     const results = await fireAll(CALLERS, () => toggleStar(db(t), actor, target));
-    const state = await starState(target);
 
+    let fulfilled = 0;
     for (const [i, result] of results.entries()) {
       if (result.status !== "fulfilled") continue;
+      fulfilled += 1;
+      /* `assertSignalState` carries the rest: the four-key set, the three counts as `number`
+         rather than as the `numeric` column's string, and `starredByCaller` strictly boolean. */
       const answered = assertSignalState(result.value, `toggleStar, caller ${i}`);
       expect(
         answered.starCount,
-        `caller ${i} was told \`starCount\` = ${answered.starCount}; the table holds ` +
-          `${state.count} and one account can only ever move it between 0 and 1. A count no ` +
-          `state of the table ever had is a client rendering a number nobody can reproduce.`,
+        `caller ${i} was told \`starCount\` = ${answered.starCount}. One account raced alone ` +
+          `here, so no state this target ever passed through held more than one star, and a ` +
+          `count above 1 is a number the client cannot reproduce from any history.`,
       ).toBeLessThanOrEqual(1);
-      expect(
-        answered.starredByCaller,
-        `caller ${i} was told \`starredByCaller\` = ${answered.starredByCaller} while ` +
-          `\`target_actor\` holds ${state.accounts.length} star row(s) for it. AC4: the toggle ` +
-          `response carries the caller's own state so a client never has to re-read it.`,
-      ).toBe(state.accounts.includes(accountId));
     }
+    expect(fulfilled, "every one of the racing callers was refused").toBeGreaterThan(0);
   }, 180_000);
 });
 
