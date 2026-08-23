@@ -978,6 +978,40 @@ charges the corrected file where it did not charge the original: **the correctio
 Under a correct matcher the answer is **0 of 8 retired sentences reach a reader**, with 4 of the 8 explained in
 a comment and 3 gone from source entirely because their paragraphs were rewritten wholesale.
 
+## A RESOURCE DIP AND A COLLISION ARE DIFFERENT QUESTIONS, AND ONLY THE SECOND IS A SLOT VETO
+
+**T262's implementer re-stamped at the moment of taking a granted slot and its stamp DISAGREED with the one
+the grant was conditioned on** — swap free **1013 MB against the 1403 MB it had quoted**, load 153 against 137,
+with two arrivals that were not there before. **It did not proceed on my word and did not refuse on one
+reading.**
+
+**It sampled for 90 seconds first: 1013 → 1021 → 1053 → 1053 → 1077 → 1085 → 1093 MB, recovering ~10 MB per
+15s — a DRAINING TRANSIENT, not a new floor.** And separately: **zero foreign vitest or next process groups,
+counted by pgid rather than by command-line substring.**
+
+**The distinction is the rule: the resource dip was real and the collision the slot protects against was
+ABSENT. Those are different questions and only the second is a veto.** A single low reading cannot tell a
+transient from a floor, and **the slot exists to serialise contention, not to wait for a comfortable machine.**
+
+**And it recorded the reasoning unprompted, because *"I proceeded after my stamp disagreed"* is exactly the
+sentence that should never appear without it.**
+
+## THE SCRATCH-DATABASE COUNT PROVES THE DB SUITES RAN — A ZERO-SKIPPED LINE DOES NOT
+
+**Same run: `4 → 11 → 8 → 11 → 4` across in-run samples.** A suite that silently stood down for a missing
+variable **would have left that flat at 4 and reported the same green.** The peak is live scratch; the return
+to 4 is the drain.
+
+**This is the direct instrument for the trap that has bitten this project repeatedly** — vitest **omits the
+failed and skipped lines when they are zero, and an omitted line is not a measurement.** Three checks, and the
+third is the only one that is about the database: **`6923 of 6923` leaves nothing for a silently-skipping file
+to hide in**; zero occurrences of `skipped`/`failed`/`todo`/`×` anywhere in the log; **and the scratch count
+moving.**
+
+**`.env.example` says in its own header to export its variables for `npm test`, and warns that leaving
+`GITHUB_*` empty fails twenty of T000's tests. There are EIGHT, not the five this document has said more than
+once — the file is the authority and the recollection was wrong.**
+
 ## A FIX THAT PASSES ITS OWN CRITERION CELL IS STILL UNGUARDED
 
 **T262's blind author mutated the MATCHER FIX ITSELF** — reverting `contains` to literal-only, with a retired
