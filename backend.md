@@ -894,6 +894,21 @@ mutations went **0 → 6** each.
 **And keep a CONTROL that must not red:** a reworded message that still leaks nothing. Without it, a D-13 cell
 pinning a literal cannot be told from one pinning the absence of a leak.
 
+## A CLAUSE MASKED BY ITS PARTNER: A MUTATION REDS NOTHING BECAUSE THE TOKEN IT REMOVES OCCURS SOMEWHERE ELSE
+
+**Three instances of one defect in a single suite, found only because the mutation table was RE-RUN after the
+repairs.** A cell asserting a request body names `version`, `ownerHandle`, `visibility` — remove any one from
+the body and the cell stays green, **because that word already occurs elsewhere in the scanned partition** and
+its partner clause matches it. `version` occurs in `BundleDropzone.tsx`; `visibility` and `unfinished` occur
+elsewhere in the same folder.
+
+**Each clause was individually satisfiable by a file that has nothing to do with the criterion**, and no
+single-clause mutation could show it — the cell was green for a reason unrelated to what it asserts. **Scope
+each clause to the FILE that must carry it**, not to the partition.
+
+**And the third instance is the argument for re-running the table after a repair rather than after writing:**
+two of the three surfaced only in the post-repair round, on cells that had looked fine in the first.
+
 ## A SOURCE-LEVEL COPY CHECK MUST STRIP COMMENTS — AND THE FAILURE RUNS BOTH WAYS
 
 **T263's implementer's own AC5 guard redded on its own prose** — a comment explaining that a retired sentence
@@ -19688,6 +19703,14 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   **The version shape check ADVISES rather than BLOCKS.** `publish.ts:216` sorts unparseable versions **below** every valid one rather than throwing, **so a client gate would refuse a submission the registry accepts.** Only an EMPTY version blocks, because the route 400s on it. **A client-side guard stricter than the server it guards is a guard that invents a refusal.**
 
   **And `BundleDetails.version` is OPTIONAL, with the `?` load-bearing rather than stylistic:** `dropzone.test.ts:58` builds a `BundleDetails` literal by hand, **so a required member reds a must-pass-unchanged suite at the TYPE level — a failure with nothing to do with what that suite checks.**
+
+- **D-263-13 — `BundleDropzone.tsx:580` IS REWRITTEN, NOT DELETED, AND NOT EXEMPT.** *"or click to browse, the files are read in this tab and nothing is uploaded"* — rendered JSX, survives comment-stripping, and the only two reds in T263's suite. Its blind author leaned (2) and declined to settle it because **D-263-01 had already carved out a dropzone sentence that stays true.**
+
+  **The two are not the same sentence and the distinction is the subject.** `436-439`'s subject is **an unreadable overlay** — a fact about one dropped file that is true before and after the cutover. **`580`'s subject is THE WHOLE GESTURE, and it sits on the route's PRIMARY CONTROL**, where a reader meets it first and carries it forward through four steps. **Step 4 now uploads.** That is D-78's shape exactly: a true statement that has become a lie about the product.
+
+  **But it is true AT STEP 1, so deleting it replaces a true sentence with silence** — the same objection that kept `436-439`. **Ruled: rewrite so the true half survives and the false implication does not** — the files are read in this tab, and **nothing is sent until you publish**. **Retiring a claim is not the same act as deleting it, and D-78 asks for the first.**
+
+  **★ AND THE SHAPE THIS LEAVES FOR EVERY LATER CUTOVER: AC5's OWN FILE IS THE ONE FILE ITS AUTHOR DID NOT APPLY IT TO.** `UploadFlow.tsx:218` says in as many words *"Deliberately free of the words this route is no longer allowed to say (AC5)"* — a careful, documented sweep — **and `BundleDropzone.tsx` was not swept.** The attention went where the criterion was written down, not where the copy was.
 
 - **Acceptance criteria:** (1) a clean bundle publishes and the response names the owner, slug, release and digest; (2) an unfinished bundle is refused with the unfinished wording, not an error count; (3) the success screen states what was stored, and `honesty.test.ts` pins the new sentence; (4) `REPORT.md` still downloads for a bundle that cannot publish; (5) no copy anywhere on the route still says nothing is sent.
 - **Out of scope:** the bundle page's own publish control (T261).
