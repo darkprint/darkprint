@@ -68,6 +68,22 @@ const SORT_KEYS = ["slug"] as const;
  * only in whether a fork is presented under its upstream tile, which is the grid's business
  * and not something a flat hit list carries. Both stay in the set because the parameter set
  * is fixed and a client must be able to pass either through untouched.
+ *
+ * ── LABELLED, NOT DELETED: this whitelist changes no behaviour today ──
+ *
+ * Measured after the repair rather than assumed: replacing `oneOf` with a bare
+ * `params.forks ?? "rolled"` passthrough reds 0 of 33 cells, and that zero is a fact about
+ * the code rather than a gap in the suite. The proof is one line — the resolved value is
+ * consumed by exactly one test, `!== "all"`, and both spellings answer `"all"` for the
+ * string `"all"` and something else for every other string — so the two are observably
+ * identical for EVERY input, not merely for the ones a cell happens to try.
+ *
+ * **The DEFAULT is what carried the defect and it is falsifiable: flipping it to `all` reds
+ * 1.** The whitelist is kept anyway, and the reason is not behaviour: it is the single place
+ * the published stance set is written down, so a fourth stance is added here or nowhere, and
+ * a reader comparing this key against `sort` finds the same construction rather than two
+ * shapes to reconcile. Written down because an unlabelled clause that reds nothing is
+ * indistinguishable from one nobody has tested yet.
  */
 const FORK_STANCES = ["all", "rolled", "originals"] as const;
 
