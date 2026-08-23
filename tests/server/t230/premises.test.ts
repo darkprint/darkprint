@@ -3,7 +3,7 @@
 
    The block says two limits already exist in the code and are "the
    starting numbers, **consumed not restated**", citing
-   `components/upload/BundleDropzone.tsx:91` (512 KB per uploaded
+   `components/upload/BundleDropzone.tsx:111` (512 KB per uploaded
    file) and `lib/core/card/validate.ts:108` (a `params` nesting
    depth of 100).
 
@@ -36,7 +36,10 @@ import { citedNumbers, sourceLine } from "./contract";
  */
 const TRANSCRIBED = [
   /* In `citedNumbers()`'s own order, which is by path. */
-  { value: 512, path: "components/upload/BundleDropzone.tsx", line: 91 },
+  /* 91 -> 111: T263's cutover added lines above the constant (D-263-12's sweep and the
+     publish wiring), so the citation moved with the tree. Updated in the same commit as the
+     backend.md citation, which is the synchronised move this pin exists to force. */
+  { value: 512, path: "components/upload/BundleDropzone.tsx", line: 111 },
   { value: 100, path: "lib/core/card/validate.ts", line: 108 },
 ];
 
