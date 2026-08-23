@@ -465,27 +465,26 @@ describe("AC6 — fetching by digest returns the bytes of that release even afte
      * the input: what AC6 constrains is the bytes a caller receives, not how the row came to be
      * re-scored.
      *
-     * ── RED BY DESIGN, and the dependency is named rather than gestured at ──
-     * Ruled after this test was written: AC6 splits, the newer-release half is keepable by the
-     * current interface and stays live, and **this half is red until persistence exists** — on
-     * the T030-AC6-waiting-on-T025 precedent, which worked. `persistArtefacts` is **T100's** and
-     * is the verb that would freeze these bytes; `readPersisted` is T090's and its `undefined` is
-     * the pre-persistence release, with generate-from-Postgres remaining the fallback. Neither is
-     * T090's to build in this round.
+     * ── WHAT THIS CELL MEASURES NOW, and it is the freeze ──
+     * **The fixture still persists nothing of its own.** It cannot: `persistArtefacts` is T100's
+     * and no write verb is published to this suite. So the FIRST `serveFile` below is what
+     * freezes these bytes — T091 made a miss generate from Postgres, hand the folder to
+     * `persistArtefacts`, and serve what it froze — and the SECOND then reads that object and
+     * never reaches the re-scored columns. The two calls straddling the re-score are the whole
+     * instrument: what is asserted is that the second answers with the first's bytes.
      *
-     * So a red here is **the dependency, not a defect in T090**, and this suite must not be read
-     * as charging one. It is kept rather than deleted for the reason that precedent records: a
-     * named red with a stated dependency is worth more than a criterion nobody is measuring, and
-     * it turns green the day **T091** builds the READ half. **CORRECTED at T100's merge: this
-     * sentence used to name T100 and it was FALSE.** T100 now persists — `persistArtefacts` freezes
-     * the folder at publish — and this cell is still red, because **persisting is necessary and not
-     * sufficient**: `serveFile` calls `buildExport` unconditionally and nothing in
-     * `lib/server/export/**` consults a persisted artefact. The criterion measures the READ; T100
-     * built the WRITE. `readPersisted` was deferred to nobody and is now T091's.
+     * A red is therefore a defect in the serving path, and the failure message below says which
+     * of the two links to look at first.
      *
-     * It is also the reason the fixture does not persist anything before re-scoring: it *cannot*,
-     * because the write verb belongs to another task. Stating that here so nobody later reads the
-     * missing persist call as an oversight and "fixes" the test into vacuity.
+     * ── HISTORY, kept because it is why the cell is worded this way ──
+     * This cell was RED BY DESIGN for two rounds, on the T030-AC6-waiting-on-T025 precedent: a
+     * named red with a stated dependency is worth more than a criterion nobody is measuring. It
+     * was first said to clear at T100, and that was FALSE — persisting is necessary and not
+     * sufficient, because `serveFile` called `buildExport` unconditionally and nothing in
+     * `lib/server/export/**` consulted the artefact, so the frozen bytes were written and never
+     * read. T091 built the READ half and the cell went green. Two sessions wrote comments here
+     * to stop a later reader treating the missing persist call as an oversight and "fixing" the
+     * test into vacuity; that warning still stands, and the assertion below is unchanged.
      */
     const before = asServedFile(
       await callServeFile(
@@ -494,6 +493,17 @@ describe("AC6 — fetching by digest returns the bytes of that release even afte
       ),
       "`serveFile` before the re-score",
     );
+
+    /* Captured so the mutation below can be undone. See the restore after the assertion for
+       why this cell may not leave the columns re-scored. */
+    const original = await scratch.pool.query(
+      `select autonomy, security from "release" where bundle_id = $1 and digest = $2`,
+      [first.bundleId, first.digest],
+    );
+    expect(
+      original.rowCount,
+      "The release this cell re-scores was not found, so the restore below could not put it back.",
+    ).toBe(1);
 
     /* A re-score that a reader would notice: the autonomy label and the security rationale are
        both quoted into README.md verbatim. Only the analysis columns move — the DOT, the card
@@ -537,13 +547,46 @@ describe("AC6 — fetching by digest returns the bytes of that release even afte
         `unchanged. AC6 is "fetching by digest returns the bytes of THAT release": one digest ` +
         `must not serve two answers, and this is the case a newer release cannot exercise because ` +
         `a newer release has a newer digest.\n` +
-        `  THIS RED IS THE NAMED DEPENDENCY, NOT A DEFECT IN T090. The bytes can only be frozen ` +
-        `by \`persistArtefacts\`, which is T100's, and read back by \`readPersisted\`, whose ` +
-        `\`undefined\` is the pre-persistence release. Neither is T090's to build in this round, ` +
-        `and this test turns green once T091 builds the READ half. It does NOT clear at T100: ` +
-        `T100 persists the artefact and \`serveFile\` still generates from Postgres, so the ` +
-        `frozen bytes are written and never read.`,
+        `  THIS IS NOW A DEFECT IN T091. It was the named dependency for as long as the READ ` +
+        `half was unbuilt, and it has stopped being one: T091 made \`serveFile\` consult the ` +
+        `frozen artefact, so a red here is this repository's code and not a task nobody had.\n` +
+        `  Where to look, because the fixture above still freezes NOTHING of its own — it ` +
+        `cannot, the write verb is another task's. The FIRST of the two calls is what freezes ` +
+        `these bytes: on a miss \`serveFile\` generates from Postgres, hands what it generated ` +
+        `to \`persistArtefacts\`, and serves it; the SECOND then has an object to read and ` +
+        `never reaches the re-scored columns. So a red means one of those two links is broken ` +
+        `— either the artefact is not read before \`buildExport\`, or a miss does not freeze ` +
+        `what it generated — and one digest served two answers at the address \`/mcp\` calls ` +
+        `load-bearing precisely because it does not move.`,
     ).toBe(decode(before.bytes));
+
+    /*
+     * PUT THE COLUMNS BACK, and it is not tidiness.
+     *
+     * This cell is the only one in the file that mutates a seeded release, and it used to leave
+     * it mutated. Every later cell whose oracle is `exportRelease` then regenerated from
+     * RE-SCORED columns while `serveFile` correctly served the FROZEN pre-re-score bytes, so the
+     * two disagreed about `README.md` — the one file that quotes both scorecards. `:560` reddened
+     * on exactly that, and the cause was here rather than there.
+     *
+     * The restore removes the mechanism instead of the symptom: moving one oracle earlier would
+     * leave the leak armed for the next cell anybody adds, and reordering would make correctness
+     * depend on declaration order.
+     *
+     * After the assertion rather than in a `finally`, so the assertion above is untouched. The
+     * consequence is worth stating: if this cell fails, the columns stay re-scored and later
+     * cells cascade. That is a red following a red, not a second defect.
+     */
+    await scratch.pool.query(
+      `update "release" set autonomy = $1::jsonb, security = $2::jsonb
+        where bundle_id = $3 and digest = $4`,
+      [
+        JSON.stringify(original.rows[0]?.autonomy),
+        JSON.stringify(original.rows[0]?.security),
+        first.bundleId,
+        first.digest,
+      ],
+    );
   }, 120_000);
 
   it("serves every file of the older release, not only the ones that happen to differ", async () => {

@@ -120,6 +120,30 @@ export async function buildExport(
 }
 
 /**
+ * Refuse unless this actor may read every card the release pins.
+ *
+ * **B-07 at the serving edge, for the path that does not build the folder (T091).** Once
+ * `serveFile` answers from a frozen artefact it never reaches `buildExport`, and the check
+ * below travels inside it — so a folder frozen by someone who may read its private cards
+ * would otherwise serve those cards' bytes to anyone who passes the BUNDLE's visibility
+ * check. Measured, not feared: an anonymous caller was refused before a freeze and served
+ * the private card afterwards, with the freeze the only thing that changed.
+ *
+ * **It delegates to `pinnedCards` rather than repeating its condition**, which is the whole
+ * point of it existing here instead of in `serve-file.ts`. "May this actor have this folder"
+ * then has exactly one author, and the frozen path cannot drift from the generated one the
+ * day the rule changes. It costs the card reads and none of the rest — no `openView`, no
+ * `loadBundle`, no analysis, no render — so what the freeze exists to save is still saved.
+ */
+export async function assertPinnedCardsReadable(
+  db: Db,
+  actor: Actor,
+  cardRefs: readonly string[],
+): Promise<void> {
+  await pinnedCards(db, actor, cardRefs);
+}
+
+/**
  * The pinned cards, in the order the release stored their refs, deduplicated.
  *
  * Read through `resolveCardRef`, which takes the actor — so a card this caller may not
