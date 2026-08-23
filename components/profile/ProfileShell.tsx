@@ -5,15 +5,22 @@ import type { ProfileView } from "./load";
 import type { ProfileTabId } from "./tabs";
 
 /**
- * What the owner view is, said once, above it.
+ * What is real on the owner view, said once, above it.
  *
- * The owner view is the one fiction on this route: there is no sign-in, so "your profile"
- * means "the handle `lib/data/account.ts` happens to name". A reader who lands on
- * `/u/mara-veil` and finds Publish buttons and a private list has every reason to think
- * they are signed in as somebody, and nothing else on the page would tell them otherwise.
+ * ── What this notice used to say, and why it could not stay ──
+ * *"There is no sign-in. This is the owner view because `lib/data/account.ts` seeds this
+ * handle as the signed-in account, and every profile on the site is prerendered the same
+ * way."* Every clause of that became false at once: there is a sign-in, this is the owner
+ * view because the reader's own session names this handle, and these routes are
+ * request-time. The reason it was there — a reader finding Publish buttons and a private
+ * list has every reason to think they are signed in as somebody — is not a reason any
+ * more, because they are.
  *
- * Two markers because there are two different claims: the values are seeded rows, and the
- * thing that would make them real is not built.
+ * **So the notice is narrowed rather than deleted (D-78, D-262-09).** What is left is the
+ * half that is still true: several figures on this page have no backend behind them, and a
+ * reader looking at their own profile should be told which. Retiring a claim is not the
+ * same act as deleting it, and where a sentence is still true in a narrower sense the true
+ * half survives.
  */
 function OwnerNotice() {
   return (
@@ -26,12 +33,12 @@ function OwnerNotice() {
         <ComingSoonBadge />
       </div>
       <p className="text-[13px] leading-relaxed text-muted">
-        There is no sign-in. This is the owner view because{" "}
-        <span className="font-mono text-fg">lib/data/account.ts</span> seeds this handle as
-        the signed-in account, and every profile on the site is prerendered the same way.
-        What is counted here is what the archive holds: the published blueprints, the node
-        cards and the vocabulary terms. What is seeded is everything an account would have
-        stored, and nothing on this page writes anything back.
+        This is your profile because your session names this handle. Your identity, your
+        join date and your saved list are real. What is counted is what the archive holds:
+        the published blueprints, the node cards and the vocabulary terms. Every community
+        figure here is still seeded, watchers and support and validated and downloads and
+        stars alike, because nothing counts them yet: there is no telemetry, no ballot and
+        no verified run report.
       </p>
     </div>
   );
@@ -58,8 +65,13 @@ export function ProfileShell({
      know to answer any other question, and `ProfileHeader` is the one place either is
      read. Both folds run over the PUBLIC lists only (`view.blueprints`/`view.cards`, not
      `owned`/`ownedCards`): a private row has never been seen by anyone else, so it
-     contributes no stars by construction — `lib/data/cards.ts` seeds every private card's
-     own support at `0` for exactly this reason, so including it would add nothing anyway. */
+     contributes no stars by construction, and every private card's own support is seeded
+     at `0` for exactly that reason — so including it would add nothing anyway.
+
+     Both figures are still seeded and both keep their marker: `downloads` and `votes` come
+     off the archive's own fixtures and `support` off `starsFor`, and no counter has run
+     for any of them — `lib/server/counters` exists but `app/api/signals/**` does not
+     (D-262-07). */
   const downloads = view.blueprints.reduce((n, b) => n + b.downloads, 0);
   const stars =
     view.blueprints.reduce((n, b) => n + b.votes, 0) +
@@ -76,7 +88,10 @@ export function ProfileShell({
         downloads={downloads}
         stars={stars}
         validated={view.profile.validated}
-        joinedAt={view.profile.joinedAt}
+        /* `view.joinedAt`, not `view.profile.joinedAt`: this is the account's own
+           `created_at` now, off `getProfile`, and it is the one figure that has left the
+           seeded four. The fixture's date is still in `view.profile` and is not read. */
+        joinedAt={view.joinedAt.toISOString()}
         watchers={view.profile.watchers}
         support={view.profile.support}
         owner={view.owner}
