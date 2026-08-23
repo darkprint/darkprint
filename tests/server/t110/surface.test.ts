@@ -23,9 +23,14 @@
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
-import { LINEAGE, PUBLISHED, RULINGS, loadLineage } from "./contract";
+import { LINEAGE, PUBLISHED, RULINGS, loadLineage, warmLineage } from "./contract";
+
+/* Before any cell awaits the import. The cold transform of the graph behind this barrel was
+   measured at 21.13s against a 20s `testTimeout`, and the cell it timed out was this file's
+   first — reporting a missing export that was present. See `warmLineage`. */
+beforeAll(warmLineage);
 
 const BARREL = fileURLToPath(new URL("../../../lib/server/lineage/index.ts", import.meta.url));
 

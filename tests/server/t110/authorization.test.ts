@@ -43,6 +43,7 @@ import {
   boundForkBundle,
   bundleRecordOf,
   refusalFrom,
+  warmLineage,
 } from "./contract";
 import {
   ANONYMOUS,
@@ -70,6 +71,9 @@ interface Env {
 }
 
 const setup = new RecordedSetup<Env>("the T110 authorization fixture");
+
+/* Before the fixture hook, so the transform cost is paid where there is headroom for it. */
+beforeAll(warmLineage);
 
 beforeAll(async () => {
   await setup.run(async () => {

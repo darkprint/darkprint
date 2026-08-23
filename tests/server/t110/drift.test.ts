@@ -49,6 +49,7 @@ import {
   bundleRecordOf,
   describe as describeValue,
   driftResultOf,
+  warmLineage,
 } from "./contract";
 import {
   type Account,
@@ -81,6 +82,9 @@ interface Env {
 }
 
 const setup = new RecordedSetup<Env>("the T110 drift fixture");
+
+/* Before the fixture hook, so the transform cost is paid where there is headroom for it. */
+beforeAll(warmLineage);
 
 beforeAll(async () => {
   await setup.run(async () => {

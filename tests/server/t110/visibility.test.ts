@@ -37,7 +37,14 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import type { Actor } from "@/lib/server/policy";
 
-import { RecordedSetup, boundForkBundle, boundForksOf, bundleRecordOf, forkListOf } from "./contract";
+import {
+  RecordedSetup,
+  boundForkBundle,
+  boundForksOf,
+  bundleRecordOf,
+  forkListOf,
+  warmLineage,
+} from "./contract";
 import {
   ANONYMOUS,
   type Account,
@@ -66,6 +73,9 @@ interface Env {
 }
 
 const setup = new RecordedSetup<Env>("the T110 visibility fixture");
+
+/* Before the fixture hook, so the transform cost is paid where there is headroom for it. */
+beforeAll(warmLineage);
 
 beforeAll(async () => {
   await setup.run(async () => {

@@ -88,6 +88,33 @@ export function loadLineage(): Promise<Namespace> {
   return lineageModule;
 }
 
+/**
+ * Pays the module's transform cost in a HOOK rather than inside a cell.
+ *
+ * **Measured, not guessed.** The first `import("@/lib/server/lineage")` in a run makes vite
+ * transform the whole graph behind the barrel — `lib/db`, drizzle, `pg`, `lib/server/archive`,
+ * `accounts`, `policy` — and that was measured at **21.13s of transform against a 20s
+ * `testTimeout`**. The first cell to await the import therefore timed out, and it did so with
+ * `Error: Test timed out in 20000ms` on a cell whose subject is "the barrel exports
+ * `forkBundle`" — a red that names a missing export while the export is present, which is the
+ * worst kind: it reads as a defect report against an implementation that is correct.
+ *
+ * It surfaced in 10 of 19 runs of a mutation sweep, on mutations that could not have touched it,
+ * which is how it was caught. It is load-dependent: another session was driving the same machine.
+ *
+ * The rejection is SWALLOWED, and that is the load-bearing part. A hook that throws produces
+ * SKIPS, and an absent module must go on costing one red per criterion — so this warms the cache
+ * and reports nothing. Every cell still calls its own `bound*`, which re-raises the same failure
+ * per criterion. `hookTimeout` is 30s against `testTimeout`'s 20s (`vitest.config.ts`), so the
+ * work is done where there is headroom for it.
+ */
+export async function warmLineage(): Promise<void> {
+  await loadLineage().then(
+    () => undefined,
+    () => undefined,
+  );
+}
+
 /* --------------------- what the contract publishes --------------------- */
 
 /**
