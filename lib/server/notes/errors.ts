@@ -8,7 +8,7 @@
    measurement T140's blind author made against a live driver on
    `save`, on tables bound the same way.
 
-   ── TWO classes here, and one consumed from elsewhere ──
+   ── THREE classes here, and one consumed from elsewhere ──
    D-140-02 ruled T140's single decision belonged to another module
    because `NotAccountOwnerError` was *precisely* that decision.
    **D-WAVE-04 rules the same for AC3 and AC7**, and this file
@@ -25,6 +25,21 @@
      of the documentation. D-WAVE-04 pins the spelling, and pins it
      against `InvalidNoteError`, which a dispatch had named and the
      document never did.
+   * **`InvalidCursorError`** — D-WAVE-13, and it replaced this
+     module's own worse answer. `listNotes` used to return
+     `{ notes: [], cursor: null }` for a cursor it could not
+     decode, on the reasoning that *a position that does not exist
+     has nothing after it*. **That is sound about the SET and wrong
+     about the CALLER**: an empty page is byte-identical to *this
+     target has no notes* and to *you may not read this parent*,
+     and the last two being alike is B-03 working. The first is
+     different in kind — **a reader mid-walk whose token was
+     mangled by a truncation or a URL round trip is told the list
+     ENDED, and stops.** A silent truncation of a read, wearing the
+     shape of a legitimate answer. The real choice was never
+     *empty page or a 500*; it was **you have all the data** or
+     **something went wrong**, and this module is the only party
+     that can tell them apart.
 
    Neither is re-exported from anywhere and neither re-exports:
    `tests/error-hygiene.test.ts` counts every error class exported
@@ -111,11 +126,31 @@ export class NoteBodyError extends Error {
   }
 }
 
+/**
+ * The cursor did not come from this module (D-WAVE-13).
+ *
+ * **Carries nothing of the caller's value.** D-13 admits the operation and this module's own
+ * field names, never the caller's input — and a cursor is caller-supplied text of unbounded
+ * length that a client may have built by concatenating something it should not. Echoing it
+ * back would put that value into whatever renders the refusal.
+ *
+ * It says *not one this module issued* rather than *malformed*, because that is the fact a
+ * caller can act on: the token's grammar is unpublished and deliberately so, so "malformed"
+ * names a rule nobody outside here can check, while "not ours" tells a client to restart the
+ * walk from the first page.
+ */
+export class InvalidCursorError extends Error {
+  constructor(operation: string) {
+    super(`${operation}: the cursor is not one this module issued.`);
+  }
+}
+
 /* On the prototype, not as instance fields: a `readonly name = "..."` class field would
    itself be an own enumerable property, which `Object.keys(err) === []` does not allow. */
 for (const [ctor, name] of [
   [NoteStoreError, "NoteStoreError"],
   [NoteBodyError, "NoteBodyError"],
+  [InvalidCursorError, "InvalidCursorError"],
 ] as const) {
   Object.defineProperty(ctor.prototype, "name", {
     value: name,

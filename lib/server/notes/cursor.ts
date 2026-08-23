@@ -90,10 +90,12 @@ export function encodeCursor(cursor: NoteCursor): string {
 /**
  * A token back into a position, or `undefined` if it did not come from here.
  *
- * **Total, and it never throws.** A cursor is this module's own output; one that does not
- * decode describes a position in a list that does not exist, and `listNotes` answers that
- * with an empty page rather than with a fault — see its comment for why that is the honest
- * answer rather than a swallowed error.
+ * **Total, and it never throws.** `undefined` is a value the caller branches on, and the
+ * branch is `listNotes`': D-WAVE-13 makes it raise `InvalidCursorError` rather than answer an
+ * empty page, so a reader whose token was mangled learns the walk broke instead of being
+ * told the list ended. **The decision stays at the caller rather than moving in here**,
+ * because this function is also what a future reader would use to ASK whether a token is
+ * one of ours — a predicate that throws cannot answer that question.
  *
  * The uuid is checked for shape rather than for existence. A row id that decodes but names
  * no row is not a malformed cursor: the keyset comparison compares VALUES and never looks

@@ -14,13 +14,18 @@
    in flight may come from drizzle, from `pg`, from the socket, or
    from a driver version that has not shipped.
 
-   What differs is that decisions are made on this path — a denial
-   and a refused body — and `Promise<NoteRecord>` cannot express
-   either as a value the way `listSaves`' frozen `[]` can. So two
-   classes pass through, recognised **by identity** rather than by
-   shape, which cannot fail open the way a driver-fault classifier
-   would: anything the predicate does not recognise is sealed, and
-   sealed is the safe direction.
+   What differs is that decisions are made on this path — a denial,
+   a refused body and a cursor this module did not issue — and
+   `Promise<NoteRecord>` cannot express any of them as a value the
+   way `listSaves`' frozen `[]` can. **`listNotes` returns a
+   `NotePage` and CAN express one**, which is exactly how the
+   cursor refusal came to be an empty page and why D-WAVE-13
+   overturned it: representable is not the same as honest, since
+   that value is byte-identical to a legitimate end-of-list. So
+   three classes pass through, recognised **by identity** rather
+   than by shape, which cannot fail open the way a driver-fault
+   classifier would: anything the predicate does not recognise is
+   sealed, and sealed is the safe direction.
 
    One of the two is another module's (D-WAVE-04): the denial is
    `NotAccountOwnerError`, consumed from `@/lib/server/accounts`
@@ -43,16 +48,20 @@
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { schema, type Db } from "@/lib/db";
 import { NotAccountOwnerError } from "@/lib/server/accounts";
-import { NoteBodyError, NoteStoreError } from "./errors";
+import { InvalidCursorError, NoteBodyError, NoteStoreError } from "./errors";
 import type { NoteCursor } from "./cursor";
 import type { NoteTarget } from "./types";
 
 /** A rejection that is somebody's decision rather than the database failing. */
 function isDecision(err: unknown): boolean {
-  return err instanceof NotAccountOwnerError || err instanceof NoteBodyError;
+  return (
+    err instanceof NotAccountOwnerError ||
+    err instanceof NoteBodyError ||
+    err instanceof InvalidCursorError
+  );
 }
 
-/** Runs `work`, letting the two decisions through and sealing everything else. */
+/** Runs `work`, letting the three decisions through and sealing everything else. */
 export async function withStore<T>(operation: string, work: () => Promise<T>): Promise<T> {
   try {
     return await work();

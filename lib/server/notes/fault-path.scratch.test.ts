@@ -21,7 +21,7 @@
 
 import { describe, expect, it } from "vitest";
 import { NotAccountOwnerError } from "@/lib/server/accounts";
-import { NoteBodyError, NoteStoreError } from "./errors";
+import { InvalidCursorError, NoteBodyError, NoteStoreError } from "./errors";
 import { withStore } from "./store";
 
 /**
@@ -84,12 +84,16 @@ describe("withStore seals what the driver throws", () => {
     expect(inherited).toEqual([]);
   });
 
-  it("lets the two DECISIONS through unsealed, so a refusal stays a refusal", async () => {
+  it("lets the three DECISIONS through unsealed, so a refusal stays a refusal", async () => {
     const refusal = new NotAccountOwnerError("editNote: not this account's owner.");
     const body = new NoteBodyError("postNote", 2000, 0);
+    const cursor = new InvalidCursorError("listNotes");
 
     await expect(withStore("editNote", async () => { throw refusal; })).rejects.toBe(refusal);
     await expect(withStore("postNote", async () => { throw body; })).rejects.toBe(body);
+    /* D-WAVE-13's class. Sealing it would turn *your token is not ours* — which tells a client
+       to restart the walk — into *the store failed*, which tells it to retry the same token. */
+    await expect(withStore("listNotes", async () => { throw cursor; })).rejects.toBe(cursor);
   });
 
   it("does not RELABEL an already-sealed fault, which nesting makes reachable here", async () => {
@@ -113,6 +117,22 @@ describe("withStore seals what the driver throws", () => {
 
     expect(thrown).toBeInstanceOf(NoteStoreError);
     expect((thrown as Error).message).toBe("deleteNote: the notes store failed.");
+  });
+});
+
+describe("InvalidCursorError carries the operation and nothing the caller sent", () => {
+  it("names the operation and states the cursor was not ours", () => {
+    const err = new InvalidCursorError("listNotes");
+    expect(err.message).toContain("listNotes");
+    expect(err.message).toContain("not one this module issued");
+  });
+
+  it("renders as {} and keeps its stack", () => {
+    const err = new InvalidCursorError("listNotes");
+    expect(Object.keys(err)).toEqual([]);
+    expect(JSON.stringify(err)).toBe("{}");
+    expect(typeof err.stack).toBe("string");
+    expect(err.name).toBe("InvalidCursorError");
   });
 });
 
