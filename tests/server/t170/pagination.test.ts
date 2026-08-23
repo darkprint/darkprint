@@ -215,28 +215,49 @@ describe("T170 AC2 — the cursor carries FULL-PRECISION `created_at`", () => {
    * timestamps. A cursor keyed on `createdAt` alone cannot order two rows sharing one, so
    * it either loses a row or repeats one at every collision that straddles a page boundary.
    */
-  it("notes sharing a timestamp are still walked exactly once", async () => {
-    const author = await seedAccount(s, "ac2-tie");
-    const bundle = await seedBundle(s, { ownerId: author.id });
-    const target = blueprintTarget(bundle);
-    const actor = accountActor(author.id, author.handle);
+  /**
+   * `id` is the tiebreak, and this is the cell that needs a genuine collision.
+   *
+   * THE FIRST DRAFT OF THIS CELL COULD NOT REACH ITS OWN PREMISE. It posted 32 notes
+   * through `Promise.all` and required `count(distinct created_at) < 32`, on T010's
+   * measurement of 32 concurrent INSERTS landing on 12 distinct timestamps. But a
+   * `postNote` is not an insert: it resolves the parent, upserts `target`, writes the row
+   * and recounts, so the calls serialise enough that all 32 got distinct microseconds. The
+   * premise guard fired and refused to go green — which is the guard working — but the cell
+   * measured nothing on every run.
+   *
+   * So the collision is now MADE rather than hoped for. The notes are still posted through
+   * the module, so everything it normalises is normalised; only `created_at` is then
+   * collapsed onto one value by raw SQL. That is not manufacturing an impossible row —
+   * D-70-22's hazard is a state the rules say cannot occur, and this one is a state T010
+   * MEASURED. It is what concurrent inserts produce.
+   */
+  it("notes sharing one timestamp are still walked exactly once", async () => {
+    const { actor, target, ids } = await stage("ac2-tie", PAGE_SIZE + 5);
 
-    const postNote = await bind("postNote");
-    const posted = await Promise.all(
-      Array.from({ length: 32 }, (_, i) => postNote(s.db, actor, target, `tie ${i}`)),
+    /* Collapse a run of five straddling the page boundary — positions 8..12 of 15, so the
+       tie spans the boundary at 10, which is where a cursor keyed on `createdAt` alone
+       loses or repeats a row. A tie sitting entirely inside one page is invisible: that page
+       is fetched in a single statement and the cursor never has to break it. */
+    const tied = ids.slice(7, 12);
+    const collapsed = await s.query(
+      "update note set created_at = (select created_at from note where id = $1) " +
+        "where id = any($2) returning id",
+      [tied[0], tied],
     );
-    const ids = posted.map((r) => String((r as Record<string, unknown>).id));
+    premise(
+      collapsed.length === tied.length,
+      `the tie must actually be planted: ${collapsed.length} of ${tied.length} rows updated`,
+    );
 
     const distinct = await s.query(
       "select count(distinct created_at) as n from note where target_kind = $1 and target_id = $2",
       [target.kind, target.refId],
     );
     premise(
-      Number(distinct[0]?.n) < ids.length,
-      `THIS RUN COULD NOT DISCRIMINATE: all ${ids.length} concurrent inserts got distinct ` +
-        `timestamps (${String(distinct[0]?.n)} distinct), so there is no collision for the ` +
-        `tiebreak to resolve. T010 measured 32 inserts to 12 distinct timestamps; a machine ` +
-        `fast enough to separate every one of them makes this cell vacuous. Re-run.`,
+      Number(distinct[0]?.n) === ids.length - tied.length + 1,
+      `after collapsing ${tied.length} rows onto one timestamp there must be ` +
+        `${ids.length - tied.length + 1} distinct values; there are ${String(distinct[0]?.n)}`,
     );
 
     const listNotes = await bind("listNotes");
@@ -245,15 +266,37 @@ describe("T170 AC2 — the cursor carries FULL-PRECISION `created_at`", () => {
 
     expect(
       [...seen].sort(),
-      `AC2: \`id\` is the tiebreak because \`createdAt\` collides under concurrent inserts, ` +
-        `and §T170 cites T010's measurement for it. ${ids.length} notes share ` +
-        `${String(distinct[0]?.n)} timestamps here, so a cursor keyed on \`createdAt\` ` +
-        `alone cannot order them and drops or repeats one at every collision straddling a ` +
-        `page boundary.\n` +
-        `  pages: ${pages.map((p) => p.length).join(" + ")} = ${seen.length}`,
+      `AC2: \`id\` is the tiebreak because \`createdAt\` collides under concurrent ` +
+        `inserts, and §T170 cites T010's measurement — 32 inserts, 12 distinct timestamps — ` +
+        `for it.\n` +
+        `  Five notes share one timestamp here, straddling the page boundary at ` +
+        `${PAGE_SIZE}. A cursor keyed on \`createdAt\` alone cannot order them: a strict ` +
+        `\`>\` drops the rest of the tie and a \`>=\` repeats it forever.\n` +
+        `  pages: ${pages.map((p) => p.length).join(" + ")} = ${seen.length} for ` +
+        `${ids.length} rows`,
     ).toEqual([...ids].sort());
     expect(new Set(seen).size, `no note twice`).toBe(ids.length);
+
+    /* The ORDER, and the first version of this assertion was WRONG — it required the walk
+       to equal the seeding order. Once five rows share a timestamp, `(created_at, id)`
+       orders them by `id`, and `id` is a random uuid: the tied group comes back in uuid
+       order, which is not the order they were posted in. That assertion would have redded a
+       correct implementation, and the stand-in is what found it.
+
+       What the contract actually forces: the untied rows keep creation order, the tie sits
+       CONTIGUOUSLY where it was, and inside it `id` breaks the tie ascending. */
+    const untiedBefore = ids.slice(0, 7);
+    const untiedAfter = ids.slice(12);
+    expect(seen.slice(0, 7), `the rows before the tie keep creation order`).toEqual(untiedBefore);
+    expect(seen.slice(12), `and the rows after it do too`).toEqual(untiedAfter);
+    expect(
+      seen.slice(7, 12),
+      `the five sharing a timestamp must come back CONTIGUOUSLY and ordered by \`id\` — ` +
+        `that is what the tiebreak IS. A group scattered through the list, or one whose ` +
+        `internal order changes between pages, is a cursor that cannot address a tie.`,
+    ).toEqual([...tied].sort());
   });
+
 });
 
 describe("T170 AC2 — a cursor is scoped to its own target", () => {

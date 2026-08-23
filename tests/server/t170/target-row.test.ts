@@ -81,52 +81,72 @@ describe("D-WAVE-01 — `target` is created on demand and stays single", () => {
    * has all eight read "no row" and all eight insert; `target_kind_ref_id_key` has seven
    * conflict and one land — IF the write is a single insert whose conflict is caught.
    *
-   * A duplicate-key rejection is not forbidden here, because whether the module swallows a
-   * conflict or surfaces it is not something the block decides. What the criterion forbids
-   * is TWO ROWS, and what AC-adjacent honesty forbids is losing a note: both are asserted.
+   * EVERY CALLER MUST RESOLVE, and requiring only "one row" was the gap a mutation found.
+   *
+   * `target_kind_ref_id_key` holds the row count at 1 whether the conflict is CAUGHT or
+   * ESCAPES, so a count-only cell cannot tell the two apart — and D-WAVE-01 rules that the
+   * insert is one "with ON CONFLICT (kind, ref_id) DO NOTHING, then read", never
+   * SELECT-then-INSERT. Measured against a stand-in written the wrong way: one row, and
+   * **4 of the 8 callers refused**, each losing its note. The criterion was satisfied and
+   * half the writes were gone.
    */
-  it("eight CONCURRENT first-posts create exactly one `target` row and lose no note", async () => {
+  it("eight CONCURRENT first-posts, five rounds, create one row each and lose no note", async () => {
     const author = await seedAccount(s, "tr-race");
-    const bundle = await seedBundle(s, { ownerId: author.id });
-    const target = blueprintTarget(bundle);
-    premise((await targetRowCount(s, target)) === 0, `the race needs a target with no row yet`);
-
     const postNote = await bind("postNote");
     const actor = accountActor(author.id, author.handle);
-    const outcomes = await Promise.all(
-      Array.from({ length: 8 }, (_, i) =>
-        outcomeOf(() => postNote(s.db, actor, target, `concurrent first post ${i}`)),
-      ),
-    );
 
-    const rows = await targetRowCount(s, target);
-    expect(
-      rows,
-      `D-WAVE-01: eight concurrent first-posts created ${rows} \`target\` rows.\n` +
-        `  "Both create it with a single insert, ON CONFLICT (kind, ref_id) DO NOTHING, ` +
-        `then read. Never SELECT-then-INSERT. A cell that does not drive two concurrent ` +
-        `callers has not tested this." — and this is that cell.\n` +
-        `  outcomes: ${outcomes.map((o) => o.settled).join(", ")}`,
-    ).toBe(1);
+    /* FIVE ROUNDS, and the repetition is the difference between a cell that catches this
+       and one that reports green on it three runs in five.
 
-    const settled = outcomes.filter((o) => o.settled === "value").length;
-    const stored = await s.query("select count(*) as n from note where target_id = $1", [
-      bundle.id,
-    ]);
-    expect(
-      Number(stored[0]?.n),
-      `every post that ANSWERED must have left a note. A module that catches the ` +
-        `\`target\` conflict and abandons its own insert answers successfully and drops the ` +
-        `note on the floor — which no cell counting \`target\` rows can see.\n` +
-        `  ${settled} of 8 calls resolved.`,
-    ).toBe(settled);
+       Measured against a stand-in whose `target` write was a `SELECT`-then-`INSERT`: the
+       race opened on 2 of 5 rounds and on the other 3 all eight callers resolved. One round
+       is a coin weighted about 40/60 IN FAVOUR OF GREEN — a real defect passing the
+       majority of the time, which is worse than no cell at all because it reads as covered.
+       Five rounds put a miss around 8%; the loop is cheap and the alternative is a flaky
+       green nobody would ever investigate.
 
+       Each round gets its OWN bundle, so every round is genuinely a FIRST event with no
+       `target` row — a second round against the same target would find the row already
+       there and race nothing. */
+    const ROUNDS = 5;
+    const report: string[] = [];
+    for (let round = 0; round < ROUNDS; round += 1) {
+      const bundle = await seedBundle(s, { ownerId: author.id });
+      const target = blueprintTarget(bundle);
+      premise(
+        (await targetRowCount(s, target)) === 0,
+        `round ${round}: the race needs a target with no row yet`,
+      );
+
+      const outcomes = await Promise.all(
+        Array.from({ length: 8 }, (_, i) =>
+          outcomeOf(() => postNote(s.db, actor, target, `round ${round} post ${i}`)),
+        ),
+      );
+      const refused = outcomes.filter((o) => o.settled === "rejected");
+      const rows = await targetRowCount(s, target);
+      const stored = await s.query("select count(*) as n from note where target_id = $1", [
+        bundle.id,
+      ]);
+      report.push(
+        `round ${round}: targetRows=${rows} resolved=${outcomes.length - refused.length} ` +
+          `refused=${refused.length} notes=${String(stored[0]?.n)}` +
+          (refused.length > 0 ? ` first refusal: ${refused[0].digest.slice(0, 160)}` : ""),
+      );
+    }
+
+    const broken = report.filter((r) => !r.includes("targetRows=1 resolved=8 refused=0 notes=8"));
     expect(
-      (await targetRow(s, target))?.noteCount,
-      `and \`note_count\` must agree with the rows that landed. A counter incremented ` +
-        `outside the transaction that writes the note drifts under exactly this contention ` +
-        `and never under a sequential test.`,
-    ).toBe(settled);
+      broken,
+      `D-WAVE-01: "Both create it with a single insert, ON CONFLICT (kind, ref_id) DO ` +
+        `NOTHING, then read. Never SELECT-then-INSERT. A cell that does not drive two ` +
+        `concurrent callers has not tested this."\n` +
+        `  Every round must end at one \`target\` row, eight resolved callers and eight ` +
+        `stored notes. THE ROW COUNT ALONE IS BLIND TO THE DEFECT — ` +
+        `\`target_kind_ref_id_key\` holds it at 1 whether the conflict is caught or ` +
+        `escapes — so the callers' outcomes and the notes they left are what see it.\n` +
+        `  all ${ROUNDS} rounds:\n    ${report.join("\n    ")}`,
+    ).toEqual([]);
   });
 
   it("a second note reuses the existing `target` row rather than adding one", async () => {

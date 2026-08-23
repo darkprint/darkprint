@@ -107,40 +107,63 @@ describe("T170 AC4 — one account, one vote, at the note's grain", () => {
    * conflict and one land. `Promise.all` over thunks that are already started is what makes
    * them concurrent — building the array of promises IS the launch.
    *
-   * Refusals are counted rather than forbidden: whether the module swallows the conflict or
-   * surfaces it is not something the block decides, and a cell requiring silence would fail
-   * a correct implementation that chose to raise. What the criterion forbids is TWO ROWS.
+   * EVERY CALLER MUST RESOLVE, and the first version of this cell did not require that.
+   *
+   * It counted refusals rather than forbidding them, on the reasoning that whether a module
+   * swallows a conflict or surfaces it is not something the block decides. That was wrong:
+   * D-WAVE-01 says the write is "a single insert **whose conflict is caught**", so a caller
+   * losing its vote to a duplicate-key error is the criterion failing, not a style choice.
+   * The row count alone cannot see it — the unique index holds the count at 1 whether the
+   * conflict is caught or escapes — so the cell passed a SELECT-then-INSERT mutation and the
+   * zero is what found the gap.
    */
-  it("eight CONCURRENT votes from one account leave exactly one row", async () => {
+  it("eight CONCURRENT votes from one account, five rounds, leave one row each", async () => {
     const author = await seedAccount(s, "ac4-conc-author");
     const voter = await seedAccount(s, "ac4-conc-voter");
     const bundle = await seedBundle(s, { ownerId: author.id });
-    const note = await postOne(
-      s.db,
-      accountActor(author.id, author.handle),
-      blueprintTarget(bundle),
-      "contended note",
-    );
-
-    const voteNote = await bind("voteNote");
+    const target = blueprintTarget(bundle);
+    const authorActor = accountActor(author.id, author.handle);
     const actor = accountActor(voter.id, voter.handle);
-    const outcomes = await Promise.all(
-      Array.from({ length: 8 }, () => outcomeOf(() => voteNote(s.db, actor, note.id))),
-    );
+    const voteNote = await bind("voteNote");
 
-    const rows = await voteRowCount(s, note.id);
+    /* Five rounds, each on its OWN note, for the reason `target-row.test.ts` states at
+       length: a single 8-caller round caught the equivalent `SELECT`-then-`INSERT` defect
+       on the `target` write only 2 times in 5, measured. A concurrency cell that fires 40%
+       of the time reports green on a real defect three runs in five. */
+    const ROUNDS = 5;
+    const report: string[] = [];
+    for (let round = 0; round < ROUNDS; round += 1) {
+      const note = await postOne(s.db, authorActor, target, `contended note ${round}`);
+      premise(
+        (await voteRowCount(s, note.id)) === 0,
+        `round ${round}: a freshly posted note must start with no votes`,
+      );
+      const outcomes = await Promise.all(
+        Array.from({ length: 8 }, () => outcomeOf(() => voteNote(s.db, actor, note.id))),
+      );
+      const refused = outcomes.filter((o) => o.settled === "rejected");
+      report.push(
+        `round ${round}: voteRows=${await voteRowCount(s, note.id)} ` +
+          `voters=${(await voterIds(s, note.id)).length} ` +
+          `resolved=${outcomes.length - refused.length} refused=${refused.length}` +
+          (refused.length > 0 ? ` first refusal: ${refused[0].digest.slice(0, 160)}` : ""),
+      );
+    }
+
+    const broken = report.filter((r) => !r.includes("voteRows=1 voters=1 resolved=8 refused=0"));
     expect(
-      rows,
-      `AC4 under contention: eight concurrent votes from one account left ${rows} ` +
-        `\`note_vote\` rows.\n` +
-        `  This is the cell the criterion rests on. A \`SELECT\`-then-\`INSERT\` passes ` +
-        `every sequential cell in this file and loses here, because all eight readers see ` +
-        `"no vote" before any of them writes. The write is a single insert whose conflict is ` +
-        `caught, and \`note_vote_note_account_key\` is the guarantee itself rather than an ` +
-        `index on top of one.\n` +
-        `  outcomes: ${outcomes.map((o) => o.settled).join(", ")}`,
-    ).toBe(1);
-    expect(await voterIds(s, note.id)).toEqual([voter.id]);
+      broken,
+      `AC4 under contention. This is the cell the criterion rests on: a ` +
+        `\`SELECT\`-then-\`INSERT\` passes every sequential cell in this file and loses ` +
+        `here, because all eight readers see "no vote" before any of them writes.\n` +
+        `  Two things are required and the second was missing from the first version of this ` +
+        `cell. ONE ROW — \`note_vote_note_account_key\` is the guarantee itself rather than ` +
+        `an index on top of one. And EVERY CALLER RESOLVING, because D-WAVE-01 says the ` +
+        `write is "a single insert WHOSE CONFLICT IS CAUGHT": the index holds the count at 1 ` +
+        `either way, so a count-only assertion is blind to a module whose callers lose their ` +
+        `votes to a driver error.\n` +
+        `  all ${ROUNDS} rounds:\n    ${report.join("\n    ")}`,
+    ).toEqual([]);
   });
 
   it("two different accounts voting on one note leave two rows", async () => {
