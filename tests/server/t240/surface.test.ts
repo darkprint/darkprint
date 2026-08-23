@@ -22,8 +22,11 @@
    the parse and the contract disagree, which is the day every
    shape cell downstream silently changes its subject.
 
-   And one of them, `GAP-240-A`, is a red I expect and stand
-   behind — see its comment.
+   `GAP-240-A` used to live here and is DELETED: the divergence
+   it reported was real, was amended at `43ceb9a`, and F-240-A is
+   recorded resolved. What replaced it is the property it was
+   protecting — and the note on why my own parser could not see
+   two of the four fixes when they landed.
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
@@ -47,10 +50,24 @@ import {
    removal or a change.
    ============================================================ */
 
-/** D-240-03 and D-240-05 add two names the Published signatures block does not yet carry. */
-const RULED_MEMBERS = ["AUDIT_ACTIONS", "AuditStoreError"] as const;
-
-const BLOCK_MEMBERS = ["writeAudit", "listAudit"] as const;
+/**
+ * Every VALUE the barrel must export, after `43ceb9a` amended the block to carry its own
+ * rulings (F-240-A, resolved).
+ *
+ * `NotPermittedError` was NOT in the list this suite was written against and is added here
+ * as an adversary repair: D-240-04 put the permission in this module, and a refusal a
+ * caller cannot NAME is a refusal a caller cannot branch on — the whole reason the class
+ * exists. My blind half asserted the refusal's SENTENCE and never its class, so an
+ * implementation throwing a bare `Error` with the right words would have passed every cell
+ * I wrote. That gap is mine, and it is closed here and in `adversary.test.ts`.
+ */
+const PUBLISHED_VALUES = [
+  "writeAudit",
+  "listAudit",
+  "AUDIT_ACTIONS",
+  "AuditStoreError",
+  "NotPermittedError",
+] as const;
 
 const AUDIT_ENTRY_FIELDS = [
   "actorId",
@@ -132,15 +149,14 @@ describe("T240 — which of the three states this suite is being read in", () =>
       );
     }
 
-    const expected = [...BLOCK_MEMBERS, ...RULED_MEMBERS];
-    const missing = expected.filter((name) => !barrel.keys.includes(name));
+    const missing = PUBLISHED_VALUES.filter((name) => !barrel.keys.includes(name));
 
     expect(
       missing,
       `${BARREL} resolved but does not export: ${missing.join(", ")}.\n` +
-        `  The Published signatures block names ${BLOCK_MEMBERS.join(" and ")}; D-240-03 ` +
-        `publishes \`AUDIT_ACTIONS\` as a closed set and D-240-05 publishes ` +
-        `\`AuditStoreError\`.\n` +
+        `  The block names \`writeAudit\` and \`listAudit\`; D-240-03 publishes ` +
+        `\`AUDIT_ACTIONS\` as a closed set, D-240-05 \`AuditStoreError\` and D-240-04 ` +
+        `\`NotPermittedError\`.\n` +
         `  found: ${barrel.keys.join(", ") || "(nothing)"}`,
     ).toEqual([]);
   });
@@ -239,62 +255,52 @@ describe("T240 — the derived published block still says what this suite was wr
   });
 
   /**
-   * **GAP-240-A — the Published signatures block and the rulings below it disagree, and the
-   * block is the half an implementer reads first.**
+   * **GAP-240-A is DELETED, not weakened — and this cell is what replaces it.**
    *
-   * Three divergences, measured against `backend` `fe143a7`:
+   * The finding held: the Published signatures block was behind its own rulings on four
+   * counts, measured at `fe143a7`. It was amended at `43ceb9a` on all four, F-240-A is
+   * recorded resolved in §T240, and the ruling says to delete the cell at the merge. Deleted.
    *
-   *   1. the block writes `listAudit(...): Promise<AuditEntry[]>`; **D-240-02 rules
-   *      `Promise<(AuditEntry & { occurredAt: Date })[]>`**;
-   *   2. the block writes `action: string` inside `AuditEntry`; **D-240-03 rules `action`
-   *      is typed as the `AUDIT_ACTIONS` union** — and over an open string the product's
-   *      absolute constraint is unfalsifiable, which is the whole reason for the ruling;
-   *   3. the block names no `AUDIT_ACTIONS` and no `AuditStoreError`; **D-240-03 and
-   *      D-240-05 publish both.**
+   * **What is kept is the property the GAP cell was protecting**, because a resolved
+   * divergence can recur: the block must NAME everything the barrel publishes. Written as a
+   * floor — the block may add — so it reds on a removal or a rename and not on growth.
    *
-   * A red against the DOCUMENT, not against the implementer, and written as a red rather
-   * than a comment on purpose: a divergence recorded only in prose is one the next reader
-   * inherits silently. The shape pins in `published-shape.test.ts` are bound to the
-   * RULINGS, which are the later and therefore governing text — so if this is resolved the
-   * other way (the rulings amended to match the block), those pins move and this cell stays.
-   *
-   * Delete it when the block is amended. Do not weaken it until it passes.
+   * **My parser was blind to two of the four when they landed, and that is the adversary
+   * finding underneath this one.** After `43ceb9a` the GAP cell still reported
+   * `AUDIT_ACTIONS` and `AuditStoreError` absent, because it read only two declaration
+   * forms — a signature line and an `interface` — and the amendment published them as a
+   * `const` and a `class`. A derivation is only a derivation over the forms it can read, and
+   * mine would have filed a red against an orchestrator who had already done the work. The
+   * parser now reads `const`, `type` and `class` too, which is what makes this cell able to
+   * observe its own subject at all.
    */
-  it("GAP-240-A: the published block carries D-240-02, D-240-03 and D-240-05", () => {
-    const list = signature("listAudit");
-    const entry = publishedBlock().interfaces.find((i) => i.name === "AuditEntry");
-    const actionField = (entry?.fields ?? []).find((f) => f.startsWith("action"));
-    const blockText = publishedBlock()
-      .signatures.map((s) => s.text)
-      .concat(publishedBlock().interfaces.flatMap((i) => [...i.fields]))
-      .join("\n");
+  it("names every published value, in a declaration form the parse can actually read", () => {
+    const block = publishedBlock();
+    const named = new Set([
+      ...block.signatures.map((sig) => sig.name),
+      ...block.declarations.map((d) => d.name),
+      ...block.interfaces.map((i) => i.name),
+    ]);
 
-    const divergences: string[] = [];
-    if (!list.returns.includes("occurredAt")) {
-      divergences.push(
-        `D-240-02: the block writes \`listAudit(...): ${list.returns}\`; the ruling says ` +
-          `\`Promise<(AuditEntry & { occurredAt: Date })[]>\``,
-      );
-    }
-    if (actionField !== undefined && /^action\s*:\s*string$/.test(actionField)) {
-      divergences.push(
-        `D-240-03: the block writes \`${actionField}\`; the ruling types it as the ` +
-          `\`AUDIT_ACTIONS\` union`,
-      );
-    }
-    for (const name of RULED_MEMBERS) {
-      if (!blockText.includes(name)) {
-        divergences.push(`the block names no \`${name}\`, which D-240-03/D-240-05 publish`);
-      }
-    }
-
+    const missing = PUBLISHED_VALUES.filter((name) => !named.has(name));
     expect(
-      divergences,
-      `GAP-240-A — backend.md §T240's Published signatures block is behind its own rulings:\n` +
-        divergences.map((d) => `  - ${d}`).join("\n") +
-        `\n  A finding against the CONTRACT DOCUMENT. An implementer reading the block alone ` +
-        `builds the wrong surface and is right to; the pins in published-shape.test.ts are ` +
-        `bound to the rulings because they are the later text.`,
+      missing,
+      `backend.md §T240's published block names no ${missing.join(", ")}.\n` +
+        `  parsed signatures:   ${block.signatures.map((sig) => sig.name).join(", ") || "(none)"}\n` +
+        `  parsed declarations: ${block.declarations.map((d) => `${d.kind} ${d.name}`).join(", ") || "(none)"}\n` +
+        `  parsed interfaces:   ${block.interfaces.map((i) => i.name).join(", ") || "(none)"}\n` +
+        `  An implementer reads the block first. A member the barrel publishes and the block ` +
+        `omits is a surface built from a document that does not describe it.`,
     ).toEqual([]);
+
+    /* The parse must SEE all three forms, not merely fail to complain. A parser that read
+       nothing would satisfy the clause above only because `named` came out empty — which is
+       exactly how the original GAP cell reported a false divergence. */
+    expect(
+      block.declarations.length,
+      `the block parsed to ZERO const/type/class declarations. It publishes AUDIT_ACTIONS, ` +
+        `AuditAction and both error classes in those forms, so a zero here is the parser ` +
+        `blind again rather than the document empty.`,
+    ).toBeGreaterThan(0);
   });
 });

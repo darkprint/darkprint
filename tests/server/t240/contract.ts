@@ -73,6 +73,9 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
+import { getTableConfig } from "drizzle-orm/pg-core";
+
+import { schema } from "@/lib/db";
 import { createTestDb, type TestDb } from "@/tests/support";
 
 export type Namespace = Record<string, unknown>;
@@ -182,6 +185,20 @@ export interface PublishedInterface {
 export interface PublishedBlock {
   signatures: readonly PublishedSignature[];
   interfaces: readonly PublishedInterface[];
+  /**
+   * `const`, `type` and `class` lines in the block, by the name they declare.
+   *
+   * **Added as an adversary repair, and the defect it fixes is worth stating.** The parser
+   * originally saw two declaration forms — a `name(...): ret` signature and an `interface`
+   * — because those were the only two the block used when this suite was written. When
+   * `43ceb9a` amended the block to publish `AUDIT_ACTIONS` as a `const` and both error
+   * classes as `class` lines, the parse did not see them, and `GAP-240-A` went on reporting
+   * them absent from a document that names them.
+   *
+   * **A derivation is only a derivation over the forms it can read.** That red would have
+   * been filed against an orchestrator who had already done the work.
+   */
+  declarations: readonly { kind: "const" | "type" | "class"; name: string; text: string }[];
   /** The numbered acceptance criteria, `(n) text` split apart. */
   criteria: readonly string[];
   /** Every `D-240-nn` the section rules, in document order. */
@@ -255,6 +272,7 @@ export function publishedBlock(): PublishedBlock {
 
   const signatures: PublishedSignature[] = [];
   const interfaces: PublishedInterface[] = [];
+  const declarations: PublishedBlock["declarations"][number][] = [];
 
   let open: { name: string; body: string } | undefined;
   for (const line of indented) {
@@ -273,6 +291,15 @@ export function publishedBlock(): PublishedBlock {
     const opening = /^interface\s+(\w+)\s*\{(.*)$/.exec(line);
     if (opening !== null) {
       open = { name: opening[1], body: opening[2] };
+      continue;
+    }
+    const declaration = /^(const|type|class)\s+(\w+)\b(.*)$/.exec(line);
+    if (declaration !== null) {
+      declarations.push({
+        kind: declaration[1] as "const" | "type" | "class",
+        name: declaration[2],
+        text: line,
+      });
       continue;
     }
     const signature = SIGNATURE.exec(line);
@@ -314,6 +341,7 @@ export function publishedBlock(): PublishedBlock {
       JSON.stringify({
         signatures: signatures.map((s) => s.text),
         interfaces: interfaces.map((i) => [i.name, [...i.fields]]),
+        declarations: declarations.map((d) => `${d.kind} ${d.name}`),
         criteria,
         rulings,
         admissible,
@@ -321,7 +349,7 @@ export function publishedBlock(): PublishedBlock {
     )
     .digest("hex");
 
-  cached = { signatures, interfaces, criteria, rulings, admissible, pin };
+  cached = { signatures, interfaces, declarations, criteria, rulings, admissible, pin };
   return cached;
 }
 
@@ -361,6 +389,54 @@ export function refusalForm(): string {
     );
   }
   return forms[0];
+}
+
+/* ============================================================
+   D-240-08's ratified vocabulary, DERIVED from the ruling
+
+   The membership is the orchestrator's to ratify and D-240-09
+   makes it amendable only at a task's dispatch. So the expected
+   set is PARSED out of §T240's ruling rather than transcribed
+   here: a member added on spec reds against the document that
+   did not authorise it, and a member the orchestrator ratifies
+   arrives without anyone editing this file.
+
+   Transcribing it would have made this suite the second place
+   the vocabulary lives, and a second spelling of one quantity is
+   the shape D-230-10 forecloses one module over.
+   ============================================================ */
+
+/**
+ * The action names D-240-08 ratifies, read off the fenced block inside the ruling.
+ *
+ * The ruling writes them as an indented, whitespace-separated grid under the sentence that
+ * names the count, so the parse takes everything between that sentence and the next prose
+ * paragraph and splits on whitespace. A parse that finds nothing throws: an empty expected
+ * set would make the equality below vacuously satisfiable by any implementation at all.
+ */
+export function ratifiedActions(): string[] {
+  const section = sectionOf(readFileSync(BACKEND_MD, "utf8"), "T240,");
+  const at = section.indexOf("D-240-08");
+  if (at === -1) {
+    throw new Error(
+      "backend.md §T240 no longer rules D-240-08, which is where this suite reads the " +
+        "ratified action vocabulary from. Broken test, not a failed criterion.",
+    );
+  }
+  const grid = section
+    .slice(at)
+    .split("\n")
+    .filter((line) => /^ {8,}\S/.test(line))
+    .join(" ");
+  const actions = [...new Set(grid.split(/\s+/).filter((t) => /^[a-z]+\.[a-z_]+$/.test(t)))];
+  if (actions.length === 0) {
+    throw new Error(
+      "D-240-08's ratified action grid parsed to nothing. An empty expected set makes the " +
+        "twelve-member equality vacuously true, which is the one failure this derivation " +
+        "exists to avoid. Broken test.",
+    );
+  }
+  return actions;
 }
 
 /* ============================================================
@@ -681,24 +757,93 @@ export async function refusalFrom(promise: Promise<unknown>, criterion: string):
 export function words(text: string): string[] {
   return text
     .toLowerCase()
-    .split(/[^a-z0-9_.]+/)
+    .split(/[^a-z0-9_.@/-]+/)
     .filter((w) => w !== "");
 }
 
 /**
- * Words the driver error put in `cause` that also appear in the wrapper's own message, minus
- * the ones the caller supplied and the module's own vocabulary.
+ * The statement and its bound parameters, as SHAPE rather than as vocabulary.
  *
- * Word by word rather than by substring, deliberately: `audit` and `audit_actor_id_fkey` are
- * simply different tokens, so the over-match a substring scan produces is gone structurally
- * rather than by curation — and a correct implementation naming its own table does not go
- * red for it.
+ * D-13 forbids a rejection carrying the failed statement or its parameters, and that is a
+ * structural claim: a `$1` placeholder, a `params:` dump, a DML keyword followed by a
+ * quoted identifier. Checked separately from the word comparison below because it is the
+ * half that stays correct when every identifier in the query is a name the module is
+ * entitled to say — a wrapper echoing `insert into "audit" ("id", "actor_id", …)` uses
+ * nothing but its own table's names, and a purely lexical check would wave it through.
  */
-export function leakedWords(message: string, cause: unknown, allowed: readonly string[]): string[] {
-  const causeText = cause instanceof Error ? `${cause.message} ${String(cause.stack ?? "")}` : String(cause ?? "");
+export function statementShape(message: string): string[] {
+  const found: string[] = [];
+  if (/\$\d/.test(message)) found.push("a bound-parameter placeholder ($n)");
+  if (/\bparams\s*:/i.test(message)) found.push("a `params:` dump");
+  if (/\b(insert|select|update|delete)\s+(into|from|set)\b/i.test(message)) {
+    found.push("a DML statement");
+  }
+  if (/\bfailed query\b/i.test(message)) found.push("the driver's `Failed query` prefix");
+  return found;
+}
+
+/** Identifier-shaped: snake_case, or a name the driver put in double quotes. */
+function identifierTokens(causeMessage: string): Set<string> {
+  const quoted = [...causeMessage.matchAll(/"([^"]+)"/g)].map((m) => m[1].toLowerCase());
+  const snake = words(causeMessage).filter((w) => w.includes("_"));
+  return new Set([...quoted, ...snake]);
+}
+
+/**
+ * Identifier-shaped words the driver error carries that the wrapper also says, minus every
+ * name this module and its own table legitimately own.
+ *
+ * **Both sides derived, neither curated** — the standing rule's own prescription: the deny
+ * set is the driver's own error, the allow set is "the caller's own identifiers plus every
+ * table, index and column name `getTableConfig` reports for the task's tables". Word by
+ * word rather than by substring, so `audit` and `audit_actor_id_fkey` are different tokens
+ * and a correct implementation naming its own table does not go red for it.
+ *
+ * ── two narrowings, both made as ADVERSARY after this instrument reported a false leak ──
+ *
+ * **1. The stack is not part of the driver's words.** The first version derived the deny
+ * set from `cause.message` AND `cause.stack`, and a stack is the runtime's record of MY OWN
+ * files — so `lib/server/observability/store.ts` put `store` in the deny set and the
+ * measured message `"writeAudit: the audit store failed."` was reported as leaking. The
+ * module could not name itself. A stack is what `statementShape` and the path/frame
+ * exclusions are for, and this is not the instrument for it.
+ *
+ * **2. Only identifier-shaped tokens.** The second version, message-only, flagged `failed`
+ * — a word drizzle happens to use in its `Failed query` prefix and a word any wrapper
+ * legitimately uses. A deny set containing ordinary English reds a correct module for
+ * being written in English. The leak B-03 names is identifiers and values, not prose.
+ *
+ * **Neither narrowing weakens the criterion**, and the falsification cell in
+ * `store-error.test.ts` is what shows it: a message repeating a constraint name still reds.
+ */
+export function leakedWords(
+  message: string,
+  cause: unknown,
+  allowed: readonly string[],
+): string[] {
+  const causeMessage = cause instanceof Error ? cause.message : String(cause ?? "");
   const allow = new Set(allowed.flatMap((a) => words(a)));
-  const deny = new Set(words(causeText).filter((w) => !allow.has(w)));
-  return [...new Set(words(message).filter((w) => deny.has(w)))].sort();
+  const said = new Set(words(message));
+  return [...identifierTokens(causeMessage)]
+    .filter((token) => !allow.has(token) && said.has(token))
+    .sort();
+}
+
+/**
+ * Every name `audit` owns, from drizzle's own table config rather than from a list here.
+ *
+ * A word the module is entitled to say about its own storage is not a leak, and deriving
+ * the entitlement means a column added to `schema.ts` does not silently start reading as
+ * one.
+ */
+export function auditOwnNames(): string[] {
+  const config = getTableConfig(schema.audit);
+  return [
+    config.name,
+    ...config.columns.map((c) => c.name),
+    ...config.columns.map((c) => String(c.keyAsName ? c.name : c.name)),
+    ...config.indexes.map((i) => i.config.name ?? ""),
+  ].filter((n) => n !== "");
 }
 
 /**

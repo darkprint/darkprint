@@ -21,15 +21,50 @@
    brackets the failing call with a whole-database snapshot and
    asserts the delta is zero.
 
-   ── the hygiene half, and what it cannot cover ──
+   ── the hygiene half, and the two false leaks it reported ──
    B-03: error responses carry no stack, no query and no internal
-   path. §T240 publishes no admissible form for this class — it
+   path. §T240 publishes no admissible form for THIS class — it
    publishes one, and it is `listAudit`'s refusal — so an exact
    pin is unavailable and inventing one would red every
    implementation that phrased the sentence differently. Both
-   sides are derived instead: the deny set is every word the
-   driver error carries on `cause`, the allow set is what the
-   caller passed in plus the module's own vocabulary.
+   sides are derived instead.
+
+   **The first version of that derivation reported the correct
+   implementation as leaking, twice, and both are recorded rather
+   than quietly fixed.** It flagged `store`, which came out of
+   `cause.stack` — the runtime's record of the module's OWN
+   filenames, which put every file in `lib/server/**` in the deny
+   set and forbade the module from naming itself. Narrowed to
+   `cause.message`, it then flagged `failed`, a word drizzle uses
+   in its `Failed query` prefix and a word any wrapper
+   legitimately uses. **A deny set holding ordinary English reds a
+   correct module for being written in English.**
+
+   So the criterion is now carried by TWO instruments that cover
+   different things and neither subsumes the other:
+
+     • `leakedWords` — IDENTIFIER-shaped tokens only (snake_case,
+       or quoted by the driver), with the allow set derived from
+       `getTableConfig(schema.audit)` plus the caller's own
+       values. `audit` and `audit_actor_id_fkey` are different
+       tokens, so a module naming its own table is not charged.
+     • `statementShape` — the statement as SHAPE: a `$n`
+       placeholder, a `params:` dump, a DML keyword. This is the
+       half a word check structurally cannot make, because a
+       wrapper echoing `insert into "audit" ("id", "actor_id", …)`
+       uses nothing but names the allow set legitimately grants.
+
+   Both are falsified in both directions in the last cell, and
+   the GREEN half of that falsification is the one that matters:
+   it is what the two false leaks above would have failed.
+
+   And one thing is stated rather than tested, because it cannot
+   be tested from here: `cause` is NON-ENUMERABLE (D-240-05), and
+   a walk of enumerable properties is blind to it by
+   construction. The sealed-shape cell asserts what SHIPS
+   (`JSON.stringify` is `{}`); it does not and cannot assert that
+   nothing sensitive hides behind a non-enumerable member. That
+   tension is real and it is D-13's, not this suite's to resolve.
 
    And one thing is stated rather than tested, because it cannot
    be tested from here: `cause` is required to be
@@ -44,6 +79,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
+  auditOwnNames,
   boundAuditStoreError,
   boundWriteAudit,
   describeAdded,
@@ -54,6 +90,7 @@ import {
   rowsAdded,
   scratchDatabase,
   snapshotRows,
+  statementShape,
   totalAdded,
   type Scratch,
 } from "./contract";
@@ -219,8 +256,10 @@ describe("T240 D-240-05 / B-03 — what the wrapper is allowed to say", () => {
     const write = await boundWriteAudit();
     const refusal = await refusalFrom(write(scratch.client.db, entry), "D-240-05");
 
-    /* Derived, not listed: everything the caller handed in, plus the module's own names.
-       A word the module is entitled to say about itself is not a leak. */
+    /* Derived on both sides, curated on neither. The caller's own identifiers, plus every
+       name `getTableConfig` reports for `audit` — a word the module is entitled to say
+       about its own storage is not a leak, and deriving the entitlement means a column
+       added to schema.ts does not silently start reading as one. */
     const allowed = [
       entry.actorId,
       entry.actorKind,
@@ -228,14 +267,29 @@ describe("T240 D-240-05 / B-03 — what the wrapper is allowed to say", () => {
       entry.targetKind,
       entry.targetId,
       entry.decision,
-      "audit",
+      ...auditOwnNames(),
       "writeAudit",
+      "listAudit",
       "AuditStoreError",
+      "NotPermittedError",
       "observability",
-      "row",
-      "entry",
-      "actor",
     ];
+
+    /* **The half a word comparison structurally cannot make.** D-13 forbids the failed
+       statement and its bound parameters, and a wrapper echoing
+       `insert into "audit" ("id", "actor_id", …)` uses nothing but names the allow set
+       above legitimately grants — so the lexical check waves it straight through. This one
+       is about SHAPE: a `$n` placeholder, a `params:` dump, a DML keyword. It is also the
+       clause that matters most here, because `params` for this module ARE the audit
+       `detail` — the exact field AC3 exists to keep out of a rendering. */
+    const statement = statementShape(refusal.message);
+    expect(
+      statement,
+      `D-13/B-03: the message carries ${statement.join(", ")}.\n` +
+        `  message: ${JSON.stringify(refusal.message)}\n` +
+        `  For this module the bound parameters ARE the audit \`detail\`, so a driver error ` +
+        `reaching a caller leaks precisely the field AC3 is built to protect.`,
+    ).toEqual([]);
 
     const leaked = leakedWords(refusal.message, refusal.cause, allowed);
     expect(
@@ -275,27 +329,53 @@ describe("T240 D-240-05 / B-03 — what the wrapper is allowed to say", () => {
    * therefore NOT a second axis on the implementation. It says only that a zero from this
    * function means something.
    */
-  it("falsifies `leakedWords`: it reports a repeat when there is one", async () => {
+  it("falsifies both instruments: each reports a real leak and neither reports a clean message", () => {
     const cause = new Error(
-      'insert or update on table "audit" violates foreign key constraint "audit_actor_id_fkey"',
+      'Failed query: insert into "audit" ("id", "actor_id") values (default, $1)\n' +
+        'params: 00000000-0000-4000-8000-000000000240\n' +
+        'violates foreign key constraint "audit_actor_id_fkey"',
     );
-    const allowed = ["audit", "writeAudit", "bundle.publish"];
+    const allowed = [...auditOwnNames(), "writeAudit", "bundle.publish"];
+    const clean = "writeAudit: the audit store failed.";
 
+    /* GREEN on the clean message — and this half is not decoration. Both of this
+       instrument's narrowings were made BECAUSE it reported this exact string as a leak:
+       first `store`, out of the module's own filename in `cause.stack`, then `failed`, out
+       of drizzle's English prose. A cell that only checked the red direction would have let
+       both false positives ship. */
     expect(
-      leakedWords("writeAudit: could not write the audit row.", cause, allowed),
-      "a clean message must report nothing; if this reds, the allow set is too narrow and " +
-        "every green above is a false negative waiting to happen.",
+      leakedWords(clean, cause, allowed),
+      "the clean message reports a leak, so the allow set is too narrow and every green in " +
+        "this file is a false negative waiting to happen.",
     ).toEqual([]);
+    expect(statementShape(clean), "the clean message reports statement shape.").toEqual([]);
 
+    /* RED on a constraint name — a Postgres-generated identifier `getTableConfig` does not
+       report, which is what keeps `audit` and `audit_actor_id_fkey` different tokens. */
     expect(
       leakedWords(
         'writeAudit failed: violates foreign key constraint "audit_actor_id_fkey"',
         cause,
         allowed,
       ),
-      "the instrument did not report a message that repeats the driver's constraint name " +
-        "verbatim — so its zeros above mean nothing.",
-    ).toEqual(["audit_actor_id_fkey", "constraint", "foreign", "key", "violates"]);
+      "the instrument did not report a message repeating the driver's constraint name " +
+        "verbatim, so its zeros above mean nothing.",
+    ).toEqual(["audit_actor_id_fkey"]);
+
+    /* RED on the statement, which the WORD check cannot see: every identifier below is a
+       name the allow set grants, so `leakedWords` is silent and only the shape check fires.
+       The pair is the assertion; neither half covers the other. */
+    const echoed = 'writeAudit: Failed query: insert into "audit" ("id", "actor_id") values (default, $1)';
+    expect(
+      leakedWords(echoed, cause, allowed),
+      "sanity: the word check is expected to be BLIND to this one — if it fires, the two " +
+        "instruments overlap and the shape check is not carrying its own weight.",
+    ).toEqual([]);
+    expect(
+      statementShape(echoed),
+      "the shape check did not report an echoed statement, so it covers nothing the word " +
+        "check does not already cover.",
+    ).not.toEqual([]);
   });
 });
 

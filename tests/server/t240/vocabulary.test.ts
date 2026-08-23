@@ -49,6 +49,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   auditRows,
   boundAuditActions,
+  ratifiedActions,
   boundWriteAudit,
   RecordedSetup,
   scratchDatabase,
@@ -132,6 +133,51 @@ describe("T240 D-240-03 — `AUDIT_ACTIONS` is a closed set worth quantifying ov
         `collapses duplicates silently, so the set and the type would disagree about their ` +
         `own size with nothing to show for it.`,
     ).toEqual([]);
+  });
+
+  /**
+   * **D-240-08's twelve, as an EQUALITY — so a member added on spec reds.**
+   *
+   * D-240-09 makes the set amendable by the orchestrator at a task's dispatch and by nobody
+   * else, because "a member no caller exists for is a guard that cannot fail". An equality
+   * is what turns that from a rule into something a run can enforce: a thirteenth member
+   * added in the module reds here against the ruling that did not authorise it, and a
+   * ratified member arrives without anyone editing this file.
+   *
+   * **The expected set is PARSED out of the ruling, not transcribed.** Transcribing it
+   * would make this suite the second place the vocabulary lives, and a second spelling of
+   * one quantity is exactly the shape D-230-10 forecloses one module over — the two would
+   * then disagree silently, and this cell would be enforcing my copy rather than the ruling.
+   *
+   * Compared as SORTED SETS rather than in order: D-240-08 writes them grouped by subject
+   * and the module writes them in the same grouping, but the order is not something either
+   * document commits to, and a cell that reddened on a reordering would be asserting a
+   * property nobody published.
+   */
+  it("is EXACTLY the twelve members D-240-08 ratified, no more and no fewer", async () => {
+    const ratified = ratifiedActions();
+
+    /* The derivation checked before it is used. Twelve is the count the ruling states in
+       words — "Twelve members, derived from the published writers of the eight merged
+       state-changing modules" — so a parse answering anything else has misread the grid,
+       and the equality below would be enforcing my parse rather than the ruling. */
+    expect(
+      ratified.length,
+      `D-240-08 says twelve members and the parse of its grid found ${ratified.length}: ` +
+        `${ratified.join(", ")}. This is a broken test until the two agree.`,
+    ).toBe(12);
+
+    const actions = await boundAuditActions();
+    expect(
+      [...actions].sort(),
+      `D-240-03/D-240-08: \`AUDIT_ACTIONS\` is not the ratified set.\n` +
+        `  extra (in the module, NOT ratified):  ` +
+        `${actions.filter((a) => !ratified.includes(a)).join(", ") || "(none)"}\n` +
+        `  missing (ratified, not in module):    ` +
+        `${ratified.filter((a) => !actions.includes(a)).join(", ") || "(none)"}\n` +
+        `  D-240-09: the set is amended by the ORCHESTRATOR at a task's dispatch and never ` +
+        `on spec, because a member no caller exists for is a guard that cannot fail.`,
+    ).toEqual([...ratified].sort());
   });
 
   /**
