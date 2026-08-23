@@ -103,6 +103,49 @@ interface Sealed {
   tells: readonly string[];
 }
 
+/**
+ * A complete scorecard, so the `autonomy`/`df`/`phase` branch of `searchBlueprints` is
+ * actually ENTERED by this file's probes.
+ *
+ * `scoresOf` answers `undefined` unless all four axes and the ontology stamp are present,
+ * and the branch that calls it runs only when one of those three keys is set. Without both,
+ * that whole path was unreached by every AC4 call here — which the per-call-site mutation
+ * sweep made visible: widening the actor on `scoresOf` alone reddened 0 of 229, and one of
+ * its two causes was that no probe ever ran the branch.
+ */
+function scorecard(level: number, cls: string, dark: boolean): Record<string, unknown> {
+  return {
+    autonomy: {
+      autonomyClass: cls,
+      isDarkFactory: dark,
+      level,
+      label: cls,
+      fraction: level / 4,
+      autonomousNodes: level,
+      totalNodes: 4,
+      contributions: [],
+      rationale: `fixture: level ${level}`,
+      ontologyVersion: "0.1.0",
+      diagnostics: [],
+    },
+    security: {
+      level,
+      raw: level,
+      penalties: [],
+      findings: [],
+      rationale: `fixture: level ${level}`,
+      ontologyVersion: "0.1.0",
+      diagnostics: [],
+    },
+    phaseCoverage: {
+      covered: ["planning"],
+      missing: [],
+      byPhase: { planning: ["n0"] },
+      unphased: [],
+    },
+  };
+}
+
 let s: Scratch;
 let v: Sealed;
 const setup = recordedSetup("the T200 sealed world");
@@ -172,6 +215,7 @@ beforeAll(async () => {
         tags: [privateTag],
         category: privateCategory,
       }),
+      ...scorecard(4, "closed-loop", true),
       localVocabulary: {
         text: `terms:\n  - id: ${privateTermId}\n`,
         terms: [
@@ -204,6 +248,7 @@ beforeAll(async () => {
         tags: [publicTag],
         category: mark("open-cat"),
       }),
+      ...scorecard(1, "assisted", false),
       localVocabulary: {
         text: `terms:\n  - id: ${publicTermId}\n`,
         terms: [
@@ -330,6 +375,17 @@ const CALLS: readonly {
     name: "searchBlueprints",
     reach: "the public bundle, whose release PINS the private card",
     params: () => ({ q: v.publicTitleToken }),
+  },
+  {
+    name: "searchBlueprints",
+    reach: "the autonomy class ONLY the sealed release carries, which is the one call that " +
+      "makes `searchBlueprints` read a scorecard at all",
+    params: () => ({ autonomy: "closed-loop" }),
+  },
+  {
+    name: "searchBlueprints",
+    reach: "`df=1`, and the sealed release is the only dark factory in this database",
+    params: () => ({ df: "1" }),
   },
   {
     name: "searchCards",
