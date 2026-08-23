@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
 
-import { AUTHOR_LIST, getAuthor } from "@/lib/data";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { ProfileShell } from "@/components/profile/ProfileShell";
 import { OwnedBundles, type OwnedRow } from "@/components/profile/OwnedBundles";
 import { VisibilityFilter } from "@/components/profile/VisibilityFilter";
 import { EmptyState, ShelfToolbar } from "@/components/profile/parts";
-import { profileView } from "@/components/profile/load";
+import { profileMetadata, profileView } from "@/components/profile/load";
+import { readSession } from "@/components/profile/session";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // TODO(SEAM-63) (cited at line 66): GET /api/authors/{handle}/bundles?include=private
@@ -30,18 +30,18 @@ import { profileView } from "@/components/profile/load";
    nowhere real to go and stay switched off, with the reason in `title`.
    ============================================================ */
 
-export const dynamicParams = false;
-
-export function generateStaticParams() {
-  return AUTHOR_LIST.map((a) => ({ username: a.username }));
-}
+/* No `dynamicParams` and no `generateStaticParams`, and the deletion is the criterion
+   rather than tidying: **a prerendered page cannot render a different view per reader**
+   (AC1, D-262-11). Both stood on `AUTHOR_LIST`, a fixed fixture list, which could not
+   have served a registry that grows between deploys either. `readSession` reaches
+   `next/headers`, so these routes are request-time by construction now. */
 
 export async function generateMetadata({
   params,
 }: PageProps<"/u/[username]/blueprints">) {
   const { username } = await params;
-  const author = getAuthor(username);
-  if (!author) return { title: "Builder not found" };
+  const author = await profileMetadata(username);
+  if (author === undefined) return { title: "Builder not found" };
   return {
     title: `${author.displayName} · blueprints`,
     description: `Blueprints published by ${author.displayName} on DarkPrint.`,
@@ -64,7 +64,7 @@ function DeadControl({ children }: { children: React.ReactNode }) {
 
 export default async function Page({ params }: PageProps<"/u/[username]/blueprints">) {
   const { username } = await params;
-  const view = profileView(username);
+  const view = await profileView(username, await readSession());
   if (view === undefined) notFound();
 
   const { author, blueprints, owned, owner } = view;

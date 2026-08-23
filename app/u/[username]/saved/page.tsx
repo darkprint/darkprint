@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 
-import { AUTHOR_LIST, getAuthor } from "@/lib/data";
 import { ProfileShell } from "@/components/profile/ProfileShell";
 import { SavedList } from "@/components/profile/SavedList";
 import { EmptyState, SectionTitle } from "@/components/profile/parts";
-import { profileView } from "@/components/profile/load";
+import { profileMetadata, profileView } from "@/components/profile/load";
+import { readSession } from "@/components/profile/session";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // TODO(SEAM-61) (cited at line 39): GET /api/account/saves
@@ -19,22 +19,23 @@ import { profileView } from "@/components/profile/load";
    the one place the handoff contradicts its own copy.
    ============================================================ */
 
-export const dynamicParams = false;
-
-export function generateStaticParams() {
-  return AUTHOR_LIST.map((a) => ({ username: a.username }));
-}
+/* No `dynamicParams` and no `generateStaticParams`, and the deletion is the criterion
+   rather than tidying: **a prerendered page cannot render a different view per reader**
+   (AC1, D-262-11). Both stood on `AUTHOR_LIST`, a fixed fixture list, which could not
+   have served a registry that grows between deploys either. `readSession` reaches
+   `next/headers`, so these routes are request-time by construction now. */
 
 export async function generateMetadata({ params }: PageProps<"/u/[username]/saved">) {
   const { username } = await params;
-  const author = getAuthor(username);
-  if (!author) return { title: "Builder not found" };
-  return { title: `${author.displayName} · saved`, description: "A private bookmark list." };
+  const author = await profileMetadata(username);
+  if (author === undefined) return { title: "Builder not found" };
+  return {
+ title: `${author.displayName} · saved`, description: "A private bookmark list." };
 }
 
 export default async function Page({ params }: PageProps<"/u/[username]/saved">) {
   const { username } = await params;
-  const view = profileView(username);
+  const view = await profileView(username, await readSession());
   if (view === undefined) notFound();
 
   return (
@@ -43,11 +44,26 @@ export default async function Page({ params }: PageProps<"/u/[username]/saved">)
         <section className="mt-10 flex flex-col gap-5">
           <div className="flex items-center justify-between gap-3">
             <SectionTitle label="Saved" dot="var(--color-amber)" count={view.saves.length} />
-            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-amber">
-              ◐ seeded
+            {/* `✓ on your account`, and the marker moved because the thing under it became
+                real in the same change (AC3, D-78). It read `◐ seeded` over five fixture
+                rows; these come out of `listSaves` for the reader's own account id. The
+                blueprint gap that survives is stated where it bites, at the foot of the
+                list, rather than as a marker over rows that are not affected by it. */}
+            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-emerald">
+              ✓ on your account
             </span>
           </div>
-          <SavedList saves={view.saves} />
+          {view.saves.length === 0 ? (
+            <EmptyState
+              title="Nothing saved yet"
+              action={{ href: "/blueprints", label: "Browse the registry" }}
+            >
+              The bookmark on a node card adds it here. A save is private: nobody else can
+              see this list, and nothing counts it.
+            </EmptyState>
+          ) : (
+            <SavedList saves={view.saves} />
+          )}
         </section>
       ) : (
         <div className="mt-10">
