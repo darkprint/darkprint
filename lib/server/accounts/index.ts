@@ -40,7 +40,7 @@ export { upsertFromGitHub } from "./github";
    and `createBundle` takes an id, and no export of any barrel bridged the two. Published here
    rather than joined inline a third time — `lib/server/registry` already spells that join
    twice, and the copy at the one door that WRITES through it is the one worth retiring. */
-export { getAccount, getPublicAuthor, resolveOwner } from "./read";
+export { getAccount, getPublicAuthor, publicAuthorsByIds, resolveOwner } from "./read";
 export { changeHandle } from "./handle";
 export { setDefaultVisibility, setEmail, updateProfile } from "./write";
 
