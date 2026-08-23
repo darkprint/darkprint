@@ -925,6 +925,37 @@ each clause to the FILE that must carry it**, not to the partition.
 **And the third instance is the argument for re-running the table after a repair rather than after writing:**
 two of the three surfaced only in the post-repair round, on cells that had looked fine in the first.
 
+## `{/* … */}` JSX COMMENTS ARE INVISIBLE TO TypeScript's COMMENT-RANGE APIs
+
+**Found by T262's implementer in its OWN stripper, while chasing an unrelated correction — after that stripper
+had been validated on 60 real files and falsified against the naive regex on six probes.**
+
+**A `{/* … */}` JSX comment parses as a `JsxExpression` WITH NO `expression`, with the comment inside the
+braces — so it is attached to NO NODE, and neither `getLeadingCommentRanges` nor `getTrailingCommentRanges` can
+see it.** Its six probes missed it because the JSX probe was a `/*` inside JSX **text**, which is a different
+shape. **In a repository whose `.tsx` files carry most of their prose in exactly that form, that is not an edge
+case** — and both halves of the task had built strippers on the same API.
+
+**Fix: blank the brace interior for those nodes.** Then **re-run every measurement that used the stripper** —
+which it did: 60/60 still stripped, 0 byte drift, 0 line drift, 0 new diagnostics, probes unchanged, the sweep
+unchanged. **One number moved and it said so: prose mentions a bare grep would false-charge went from 20 to
+21.** Small, wrong, and its own.
+
+### AND THE ORDER OF THE THREE PASSES IS LOAD-BEARING
+
+**Collapse whitespace, strip JSX markup, blank comments — IN THAT ORDER.** *Collapsing before blanking fuses a
+comment's text with the code beside it*, which produces **a third wrong answer neither direction of the
+false-red / false-green pair has hit yet.** A matcher that gets all three passes right and their order wrong is
+still wrong.
+
+### AND A CORRECTION THAT EXPLAINS A RETIREMENT QUOTES THE RETIRED SENTENCE
+
+Measured across the same change: **both wrapped quotations read `literal=0` at base and `literal=1` at HEAD** —
+**because the corrections QUOTE the retired sentence while explaining what changed.** So an unstripped check
+charges the corrected file where it did not charge the original: **the correction is what makes it visible.**
+Under a correct matcher the answer is **0 of 8 retired sentences reach a reader**, with 4 of the 8 explained in
+a comment and 3 gone from source entirely because their paragraphs were rewritten wholesale.
+
 ## A FAITHFUL QUOTATION CAN BE UNFINDABLE, BECAUSE SOURCE WRAPS — NORMALISE BEFORE YOU MATCH
 
 **T262's blind author measured two quotations the orchestrator published as survivor text and found each
