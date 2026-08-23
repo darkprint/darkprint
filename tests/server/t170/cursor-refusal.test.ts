@@ -30,6 +30,8 @@ import {
   accountActor,
   asPage,
   bind,
+  NOTE_STORE_ERROR,
+  assertDistinctFrom,
   bindErrorClass,
   READER_SILENT_TRUNCATION,
   plantedToken,
@@ -103,6 +105,15 @@ describe("T170 — `listNotes` refuses a cursor it did not issue", () => {
           `  \`InvalidCursorError\` is the ruled class. \`error-hygiene\` moves to 37 at the ` +
           `merge, derived there and never carried.`,
       ).toBeInstanceOf(cls);
+
+      await assertDistinctFrom(
+        err,
+        NOTE_STORE_ERROR,
+        "Sealing this inside `NoteStoreError` turns *your token is not ours* — which tells " +
+          "a client to RESTART the walk — into *the store failed*, which tells it to RETRY " +
+          "THE SAME TOKEN forever. The class passes through `withStore` as a DECISION, not " +
+          "a fault, and the two answers send a caller in opposite directions.",
+      );
     },
   );
 

@@ -401,7 +401,53 @@ export async function bindErrorClass(name: string): Promise<new (...args: never[
         `  backend.md §T170, D-WAVE-04.`,
     );
   }
+  /* ── THE VACUITY THIS CLOSES, MEASURED ──
+     `expect(err).toBeInstanceOf(await bindErrorClass(name))` binds its EXPECTED class from
+     the module under test. Republish that export as `Error` itself and the assertion
+     becomes `toBeInstanceOf(Error)`, which every rejection satisfies: the mutation reddened
+     **0 of 99 cells** while the published surface had lost the class entirely. An
+     expectation built from the subject asserts that the subject agrees with itself, and
+     here it agreed with itself about nothing. */
+  if ((cls as unknown) === Error) {
+    throw new Error(
+      `${NOTES} publishes \`${name}\` as \`Error\` ITSELF rather than as a class of its own.\n` +
+        `  Every \`toBeInstanceOf(${name})\` in this suite would then be ` +
+        `\`toBeInstanceOf(Error)\`, which EVERY rejection satisfies — the assertions go green ` +
+        `while the published surface has lost the class. A caller cannot branch on a name ` +
+        `that is an alias for the base type, and branching is the whole reason D-WAVE-04 and ` +
+        `D-WAVE-13 published these names.`,
+    );
+  }
+  const proto = (cls as { prototype?: unknown }).prototype;
+  if (!(proto instanceof Error)) {
+    throw new Error(
+      `${NOTES}.\`${name}\`'s prototype is not an \`Error\`, so \`instanceof\` cannot ` +
+        `distinguish it from anything and a caller has nothing to branch on.`,
+    );
+  }
   return cls as new (...args: never[]) => Error;
+}
+
+/**
+ * The published classes must be DISTINCT FROM EACH OTHER, and this is what the cursor
+ * ruling turns on.
+ *
+ * Sealing `InvalidCursorError` inside `NoteStoreError` would turn *your token is not ours*,
+ * which tells a client to RESTART the walk, into *the store failed*, which tells it to
+ * RETRY THE SAME TOKEN forever. A cell that only checks the refusal is "some published
+ * class" cannot see that, and a caller that cannot tell them apart retries into a wall.
+ */
+export async function assertDistinctFrom(
+  err: unknown,
+  otherName: string,
+  because: string,
+): Promise<void> {
+  const other = await bindErrorClass(otherName);
+  if (err instanceof other) {
+    throw new Error(
+      `The refusal is an instance of \`${otherName}\`, and it must not be.\n  ${because}`,
+    );
+  }
 }
 
 /* ============================================================
