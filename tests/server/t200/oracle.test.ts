@@ -50,7 +50,7 @@ import {
   scratchDatabase,
   type Scratch,
 } from "./fixtures";
-import { buildWorld, type World } from "./world";
+import { assertTokensAreDiscriminating, buildWorld, type World } from "./world";
 
 let s: Scratch;
 let w: World;
@@ -71,6 +71,47 @@ afterAll(async () => {
 function db(): Db {
   return s.db as Db;
 }
+
+/**
+ * The guard that protects every `q` cell, falsified on both axes rather than read.
+ *
+ * It exists because `mark()` embeds the pid and the matcher splits on non-alphanumerics, so
+ * two identifiers can share a WORD without either being a substring of the other. Its first
+ * version also checked the reverse containment, and the full suite is what showed that to be
+ * wrong: on a process id whose base-26 spelling contained `ci`, every token "collided" with
+ * the core ontology's `ci` term and twenty cells reported a broken fixture that was not
+ * broken — on some process ids and not others.
+ *
+ * So the guard now asks exactly what `findWord` asks, and these two cells are what say so.
+ * A guard nobody has driven in both directions is a guard whose zero means nothing.
+ */
+describe("the token guard fires on a real collision and not on a reachable-looking one", () => {
+  it("throws when a document word CONTAINS a search token", () => {
+    expect(
+      () => assertTokensAreDiscriminating({ q: "widget" }, ["a fixture naming widgets"]),
+      "`findWord` asks `documentWord.includes(queryWord)`, so `widgets` containing `widget` " +
+        "is exactly the match a cell would make for the wrong reason.",
+    ).toThrow(/is inside the document word/);
+  });
+
+  it("does NOT throw when a search token merely contains a short document word", () => {
+    expect(
+      () => assertTokensAreDiscriminating({ q: "qtokciywqd" }, ["ci", "git", "sql"]),
+      "No cell ever queries `ci`, and `findWord` cannot reach a token from a document word " +
+        "shorter than it — the substring test runs the other way and the 3-gram channel " +
+        "needs five characters. A guard that fires here is a flake with a justification " +
+        "attached, and it fired for exactly one run of the full suite.",
+    ).not.toThrow();
+  });
+
+  it("throws when two search tokens contain each other", () => {
+    expect(
+      () => assertTokensAreDiscriminating({ a: "alpha", b: "alphabet" }, []),
+      "Both of these ARE queried, so either containment makes one cell's token find the " +
+        "other cell's content — which is why the token-to-token check keeps both directions.",
+    ).toThrow(/shares a word with/);
+  });
+});
 
 describe("the four blueprints are indexed", () => {
   it("`blueprints()` returns exactly the four this suite planted", async () => {

@@ -180,7 +180,7 @@ function autonomy(level: number, autonomyClass: string, isDarkFactory: boolean):
  * filter cell makes, so it is checked rather than trusted — and a collision is a broken
  * fixture, raised here, not a red charged to somebody else's module.
  */
-function assertTokensAreDiscriminating(
+export function assertTokensAreDiscriminating(
   tokens: Record<string, string>,
   others: readonly string[],
 ): void {
@@ -198,12 +198,20 @@ function assertTokensAreDiscriminating(
   for (const [name, token] of entries) {
     for (const part of split(token)) {
       for (const other of otherWords) {
-        /* Both directions. `other.includes(part)` is the query word found in a document
-           word; `part.includes(other)` is a document word found inside the query word,
-           which is how a short identifier fragment reaches a long token. */
-        if (other.includes(part) || part.includes(other)) {
+        /* ONE direction, and it is the one `findWord` actually asks:
+           `documentWord.includes(queryWord)`. A document word CONTAINING one of these
+           tokens makes a cell match something it did not mean to; a document word contained
+           INSIDE one of them cannot, because no cell ever queries a document word.
+
+           The reverse check was here for one round and the full suite is what removed it.
+           `word()` builds from the pid, and on a pid whose base-26 spelling happened to
+           contain `ci` every token "collided" with the core ontology's `ci` term — 20 cells
+           reported a broken fixture that was not broken, and only on some process ids. A
+           guard that fires on a condition the matcher cannot reach is a flake with a
+           justification attached. */
+        if (other.includes(part)) {
           collisions.push(
-            `${name} ${JSON.stringify(token)} shares the word ${JSON.stringify(part)} with ` +
+            `${name} ${JSON.stringify(token)} is inside the document word ` +
               `${JSON.stringify(other)}`,
           );
         }
@@ -213,6 +221,8 @@ function assertTokensAreDiscriminating(
       if (otherName === name) continue;
       for (const part of split(token)) {
         for (const otherPart of split(otherToken)) {
+          /* Both directions between the tokens themselves, because each of them IS queried:
+             either containment makes one cell's token find another cell's content. */
           if (otherPart.includes(part) || part.includes(otherPart)) {
             collisions.push(`${name} ${JSON.stringify(token)} shares a word with ${otherName}`);
           }
