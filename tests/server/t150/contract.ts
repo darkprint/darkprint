@@ -627,8 +627,23 @@ export interface Renderings {
  * clause and the scan are in tension, and an enumerable-only scan rewards the shape it cannot
  * read. Found by falsifying this function rather than by reading it.
  *
- * So `own` reads every own property with `getOwnPropertyNames` and renders its VALUE, following
- * `cause` to a bounded depth because a driver error is conventionally nested there.
+ * ── and `cause` is EXCLUDED, which is the opposite correction and was measured too ──
+ * The first fix followed `cause` to depth 4. Against the real module that reds, and the red is
+ * a FALSE CHARGE: `err.cause.message` and `err.cause.query` carry the statement and the bound
+ * `refId`, and **that is the tree's ratified convention rather than a leak.**
+ * `lib/server/registry/errors.ts:12-15` states the clause as five merged modules apply it —
+ * *"`Object.keys(err)` is empty and `JSON.stringify(err)` is exactly `"{}"`; **`cause` is
+ * present but non-enumerable** (the ES2022 Error-cause option makes it so by spec); `stack` is
+ * retained. Whitelist, not blacklist — the only thing any rendering carries is the operation."*
+ * `tests/error-hygiene.test.ts` constructs every class at both arities and passes them.
+ *
+ * So D-13's clause is about what a RENDERING carries, and `cause` is the one sanctioned
+ * carrier. Descending into it charges a module for following a convention a merged guard
+ * already weighed — which is the decision that had already read the artefact.
+ *
+ * The morning's finding survives the correction intact, and the two are not the same hazard: a
+ * driver payload stashed on the ERROR ITSELF (`err.query`, enumerable or not) is unsanctioned
+ * and still reds. Only the `cause` chain is exempt, and only because something else ruled it.
  */
 export function renderingsOf(err: unknown): Renderings {
   const e = err as { message?: unknown };
@@ -652,13 +667,22 @@ export function renderingsOf(err: unknown): Renderings {
  * not a leak this suite can measure, and letting it escape would turn a hygiene check into a
  * red about the fixture.
  */
-function ownValues(value: unknown, depth: number, seen = new Set<unknown>()): string[] {
+function ownValues(
+  value: unknown,
+  depth: number,
+  path = "err",
+  seen = new Set<unknown>(),
+): string[] {
   if (depth <= 0 || value === null || value === undefined) return [];
-  if (typeof value !== "object") return [String(value)];
+  if (typeof value !== "object") return [`${path}=${String(value)}`];
   if (seen.has(value)) return [];
   seen.add(value);
   const out: string[] = [];
   for (const name of Object.getOwnPropertyNames(value)) {
+    /* The one sanctioned carrier. See the header: five merged modules put the driver error
+       here deliberately and `tests/error-hygiene.test.ts` passes them, so descending would
+       charge a module for a convention that is already ruled. */
+    if (name === "cause") continue;
     let held: unknown;
     try {
       held = (value as Record<string, unknown>)[name];
@@ -666,8 +690,9 @@ function ownValues(value: unknown, depth: number, seen = new Set<unknown>()): st
       continue;
     }
     if (typeof held === "function") continue;
-    if (held !== null && typeof held === "object") out.push(...ownValues(held, depth - 1, seen));
-    else if (held !== undefined) out.push(`${name}=${String(held)}`);
+    if (held !== null && typeof held === "object") {
+      out.push(...ownValues(held, depth - 1, `${path}.${name}`, seen));
+    } else if (held !== undefined) out.push(`${path}.${name}=${String(held)}`);
   }
   return out;
 }
@@ -705,8 +730,18 @@ export function assertSealed(err: unknown, where: string): void {
     const lowered = text.toLowerCase();
     const hit = DRIVER_PROSE.find((needle) => lowered.includes(needle));
     if (hit !== undefined) {
+      /* The carrier's PATH, not just the channel name. The first version of this message
+         printed the channel and the first 400 characters of it, and against a real error that
+         named `stack` while the match was 900 characters further along — a red reporting a
+         plausible wrong cause, which is the thing that makes a reader go and check the wrong
+         file. `own` is path-tagged for this. */
+      const carrier =
+        channel === "own"
+          ? (text.split(" | ").find((part) => part.toLowerCase().includes(hit)) ?? channel)
+          : channel;
       throw new Error(
         `${where} leaks the driver through \`${channel}\`: it carries ${JSON.stringify(hit)}.\n` +
+          `  carrier: ${carrier.slice(0, 300)}\n` +
           `  ${channel}: ${text.slice(0, 400)}\n` +
           `  D-13: no rejection may carry the failed statement or its bound parameters. ` +
           `\`tests/store-modules-seal-their-faults.test.ts\` exists because an absent class ` +

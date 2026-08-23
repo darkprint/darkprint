@@ -208,13 +208,58 @@ describe("the widened `own` channel does not false-positive", () => {
     }
     throw new Error("unreachable");
   });
-  it("STILL REJECTS a driver payload nested two levels down under `cause`", () => {
-    const inner = new Error("boom");
-    Object.defineProperty(inner, "query", {
+  it("ACCEPTS the sanctioned `cause` chain, statement and bound values included", () => {
+    /*
+     * The correction that cost the most to get right, and it went the OPPOSITE way to the
+     * morning's widening.
+     *
+     * Following `cause` reds the real module, and that red is a **false charge**:
+     * `err.cause.message` and `err.cause.query` carry the failed statement and the bound
+     * `refId`, and that is the tree's ratified convention. `lib/server/registry/errors.ts:12-15`
+     * states the clause as five merged modules apply it — *"`Object.keys(err)` is empty and
+     * `JSON.stringify(err)` is exactly `"{}"`; **`cause` is present but non-enumerable**; `stack`
+     * is retained. Whitelist, not blacklist — the only thing any rendering carries is the
+     * operation."* — and `tests/error-hygiene.test.ts` constructs every class at both arities
+     * and passes them.
+     *
+     * So D-13 governs what a RENDERING carries, `cause` is the one sanctioned carrier, and a
+     * scanner that descends into it charges a module for a decision something else already made.
+     *
+     * This is the exact error shape the real module produces, rebuilt here.
+     */
+    const driver = new Error(
+      'Failed query: select "id", "star_count" from "target" where ("target"."kind" = $1)',
+    );
+    (driver as unknown as Record<string, unknown>).query =
+      'select "id", "star_count" from "target" where ("target"."kind" = $1)';
+    (driver as unknown as Record<string, unknown>).params = ["card", "t150-probe-ref-9999"];
+    const sealed = new Error("getSignals: the counter store failed.", { cause: driver });
+    expect(() => assertSealed(sealed, "x")).not.toThrow();
+    expect(() => assertNoValue(sealed, ["t150-probe-ref-9999"], "x")).not.toThrow();
+  });
+
+  it("STILL REJECTS a driver payload stashed on the ERROR ITSELF, non-enumerably", () => {
+    /*
+     * The morning's finding, re-pinned after the `cause` exemption so the two hazards stay
+     * separable. `cause` is sanctioned; anywhere else is not, and burying it non-enumerably is
+     * precisely the shape that renders as `{}` in a structured log.
+     *
+     * Without this cell the exemption above would be indistinguishable from deleting the check.
+     */
+    const e = new Error("toggleStar: the counter store failed.");
+    Object.defineProperty(e, "query", {
       value: 'insert into "target_actor" (target_id) values ($1)',
       enumerable: false,
     });
-    const outer = new Error("toggleStar: the counter store failed.", { cause: inner });
-    expect(() => assertSealed(outer, "x")).toThrow();
+    expect(() => assertSealed(e, "x")).toThrow();
+  });
+
+  it("STILL REJECTS a bound value stashed on the error itself", () => {
+    const e = new Error("toggleStar: the counter store failed.");
+    Object.defineProperty(e, "boundParams", {
+      value: ["t150-probe-ref-9999"],
+      enumerable: false,
+    });
+    expect(() => assertNoValue(e, ["t150-probe-ref-9999"], "x")).toThrow();
   });
 });
