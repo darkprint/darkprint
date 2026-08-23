@@ -1024,6 +1024,28 @@ moving.**
 `GITHUB_*` empty fails twenty of T000's tests. There are EIGHT, not the five this document has said more than
 once — the file is the authority and the recollection was wrong.**
 
+## ONE IDENTIFIER BEING A PREFIX OF ANOTHER COLLAPSES TWO CELLS INTO ONE
+
+**Second instance in ONE suite, and its author had found and fixed the first four commits earlier without
+carrying the lesson across.** First: `export const dynamic` as a substring **also matches
+`export const dynamicParams`**, so one cell re-reported a finding the cell above owned. Second:
+**`MIGRATE_PATH = "/api/account/saves/migrate"` CONTAINS `"/api/account/saves"`**, so an `includes()` check for
+the saves route was satisfied by the migration constant alone.
+
+**Unwiring the saves route reddened ZERO of 170.** *The two cells written as independent were one cell twice* —
+**a component that migrated and never saved would have passed both**, and where a save lands is the criterion's
+whole subject. Terminate the match (a closing quote, a word boundary) and check the 2x2: **each alone reds 1,
+both red 2.**
+
+**The lesson did not transfer because the first instance was a CONFIG EXPORT and the second was a URL.** A
+defect learned in one syntactic neighbourhood does not announce itself in another; **the invariant is
+*substring containment between two things a suite treats as distinct*, and it is worth grepping for directly
+rather than recognising twice.**
+
+**And note what caught it: only a mutation.** All 170 cells were green, both cells were green, **and the cell
+was measuring nothing.** Its author ran the sweep **immediately after repairing six cells to make reds
+disappear — which is exactly when a suite is most likely to have been repaired into vacuity.**
+
 ## A FIX THAT PASSES ITS OWN CRITERION CELL IS STILL UNGUARDED
 
 **T262's blind author mutated the MATCHER FIX ITSELF** — reverting `contains` to literal-only, with a retired
