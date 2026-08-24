@@ -90,7 +90,7 @@ export type { CheckLimitOptions } from "./check";
 export { checkLimit, enforceLimit } from "./check";
 
 /* --------------------- keys --------------------- */
-export { MAX_LABEL_LENGTH, issueKey, listKeys, resolveKey, revokeKey } from "./keys";
+export { MAX_LABEL_LENGTH, issueKey, listKeys, resolveKey, revokeKey, revokeKeysFor } from "./keys";
 export { SECRET_LENGTH, SECRET_PREFIX } from "./secret";
 
 /* --------------------- D-13's boundary --------------------- */

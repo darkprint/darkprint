@@ -28,11 +28,45 @@ import {
   frozen,
 } from "./order";
 
+/**
+ * What a blueprint's current release stores that its RECORD does not carry: the DOT
+ * topology and the local vocabulary overlay.
+ *
+ * `BlueprintSummary` is the index's answer and deliberately projects both away — nothing
+ * reading the index wants a DOT source. `graphsOf` needs them to reassemble the bundle,
+ * and the alternative to keeping them here is a second query issued under a second copy of
+ * D-80-03's current-release rule, which is the duplicate-decision defect this project
+ * charges more than any other (D-132-01: extract, never duplicate). These are references to
+ * rows `loadSnapshot` has already read and would otherwise drop on the floor, so retaining
+ * them costs no statement and no copy.
+ *
+ * **The pins are deliberately NOT here.** An earlier version carried `release.card_refs`
+ * so a reassembly could read them in the order they were stored, as `export/build.ts` does.
+ * That is wrong for this reader: the column holds the pins AS WRITTEN and `parseCardRef`
+ * trims, so a padded spelling misses the canonical keys the index is built on. A caller
+ * wants `BlueprintSummary.cardRefs`, which is canonical and visibility-filtered already.
+ */
+export interface ReleaseSource {
+  dot: string;
+  manifest: BundleManifest;
+  /** `release.local_vocabulary` verbatim. `unknown` because the column's reading is T133's. */
+  vocabulary: unknown;
+}
+
 /** The index one request reads. Internal: the barrel publishes readers, not this shape. */
 export interface RegistrySnapshot {
   blueprints: readonly BlueprintSummary[];
   /** Keyed `${ownerHandle}/${slug}` — the whole key, since B-09 made the slug half of one. */
   byKey: ReadonlyMap<string, BlueprintSummary>;
+  /** Same key. Present for every blueprint in `blueprints`, and for nothing else. */
+  releaseByKey: ReadonlyMap<string, ReleaseSource>;
+  /**
+   * The archived YAML of every indexed card row, by ref. `CardSummary.card` is the parsed
+   * `body` and `resolveBundle` reads files, so the bytes are what a reassembly needs; they
+   * are also what the digest in a folder's README was computed over (`build.ts`'s
+   * `pinnedCards` says the same thing about `source` versus `body`).
+   */
+  sourceByRef: ReadonlyMap<CardRef, string>;
   cards: readonly CardSummary[];
   byRef: ReadonlyMap<CardRef, CardSummary>;
   byId: ReadonlyMap<string, readonly CardSummary[]>;
@@ -89,6 +123,8 @@ const EMPTY_BLUEPRINTS: readonly BlueprintSummary[] = frozen<BlueprintSummary>([
 const EMPTY_SNAPSHOT: RegistrySnapshot = {
   blueprints: EMPTY_BLUEPRINTS,
   byKey: new Map(),
+  releaseByKey: new Map(),
+  sourceByRef: new Map(),
   cards: EMPTY_CARDS,
   byRef: new Map(),
   byId: new Map(),
@@ -108,6 +144,8 @@ interface CurrentBlueprint {
   manifest: BundleManifest;
   /** The release's pins, verbatim — before the invisible cards are filtered out of them. */
   pinned: readonly string[];
+  /** The rest of what the release stores, kept for `graphsOf` — see `ReleaseSource`. */
+  source: ReleaseSource;
 }
 
 export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapshot> {
@@ -141,11 +179,13 @@ export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapsh
     if (release === undefined) continue;
     const ownerHandle = handleOf.get(bundle.ownerId);
     if (ownerHandle === null || ownerHandle === undefined) continue;
+    const manifest = release.manifest as BundleManifest;
     current.push({
       key: { ownerHandle, slug: bundle.slug },
       digest: release.digest,
-      manifest: release.manifest as BundleManifest,
+      manifest,
       pinned: release.cardRefs,
+      source: { dot: release.dot, manifest, vocabulary: release.localVocabulary },
     });
   }
 
@@ -296,6 +336,10 @@ export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapsh
   const latest = frozen([...byId.values()].map((versions) => versions[0]));
 
   const byKey = new Map(blueprints.map((bp) => [keyOf(bp), bp]));
+  // Same key and the same pass: `current` is what `blueprints` was built from, one entry
+  // each, so these two maps cannot disagree about which release a blueprint is.
+  const releaseByKey = new Map(current.map((bp) => [keyOf(bp.key), bp.source]));
+  const sourceByRef = new Map([...rowsByRef].map(([ref, row]) => [ref, row.source]));
   const usersOf = new Map<string, readonly BlueprintSummary[]>();
   for (const [id, keys] of usersById) {
     const summaries: BlueprintSummary[] = [];
@@ -309,6 +353,8 @@ export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapsh
   return {
     blueprints: frozen(blueprints),
     byKey,
+    releaseByKey,
+    sourceByRef,
     cards,
     byRef,
     byId,

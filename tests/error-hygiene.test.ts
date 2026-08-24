@@ -269,7 +269,22 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
        produce belongs to a merged module and leaves unaltered under D-50-08. Derived HERE, at the merge
        commit, against the domain this guard resolves from `backend`: the figure in the handback was a
        report until this run, and a carried number is somebody else's measurement of a different tree. */
-    ).toBe(40);
+    /* 40 -> 44 at the T160+T180 double merge: `lib/server/ballot` publishes BallotRefusedError
+       and BallotStoreError, `lib/server/runs` publishes RunReportRefusedError and RunsStoreError.
+       Two each, both adversary-verified with the walk re-falsified per module (an enumerable own
+       field reds both arities naming the barrel). Derived at THIS merge against the tree landed in;
+       both sessions computed 42 from the same base of 40 and were told the second merge would face
+       a different figure -- this is that figure. */
+    /* 44 -> 45 at T210's merge: `lib/server/terms` publishes TermStoreError and nothing
+       else. Derived here; T120 lands next from the same base and faces 47 -> 48 arithmetic
+       of its own, derived at ITS merge. */
+    /* 45 -> 48 at T120's merge: lifecycle publishes DeletionRefusedError,
+       LifecycleStoreError and TransferRefusedError -- exactly three, pinned by its own
+       surface cell so a re-export cannot double-count. Derived here. */
+    /* 48 -> 50 at T220's merge: lib/server/mcp publishes McpRefusedError and McpStoreError
+       (D-220-06), exactly two, ExportError wrapped at the boundary so the surface refuses
+       with one voice. Derived here. */
+    ).toBe(50);
 
     const rendered: string[] = [];
     const traceless: string[] = [];

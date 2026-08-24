@@ -123,6 +123,12 @@ const READERS: readonly { operation: string; invoke: (db: Db) => Promise<unknown
   { operation: "card", invoke: (d) => registry.card(d, ANON, PROBE_REF) },
   { operation: "usersOf", invoke: (d) => registry.usersOf(d, ANON, PROBE_REF) },
   { operation: "duplicates", invoke: (d) => registry.duplicates(d, ANON) },
+  /* The three T132 readers (D-132-01/03). Probes carry non-empty keys because an empty
+     list answers without a statement and never reaches the dead pool -- a green measuring
+     nothing (D-132-05's own rule, applied here in the same commit as the merge). */
+  { operation: "graphsOf", invoke: (d) => registry.graphsOf(d, ANON, [{ ownerHandle: PROBE_REF, slug: PROBE_REF }]) },
+  { operation: "scoresFor", invoke: (d) => registry.scoresFor(d, ANON, [{ ownerHandle: PROBE_REF, slug: PROBE_REF }]) },
+  { operation: "cardsOwnedBy", invoke: (d) => registry.cardsOwnedBy(d, ANON, PROBE_REF) },
   { operation: "phases", invoke: (d) => registry.phases(d, ANON) },
   { operation: "cardsByPhase", invoke: (d) => registry.cardsByPhase(d, ANON, PROBE_REF) },
   { operation: "tags", invoke: (d) => registry.tags(d, ANON) },
@@ -364,9 +370,9 @@ describe("AC2/AC3: every published reader seals what the driver throws", () => {
     expect(
       READERS.length,
       "An empty or shortened case list would make every assertion below pass over nothing. " +
-        "Thirteen readers are published from the barrel; the partition test above is what keeps " +
+        "Sixteen readers are published (13 + T132's three, D-132-01/03) from the barrel; the partition test above is what keeps " +
         "this number honest as the surface changes.",
-    ).toBe(13);
+    ).toBe(16);
 
     const leaked: string[] = [];
     const unreached: string[] = [];

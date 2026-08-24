@@ -1,9 +1,19 @@
 /* ============================================================
    DarkPrint backend — lib/server/registry public surface
-   Thirteen readers, each taking an `Actor`, plus the record shapes
-   they return, plus the fault path all thirteen share. Deep paths
+   Sixteen readers, each taking an `Actor`, plus the record shapes
+   they return, plus the fault path all sixteen share. Deep paths
    are internal; nothing outside this module should reach for one
    (T000 contract, D-01).
+
+   Thirteen until T132. The three amendments are all to this task's
+   published record and each was ruled rather than proposed:
+   `graphsOf` and `scoresFor` are D-132-01's, owed to T260 under
+   D-260-14 and D-260-21, and they ship together — a batch scorecard
+   reader alone makes a shelf fast at returning nothing while
+   D-260-24 stands. `cardsOwnedBy` is D-132-02's reading (a) of
+   T130's blocked `counts.cards`: the one card reader deliberately
+   outside the pin index, because ownership and indexing are
+   different questions and the count has to answer the first.
 
    The message literal is NOT exported. A test that imports its
    expected message from the module under test asserts that the
@@ -11,7 +21,17 @@
    wording starts interpolating something it should not.
    ============================================================ */
 
-export type { BlueprintKey, BlueprintSummary, CardSummary, Scores } from "./types";
+export type {
+  BlueprintKey,
+  BlueprintSchematic,
+  BlueprintSummary,
+  CardSummary,
+  Scores,
+} from "./types";
+/* `BlueprintSchematic.graph` is `lib/types.ts`'s `BlueprintGraph` and is NOT re-exported
+   here. `types.ts` says why: a caller binding `graphsOf` reaches it from `@/lib/types`,
+   which is where the row component that draws it already reads it, so republishing it
+   from a server barrel would put a second address on one type. */
 
 /* D-13's boundary. One class, because this module authors no refusal of its own — every
    absent, invisible or empty answer above is a VALUE, so there is no decision for the
@@ -22,10 +42,11 @@ export { withRegistryStore } from "./store";
 export { withRegistryErrors } from "./http";
 
 export { blueprint, blueprints } from "./blueprints";
-export { card, cards, latestCards, versionsOf } from "./cards";
+export { card, cards, cardsOwnedBy, latestCards, versionsOf } from "./cards";
+export { graphsOf } from "./graphs";
 export { duplicates, usersOf } from "./joins";
 export { cardsByPhase, categories, phases, tags } from "./facets";
-export { scoresOf } from "./scores";
+export { scoresFor, scoresOf } from "./scores";
 
 /**
  * The route boundary's `Request` -> `Actor` step. Published here rather than deep-imported

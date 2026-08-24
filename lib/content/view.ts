@@ -10,40 +10,16 @@
    PURE — no filesystem, no clock.
    ============================================================ */
 
-import type { AutonomyClass, Author, Blueprint, Metric } from "@/lib/types";
+import type { Author, Blueprint, Metric } from "@/lib/types";
 import type { BlueprintAnalysis, Diagnostic, ResolvedBlueprint } from "@/lib/core";
 import { DARKPRINT_CONFIG } from "@/lib/core";
-import { autonomyStatement } from "@/lib/format";
+import { AUTONOMY_BLURB, autonomyStatement } from "@/lib/format";
 import { getAuthor } from "@/lib/data/users";
 import type { CommunitySignals } from "@/lib/data/community";
 import { graphForBlueprint, requiredAgents, requiredTools } from "@/lib/graph-seed";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // TODO(SEAM-74) (cited at line 167): POST /api/blueprints/{slug}/votes
-
-/* --------------------- autonomy prose --------------------- */
-
-/**
- * What each class says about the design, in the register the gallery already uses. The
- * engine owns the class and its label; this is the sentence that goes under them.
- *
- * Each one states a decision an author made. None of them states a shortfall, names a
- * next class up, or reads as a step towards anything, because doc 2 §1.1 rules that out
- * and because it is false: the four are co-ordinate readings of a graph's shape. The old
- * table was keyed on the 1-to-4 band and its top row ("no human in the loop") also said
- * something the band cannot promise, since the top band is a fraction above 0.90 and a
- * graph of eleven nodes reaches it with a person still standing in it. That claim now
- * belongs to `isDarkFactory` alone, which counts the human nodes rather than the share.
- */
-const AUTONOMY_BLURB: Record<AutonomyClass, string> = {
-  assisted: "A person acts at most of the nodes, and the agents work under that hand.",
-  supervised:
-    "Agents do the work, and a person approves the moves this graph treats as critical.",
-  conditional:
-    "The graph runs inside the guardrails its author drew and calls a person for the cases it names.",
-  "closed-loop":
-    "The line runs from the specification to the delivery without stopping for an approval.",
-};
 
 /* --------------------- the bridge --------------------- */
 

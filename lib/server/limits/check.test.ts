@@ -273,6 +273,12 @@ describe("T231: the key precondition is a type rather than caller discipline", (
       "readJsonObject",
       "resolveKey",
       "revokeKey",
+      /* D-120-10: the per-ACCOUNT revoke, added when T120's deletion needed to close the
+         ghost-keys hole and `revokeKey` binds its WHERE to the CALLER's accountId. It
+         constructs no ResolvedKey and hands out no Tier, so both properties this cell
+         holds survive it. Amended in the same commit as the export, the equality's own
+         sanctioned path. */
+      "revokeKeysFor",
       "withLimitsErrors",
     ]);
   });
