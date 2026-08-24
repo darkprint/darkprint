@@ -5,13 +5,19 @@
    so `validate` accepts exactly what the wizard accepts and what
    the authoring skill writes.
 
-   ── the card keys are the export's own, and that is AC1 ──
+   ── the card keys are the export's own, and AC1 CANNOT see it ──
    `cardFilePath` names a pinned card `cards/<id>@<version>.yaml`
    and `lib/content/read.ts` keys the archive's own submission with
-   the same `cards/` prefix. Diagnostics carry the key as their
-   `file`, so reading the folder under any other key would change
-   the diagnostics' text without changing the bundle — which is
-   the one thing AC1 measures. The key is therefore the path
+   the same `cards/` prefix. `resolveBundle` hands the key to
+   `loadCard` as `file`, so it is what a card diagnostic's
+   `location.file` reports and what a reader opens.
+   AC1 does not measure it: the nine archive bundles produce no
+   card-level diagnostic once the archive vocabulary is layered, so
+   `location.file` is never populated from a key anywhere in that
+   fixture set — a mutation keying the cards `<name>` reddened 0 of
+   11 AC1 cells and 1 of the cell in `layout.test.ts` written for
+   it. Stated because a comment claiming AC1 covers this is the
+   kind of thing the next reader would believe. The key is therefore the path
    relative to the bundle root, verbatim.
    ============================================================ */
 
