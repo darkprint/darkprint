@@ -37,12 +37,43 @@
 
 export type { ProfileRecord } from "./types";
 
+/* `PinnedRef` is NOT re-exported. It is `lib/data/profiles.ts:29`'s union and both halves of
+   this task bind it THERE by import (D-131-01) — republishing it from a server barrel would
+   put a second address on one type, which is what `lib/server/registry` refused to do for
+   `BlueprintGraph` and for the same reason. A caller typing a `setPins` argument imports the
+   union from the one place that declares it. */
+
 /* D-13's boundary. TWO classes, and the split is about whose fault the condition is: the
    store being unable to answer, and the store answering with content no reader here accepts
    (D-130-10). Neither is a refusal of a CALLER'S input — every absent answer in the
    published surface is still a VALUE (D-130-02). Measured rather than copied from a
    neighbour; the reasoning and the measurement are in `errors.ts`. */
 export { MalformedStoredVocabularyError, ProfileStoreError } from "./errors";
+
+/* T131's third class, and the first REFUSAL this module has ever published. The two above
+   are faults — the store could not answer, or answered with content no reader accepts — and
+   neither is about a caller. Three write verbs gave this module callers to refuse, and the
+   distinction a consumer branches on is exactly that one: a refusal means fix the request, a
+   fault means try again. `ProfileRefusedKind` ships with it because a caller that cannot name
+   the arm cannot branch on it, which is the saves and counters barrels' own reasoning.
+   `error-hygiene`'s published equality moves by ONE at this task's merge, derived there
+   against `backend` rather than carried from this worktree — the guard's domain is the ref. */
+export { ProfileRefusedError } from "./errors";
+export type { ProfileRefusedKind } from "./errors";
+
 export { withProfileErrors } from "./http";
 
 export { getProfile } from "./read";
+
+/* D-131-04's three verbs. `setPins` takes an `accountId` and not a handle — the route
+   resolves one to the other and `can` decides — which is the block T130's blind author
+   bound to, kept rather than tidied. */
+export { setPins, toggleFollow, toggleSupport } from "./write";
+
+/* D-131-10's two, and the toggles above are NOT replaced by them. A toggle is the UI's own
+   semantics — one button, one meaning — and it is what the inherited T130 cells drive. These
+   two REACH a state, which is what POST and DELETE mean, and they are idempotent by
+   construction rather than by reading first. The ruling exists because this task's routes
+   could not be built correctly without them and the implementer refused to add the surface on
+   its own authority against a blind suite it cannot see. */
+export { setFollow, setSupport } from "./write";

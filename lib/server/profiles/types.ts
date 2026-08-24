@@ -29,9 +29,23 @@
    T080 published `cardsOwnedBy` to serve it. So the visibility
    decision still has exactly one author, one module over, and this
    file consumes it the same way it consumes `blueprints()`.
-   `watchers`, `support`, `pinned` and `validated` stay out.
+   **AND NOW THEY ARE IN, which is T131 and the tables it owed
+   first.** The block above is kept rather than rewritten: it is
+   the record of WHY four fields were absent for two tasks, and
+   every one of its reasons was a missing column rather than a
+   missing opinion. `follow`, `profile_pin` and `account_support`
+   exist as of `0004_social`, so the four come back on the same
+   terms `counts` already holds — derived at read time, never
+   stored as a counter (D-131-04, D-131-08).
    ============================================================ */
 
+/* D-131-01, and this is the first `lib/server` -> `lib/data` import in the repository,
+   sanctioned in the block for exactly this union and nothing else. TYPE-ONLY: it erases at
+   build, so no fixture byte reaches a server bundle. The point is that both halves of this
+   task bind the SAME union by import rather than restating it — a restatement drifts
+   silently, because AC3 makes an unresolvable pin absent and a wrong spelling therefore
+   yields `pinned: []` and goes green rather than red. Imported, a drift is a compile error. */
+import type { PinnedRef } from "@/lib/data/profiles";
 import type { PublicAuthor } from "@/lib/server/accounts";
 
 /**
@@ -52,5 +66,28 @@ import type { PublicAuthor } from "@/lib/server/accounts";
 export interface ProfileRecord {
   author: PublicAuthor;
   joinedAt: Date;
+  /** Accounts currently following this handle. `count(*)` over `follow`, never a column (AC1, AC4). */
+  watchers: number;
+  /** Accounts currently endorsing this handle. `count(*)` over `account_support` (D-131-05). */
+  support: number;
+  /**
+   * Distinct PUBLIC blueprints owned by SOMEBODY ELSE that this handle has submitted a run
+   * report against (D-131-06). Actor-independent, unlike everything else here: the subject
+   * bundles are third parties', so no owner widening applies, and a figure that moved with a
+   * private bundle's existence would be an existence oracle arriving through a number (B-13).
+   */
+  validated: number;
+  /**
+   * At most two, in the order the account chose, **filtered to the pins this ACTOR can
+   * resolve** — refs, never resolved items (D-131-04; SEAM-55's `PinnedItem[]` is a frontend
+   * view shape and is superseded here, as SEAM-52/53's `ProfileView` was at D-130-05).
+   *
+   * A pin whose target no longer resolves is ABSENT rather than null (AC3,
+   * `components/profile/load.ts:182-190`), and so is one at a target this actor may not see
+   * (D-132-04's C-D, extended to `pinned` at D-131-04). **Both are the same mechanism**: the
+   * readers this resolves through are already actor-filtered, so the owner of a private
+   * blueprint sees their own pin and a visitor sees a shorter array.
+   */
+  pinned: readonly PinnedRef[];
   counts: { blueprints: number; cards: number; terms: number };
 }

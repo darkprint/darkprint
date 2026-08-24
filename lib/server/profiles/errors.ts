@@ -145,3 +145,113 @@ Object.defineProperty(MalformedStoredVocabularyError.prototype, "name", {
   writable: true,
   configurable: true,
 });
+
+/* ============================================================
+   T131 — and now there is a THIRD, because this module finally
+   authors a refusal of its own.
+
+   The two above are faults: the store could not answer, or it
+   answered with content no reader here accepts. Neither is about
+   a CALLER, and until T131 this module had no caller to refuse —
+   every absent answer in the published surface was a VALUE
+   (D-130-02), which is why `getProfile` returns `undefined`
+   rather than raising.
+
+   Three write verbs change that. `setPins`, `toggleFollow` and
+   `toggleSupport` all take something a caller supplies and can
+   all be handed something the contract does not admit, so there
+   is a refusal here that belongs to nobody else. ONE class for
+   all four conditions, on T180's precedent — a refusal means fix
+   the request and a store fault means try again, and that is the
+   distinction a caller actually branches on.
+   ============================================================ */
+
+/**
+ * Why a write was refused. **`no-such-account` deliberately covers TWO states** — the
+ * account does not exist, and it exists but is not this actor's to write — and that is
+ * D-130-02's argument one layer along, for writes. A caller able to tell those apart has
+ * exactly the existence oracle B-03 closes, and the route answers 404 for both
+ * (D-131-07). Collapsing them HERE rather than at the transport is what keeps a future
+ * route from leaking the difference by accident: there is nothing for it to leak.
+ *
+ * A handle that is `null` is the same answer again. An account that has claimed no handle
+ * has no profile page, and "no handle" and "no account" are one state to a caller.
+ */
+export type ProfileRefusedKind =
+  | "not-signed-in"
+  | "no-such-account"
+  | "too-many-pins"
+  | "malformed-pin";
+
+/**
+ * A write this module refuses, as opposed to a store that could not answer it.
+ *
+ * **Every message form here is safe by construction, which is what D-13 asks and what makes
+ * an exact-match pin writable by a blind author.** Each is the published verb's name, the
+ * refusal, and at most a bound this module itself supplies — `MAX_PINS`, a literal. **No
+ * caller value is ever interpolated**: not the handle, not the account id, and above all not
+ * the pin, whose whole content is a string a caller sent. A refusal that quoted the pin it
+ * rejected would put caller data into the one rendering the transport copies verbatim.
+ *
+ * `kind` is non-enumerable, matching `BallotRefusedError` and the four classes before it:
+ * a caller branches on it, and `Object.keys(err)` stays empty so no rendering can carry it
+ * into a body by accident.
+ */
+export class ProfileRefusedError extends Error {
+  declare readonly kind: ProfileRefusedKind;
+
+  constructor(kind: ProfileRefusedKind, message: string) {
+    super(message);
+    Object.defineProperty(this, "kind", { value: kind, enumerable: false, writable: false });
+  }
+}
+
+/* On the prototype, not as an instance field — see `ProfileStoreError` above. */
+Object.defineProperty(ProfileRefusedError.prototype, "name", {
+  value: "ProfileRefusedError",
+  enumerable: false,
+  writable: true,
+  configurable: true,
+});
+
+/**
+ * Module-boundary only, and it is worth saying so where somebody will read it:
+ * `withSession` answers 401 before any of the three verbs is entered, so **this refusal is
+ * unreachable through HTTP** and is reached only by a direct caller. T120's lifecycle
+ * errors carry the same note for the same reason. It exists because a module whose
+ * anonymous path is "whatever the driver does with `undefined`" is a module with an
+ * unstated precondition.
+ */
+export function notSignedIn(operation: string): ProfileRefusedError {
+  return new ProfileRefusedError("not-signed-in", `${operation}: not signed in.`);
+}
+
+/** B-03's one answer for three states — absent, handle-less, and not yours. */
+export function noSuchAccount(operation: string): ProfileRefusedError {
+  return new ProfileRefusedError("no-such-account", `${operation}: no such account.`);
+}
+
+/**
+ * AC3's published bound. The number is interpolated from this module's own constant rather
+ * than written into the sentence twice, so the message cannot disagree with the check.
+ */
+export function tooManyPins(operation: string, max: number): ProfileRefusedError {
+  return new ProfileRefusedError(
+    "too-many-pins",
+    `${operation}: at most ${max} pins.`,
+  );
+}
+
+/**
+ * The union's own shape, refused without quoting what arrived. **The offending value is on
+ * `cause` and never in the message** — `cause` is D-13's sanctioned carrier, and a pin is
+ * caller-supplied content in its entirety.
+ */
+export function malformedPin(operation: string, cause: unknown): ProfileRefusedError {
+  const err = new ProfileRefusedError(
+    "malformed-pin",
+    `${operation}: a pin must be {kind:"blueprint",slug} or {kind:"node",ref}.`,
+  );
+  Object.defineProperty(err, "cause", { value: cause, enumerable: false, writable: true, configurable: true });
+  return err;
+}
