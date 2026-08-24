@@ -726,14 +726,23 @@ export async function countQueries<T>(s: Scratch, run: () => Promise<T>): Promis
     queries += 1;
     return realQuery(...args);
   };
-  pool.connect = async (...args: unknown[]) => {
-    const client = (await realConnect(...args)) as { query: (...a: unknown[]) => unknown };
-    const clientQuery = client.query.bind(client);
-    client.query = (...a: unknown[]) => {
-      queries += 1;
-      return clientQuery(...a);
-    };
-    return client;
+  pool.connect = (...args: unknown[]) => {
+    /* `pool.query` checks a client out through `pool.connect(callback)` INTERNALLY, and in
+       that form `connect` returns undefined and answers through the callback. Wrapping it as
+       a promise made every internal checkout reject with "cannot read properties of
+       undefined", 22 unhandled rejections deep, while the assertion above still read a
+       plausible number — an instrument failing loudly in a channel nobody was asserting on.
+       The callback form is passed straight through; `pool.query` is already counted. */
+    if (args.some((arg) => typeof arg === "function")) return realConnect(...args);
+    return (async () => {
+      const client = (await realConnect(...args)) as { query: (...a: unknown[]) => unknown };
+      const clientQuery = client.query.bind(client);
+      client.query = (...a: unknown[]) => {
+        queries += 1;
+        return clientQuery(...a);
+      };
+      return client;
+    })();
   };
   try {
     const result = await run();

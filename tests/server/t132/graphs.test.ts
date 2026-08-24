@@ -439,7 +439,17 @@ describe("D-132-01: an absent entry is the answer, never a refusal", () => {
    * public bundle that a caller may see pinning one card they may not.
    */
   it("omits a public blueprint pinning a card this caller may not see, and keeps it for the owner", async () => {
-    const target = await seed("guarded-merge-bot", { slug: "t132-one-sealed-card" });
+    /* A content bundle no other cell in this file seeds, and then a pin that NO OTHER
+       RELEASE holds — both measured, not assumed.
+
+       `seedRelease` writes one `card_version` row per `(id, version)` and reuses it for
+       every bundle that pins it, which is the normal case rather than an error. So sealing a
+       shared row does not seal one fixture, it seals every bundle pinning that card — and
+       the first version of this cell did exactly that to `guarded-merge-bot`, taking two
+       later cells' fixtures out from under them. THE BLIND POSITION COULD NOT SHOW IT: every
+       cell in the file was red for the same absent member, so no interference was visible
+       until both halves ran together. */
+    const target = await seed("incident-commander", { slug: "t132-one-sealed-card" });
     const [pinned] = await query(
       gate.get(),
       "select card_refs from release where id = $1",
@@ -447,14 +457,31 @@ describe("D-132-01: an absent entry is the answer, never a refusal", () => {
     );
     const refs = pinned?.card_refs as string[];
     expect(refs.length).toBeGreaterThan(1);
-    const sealed = refs[0];
-    const [id, version] = [sealed.slice(0, sealed.lastIndexOf("@")), sealed.slice(sealed.lastIndexOf("@") + 1)];
+    let sealed: string | undefined;
+    for (const ref of refs) {
+      const [row] = await query(
+        gate.get(),
+        "select count(*)::int as n from release where $1 = any(card_refs) and id <> $2",
+        [ref, target.releaseId],
+      );
+      if (row?.n === 0) {
+        sealed = ref;
+        break;
+      }
+    }
+    expect(
+      sealed,
+      `Every card \`${target.slug}\` pins is also pinned by another release in this database, ` +
+        `so sealing any of them would change a fixture this cell does not own.`,
+    ).toBeDefined();
+    const at = (sealed as string).lastIndexOf("@");
+    const [id, version] = [(sealed as string).slice(0, at), (sealed as string).slice(at + 1)];
     const updated = await query(
       gate.get(),
       "update card_version set visibility = 'private' where card_id = $1 and version = $2 returning id",
       [id, version],
     );
-    expect(updated.length, `the fixture must actually seal \`${sealed}\``).toBe(1);
+    expect(updated.length, `the fixture must actually seal \`${String(sealed)}\``).toBe(1);
 
     const asAnon = await graphsOf(anonymous, [key("t132-one-sealed-card")]);
     expect(
