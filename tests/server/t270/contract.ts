@@ -608,6 +608,90 @@ export const RUN_CLI = "runCli";
 /** `argv` and `io`. Stated as the block's parameter list rather than counted in prose. */
 export const RUN_CLI_ARITY = 2;
 
+/**
+ * `io`, published by D-270-03 (1) after this suite charged that it was unwritable without one.
+ *
+ * *"`io` is `{ out(text: string): void; err(text: string): void }` — `runCli` and every verb
+ * render through `io` alone; nothing under `packages/cli/src/**` writes to
+ * `process.stdout`/`process.stderr` except the bin shim that passes the real streams."*
+ *
+ * A cell asserting `io.out` was REFUSED here until that ruling existed, and the refusal is
+ * the point: a blind suite that invents an interface and reds on its absence charges an
+ * implementer who followed the contract. It is sanctioned now because it is published now.
+ */
+export interface CliIo {
+  out(text: string): void;
+  err(text: string): void;
+}
+
+/** An `io` that records everything written through it, so a cell can read what was rendered. */
+export function recordingIo(): CliIo & {
+  readonly out_: string[];
+  readonly err_: string[];
+  all(): string;
+} {
+  const out_: string[] = [];
+  const err_: string[] = [];
+  return {
+    out_,
+    err_,
+    out: (text) => void out_.push(text),
+    err: (text) => void err_.push(text),
+    /* Both channels joined. The rendering clause forbids a credential, an endpoint, a stack
+       and a driver or HTTP body from the RENDERING — it does not say which stream, and a leak
+       scan reading only `out` would miss every one written to `err`, which is where a CLI puts
+       its refusals. */
+    all: () => [...out_, ...err_].join("\n"),
+  };
+}
+
+/**
+ * The per-verb function names, which are the verb names.
+ *
+ * D-270-03 (2)-(3): the per-verb functions take parsed inputs and return DATA, `runCli` alone
+ * renders, and they are *"EXPORTED FROM THE BARREL so the blind suite binds them by name and
+ * reds on absence rather than inventing synonyms."* Only `validate(dir)`'s parameter spelling
+ * is published; the rest are the implementer's, so nothing here pins an argument list beyond
+ * the one the ruling writes.
+ *
+ * Derived from the live verbs rather than typed, so a withdrawn verb cannot be bound and a
+ * newly published one is bound without editing this line.
+ */
+export const VERB_FUNCTIONS: readonly string[] = VERBS;
+
+/**
+ * Bind one named export off the CLI barrel, LAST inside a cell.
+ *
+ * Reds with the clause that publishes the name, so a failure says where the expectation comes
+ * from rather than merely that a test wanted something.
+ */
+export async function bindVerb(name: string): Promise<(...args: never[]) => unknown> {
+  const barrel = await loadCli();
+  const value = barrel[name];
+  if (typeof value !== "function") {
+    throw new Error(
+      `\`${name}\` is not exported as a function from \`${CLI}\`.\n` +
+        `  backend.md §T270 D-270-03 (2)-(3) publishes the per-verb functions as barrel ` +
+        `exports so this suite binds them BY NAME and reds on absence "rather than inventing ` +
+        `synonyms". Exported names seen: ` +
+        `${Object.keys(barrel).filter((key) => typeof barrel[key] === "function").join(", ") || "(none)"}.`,
+    );
+  }
+  return value as (...args: never[]) => unknown;
+}
+
+/**
+ * Where `validate` looks for a local vocabulary, ruled by D-270-04 (3).
+ *
+ * BOTH spellings: the wizard's flat `extensions.(yaml|yml|json)` and `ontology/extensions.yaml`,
+ * which is `exportBundle`'s own output path. C6 promises the wizard's accepted layout AND that
+ * clone's output folder is validatable, and those two facts name different paths — so this is
+ * a union rather than a precedence. Both present and byte-identical is fine; both present and
+ * DIFFERENT is a `Diagnostic` naming both paths, never a silent winner and no new error class.
+ */
+export const FLAT_VOCABULARY_NAME = /^extensions\.(ya?ml|json)$/i;
+export const NESTED_VOCABULARY_PATH = "ontology/extensions.yaml";
+
 let cliModule: Promise<Record<string, unknown>> | undefined;
 
 /**
