@@ -108,3 +108,55 @@ export const STATIC_PARAMS_MARKERS = [
   "export const dynamicParams",
   "generateStaticParams",
 ] as const;
+
+/* ============================================================
+   WHAT A ROUTE DID, AS ONE VALUE
+
+   A page function can do three things a cell cares about: render,
+   redirect, or 404. Next signals the last two by THROWING, with
+   the kind in `error.digest`:
+
+       permanentRedirect  ->  NEXT_REDIRECT;replace;<url>;308;
+       notFound           ->  NEXT_HTTP_ERROR_FALLBACK;404
+
+   Both measured, not recalled.
+
+   One reader for both, here, because AC1's mechanism cells and its
+   behavioural cells must not come to disagree about what a 308
+   looks like — and because a cell that merely asserted
+   `rejects.toThrow()` would accept ALL THREE outcomes plus a
+   database error, which is the laundering shape this project has
+   already paid for once.
+
+   Anything that is not one of the two known digests is RE-THROWN.
+   A connection failure must never be readable as a 404.
+   ============================================================ */
+
+export type RouteOutcome =
+  | { kind: "rendered"; element: unknown }
+  | { kind: "redirect"; destination: string; status: number; query: string }
+  | { kind: "notFound" };
+
+export async function outcomeOf(run: () => unknown): Promise<RouteOutcome> {
+  try {
+    return { kind: "rendered", element: await run() };
+  } catch (error) {
+    const digest = (error as { digest?: unknown }).digest;
+    if (typeof digest !== "string") throw error;
+
+    if (digest.startsWith("NEXT_HTTP_ERROR_FALLBACK;404")) return { kind: "notFound" };
+
+    if (digest.startsWith("NEXT_REDIRECT")) {
+      const [, , url = "", status = ""] = digest.split(";");
+      const at = url.indexOf("?");
+      return {
+        kind: "redirect",
+        destination: at === -1 ? url : url.slice(0, at),
+        status: Number(status),
+        query: at === -1 ? "" : url.slice(at + 1),
+      };
+    }
+
+    throw error;
+  }
+}
