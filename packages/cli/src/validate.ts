@@ -13,8 +13,8 @@
    the directory reader — no fetch, no credential, no environment.
    ============================================================ */
 
-import { sortDiagnostics, type LoadBundleResult } from "@/lib/core";
-import { validateBundle } from "@/lib/server/engine";
+import { sortDiagnostics, type LoadBundleResult } from "../../../lib/core";
+import { validateBundle } from "../../../lib/server/engine";
 import { readBundleDirectory } from "./layout";
 
 /**

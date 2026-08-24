@@ -16,8 +16,8 @@ import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parse as parseYaml } from "yaml";
 
-import { cardRef, parseCardRef, parseDot, type BundleManifest, type CardRef } from "@/lib/core";
-import { validateBundle, validateVocabularySource } from "@/lib/server/engine";
+import { cardRef, parseCardRef, parseDot, type BundleManifest, type CardRef } from "../../../lib/core";
+import { validateBundle, validateVocabularySource } from "../../../lib/server/engine";
 import { readBundleDirectory } from "./layout";
 import { validate } from "./validate";
 

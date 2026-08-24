@@ -25,9 +25,9 @@ import { readFileSync, readdirSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 
-import { CORE_ONTOLOGY, error, type BundleManifest, type Diagnostic, type OntologyTerm } from "@/lib/core";
-import { ONTOLOGY_EXTENSIONS_FILE } from "@/lib/content/ontology-file";
-import { validateVocabularySource } from "@/lib/server/engine";
+import { CORE_ONTOLOGY, error, type BundleManifest, type Diagnostic, type OntologyTerm } from "../../../lib/core";
+import { ONTOLOGY_EXTENSIONS_FILE } from "../../../lib/content/ontology-file";
+import { validateVocabularySource } from "../../../lib/server/engine";
 import { CliError } from "./errors";
 
 /**

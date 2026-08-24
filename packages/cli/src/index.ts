@@ -19,3 +19,8 @@ export type { BundleDirectory } from "./layout";
 export { readBundleDirectory } from "./layout";
 
 export { validate } from "./validate";
+
+export type { CloneOptions, CloneResult } from "./clone";
+export { clone } from "./clone";
+
+export type { RegistryOverrides } from "./registry";
