@@ -54,7 +54,7 @@ export { NotificationStoreError, UnsubscribeInvalidError } from "./errors";
 
 export { getPreferences, setPreferences } from "./preferences";
 export { enqueue, enqueueRepinEvents } from "./enqueue";
-export { deliverPending } from "./deliver";
+export { DELIVERY_LOCK_KEY, deliverPending } from "./deliver";
 export { unsubscribe } from "./unsubscribe";
 
 /* The transport boundary. Here rather than beside the routes because `app/api/**` holds route

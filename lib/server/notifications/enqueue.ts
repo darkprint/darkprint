@@ -103,9 +103,24 @@ export async function enqueue(db: Db, event: NotificationEvent): Promise<void> {
  * again if it did not: an account owning two bundles that both pin the card gets ONE row,
  * because `(kind, account_id, subject_digest)` is equal for both.
  */
-export async function enqueueRepinEvents(db: Db, cardId: string, version: string): Promise<void> {
+export async function enqueueRepinEvents(
+  db: Db,
+  cardId: string,
+  version: string,
+  publisherAccountId: string | undefined = undefined,
+): Promise<void> {
   const recipients = await withStore("enqueueRepinEvents", async () => await accountsPinningCard(db, cardId));
   for (const accountId of recipients) {
+    /* D-190-09(2): the publisher is not told about its own publish. An account that pins a card
+       and then publishes a new version of it already knows, and announcing it is the same
+       refusal T110 makes for a fork announced to its own author.
+
+       Omitted rather than absent by default, because the wiring is deferred: until the
+       orchestrator's merge-time visit passes a publisher, every recipient is a third party and
+       the filter is inert. `= undefined` and not `?`, per the ruled arity spelling — `?` erases
+       at compile time with no default emitted, which leaves `Function.length` at 4 and would
+       red a cell reading the published arity. */
+    if (publisherAccountId !== undefined && accountId === publisherAccountId) continue;
     /* D-190-07: `{ cardId, version }`, EXACTLY those two keys, and the spelling is the ruling's
        rather than T110's. `Repin.card` names the same quantity and is the older spelling; this
        ruling is later and matches this verb's own parameter name, so a reader moving between

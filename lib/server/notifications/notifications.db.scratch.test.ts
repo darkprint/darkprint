@@ -35,7 +35,7 @@
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { BundleManifest } from "@/lib/core";
-import { schema, type Db } from "@/lib/db";
+import { migrateDown, migrateUp, schema, type Db } from "@/lib/db";
 import { addRelease, createBundle } from "@/lib/server/archive";
 import { forkBundle } from "@/lib/server/lineage";
 import type { Actor } from "@/lib/server/policy";
@@ -583,6 +583,45 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
       expect(stamped, "all three end delivered, each stamped once").toHaveLength(3);
     });
 
+    it("D-190-09: two CONCURRENT drains send the pending set exactly once, and one answers 0", async () => {
+      const account = await seedAccount("ac5-concurrent");
+      for (const fork of ["c1", "c2", "c3"]) {
+        await enqueue(db, { kind: "fork", accountId: account, subject: { slug: "s", fork } });
+      }
+
+      /* Warmed, for the same reason as the concurrent-enqueue cell: a cold pool serialises the
+         two callers on connection setup and the overlap the lock exists for never opens. */
+      await Promise.all(Array.from({ length: 6 }, async () => await db.execute(sql`select 1`)));
+
+      const first = new RecordingDelivery();
+      const second = new RecordingDelivery();
+      const [a, b] = await Promise.all([deliverPending(db, first), deliverPending(db, second)]);
+
+      expect(
+        [a, b].sort((x, y) => x - y),
+        "D-190-09: one drain does the pass, the other finds the try-lock taken and answers 0. " +
+          "Without the lock both read the same pending set and both send all three.",
+      ).toEqual([0, 3]);
+      expect(
+        [...first.sent, ...second.sent].map((m) => m.subject["fork"]).sort(),
+        "total sends across BOTH calls equal the pending set exactly once",
+      ).toEqual(["c1", "c2", "c3"]);
+    });
+
+    it("the lock is released, so a drain AFTER a concurrent pair still works", async () => {
+      const account = await seedAccount("ac5-lockfree");
+      await enqueue(db, { kind: "fork", accountId: account, subject: { slug: "s", fork: "l1" } });
+      await Promise.all([deliverPending(db, new RecordingDelivery()), deliverPending(db, new RecordingDelivery())]);
+
+      /* The falsification that matters for a lock: a transaction-scoped lock cannot leak, but a
+         SESSION-scoped one taken and released on different pooled connections would wedge here
+         forever. This cell is what tells those two implementations apart. */
+      await enqueue(db, { kind: "fork", accountId: account, subject: { slug: "s", fork: "l2" } });
+      const after = new RecordingDelivery();
+      expect(await deliverPending(db, after)).toBe(1);
+      expect(after.sent[0]!.subject["fork"]).toBe("l2");
+    });
+
     it("a delivered row is never handed to the seam again", async () => {
       const account = await seedAccount("ac5-once");
       await enqueue(db, { kind: "fork", accountId: account, subject: { slug: "s", fork: "f" } });
@@ -653,6 +692,41 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
       ).toHaveLength(1);
     });
 
+    it("D-190-09(2): the PUBLISHER is excluded from its own repin fan-out", async () => {
+      const publisher = await seedAccount("rp-publisher");
+      const other = await seedAccount("rp-other");
+      await seedPinning(publisher, "rp-pub", "public", ["solver-a@1.0.0"]);
+      await seedPinning(other, "rp-oth", "public", ["solver-a@1.0.0"]);
+
+      await enqueueRepinEvents(db, "solver-a", "2.0.0", publisher);
+
+      expect(
+        await queueRows(publisher),
+        "an account that pins a card and then publishes its new version already knows",
+      ).toHaveLength(0);
+      expect(
+        await queueRows(other),
+        "and the exclusion is targeted — everybody else still hears about it",
+      ).toHaveLength(1);
+    });
+
+    it("omitting the publisher notifies every pinner, so the filter is inert until wired", async () => {
+      const pinner = await seedAccount("rp-nopub");
+      await seedPinning(pinner, "rp-nopub-b", "public", ["solver-a@1.0.0"]);
+      /* The third control D-190-09(2) needs: without it, "the publisher got nothing" is equally
+         true of an implementation that notifies nobody. */
+      await enqueueRepinEvents(db, "solver-a", "2.0.0");
+      expect(await queueRows(pinner)).toHaveLength(1);
+    });
+
+    it("the published arity is 3 — `= undefined`, not `?`", () => {
+      expect(
+        enqueueRepinEvents.length,
+        "the ruled spelling is `publisherAccountId: string | undefined = undefined`. A `?` " +
+          "erases at compile time with no default emitted, which leaves this at 4.",
+      ).toBe(3);
+    });
+
     it("two versions of one card are two rows", async () => {
       const pinner = await seedAccount("rp-versions");
       await seedPinning(pinner, "rp-v", "public", ["solver-a@1.0.0"]);
@@ -660,6 +734,69 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
       await enqueueRepinEvents(db, "solver-a", "2.1.0");
       expect(await queueRows(pinner)).toHaveLength(2);
     });
+  });
+
+  /* ─────────────── the migration ─────────────── */
+
+  describe("0005_notifications rolls back on its own and re-applies", () => {
+    /**
+     * A database of this suite's OWN, because this cell rolls a migration back and the shared
+     * `testDb` above is what every other cell here is standing on.
+     *
+     * The property is T005's, not mine: `t005Migrations` is every applied id except
+     * `0001_init` (`tests/server/t005/harness.ts:359`), so `reversibility.test.ts` will roll
+     * `0005` back STEPWISE at the merge. Measuring it here means finding out now rather than
+     * inside somebody else's suite.
+     */
+    it("down drops exactly its own three objects and leaves the base tables standing", async () => {
+      const own = await createTestDb();
+      try {
+        const objects = async (): Promise<{ tables: string[]; types: string[] }> => {
+          const t = await own.client.query(
+            `select table_name from information_schema.tables where table_schema = 'public'`,
+          );
+          const y = await own.client.query(
+            `select typname from pg_type where typnamespace = 'public'::regnamespace and typtype = 'e'`,
+          );
+          return {
+            tables: t.rows.map((r) => String(r["table_name"])).sort(),
+            types: y.rows.map((r) => String(r["typname"])).sort(),
+          };
+        };
+
+        const before = await objects();
+        /* The premise. Without it the disappearance below could be of something that was never
+           there, and the cell would pass against a migration that created nothing. */
+        expect(before.tables).toContain("notification_queue");
+        expect(before.tables).toContain("unsubscribe_token");
+        expect(before.types).toContain("notification_kind");
+
+        const rolled = await migrateDown(own.client.pool, 1);
+        expect(rolled, "exactly one step, and it is mine").toEqual(["0005_notifications"]);
+
+        const after = await objects();
+        expect(after.tables).not.toContain("notification_queue");
+        expect(after.tables).not.toContain("unsubscribe_token");
+        expect(after.types).not.toContain("notification_kind");
+
+        /* The half that a `DROP ... CASCADE` would fail. `reversibility.test.ts` reds a down
+           script that reaches past the migration owning it, and the ten base tables are what it
+           would reach into. */
+        for (const base of ["account", "bundle", "release", "card_version", "audit"]) {
+          expect(after.tables, `${base} is base's and this rollback must not touch it`).toContain(base);
+        }
+        expect(
+          after.tables.filter((t) => !before.tables.includes(t)),
+          "and it added nothing either",
+        ).toEqual([]);
+
+        const reapplied = await migrateUp(own.client.pool);
+        expect(reapplied).toEqual(["0005_notifications"]);
+        expect(await objects(), "re-applying restores exactly the same schema").toEqual(before);
+      } finally {
+        await own.drop();
+      }
+    }, 120_000);
   });
 
   /* ─────────────── the schema itself ─────────────── */
