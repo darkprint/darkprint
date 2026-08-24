@@ -21,9 +21,24 @@
    two-part key (D-210-08) answers 5 and meets it. The collision
    is the fixture, not a coincidence in it.
 
-   `acme/widget` is also named TWICE by one card — once at `type`
-   and once at an input port's `type` — so a count of references
-   rather than of distinct cards reads 4 cards where AC2 says 3.
+   AC2 has TWO discriminating shapes and they are different code
+   (C-210-11, corrected into D-210-10). ACROSS arrays: `c1` names
+   the `data-type` `acme/widget` at BOTH port sites, input and
+   output. WITHIN one array: `c2` names the tool `acme/gizmo`
+   twice in `tools`. Either shape read as a reference count answers
+   4 cards where AC2 says 3.
+
+   **The fixture the contract originally named — one term at `type`
+   AND at a port's `type` — is ILLEGAL and is not built here.** The
+   five sites take five DISJOINT term kinds, so the engine refuses
+   that card with `card/wrong-term-kind` at error severity and
+   `publish` refuses the bundle. Every `acme/*` term below is used
+   at exactly ONE kind of site for that reason: `acme/widget` is a
+   data-type at ports, `acme/gizmo` a tool, `acme/gadget` and
+   `acme/secret` risk markers. `kindsAgree` below asserts that
+   about the fixture rather than leaving it to a reading — these
+   rows are inserted directly, so nothing else in this file would
+   notice a state no writer in the product can produce.
 
    `acme/gizmo` is the near-miss that makes both booleans do work:
    three authors over three blueprints, so `meetsAuthors` is true
@@ -142,22 +157,42 @@ beforeAll(async () => {
     .insert(schema.ontologyVersion)
     .values({ version: "0.1.0", digest: "sha256:onto-1" });
 
-  /* c1 names `acme/widget` at TWO sites on one card — AC2's discriminating fixture. */
+  /* c1: AC2 ACROSS arrays — the same data-type at the input and the output port. */
   await card(aliceId, {
     id: "c1",
     author: "ann",
-    type: "acme/widget",
+    type: "agent",
     inputTypes: ["acme/widget"],
+    outputTypes: ["acme/widget"],
     riskMarkers: ["acme/gadget"],
     phases: ["planning"],
   });
-  await card(aliceId, { id: "c2", author: "bea", type: "acme/widget", tools: ["acme/gizmo"] });
-  await card(aliceId, { id: "c3", author: "cyd", type: "acme/widget", tools: ["acme/gizmo"] });
+  /* c2: AC2 WITHIN one array — the same tool twice in `tools`. */
+  await card(aliceId, {
+    id: "c2",
+    author: "bea",
+    type: "agent",
+    inputTypes: ["acme/widget"],
+    tools: ["acme/gizmo", "acme/gizmo"],
+  });
+  await card(aliceId, {
+    id: "c3",
+    author: "cyd",
+    type: "agent",
+    inputTypes: ["acme/widget"],
+    tools: ["acme/gizmo"],
+  });
   await card(aliceId, { id: "c4", author: "dee", type: "agent", tools: ["acme/gizmo"] });
 
   /* AC3's two halves: a private BUNDLE naming a term, and a private CARD naming it. */
-  await card(aliceId, { id: "c5", author: "eve", type: "acme/secret" });
-  await card(aliceId, { id: "c6", author: "fay", type: "acme/secret", visibility: "private" });
+  await card(aliceId, { id: "c5", author: "eve", type: "agent", riskMarkers: ["acme/secret"] });
+  await card(aliceId, {
+    id: "c6",
+    author: "fay",
+    type: "agent",
+    riskMarkers: ["acme/secret"],
+    visibility: "private",
+  });
 
   await publishBundle(aliceId, "b1", ["c1"]);
   await publishBundle(aliceId, "b2", ["c2", "c4"]);
@@ -183,13 +218,50 @@ describe("usageOf", () => {
     });
   });
 
-  it("AC2: one card naming a term at two sites counts one card, not two", async () => {
-    /* Stated as an exclusion rather than as a match: the comment above names the bad
-       output, so the assertion has to refuse it (common-traps). `c1` reaches
-       `acme/widget` through `type` AND through an input port. */
+  it("AC2 ACROSS arrays: one card naming a term at both port sites counts once", async () => {
+    /* Stated as an exclusion rather than as a match: the comment names the bad output, so
+       the assertion has to refuse it. `c1` reaches `acme/widget` through its input port
+       AND its output port, so a reference count answers 4 where AC2 says 3. */
     const { cards: counted } = await usageOf(db, ANON, "acme/widget");
     expect(counted).not.toBe(4);
     expect(counted).toBe(3);
+  });
+
+  it("AC2 WITHIN one array: one card naming a term twice in `tools` counts once", async () => {
+    /* A separate cell because it is separate code: `c2` carries `["acme/gizmo",
+       "acme/gizmo"]`, which across-array dedupe never sees. A reference count answers 4. */
+    const { cards: counted } = await usageOf(db, ANON, "acme/gizmo");
+    expect(counted).not.toBe(4);
+    expect(counted).toBe(3);
+  });
+
+  it("the fixture is legal: no term is used at two different kinds of site", async () => {
+    /* These rows are inserted directly rather than through `publish`, so nothing else here
+       would notice a card the engine refuses. The five sites take five DISJOINT term kinds
+       (`card/wrong-term-kind`, error severity), and the contract's original AC2 fixture —
+       one term at `type` and at a port's `type` — violates exactly this. Asserted rather
+       than read, because a fixture more complete than any writer is green about a state
+       that cannot occur. */
+    const kindOf = new Map<string, string>();
+    const rows = await db.select().from(schema.cardVersion);
+    for (const row of rows) {
+      const card = row.body as NodeCard;
+      const sites: [string, readonly string[]][] = [
+        ["phase", card.phases],
+        ["node-type", [card.type]],
+        ["risk-marker", card.riskMarkers],
+        ["tool", card.tools],
+        ["data-type", [...card.inputs, ...card.outputs].map((port) => port.type)],
+      ];
+      for (const [kind, ids] of sites) {
+        for (const id of ids) {
+          expect(kindOf.get(id) ?? kind).toBe(kind);
+          kindOf.set(id, kind);
+        }
+      }
+    }
+    expect(kindOf.get("acme/widget")).toBe("data-type");
+    expect(kindOf.get("acme/gizmo")).toBe("tool");
   });
 
   it("AC4: a term nothing names is zeros, not absent and not a throw", async () => {

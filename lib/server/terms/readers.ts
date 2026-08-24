@@ -8,14 +8,13 @@
    its own staleness).
 
    ── Why the whole list has a reader at all ──
-   D-210-09 publishes `GET /api/ontology-usage` as every counted
-   term, and neither published reader can produce it: `usageOf`
+   D-210-09 published `GET /api/ontology-usage` as every counted
+   term while neither published reader could produce it: `usageOf`
    answers one id and `candidates` is local-only by D-210-05, so it
-   structurally cannot report `agent` or `json`. The route is ruled
-   and the surface it needs was not, so `usage` is added here and
-   reported as such rather than reached around; a handler
-   deep-importing the index builder would be D-01's defect and
-   would put a second copy of the sort order beside the route.
+   structurally cannot report `agent` or `json`. The route was
+   ruled and the surface it needs was not; charged rather than
+   invented, and ruled back as **D-210-10** with this signature and
+   this sort order.
    ============================================================ */
 
 import { DARKPRINT_CONFIG, splitTermId } from "@/lib/core";

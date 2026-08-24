@@ -15,11 +15,14 @@
    noticed missing.
 
    `usage` is the third reader and it was NOT on the published
-   block. D-210-09 rules `GET /api/ontology-usage` as every counted
-   term and no published reader can answer that — `usageOf` takes
-   one id, `candidates` is local-only — so the surface the ruled
-   route needs is added here and reported, rather than reached
-   around from the handler.
+   block: D-210-09 ruled `GET /api/ontology-usage` as every counted
+   term while no published reader could answer that — `usageOf`
+   takes one id, `candidates` is local-only by D-210-05 — so the
+   route was ruled and its producer was not. Charged rather than
+   invented, and ruled back as **D-210-10** with this exact
+   signature. It is named here because the alternative was a
+   handler deep-importing the index builder, which is D-01's defect
+   and would put a second copy of the sort order beside the route.
 
    The message literal is NOT exported. A test importing its
    expected message from the module under test asserts that the
