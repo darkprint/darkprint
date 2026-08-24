@@ -239,16 +239,53 @@ describe("T190 routes: GET /api/account/notifications/unsubscribe", () => {
    * asserts the difference rather than merely accepting each status on its own — an assertion
    * that took both would be green against an implementation that had collapsed them.
    */
-  it.each(["", "   "])("answers 400 for the empty token %o", async (token) => {
+  it("answers 400 for the empty token ''", async () => {
     const scratch = await setup.require();
     const answer = await withRoutesPointedAt(scratch.url, () =>
-      callRoute("unsubscribe", { query: `token=${encodeURIComponent(token)}` }),
+      callRoute("unsubscribe", { query: "token=" }),
     );
     expect(
       answer.status,
       `D-190-12 publishes \`400 for an EMPTY or ABSENT token\`. It answered ${answer.status}: ` +
         `${answer.body}`,
     ).toBe(400);
+  });
+
+  /**
+   * A WHITESPACE-ONLY token, asserted only as far as the contract goes — and narrowed after I
+   * over-reached on it.
+   *
+   * My first version of the cell above drove `["", "   "]` and demanded 400 for both. It redded,
+   * and the red was mine: D-190-12 says "EMPTY or ABSENT", and `"   "` is neither — it is a
+   * three-character string. `tokenFrom` tests `token === null || token === ""`, so whitespace
+   * passes through as a token and is refused as unknown, which is 404. I had bundled whitespace
+   * into the empty class on my own initiative, which is the guessing this round exists to catch,
+   * and I was doing it while REPOINTING a cell at a ruling.
+   *
+   * So this asserts what IS ruled and no more: whatever the status, the request must be REFUSED
+   * and must render the one published sentence. Whether a whitespace-only token is "empty" for
+   * D-190-12's purposes is an open boundary, reported rather than decided here.
+   *
+   * Worth noting for whoever rules it: at the MODULE level `""` and `"   "` are already
+   * identical — `unsubscribe.test.ts` drives both and both answer "this link is no longer
+   * valid." The split exists only at the wire.
+   */
+  it("refuses a whitespace-only token, and the status is an OPEN boundary", async () => {
+    const scratch = await setup.require();
+    const answer = await withRoutesPointedAt(scratch.url, () =>
+      callRoute("unsubscribe", { query: `token=${encodeURIComponent("   ")}` }),
+    );
+
+    expect(
+      answer.status,
+      `a whitespace-only token was ACCEPTED (${answer.status}). Whichever of 400 or 404 is ` +
+        `right, it is not a success.`,
+    ).not.toBe(200);
+    expect(
+      [400, 404],
+      `a whitespace-only token answered ${answer.status}, which is outside the two statuses ` +
+        `D-190-12 publishes for a refusal on this route.`,
+    ).toContain(answer.status);
   });
 
   it("answers 400 with no token parameter at all", async () => {
