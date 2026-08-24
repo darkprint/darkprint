@@ -34,7 +34,7 @@ import {
   RUN_CLI,
 } from "./contract";
 import { ARCHIVE, OVERLAY_SLUG } from "./fixtures";
-import { stubRegistry, type StubRegistry } from "./registry";
+import { stubRegistry, twoReleaseVersions, type StubRegistry } from "./registry";
 
 let registry: StubRegistry | undefined;
 let previousUrl: string | undefined;
@@ -310,5 +310,50 @@ describe("D-270-06 — `--out` defaults to `./<slug>` and `root` is ABSOLUTE", (
     for (const file of result.files) {
       expect(isAbsolute(file), `\`${file}\` is absolute; files are bundle-relative`).toBe(false);
     }
+  });
+});
+
+describe("D-270-07 — `latest` is the CURRENT release, not the first listed (Z6 closed)", () => {
+  it("resolves the highest semver when neither --version nor --digest is given", async () => {
+    /* Z6 WAS A DISCLOSED ZERO AND IS NOW CLOSED. With one release published, latest and oldest
+       are the same object, so the "neither given = latest" cell could not discriminate a CLI
+       resolving the newest from one taking `releases[0]`. D-270-07 rules latest as the release
+       the registry treats as CURRENT — highest semver by `compareVersionStrings`, D-100-01
+       AC8's own reading — and authorises this two-release stub.
+
+       Ordered OLDEST FIRST on purpose: a CLI taking `releases[0]` lands on the wrong one. And
+       only the newer release carries the real digest, so a CLI resolving the older fetches a
+       digest the files route does not serve and fails loudly rather than quietly returning the
+       right bytes for the wrong reason. */
+    const slug = ARCHIVE[0].slug;
+    const { older, newer } = twoReleaseVersions();
+    const real = stubRegistry(slug);
+    real.restore();
+
+    registry = stubRegistry(slug, {
+      releases: [
+        { version: older, digest: "sha256:" + "1".repeat(64) },
+        { version: newer, digest: real.digest },
+      ],
+    });
+    const out = mkdtempSync(join(tmpdir(), "t270-latest-"));
+
+    /* The premise: the two releases must actually differ, or the cell discriminates nothing. */
+    expect(registry.releases[0].digest).not.toBe(registry.releases[1].digest);
+
+    const clone = await bindVerb("clone");
+    const result = (await clone("someone/" + slug as never, {
+      out,
+      baseUrl: registry.base,
+      fetch: globalThis.fetch,
+    } as never)) as { digest: string; version?: string };
+
+    /* Excludes the bad output rather than admitting the good one: asserting only that the
+       digest is one of the two would pass against a CLI that took the first listed. */
+    expect(result.digest, "clone resolved a release that is not the current one").toBe(
+      registry.releases[1].digest,
+    );
+    expect(result.digest).not.toBe(registry.releases[0].digest);
+    expect(result.version, "`version` is reported for a caller that named none").toBeUndefined();
   });
 });

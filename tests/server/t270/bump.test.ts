@@ -29,7 +29,16 @@
 
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 
-import { bindVerb, bumpEnough, BUMP_ARITY, loadCli, recordingIo, RUN_CLI } from "./contract";
+import {
+  bindVerb,
+  bumpEnough,
+  BUMP_ARITY,
+  CLI_ERROR,
+  loadCli,
+  NO_TARGET_MESSAGE,
+  recordingIo,
+  RUN_CLI,
+} from "./contract";
 import { cleanupFolders, writeBundleFolder, ARCHIVE } from "./fixtures";
 import { serverBumpDiagnostics, SNAPSHOT_PAIRS, SNAPSHOT_PAIRS_ERROR } from "./references";
 import { stubRegistry, type StubRegistry } from "./registry";
@@ -79,7 +88,7 @@ describe("AC2 — the rendered refusal keeps the engine's reasons", () => {
       const io = recordingIo();
       const barrel = await loadCli();
       const runCli = barrel[RUN_CLI] as (argv: readonly string[], io: unknown) => Promise<number>;
-      await runCli(["bump", dir, "--declare", pair.previousVersion], io);
+      await runCli(["bump", dir, "--target", "someone/" + slug, "--declare", pair.previousVersion], io);
 
       const rendered = io.all();
       expect(rendered, "bump rendered nothing at all").not.toBe("");
@@ -112,7 +121,7 @@ describe("AC2 — the rendered refusal keeps the engine's reasons", () => {
       const io = recordingIo();
       const barrel = await loadCli();
       const runCli = barrel[RUN_CLI] as (argv: readonly string[], io: unknown) => Promise<number>;
-      const code = await runCli(["bump", dir, "--declare", pair.previousVersion], io);
+      const code = await runCli(["bump", dir, "--target", "someone/" + slug, "--declare", pair.previousVersion], io);
 
       expect(code, `bump exited 0 on a refused declaration. rendered: ${io.all()}`).not.toBe(0);
     },
@@ -156,6 +165,10 @@ describe("D-270-06 — `bump`'s published spelling and its SUCCESS path", () => 
 
       const bump = await bindVerb("bump");
       const actual = await bump(dir as never, satisfying as never, {
+        /* D-270-07 (1). Nothing in a bundle directory can supply the owner — no manifest in an
+           export folder, no `author` on D3's stub, no owner in the README — and both registry
+           routes are keyed `{owner}/{slug}`, so the CALLER supplies it. */
+        target: "someone/" + slug,
         baseUrl: registry.base,
         fetch: globalThis.fetch,
       } as never);
@@ -188,11 +201,78 @@ describe("D-270-06 — `bump`'s published spelling and its SUCCESS path", () => 
       const io = recordingIo();
       const barrel = await loadCli();
       const runCli = barrel[RUN_CLI] as (argv: readonly string[], io: unknown) => Promise<number>;
-      const code = await runCli(["bump", dir, "--declare", satisfying], io);
+      const code = await runCli(["bump", dir, "--target", "someone/" + slug, "--declare", satisfying], io);
 
       expect(code, `bump exited ${code} on a satisfying declaration`).toBe(0);
       expect(io.out_.join("\n")).toContain(bumpEnough(satisfying));
       expect(io.err_.join("\n"), "success reached io.err").toBe("");
     },
   );
+});
+
+describe("D-270-07 — an absent `--target` refuses OFFLINE", () => {
+  it("refuses with the ruled sentence and makes NO network call", async () => {
+    /* D-270-07 (1). The owner cannot be recovered from the folder — an export folder carries
+       no manifest, D-270-02 D3's stub has no `author`, `README.md` names no owner, and a
+       hand-written `author` is D-250-18's stale claim — while both registry routes are keyed
+       `{owner}/{slug}`. So the CLI can know this request is unanswerable before it asks
+       anyone, and "before any network call" is the ruled half.
+
+       Same shape as `clone`'s mutual exclusion: `fetch` replaced with a throw and the call
+       count asserted to ZERO. A CLI that resolved provenance and then discovered it had no
+       owner to resolve it FOR would satisfy a message check while making a request it could
+       have known was pointless. The message assertion alone admits that; the count excludes it. */
+    const entry = ARCHIVE[0];
+    const dir = writeBundleFolder(entry.bundle, { manifest: "blueprint.yaml" });
+
+    let reached = 0;
+    const real = globalThis.fetch;
+    globalThis.fetch = (() => {
+      reached += 1;
+      throw new Error("ENETDOWN");
+    }) as typeof globalThis.fetch;
+
+    try {
+      const bump = await bindVerb("bump");
+      const thrown = await (bump(dir as never, "2.0.0" as never) as Promise<unknown>).then(
+        () => undefined,
+        (err: unknown) => err,
+      );
+
+      expect(thrown, "bump accepted a call with no target").toBeInstanceOf(Error);
+      expect((thrown as Error).message).toBe(NO_TARGET_MESSAGE);
+      expect((thrown as Error).constructor.name).toBe(CLI_ERROR);
+      expect(reached, "bump reached the network before refusing for a missing target").toBe(0);
+    } finally {
+      globalThis.fetch = real;
+    }
+  });
+
+  it("does not refuse when a target IS given", async () => {
+    /* THE NEAR MISS. One option different and the answer must flip. Without it, a `bump` that
+       threw `bump: give --target …` unconditionally would pass the cell above and fail every
+       real caller — and every other bump cell here reds on the absent module today, so nothing
+       else would catch it at first contact either. */
+    const pair = SNAPSHOT_PAIRS[0];
+    const entry = ARCHIVE.find((bundle) => bundle.slug === pair.slug)!;
+    const dir = writeBundleFolder(entry.bundle, { manifest: "blueprint.yaml" });
+    registry = stubRegistry(pair.slug, {
+      releases: [{ version: pair.previousVersion, digest: "sha256:" + "0".repeat(64) }],
+    });
+
+    const bump = await bindVerb("bump");
+    const thrown = await (bump(dir as never, pair.previousVersion as never, {
+      target: "someone/" + pair.slug,
+      baseUrl: registry.base,
+      fetch: globalThis.fetch,
+    } as never) as Promise<unknown>).then(
+      () => undefined,
+      (err: unknown) => err,
+    );
+
+    expect(
+      thrown instanceof Error && thrown.message === NO_TARGET_MESSAGE,
+      "bump refused for a missing target while a target was given",
+    ).toBe(false);
+  });
 });

@@ -41,7 +41,27 @@ export interface StubRegistry {
   readonly calls: string[];
   /** Requests that matched no route — a cell reports these rather than guessing. */
   readonly unmatched: string[];
+  /** Every release the provenance answer publishes, in the order it publishes them. */
+  readonly releases: readonly { version: string; digest: string }[];
   restore(): void;
+}
+
+/**
+ * A provenance answer carrying TWO releases, oldest first, so "latest" is discriminable.
+ *
+ * D-270-07 rules "latest" as the release the registry treats as CURRENT — highest semver by
+ * `compareVersionStrings`, the same reading D-100-01 AC8 gives `previous`. With a single
+ * release published, latest and oldest are the same object and no cell can tell a CLI that
+ * resolves the newest from one that resolves the first in the list. This is the fixture that
+ * separates them, and it is deliberately ordered OLDEST FIRST: a CLI taking `releases[0]`
+ * must land on the wrong one.
+ *
+ * Only `v2` carries the real digest and the real files. A CLI resolving `v1` fetches a digest
+ * the files route does not serve and fails loudly rather than quietly returning the right
+ * bytes for the wrong reason.
+ */
+export function twoReleaseVersions(): { older: string; newer: string } {
+  return { older: "1.0.0", newer: "2.0.0" };
 }
 
 /**
@@ -109,6 +129,7 @@ export function stubRegistry(
     files,
     calls,
     unmatched,
+    releases,
     restore: () => {
       globalThis.fetch = real;
     },

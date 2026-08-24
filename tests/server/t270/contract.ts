@@ -723,6 +723,19 @@ export function bumpEnough(declared: string): string {
   return BUMP_ENOUGH_TEMPLATE.replace("<declared>", declared);
 }
 
+/**
+ * `bump: give --target <owner>/<slug>.` — D-270-07 (1), refused OFFLINE before any network call.
+ *
+ * The owner cannot come from the folder: an export folder carries no manifest, D-270-02 D3's
+ * stub has no `author`, `README.md` names no owner, and a hand-written `author` is D-250-18's
+ * stale claim — while both registry routes are keyed `{owner}/{slug}`. So the caller must
+ * supply it, and an absent target is a refusal the CLI can make without asking anyone.
+ */
+export const NO_TARGET_MESSAGE = sentenceIn(
+  /`(bump: give --target <owner>\/<slug>\.)`/,
+  "bump-no-target",
+);
+
 /** The class D-270-06 names for the offline refusal. */
 export const CLI_ERROR = "CliError";
 
