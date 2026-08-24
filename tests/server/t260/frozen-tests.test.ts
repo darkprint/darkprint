@@ -63,7 +63,12 @@ const FROZEN: readonly Frozen[] = [
   },
   {
     path: "components/site/honesty.test.ts",
-    blob: "a7e8b77bbf2c4cd42e82f2087bc2d0ccd6568315",
+    blob: "a6143c8632bcfa5acd427fdb59b1e9b8954ec427" /* re-pinned DELIBERATELY at T260's merge:
+      T263's 528806a (D-263-12, the drop control stops saying nothing is uploaded) moved the
+      file through the backend merge — the T260 implementer never touched it (verified:
+      git log backend..feat/t260-browse -- <file> is empty but a merge commit). The pin
+      fired exactly as designed; updating it here, with the cause named, is the deliberate
+      re-pin its own message demands rather than the silent one it forbids. */,
     owner: "nobody in this wave; amended by T263 under D-263-04",
     why:
       "AC3 names it. It pins its sentences VERBATIM, so changing one is changing this file in the same commit with the new sentence pinned — which is the mechanism D-78's one-direction rule relies on. Note that none of its pinned surfaces is a T260 route (D-260-09), so this pin holds the file, not this task's honesty; `ac4-markers.test.ts` is the instrument for that.",
