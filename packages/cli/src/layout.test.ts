@@ -1,0 +1,110 @@
+/* ============================================================
+   The directory reader's own criteria, and one hole AC1 cannot
+   cover.
+
+   ── why this file exists beside `validate.test.ts` ──
+   AC1 compares the CLI against the server over the nine archive
+   bundles, and those nine are all CLEAN once the archive's
+   vocabulary is layered: not one card in them produces a
+   diagnostic. `location.file` is therefore never populated from a
+   card key anywhere in that fixture set, and a mutation keying the
+   cards `<name>` instead of `cards/<name>` reddened 0 of 11 AC1
+   cells. The criterion is blind to it by construction, so the
+   discriminating case is built here rather than assumed covered.
+   ============================================================ */
+
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, describe, expect, it } from "vitest";
+
+import { readBundleDirectory } from "./layout";
+import { validate } from "./validate";
+import { CliError } from "./errors";
+
+const scratch = mkdtempSync(join(tmpdir(), "darkprint-cli-"));
+afterAll(() => {
+  rmSync(scratch, { recursive: true, force: true });
+});
+
+/** A copy of one archive bundle, for a test that needs to break something in it. */
+function bundleCopy(name: string, slug = "frontline-triage"): string {
+  const dir = join(scratch, name);
+  cpSync(`public/bundles/${slug}`, dir, { recursive: true });
+  return dir;
+}
+
+describe("the card key is the bundle-relative path, and a diagnostic proves it", () => {
+  it("names a broken card `cards/<file>`, not `<file>`", () => {
+    const dir = bundleCopy("card-key");
+    const card = join(dir, "cards", "kb-resolver@1.0.0.yaml");
+    /* An unrooted local term: `card/unknown-term` carries `location.file`, which is the
+       key the reader chose. Appended rather than rewritten so the rest of the card still
+       parses and the diagnostic is about the term and not about the document. */
+    writeFileSync(card, `${readFileSync(card, "utf8")}\nrisk_markers:\n  - nobody/invented-this\n`);
+
+    const named = validate(dir).diagnostics.filter((d) => d.location?.file?.includes("kb-resolver"));
+    expect(named.length).toBeGreaterThan(0);
+    for (const diagnostic of named) {
+      expect(diagnostic.location?.file).toBe("cards/kb-resolver@1.0.0.yaml");
+    }
+  });
+});
+
+describe("D-270-04(3) — two vocabulary spellings", () => {
+  it("accepts both when they are byte-identical, and uses the terms", () => {
+    const dir = bundleCopy("vocab-same");
+    writeFileSync(join(dir, "extensions.yaml"), readFileSync(join(dir, "ontology/extensions.yaml"), "utf8"));
+
+    const read = readBundleDirectory(dir);
+    expect(read.vocabularyConflict).toBeUndefined();
+    expect(read.extensions?.length).toBeGreaterThan(0);
+  });
+
+  it("refuses to choose when they differ, names BOTH paths, and uses neither", () => {
+    const dir = bundleCopy("vocab-differs");
+    writeFileSync(join(dir, "extensions.yaml"), "terms: []\n");
+
+    const read = readBundleDirectory(dir);
+    expect(read.extensions).toBeUndefined();
+    const message = read.vocabularyConflict?.message ?? "";
+    /* Both paths, asserted separately: a message naming one of the two is exactly the
+       silent-precedence failure the ruling forbids, and a single `toContain` over the
+       joined sentence would admit it. */
+    expect(message).toContain("ontology/extensions.yaml");
+    expect(message).toContain("extensions.yaml");
+    expect(read.vocabularyConflict?.severity).toBe("error");
+  });
+
+  it("puts the conflict into the diagnostics `validate` answers with", () => {
+    const dir = bundleCopy("vocab-reaches-validate");
+    writeFileSync(join(dir, "extensions.yaml"), "terms: []\n");
+
+    const codes = validate(dir).diagnostics.map((d) => d.message);
+    expect(codes.some((m) => m.includes("two different local vocabularies"))).toBe(true);
+  });
+});
+
+describe("the directory itself", () => {
+  it("refuses a folder with no blueprint.dot, naming what it looked in", () => {
+    const dir = join(scratch, "empty");
+    mkdirSync(dir, { recursive: true });
+    expect(() => validate(dir)).toThrow(CliError);
+    expect(() => validate(dir)).toThrow(/blueprint\.dot/);
+  });
+
+  it("reads a manifest when the folder carries one, and says which file it was", () => {
+    const dir = bundleCopy("with-manifest");
+    writeFileSync(join(dir, "blueprint.yml"), 'slug: hand-written\ntitle: Hand Written\n');
+
+    const read = readBundleDirectory(dir);
+    /* `.yml`, not `.yaml` — the wizard's regex accepts three spellings and D-270-02 D3
+       binds the implementation to that same regex. A reader hard-coding `blueprint.yaml`
+       passes every archive fixture and fails this. */
+    expect(read.manifestFile).toBe("blueprint.yml");
+    expect(read.manifest.slug).toBe("hand-written");
+    /* The stub still supplies what the document omitted, which is why a partial manifest
+       from the wizard is not a refusal. */
+    expect(read.manifest.ontologyVersion).toBe("0.1.0");
+  });
+});
