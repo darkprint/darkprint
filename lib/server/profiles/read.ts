@@ -15,6 +15,8 @@ import type { Actor } from "@/lib/server/policy";
 import { blueprints, cardsOwnedBy } from "@/lib/server/registry";
 import { schema, type Db } from "@/lib/db";
 
+import { readPins, resolvePins } from "./pins";
+import { countSupport, countValidated, countWatchers } from "./social";
 import { withProfileStore } from "./store";
 import { countNamespacedTerms } from "./terms";
 import type { ProfileRecord } from "./types";
@@ -75,9 +77,35 @@ export async function getProfile(
      countable is counted and never stored as a counter. */
   const cards = await cardsOwnedBy(db, actor, handle);
 
+  /* T131. The four fields D-130-06 cut for want of a column, back on the terms `counts`
+     already holds: `watchers` and `support` are `count(*)` over `0004_social`'s rows and
+     `validated` is a count over run reports, so there is still no counter column anywhere and
+     AC1's inherited clause is untouched. Each statement is wrapped where it is issued, and
+     the registry call inside `resolvePins` is deliberately OUTSIDE the wrapper — re-wrapping
+     a `RegistryStoreError` relabels a store that was working (`store.ts`'s own argument). */
+  const [watchers, support, validated, storedPins] = await withProfileStore("getProfile", () =>
+    Promise.all([
+      countWatchers(db, row.id),
+      countSupport(db, row.id),
+      countValidated(db, row.id),
+      readPins(db, row.id),
+    ]),
+  );
+
+  /* The owner's own visible slugs, which `counts.blueprints` already computed. A blueprint
+     pin resolves against THIS handle's bundles and not against the archive at large (A5,
+     D-131-04): `bundle_owner_slug_key` is unique per owner, so a bare slug names a bundle
+     only once an owner is fixed. Reusing `owned` is also what keeps pin resolution from
+     issuing a second registry read. */
+  const pinned = await resolvePins(db, actor, storedPins, new Set(owned.map((b) => b.slug)));
+
   return {
     author,
     joinedAt: row.createdAt,
+    watchers,
+    support,
+    validated,
+    pinned,
     counts: {
       blueprints: owned.length,
       cards: cards.length,

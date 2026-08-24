@@ -19,6 +19,7 @@ import {
   checkSlug,
   HandleTakenError,
   InvalidNameError,
+  MAX_HANDLE_LENGTH,
   MAX_NAME_LENGTH,
   NamingStoreError,
   releaseHandle,
@@ -382,19 +383,30 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
 
   /* ---------- D-70-13: the check may not promise what the store cannot hold ---------- */
 
-  it("D-70-13: everything the grammar admits, the store accepts", async () => {
+  it("D-70-13: everything the handle door admits, the store accepts", async () => {
     const owner = await accountId("gh-maxlen");
-    const atLimit = nameOfLength(MAX_NAME_LENGTH);
-    expect(atLimit).toHaveLength(MAX_NAME_LENGTH);
+    /* **Re-quantified by T071 over the bound this door actually applies** (D-071-01(5)).
+       The invariant is unchanged and it is the one D-70-13 was raised for: availability and
+       allocation must never disagree, at whatever length the door stops admitting. What
+       moved is which constant that is. `MAX_NAME_LENGTH` is the STORAGE bound and after
+       D-70-15 no handle door reaches it; `MAX_HANDLE_LENGTH` is what `checkHandle` and
+       `allocateHandle` now admit up to, so the boundary worth driving end to end is this
+       one. Quantified over the door rather than over the number, so it follows the bound
+       if the bound moves again. */
+    const atLimit = nameOfLength(MAX_HANDLE_LENGTH);
+    expect(atLimit).toHaveLength(MAX_HANDLE_LENGTH);
 
-    /* The invariant, driven end to end rather than asserted about the constant: whatever
-       `MAX_NAME_LENGTH` is set to, a name of exactly that length must survive the write.
-       Raising it past what a btree index tuple can hold reds here rather than reaching a
-       user as `checkHandle` promising a name `allocateHandle` answers 54000 for. */
+    /* Driven end to end rather than asserted about the constant: a name of exactly the
+       bound must survive the write. A bound raised past what a btree index tuple can hold
+       still reds here rather than reaching a user as `checkHandle` promising a name
+       `allocateHandle` answers 54000 for. */
     expect(await checkHandle(client.db, atLimit)).toEqual({ available: true });
     await expect(allocateHandle(client.db, owner, atLimit)).resolves.toBeUndefined();
 
-    const overLimit = nameOfLength(MAX_NAME_LENGTH + 1);
+    /* One past the PRODUCT bound, which Postgres stores and indexes without complaint — so
+       a refusal here can only be this module's own. That is what makes 33 the discriminating
+       case and 256 merely a true one. */
+    const overLimit = nameOfLength(MAX_HANDLE_LENGTH + 1);
     expect(await checkHandle(client.db, overLimit)).toEqual({
       available: false,
       reason: "illegal",
@@ -433,26 +445,34 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
     await expect(allocateHandle(client.db, second, answer.suggestion!)).resolves.toBeUndefined();
   });
 
-  it("D-70-18: a name at the length bound is still owed a suggestion that fits", async () => {
+  it("D-70-18: a handle at the product bound is still owed a suggestion that fits", async () => {
     const owner = await accountId("gh-bound-suggest");
-    const atLimit = nameOfLength(MAX_NAME_LENGTH);
+    /* **Re-pointed by T071 to the 32 band** (D-071-01(5)), and the move is what makes the
+       cell mean anything again. D-70-20 ruled that the generator SHORTENS rather than only
+       appending, because at the bound every `<name>-2` overflows. At 255 that clause is now
+       unreachable through this door — nothing admits a 255-character handle any more — so
+       the cell would have gone vacuous while still passing. `MAX_HANDLE_LENGTH` is where the
+       clause is live, and D-071-01(3) is the reason it needed a fix at all: a stem cut
+       against `MAX_NAME_LENGTH` returns a 34-character suggestion for a taken 32-character
+       handle, which `checkHandle` itself calls illegal and `allocateHandle` refuses. */
+    const atLimit = nameOfLength(MAX_HANDLE_LENGTH);
     await allocateHandle(client.db, owner, atLimit);
 
-    /* The boundary is where "required" would otherwise be unsatisfiable: every variant of
-       a full-length name overflows, so the stem is cut to leave room for the suffix. */
     const answer = await checkHandle(client.db, atLimit);
     expect(answer.available).toBe(false);
     expect(answer.reason).toBe("taken");
     expect(answer.suggestion).toBeDefined();
-    expect(answer.suggestion!.length).toBeLessThanOrEqual(MAX_NAME_LENGTH);
+    /* The bound the HANDLE door applies, not the storage one. Asserted with `MAX_NAME_LENGTH`
+       this passes against the exact defect it exists to catch: 34 is comfortably under 255. */
+    expect(answer.suggestion!.length).toBeLessThanOrEqual(MAX_HANDLE_LENGTH);
     expect(validateNamespace(answer.suggestion!)).toEqual([]);
-    /* D-70-20: the generator SHORTENS rather than only appending, and it shortens by
-       exactly as much as the suffix needs — `<253 chars>-2`, not a stem cut to some fixed
-       reserved width. Pinned as an equality against the caller's own name so an
-       appending-only generator and an over-eager one both red. */
-    expect(answer.suggestion).toBe(`${atLimit.slice(0, MAX_NAME_LENGTH - 2)}-2`);
-    expect(answer.suggestion).toHaveLength(MAX_NAME_LENGTH);
-    /* And it is a real name, not merely a legal string: the store takes it. */
+    /* D-70-20: shortened by exactly as much as the suffix needs — `<30 chars>-2`, not a stem
+       cut to some fixed reserved width. Pinned as an equality against the caller's own name
+       so an appending-only generator and an over-eager one both red. */
+    expect(answer.suggestion).toBe(`${atLimit.slice(0, MAX_HANDLE_LENGTH - 2)}-2`);
+    expect(answer.suggestion).toHaveLength(MAX_HANDLE_LENGTH);
+    /* And it is a real name, not merely a legal string: the store takes it. This is the
+       assertion that would have caught the 34-character suggestion on its own. */
     const second = await accountId("gh-bound-suggest-2");
     await expect(allocateHandle(client.db, second, answer.suggestion!)).resolves.toBeUndefined();
   });

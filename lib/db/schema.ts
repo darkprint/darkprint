@@ -623,3 +623,145 @@ export const cardVersionEmbedding = pgTable("card_version_embedding", {
   embedding: vector("embedding", { dimensions: 384 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/* ============================================================
+   T131 — follows, pins and per-account support
+
+   Three tables and one new enum type, appended under D-131-03's
+   migration coordinates (`0004_social`; T190 holds `0005`) so two
+   schema-extending tasks in flight together cannot collide on a
+   number. A textual conflict here at whichever merge lands second
+   is expected and is the orchestrator's to resolve.
+
+   ── extension means NEW, and that is a ruling rather than a taste ──
+   D-131-02. The section this implements says `target_kind` and
+   `target_actor_kind` "both need an `ALTER TYPE`", and the merged
+   code corrects it: T005 AC7's guard reds any base enum that
+   gained, lost or reordered a label, and its comment names these
+   two as the exact temptation — `target_kind` gaining a member
+   widens what every merged task's `target` rows may hold. So a
+   follow is its OWN table with both sides accounts, rather than a
+   `target_actor` row pointing at an account it cannot name.
+
+   ── and not one counter column, which is the whole inheritance ──
+   `watchers` and `support` are `count(*)` over the rows below.
+   T130's AC1 travels here unchanged: anything countable is
+   counted, never stored as a counter. A `watchers integer` on
+   `account` would satisfy every sentence in the section and drift
+   the first time an account is deleted, with nothing to red.
+   ============================================================ */
+
+/** The two arms of `lib/data/profiles.ts:29`'s `PinnedRef`, and NOT `target_kind`'s set — that one is frozen (D-131-02), and it differs by a member besides: `card`/`term` against `node`. */
+export const pinKind = pgEnum("pin_kind", ["blueprint", "node"]);
+
+/* --------------------- follow (T131, AC4) --------------------- */
+
+/**
+ * One row per `(follower, followed)`, both accounts. `watchers` is the count of
+ * rows for one `followedId` and is never a column, per AC1's inherited clause.
+ *
+ * The unique index IS the idempotency guarantee rather than an index on top of
+ * one — T005's reasoning for `save`, and the reason `toggleFollow` cannot
+ * double-count under two concurrent callers the way a `SELECT`-then-`INSERT`
+ * would.
+ *
+ * **NO ACTION on both sides, and the CASCADE that stood here was REVOKED at
+ * D-131-11 after a merged guard caught it.** I argued for the cascade on the
+ * grounds that AC4's derived-versus-stored discriminator needs a FOLLOWER's
+ * account row deleted behind the module's back, and the premise was false:
+ * **T120 never deletes an account row — D-120-01 rules the tombstone precisely
+ * BECAUSE the structure refuses the delete**, so a cascading key removes the
+ * structural fact that ruling rests on, and `tests/server/t120/instruments.test.ts`
+ * reds naming all five keys.
+ *
+ * **The discriminator does not need it and never did.** T130's blind author
+ * could not separate a derived count from a counter because **no follow table
+ * existed** (`test/t130-profiles` `32556b7`, `follow.test.ts`'s header, which
+ * reported the hole and declined to fake it). This table is the fix: a cell
+ * deletes a row from `follow` directly and watches `watchers` move, touching
+ * `account` not at all. The cascade bought a fixture for a state the product
+ * cannot reach, at the cost of a merged task's premise.
+ */
+export const follow = pgTable("follow", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  followerId: uuid("follower_id").notNull().references(() => account.id),
+  followedId: uuid("followed_id").notNull().references(() => account.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("follow_follower_followed_key").on(t.followerId, t.followedId),
+  /* The counted direction. The unique index leads with `follower_id`, which is
+     what idempotency needs; `watchers` reads the other column on every profile
+     load. `run_report_account_id_idx` is the merged precedent. */
+  index("follow_followed_id_idx").on(t.followedId),
+]);
+
+/* --------------------- profile_pin (T131, AC3) --------------------- */
+
+/**
+ * At most two, which is what the two-column grid holds.
+ *
+ * `position` carries the ORDER, which the union does not: `pinned` is an array
+ * whose first entry is the first card drawn, and a set with no order redraws a
+ * profile differently on each read. The unique index on `(accountId, position)`
+ * is what makes a slot hold one pin.
+ *
+ * `kind`/`ref` are `lib/data/profiles.ts:29`'s `PinnedRef` spelled into columns
+ * (D-131-01): a `blueprint` pin's `slug`, or a `node` pin's canonical
+ * `id@version`. The union is imported by the module and never restated, so a
+ * drift is a compile error rather than a quietly empty array.
+ *
+ * **`ref` has no foreign key, and that is deliberate.** AC3 makes an
+ * unresolvable pin ABSENT from the read, so every AC3 cell needs a stored pin
+ * whose target is then removed — and a reference, or a write-time resolution
+ * check, would make that fixture unbuildable and the criterion undrivable
+ * through the published surface (D-131-04's A7: a write-time guard removes the
+ * reader's witnesses). Resolution and the actor filter both happen in
+ * `getProfile`, which is where the criterion can be observed.
+ *
+ * The max of two is `setPins`' to refuse and is not written here as a check. It
+ * is a published arity bound rather than a shape the storage enforces, and
+ * pinning it in the DDL would leave the module's own refusal unfalsifiable —
+ * the driver would answer first, with a store fault in place of a refusal.
+ */
+export const profilePin = pgTable("profile_pin", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  accountId: uuid("account_id").notNull().references(() => account.id),
+  position: smallint("position").notNull(),
+  kind: pinKind("kind").notNull(),
+  ref: text("ref").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("profile_pin_account_position_key").on(t.accountId, t.position),
+]);
+
+/* --------------------- account_support (T131) --------------------- */
+
+/**
+ * Community support for a PERSON — one row per supporter, `support` derived by
+ * count. The subject being an account is what separates this from every star in
+ * the archive, and three merged surfaces say so: the fixture's own docblock
+ * (`lib/data/profiles.ts:41-44`, "the same seeded figure `FavoriteStar` prints
+ * beside a blueprint"), `ProfileHeader.tsx:174` ("at the one place on the site
+ * where the subject is a person rather than a bundle"), and
+ * `ProfileShell.tsx:76-78`, which computes the fold over this handle's items as
+ * `stars` and passes `support` through untouched.
+ *
+ * **So it is NOT the sum of stars on the handle's blueprints and cards.** Those
+ * are a different figure that the same page already draws beside it, and
+ * conflating the two is a defect rather than a saving (D-131-05).
+ *
+ * **This is not a second copy of T150's decision.** `CounterTargetKind` IS
+ * `target_kind`, so `toggleStar` cannot name an account either without the
+ * `ALTER TYPE` D-131-02 forbids — the door is shut on both sides, which is why
+ * the table is here rather than a widening one module over.
+ */
+export const accountSupport = pgTable("account_support", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  supporterId: uuid("supporter_id").notNull().references(() => account.id),
+  supportedId: uuid("supported_id").notNull().references(() => account.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("account_support_supporter_supported_key").on(t.supporterId, t.supportedId),
+  /* The counted direction, for `follow_followed_id_idx`'s reason. */
+  index("account_support_supported_id_idx").on(t.supportedId),
+]);
