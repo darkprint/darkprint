@@ -139,8 +139,21 @@ export const RECORD_KEYS = [
   "joinedAt",
 ] as const;
 
-/** The two members of `ProfileRecord.counts`, exactly as the block declares them. */
-export const COUNT_KEYS = ["blueprints", "terms"] as const;
+/**
+ * The members of `ProfileRecord.counts`, exactly as the block declares them.
+ *
+ * **Two at T130's merge, three since T132, and this table moving is the sanctioned path.**
+ * `counts.cards` was cut by D-130-06 because D-130-04 made it unreachable — `CardSummary`
+ * carried no owner and re-implementing T080's visibility filter against `card_version` is
+ * the one thing this task's inherited-read-semantics paragraph exists to prevent. T132
+ * amended that merged record instead: T080 published `cardsOwnedBy`, D-132-02 ruled the
+ * count is cards this handle OWNS rather than cards the index carries for it, and the
+ * figure came back. This is an exact key set, so the addition reds it BY DESIGN and the
+ * amendment lands in the same commit as the key it pins (D-132-02 C-2, granted) — the same
+ * construction as T080's `PUBLISHED`. An EXTRA member is still how a column reaches a
+ * public surface, and no per-field assertion can see one.
+ */
+export const COUNT_KEYS = ["blueprints", "cards", "terms"] as const;
 
 export function describe_(value: unknown): string {
   if (value === null) return "null";
@@ -249,7 +262,7 @@ export function asProfileRecord(value: unknown, where: string): ProfileRecord {
   if (counts === null || typeof counts !== "object") {
     throw new Error(
       `${where}.counts is ${describe_(counts)}; the block declares ` +
-        `\`counts: { blueprints: number; terms: number }\`.`,
+        `\`counts: { blueprints: number; cards: number; terms: number }\`.`,
     );
   }
   const c = counts as Record<string, unknown>;

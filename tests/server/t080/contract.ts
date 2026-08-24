@@ -91,6 +91,13 @@ export function loadRegistry(): Promise<Namespace> {
  * comes from and not merely that a test wanted it. `BlueprintSummary` and `CardSummary`
  * replace `lib/core`'s `BlueprintRecord`/`CardVersionRecord` throughout the block per
  * D-80-01, and `scoresOf` is the thirteenth reader added by D-80-02b.
+ *
+ * **The last three are T132's amendments to this merged record, and this table moving is the
+ * sanctioned path rather than collateral.** D-260-14 says so in terms: `PUBLISHED` is an
+ * equality over reader names, so adding a reader reds it BY DESIGN, and the amendment lands
+ * in the same commit as the readers. `graphsOf` and `scoresFor` are D-132-01's, owed to T260
+ * under D-260-14 and D-260-21; `cardsOwnedBy` is D-132-02's, the reader T130's blocked
+ * `counts.cards` needed and the only card reader outside the pin index.
  */
 export const PUBLISHED = {
   blueprints: "blueprints(db: Db, actor: Actor): Promise<readonly BlueprintSummary[]>",
@@ -115,11 +122,36 @@ export const PUBLISHED = {
     "scoresOf(db: Db, actor: Actor, ownerHandle: string, slug: string): " +
     "Promise<Scores | undefined> — D-80-02b, the thirteenth reader, because AC7 was " +
     "unreachable through any published surface without it",
+  graphsOf:
+    "graphsOf(db: Db, actor: Actor, keys: readonly BlueprintKey[]): " +
+    "Promise<ReadonlyMap<string, { graph: BlueprintGraph; requiredAgents: readonly " +
+    "string[]; requiredTools: readonly string[] }>> — D-132-01, keyed " +
+    "`${ownerHandle}/${slug}`, BATCH so /blueprints makes one call; an absent entry means " +
+    "not visible or not resolvable and is a VALUE, not a refusal",
+  scoresFor:
+    "scoresFor(db: Db, actor: Actor, keys: readonly BlueprintKey[]): " +
+    "Promise<ReadonlyMap<string, Scores>> — D-132-01 and D-260-21, the batch form of " +
+    "`scoresOf`, because a client-side-filtering shelf needs a scorecard for every tile on " +
+    "every request and per-tile is 3 queries x N",
+  cardsOwnedBy:
+    "cardsOwnedBy(db: Db, actor: Actor, ownerHandle: string): " +
+    "Promise<readonly CardSummary[]> — D-132-02 reading (a), the cards this handle OWNS " +
+    "and `actor` may read, deliberately NOT narrowed by the pin index: the two sets differ " +
+    "by a row no release pins, and a `counts.cards` built on the index is quietly short",
 } as const;
 
 export type ReaderName = keyof typeof PUBLISHED;
 
-/** Thirteen, in the order the block publishes them. AC6 is asserted across every one. */
+/**
+ * Sixteen, in the order the block publishes them.
+ *
+ * **AC6 is asserted across the first THIRTEEN and not across all sixteen, and that is a
+ * stated gap rather than an oversight.** `privacy.test.ts` sweeps a separate hand-written
+ * `CALLS` table — it needs arguments that give each reader a way to leak, which cannot be
+ * derived from a name — and D-132-02 C-8 ruled that the AC6 cells for T132's three readers
+ * belong to that task's BLIND round rather than to the implementer that wrote them. Until
+ * those land, the sweep's claim is about thirteen readers.
+ */
 export const READER_NAMES = Object.keys(PUBLISHED) as ReaderName[];
 
 function describe_(value: unknown): string {

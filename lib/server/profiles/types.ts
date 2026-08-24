@@ -18,6 +18,18 @@
    The follow-up task inherits all four and owes the tables before
    it owes the behaviour. Nothing here is a placeholder for them:
    an absent field is why a caller cannot read a fabricated one.
+
+   **`counts.cards` IS BACK, and the block above is why it took an
+   amendment to a merged task rather than a line here (T132).**
+   D-130-04 was never a rule against the figure; it was a rule
+   against WHERE the figure could come from. D-132-02 ruled the
+   reading — cards this handle OWNS and the actor may see, not
+   cards the index carries for it, because the two differ by a row
+   no release pins and a count that drops one is quietly short — and
+   T080 published `cardsOwnedBy` to serve it. So the visibility
+   decision still has exactly one author, one module over, and this
+   file consumes it the same way it consumes `blueprints()`.
+   `watchers`, `support`, `pinned` and `validated` stay out.
    ============================================================ */
 
 import type { PublicAuthor } from "@/lib/server/accounts";
@@ -40,5 +52,5 @@ import type { PublicAuthor } from "@/lib/server/accounts";
 export interface ProfileRecord {
   author: PublicAuthor;
   joinedAt: Date;
-  counts: { blueprints: number; terms: number };
+  counts: { blueprints: number; cards: number; terms: number };
 }
