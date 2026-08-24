@@ -21,6 +21,7 @@ import {
   PUBLISHED,
   READER_NAMES,
   READER_COUNT_AFTER,
+  READERS_ADDED_AFTER,
   REGISTRY,
   T080_READER_COUNT,
   bind,
@@ -52,16 +53,18 @@ describe("T132 published signatures", () => {
    * the old set". The arithmetic is derived from D-132-03's own numbers rather than typed
    * twice: 13 + 3.
    */
-  it("leaves T080's reader table naming all sixteen", () => {
+  it("leaves T080's reader table naming all sixteen, plus the later ruled additions", () => {
     expect(
       T080_READER_NAMES.length,
-      `D-132-03 moves the count 13 -> 16 in the same commit as the readers. T080's table ` +
-        `still names ${T080_READER_NAMES.length}: [${T080_READER_NAMES.join(", ")}]. ` +
+      `D-132-03 moves the count 13 -> 16 in the same commit as the readers, and ` +
+        `READERS_ADDED_AFTER names what later rulings added (D-260-31: usersOfMany). T080's ` +
+        `table still names ${T080_READER_NAMES.length}: [${T080_READER_NAMES.join(", ")}]. ` +
         `\`privacy.test.ts\` iterates that table, so a table left short shrinks the merged ` +
         `AC6 sweep without failing anything over there.`,
-    ).toBe(READER_COUNT_AFTER);
+    ).toBe(READER_COUNT_AFTER + READERS_ADDED_AFTER.length);
     expect(T080_READER_COUNT + READER_NAMES.length).toBe(READER_COUNT_AFTER);
     for (const name of READER_NAMES) expect(T080_READER_NAMES).toContain(name);
+    for (const name of READERS_ADDED_AFTER) expect(T080_READER_NAMES).toContain(name);
   });
 
   /**
@@ -98,14 +101,19 @@ describe("T132 published signatures", () => {
    */
   it("covers every published reader by exactly one AC6 table", () => {
     const mine = new Set<string>(READER_NAMES);
-    const theirs = T080_READER_NAMES.filter((name) => !mine.has(name));
+    /* The later additions are swept HERE too (their AC6 cells are in this suite's
+       privacy.test.ts, per READERS_ADDED_AFTER's docblock), so they count as covered by this
+       side of the partition, not T080's. */
+    const later = new Set<string>(READERS_ADDED_AFTER);
+    const theirs = T080_READER_NAMES.filter((name) => !mine.has(name) && !later.has(name));
     expect(
       theirs.length,
       `T080's \`privacy.test.ts\` sweeps the thirteen it was written for; this suite sweeps ` +
-        `the three T132 adds. If those two sets do not partition the published readers, some ` +
-        `reader has no AC6 cell anywhere and nothing fails to say so.`,
+        `the three T132 adds plus READERS_ADDED_AFTER (D-260-31). If those sets do not ` +
+        `partition the published readers, some reader has no AC6 cell anywhere and nothing ` +
+        `fails to say so.`,
     ).toBe(T080_READER_COUNT);
-    expect(theirs.length + mine.size).toBe(READER_COUNT_AFTER);
+    expect(theirs.length + mine.size + later.size).toBe(READER_COUNT_AFTER + READERS_ADDED_AFTER.length);
   });
 
   /**

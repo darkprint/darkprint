@@ -1,13 +1,12 @@
-import type { OntologyTerm, TermKind } from "@/lib/core";
+import type { OntologyTerm, OntologyView, TermKind } from "@/lib/core";
 import { CORE_PHASE_IDS, partitionTerms } from "@/lib/core";
-import { getOntologyView, getRegistry } from "@/lib/content";
 import { ReachList, ReachRow } from "@/components/ui/ReachList";
 import { TermTree, termRootIds } from "@/components/ontology/TermTree";
 import {
   TERM_KIND_META,
   TermTable,
   markerWeight,
-  termUsageIndex,
+  type TermUsage,
 } from "@/components/ontology/TermTable";
 
 /** A term id quoted inside prose, in the same mono the rows use. */
@@ -112,12 +111,23 @@ function KindNotes({ children }: { children: React.ReactNode }) {
    It used to carry the page heading and its own `container-page`, because it was mounted
    as a full-bleed band on `/spec/ontology` and had to supply both. The route owns them now,
    so this is a plain stack: a component that sets its own page container cannot be nested
-   inside one, and this one is. */
-export function OntologyCatalog() {
-  const view = getOntologyView();
-  const registry = getRegistry();
-  const usage = termUsageIndex(registry);
+   inside one, and this one is.
 
+   ── Why the view and the usage index are props now ──
+
+   Both were read here, off `@/lib/content`, which made this component a second reader of
+   the build-time archive sitting underneath a route that no longer has one. The route reads
+   the registry and passes what it read, so there is one read per request and one place that
+   decides which ontology version the page is describing — a component resolving its own
+   would be free to describe a different one from the rows above it. */
+export function OntologyCatalog({
+  view,
+  usage,
+}: {
+  view: OntologyView;
+  /** How many cards name each term, by `termUsageOver`. `TermTable`'s shape, unchanged. */
+  usage: ReadonlyMap<string, TermUsage>;
+}) {
   const { version, terms } = view.ontology;
   const nodeTypes = view.byKind("node-type");
   const dataTypes = view.byKind("data-type");
