@@ -23,7 +23,7 @@ import { NotAccountOwnerError } from "@/lib/server/accounts";
 import { can, type Actor } from "@/lib/server/policy";
 import { DEFAULT_PREFERENCES } from "./defaults";
 import { storedPreferencesFor, withStore, writePreferences } from "./store";
-import type { EventKind, Preferences } from "./types";
+import { EVENT_KINDS, type EventKind, type Preferences } from "./types";
 
 /**
  * The refusal, in T050's parameterised family (D-190-05 ratifies a third instance of it).
@@ -98,9 +98,20 @@ export async function getPreferences(db: Db, actor: Actor, accountId: string): P
  * `fillPreferences` refuses to coerce: `"false"` is truthy, and a caller that can turn a
  * preference on by sending a string has found a way past the switch the account actually holds.
  *
- * **`setPreferences({})` is a no-op that answers the current four** (D-190-05). It still writes,
- * because the written object is the filled current state and writing it is what makes the
- * column total for an account whose row is still `{}` — the answer is the same either way.
+ * **`setPreferences({})` performs NO WRITE and answers the current four** (D-190-11, a round
+ * charge against my earlier reading). I had it write the filled four, arguing that writing is
+ * what makes the column total. The tell that settles it is the side effect: `writePreferences`
+ * bumps `updated_at`, a column **T050 owns**, so under my reading an empty PATCH from any client
+ * mutated another module's column as the consequence of nothing. "No-op" plainly means no write.
+ *
+ * **Normalisation-to-total survives, on REAL writes.** A patch carrying at least one known key
+ * writes all four, so the column becomes total at the first genuine write and stays total. What
+ * is gone is only the write that changed nothing.
+ *
+ * The test is KEY PRESENCE after unknown-key filtering, which is the ruling's own wording — not
+ * whether the resulting four differ from the current four. `{ digest: false }` against an
+ * already-false digest is a real patch about a real preference and writes; the ruled line is
+ * about a caller that named no preference at all.
  */
 export async function setPreferences(
   db: Db,
@@ -117,6 +128,11 @@ export async function setPreferences(
        does not hold, which is a session and a row disagreeing. */
     if (row === undefined) throw notThisAccountsOwner("setPreferences");
     const current = fillPreferences(row.stored);
+
+    /* D-190-11. Returned BEFORE any write, so an empty-after-filtering patch touches neither
+       `notification_preferences` nor `updated_at`. The answer is the filled current four, which
+       is what it would have been either way — the difference is entirely in the side effect. */
+    if (!offersAKnownKey(patch)) return current;
 
     const one = (kind: EventKind): boolean => readOffered(patch, kind) ?? current[kind];
     /* Member by member for `fillPreferences`'s reason: an accumulated record cast to
@@ -141,6 +157,28 @@ export async function setPreferences(
  * whose `digest` exists only on a prototype has not offered one, and authority — here, the
  * authority to change a setting — is never inherited.
  */
+/**
+ * Whether `patch` names any of the four at all — D-190-11's test, and it is about PRESENCE.
+ *
+ * Deliberately `Object.hasOwn` and not `readOffered`: the ruling says "empty after unknown-key
+ * filtering", so what disqualifies a key is being unknown, not carrying a value this module
+ * declines to use. `{ digest: 3 }` therefore WRITES the filled four while changing no
+ * preference — it named a real preference badly rather than naming none.
+ *
+ * **The narrower reading is defensible and I am not taking it**, because it is not what the
+ * ruling says and this is a round charge: a patch whose only known key holds a non-boolean also
+ * changes nothing, so bumping `updated_at` for it is the same "consequence of nothing". The two
+ * readings differ on exactly one input, which the PATCH route already answers 400, so nothing
+ * reaches it from HTTP. Flagged for the adversary rather than decided quietly.
+ *
+ * `Object.hasOwn` for the reason `can` and `visibleTo` read every field that way: a `digest` that
+ * exists only on a prototype has not been named, and authority is never inherited.
+ */
+function offersAKnownKey(patch: Partial<Preferences>): boolean {
+  if (typeof patch !== "object" || patch === null) return false;
+  return EVENT_KINDS.some((kind) => Object.hasOwn(patch, kind));
+}
+
 function readOffered(patch: Partial<Preferences>, kind: EventKind): boolean | undefined {
   if (typeof patch !== "object" || patch === null || !Object.hasOwn(patch, kind)) return undefined;
   const offered = (patch as Record<string, unknown>)[kind];

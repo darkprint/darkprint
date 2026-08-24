@@ -130,6 +130,37 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
     return row?.preferences;
   }
 
+  /**
+   * Force `account.updated_at` to a fixed sentinel far in the past, and answer it.
+   *
+   * **A before/after comparison of two `now()` stamps cannot discriminate here.** T010 measured
+   * 32 inserts landing on 12 distinct timestamps, and `Date.getTime()` truncates Postgres
+   * microseconds — so a write that happened in the same millisecond as the previous one reads as
+   * "unchanged", and a no-write cell would pass over exactly the write it forbids. Against a
+   * sentinel there is no ambiguity in either direction: still 2020 means nothing wrote, anything
+   * else means something did.
+   */
+  const UPDATED_AT_SENTINEL = new Date("2020-01-01T00:00:00.000Z");
+  async function pinUpdatedAt(accountId: string): Promise<Date> {
+    await db
+      .update(schema.account)
+      .set({ updatedAt: UPDATED_AT_SENTINEL })
+      .where(eq(schema.account.id, accountId));
+    return UPDATED_AT_SENTINEL;
+  }
+
+  /** The two things D-190-11 is about: the column's bytes and the stamp T050 owns. */
+  async function accountRowStamp(accountId: string): Promise<{ preferences: unknown; updatedAt: Date | null }> {
+    const [row] = await db
+      .select({
+        preferences: schema.account.notificationPreferences,
+        updatedAt: schema.account.updatedAt,
+      })
+      .from(schema.account)
+      .where(eq(schema.account.id, accountId));
+    return { preferences: row?.preferences, updatedAt: row?.updatedAt ?? null };
+  }
+
   async function queueRows(accountId?: string): Promise<{ kind: string; subject: unknown; deliveredAt: Date | null }[]> {
     const rows = await db
       .select({
@@ -220,11 +251,68 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
       expect((column as Record<string, unknown>)["sms"]).toBeUndefined();
     });
 
-    it("`setPreferences({})` is a no-op that answers the current four", async () => {
+    it("D-190-11: `setPreferences({})` answers the current four and WRITES NOTHING", async () => {
       const account = await seedAccount("set-empty");
+      /* A real write first, so the column is total and the no-op below is measured against a
+         populated column rather than against `{}` — where "unchanged" and "overwritten with the
+         filled four" are the same bytes and the cell could not discriminate. */
       await setPreferences(db, actorFor(account), account, { fork: false });
+
+      const before = await accountRowStamp(account);
+      const sentinel = await pinUpdatedAt(account);
       const answered = await setPreferences(db, actorFor(account), account, {});
+      const after = await accountRowStamp(account);
+
       expect(answered).toEqual({ repin: true, fork: false, deprecation: true, digest: false });
+      expect(after.preferences, "the column is byte-unchanged").toEqual(before.preferences);
+      expect(
+        after.updatedAt?.getTime(),
+        "D-190-11's own tell: `updated_at` is T050's column, and an empty PATCH from any client " +
+          "must not mutate another module's column as the consequence of nothing.",
+      ).toBe(sentinel.getTime());
+    });
+
+    it("D-190-11: a patch naming only UNKNOWN keys is empty after filtering, so it writes nothing", async () => {
+      const account = await seedAccount("set-unknown-only");
+      await setPreferences(db, actorFor(account), account, { fork: false });
+      const before = await accountRowStamp(account);
+      const sentinel = await pinUpdatedAt(account);
+      await setPreferences(db, actorFor(account), account, { ...({ sms: true } as object) });
+      const after = await accountRowStamp(account);
+      expect(after.preferences).toEqual(before.preferences);
+      expect(after.updatedAt?.getTime()).toBe(sentinel.getTime());
+    });
+
+    it("D-190-11: normalisation-to-total survives — one known key still writes all four", async () => {
+      const account = await seedAccount("set-total");
+      /* The other direction, and without it "writes nothing" would be equally true of an
+         implementation that stopped writing altogether. The column starts `{}`; one known key
+         must leave it holding all four. */
+      expect(await storedColumn(account)).toEqual({});
+      await setPreferences(db, actorFor(account), account, { digest: true });
+      expect(
+        Object.keys((await storedColumn(account)) as object).sort(),
+        "a REAL write still normalises the column to total (D-190-11)",
+      ).toEqual(["deprecation", "digest", "fork", "repin"]);
+    });
+
+    it("D-190-11: a known key whose value equals the current one is still a REAL write", async () => {
+      const account = await seedAccount("set-same");
+      await setPreferences(db, actorFor(account), account, { fork: false });
+      const before = await accountRowStamp(account);
+      const sentinel = await pinUpdatedAt(account);
+      /* The ruled line is key PRESENCE, not value CHANGE. This patch names a real preference and
+         must write, even though the resulting four are identical — so the stamp must LEAVE the
+         sentinel. Asserted against the sentinel rather than as `after >= before`, which is true
+         whatever the code does and would admit the no-write this cell exists to forbid. */
+      await setPreferences(db, actorFor(account), account, { fork: false });
+      const after = await accountRowStamp(account);
+      expect(after.preferences).toEqual(before.preferences);
+      expect(
+        after.updatedAt?.getTime(),
+        "the ruled test is key PRESENCE, not value change: a patch naming a real preference is a " +
+          "real write, so it must move the stamp off the sentinel.",
+      ).not.toBe(sentinel.getTime());
     });
 
     it("a non-owner is refused with the published sentence, and it names no account", async () => {
