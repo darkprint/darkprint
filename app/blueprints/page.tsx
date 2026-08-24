@@ -8,12 +8,17 @@ import { authorFor } from "@/components/profile/author";
 import { getSharedDbClient } from "@/lib/db";
 import { getPublicAuthor } from "@/lib/server/accounts";
 import type { Actor } from "@/lib/server/policy";
-/* NOT MERGED YET. `graphsOf` and `scoresFor` are T132's deliverables under D-132-01, and
-   this import is deliberately left unresolved: a stub satisfying the typechecker would be a
-   second implementation of a projection T080 owns, which is the defect this project has
-   charged more than any other. Two TS2305 errors here are the expected state of this file
-   until T132 merges; everything else in it compiles. */
-import { graphsOf, scoresFor, type BlueprintKey, type Scores } from "@/lib/server/registry";
+/* T132's two batch readers (D-132-01), owed to this page under D-260-14 and D-260-21 and
+   merged as 35. They are batch because a client-side-filtering shelf needs a drawing and a
+   scorecard for EVERY tile on EVERY request: per-tile readers were one registry snapshot
+   plus three statements per blueprint, per load. */
+import {
+  graphsOf,
+  scoresFor,
+  type BlueprintKey,
+  type BlueprintSchematic,
+  type Scores,
+} from "@/lib/server/registry";
 import { searchBlueprints } from "@/lib/server/search";
 /* `BundleManifest` is the ENGINE's shape, taken through `lib/server/types` the way
    `lib/server/search/blueprints.ts` takes it. `lib/types` deliberately never imports
@@ -242,7 +247,7 @@ function manifestOf(manifest: unknown): Partial<BundleManifest> {
  */
 function viewOf(
   bp: { ownerHandle: string; slug: string; manifest: unknown; digest: string; cardRefs: readonly string[] },
-  drawing: { graph: Blueprint["graph"]; requiredAgents: readonly string[]; requiredTools: readonly string[] },
+  drawing: BlueprintSchematic,
   scorecard: Scores,
   authors: ReadonlyMap<string, Author>,
 ): Blueprint {
