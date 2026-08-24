@@ -145,9 +145,14 @@ describe("T120 AC1 — after a transfer the digest is unchanged and the bundle r
 describe("T120 AC2 — the old owner has no write access and the new owner does", () => {
   it("the NEW owner appends a release to the SAME bundle row", async () => {
     const { scratch, alice, bob } = world.require();
-    const corpus = resolvingCorpus();
-
     const published = await publishBundle(scratch, alice, "ac2-write", "public");
+
+    /* The appended release carries a DIFFERENT corpus, and that is forced rather than
+       stylistic: `bundleDigest` reads neither owner nor slug nor version, so republishing the
+       same bytes at `1.1.0` is refused by T100 with
+       `publish: conflict — release \`1.0.0\` already holds these bytes.` The first version of
+       this cell did exactly that and reported T100's refusal in place of AC2. */
+    const second = resolvingCorpus(1);
 
     const transfer = await transferBundle();
     await transfer(scratch.db, alice.actor, published.bundleId, bob.handle);
@@ -160,9 +165,9 @@ describe("T120 AC2 — the old owner has no write access and the new owner does"
       ownerHandle: bob.handle,
       slug: "ac2-write",
       version: "1.1.0",
-      manifest: corpus.manifest,
-      dot: corpus.dot,
-      cardFiles: corpus.cardFiles,
+      manifest: second.manifest,
+      dot: second.dot,
+      cardFiles: second.cardFiles,
     });
     expect(appended.bundleId).toBe(published.bundleId);
     expect(

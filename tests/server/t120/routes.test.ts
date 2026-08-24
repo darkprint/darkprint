@@ -82,7 +82,12 @@ function walk(dir: string, segments: string[], out: DiscoveredRoute[]): void {
 function discovered(): DiscoveredRoute[] {
   const found: DiscoveredRoute[] = [];
   for (const tree of OWNED_TREES) {
-    walk(fileURLToPath(new URL(`../../../${tree}/`, import.meta.url)), tree.split("/"), found);
+    /* `app/` is the App Router's root and is NOT part of the served path: `app/api/transfer`
+       is served at `/api/transfer`. The first version passed `tree.split("/")` whole and
+       produced `/app/api/transfer`, so every cell in this file reported the published route
+       as unserved — five reds against a route tree that was there. */
+    const segments = tree.split("/").slice(1);
+    walk(fileURLToPath(new URL(`../../../${tree}/`, import.meta.url)), segments, found);
   }
   return found.sort((a, b) => a.pattern.localeCompare(b.pattern));
 }
@@ -259,15 +264,17 @@ describe("T120 D-120-14/18 — the four published routes exist and are served", 
 
     const response = await call("POST", "/api/account/delete", { cookie: cookieFor(doomed) });
     expect(response.status).toBe(200);
-    const body = (await response.json()) as { plan?: Record<string, unknown> };
+    const body = (await response.json()) as Record<string, unknown>;
 
-    /* D-120-19: 200 carrying a `DeletionPlan`, with the one-statement staleness window
-       FLAGGED rather than hidden — the plan is computed and the deletion performed in one
-       transaction, so what comes back describes what happened rather than what was going to. */
-    expect(body.plan).toBeDefined();
-    expect(Object.keys(body.plan ?? {}).sort()).toEqual([...keysOf("DeletionPlan")].sort());
-    expect(body.plan?.accountId).toBe(doomed.accountId);
-    expect(body.plan?.publishedBundles).toBe(1);
+    /* D-120-19: 200 carrying a `DeletionPlan` — **BARE, not `{ plan: … }`**, and the
+       difference is the document's own. D-120-18 wraps the two GET PREVIEWS in `{ plan: … }`;
+       D-120-19 writes the POST's answer as `200 DeletionPlan` with no envelope. The first
+       version of this cell asserted the wrapper on all three and reported a defect against a
+       route that matched its ruling — E3 in the pre-registration, arriving exactly where it
+       was predicted to. */
+    expect(Object.keys(body).sort()).toEqual([...keysOf("DeletionPlan")].sort());
+    expect(body.accountId).toBe(doomed.accountId);
+    expect(body.publishedBundles).toBe(1);
 
     const row = await scratch.pool.query(`select github_id from "account" where id = $1`, [
       doomed.accountId,
@@ -275,18 +282,17 @@ describe("T120 D-120-14/18 — the four published routes exist and are served", 
     expect(row.rows[0]?.github_id).toBe(`deleted:${doomed.accountId}`);
   });
 
-  it("an anonymous caller reaches neither route", async () => {
+  it("an anonymous caller reaches neither POST route", async () => {
     const { bob, bundleId } = world.require();
     /* No cookie at all. Both trees sit behind a session and neither publishes an anonymous
        reading — `POST /api/account/delete` has no body id precisely because the subject IS
-       the session. */
-    expect((await call("GET", "/api/account/delete/plan")).status).toBeGreaterThanOrEqual(400);
+       the session.
+       Only the two POSTs, deliberately: the preview routes are asserted present by the cell
+       above, and driving them here as well would report ONE absence as TWO reds. A count of
+       reds is a count of causes only if each cause reds once. */
+    expect((await call("POST", "/api/account/delete")).status).toBeGreaterThanOrEqual(400);
     expect(
-      (
-        await call("POST", "/api/transfer", {
-          body: { bundleId, toHandle: bob.handle },
-        })
-      ).status,
+      (await call("POST", "/api/transfer", { body: { bundleId, toHandle: bob.handle } })).status,
     ).toBeGreaterThanOrEqual(400);
   });
 });

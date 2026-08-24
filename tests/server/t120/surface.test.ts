@@ -96,6 +96,26 @@ describe("T120 document floor — the parse and the contract agree (GREEN blind;
     ]);
   });
 
+  it("D-120-20: the section's one FORBIDDEN pairing is read as forbidden, not as published", () => {
+    const block = publishedBlock();
+    /* D-120-20 closed this suite's declared E1 gap and poisoned its reader in the same
+       sentence: it quotes `deleteAccount: only the owner may transfer a bundle.` in order to
+       outlaw it, and a delimiter-keyed reader cannot tell that from publishing it. The count
+       went 11 -> 12 and `isAdmissible` began accepting the one pairing just outlawed. The
+       quote is now kept as `forbidden` rather than dropped, which turns the hazard into this
+       assertion. */
+    expect(block.forbidden.map((f) => f.message)).toEqual([
+      "deleteAccount: only the owner may transfer a bundle.",
+    ]);
+    expect(isAdmissible("deleteAccount", "deleteAccount: only the owner may transfer a bundle.")).toBe(
+      false,
+    );
+    /* And the partition is non-empty on BOTH sides, so a future ruling that moved every form
+       to one side reds here instead of silently emptying the admissible set. */
+    expect(block.forms.length).toBeGreaterThan(0);
+    expect(block.forbidden.length).toBeGreaterThan(0);
+  });
+
   it("the admissible reader accepts a rendered form and refuses a reworded one", () => {
     /* `isAdmissible` is this suite's whole refusal instrument, and an instrument that accepts
        everything is worse than none: `rejects.toThrow(undefined)` is satisfied by any throw,
@@ -107,13 +127,12 @@ describe("T120 document floor — the parse and the contract agree (GREEN blind;
     expect(isAdmissible("transferBundle", "deleteAccount: not this account's owner.")).toBe(false);
     /* And the sentence ends where the contract ends it: trailing prose is a different message. */
     expect(isAdmissible("transferBundle", "transferBundle: no bundle at `abc`. Retry.")).toBe(false);
-    /* Known and deliberate looseness, recorded rather than discovered: body membership is
-       checked across ALL verbs, so a body the document only ever paired with another verb is
-       still admissible. D-120-12's K rules `planDeletion` authorizes and no
-       `planDeletion: not this account's owner.` is enumerated — under pair matching that
-       correct refusal would be a defect report. Admitting a nonsense pairing is the cheaper
-       error than false-charging a module that followed the ruling. */
-    expect(isAdmissible("planDeletion", "planDeletion: not this account's owner.")).toBe(true);
+    /* D-120-20 made this PAIR matching: a body paired with a verb the rulings do not send
+       down it is a module defect, not an admissible variant. `transferBundle` has a
+       `no bundle at` arm and `planDeletion` does not, so the same body is admissible from one
+       and refused from the other — which is the whole content of the ruling. */
+    expect(isAdmissible("planDeletion", "planDeletion: no bundle at `abc`.")).toBe(false);
+    expect(isAdmissible("planDeletion", "planDeletion: no account at `abc`.")).toBe(true);
   });
 });
 

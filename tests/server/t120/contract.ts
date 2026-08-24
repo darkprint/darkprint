@@ -197,6 +197,11 @@ export interface PublishedBlock {
   /** Every (verb, body) refusal pair the SECTION enumerates, wherever it writes them. */
   forms: readonly RuledForm[];
   /**
+   * Every (verb, body) pair the section quotes in order to FORBID it. D-120-20 names one.
+   * Kept rather than dropped so `isAdmissible` can be asserted false for each.
+   */
+  forbidden: readonly RuledForm[];
+  /**
    * Every refusal BODY the section publishes, placeholder-verb forms included. This is what
    * `isAdmissible` quantifies over — see `ruledFormsIn` for why it is bodies and not pairs.
    */
@@ -364,7 +369,7 @@ export function publishedBlock(): PublishedBlock {
   /* `D-05-01`, `D-180-01` and `D-WAVE-02` all reach this task, so the shape is not `D-120-nn`. */
   const rulings = [...new Set(section.match(/D-[A-Z0-9]+-\d+[a-z]?/g) ?? [])];
 
-  const { forms, bodies } = ruledFormsIn(section, signatures.map((s) => s.name));
+  const { forms, forbidden, bodies } = ruledFormsIn(section, signatures.map((s) => s.name));
   const errorClasses = [...new Set(section.match(/\b[A-Z]\w*Error\b/g) ?? [])].sort();
 
   const pin = createHash("sha256")
@@ -376,13 +381,16 @@ export function publishedBlock(): PublishedBlock {
         criteria,
         rulings,
         forms: forms.map((f) => `${f.className ?? "?"} ${f.message}`),
+        forbidden: forbidden.map((f) => f.message),
         bodies,
         errorClasses,
       }),
     )
     .digest("hex");
 
-  cached = { signatures, interfaces, declarations, criteria, rulings, forms, bodies, errorClasses, pin };
+  cached = {
+    signatures, interfaces, declarations, criteria, rulings, forms, forbidden, bodies, errorClasses, pin,
+  };
   return cached;
 }
 
@@ -425,19 +433,25 @@ export function publishedBlock(): PublishedBlock {
 function ruledFormsIn(
   section: string,
   verbs: readonly string[],
-): { forms: RuledForm[]; bodies: string[] } {
-  if (verbs.length === 0) return { forms: [], bodies: [] };
+): { forms: RuledForm[]; forbidden: RuledForm[]; bodies: string[] } {
+  if (verbs.length === 0) return { forms: [], forbidden: [], bodies: [] };
   const escaped = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const alternation = [...verbs.map(escaped), escaped(OPERATION_SLOT)].join("|");
   const pattern = new RegExp(String.raw`(${alternation}): (.*?\.)(?=["\`']|\s*$)`, "gm");
 
   const forms = new Map<string, RuledForm>();
+  const forbidden = new Map<string, RuledForm>();
   const bodies = new Set<string>();
   for (const line of section.split("\n")) {
+    const negative = NEGATIVE_CONTEXT.test(line) && !POSITIVE_CONTEXT.test(line);
     for (const match of line.matchAll(pattern)) {
       const [whole, verb, body] = match;
       bodies.add(body);
       if (verb === OPERATION_SLOT) continue;
+      if (negative) {
+        if (!forbidden.has(whole)) forbidden.set(whole, { verb, body, message: whole });
+        continue;
+      }
       if (forms.has(whole)) continue;
       /* The class, when the document writes one on the same line — §T120's block puts
          `TransferRefusedError` two spaces to the left of the sentence. A form with no class
@@ -450,21 +464,78 @@ function ruledFormsIn(
   }
   return {
     forms: [...forms.values()].sort((a, b) => a.message.localeCompare(b.message)),
+    forbidden: [...forbidden.values()].sort((a, b) => a.message.localeCompare(b.message)),
     bodies: [...bodies].sort(),
   };
 }
 
 /**
+ * A line that QUOTES a refusal in order to forbid it, rather than to publish it.
+ *
+ * **D-120-20 closed this suite's declared E1 gap and poisoned its reader in the same
+ * sentence, which is worth stating plainly because the mechanism generalises.** The ruling
+ * writes *"A body paired with the wrong verb (`deleteAccount: only the owner may transfer a
+ * bundle.`) is a MODULE defect, not an admissible variant"* — so the exact string the
+ * ruling forbids sits in the section this reader scans, in the same shape as every
+ * published form. The count went from 11 to 12 and `isAdmissible` began ACCEPTING the one
+ * pairing the contract had just outlawed.
+ *
+ * A reader keyed to the delimiter cannot see the difference; only the surrounding prose
+ * carries it. So the sentence's CONTEXT decides, and a match on a forbidding line is kept
+ * as `forbidden` rather than dropped — which turns the hazard into coverage, because
+ * `isAdmissible` can then be asserted FALSE for exactly the pairings the document names.
+ * D-180-06's lesson is why the scan is not narrowed back to the block instead: a reader
+ * that only sees one region cannot see a ruling written anywhere else.
+ */
+const NEGATIVE_CONTEXT =
+  /wrong verb|MODULE defect|not an admissible|never the cross-product|manufactured|would have reddened/i;
+
+/** A line that ENUMERATES, so a ruling using both vocabularies is read as publishing. */
+const POSITIVE_CONTEXT = /admissible message forms?|verbs resolved/i;
+
+/**
  * Whether `message` is a refusal the contract admits from `verb`.
  *
- * Body membership plus an exact verb prefix, for the reason `ruledFormsIn` gives. The
- * placeholders inside a body (`` `<handle>` ``, `` `<bundleId>` ``, `` `<slug>` ``,
- * `` `<accountId>` ``) are the caller's own submissions, so each becomes a non-greedy
- * wildcard and everything else is matched literally — a module that rewords the sentence
- * around them fails, which is the point of publishing a form at all.
+ * **PAIR matching, ruled by D-120-20**: the admissible set is the eleven (verb, body) pairs
+ * the section enumerates — each ruled body prefixed by exactly the verbs whose arms the
+ * rulings send down it, never the cross-product. A body paired with the wrong verb is a
+ * MODULE defect.
+ *
+ * This started as BODY matching, deliberately and for a stated reason: D-120-12's K rules
+ * that `planDeletion` authorizes, and no `planDeletion: not this account's owner.` was
+ * enumerated, so pair matching would have false-charged a module following the ruling. That
+ * risk was declared as E1 in the pre-registration and D-120-20 answered it by ruling the
+ * pairing question rather than by leaving it to a reader's discretion. The looser form is
+ * gone; `isAdmissibleBody` survives beside it for the one cell whose pair the document has
+ * still not enumerated, and that cell says so where it fails.
+ *
+ * The placeholders inside a body — `` `<handle>` ``, `` `<bundleId>` ``, `` `<slug>` ``,
+ * `` `<accountId>` `` — are the caller's own submissions, so each is widened to a
+ * backtick-bounded run and everything else is matched literally.
  */
 export function isAdmissible(verb: string, message: unknown): boolean {
   if (typeof message !== "string") return false;
+  if (publishedBlock().forbidden.some((f) => bodyPattern(f.verb, f.body).test(message))) {
+    return false;
+  }
+  return publishedBlock()
+    .forms.filter((form) => form.verb === verb)
+    .some((form) => bodyPattern(verb, form.body).test(message));
+}
+
+/**
+ * Whether `message` reads `<verb>: <a body the section publishes for ANY verb>`.
+ *
+ * The one place pair matching cannot be used: a refusal the rulings require but the
+ * document has not enumerated a pair for. Used by exactly one cell — `planDeletion`'s
+ * authorization refusal under D-120-12's K — and that cell names the gap in its own message
+ * so the looseness is visible where it is spent rather than hidden in this file.
+ */
+export function isAdmissibleBody(verb: string, message: unknown): boolean {
+  if (typeof message !== "string") return false;
+  if (publishedBlock().forbidden.some((f) => bodyPattern(f.verb, f.body).test(message))) {
+    return false;
+  }
   return publishedBlock().bodies.some((body) => bodyPattern(verb, body).test(message));
 }
 
