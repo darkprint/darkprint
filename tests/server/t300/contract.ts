@@ -253,10 +253,26 @@ export function missingSimilarMarker(
  */
 export function violatesSemanticTail(results: Results, where: string): string | undefined {
   const seen = channels(results);
-  const lastSemantic = seen.lastIndexOf("semantic");
-  const firstLexical = seen.indexOf("lexical");
-  if (lastSemantic === -1 || firstLexical === -1) return undefined;
-  if (lastSemantic < firstLexical) return undefined;
+  /* ── THE EARLY RETURN THAT USED TO SIT HERE WAS INVERTED, AND ITS OWN VACUITY HID IT ──
+
+     It read `if (lastSemantic < firstLexical) return undefined` — i.e. it treated "every
+     semantic rank comes BEFORE every lexical rank" as the passing case, which is precisely
+     the violation. The correct passing case is the opposite: the first semantic rank is
+     after the last lexical one.
+
+     It survived the whole blind position because in the blind position there were no
+     semantic hits at all: `lastSemantic === -1` took the guard above it and the inverted
+     line never executed. The first response that carried both channels — one lexical hit
+     then one semantic hit, which is the criterion being SATISFIED — reported a violation.
+
+     What made it legible rather than merely wrong is that the offender loop below was
+     right, so the complaint it produced listed ZERO offenders: a red whose own evidence
+     section was blank. A predicate that reports a violation it cannot name is reporting on
+     itself.
+
+     The guard is deleted rather than repaired. The loop already computes the property
+     exactly — a violation is any semantic rank with a lexical rank after it — so a
+     precondition on top of it could only ever disagree with it. */
   const offenders: string[] = [];
   for (const [i, channel] of seen.entries()) {
     if (channel !== "semantic") continue;
@@ -264,6 +280,7 @@ export function violatesSemanticTail(results: Results, where: string): string | 
       if (seen[j] === "lexical") offenders.push(`rank ${i} (semantic) precedes rank ${j} (lexical)`);
     }
   }
+  if (offenders.length === 0) return undefined;
   return (
     `${where} put a semantic-only hit above a lexical one:\n  ${offenders.join("\n  ")}\n` +
     `  channels by rank: ${seen.join(", ")}\n` +

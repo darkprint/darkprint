@@ -72,15 +72,47 @@ import {
   type Scratch,
 } from "../t200/fixtures";
 import { buildWorld, type World } from "../t200/world";
+import { buildWorld as buildLiveWorld, type World as LiveWorld } from "./world";
 
 /**
  * A query that paraphrases s1's summary — "A blueprint that plans." — and shares no word
  * with anything T200's world plants.
  *
- * Its separation is CHECKED rather than asserted, by the same premise cell shape
- * `recall.test.ts` uses and against the same `findWord`. It is the only string this file
- * adds to T200's world, and it is added for one reason: without a query the channel can
- * actually answer, every "unmoved" cell below is satisfied by a module that has no channel.
+ * ── IT DOES NOT REACH s1, AND THAT IS A MEASURED FACT ABOUT T200's WORLD ──
+ *
+ * This probe was written to be the anti-vacuity control for the T200 comparison below, and
+ * at the hand-back run it reddened. Measured against the shipped q8 encoder rather than
+ * guessed at, cosine of this probe to `manifestText(s1)`:
+ *
+ *     arranging upcoming duties beforehand      0.1181     <- this probe
+ *     scheduling                                0.1667
+ *     a scheme drawn up before building ...     0.1468
+ *     an outline describing how a project ...   0.0485
+ *     preparation                               0.0777
+ *
+ * against `SIMILAR_MIN = 0.20`. Ten candidates were tried; **every one that is lexically
+ * separated from T200's world falls below the cutoff**, and the only candidate that cleared
+ * it ("a design document for scheduling work", 0.2276) does so while sharing words with the
+ * corpus, which disqualifies it as a probe of the vector channel.
+ *
+ * The cause is the fixture rather than the encoder. T200's world plants MINTED tokens —
+ * `qtokdlqf`, `t200-s1-87169-4`, `cata-87169-8` — and `manifestText` embeds slug, category
+ * and tags alongside the prose (D-300-04 D6's wide list), so the document a query is
+ * compared against is mostly noise with one English sentence in it. The same probe reaches
+ * this suite's own `service` blueprint at **0.2462**, and the T300 paraphrase reaches it at
+ * **0.3520**, so neither the probe nor the encoder is the weak part.
+ *
+ * ── SO THIS IS NOW A STATED LIMIT AND A SECOND WITNESS, NOT A RED ──
+ *
+ * D-300-04 D3 rules that AC2 holds BY CONSTRUCTION because T200's worlds never call
+ * `reembedRelease`. This file now adds an INDEPENDENT second reason, which is stronger
+ * because it survives someone wiring a trigger in: even with both vector tables fully
+ * populated, no lexically-separated query clears the cutoff against T200's documents. The
+ * cell below asserts that, with the numbers, rather than asserting a hit that cannot happen.
+ *
+ * The anti-vacuity control the T200 block genuinely needs therefore lives in the SECOND
+ * block of this file, over a corpus written in English, where the channel demonstrably
+ * fires. Without that block the eighteen comparison cells here would be a scoped zero.
  */
 const LIVE_PROBE = "arranging upcoming duties beforehand";
 
@@ -110,8 +142,32 @@ const PROBES: readonly Probe[] = [
   { label: "the live probe", name: "searchBlueprints", params: () => ({ q: LIVE_PROBE }) },
 ];
 
+/**
+ * The same shapes as `PROBES`, over the English corpus. Thunks for D-200-27's reason.
+ */
+const LIVE_PROBES: readonly { label: string; params: () => Record<string, string> }[] = [
+  { label: "a lexical hit and a semantic neighbour", params: () => ({ q: liveWorld.lexicalWord }) },
+  { label: "a pure paraphrase", params: () => ({ q: liveWorld.paraphrase }) },
+  { label: "an unfiltered listing", params: () => ({}) },
+  { label: "an explicitly sorted listing", params: () => ({ sort: "slug" }) },
+  { label: "a query about nothing here", params: () => ({ q: liveWorld.farQuery }) },
+];
+
 let s: Scratch;
 let w: World;
+/**
+ * A SECOND world and a second scratch database, in the same file and on purpose.
+ *
+ * The T200 world is the fixture AC2's criterion is written about, and the block above proves
+ * the channel cannot reach it. So it can establish that the lexical answers did not move and
+ * it can NEVER establish that anything was on while they did not move. The two claims need
+ * two corpora, and putting them in one file is what keeps the second from being read as a
+ * separate subject rather than as this one's control.
+ */
+let live: Scratch;
+let liveWorld: LiveWorld;
+const liveBefore = new Map<string, Results>();
+const liveAfter = new Map<string, Results>();
 const before = new Map<string, Results>();
 const after = new Map<string, Results>();
 let emptyBefore = { releases: -1, cards: -1 };
@@ -146,8 +202,23 @@ beforeAll(async () => {
     for (const probe of PROBES) {
       after.set(probe.label, await search(probe.name, s.db, anonymous, probe.params()));
     }
+
+    /* The same experiment over English prose. Its own database, so a vector written for one
+       world cannot be read by a query against the other — which would make "the channel was
+       live" and "the lexical part did not move" claims about two different stores. */
+    live = await scratchDatabase();
+    liveWorld = await buildLiveWorld(live);
+    for (const probe of LIVE_PROBES) {
+      liveBefore.set(probe.label, await search("searchBlueprints", live.db, anonymous, probe.params()));
+    }
+    for (const shelf of liveWorld.shelves) {
+      await reembed(live.db, shelf.release.bundleId, shelf.release.digest);
+    }
+    for (const probe of LIVE_PROBES) {
+      liveAfter.set(probe.label, await search("searchBlueprints", live.db, anonymous, probe.params()));
+    }
   });
-}, 180_000);
+}, 300_000);
 
 afterAll(async () => {
   await dropScratchDatabases();
@@ -243,25 +314,47 @@ describe("the channel is live over this world, or the file below measures nothin
     ).toEqual([]);
   });
 
-  it("and it produces a semantic hit in phase B", () => {
+  it("does NOT reach T200's world, which is a second witness for D-300-04 D3", () => {
     setup.check();
-    const results = after.get("the live probe");
-    const seen = channels(results as Results);
+    const results = after.get("the live probe") as Results;
+    const seen = channels(results);
     expect(
       seen.filter((c) => c === "semantic").length,
-      `THE ANTI-VACUITY CONTROL FOR THIS WHOLE FILE. Every cell below says "the lexical part ` +
-        `did not move between phase A and phase B". A module with no vector channel satisfies ` +
-        `all of them, and so does one whose cut is set so high that nothing ever clears it: ` +
-        `phase B would simply equal phase A.\n` +
-        `  So this cell requires the two phases to actually DIFFER somewhere. The probe ` +
-        `paraphrases s1's summary and the cell above proved it cannot be reached lexically, ` +
-        `so a semantic hit here is the channel firing over the very world whose lexical ` +
-        `guarantees the rest of this file claims are unmoved.\n` +
-        `  phase A: ${JSON.stringify((before.get("the live probe") as Results)?.hits.map((h) => h.evidence))}\n` +
-        `  phase B: ${JSON.stringify(results?.hits.map((h) => h.evidence))}` + PROVISIONING_CAVEAT,
-    ).toBeGreaterThan(0);
+      `A STATED LIMIT, MEASURED, NOT A FAILURE. This cell asserted the OPPOSITE at the ` +
+        `hand-back run and reddened; the measurement behind the flip is in \`LIVE_PROBE\`'s ` +
+        `docblock, and the short version is that every lexically-separated query tried falls ` +
+        `below \`SIMILAR_MIN\` against T200's documents — this one at 0.1181 — because those ` +
+        `documents are minted tokens with one English sentence in them.\n` +
+        `  So the claim here is the true one: with BOTH vector tables fully populated, the ` +
+        `channel still cannot reach T200's world. That is an INDEPENDENT second reason AC2 ` +
+        `holds over T200's 240 merged cells, and it is the stronger of the two, because ` +
+        `D-300-04 D3's reason — those worlds never call \`reembedRelease\` — stops holding the ` +
+        `day someone wires a trigger in, and this one does not.\n` +
+        `  IF THIS CELL EVER REDS, the finding is real and it is about AC2: something now ` +
+        `reaches T200's fixtures through the vector channel, and the by-construction argument ` +
+        `protecting those 240 cells needs re-arguing on the merits rather than re-asserting.\n` +
+        `  channels by rank: ${seen.join(", ") || "(no hits)"}`,
+    ).toBe(0);
   });
-});
+
+  it("but the channel IS live on English prose, which is what makes the block above a measurement", async () => {
+    setup.check();
+    const results = await search("searchBlueprints", live.db, anonymous, { q: liveWorld.paraphrase });
+    const seen = channels(results);
+    expect(
+      seen.filter((c) => c === "semantic").length,
+      `THE ANTI-VACUITY CONTROL THE T200 BLOCK CANNOT PROVIDE FOR ITSELF.\n` +
+        `  Every "unmoved" cell above compares phase A with phase B, and over T200's world ` +
+        `those two phases are IDENTICAL — the cell above proves the channel cannot reach it. ` +
+        `A module with no vector channel at all passes all eighteen of them, which would make ` +
+        `this file a scoped zero dressed as coverage.\n` +
+        `  So the same two-phase comparison is run below over a corpus written in English, ` +
+        `where the paraphrase reaches its target at cosine 0.3520 against a 0.20 cutoff. This ` +
+        `cell is what says the channel was ON while those comparisons were made.\n` +
+        `  channels by rank: ${seen.join(", ") || "(no hits)"}\n` +
+        `  evidence by rank: ${JSON.stringify(results.hits.map((h) => h.evidence))}`,
+    ).toBeGreaterThan(0);
+  });});
 
 /* --------------------- the criterion --------------------- */
 
@@ -355,6 +448,49 @@ describe("F6 the channel stays out of two places, both ratified", () => {
           `  A marker here is a third channel nobody ruled on, over a corpus D-200-17 already ` +
           `showed is the hardest of the three to get the visibility right on.`,
       ).toBe(0);
+    }
+  });
+});
+
+/* --------------------- AC2 again, with the channel demonstrably ON --------------------- */
+
+describe("AC2 the lexical half is unmoved over a corpus the channel CAN reach", () => {
+  for (const probe of LIVE_PROBES) {
+    it(`${probe.label}: same hits, same ranks, same evidence`, () => {
+      setup.check();
+      const a = liveBefore.get(probe.label) as Results;
+      const b = liveAfter.get(probe.label) as Results;
+      expect(
+        lexicalPart(b),
+        `THIS is AC2 measured rather than satisfied vacuously. The block over T200's world ` +
+          `compares two phases that are identical by construction; this one compares two ` +
+          `phases that genuinely differ, because the paraphrase reaches its target here at ` +
+          `0.3520 against a 0.20 cutoff.\n` +
+          `  Same module, same params, same rows. The only difference is that ` +
+          `\`reembedRelease\` ran in between, so a lexical hit that changed its rank, its ` +
+          `evidence, or its presence changed BECAUSE the vectors exist — which is exactly what ` +
+          `AC2 forbids, and the semantic tail it is allowed to grow is excluded from the ` +
+          `comparison rather than asserted against.\n` +
+          `  params: ${JSON.stringify(probe.params())}\n` +
+          `  phase A: ${JSON.stringify(lexicalPart(a))}\n` +
+          `  phase B: ${JSON.stringify(lexicalPart(b))}`,
+      ).toEqual(lexicalPart(a));
+    });
+  }
+
+  it("and the facets did not move either", () => {
+    setup.check();
+    for (const probe of LIVE_PROBES) {
+      const a = liveBefore.get(probe.label) as Results;
+      const b = liveAfter.get(probe.label) as Results;
+      expect(
+        b.facets,
+        `AC3 of T200 keeps the facet map derived from the VOCABULARY rather than from the hit ` +
+          `set, so a channel that added candidates must not move it. Driven over the live ` +
+          `corpus for the same reason as the cells above: over T200's world the two phases ` +
+          `cannot differ, so the T200 facet cells cannot see this.\n` +
+          `  params: ${JSON.stringify(probe.params())}`,
+      ).toEqual(a.facets);
     }
   });
 });
