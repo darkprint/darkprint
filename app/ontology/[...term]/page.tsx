@@ -2,16 +2,21 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { OntologyTerm, OntologyView } from "@/lib/core";
 import { CORE_PHASE_IDS, DARKPRINT_CONFIG, INFERRED_MARKERS } from "@/lib/core";
-import { getOntologyView, getRegistry } from "@/lib/content";
+import { ontologyView } from "@/lib/core";
+import { getSharedDbClient } from "@/lib/db";
+import type { Actor } from "@/lib/server/policy";
+import { getLatestOntologyVersion, openView } from "@/lib/server/ontology";
+import { blueprints, cards, latestCards } from "@/lib/server/registry";
+import { searchTerms } from "@/lib/server/search";
 import { HUMAN_PRESENCE_MARK } from "@/lib/format";
-import { contentHref, nodeHref, termHref } from "@/lib/href";
+import { blueprintRecordHref, nodeHref, termHref } from "@/lib/href";
 import {
   NO_USAGE,
   TERM_KIND_META,
   TermKindBadge,
   formatWeight,
   markerWeight,
-  termUsageIndex,
+  termUsageOver,
   type TermUsage,
 } from "@/components/ontology/TermTable";
 
@@ -40,17 +45,32 @@ import {
  * the prerendered output rather than a request-time render of a page whose data comes
  * off the filesystem.
  */
-export const dynamicParams = false;
+export const dynamic = "force-dynamic";
 
-export function generateStaticParams() {
-  return getOntologyView().ontology.terms.map((term) => ({
-    term: term.id.split("/"),
-  }));
+/** A reader with no session: the vocabulary and its usage column are public. */
+const ANONYMOUS: Actor = Object.freeze({ kind: "anonymous" });
+
+/**
+ * The core vocabulary with every public local term layered on.
+ *
+ * `openView` stores core terms only and takes its overlay per bundle — *"never a global
+ * row"* — while this route must resolve a namespaced id like `lupo/pii-handling`, which
+ * lives in whichever release declares it. `searchTerms` is the module that knows which
+ * terms are local, so its answer is fed back in as the extensions. Three published readers
+ * in the order T260's merged `/ontology` already composes them; the decisions are theirs
+ * and only the call sequence repeats here.
+ */
+async function vocabularyView(db: ReturnType<typeof getSharedDbClient>["db"]) {
+  const published = await getLatestOntologyVersion(db);
+  if (published === undefined) return ontologyView({ version: "", title: "", terms: [] });
+  const local = await searchTerms(db, ANONYMOUS, { origin: "local" });
+  return openView(db, published.version, local.hits.map((hit) => hit.item));
 }
 
 export async function generateMetadata({ params }: PageProps<"/ontology/[...term]">) {
   const { term } = await params;
-  const found = getOntologyView().get(term.join("/"));
+  const { db } = getSharedDbClient();
+  const found = (await vocabularyView(db)).get(term.join("/"));
   if (!found) return { title: "Term not found" };
   return {
     title: `${found.label}: ${TERM_KIND_META[found.kind].label}`,
@@ -139,14 +159,30 @@ function narrowerReach(
 
 export default async function Page({ params }: PageProps<"/ontology/[...term]">) {
   const { term: segments } = await params;
-  const view = getOntologyView();
+  const { db } = getSharedDbClient();
+  const view = await vocabularyView(db);
   // The catch-all captures `["lupo", "pii-handling"]`; the vocabulary is keyed on the
   // id, which is those segments with the separator put back.
   const term = view.get(segments.join("/"));
   if (!term) notFound();
 
-  const registry = getRegistry();
-  const usageIndex = termUsageIndex(registry);
+  /* The usage index over the REGISTRY's cards. `termUsageIndex(registry)` took `lib/core`'s
+     build-time archive, which this route no longer has; `termUsageOver` is the same
+     computation over any corpus and was added for exactly this (D-260-07), with
+     `termUsageIndex` delegating to it so the two cannot drift.
+
+     `usedIn` is spelled `owner/slug`, which the function's own docblock asks for: a
+     blueprint's identity since B-09 is the two-part key, and D-210-08 measured what a
+     slug-only spelling costs — `alice/foo` and `bob/foo` collapse into one, invisible on a
+     single-account seed and wrong the day it is not. */
+  const corpus = await cards(db, ANONYMOUS);
+  const usageIndex = termUsageOver(
+    corpus.map((entry) => ({
+      id: entry.id,
+      card: entry.card,
+      usedIn: entry.usedIn.map((key) => `${key.ownerHandle}/${key.slug}`),
+    })),
+  );
   const usage = usageIndex.get(term.id) ?? NO_USAGE;
   const reach = narrowerReach(view, usageIndex, term);
   const meta = TERM_KIND_META[term.kind];
@@ -163,13 +199,29 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
     (other) => other.deprecated?.replacedBy === term.id,
   );
 
-  const cards = usage.cards
-    .map((id) => registry.versionsOf(id)[0])
+  /* The cards naming this term, newest version each. `latestCards` is one row per id, so
+     the lookup is a map rather than a reader call per card. */
+  const newest = new Map((await latestCards(db, ANONYMOUS)).map((entry) => [entry.id, entry]));
+  const usingCards = usage.cards
+    .map((id) => newest.get(id))
     .filter((record) => record !== undefined);
-  const blueprints = usage.blueprints.map((slug) => ({
-    slug,
-    title: registry.blueprint(slug)?.manifest.title ?? slug,
-  }));
+
+  /* The blueprints pinning them, resolved from the `owner/slug` keys the index now carries.
+     One read for the readable universe rather than a lookup per key; a key nothing in it
+     answers keeps its slug as the label, which is the honest rendering for a blueprint this
+     reader may not see. */
+  const readable = new Map(
+    (await blueprints(db, ANONYMOUS)).map((bp) => [`${bp.ownerHandle}/${bp.slug}`, bp]),
+  );
+  const usingBlueprints = usage.blueprints.map((key) => {
+    const found = readable.get(key);
+    const slug = key.slice(key.indexOf("/") + 1);
+    return {
+      ownerHandle: found?.ownerHandle ?? key.slice(0, key.indexOf("/")),
+      slug,
+      title: found?.manifest.title ?? slug,
+    };
+  });
 
   const replacedBy =
     term.deprecated?.replacedBy === undefined
@@ -564,7 +616,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   <div className="flex flex-col gap-2">
                     <PanelLabel>Node cards</PanelLabel>
                     <ul className="divide-y divide-line">
-                      {cards.map((record) => (
+                      {usingCards.map((record) => (
                         <li key={record.ref}>
                           <Link
                             href={nodeHref(record.id)}
@@ -585,10 +637,10 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   <div className="flex flex-col gap-2">
                     <PanelLabel>Blueprints</PanelLabel>
                     <ul className="divide-y divide-line">
-                      {blueprints.map((bp) => (
+                      {usingBlueprints.map((bp) => (
                         <li key={bp.slug}>
                           <Link
-                            href={contentHref({ kind: "blueprint", slug: bp.slug })}
+                            href={blueprintRecordHref(bp)}
                             className="group flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2.5"
                           >
                             <span className="text-sm text-fg transition-colors group-hover:text-cyan">

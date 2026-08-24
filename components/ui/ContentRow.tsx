@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { cx, prettyDate } from "@/lib/format";
-import { contentHref } from "@/lib/href";
+import { blueprintRecordHref } from "@/lib/href";
 import type { AnyContent } from "@/lib/types";
 
 import { Avatar } from "./Avatar";
@@ -155,7 +155,7 @@ export function ContentRow({
           for hit-testing, below the star at `z-20`, which is the one thing on the row that
           has to stay independently clickable. Unchanged from the tile, and the z ladder with
           it. */}
-      <Link href={contentHref(item)} className="absolute inset-0 z-10">
+      <Link href={blueprintRecordHref(item)} className="absolute inset-0 z-10">
         <span className="sr-only">{item.title}</span>
       </Link>
 

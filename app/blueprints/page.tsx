@@ -308,6 +308,11 @@ function viewOf(
   return {
     kind: "blueprint",
     slug: bp.slug,
+    /* The one granted line this Forbidden file takes from T261 (D-261-07). `bp.ownerHandle`
+       was read three lines up to key the two batch maps and then dropped, and B-09 makes it
+       half of the address every row on this shelf links to: `ContentRow` cannot build the
+       canonical URL from a record that does not carry an owner. */
+    ownerHandle: bp.ownerHandle,
     title: manifest.title ?? bp.slug,
     summary: manifest.summary ?? "",
     description: manifest.description ?? "",

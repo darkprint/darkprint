@@ -223,6 +223,21 @@ export interface BlueprintAnalysisView {
 export interface Blueprint {
   kind: "blueprint";
   slug: string;
+  /**
+   * The handle whose account holds this bundle, when the row came from the registry.
+   *
+   * Half of B-09's two-part key and half of the canonical URL `contentHref` builds. OPTIONAL
+   * because the two worlds that produce a `Blueprint` do not both know it: a row projected
+   * from `BlueprintSummary` carries it, and a row assembled from `lib/data/**` has nobody
+   * to name. A required member would move ninety-eight fixture sites to record an owner the
+   * fixtures do not have (D-261-07).
+   *
+   * NOT `author`. Re-attribution moves OWNERSHIP and not AUTHORSHIP (D-250-18), so
+   * `author.username` is the handle that WROTE the bundle and names the wrong account the
+   * first time one is transferred. The two are equal across the archive's nine today, which
+   * is exactly why they have to be kept apart here rather than at the first divergence.
+   */
+  ownerHandle?: string;
   title: string;
   summary: string;
   /** Long-form markdown-ish description (rendered as paragraphs). */

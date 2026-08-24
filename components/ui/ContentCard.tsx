@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { AnyContent } from "@/lib/types";
 import { cx, prettyDate } from "@/lib/format";
-import { contentHref } from "@/lib/href";
+import { blueprintRecordHref } from "@/lib/href";
 import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { Avatar } from "./Avatar";
 import { KindBadge } from "./Badge";
@@ -96,7 +96,7 @@ export function ContentCard({
           plain-flow content below for hit-testing (so clicking anywhere on the card
           navigates), and below the star (`z-20`), which is the one thing on the card
           that has to stay independently clickable. */}
-      <Link href={contentHref(item)} className="absolute inset-0 z-10">
+      <Link href={blueprintRecordHref(item)} className="absolute inset-0 z-10">
         <span className="sr-only">{item.title}</span>
       </Link>
 
