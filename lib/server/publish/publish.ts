@@ -60,8 +60,9 @@ import {
 import { addCard, getCard } from "@/lib/server/cards";
 import { validateBundle } from "@/lib/server/engine";
 import { exportRelease } from "@/lib/server/export";
-import { openView } from "@/lib/server/ontology";
+import { getOntologyVersion, openView } from "@/lib/server/ontology";
 import { can, type Actor } from "@/lib/server/policy";
+import { reembedRelease } from "@/lib/server/search";
 import { persistArtefacts } from "./artefacts";
 import { cardConflict, conflict, inError, notOwner, unfinished, versionNotHigher } from "./errors";
 
@@ -201,6 +202,18 @@ export async function publish(
   const cardRefs = blueprint.nodes.map((node) => node.ref);
   const cardDigests = blueprint.nodes.map((node) => node.digest);
 
+  /* D-260-24: the fourth field of the scorecard, resolved HERE because this function is the
+     one production writer of scores. `analysis.ontologyVersion` is the version the score was
+     actually computed against (`lib/core/analysis/analyze.ts:94` reads it off the view this
+     function built above), and `registry/scores.ts` refuses to call a scorecard complete
+     without the row id it names. `getOntologyVersion` cannot miss on this path — `openView`
+     above already refused a version nobody published, and `analysis.ontologyVersion` IS that
+     view's version — but a miss still stamps nothing rather than throwing: an incomplete
+     scorecard is the honest record of a score whose vocabulary row cannot be named. The
+     published reader is consumed even though it loads terms this caller discards; a lean
+     id-only reader would be a second query beside it, and the cost is one publish-time read. */
+  const scored = await getOntologyVersion(db, analysis.ontologyVersion);
+
   if (existing !== undefined) {
     /* AC6, before AC8 (B3/D-100-01): a conflict is a statement about IDENTITY, and the
        contract has the digest computed before the write is attempted for exactly this. By
@@ -284,6 +297,7 @@ export async function publish(
         autonomy: analysis.autonomy,
         security: analysis.security,
         phaseCoverage: analysis.phaseCoverage,
+        ...(scored === undefined ? {} : { scoredOntologyVersionId: scored.id }),
       },
     });
 
@@ -307,6 +321,15 @@ export async function publish(
        content, and a retry writes the identical object. */
     const files = await exportRelease(tx, actor, bundle.id, release.digest);
     await persistArtefacts(storage ?? createObjectStorage(), release.digest, files);
+
+    /* D-300-06 F4.2: the one production trigger of re-embedding, wired in the same visit as
+       D-260-24's stamp. Inside the transaction on purpose: the vectors live in the SAME
+       database as the release, so a driver fault here is a release-write fault and "publish
+       succeeded but the error said it failed" cannot happen; and a derived row never exists
+       for a release that did not commit. Idempotent by row presence (D-200-03), no-op when
+       the embedder degrades to absent (D-300-05's arm), so a publish never waits on an
+       encoder that is not provisioned. */
+    await reembedRelease(tx, bundle.id, release.digest);
 
     return { bundleId: bundle.id, releaseId: release.id, digest: release.digest, created: existing === undefined };
   });

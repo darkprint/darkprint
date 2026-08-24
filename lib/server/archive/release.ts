@@ -63,7 +63,20 @@ export interface AddReleaseInput {
    * a cast.
    */
   vocabulary?: unknown;
-  analysis?: { autonomy: AutonomyResult; security: SecurityResult; phaseCoverage: PhaseCoverage };
+  analysis?: {
+    autonomy: AutonomyResult;
+    security: SecurityResult;
+    phaseCoverage: PhaseCoverage;
+    /**
+     * D-260-24: the fourth field of a complete scorecard. `registry/scores.ts` requires it
+     * together with the three payloads ("a half-written scorecard is not a scorecard") and
+     * nothing had ever written it, so `scoresOf` answered `undefined` for every release ever
+     * published. The caller resolves `analysis.ontologyVersion` (a version STRING this
+     * column has no room for) to its `ontology_version.id` — publish.ts is the one
+     * production caller and does exactly that.
+     */
+    scoredOntologyVersionId?: string;
+  };
 }
 
 /** The name the parser's diagnostics quote. A column, since that is where the bytes are. */
@@ -236,6 +249,7 @@ export async function addRelease(db: Db, input: AddReleaseInput): Promise<Releas
         autonomy: input.analysis?.autonomy ?? null,
         security: input.analysis?.security ?? null,
         phaseCoverage: input.analysis?.phaseCoverage ?? null,
+        scoredOntologyVersionId: input.analysis?.scoredOntologyVersionId ?? null,
       })
       .returning();
     return toReleaseRecord(row);
