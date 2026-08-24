@@ -52,7 +52,14 @@ import { createTestDb, type TestDb } from "@/tests/support";
 import type { Actor } from "@/lib/server/policy";
 import type { NodeCard } from "@/lib/server/types";
 
-import { candidates, usage, usageOf } from "@/lib/server/terms";
+import {
+  candidates,
+  TermStoreError,
+  usage,
+  usageOf,
+  withTermErrors,
+  withTermStore,
+} from "@/lib/server/terms";
 import { GET as getUsage } from "@/app/api/ontology-usage/route";
 import { GET as getCandidates } from "@/app/api/ontology-usage/candidates/route";
 
@@ -375,6 +382,63 @@ describe("AC6, rewritten by D-210-01: no refresh verb exists and the index still
   it("the barrel publishes no refreshUsage (D-210-09)", async () => {
     const barrel: Record<string, unknown> = await import("@/lib/server/terms");
     expect(Object.hasOwn(barrel, "refreshUsage")).toBe(false);
+  });
+});
+
+describe("the fault path", () => {
+  /* The repository's `error-hygiene` guard resolves its domain from `git ls-tree -d backend
+     lib/server/`, so `lib/server/terms` is outside it until this branch merges and
+     `TermStoreError` is unobserved by it today. These cells stand in until then; they are
+     not a substitute for it, and the equality there is derived at the merge, never carried. */
+  it("D-13: a sealed fault renders as `{}` and keeps its cause and stack", () => {
+    for (const args of [["usageOf"], ["usageOf", new Error("select * from card_version")]] as const) {
+      const err = new TermStoreError(...(args as [string, unknown]));
+      expect(Object.keys(err)).toEqual([]);
+      expect(JSON.stringify(err)).toBe("{}");
+      expect(err.name).toBe("TermStoreError");
+      expect(typeof err.stack).toBe("string");
+      expect(Object.propertyIsEnumerable.call(err, "cause")).toBe(false);
+      /* The exact rendering, hardcoded rather than imported: a test taking its expected
+         message from the module under test asserts the module agrees with itself. */
+      expect(err.message).toBe("usageOf: the term store failed.");
+    }
+  });
+
+  it("withTermStore seals a driver fault and does NOT relabel an already-sealed one", async () => {
+    const inner = withTermStore("usageOf", async () => {
+      throw new Error('select "card_id" from "card_version" where id = $1');
+    });
+    await expect(inner).rejects.toThrow("usageOf: the term store failed.");
+
+    let seen: unknown;
+    try {
+      await withTermStore("candidates", () =>
+        withTermStore("usageOf", async () => {
+          throw new Error("boom");
+        }),
+      );
+    } catch (err) {
+      seen = err;
+    }
+    expect((seen as Error).message).toBe("usageOf: the term store failed.");
+  });
+
+  it("withTermErrors answers problem+json at 500 and rethrows what it does not know", async () => {
+    const request = new Request("http://localhost/api/ontology-usage");
+    const response = await withTermErrors(request, async () => {
+      throw new TermStoreError("usage", new Error("select * from bundle"));
+    });
+    expect(response.status).toBe(500);
+    const body = (await response.json()) as { detail: string; title: string };
+    expect(body.detail).toBe("usage: the term store failed.");
+    expect(body.detail).not.toContain("select");
+    expect(body.title).toBe("Store failed");
+
+    await expect(
+      withTermErrors(request, async () => {
+        throw new TypeError("a bug outside a reader");
+      }),
+    ).rejects.toThrow("a bug outside a reader");
   });
 });
 
