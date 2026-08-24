@@ -210,7 +210,12 @@ async function similarCandidates(
   const queryVector = await embed(q);
   if (queryVector === undefined) return [];
 
-  const distance = sql<number>`${schema.cardVersionEmbedding.embedding} <=> ${JSON.stringify(queryVector)}::vector`;
+  /* PARENTHESISED, and it is not decoration. `<=>` is a user-defined operator, and
+     PostgreSQL gives every such operator HIGHER precedence than a comparison — so
+     `embedding <=> $1 <= $2` does already parse as `(embedding <=> $1) <= $2`. The
+     parentheses are here so a reader does not have to know that to check the filter,
+     because the wrong reading is silently a different query rather than an error. */
+  const distance = sql<number>`(${schema.cardVersionEmbedding.embedding} <=> ${JSON.stringify(queryVector)}::vector)`;
 
   const rows = await db
     .select({

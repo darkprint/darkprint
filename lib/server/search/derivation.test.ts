@@ -19,9 +19,9 @@
 
 import { describe, expect, it } from "vitest";
 
-import { EMBEDDING_DIMENSIONS, embed, encoderAvailable, SIMILAR_MIN } from "./embed";
+import { EMBEDDING_DIMENSIONS, embed, encoderAvailable, SIMILAR_EVIDENCE, SIMILAR_MIN } from "./embed";
 import { flag, oneOf, searchParams, sortKey, value } from "./params";
-import { evidenceFor, ranked, unranked, type Field, type Scored } from "./rank";
+import { evidenceFor, ranked, rankedWithSimilar, unranked, type Field, type Scored } from "./rank";
 import { findWord, normalise, trigrams } from "./text";
 
 /* --------------------- the derivation --------------------- */
@@ -268,6 +268,56 @@ describe("the ranking", () => {
        why the field is derived from the hits rather than from the branch that made them. */
     expect(unranked([], {}).ordered).toBe(true);
     expect(ranked([], {}).ordered).toBe(true);
+  });
+
+  it("puts the vector channel's finds BEHIND every lexical hit (AC3)", () => {
+    /* AC3's whole content, and it is checked against the arrangement that BREAKS it rather
+       than a comfortable one. `similar:purpose` scores 1, exactly like `title:x`, and
+       `similar:` sorts between `owner:` and `slug:` — so a tail fed through the ordinary
+       comparator would land BETWEEN these two lexical hits instead of after both. The
+       fixture is built so that a wrong implementation reorders visibly. */
+    const results = rankedWithSimilar(
+      [candidate("slug-hit", ["slug:x"]), candidate("owner-hit", ["owner:x"])],
+      [candidate("vector-only", [SIMILAR_EVIDENCE])],
+      {},
+    );
+    expect(results.hits.map((hit) => hit.item)).toEqual(["owner-hit", "slug-hit", "vector-only"]);
+  });
+
+  it("keeps the tail contiguous and never splits a lexical block (D-200-20)", () => {
+    const results = rankedWithSimilar(
+      [candidate("a", ["title:x"]), candidate("c", ["title:x"]), candidate("b", ["tag:x"])],
+      [candidate("v1", [SIMILAR_EVIDENCE]), candidate("v2", [SIMILAR_EVIDENCE])],
+      {},
+    );
+    expect(blocks(results.hits.map((hit) => hit.evidence))).toEqual([
+      ["tag:x"],
+      ["title:x", "title:x"],
+      [SIMILAR_EVIDENCE, SIMILAR_EVIDENCE],
+    ]);
+  });
+
+  it("preserves the tail's own distance order rather than re-sorting it", () => {
+    /* The tail arrives nearest-first from pgvector and every entry carries byte-identical
+       evidence, so ANY comparator would fall through to the identity tiebreak and sort it
+       alphabetically. `zeta` before `alpha` is the fixture that tells the two apart. */
+    const results = rankedWithSimilar(
+      [],
+      [candidate("zeta", [SIMILAR_EVIDENCE]), candidate("alpha", [SIMILAR_EVIDENCE])],
+      {},
+    );
+    expect(results.hits.map((hit) => hit.item)).toEqual(["zeta", "alpha"]);
+  });
+
+  it("stays ordered:true with a tail, and that is the law computing (D-300-04 D1)", () => {
+    /* Not an amendment — `finish` evaluates the same `every(evidence.length > 0)` it always
+       did. Recorded as a cell because the ruling this task was DISPATCHED with said an
+       all-semantic response was `ordered: false`, which the unamended law does not compute;
+       D-300-04 D1 resolved that toward the marker, and this is what the resolution means in
+       the code. */
+    const allSemantic = rankedWithSimilar([], [candidate("v", [SIMILAR_EVIDENCE])], {});
+    expect(allSemantic.ordered).toBe(true);
+    expect(rankedWithSimilar([], [], {}).ordered).toBe(true);
   });
 
   it("hands back the facets it was given, hits or no hits", () => {
