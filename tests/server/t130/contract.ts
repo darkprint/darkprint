@@ -126,17 +126,32 @@ export type FunctionName = keyof typeof PUBLISHED;
 export const FUNCTION_NAMES = Object.keys(PUBLISHED) as FunctionName[];
 
 /**
- * The three members of `ProfileRecord`, exactly as the block declares them.
+ * The seven members of `ProfileRecord`, exactly as the block declares them.
  *
  * Asserted as a KEY SET rather than field by field, which is T050's AC2 precedent: "the test
  * that matters asserts the key set of what a visitor receives rather than the value of one
  * field". An extra member is how a column arrives on a public surface, and no per-field
  * assertion can see one.
+ *
+ * **Three at T130's merge, seven since T131, and this table moving is the sanctioned path** —
+ * `COUNT_KEYS` below records the same shape of move for T132, and both are granted edits to a
+ * merged suite rather than an implementer widening an instrument on its own authority
+ * (D-131-08, on D-132-02 C-2's precedent).
+ *
+ * The four that arrive are the four D-130-06 cut for want of a column, and every one of its
+ * reasons was a missing table rather than a missing opinion: `watchers` and `support` had no
+ * relation to count, `pinned` had nowhere to live, and `validated` is a count (D-130-01) that
+ * needed T180's run reports. `0004_social` closes all four. **None of them is a counter
+ * column** — AC1's inherited clause is why this list can grow without the guard weakening.
  */
 export const RECORD_KEYS = [
   "author",
   "counts",
   "joinedAt",
+  "pinned",
+  "support",
+  "validated",
+  "watchers",
 ] as const;
 
 /**
@@ -274,7 +289,7 @@ export function asProfileRecord(value: unknown, where: string): ProfileRecord {
 }
 
 /**
- * The same three members, checked on the WIRE, where `joinedAt` is an ISO string.
+ * The same seven members, checked on the WIRE, where `joinedAt` is an ISO string.
  *
  * A separate validator rather than a loosened one: `Date` is what the block declares of the
  * module's return and JSON has no date type, so a route answering a string is correct and a

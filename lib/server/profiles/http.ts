@@ -40,10 +40,10 @@
    ============================================================ */
 
 import { AccountStoreError } from "@/lib/server/accounts";
-import { PROBLEM_TYPE_BASE, problem } from "@/lib/server/http";
+import { PROBLEM_TYPE_BASE, badRequest, notFound, problem, unauthorized } from "@/lib/server/http";
 import { RegistryStoreError } from "@/lib/server/registry";
 
-import { MalformedStoredVocabularyError, ProfileStoreError } from "./errors";
+import { MalformedStoredVocabularyError, ProfileRefusedError, ProfileStoreError } from "./errors";
 
 /**
  * The one refusal body this route answers a store failure with.
@@ -103,6 +103,46 @@ function malformedStoredVocabulary(request: Request, err: MalformedStoredVocabul
 }
 
 /**
+ * T131's write refusals, mapped by `kind` (D-131-07).
+ *
+ * **The two 404s are the whole of B-03 on this surface, and they are one answer on purpose.**
+ * `no-such-account` already covers "no such account" and "not yours" inside the module
+ * (`errors.ts` says why), and it lands on `notFound` with the SAME `detail` the read route
+ * answers an unknown handle with. **404, never 403** — a 403 tells a caller the account
+ * exists and is somebody else's, which is exactly the existence oracle the shared status
+ * closes. There is no `forbidden` constructor in `@/lib/server/http` and this route does not
+ * mint one.
+ *
+ * The two 400s carry the refusal's own `message`, which is safe by construction: every
+ * message form in `errors.ts` is the verb's name, the refusal, and at most this module's own
+ * `MAX_PINS`. **The rejected pin travels on `cause` and never in the body** — it is caller
+ * content in its entirety, and `detail` is the one rendering the transport copies verbatim.
+ *
+ * `not-signed-in` is 401 and is **unreachable through HTTP**: `withSession` answers 401
+ * before any verb is entered. The arm is here so that a `kind` added later cannot fall
+ * through into somebody else's status, and so the switch is exhaustive against the union.
+ */
+function refused(request: Request, err: ProfileRefusedError): Response {
+  switch (err.kind) {
+    case "not-signed-in":
+      return unauthorized(request);
+    case "no-such-account":
+      return notFound(request, NO_SUCH_AUTHOR);
+    case "too-many-pins":
+    case "malformed-pin":
+      return badRequest(request, err.message);
+  }
+}
+
+/**
+ * The same sentence `app/api/authors/[handle]/route.ts` answers an unknown handle with, and
+ * the duplication is the point: a write that refused with a different wording than the read
+ * would let a caller tell "not yours" from "no such handle" by comparing two strings, which
+ * is the oracle both statuses exist to close. D-130-12's shape, `<resource>: no such <thing>.`
+ */
+const NO_SUCH_AUTHOR = "author: no such handle.";
+
+/**
  * Run the profile route's handler and turn a sealed store fault into B-03's envelope.
  *
  * Everything the handler does goes inside `work` — `await params`, `getSharedDbClient()`
@@ -118,6 +158,10 @@ export async function withProfileErrors(
   try {
     return await work();
   } catch (err) {
+    /* T131's refusals, before every fault arm. These are the only conditions here that are
+       about a CALLER rather than about a component, and they are the only ones whose status
+       is not 500. */
+    if (err instanceof ProfileRefusedError) return refused(request, err);
     /* Before the store-fault arm, because it is the more specific condition and the two
        must not collapse: an arm order that answered `store-failed` here would restore the
        exact relabelling D-130-10 removed. Ordering is load-bearing and this comment is the
