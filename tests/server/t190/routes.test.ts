@@ -258,6 +258,24 @@ describe("T190: the struck internal-events routes are NOT built (D-190-05)", () 
    */
   it("`app/api/internal/` does not exist", () => {
     const dir = fileURLToPath(new URL("../../../app/api/internal/", import.meta.url));
+
+    /* The control, and this cell is the one place in the suite that needs one most.
+       Every other assertion here FAILS CLOSED — a wrong path makes `routeTable()` throw and
+       `barrelSource()` return undefined, and both are reds. This one fails OPEN: a path that
+       points at nothing answers `false` and the cell passes forever, reporting a struck route
+       as unbuilt whether or not anybody built it. It was the only cell green in the blind run,
+       which is exactly the position where a silent zero hides.
+
+       So the same construction is aimed at a sibling that certainly DOES exist. If this reds,
+       the relative path is wrong and the assertion below is meaningless rather than satisfied. */
+    const sibling = fileURLToPath(new URL("../../../app/api/account/", import.meta.url));
+    expect(
+      existsSync(sibling),
+      `\`${sibling}\` was not found, so this file's \`../../../app/api/\` path does not reach ` +
+        `the route tree at all — and the assertion below is then a zero obtained from a typo ` +
+        `rather than from a route nobody built.`,
+    ).toBe(true);
+
     expect(
       existsSync(dir),
       `\`app/api/internal/\` exists.\n` +

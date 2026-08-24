@@ -33,8 +33,12 @@ import { canonicalJson, contentDigest } from "@/lib/core";
 import {
   DEFAULT_PREFERENCES_PIN,
   EVENT_KINDS,
+  MESSAGE_FORMS,
+  NON_OWNERS,
   PINNED_DIGESTS,
   PREFERENCE_KEYS,
+  PUBLISHED_NAMES,
+  ROUTE_NAMES,
   deliveredCountFor,
   recordingDelivery,
   subjectDigest,
@@ -199,5 +203,55 @@ describe("T190 instruments: the pins agree with the block they were copied from"
     expect(values).toContain(true);
     expect(values).toContain(false);
     expect(DEFAULT_PREFERENCES_PIN.digest).toBe(false);
+  });
+});
+
+describe("T190 instruments: every `it.each` domain is non-empty", () => {
+  /**
+   * The failure this closes is silent, and it is the one an all-green run cannot show you.
+   *
+   * Most of this suite's cells are generated: `it.each(NON_OWNERS)`, `it.each(EVENT_KINDS)`,
+   * `it.each(PUBLISHED_NAMES)`, `it.each(PINNED_DIGESTS)`. A list that an edit empties does not
+   * red — it produces NO CELLS AT ALL, and the run reports every remaining test passing over a
+   * suite that is measuring a fraction of what its file names claim. Fourteen refusal cells and
+   * seven published-name cells can leave without moving the failed column by one.
+   *
+   * That has happened in this repository: a derivation that found nothing made every cell built
+   * from it vacuously green, which is why `tests/support/db.ts` and T150's `allTables()` both
+   * FAIL CLOSED on an empty domain. Same move, stated as counts so a red says which list went
+   * and what it should hold.
+   *
+   * The counts are LITERALS rather than `.length > 0`. A greater-than-zero check survives a
+   * list that lost six of its seven members, and losing six of seven is the realistic edit —
+   * a whole list going missing is loud, a member quietly dropped is not.
+   */
+  it.each([
+    { name: "PINNED_DIGESTS", got: PINNED_DIGESTS.length, want: 4, why: "the four ruled subject shapes (D-190-07)" },
+    { name: "EVENT_KINDS", got: EVENT_KINDS.length, want: 4, why: "`type EventKind` has four members" },
+    { name: "PREFERENCE_KEYS", got: PREFERENCE_KEYS.length, want: 4, why: "`interface Preferences` has four booleans" },
+    { name: "PUBLISHED_NAMES", got: PUBLISHED_NAMES.length, want: 7, why: "the Published signatures block plus D-190-02..05's additions" },
+    { name: "NON_OWNERS", got: NON_OWNERS.length, want: 7, why: "T060's non-owner shapes, including the two that INHERIT authority" },
+    { name: "ROUTE_NAMES", got: ROUTE_NAMES.length, want: 3, why: "D-190-05 publishes three routes" },
+    { name: "ADMISSIBLE_MESSAGES", got: Object.keys(MESSAGE_FORMS).length, want: 3, why: "D-190-05 made the whole set three forms" },
+  ])("$name holds $want entries", ({ name, got, want, why }) => {
+    expect(
+      got,
+      `\`${name}\` holds ${got} entries and should hold ${want} — ${why}.\n` +
+        `  This list drives \`it.each\` cells elsewhere in the suite. A shortened list does ` +
+        `not RED: it produces fewer cells, and the run then reports every remaining test ` +
+        `passing over a suite measuring less than its file names claim. Nothing else in this ` +
+        `suite can see that happen.`,
+    ).toBe(want);
+  });
+
+  /** And the non-owner list really does carry the two shapes only `can`-delegation refuses. */
+  it("NON_OWNERS keeps both prototype-inheriting shapes", () => {
+    const inheriting = NON_OWNERS.filter((n) => n.label.includes("INHERIT"));
+    expect(
+      inheriting.map((n) => n.label),
+      "the two `Object.create(...)` actors are gone from NON_OWNERS. They are the ONLY members " +
+        "that separate a module delegating to T060's `can` from one re-implementing ownership " +
+        "as `actor.accountId === accountId` — every other shape in the list is refused by both.",
+    ).toHaveLength(2);
   });
 });
