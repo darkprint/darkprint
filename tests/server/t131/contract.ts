@@ -1402,6 +1402,36 @@ export async function proveInterleaving(s: Scratch): Promise<Interleaving> {
   };
 }
 
+
+/**
+ * The SQLSTATE anywhere in a rejection's `cause` CHAIN, however deep.
+ *
+ * **Depth is the whole point, and this function exists because a mutation proved the previous
+ * two-level version blind.** Removing `onConflictDoNothing` from `toggleFollow`'s insert makes a
+ * concurrent loser fail every time — measured 8 races, 8 rejections — and the race cells reddened
+ * ZERO, because the code sits three levels down:
+ *
+ *     [0] ProfileStoreError   code=undefined   "toggleFollow: the profile store failed."
+ *     [1] DrizzleQueryError   code=undefined   "Failed query: insert into \"follow\" ..."
+ *     [2] DatabaseError       code=23505       "duplicate key value violates unique constraint"
+ *
+ * The old reader looked at [0] and [1] and stopped. So the cells asserting "no caller receives a
+ * unique violation, raw OR sealed on `cause`" were asserting something they could not observe —
+ * their message and their assertion read different text, and only a mutation could tell.
+ *
+ * A blind suite green because its reader is too shallow is worse than a red: it reports coverage
+ * of exactly the criterion it cannot see.
+ */
+export function sqlstateIn(err: unknown, maxDepth = 8): string | undefined {
+  let e: unknown = err;
+  for (let d = 0; d < maxDepth && e !== null && e !== undefined; d += 1) {
+    const o = e as { code?: unknown; cause?: unknown };
+    if (typeof o.code === "string" && /^[0-9A-Z]{5}$/.test(o.code)) return o.code;
+    e = o.cause;
+  }
+  return undefined;
+}
+
 /** What a concurrent pair did, without deciding in advance that either had to succeed. */
 export interface RaceOutcome {
   resolved: number;
@@ -1432,9 +1462,7 @@ export async function race(a: () => unknown, b: () => unknown): Promise<RaceOutc
       out.answers.push(r.value);
     } else {
       out.rejected += 1;
-      const reason = r.reason as { code?: unknown; cause?: { code?: unknown } };
-      const code = reason?.code ?? reason?.cause?.code;
-      out.codes.push(typeof code === "string" ? code : undefined);
+      out.codes.push(sqlstateIn(r.reason));
     }
   }
   return out;
@@ -1562,8 +1590,9 @@ export async function sqlstateOf(work: () => Promise<unknown>): Promise<string |
     await work();
     return undefined;
   } catch (err) {
-    const e = err as { code?: unknown; cause?: { code?: unknown } };
-    const code = e?.code ?? e?.cause?.code;
-    return typeof code === "string" ? code : "(a rejection carrying no SQLSTATE)";
+    /* Full-chain, for the reason `sqlstateIn` documents: a sealed refusal buries its SQLSTATE
+       under the ORM's own wrapper, and a two-level reader answers `undefined` for a code that
+       is plainly there. */
+    return sqlstateIn(err) ?? "(a rejection carrying no SQLSTATE)";
   }
 }
