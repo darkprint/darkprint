@@ -1,23 +1,28 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM"],
     "module": "commonjs",
     "moduleResolution": "node",
     "types": ["node"],
     "strict": true,
-    "declaration": false,
-    "sourceMap": false,
-    "outDir": "dist",
-    "rootDir": "src",
-    "noEmit": false,
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    /* TYPECHECK ONLY since T270. This config used to drive the build (`tsc -p`, `outDir:
+       dist`, `rootDir: src`), and it cannot any more: the package now dispatches into
+       `packages/cli`, which SHIPS THE ENGINE, and the engine imports itself through this
+       repo's `@/` alias. `tsc` emits those aliases verbatim and Node throws
+       MODULE_NOT_FOUND on the result — measured on the real tree, which is why D-270-06's
+       plain-tsc paragraph was struck and D-270-07(2) put the build on esbuild
+       (`packages/cli/build.mjs`), where the alias is resolved at bundle time. `rootDir` is
+       gone with `outDir` because a package reaching two directories up has no single root. */
+    "noEmit": true,
+    "baseUrl": "../..",
+    "paths": { "@/*": ["./*"] }
   },
-  "include": ["src/**/*.ts"],
   /* The colocated suite is a REPO instrument, not part of the distributable: it imports
-     vitest, whose own types do not resolve under this file's `moduleResolution: "node"`,
-     and shipping a test into `dist` would put the harness in the published package. Root
-     `vitest.config.ts` collects it through the packages glob D-220-08 added. */
+     vitest, whose own types do not resolve under this file's `moduleResolution: "node"`.
+     Root `vitest.config.ts` collects it through the packages glob D-220-08 added. */
+  "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.test.ts"]
 }
