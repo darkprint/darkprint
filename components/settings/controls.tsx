@@ -25,14 +25,16 @@ import { cx } from "@/lib/format";
    disabled" check and fails this one.
 
    What is still off, and why it is off rather than reworded:
-   the notification switches, because `AccountRecord` carries no
-   `notifications` member and T190 has not built the column; and the
-   two danger-zone actions, because no route deletes an account or
-   transfers a bundle. **Their REASONS changed even though their
-   state did not** — "no account to delete" became false the day
-   accounts landed — so each says what is actually missing now
-   (D-262-15). D-78 asks whether the CLAIM is still true, not
-   whether the control still works.
+   the notification switches, because this page is not wired to
+   T190's preferences API and no mail sends — the earlier reason
+   here ("T190 has not built the column") went false at T190's
+   merge, the third time this paragraph's reasons outlived their
+   facts. **Their REASONS changed even though their state did
+   not** — "no account to delete" became false the day accounts
+   landed, and T120 has since shipped delete and transfer routes —
+   so each says what is actually missing now (D-262-15). D-78 asks
+   whether the CLAIM is still true, not whether the control still
+   works.
 
    `readOnly` is gone from the text fields, but the reason it was
    there survives in what replaced it: an editable input keeps its
@@ -219,6 +221,7 @@ export function PrefixedField({
   onChange,
   label,
   placeholder,
+  maxLength,
 }: {
   id: string;
   prefix: string;
@@ -227,6 +230,13 @@ export function PrefixedField({
   label: string;
   /** What an account with no handle yet sees in the empty field (T050 AC1). */
   placeholder?: string;
+  /**
+   * Optional, and the omission is meaningful rather than a convenience: a field with no
+   * product bound must render an `<input>` with no `maxLength`, not one capped at some
+   * default this component picked. Passed through to the intrinsic element so the browser
+   * enforces it on typing and on paste.
+   */
+  maxLength?: number;
 }) {
   return (
     <span className={cx(FIELD, "flex h-10 items-center overflow-hidden")}>
@@ -238,6 +248,7 @@ export function PrefixedField({
         type="text"
         value={value}
         placeholder={placeholder}
+        maxLength={maxLength}
         onChange={(event) => onChange(event.target.value)}
         aria-label={`${label}, at ${prefix}`}
         className="h-full min-w-0 flex-1 bg-transparent pl-1 pr-3 font-mono text-sm text-fg placeholder:text-dim"

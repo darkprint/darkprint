@@ -76,35 +76,44 @@ beforeEach(async () => {
   await clean(t);
 }, 60_000);
 
+/* ============================================================
+   RETIRED BY T071 / D-071-02 — THE THREE HANDLE CELLS, AND WHY THIS
+   IS A DELIBERATE RETIREMENT RATHER THAN A DELETION
+
+   This block held four cells. Three drove the HANDLE door at
+   `MAX_NAME_LENGTH` — `allocateHandle` storing a 255-character
+   handle, `checkHandle` answering `available` for one, and the
+   round trip between them. T071 adds `MAX_HANDLE_LENGTH = 32`
+   (D-70-15), a PRODUCT bound narrower than the storage bound and
+   enforced at both handle doors, so all three now assert the
+   opposite of what the module is required to do. They MUST red
+   under a correct T071; that was reported before a line of it was
+   written and is ruled at D-071-01(5).
+
+   **They are not re-pointed at `checkSlug`, and the reason is this
+   suite's own header.** It states the discriminating direction: the
+   cell at the bound is asserted "through `allocateHandle` — the
+   published surface that actually writes a btree key — and not
+   through `checkHandle`, which reads and would stay green on a
+   bound nothing enforces". Slugs have no allocate door; `checkSlug`
+   is a query. Substituting it would keep the title and lose the
+   only property the cell had.
+
+   **So the consequence is priced, not hidden: after T071 no
+   published door writes a 255-character btree key, and the storage
+   bound is no longer exercised AT the bound through any product
+   door.** That is what a product bound narrower than a storage
+   bound means, and it is by design. `MAX_NAME_LENGTH` keeps its
+   constant and keeps its surface pin — `t070/surface.test.ts`
+   still compares it against a literal 255, so raising it past what
+   a tuple holds still reds there. What is gone is the end-to-end
+   write at the bound, and the merge records it in section 11.
+
+   The slug cell below is untouched: a 255-character SLUG is still
+   legal (AC3), and `isNameSegment` is deliberately left unbounded
+   so that stays true.
+   ============================================================ */
 describe("a name of exactly MAX_NAME_LENGTH is a name", () => {
-  it(`allocateHandle stores a handle of ${MAX_NAME_LENGTH} characters`, async () => {
-    /* The assertion D-70-15 asks for by name. It is a claim about STORAGE, not about the
-       grammar: this string is legal under `CARD_ID` at any length, so if it is refused the
-       bound is what refused it, and if the bound is later raised past what a btree tuple holds
-       this is where it stops rather than in a user's sign-up form. */
-    const allocate = await bind("allocateHandle");
-    const account = await createAccount(t);
-    const handle = nameOfLength(MAX_NAME_LENGTH);
-
-    await expect(allocate(db(t), account, handle)).resolves.toBeUndefined();
-
-    const rows = await reservationsFor(t, handle);
-    expect(rows.length, "and the row is really there, at full length").toBe(1);
-    expect(
-      rows[0].handle.length,
-      "the stored key is the whole name — a bound implemented by truncation would store a " +
-        "different primary key from the one the caller asked for",
-    ).toBe(MAX_NAME_LENGTH);
-  });
-
-  it(`checkHandle answers \`available\` for a free handle of ${MAX_NAME_LENGTH} characters`, async () => {
-    const check = await bind("checkHandle");
-    await availableNow(
-      () => check(db(t), nameOfLength(MAX_NAME_LENGTH)),
-      `checkHandle(db, ${MAX_NAME_LENGTH} chars)`,
-    );
-  });
-
   it(`checkSlug answers \`available\` for a free slug of ${MAX_NAME_LENGTH} characters`, async () => {
     const check = await bind("checkSlug");
     const owner = await createAccount(t);
@@ -112,28 +121,6 @@ describe("a name of exactly MAX_NAME_LENGTH is a name", () => {
       () => check(db(t), owner, nameOfLength(MAX_NAME_LENGTH)),
       `checkSlug(db, owner, ${MAX_NAME_LENGTH} chars)`,
     );
-  });
-
-  it(`and the ${MAX_NAME_LENGTH}-character handle reads back as taken once allocated`, async () => {
-    /* Round-trip through both halves. A bound applied on write and not on read, or a name
-       truncated on the way in, shows up here as a handle the module just stored and cannot
-       find — while both single-sided tests above stay green. */
-    const allocate = await bind("allocateHandle");
-    const check = await bind("checkHandle");
-    const account = await createAccount(t);
-    const handle = nameOfLength(MAX_NAME_LENGTH);
-
-    await allocate(db(t), account, handle);
-    /* **D-70-20 closed this and the weak spot went away rather than becoming an exception.**
-       At exactly `MAX_NAME_LENGTH` no SUFFIX fits — every `<name>-2` is two characters over —
-       so round 3 reported the interaction and used a helper that dropped the suggestion
-       requirement here. Ruled (a): "no suffix fits" is a property of one generation strategy
-       and not of the problem. Truncate to `MAX_NAME_LENGTH - 2` and append, and a legal
-       candidate always exists; the carve-out would have made D-70-18 unsatisfiable at exactly
-       the boundary D-70-15 exists to defend, which is the one place it is load-bearing.
-       So this is the ordinary `unavailable` again, and the suggestion is required here like
-       everywhere else. */
-    await unavailable(() => check(db(t), handle), "checkHandle(long, taken)", "taken");
   });
 });
 

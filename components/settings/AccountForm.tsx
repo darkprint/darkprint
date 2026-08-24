@@ -20,7 +20,7 @@ import { ProfileFields } from "./ProfileFields";
 // SEAM-45 LIVE: PATCH /api/account/handle
 // SEAM-46 LIVE: PATCH /api/account/email
 // SEAM-48 LIVE: PATCH /api/account/default-visibility
-// SEAM-47 PLANNED: PATCH /api/account/notifications — no column, no route, see §03 below.
+// SEAM-47: PATCH /api/account/notifications EXISTS (T190) — this page is not wired to it, see §03 below.
 
 /* ============================================================
    Sections 01 to 04, and the one Save that writes them.
@@ -200,6 +200,13 @@ export function AccountForm({
               </>
             }
           >
+            {/* D-70-15's product bound, 32. Written as a literal and NOT imported from
+                `@/lib/server/naming`: this is a client component, and that barrel reaches
+                `lib/db` and pulls the driver into the browser bundle. The duplication is
+                the safe direction anyway — AC4 requires the server to refuse 33 REGARDLESS
+                of this attribute, because a client cap is a convenience and not
+                enforcement. Anything that can send a PATCH can send 33 characters, and
+                `allocateHandle` is what stops it. */}
             <PrefixedField
               id="handle"
               prefix="darkprint.io/u/"
@@ -207,6 +214,7 @@ export function AccountForm({
               onChange={setHandle}
               label="Handle"
               placeholder="choose one"
+              maxLength={32}
             />
           </Field>
 
@@ -240,12 +248,12 @@ export function AccountForm({
           </Field>
 
           {/* The three rows below are COPY, not settings, and the difference is the point.
-              `AccountRecord` carries no `notifications` member — no column holds one, and
-              T190 owns the table before it owns the behaviour — so there is no value to
-              read and nothing a switch could write. They stay on the page rather than
-              being deleted because they describe what this section will offer, and each
-              switch says what is actually missing instead of the page's old blanket
-              reason (D-262-14 G1). */}
+              The server side is real since T190 — stored preferences, GET/PATCH
+              /api/account/notifications — but this page reads a static fixture and calls
+              neither, so there is still no value here to read and nothing a switch could
+              write. They stay on the page rather than being deleted because they describe
+              what this section will offer, and each switch says what is actually missing
+              instead of the page's old blanket reason (D-262-14 G1). */}
           <ul className="flex flex-col divide-y divide-line rounded-md border border-line">
             {NOTIFICATIONS.map((notification) => (
               <li key={notification.id} className="flex items-center gap-4 px-4 py-3.5">
@@ -258,15 +266,16 @@ export function AccountForm({
                 <Switch
                   on={notification.on}
                   label={notification.title}
-                  reason="Nothing sends yet: no column stores this and no mail goes out."
+                  reason="Nothing sends yet: this page is not wired to the preferences API, and no mail goes out."
                 />
               </li>
             ))}
           </ul>
           <p className="text-[13px] leading-relaxed text-muted">
             Your email is stored and can be changed here. The three rows above are not
-            settings yet: nothing stores them and no mail is sent, so the switches show
-            what is planned rather than what is on.
+            settings yet: the server can store them now, but this page is not wired to it
+            and no mail is sent, so the switches show what is planned rather than what is
+            on.
           </p>
         </div>
       </SettingsSection>

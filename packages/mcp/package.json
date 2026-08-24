@@ -2,7 +2,7 @@
   "name": "darkprint",
   "version": "0.1.0",
   "private": true,
-  "description": "Read the DarkPrint registry from inside an agent session, over MCP.",
+  "description": "The DarkPrint registry from your terminal and from an agent session: clone, validate, bump, and an MCP stdio server.",
   "license": "MIT",
   "bin": {
     "darkprint": "dist/cli.js"
@@ -11,7 +11,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "node ../cli/build.mjs"
   },
   "engines": {
     "node": ">=20"

@@ -12,12 +12,16 @@
    and a single stray line on it kills the session (see `rpc.ts`).
    ============================================================ */
 
+import { runCli } from "../../cli/src/index";
 import { optionsFromEnv } from "./registry";
 import { runServer } from "./server";
 
-const USAGE = `darkprint mcp — serve the DarkPrint registry to an agent over MCP (stdio).
+const USAGE = `darkprint — the DarkPrint registry from your terminal and from an agent.
 
-  npx -y darkprint mcp
+  npx -y darkprint mcp                      serve the registry over MCP (stdio)
+  npx -y darkprint clone <owner>/<slug> [--version <v> | --digest <d>] [--out <dir>]
+  npx -y darkprint validate [<dir>]
+  npx -y darkprint bump [<dir>] --declare <version> --target <owner>/<slug>
 
 Environment:
   DARKPRINT_URL      registry base URL (default https://darkprint.io)
@@ -34,13 +38,28 @@ export async function main(argv: readonly string[]): Promise<number> {
     return command === undefined ? 1 : 0;
   }
 
-  if (command !== "mcp") {
-    process.stderr.write(`darkprint: unknown command \`${command}\`.\n\n${USAGE}`);
-    return 1;
+  if (command === "mcp") {
+    await runServer(optionsFromEnv(process.env), process.stdin, process.stdout);
+    return 0;
   }
 
-  await runServer(optionsFromEnv(process.env), process.stdin, process.stdout);
-  return 0;
+  /* Every other verb is T270's, and this is the whole of the dispatcher extension C1
+     granted: ONE distributable, so `npx -y darkprint mcp` and `npx -y darkprint validate`
+     are the same package and the site's six client configs keep working unchanged.
+
+     The two real streams are passed HERE and nowhere else. `packages/cli` renders through
+     `io` alone (D-270-03(1)) so a suite can drive a whole command in-process; this shim is
+     the one place that turns that into a terminal. `out` goes to stdout and `err` to
+     stderr — and note that this is the only branch where stdout is NOT the JSON-RPC wire,
+     which is why the rule at the top of this file is about the `mcp` branch specifically. */
+  return await runCli(argv, {
+    out: (text) => {
+      process.stdout.write(text);
+    },
+    err: (text) => {
+      process.stderr.write(text);
+    },
+  });
 }
 
 /* `require.main === module` rather than a bare call, so importing this file for a test does

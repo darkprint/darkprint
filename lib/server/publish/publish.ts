@@ -63,6 +63,7 @@ import { exportRelease } from "@/lib/server/export";
 import { getOntologyVersion, openView } from "@/lib/server/ontology";
 import { can, type Actor } from "@/lib/server/policy";
 import { reembedRelease } from "@/lib/server/search";
+import { enqueueRepinEvents } from "@/lib/server/notifications";
 import { persistArtefacts } from "./artefacts";
 import { cardConflict, conflict, inError, notOwner, unfinished, versionNotHigher } from "./errors";
 
@@ -274,7 +275,15 @@ export async function publish(
     for (const node of blueprint.nodes) {
       if (seen.has(node.ref)) continue;
       seen.add(node.ref);
-      await publishCard(tx, actor, node.ref, node.card, sources, owner.accountId, visibility);
+      const added = await publishCard(tx, actor, node.ref, node.card, sources, owner.accountId, visibility);
+      /* D-190-04's deferred wiring, the orchestrator's merge-time visit: a card VERSION first
+         landing in the store announces itself to everyone pinning any version of that card.
+         Only `added` announces — a byte-identical re-publish stored nothing and was announced
+         when it first landed. Inside the transaction on purpose: a rolled-back publish must
+         not have mailed anyone, and the queue's unique key makes a retried publish enqueue
+         the same rows, not new ones. The publisher is excluded per D-190-09(2). This runs
+         before `addRelease`, so the recipient set cannot include this release's own pins. */
+      if (added) await enqueueRepinEvents(tx, node.card.id, node.card.version, owner.accountId);
     }
 
     const release = await addRelease(tx, {
@@ -338,7 +347,9 @@ export async function publish(
 /* --------------------- the parts this file does decide --------------------- */
 
 /**
- * Store one pinned card, or confirm the store already holds exactly it.
+ * Store one pinned card, or confirm the store already holds exactly it. Answers `true` when
+ * it STORED a new version and `false` when the identical row already existed — the repin
+ * fan-out hangs on that distinction (D-190-04), and nothing else does.
  *
  * **A version that exists with DIFFERENT content is refused (B2/D-100-01), folded into
  * `conflict` rather than given a sixth kind.** Letting the stored row win silently is the
@@ -368,7 +379,7 @@ async function publishCard(
   sources: ReadonlyMap<CardRef, string>,
   ownerId: string,
   visibility: Visibility,
-): Promise<void> {
+): Promise<boolean> {
   const source = sources.get(ref);
   /* Unreachable through a resolved blueprint: every pinned ref was parsed out of one of
      these files, and `sourcesByRef` walks the same record with the same reader. Kept because
@@ -383,7 +394,7 @@ async function publishCard(
        value-identical only, so comparing that would reintroduce exactly the blindness the
        ruling rejected. */
     if (stored.source !== source) throw cardConflict(ref);
-    return;
+    return false;
   }
 
   /* The chain check is T020's, run inside `addCard` against the stored version's immediate
@@ -392,6 +403,7 @@ async function publishCard(
      dependency on T025, so a second call would be one refusal with two messages and two
      classes. A `CardStoreError` raised here aborts the whole transaction, which is AC5. */
   await addCard(db, { cardId: card.id, version: card.version, ownerId, visibility, body: card, source });
+  return true;
 }
 
 /**
