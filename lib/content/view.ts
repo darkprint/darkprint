@@ -10,7 +10,7 @@
    PURE — no filesystem, no clock.
    ============================================================ */
 
-import type { AutonomyClass, Author, Blueprint, Metric } from "@/lib/types";
+import type { Author, Blueprint, Metric } from "@/lib/types";
 import type { BlueprintAnalysis, Diagnostic, ResolvedBlueprint } from "@/lib/core";
 import { DARKPRINT_CONFIG } from "@/lib/core";
 import { AUTONOMY_BLURB, autonomyStatement } from "@/lib/format";

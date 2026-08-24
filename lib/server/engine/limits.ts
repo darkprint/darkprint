@@ -465,7 +465,15 @@ function walk(root: unknown, spend: (bytes: number) => void, operation: string):
  * the extent at all and ran until the byte budget stopped it.
  */
 function lengthOfArrayLike(container: readonly unknown[]): number {
-  const length = Number((container as { length: unknown }).length);
+  /* `ToLength` is `ToIntegerOrInfinity` is **`ToNumber`**, and `+` is the only spelling of it
+     (D-40-L). `Number(v)` is `ToNumeric(v)` followed by BigInt->Number, so it ACCEPTS a BigInt
+     where `ToNumber` REFUSES one: a `length` trap answering `3n` measured 19 here while the
+     ruled formula threw, and the walk answering where the formula refuses is the direction
+     neither the over-count nor the under-count clause covers. The cast is to `number` because
+     the runtime value is deliberately unknown and `+` is what interrogates it; asserting the
+     type does not assert the value. The same sentence is at `unbox` below, written a round
+     earlier, and this transcription was made without reading it. */
+  const length = +((container as { length: unknown }).length as number);
   if (Number.isNaN(length)) return 0;
   return Math.min(Math.max(Math.trunc(length), 0), Number.MAX_SAFE_INTEGER);
 }
