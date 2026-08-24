@@ -150,6 +150,14 @@ const LIVE_PROBES: readonly { label: string; params: () => Record<string, string
   { label: "a pure paraphrase", params: () => ({ q: liveWorld.paraphrase }) },
   { label: "an unfiltered listing", params: () => ({}) },
   { label: "an explicitly sorted listing", params: () => ({ sort: "slug" }) },
+  /* A QUERY **AND** AN EXPLICIT SORT, which is the only shape that can test F6.
+     The T200 probe of the same name sends `sort` with NO `q`, and with no query there is no
+     tail to suppress — `blueprints.ts` returns `unranked` from the `query.length === 0`
+     branch whether or not the sort branch exists. So that cell asserted "no marker under an
+     explicit sort" against an input that could not have carried one either way, and it
+     passed for a reason unrelated to F6. Found by trying to design a mutation that would red
+     it and discovering none could. */
+  { label: "a paraphrase UNDER an explicit sort", params: () => ({ q: liveWorld.paraphrase, sort: "slug" }) },
   { label: "a query about nothing here", params: () => ({ q: liveWorld.farQuery }) },
 ];
 
@@ -314,27 +322,56 @@ describe("the channel is live over this world, or the file below measures nothin
     ).toEqual([]);
   });
 
-  it("does NOT reach T200's world, which is a second witness for D-300-04 D3", () => {
+  it("MY STATED LIMIT WAS FALSE: T200's own tokens DO reach the channel", () => {
     setup.check();
-    const results = after.get("the live probe") as Results;
-    const seen = channels(results);
+    const miss = after.get("a blueprint query matching nothing") as Results;
+    const seen = channels(miss);
     expect(
       seen.filter((c) => c === "semantic").length,
-      `A STATED LIMIT, MEASURED, NOT A FAILURE. This cell asserted the OPPOSITE at the ` +
-        `hand-back run and reddened; the measurement behind the flip is in \`LIVE_PROBE\`'s ` +
-        `docblock, and the short version is that every lexically-separated query tried falls ` +
-        `below \`SIMILAR_MIN\` against T200's documents — this one at 0.1181 — because those ` +
-        `documents are minted tokens with one English sentence in them.\n` +
-        `  So the claim here is the true one: with BOTH vector tables fully populated, the ` +
-        `channel still cannot reach T200's world. That is an INDEPENDENT second reason AC2 ` +
-        `holds over T200's 240 merged cells, and it is the stronger of the two, because ` +
-        `D-300-04 D3's reason — those worlds never call \`reembedRelease\` — stops holding the ` +
-        `day someone wires a trigger in, and this one does not.\n` +
-        `  IF THIS CELL EVER REDS, the finding is real and it is about AC2: something now ` +
-        `reaches T200's fixtures through the vector channel, and the by-construction argument ` +
-        `protecting those 240 cells needs re-arguing on the merits rather than re-asserting.\n` +
+      `THIS CELL ASSERTED THE OPPOSITE TWICE AND WAS WRONG BOTH TIMES. The record matters ` +
+        `more than the assertion, so it is here rather than in a report nobody reads.\n` +
+        `  I first wrote it as "the channel fires over T200's world" and it reddened. I then ` +
+        `flipped it to "the channel CANNOT reach T200's world", called that an independent ` +
+        `second witness for D-300-04 D3, and said it was STRONGER than D3's own reason ` +
+        `because it would survive someone wiring a publish trigger into those fixtures. The ` +
+        `implementer challenged that and it is false.\n` +
+        `  MY ERROR WAS THE PROBE FAMILY. I measured with English paraphrases, which are the ` +
+        `hardest possible case for a high cosine, and then generalised from one family to a ` +
+        `property of the whole world. T200's 240 cells do not search with English. They search ` +
+        `with MINTED TOKENS, and \`fixtures.ts:166\` builds every one of them as ` +
+        `\`prefix + base26(pid) + "q" + base26(counter)\` — so within a run they all share the ` +
+        `\`<pid>q\` infix and are near-duplicate STRINGS of each other. A subword tokenizer sees ` +
+        `heavy overlap, and \`queryToken\` is IN the documents. \`missToken\` is near a document ` +
+        `precisely because it looks like the token that document contains.\n` +
+        `  Measured end-to-end against the LIVE world rather than a reconstruction, with both ` +
+        `vector tables populated: \`q=missToken\` answers THREE hits, every one of them ` +
+        `\`similar:purpose\`. \`soloToken\` and \`descToken\` answer one lexical hit and two ` +
+        `semantic ones each. Only the English probe answers nothing.\n` +
+        `  SO T200's WORLD IS NOT UNUSUALLY SAFE FROM THE CHANNEL, IT IS UNUSUALLY EXPOSED TO ` +
+        `IT, because its search tokens are minted to be near-identical to one another.\n` +
         `  channels by rank: ${seen.join(", ") || "(no hits)"}`,
-    ).toBe(0);
+    ).toBeGreaterThan(0);
+  });
+
+  it("so AC2 over T200 rests on those fixtures holding NO embeddings, and on nothing else", () => {
+    setup.check();
+    expect(
+      emptyBefore,
+      `THE CORRECTED LIMIT, and it is the opposite shape from the one I first claimed. There ` +
+        `is no margin in the cutoff protecting T200's 240 merged cells. There is one fact, and ` +
+        `this is it: those fixtures build releases through a local \`insertRelease\` and never ` +
+        `reach \`publish()\` or \`runImport\`, so the two vector tables are empty and the ` +
+        `channel has nothing to read.\n` +
+        `  What happens if that stops being true is measured rather than feared. The cell above ` +
+        `shows \`q=missToken\` answering three marked hits over an embedded T200 world, and ` +
+        `\`tests/server/t200/facets.test.ts:219\` asserts that same query answers an EMPTY hit ` +
+        `set. Wire a publish trigger into those fixtures and that merged cell reds with "a ` +
+        `token in nothing must match nothing" — D-300-07's plausible-wrong-cause failure ` +
+        `landing on T200 instead of T220, pointing a reader at a fixture rather than at the ` +
+        `channel.\n` +
+        `  This cell is the guard on the only thing holding that up. If it reds, do not repair ` +
+        `it: go and read what started writing vectors into T200's world.`,
+    ).toEqual({ releases: 0, cards: 0 });
   });
 
   it("but the channel IS live on English prose, which is what makes the block above a measurement", async () => {
@@ -492,5 +529,36 @@ describe("AC2 the lexical half is unmoved over a corpus the channel CAN reach", 
           `  params: ${JSON.stringify(probe.params())}`,
       ).toEqual(a.facets);
     }
+  });
+});
+
+describe("F6 an explicit `sort` suppresses the channel, tested where it CAN fire", () => {
+  it("a paraphrase that retrieves on its own carries no marker once `sort` is set", () => {
+    setup.check();
+    const free = liveAfter.get("a pure paraphrase") as Results;
+    const sorted = liveAfter.get("a paraphrase UNDER an explicit sort") as Results;
+
+    expect(
+      channels(free).filter((c) => c === "semantic").length,
+      `THE PREMISE, and it is what the T200 version of this cell was missing: the SAME query ` +
+        `without \`sort\` must actually produce a tail. Otherwise "no marker under an explicit ` +
+        `sort" is a claim about an input that carries no marker under any conditions.`,
+    ).toBeGreaterThan(0);
+
+    const marked = sorted.hits.filter((h) => h.evidence.some(isSimilarEvidence));
+    expect(
+      marked.length,
+      `D-300-06 F6, ratified: no vector under an explicit \`sort\`, "because a shared link's ` +
+        `answer must not grow". This is the same query as the premise above, which DOES ` +
+        `retrieve through the channel, with \`sort=slug\` added — so a marker here is the ` +
+        `channel firing on a link whose answer was supposed to be frozen.\n` +
+        `  D-200-09 also binds it independently: an explicitly sorted listing is the caller's ` +
+        `own instruction rather than a rank the archive explains, so it answers unranked with ` +
+        `EMPTY evidence, and a marker is evidence.\n` +
+        `  evidence by rank: ${JSON.stringify(sorted.hits.map((h) => h.evidence))}`,
+    ).toBe(0);
+
+    const law = violatesOrderedLaw(sorted, "searchBlueprints({q, sort: 'slug'})");
+    expect(law ?? "", law ?? "").toBe("");
   });
 });
