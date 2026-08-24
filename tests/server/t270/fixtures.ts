@@ -218,7 +218,15 @@ function manifestText(manifest: BundleManifest, filename: string): string {
     `slug: ${manifest.slug}`,
     `title: ${JSON.stringify(manifest.title)}`,
     `summary: ${JSON.stringify(manifest.summary)}`,
-    `ontology_version: ${manifest.ontologyVersion}`,
+    /* `ontologyVersion`, camelCase — the key BOTH readers actually accept:
+       `lib/content/read.ts:436` is `requireString(doc, "ontologyVersion", file)` and the
+       archive's own `blueprint.yaml` is written that way. This fixture wrote
+       `ontology_version` and neither reader found it, so every manifest cell silently fell
+       back to the stub and the with-manifest and absent-manifest paths were the SAME test.
+       Found by a prediction MISS: mutating the stub's `ontologyVersion` was predicted to red
+       1 cell and reddened 26. A cell asserting an explicit value is vacuous when the
+       subject's default already equals it. */
+    `ontologyVersion: ${manifest.ontologyVersion}`,
     `tags: [${manifest.tags.map((tag) => JSON.stringify(tag)).join(", ")}]`,
     "",
   ].join("\n");
