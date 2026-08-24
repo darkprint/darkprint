@@ -85,7 +85,7 @@ async function faultOf(
 }
 
 describe("AC2/AC3 — the domain is §T080's published read surface", () => {
-  it("the barrel's read functions are exactly the sixteen the block publishes", async () => {
+  it("the barrel's read functions are exactly the seventeen the block publishes", async () => {
     const mod = await loadRegistry();
     const present = READER_NAMES.filter((name) => typeof mod[name] === "function").sort();
 
@@ -93,14 +93,14 @@ describe("AC2/AC3 — the domain is §T080's published read surface", () => {
       READER_NAMES.length,
       "The loop below quantifies over this list. An empty or shortened one turns every sweep " +
         "in this file into a green over nothing, which is the failure AC3's floor clause names.",
-    ).toBe(16);
+    ).toBe(17);
 
     expect(
       present,
       "A published reader is missing from the barrel, so the AC2 sweep below is measuring a " +
-        "smaller surface than the criterion quantifies over. The sixteen are §T080's " +
-        "Published signatures block as T132 amended it, and AC2's \"every published read\" " +
-        "is that block.",
+        "smaller surface than the criterion quantifies over. The seventeen are §T080's " +
+        "Published signatures block as T132 and T260's merge (D-260-31) amended it, and " +
+        "AC2's \"every published read\" is that block.",
     ).toEqual([...READER_NAMES].sort());
   });
 });
@@ -305,7 +305,8 @@ describe("the sweep's own case count", () => {
     ).toEqual([...READER_NAMES].sort());
     /* The literal beside the set equality, so shrinking BOTH the list and this number in one
        edit still takes a second decision. Thirteen at T081's merge; sixteen since T132's
-       three ruled amendments to §T080's block. */
-    expect(driven.size).toBe(16);
+       three ruled amendments to §T080's block; seventeen since T260's merge added
+       `usersOfMany` (D-260-31). */
+    expect(driven.size).toBe(17);
   }, 60_000);
 });

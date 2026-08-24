@@ -35,7 +35,7 @@ describe("T080 published signatures", () => {
    * saying it did would have made a real gap invisible — see `contract.ts`'s note on the
    * three readers T132 added that `CALLS` does not yet cover (D-132-02 C-8).
    */
-  it("keeps this suite's reader table at the sixteen the contract publishes", () => {
+  it("keeps this suite's reader table at the seventeen the contract publishes", () => {
     expect(
       READER_NAMES.length,
       `Thirteen at T080's merge — D-80-02b added \`scoresOf\` because AC7 was unreachable ` +
@@ -44,13 +44,15 @@ describe("T080 published signatures", () => {
         `(D-132-01, owed to T260) and \`cardsOwnedBy\` (D-132-02, the reader ` +
         `\`counts.cards\` needed). \`PUBLISHED\` is an equality over reader names, so an ` +
         `addition reds this BY DESIGN and the amendment lands in the same commit — the ` +
-        `sanctioned path D-260-14 names. If this number moved without a ruling, that is the ` +
-        `defect it exists to catch.`,
-    ).toBe(16);
+        `sanctioned path D-260-14 names. T260's merge added \`usersOfMany\` (D-260-31), the ` +
+        `batch form the /nodes cutover armed. If this number moved without a ruling, that is ` +
+        `the defect it exists to catch.`,
+    ).toBe(17);
     expect(PUBLISHED.scoresOf).toContain("scoresOf(db: Db, actor: Actor");
     expect(PUBLISHED.graphsOf).toContain("graphsOf(db: Db, actor: Actor");
     expect(PUBLISHED.scoresFor).toContain("scoresFor(db: Db, actor: Actor");
     expect(PUBLISHED.cardsOwnedBy).toContain("cardsOwnedBy(db: Db, actor: Actor");
+    expect(PUBLISHED.usersOfMany).toContain("usersOfMany(db: Db, actor: Actor");
   });
 
   /**
