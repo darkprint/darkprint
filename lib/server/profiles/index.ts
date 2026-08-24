@@ -69,3 +69,11 @@ export { getProfile } from "./read";
    resolves one to the other and `can` decides — which is the block T130's blind author
    bound to, kept rather than tidied. */
 export { setPins, toggleFollow, toggleSupport } from "./write";
+
+/* D-131-10's two, and the toggles above are NOT replaced by them. A toggle is the UI's own
+   semantics — one button, one meaning — and it is what the inherited T130 cells drive. These
+   two REACH a state, which is what POST and DELETE mean, and they are idempotent by
+   construction rather than by reading first. The ruling exists because this task's routes
+   could not be built correctly without them and the implementer refused to add the surface on
+   its own authority against a blind suite it cannot see. */
+export { setFollow, setSupport } from "./write";

@@ -11,61 +11,36 @@
    place the two meet, which is why the mapping is written out
    rather than achieved by naming a variable cleverly.
 
-   ── why these are IDEMPOTENT and the module verb is a toggle ──
+   ── why these consume `setFollow` and not `toggleFollow` ──
    D-131-07: two POSTs must not unfollow, because no HTTP retry is
-   safe against a toggling POST. So POST means "be following" and
-   DELETE means "be not following", whatever the current state.
+   safe against a toggling POST. POST means "be following" and
+   DELETE means "be not following", whatever the current state,
+   which is exactly what the set-verb does in one statement.
 
-   **AND THE WAY THIS IS BUILT IS A DEFECT I INTRODUCED AND AM
-   REPORTING RATHER THAN HIDING.** The ratified wording is "the
-   route reads current state and calls the module only when a flip
-   is needed" — and the published surface has no reader for that
-   state. `toggleFollow` reports `followedByCaller` only AFTER it
-   has already flipped, and `getProfile` carries no per-caller
-   flag. So this route cannot look before it leaps; it flips, reads
-   the answer, and flips back when the answer disagrees with the
-   verb.
-
-   The cost, stated: a POST from an account that already follows
-   does TWO writes and passes through a state where the follow row
-   is gone, so a concurrent `getProfile` can observe a `watchers`
-   one lower than it was before and after. The end state is always
-   correct and both verbs are idempotent. A published
-   `setFollow(db, actor, handle, following)` would remove the
-   window entirely, and adding one is not this session's to do: it
-   is surface the blind author never bound, and a barrel-agreement
-   cell would red on the addition alone.
+   The toggle is still published and is still the right verb for
+   the control that draws this — one button whose meaning is
+   "change my mind". It is the wrong verb for a METHOD that a proxy
+   may replay, and D-131-10 exists because this route was built
+   against the toggle first and could only reach idempotency by
+   flipping, reading the answer and flipping back: two writes, and
+   a real window in which the follow row was gone and a concurrent
+   `getProfile` read a `watchers` one lower than it was before and
+   after. That interim is gone rather than merely commented, and
+   this paragraph is here so the next reader does not reintroduce
+   it by reaching for the verb whose name matches the button.
    ============================================================ */
 
 import { getSharedDbClient } from "@/lib/db";
 import { withSession } from "@/lib/server/auth";
 import { ok } from "@/lib/server/http";
-import { toggleFollow, withProfileErrors } from "@/lib/server/profiles";
+import { setFollow, withProfileErrors } from "@/lib/server/profiles";
 import { actorFrom } from "@/lib/server/registry";
-import type { Db } from "@/lib/db";
-import type { Actor } from "@/lib/server/policy";
 
-/**
- * Reach `following`, whatever the current state, and answer SEAM-57's body.
- *
- * The second call is the compensation described in this file's header. It runs only when the
- * first flip went the wrong way, so the common cases — following something you do not
- * follow, unfollowing something you do — are a single write.
- *
- * A refusal from the first call (`no such account`) leaves through `withProfileErrors`
- * before the second can run, so a compensating write never fires against an account the
- * module has already refused.
- */
-async function reach(
-  db: Db,
-  actor: Actor,
-  handle: string,
-  following: boolean,
-): Promise<Response> {
-  let answer = await toggleFollow(db, actor, handle);
-  if (answer.followedByCaller !== following) answer = await toggleFollow(db, actor, handle);
-  /* The one place `followedByCaller` becomes `watching`. */
-  return ok({ watching: answer.followedByCaller, watchers: answer.watchers });
+/** The one place `followedByCaller` becomes `watching` (D-131-04(c)). */
+async function answer(request: Request, handle: string, following: boolean): Promise<Response> {
+  const { db } = getSharedDbClient();
+  const state = await setFollow(db, actorFrom(request), handle, following);
+  return ok({ watching: state.followedByCaller, watchers: state.watchers });
 }
 
 export async function POST(
@@ -73,11 +48,7 @@ export async function POST(
   context: { params: Promise<{ handle: string }> },
 ): Promise<Response> {
   return withProfileErrors(request, async () =>
-    withSession(request, async () => {
-      const { handle } = await context.params;
-      const { db } = getSharedDbClient();
-      return reach(db, actorFrom(request), handle, true);
-    }),
+    withSession(request, async () => answer(request, (await context.params).handle, true)),
   );
 }
 
@@ -86,10 +57,6 @@ export async function DELETE(
   context: { params: Promise<{ handle: string }> },
 ): Promise<Response> {
   return withProfileErrors(request, async () =>
-    withSession(request, async () => {
-      const { handle } = await context.params;
-      const { db } = getSharedDbClient();
-      return reach(db, actorFrom(request), handle, false);
-    }),
+    withSession(request, async () => answer(request, (await context.params).handle, false)),
   );
 }

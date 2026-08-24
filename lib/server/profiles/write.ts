@@ -1,10 +1,10 @@
 /* ============================================================
-   DarkPrint backend — the three write verbs T131 publishes
+   DarkPrint backend — the five write verbs T131 publishes
 
-   `setPins`, `toggleFollow`, `toggleSupport`. T130 published a
-   reader and nothing else; these are the first writes this module
-   has ever had, which is why `errors.ts` grew its first refusal
-   class in the same commit.
+   `setPins`, `toggleFollow`, `toggleSupport`, and D-131-10's
+   `setFollow`/`setSupport`. T130 published a reader and nothing
+   else; these are the first writes this module has ever had, which
+   is why `errors.ts` grew its first refusal class beside them.
 
    ── the two authorization questions are DIFFERENT, and so are
       their answers ──
@@ -20,6 +20,23 @@
    Neither question is answered with an `if` over `actor.kind` and
    an id comparison. That comparison IS `can`, one module over,
    already ruled and already tested.
+
+   ── FOUR verbs over two relations, and the pairing is D-131-10 ──
+   `toggleFollow`/`toggleSupport` FLIP: that is the UI's own
+   semantics (one button, one meaning) and it is what the inherited
+   T130 cells drive. `setFollow`/`setSupport` REACH a state and are
+   idempotent by construction, because POST and DELETE are, and no
+   HTTP retry is safe against a toggling POST.
+
+   The set-verbs exist because the routes could not be built
+   correctly without them. This module published only toggles, and
+   nothing published answers "does this caller already follow?"
+   BEFORE a write -- `followedByCaller` arrives after the flip -- so
+   an idempotent route had to flip, look, and flip back. That kept
+   the criterion and cost a second write and a real window where
+   the row is gone and a concurrent `getProfile` reads a `watchers`
+   one lower than it was before and after. One statement plus the
+   count replaces both.
 
    ── why a toggle is a DELETE-then-INSERT inside a transaction ──
    T150's own recorded trap: a `SELECT`-then-`INSERT` passes every
@@ -231,6 +248,57 @@ export async function toggleFollow(
 }
 
 /**
+ * Reach `following` for the caller, whatever the current state (D-131-10).
+ *
+ * **Idempotent BY CONSTRUCTION rather than by checking first.** `following: true` is one
+ * `INSERT … ON CONFLICT DO NOTHING` and `following: false` is one `DELETE`, and both are
+ * already no-ops when the state is what was asked for. Nothing reads the row before writing
+ * it, so there is no read-then-decide for a second caller to interleave with, and the count
+ * is taken in the same transaction as the write it describes.
+ *
+ * **`followedByCaller` is `following` and is not re-read.** Inside this transaction the
+ * statement above has run, so the answer is known; re-reading it would be a second question
+ * with the same answer and a chance to disagree with itself.
+ *
+ * The `onConflictDoNothing` is doing real work rather than guarding a case that cannot
+ * happen: without it, two concurrent follows raise 23505 at whichever caller loses, and that
+ * caller did nothing wrong — the unique index is the idempotency guarantee, and this is the
+ * clause that lets a caller benefit from it instead of being refused by it.
+ */
+export async function setFollow(
+  db: Db,
+  actor: Actor,
+  handle: string,
+  following: boolean,
+): Promise<{ watchers: number; followedByCaller: boolean }> {
+  const follower = actingAccountId("setFollow", actor);
+
+  const answer = await withProfileStore("setFollow", async () => {
+    const followed = await accountIdFor(db, handle);
+    if (followed === undefined) return undefined;
+
+    return await db.transaction(async (tx) => {
+      if (following) {
+        await tx
+          .insert(schema.follow)
+          .values({ followerId: follower, followedId: followed })
+          .onConflictDoNothing();
+      } else {
+        await tx
+          .delete(schema.follow)
+          .where(
+            and(eq(schema.follow.followerId, follower), eq(schema.follow.followedId, followed)),
+          );
+      }
+      return { watchers: await countWatchers(tx, followed), followedByCaller: following };
+    });
+  });
+
+  if (answer === undefined) throw noSuchAccount("setFollow");
+  return answer;
+}
+
+/**
  * Endorse `handle` if the caller does not, withdraw it if they do (D-131-05).
  *
  * The same shape as `toggleFollow` and deliberately so — one row per supporter, count
@@ -276,5 +344,49 @@ export async function toggleSupport(
   });
 
   if (answer === undefined) throw noSuchAccount("toggleSupport");
+  return answer;
+}
+
+/**
+ * Reach `supporting` for the caller, whatever the current state (D-131-10).
+ *
+ * `setFollow`'s shape and `setFollow`'s reasons, over the endorsement relation. Written out
+ * rather than folded into one generic over a table: the two relations name their columns
+ * differently, and a helper parameterised over column references buys four lines and costs
+ * every reader the indirection.
+ */
+export async function setSupport(
+  db: Db,
+  actor: Actor,
+  handle: string,
+  supporting: boolean,
+): Promise<{ support: number; supportedByCaller: boolean }> {
+  const supporter = actingAccountId("setSupport", actor);
+
+  const answer = await withProfileStore("setSupport", async () => {
+    const supported = await accountIdFor(db, handle);
+    if (supported === undefined) return undefined;
+
+    return await db.transaction(async (tx) => {
+      if (supporting) {
+        await tx
+          .insert(schema.accountSupport)
+          .values({ supporterId: supporter, supportedId: supported })
+          .onConflictDoNothing();
+      } else {
+        await tx
+          .delete(schema.accountSupport)
+          .where(
+            and(
+              eq(schema.accountSupport.supporterId, supporter),
+              eq(schema.accountSupport.supportedId, supported),
+            ),
+          );
+      }
+      return { support: await countSupport(tx, supported), supportedByCaller: supporting };
+    });
+  });
+
+  if (answer === undefined) throw noSuchAccount("setSupport");
   return answer;
 }

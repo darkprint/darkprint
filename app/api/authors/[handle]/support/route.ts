@@ -10,33 +10,25 @@
    the absence of a caller reads as a known price rather than as a
    route nobody finished.
 
-   Idempotent POST/DELETE over a toggle verb, exactly as
-   `../watch/route.ts`, and **carrying the same defect for the same
-   reason** — the published surface has no reader for "does this
-   caller already support this handle", so the route flips and
-   compensates instead of looking first. That file's header states
-   the cost and the fix; it is one defect in two places rather than
-   two, and both would close on one published `setSupport`.
+   Idempotent POST/DELETE over `setSupport`, exactly as
+   `../watch/route.ts` is over `setFollow`, and that file's header
+   carries the reasoning for both: a toggle is the right verb for a
+   button and the wrong verb for a method a proxy may replay.
+   `toggleSupport` stays published and is deliberately not what
+   this route calls.
    ============================================================ */
 
 import { getSharedDbClient } from "@/lib/db";
 import { withSession } from "@/lib/server/auth";
 import { ok } from "@/lib/server/http";
-import { toggleSupport, withProfileErrors } from "@/lib/server/profiles";
+import { setSupport, withProfileErrors } from "@/lib/server/profiles";
 import { actorFrom } from "@/lib/server/registry";
-import type { Db } from "@/lib/db";
-import type { Actor } from "@/lib/server/policy";
 
-/** Reach `supported`, whatever the current state. See `../watch/route.ts` for the cost. */
-async function reach(
-  db: Db,
-  actor: Actor,
-  handle: string,
-  supported: boolean,
-): Promise<Response> {
-  let answer = await toggleSupport(db, actor, handle);
-  if (answer.supportedByCaller !== supported) answer = await toggleSupport(db, actor, handle);
-  return ok({ supported: answer.supportedByCaller, support: answer.support });
+/** `supportedByCaller` becomes `supported` on the wire, as `watch` maps its own flag. */
+async function answer(request: Request, handle: string, supporting: boolean): Promise<Response> {
+  const { db } = getSharedDbClient();
+  const state = await setSupport(db, actorFrom(request), handle, supporting);
+  return ok({ supported: state.supportedByCaller, support: state.support });
 }
 
 export async function POST(
@@ -44,11 +36,7 @@ export async function POST(
   context: { params: Promise<{ handle: string }> },
 ): Promise<Response> {
   return withProfileErrors(request, async () =>
-    withSession(request, async () => {
-      const { handle } = await context.params;
-      const { db } = getSharedDbClient();
-      return reach(db, actorFrom(request), handle, true);
-    }),
+    withSession(request, async () => answer(request, (await context.params).handle, true)),
   );
 }
 
@@ -57,10 +45,6 @@ export async function DELETE(
   context: { params: Promise<{ handle: string }> },
 ): Promise<Response> {
   return withProfileErrors(request, async () =>
-    withSession(request, async () => {
-      const { handle } = await context.params;
-      const { db } = getSharedDbClient();
-      return reach(db, actorFrom(request), handle, false);
-    }),
+    withSession(request, async () => answer(request, (await context.params).handle, false)),
   );
 }
