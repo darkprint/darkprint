@@ -49,7 +49,7 @@ import {
   loadTerms,
   outcomeOf,
 } from "./contract";
-import { AC1, ac1World, ac5World, anonymous, dropScratchDatabases } from "./fixtures";
+import { AC1, ORDER, ac1World, ac5World, anonymous, dropScratchDatabases, orderWorld } from "./fixtures";
 
 afterAll(async () => {
   await dropScratchDatabases();
@@ -155,6 +155,39 @@ describe("TermUsage is the shape the contract publishes, checked on a real retur
        pairwise, so the message shows the whole disagreement. */
     const ids = rows.map((r) => r.termId);
     expect(ids).toEqual([...ids].sort());
+  });
+
+  it("the order is CODE UNIT and not locale, on ids where the two disagree", async () => {
+    const { scratch } = await orderWorld();
+    const usage = await bind("usage");
+
+    const rows = ((await usage(scratch.db, anonymous)) as unknown[]).map((row, i) =>
+      assertUsage(row, `usage()[${i}]`),
+    );
+    const mine = rows.map((r) => r.termId).filter((id) => ORDER.terms.includes(id as never));
+
+    /* ── this cell replaces one that could not fail ──
+       The cell above compares the returned ids to a copy sorted HERE with `.sort()`. Against
+       an all-lowercase corpus that is a tautology dressed as an assertion: `.sort()` and
+       `localeCompare` produce the same list, so a module using either passes. The sweep proved
+       it — swapping the module's comparator for `localeCompare` reddened ZERO cells, which I
+       had registered in advance as a zero I would charge against myself if it came up.
+
+       `Zeta/marker` and `alpha/marker` are the smallest thing that separates them. Code unit
+       puts `Z` (0x5A) before `a` (0x61); a locale comparator folds case at the primary level
+       and puts `alpha` first. Both ids are planted on ONE card in ONE bundle, so they are
+       adjacent in the returned list and a comparator swap moves them past each other and
+       nothing else.
+
+       Asserted against a literal rather than against a re-sort, because a re-sort computed in
+       this file is the same tautology one layer along. */
+    expect(mine).toEqual([...ORDER.codeUnitOrder]);
+    /* And the fixture is only worth anything if the two orders really do disagree on it. A
+       guard on the premise, so this cell cannot quietly become decorative again the way its
+       predecessor did. */
+    expect([...ORDER.terms].sort((a, b) => a.localeCompare(b))).not.toEqual([
+      ...ORDER.codeUnitOrder,
+    ]);
   });
 
   it("every id `usage` reports is distinct — a term counted twice is a term counted wrong", async () => {

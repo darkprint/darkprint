@@ -463,6 +463,130 @@ export const ac2World = recorded("the AC2 world (a term named twice on one card)
   return { scratch, owner };
 });
 
+/* --------------------- the sort order, made observable --------------------- */
+
+/**
+ * Two local terms whose CODE-UNIT order and whose LOCALE order disagree.
+ *
+ * ── this world exists because a pre-registered mutation scored zero ──
+ * The sweep replaced the module's comparator with `localeCompare`. It reddened NOTHING.
+ * D-210-10 pins the order as ascending by code unit and the module's own comment cites
+ * `lib/core/ontology/resolve.ts` for why — "a list that reorders between hosts is a list two
+ * readers disagree about" — so the order is load-bearing and my sort cell was not guarding it.
+ *
+ * The reason is measurable rather than mysterious: the two comparators agree on every
+ * all-lowercase corpus, which is every id in the seeded archive and every id in the other
+ * fixture worlds. `/` sorts before every letter under both, so a namespaced id alone does not
+ * separate them. **CASE does.** Code unit puts `Z` (0x5A) before `a` (0x61); a locale
+ * comparator sorts case-insensitively at the primary level and puts `alpha` first.
+ *
+ * Verified publishable before the cell was written: the engine accepts a namespaced term id
+ * carrying an upper-case letter, and both survive to `card.riskMarkers` unaltered.
+ *
+ *   code unit : Zeta/marker, alpha/marker
+ *   locale    : alpha/marker, Zeta/marker
+ *
+ * Only the first is correct under D-210-10, and the two are adjacent in the same list, so a
+ * comparator swap moves them past each other and nothing else.
+ */
+export const ORDER = {
+  slug: "order-case",
+  /** Deliberately NOT in code-unit order here, so the constant cannot be mistaken for the answer. */
+  terms: ["alpha/marker", "Zeta/marker"] as const,
+  /** What D-210-10 requires. Upper case first, because `Z` is 0x5A and `a` is 0x61. */
+  codeUnitOrder: ["Zeta/marker", "alpha/marker"] as const,
+};
+
+export const orderWorld = recorded("the sort-order world (case-disagreeing local terms)", async () => {
+  const scratch = await emptyWorld();
+  const owner = await makeOwner(scratch.db, "casey");
+  await publishBundle(scratch.db, {
+    owner,
+    slug: ORDER.slug,
+    cards: [
+      {
+        id: "t210-order-card",
+        type: "agent",
+        markers: [...ORDER.terms],
+        author: "casey",
+      },
+    ],
+    vocabulary: localVocabulary(ORDER.terms.map(localMarker)),
+  });
+  return { scratch, owner };
+});
+
+/* --------------------- the six reference sites, one at a time --------------------- */
+
+/**
+ * Six cards, each naming a DISTINCT term at exactly ONE of the six reference sites.
+ *
+ * ── this world exists because the mutation sweep found the hole ──
+ * The pre-registered sweep dropped each site from `termIdsOf` in turn. Three of the six
+ * reddened NOTHING in my criterion cells:
+ *
+ *   `phases`  — no cell of mine ever asserted a phase term's usage at all.
+ *   `inputs`  — masked. AC2's port card names `json` at BOTH port sites, so dropping one
+ *   `outputs`   leaves the term reachable through the other and the count does not move.
+ *               One fixture violating both clauses at once is exactly how paired clauses
+ *               mask each other, and the AC2 card was built to test dedupe rather than
+ *               coverage.
+ *
+ * In all three the ONLY thing that caught the loss was the component oracle over the seeded
+ * archive — which is a real result for a file whose header says it is not a second axis, and
+ * a real gap in the fixture half.
+ *
+ * So: one term, one site, six cards, and nothing shared between them. Each term appears at
+ * its own site and NOWHERE else in this world, which is what makes dropping that one site
+ * move exactly one number. The terms are chosen from kinds the site accepts — a `phase` at
+ * `phases`, a `node-type` at `type`, a `risk-marker` at `riskMarkers`, a `tool` at `tools`,
+ * and `data-type`s at the two port sites — because the five kinds are disjoint and the engine
+ * refuses a term at a site of the wrong kind.
+ */
+export const SITES = {
+  slug: "sites-one-each",
+  /** term -> the site it is planted at, for a message that names the site rather than the id. */
+  plan: [
+    { site: "phases", term: "testing" },
+    { site: "type", term: "evaluative" },
+    { site: "riskMarkers", term: "unbounded-loop" },
+    { site: "tools", term: "vector-store" },
+    { site: "inputs[].type", term: "acceptance-criteria" },
+    { site: "outputs[].type", term: "artifact" },
+  ] as const,
+  cards: [
+    /* `type` is required on every card, so the five cards that are not testing `type` all
+       carry the SAME filler node-type — `agent` — and `agent` is deliberately NOT one of the
+       six terms under test. If the filler were also a term a cell asserted on, dropping the
+       `type` site would move that cell for a reason belonging to another card. */
+    { id: "t210-site-phases", type: "agent", phases: ["testing"], author: "sites" },
+    { id: "t210-site-type", type: "evaluative", author: "sites" },
+    { id: "t210-site-markers", type: "agent", markers: ["unbounded-loop"], author: "sites" },
+    { id: "t210-site-tools", type: "agent", tools: ["vector-store"], author: "sites" },
+    {
+      id: "t210-site-inputs",
+      type: "agent",
+      inputs: [{ name: "criteria", type: "acceptance-criteria" }],
+      author: "sites",
+    },
+    {
+      id: "t210-site-outputs",
+      type: "agent",
+      outputs: [{ name: "built", type: "artifact" }],
+      author: "sites",
+    },
+  ] satisfies CardSpec[],
+  /** One card, one bundle, one author claim — so every term's correct record is 1 / 1 / 1. */
+  expected: { cards: 1, blueprints: 1, authors: 1 },
+};
+
+export const sitesWorld = recorded("the six-sites world (one term per site)", async () => {
+  const scratch = await emptyWorld();
+  const owner = await makeOwner(scratch.db, "sites-owner");
+  await publishBundle(scratch.db, { owner, slug: SITES.slug, cards: SITES.cards });
+  return { scratch, owner };
+});
+
 /* --------------------- AC3: private content contributes nothing --------------------- */
 
 /**
