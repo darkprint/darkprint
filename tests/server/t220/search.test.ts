@@ -53,7 +53,7 @@ import { readContent } from "@/lib/content/read";
 import { searchBlueprints, searchCards } from "@/lib/server/search";
 
 import { anonymous, dropScratchDatabases, seededWorld } from "./fixtures";
-import { verb } from "./contract";
+import { hitsOf, verb } from "./contract";
 
 const world = seededWorld();
 
@@ -158,14 +158,15 @@ describe("T220 AC5 — the honesty clause, composed through", () => {
       ordered: boolean;
     };
 
-    expect(result.hits.length).toBeGreaterThan(0);
+    const hits = hitsOf(result, 'mcpSearch(db, actor, "??? ...")');
+    expect(hits.length).toBeGreaterThan(0);
     expect(
       result.ordered,
       "`ordered` was true for a task that carries no query words. That is what " +
         "`ordered = task !== \"\"` answers, and it agrees with the law on every OTHER input " +
         "this suite sends — which is why this cell exists.",
     ).toBe(false);
-    expect(result.hits.every((h) => h.evidence.length === 0)).toBe(true);
+    expect(hits.every((h) => h.evidence.length === 0)).toBe(true);
   });
 
   it("a task that matches something answers hits and claims to be ordered", async () => {
@@ -241,11 +242,12 @@ describe("T220 AC5 — the evidence D-220-04 restored", () => {
         hits: { evidence: readonly string[] }[];
         ordered: boolean;
       };
-      expect(result.hits.length, `task ${JSON.stringify(task)} matched nothing`).toBeGreaterThan(0);
+      const hits = hitsOf(result, `mcpSearch(db, actor, ${JSON.stringify(task)})`);
+      expect(hits.length, `task ${JSON.stringify(task)} matched nothing`).toBeGreaterThan(0);
       /* AC5's law, now checkable by the CALLER rather than only from inside the process —
          which is the whole difference D-220-04 made. */
       expect(
-        result.hits.every((h) => h.evidence.length > 0),
+        hits.every((h) => h.evidence.length > 0),
         `task ${JSON.stringify(task)}: \`ordered\` is ${result.ordered} but the evidence ` +
           "does not agree with it.",
       ).toBe(result.ordered);
@@ -272,6 +274,7 @@ describe("T220 AC5 — the evidence D-220-04 restored", () => {
       hits: { kind: string; ref: string; evidence: readonly string[] }[];
     };
 
+    hitsOf(result, `mcpSearch(db, actor, ${JSON.stringify(token)})`);
     const wrong = result.hits
       .filter((h) => h.kind === "blueprint")
       .filter((h) => {
@@ -296,9 +299,10 @@ describe("T220 AC5 — the evidence D-220-04 restored", () => {
       hits: { evidence: readonly string[] }[];
       ordered: boolean;
     };
+    const hits = hitsOf(result, 'mcpSearch(db, actor, "")');
     expect(result.ordered).toBe(false);
     expect(
-      result.hits.filter((h) => h.evidence.length > 0).length,
+      hits.filter((h) => h.evidence.length > 0).length,
       "an unranked listing carries no evidence — every hit sits in the registry's own key " +
         "order, which is not a rank the archive explains.",
     ).toBe(0);

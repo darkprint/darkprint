@@ -30,7 +30,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { importsOf, reveals, stringsIn, strip, type Outcome } from "./contract";
+import { hitsOf, importsOf, reveals, stringsIn, strip, type Outcome } from "./contract";
 
 const names = (source: string): string[] =>
   importsOf("x.ts", source).flatMap((i) => i.names);
@@ -161,5 +161,43 @@ describe("the AC3 leak scan reads what an enumerable-only walk cannot", () => {
   it("does NOT fire on a value that does not carry the needle", () => {
     const clean: Outcome = { ok: true, value: { path: "README.md", text: "nothing here" } };
     expect(reveals(clean, NONCE)).toBe(false);
+  });
+});
+
+describe("the shape guard names the right cause", () => {
+  /* Measured before this guard existed: a module that dropped `evidence` reddened three
+     cells with `TypeError: Cannot read properties of undefined (reading 'length')`. That is
+     a red naming a plausible WRONG cause — a reader triaging it looks for a null-safety bug
+     in the suite rather than for the field D-220-04 restored. The rule this repository holds
+     is to widen what the failure SAYS, never to narrow what the module may return, so the
+     guard raises and the cells still accept anything with an evidence array. */
+
+  it("accepts a well-formed answer and returns its hits", () => {
+    const ok = { hits: [{ ref: "a/b", evidence: ["title:x"] }], ordered: true };
+    expect(hitsOf(ok, "where").length).toBe(1);
+  });
+
+  it("names the missing field rather than dereferencing it", () => {
+    const dropped = { hits: [{ ref: "a/b" }], ordered: true };
+    expect(() => hitsOf(dropped, "mcpSearch(...)")).toThrowError(/carry no `evidence` array/);
+    /* The bad output is EXCLUDED, not merely the good one admitted: the old failure is the
+       string this must never be. */
+    try {
+      hitsOf(dropped, "mcpSearch(...)");
+    } catch (err) {
+      expect((err as Error).message).not.toContain("Cannot read properties of undefined");
+      expect((err as Error).message).toContain("D-220-04");
+    }
+  });
+
+  it("names an answer that carries no hits array at all", () => {
+    expect(() => hitsOf({ ordered: true }, "mcpSearch(...)")).toThrowError(/no `hits` array/);
+    expect(() => hitsOf(undefined, "mcpSearch(...)")).toThrowError(/no `hits` array/);
+  });
+
+  it("does not fire on an EMPTY hit list, which is a legitimate answer", () => {
+    /* The gibberish task answers zero hits at `ordered: true`, so a guard that treated an
+       empty list as malformed would red the cell that exists to check exactly that. */
+    expect(hitsOf({ hits: [], ordered: true }, "where")).toEqual([]);
   });
 });

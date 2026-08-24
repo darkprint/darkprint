@@ -506,3 +506,39 @@ export function importsOf(file: string, text: string): Imported[] {
   }
   return found;
 }
+
+/**
+ * The hits of a `mcpSearch` answer, checked for SHAPE before anything reads `evidence`.
+ *
+ * Without this, a module that dropped `evidence` reds three cells with
+ * `TypeError: Cannot read properties of undefined (reading 'length')` — measured, that is
+ * the exact string. It is a red, and it names the wrong cause: a reader triaging it looks
+ * for a null-safety bug in the suite rather than for the published field D-220-04 restored
+ * after both halves charged its absence. Widening what the failure SAYS costs nothing and
+ * does not narrow what the module may return.
+ *
+ * Returns the hits so a cell reads `hitsOf(result)` and then dereferences freely.
+ */
+export function hitsOf(result: unknown, where: string): { evidence: readonly string[] }[] {
+  const hits = (result as { hits?: unknown })?.hits;
+  if (!Array.isArray(hits)) {
+    throw new Error(
+      `${where}: the answer carries no \`hits\` array — it is ${describe_(hits)}.\n` +
+        `  backend.md §T220 publishes ` +
+        `\`Promise<{ hits: readonly McpSearchHit[]; ordered: boolean }>\`.`,
+    );
+  }
+  const missing = hits.filter(
+    (h) => !Array.isArray((h as { evidence?: unknown }).evidence),
+  );
+  if (missing.length > 0) {
+    throw new Error(
+      `${where}: ${missing.length} of ${hits.length} hits carry no \`evidence\` array.\n` +
+        `  First: ${JSON.stringify(missing[0])}\n` +
+        "  D-220-04 restored `evidence: readonly string[]` to `McpSearchHit` after both " +
+        "halves charged the block for losing it: `ordered: true` with nothing beside it is " +
+        "the relevance-number-with-no-published-derivation `/mcp`'s own OPEN row refuses.",
+    );
+  }
+  return hits as { evidence: readonly string[] }[];
+}
