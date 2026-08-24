@@ -443,12 +443,18 @@ function ruledFormsIn(
   const forbidden = new Map<string, RuledForm>();
   const bodies = new Set<string>();
   for (const line of section.split("\n")) {
-    const negative = NEGATIVE_CONTEXT.test(line) && !POSITIVE_CONTEXT.test(line);
     for (const match of line.matchAll(pattern)) {
       const [whole, verb, body] = match;
       bodies.add(body);
       if (verb === OPERATION_SLOT) continue;
-      if (negative) {
+      /* The window is the CLAUSE, not the line, and that grain was bought the hard way: the
+         correction adding the twelfth pair was appended to D-120-20's OWN line, so a
+         line-level classifier read *the adversary measured that `planDeletion` raises …* as
+         FORBIDDEN, because *never the cross-product* and *MODULE defect* sit on that same
+         line. A sentence forbidding an example and a sentence publishing a form now coexist
+         in one paragraph, and only proximity separates them. */
+      const clause = line.slice(Math.max(0, (match.index ?? 0) - NEGATIVE_WINDOW), match.index ?? 0);
+      if (NEGATIVE_CONTEXT.test(clause)) {
         if (!forbidden.has(whole)) forbidden.set(whole, { verb, body, message: whole });
         continue;
       }
@@ -487,11 +493,18 @@ function ruledFormsIn(
  * D-180-06's lesson is why the scan is not narrowed back to the block instead: a reader
  * that only sees one region cannot see a ruling written anywhere else.
  */
-const NEGATIVE_CONTEXT =
-  /wrong verb|MODULE defect|not an admissible|never the cross-product|manufactured|would have reddened/i;
+const NEGATIVE_CONTEXT = /wrong verb|not an admissible|never the cross-product|is a MODULE defect/i;
 
-/** A line that ENUMERATES, so a ruling using both vocabularies is read as publishing. */
-const POSITIVE_CONTEXT = /admissible message forms?|verbs resolved/i;
+/**
+ * How far back a prohibition reaches.
+ *
+ * The forbidden example sits inside the parenthesis that names it — *"A body paired with the
+ * wrong verb (`deleteAccount: …`)"* — about twenty-five characters. Sixty is comfortably past
+ * that and comfortably short of the next clause. A window the width of a LINE reads a
+ * CORRECTION as a prohibition, which is exactly what happened and what this constant exists
+ * to stop.
+ */
+const NEGATIVE_WINDOW = 60;
 
 /**
  * Whether `message` is a refusal the contract admits from `verb`.
@@ -506,8 +519,10 @@ const POSITIVE_CONTEXT = /admissible message forms?|verbs resolved/i;
  * enumerated, so pair matching would have false-charged a module following the ruling. That
  * risk was declared as E1 in the pre-registration and D-120-20 answered it by ruling the
  * pairing question rather than by leaving it to a reader's discretion. The looser form is
- * gone; `isAdmissibleBody` survives beside it for the one cell whose pair the document has
- * still not enumerated, and that cell says so where it fails.
+ * GONE rather than kept beside this one: once the merged run MEASURED that `planDeletion`
+ * really does raise that sentence, D-120-20 was corrected to TWELVE pairs and the cell that
+ * needed the looseness now pins the exact form. A spare, weaker matcher left in a helper is
+ * a thing the next author reaches for.
  *
  * The placeholders inside a body — `` `<handle>` ``, `` `<bundleId>` ``, `` `<slug>` ``,
  * `` `<accountId>` `` — are the caller's own submissions, so each is widened to a
@@ -521,22 +536,6 @@ export function isAdmissible(verb: string, message: unknown): boolean {
   return publishedBlock()
     .forms.filter((form) => form.verb === verb)
     .some((form) => bodyPattern(verb, form.body).test(message));
-}
-
-/**
- * Whether `message` reads `<verb>: <a body the section publishes for ANY verb>`.
- *
- * The one place pair matching cannot be used: a refusal the rulings require but the
- * document has not enumerated a pair for. Used by exactly one cell — `planDeletion`'s
- * authorization refusal under D-120-12's K — and that cell names the gap in its own message
- * so the looseness is visible where it is spent rather than hidden in this file.
- */
-export function isAdmissibleBody(verb: string, message: unknown): boolean {
-  if (typeof message !== "string") return false;
-  if (publishedBlock().forbidden.some((f) => bodyPattern(f.verb, f.body).test(message))) {
-    return false;
-  }
-  return publishedBlock().bodies.some((body) => bodyPattern(verb, body).test(message));
 }
 
 /**

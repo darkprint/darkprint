@@ -31,7 +31,6 @@ import {
   RecordedSetup,
   describe_,
   isAdmissible,
-  isAdmissibleBody,
   loadLifecycle,
   requiredFn,
   signature,
@@ -104,17 +103,6 @@ function expectRefusal(
   thrown: unknown,
   callingVerb: string,
   expectedClass?: string,
-  /**
-   * Fall back to BODY matching for the one refusal D-120-20's eleven pairs do not enumerate.
-   *
-   * D-120-12's K rules that `planDeletion` authorizes; the eleven give `planDeletion` only
-   * `no account at`. Measured on the merged tree: the module raises
-   * `planDeletion: not this account's owner.` — the body `deleteAccount` publishes, prefixed
-   * with the verb that raised it, which is the only reading consistent with both rulings.
-   * **That is a TWELFTH pair and it is reported as a contract gap, not charged as a defect.**
-   * Pair matching here would report a defect against a module that followed the ruling.
-   */
-  unenumeratedPair = false,
 ): Error {
   if (typeof thrown === "object" && thrown !== null && "__resolved" in thrown) {
     throw new Error(
@@ -134,10 +122,7 @@ function expectRefusal(
         `  Cause: ${message}`,
     );
   }
-  const admissible = unenumeratedPair
-    ? isAdmissibleBody(callingVerb, message)
-    : isAdmissible(callingVerb, message);
-  if (!admissible) {
+  if (!isAdmissible(callingVerb, message)) {
     throw new Error(
       `${callingVerb} threw \`${error?.name}\` reading ${JSON.stringify(message)}, which is ` +
         `not one of the sentences §T120 publishes for it (D-120-03, D-120-15).`,
@@ -312,23 +297,18 @@ describe("T120 D-120-12 K — both `plan*` verbs authorize as their verbs do", (
     const thrown = await caught(async () =>
       (await verb("planDeletion"))(scratch.db, bob.actor, alice.accountId),
     );
-    const error = expectRefusal(thrown, "planDeletion", undefined, true);
+    const error = expectRefusal(thrown, "planDeletion");
 
-    /* **The one cell in this suite that cannot use D-120-20's pair matching, and it says so
-       here rather than hiding the looseness in `contract.ts`.** D-120-12's K rules that
-       `planDeletion` authorizes, and the eleven enumerated pairs give `planDeletion` only
-       `no account at`. So a correct module raising `planDeletion: not this account's owner.`
-       — the sentence `deleteAccount` is published for — has no pair of its own to match, and
-       pair matching would report a defect against a module that followed the ruling.
-       What is pinned: the verb naming itself is the verb that raised it, and the body is one
-       §T120 publishes for some verb. **The twelfth pair is a contract gap, reported.** */
-    expect(
-      isAdmissibleBody("planDeletion", error.message),
-      `planDeletion refused with ${JSON.stringify(error.message)}, which is not built from ` +
-        `any body §T120 publishes. Note this cell is deliberately looser than D-120-20's pair ` +
-        `rule, because the pair it needs is the one the document has not enumerated.`,
-    ).toBe(true);
-    expect(error.message.startsWith("planDeletion: ")).toBe(true);
+    /* **This cell was body-matching for one round and is now pair-matching, and the reason
+       is worth keeping.** D-120-12's K rules that `planDeletion` authorizes; D-120-20's
+       first enumeration gave `planDeletion` only `no account at`, so a correct module
+       raising `planDeletion: not this account's owner.` had no pair to match and strict
+       matching would have reported a defect against a module that followed the ruling. The
+       cell was written loose ON PURPOSE and said so where it failed; the merged run then
+       MEASURED that the module raises exactly that sentence, and D-120-20 was corrected to
+       twelve pairs. The looseness is spent and the exact sentence is pinned. */
+    expect(error.message).toBe("planDeletion: not this account's owner.");
+    expect(isAdmissible("planDeletion", error.message)).toBe(true);
   });
 
   it("the disagreeing control: the account's OWN `planDeletion` answers", async () => {

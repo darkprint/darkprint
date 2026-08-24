@@ -83,11 +83,13 @@ describe("T120 document floor — the parse and the contract agree (GREEN blind;
     ).toEqual([]);
   });
 
-  it("the section publishes eleven refusal forms over seven bodies, and three error classes", () => {
+  it("the section publishes twelve refusal forms over seven bodies, and three error classes", () => {
     const block = publishedBlock();
-    /* Eleven (verb, body) pairs and SEVEN bodies — D-120-15's own count of the admissible
-       forms is seven, reached here by parsing rather than by agreeing with it. */
-    expect(block.forms).toHaveLength(11);
+    /* TWELVE (verb, body) pairs over SEVEN bodies. Eleven for one round: the twelfth,
+       `planDeletion: not this account's owner.`, is the pair D-120-12's K required and no
+       ruling enumerated — this suite MEASURED the module raising it and D-120-20 was
+       corrected. Reached by parsing rather than by agreeing with the count. */
+    expect(block.forms).toHaveLength(12);
     expect(block.bodies).toHaveLength(7);
     expect(block.errorClasses).toEqual([
       "DeletionRefusedError",
