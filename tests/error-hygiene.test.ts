@@ -275,7 +275,13 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
        field reds both arities naming the barrel). Derived at THIS merge against the tree landed in;
        both sessions computed 42 from the same base of 40 and were told the second merge would face
        a different figure -- this is that figure. */
-    ).toBe(44);
+    /* 44 -> 45 at T210's merge: `lib/server/terms` publishes TermStoreError and nothing
+       else. Derived here; T120 lands next from the same base and faces 47 -> 48 arithmetic
+       of its own, derived at ITS merge. */
+    /* 45 -> 48 at T120's merge: lifecycle publishes DeletionRefusedError,
+       LifecycleStoreError and TransferRefusedError -- exactly three, pinned by its own
+       surface cell so a re-export cannot double-count. Derived here. */
+    ).toBe(48);
 
     const rendered: string[] = [];
     const traceless: string[] = [];
