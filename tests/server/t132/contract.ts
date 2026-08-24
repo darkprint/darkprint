@@ -112,6 +112,17 @@ export const READER_COUNT_AFTER = 16;
 /** What T080's table holds before this task, and what D-132-03 leaves it holding for AC6. */
 export const T080_READER_COUNT = 13;
 
+/**
+ * Readers added to T080's table AFTER T132's merge, each named with the ruling that added it
+ * and carrying its AC6 cells in THIS suite's `privacy.test.ts` (the instrument here expands
+ * Maps; T080's `findTokens` is blind to one). The partition cell consumes this list, so a
+ * later reader with no AC6 home still reds there rather than arriving unswept.
+ *
+ * `usersOfMany` — D-260-31, T260's merge: the batch form of `usersOf`, armed when the /nodes
+ * cutover turned the disclosed 53-snapshots-per-load cost from build-time to per-request.
+ */
+export const READERS_ADDED_AFTER = ["usersOfMany"] as const;
+
 let registry: Promise<Namespace> | undefined;
 
 /**
@@ -166,6 +177,25 @@ export async function bind(name: ReaderName): Promise<UnknownFn> {
     throw new Error(
       `${REGISTRY} exports \`${name}\` as ${describe_(value)}; the contract publishes it as ` +
         `a function: ${PUBLISHED[name]}`,
+    );
+  }
+  return value as UnknownFn;
+}
+
+/**
+ * The T260-merge reader (D-260-31), bound the way `bindScoresOf` binds a T080-side name:
+ * it is not in this task's `PUBLISHED` three — READER_COUNT_AFTER stays D-132-03's 13 + 3 —
+ * but its AC6 cells live in this suite because only this suite's instrument can scan a Map.
+ */
+export async function bindUsersOfMany(): Promise<UnknownFn> {
+  const mod = await loadRegistry();
+  const value = mod.usersOfMany;
+  if (typeof value !== "function") {
+    throw new Error(
+      `${REGISTRY} exports \`usersOfMany\` as ${describe_(value)}. D-260-31 publishes it as ` +
+        `usersOfMany(db, actor, cardIds): Promise<ReadonlyMap<string, readonly ` +
+        `BlueprintSummary[]>> at T260's merge; without it the AC6 sweep over the seventeenth ` +
+        `reader binds nothing and greens over its absence.`,
     );
   }
   return value as UnknownFn;

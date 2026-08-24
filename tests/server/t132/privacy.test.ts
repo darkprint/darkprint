@@ -39,6 +39,7 @@ import {
   account,
   anonymous,
   bind,
+  bindUsersOfMany,
   dropScratchDatabases,
   keyOf,
   leakSurface,
@@ -241,7 +242,7 @@ describe("the leak instrument can see inside a Map", () => {
  * Bound LAST inside `run`, after the fixture gate has answered.
  */
 const CALLS: readonly {
-  name: "graphsOf" | "scoresFor" | "cardsOwnedBy";
+  name: "graphsOf" | "scoresFor" | "cardsOwnedBy" | "usersOfMany";
   reach: string;
   run: (actor: unknown, victim: Side) => Promise<unknown>;
 }[] = [
@@ -270,6 +271,23 @@ const CALLS: readonly {
       const db = gate.get().db;
       const fn = await bind("cardsOwnedBy");
       return fn(db, actor, victim.owner.handle);
+    },
+  },
+  /* The seventeenth reader, D-260-31 (T260's merge). Probed with a card id ONLY the victim's
+     private bundle pins, so the leak arrives as that bundle in the value list. The scanned
+     surface is the VALUES ALONE: `usersOfMany` echoes every asked id as a Map key whether or
+     not anything answers, so the keys are the CALLER'S OWN PROBE coming back — and the probe
+     id is itself one of the tells. Scanning the echo would red a reader that leaked nothing,
+     which is T-04's rule applied to an input echoed as a key. */
+  {
+    name: "usersOfMany",
+    reach: "a card id only the victim's private bundle pins, values scanned, keys are the caller's own echo",
+    run: async (actor, victim) => {
+      const db = gate.get().db;
+      const fn = await bindUsersOfMany();
+      const ref = victim.sealedRefs[0] as string;
+      const answered = (await fn(db, actor, [ref.slice(0, ref.lastIndexOf("@"))])) as Map<string, unknown>;
+      return [...answered.values()];
     },
   },
 ];
@@ -368,6 +386,30 @@ describe("AC6 control — each reader does return the public fixture", () => {
     const answered = (await CALLS[2].run(anonymous, sides.A)) as unknown[];
     expect(Array.isArray(answered)).toBe(true);
     expect(answered.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * The sweep entry probes a SEALED id, whose correct anonymous answer is an empty list — so
+   * without this cell the whole usersOfMany sweep is satisfiable by a reader that answers
+   * nothing to everything. Probed here with a card the PUBLIC bundle pins, which must come
+   * back naming that bundle.
+   */
+  it("usersOfMany() answers the public blueprint for a card its public bundle pins", async () => {
+    const scratch = gate.get();
+    const [row] = await query(
+      scratch,
+      "select r.card_refs from release r join bundle b on b.id = r.bundle_id " +
+        "join account a on a.id = b.owner_id where a.handle = $1 and b.slug = $2",
+      [sides.A.owner.handle, sides.A.publicSlug],
+    );
+    const ref = ((row?.card_refs as string[]) ?? [])[0];
+    expect(ref, "the public bundle must pin at least one card").toBeDefined();
+    const id = ref.slice(0, ref.lastIndexOf("@"));
+    const fn = await bindUsersOfMany();
+    const answered = (await fn(scratch.db, anonymous, [id])) as Map<string, readonly unknown[]>;
+    const users = answered.get(id) ?? [];
+    const keys = users.map((user) => keyOf(user as { ownerHandle: string; slug: string }));
+    expect(keys).toContain(keyOf(publicKey(sides.A)));
   });
 });
 

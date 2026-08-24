@@ -127,6 +127,9 @@ const READERS: readonly { operation: string; invoke: (db: Db) => Promise<unknown
      list answers without a statement and never reaches the dead pool -- a green measuring
      nothing (D-132-05's own rule, applied here in the same commit as the merge). */
   { operation: "graphsOf", invoke: (d) => registry.graphsOf(d, ANON, [{ ownerHandle: PROBE_REF, slug: PROBE_REF }]) },
+  /* Same non-empty-probe rule for the T260-merge reader (D-260-31): an empty id list would
+     answer an empty Map without a statement. */
+  { operation: "usersOfMany", invoke: (d) => registry.usersOfMany(d, ANON, [PROBE_REF]) },
   { operation: "scoresFor", invoke: (d) => registry.scoresFor(d, ANON, [{ ownerHandle: PROBE_REF, slug: PROBE_REF }]) },
   { operation: "cardsOwnedBy", invoke: (d) => registry.cardsOwnedBy(d, ANON, PROBE_REF) },
   { operation: "phases", invoke: (d) => registry.phases(d, ANON) },
@@ -366,13 +369,14 @@ describe("the barrel's fault surface is exactly one class, and its exports are p
 /* ------------------------------------------------------------------ */
 
 describe("AC2/AC3: every published reader seals what the driver throws", () => {
-  it("thirteen readers, each rejecting with its own operation and nothing from the statement", async () => {
+  it("seventeen readers, each rejecting with its own operation and nothing from the statement", async () => {
     expect(
       READERS.length,
       "An empty or shortened case list would make every assertion below pass over nothing. " +
-        "Sixteen readers are published (13 + T132's three, D-132-01/03) from the barrel; the partition test above is what keeps " +
+        "Seventeen readers are published (13 + T132's three, D-132-01/03, + usersOfMany at " +
+        "T260's merge, D-260-31) from the barrel; the partition test above is what keeps " +
         "this number honest as the surface changes.",
-    ).toBe(16);
+    ).toBe(17);
 
     const leaked: string[] = [];
     const unreached: string[] = [];

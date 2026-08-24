@@ -138,6 +138,12 @@ export const PUBLISHED = {
     "Promise<readonly CardSummary[]> — D-132-02 reading (a), the cards this handle OWNS " +
     "and `actor` may read, deliberately NOT narrowed by the pin index: the two sets differ " +
     "by a row no release pins, and a `counts.cards` built on the index is quietly short",
+  usersOfMany:
+    "usersOfMany(db: Db, actor: Actor, cardIds: readonly string[]): " +
+    "Promise<ReadonlyMap<string, readonly BlueprintSummary[]>> — D-260-31, the batch form " +
+    "of `usersOf` armed when T260's cutover turned /nodes' 53-snapshots-per-load cost from " +
+    "build-time to per-request; an id nothing pins answers an EMPTY LIST, never an absent " +
+    "key, because a map omitting what nothing names drops the rows a caller is iterating",
 } as const;
 
 export type ReaderName = keyof typeof PUBLISHED;
