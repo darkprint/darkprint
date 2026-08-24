@@ -123,6 +123,12 @@ const READERS: readonly { operation: string; invoke: (db: Db) => Promise<unknown
   { operation: "card", invoke: (d) => registry.card(d, ANON, PROBE_REF) },
   { operation: "usersOf", invoke: (d) => registry.usersOf(d, ANON, PROBE_REF) },
   { operation: "duplicates", invoke: (d) => registry.duplicates(d, ANON) },
+  /* The three T132 readers (D-132-01/03). Probes carry non-empty keys because an empty
+     list answers without a statement and never reaches the dead pool -- a green measuring
+     nothing (D-132-05's own rule, applied here in the same commit as the merge). */
+  { operation: "graphsOf", invoke: (d) => registry.graphsOf(d, ANON, [{ ownerHandle: PROBE_REF, slug: PROBE_REF }]) },
+  { operation: "scoresFor", invoke: (d) => registry.scoresFor(d, ANON, [{ ownerHandle: PROBE_REF, slug: PROBE_REF }]) },
+  { operation: "cardsOwnedBy", invoke: (d) => registry.cardsOwnedBy(d, ANON, PROBE_REF) },
   { operation: "phases", invoke: (d) => registry.phases(d, ANON) },
   { operation: "cardsByPhase", invoke: (d) => registry.cardsByPhase(d, ANON, PROBE_REF) },
   { operation: "tags", invoke: (d) => registry.tags(d, ANON) },
