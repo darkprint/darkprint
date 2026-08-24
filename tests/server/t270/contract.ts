@@ -680,6 +680,65 @@ export async function bindVerb(name: string): Promise<(...args: never[]) => unkn
   return value as (...args: never[]) => unknown;
 }
 
+/* --------------------- D-270-06: the four verb spellings --------------------- */
+
+/**
+ * A literal sentence the section publishes, lifted from the document rather than retyped.
+ *
+ * The exact wording IS the contract for these three — D-270-06 ratifies them "verbatim" — so a
+ * cell comparing against a string typed here would be comparing the implementation to my
+ * transcription. Lifted, and floored: a sentence that has moved reds as a BROKEN TEST rather
+ * than silently becoming `undefined`, which `toContain(undefined)` would then satisfy against
+ * anything at all. That is D-180-06's blind-position launderer in a new costume.
+ */
+function sentenceIn(pattern: RegExp, what: string): string {
+  const found = SECTION.match(pattern)?.[1]?.trim();
+  if (found === undefined || found === "") {
+    throw new Error(
+      `backend.md §T270 no longer publishes the ${what} sentence this suite compares against.\n` +
+        `  pattern: ${pattern}\n` +
+        `  BROKEN TEST, not a failed criterion: an absent sentence would make the cell compare ` +
+        `against \`undefined\` and pass against any output. Report the section.`,
+    );
+  }
+  return found;
+}
+
+/** `clone: give --version or --digest, not both.` — thrown OFFLINE as a `CliError`. */
+export const BOTH_SELECTORS_MESSAGE = sentenceIn(
+  /`(clone: give --version or --digest, not both\.)`/,
+  "mutual-exclusion",
+);
+
+/** `clone: no release at that version.` — a `--version` naming no release. */
+export const NO_RELEASE_AT_VERSION = sentenceIn(
+  /`(clone: no release at that version\.)`/,
+  "version-miss",
+);
+
+/** `bump: <declared> is enough.` rendered to `io.out` when the declaration satisfies. */
+export const BUMP_ENOUGH_TEMPLATE = sentenceIn(/`(bump: <declared> is enough\.)`/, "bump-success");
+
+export function bumpEnough(declared: string): string {
+  return BUMP_ENOUGH_TEMPLATE.replace("<declared>", declared);
+}
+
+/** The class D-270-06 names for the offline refusal. */
+export const CLI_ERROR = "CliError";
+
+/**
+ * `Function.length` for the two network verbs, and this is the CORRECTION D-270-06 (1)
+ * enforces rather than prefers.
+ *
+ * `clone(target, options = undefined)` and `bump(dir, declare, options = undefined)`. A
+ * default-valued parameter stops `Function.length`, and TypeScript's `?` erases to nothing —
+ * so the ruled `= undefined` spelling gives 1 and 2, while the refused `?` spelling gives 2
+ * and 3. That is the whole discriminator: the number moves by exactly one per verb, and
+ * nothing else in the suite can see the difference.
+ */
+export const CLONE_ARITY = 1;
+export const BUMP_ARITY = 2;
+
 /**
  * Where `validate` looks for a local vocabulary, ruled by D-270-04 (3).
  *

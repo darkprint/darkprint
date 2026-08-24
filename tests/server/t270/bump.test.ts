@@ -29,7 +29,7 @@
 
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 
-import { loadCli, recordingIo, RUN_CLI } from "./contract";
+import { bindVerb, bumpEnough, BUMP_ARITY, loadCli, recordingIo, RUN_CLI } from "./contract";
 import { cleanupFolders, writeBundleFolder, ARCHIVE } from "./fixtures";
 import { serverBumpDiagnostics, SNAPSHOT_PAIRS, SNAPSHOT_PAIRS_ERROR } from "./references";
 import { stubRegistry, type StubRegistry } from "./registry";
@@ -115,6 +115,84 @@ describe("AC2 — the rendered refusal keeps the engine's reasons", () => {
       const code = await runCli(["bump", dir, "--declare", pair.previousVersion], io);
 
       expect(code, `bump exited 0 on a refused declaration. rendered: ${io.all()}`).not.toBe(0);
+    },
+  );
+});
+
+describe("D-270-06 — `bump`'s published spelling and its SUCCESS path", () => {
+  it(`\`bump\` takes ${BUMP_ARITY} counted parameters — \`options = undefined\`, never \`?\``, async () => {
+    /* D-270-06 (1), enforced rather than preferred. `bump(dir, declare, options = undefined)`
+       counts 2; the refused `options?` spelling counts 3. Every behavioural cell in this file
+       passes under either, so this is the only one that can see the difference. */
+    const bump = await bindVerb("bump");
+    expect(
+      bump.length,
+      `\`bump(dir, declare, options = undefined)\` counts ${BUMP_ARITY}. A count of 3 means ` +
+        `\`options?\` — the spelling D-270-06 (1) refuses.`,
+    ).toBe(BUMP_ARITY);
+  });
+
+  it.each(SNAPSHOT_PAIRS.map((pair) => [pair.slug, pair] as const))(
+    "%s — returns the EMPTY ARRAY for a declaration that satisfies",
+    async (slug, pair) => {
+      /* THE SUCCESS PATH, held until D-270-06 published `bump`'s spelling and ruled success as
+         the empty array. Until now this file drove only the refusal, which meant a `bump` that
+         refused EVERYTHING passed every cell here.
+
+         The satisfying version is computed from the inferred level rather than typed, so this
+         stays correct whether the engine prices the moved ref `minor` or `major`. */
+      const entry = ARCHIVE.find((bundle) => bundle.slug === slug)!;
+      const dir = writeBundleFolder(entry.bundle, { manifest: "blueprint.yaml" });
+      registry = stubRegistry(slug, {
+        releases: [{ version: pair.previousVersion, digest: "sha256:" + "0".repeat(64) }],
+      });
+
+      const satisfying = { major: "2.0.0", minor: "1.1.0", patch: "1.0.1", none: "1.0.1" }[
+        pair.inferred.level
+      ];
+      /* The premise: the server half must ACCEPT this one, or the cell is asserting that a
+         refusal is empty rather than that an acceptance is. */
+      expect(serverBumpDiagnostics(pair, satisfying)).toEqual([]);
+
+      const bump = await bindVerb("bump");
+      const actual = await bump(dir as never, satisfying as never, {
+        baseUrl: registry.base,
+        fetch: globalThis.fetch,
+      } as never);
+
+      expect(actual, "a satisfying declaration did not return the empty array").toEqual([]);
+    },
+  );
+
+  it.each(SNAPSHOT_PAIRS.map((pair) => [pair.slug, pair] as const))(
+    "%s — `runCli` renders success to io.out and exits 0",
+    async (slug, pair) => {
+      /* The rendered half, and the two channels are asserted SEPARATELY. D-270-06 puts success
+         on `io.out` and refusals on `io.err`; a CLI writing everything to one stream satisfies
+         a combined check and breaks every caller that pipes them apart. `err` empty is the
+         exclusion — asserting only that `out` carries the sentence admits a CLI that writes it
+         to both. */
+      const entry = ARCHIVE.find((bundle) => bundle.slug === slug)!;
+      const dir = writeBundleFolder(entry.bundle, { manifest: "blueprint.yaml" });
+      registry = stubRegistry(slug, {
+        releases: [{ version: pair.previousVersion, digest: "sha256:" + "0".repeat(64) }],
+      });
+      previousUrl = process.env.DARKPRINT_URL;
+      process.env.DARKPRINT_URL = registry.base;
+
+      const satisfying = { major: "2.0.0", minor: "1.1.0", patch: "1.0.1", none: "1.0.1" }[
+        pair.inferred.level
+      ];
+      expect(serverBumpDiagnostics(pair, satisfying)).toEqual([]);
+
+      const io = recordingIo();
+      const barrel = await loadCli();
+      const runCli = barrel[RUN_CLI] as (argv: readonly string[], io: unknown) => Promise<number>;
+      const code = await runCli(["bump", dir, "--declare", satisfying], io);
+
+      expect(code, `bump exited ${code} on a satisfying declaration`).toBe(0);
+      expect(io.out_.join("\n")).toContain(bumpEnough(satisfying));
+      expect(io.err_.join("\n"), "success reached io.err").toBe("");
     },
   );
 });
