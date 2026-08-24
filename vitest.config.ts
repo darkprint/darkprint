@@ -29,6 +29,10 @@ export default defineConfig({
   },
   test: {
     include: [
+      /* packages/** carries T220's distributable stdio server (D-220-08). Without this glob a
+         test colocated there is silently uncollected — the failure this file's own header records
+         against app/**, arriving at a new root. */
+      "packages/**/*.test.{ts,tsx}",
       "lib/**/*.test.ts",
       "components/**/*.test.{ts,tsx}",
       "scripts/**/*.test.ts",
