@@ -493,34 +493,75 @@ describe("T220 — what a hit carries", () => {
 
   it("concatenates blueprints then cards, with no interleaving by score", async () => {
     const w = await world();
-    const token = knownToken();
-    /* The premise that makes this cell able to fail: the token must match BOTH kinds, or a
-       hit list of one kind satisfies "no interleaving" by having nothing to interleave. */
-    const bp = await searchBlueprints(w.scratch.db as never, anonymous, { q: token });
-    const cards = await searchCards(w.scratch.db as never, anonymous, { q: token });
-    const task = bp.hits.length > 0 && cards.hits.length > 0 ? token : "";
-    const both = task === "" ? "the empty listing" : `\`${token}\``;
-    const bpN = task === "" ? undefined : bp.hits.length;
-    void bpN;
+
+    /* ── THE TOKEN IS CHOSEN FOR DETECTABILITY, NOT PICKED ──
+       This cell scored ZERO under V15 (sort the merged list by evidence length) and the
+       reason was the fixture, not the module. `knownToken()` returns a word unique to ONE
+       manifest title — measured, `"adversarial"`: 1 blueprint and 0 CARDS — so the cell fell
+       back to the empty task, where every hit carries empty evidence and a score-sort is a
+       no-op. Green, and about nothing.
+
+       So the premise is now the detectability itself: the token must produce a merged list
+       whose kind sequence CHANGES under the sort this cell exists to forbid. `Array.sort` is
+       stable, so equal evidence lengths preserve order — a token matching both kinds is not
+       enough on its own. */
+    const oracleFor = async (q: string) => {
+      const bp = await searchBlueprints(w.scratch.db as never, anonymous, { q });
+      const cd = await searchCards(w.scratch.db as never, anonymous, { q });
+      const merged = [
+        ...bp.hits.map((h) => ({ kind: "blueprint", n: h.evidence.length })),
+        ...cd.hits.map((h) => ({ kind: "card", n: h.evidence.length })),
+      ];
+      const concat = merged.map((h) => h.kind).join(",");
+      const sorted = [...merged].sort((a, b) => b.n - a.n).map((h) => h.kind).join(",");
+      return { concat, sorted, bp: bp.hits.length, cd: cd.hits.length };
+    };
+
+    const candidates = new Set<string>();
+    for (const b of readContent()) {
+      const text = `${b.bundle.manifest.title} ${b.bundle.manifest.summary}`;
+      for (const word of text.toLowerCase().split(/[^a-z0-9]+/)) {
+        if (word.length >= 5) candidates.add(word);
+      }
+    }
+    let task: string | undefined;
+    let seen: Awaited<ReturnType<typeof oracleFor>> | undefined;
+    for (const candidate of candidates) {
+      const o = await oracleFor(candidate);
+      if (o.bp > 0 && o.cd > 0 && o.concat !== o.sorted) {
+        task = candidate;
+        seen = o;
+        break;
+      }
+    }
+    expect(
+      task,
+      "No token in the archive produces a merged list that a score-sort would reorder, so " +
+        "this cell cannot distinguish concatenation from interleaving. It is measuring " +
+        "nothing until the fixture provides one.",
+    ).toBeDefined();
+    expect(seen!.bp).toBeGreaterThan(0);
+    expect(seen!.cd).toBeGreaterThan(0);
 
     const mcpSearch = await verb("mcpSearch");
-    const result = (await mcpSearch(w.scratch.db, anonymous, task)) as {
+    const result = (await mcpSearch(w.scratch.db, anonymous, task!)) as {
       hits: { kind: string }[];
     };
     const kinds = result.hits.map((h) => h.kind);
-    expect(kinds.filter((k) => k === "blueprint").length, `${both} matched no blueprint`)
-      .toBeGreaterThan(0);
-    expect(kinds.filter((k) => k === "card").length, `${both} matched no card`).toBeGreaterThan(0);
 
     /* D-220-14: concatenation blueprints-then-cards. Interleaving by score would be the
        second ranking D-220-02 forbids, and it is invisible to every other cell here — a
        merged list has the same length and the same members either way. */
     const firstCard = kinds.indexOf("card");
     const lastBlueprint = kinds.lastIndexOf("blueprint");
+    expect(firstCard, `task "${task}" returned no card hit`).toBeGreaterThan(-1);
+    expect(lastBlueprint, `task "${task}" returned no blueprint hit`).toBeGreaterThan(-1);
     expect(
       lastBlueprint,
-      `kinds: ${kinds.join(",")} — a blueprint appears after a card, so the two shelves were ` +
-        "merged by score rather than concatenated.",
+      `task "${task}" — kinds: ${kinds.join(",")}\n` +
+        `  concatenated would be: ${seen!.concat}\n` +
+        `  score-sorted would be: ${seen!.sorted}\n` +
+        "  A blueprint appears after a card, so the two shelves were merged by score rather " +
+        "than concatenated.",
     ).toBeLessThan(firstCard);
-  });
-});
+  });});

@@ -295,6 +295,13 @@ export const COMPOSABLE = [
   "@/lib/content/bundle-export",
   "@/lib/server/types",
   "@/lib/server/policy",
+  /* The transport boundary. Every owned module in this repo publishes one here rather than
+     beside the routes, because `app/api/**` holds route handlers and nothing else (D-01) —
+     `withSearchErrors`, `withRegistryErrors`, `withLineageErrors` are all this shape. It was
+     missing from my first list and reddened a correct module on `mcp/http.ts`, which is the
+     false charge this cell's own pre-registration named as most likely. `notFound` and
+     `problem` render; neither writes. */
+  "@/lib/server/http",
   "@/lib/server/accounts",
   "@/lib/server/archive",
   "@/lib/server/cards",

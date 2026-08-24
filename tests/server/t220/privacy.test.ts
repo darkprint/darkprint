@@ -59,11 +59,41 @@ async function actors(): Promise<{ label: string; actor: unknown }[]> {
 }
 
 describe("T220 AC3 — search", () => {
-  it("never carries the private bundle's digest, to any of the three actors", async () => {
+  it("never carries the private bundle's identity, to any of the three actors", async () => {
     const w = await world();
-    /* Premises before the bind. The two digests are distinct, and neither is anything the
-       caller sends — `mcpSearch` takes only a task string. */
-    expect(w.secret.digest).not.toBe(w.shown.digest);
+
+    /* ── THE NEEDLE IS THE SLUG, NOT THE DIGEST, AND THE REASON IS A DEFECT THIS CELL HAD ──
+       A digest is CONTENT-ADDRESSED, so it is unique to bytes and not to a row. When the
+       lineage fixture added `t220-fork-of-secret` — a PUBLIC bundle built from the private
+       one's bytes, which is what a fork is — the two rows came to carry the same digest
+       (measured: both `sha256:69bcfb1e…`, because the manifest sits outside `bundleDigest`).
+       The public fork then appeared in search carrying it, and this cell charged an AC3 leak
+       against a correct module, for all three actors at once.
+
+       A fixture added in one file invalidated a needle in another, and nothing asserted the
+       property the needle rested on. So the property is now a PREMISE rather than an
+       assumption: whatever is used as the needle must belong to exactly one row, and that
+       row must be the private one. */
+    const carriers = await w.scratch.query(
+      `select b.slug, b.visibility from "bundle" b where b.slug = $1`,
+      [w.secret.slug],
+    );
+    expect(
+      carriers.map((r) => `${r.slug}:${r.visibility}`),
+      "the needle must identify exactly one row, and that row must be the private one",
+    ).toEqual([`${w.secret.slug}:private`]);
+    /* And it must not be something the caller sends: `mcpSearch` takes only a task string,
+       so a slug can only appear in an answer by being read out of the store. */
+    const needle = w.secret.slug;
+
+    /* The control needle, checked for the same property. */
+    const shownCarriers = await w.scratch.query(
+      `select b.slug from "bundle" b where b.slug = $1`,
+      [w.shown.slug],
+    );
+    expect(shownCarriers).toHaveLength(1);
+    const control = w.shown.slug;
+
     const who = await actors();
 
     const mcpSearch = await verb("mcpSearch");
@@ -71,13 +101,13 @@ describe("T220 AC3 — search", () => {
     const missed: string[] = [];
     for (const { label, actor } of who) {
       const got = await outcome(() => mcpSearch(w.scratch.db, actor, "") as Promise<unknown>);
-      if (reveals(got, w.secret.digest)) leaked.push(label);
+      if (reveals(got, needle)) leaked.push(label);
       /* The disagreeing control, in the same cell so the two cannot drift apart: the PUBLIC
-         bundle must be reachable by the same call. Without it "the private digest is absent"
+         bundle must be reachable by the same call. Without it "the private one is absent"
          is satisfied by a search that returns nothing at all. */
-      if (!reveals(got, w.shown.digest)) missed.push(label);
+      if (!reveals(got, control)) missed.push(label);
     }
-    expect(leaked, "the private bundle's digest reached these actors").toEqual([]);
+    expect(leaked, "the private bundle's slug reached these actors").toEqual([]);
     expect(
       missed,
       "these actors could not reach the PUBLIC bundle either, so the cell above proves " +
@@ -122,8 +152,22 @@ describe("T220 AC3 — read a card", () => {
 describe("T220 AC3 — inspect provenance", () => {
   it("never discloses the private bundle's releases, and does disclose the public one's", async () => {
     const w = await world();
-    /* The needle is the stored digest; the caller sends only owner and slug. */
+    /* The needle is the stored digest and the caller sends only owner and slug — but a
+       digest is CONTENT-addressed, and the lineage fixture's public fork carries the
+       private bundle's bytes and therefore its digest (measured: both `sha256:69bcfb1e…`).
+       That non-uniqueness cost the search cell above a false AC3 charge, so the premise is
+       asserted here rather than reasoned about: the digest must be reachable on a PRIVATE
+       row and the leak must be read from a call that names that row. */
     expect(w.secret.digest).not.toBe(w.shown.digest);
+    const sharers = await w.scratch.query(
+      `select b.slug, b.visibility from "bundle" b join "release" r on r.bundle_id = b.id
+        where r.digest = $1 order by b.slug`,
+      [w.secret.digest],
+    );
+    expect(
+      sharers.some((r) => r.slug === w.secret.slug && r.visibility === "private"),
+      `no private row carries the needle digest: ${JSON.stringify(sharers)}`,
+    ).toBe(true);
     const who = await actors();
 
     const provenance = await verb("mcpProvenance");
@@ -158,6 +202,13 @@ describe("T220 AC3 — fetch a release", () => {
     const shownRef = refsOf(w.shown.slug)[0]!;
     expect(secretRef).not.toBe(shownRef);
     expect(refsOf(w.shown.slug)).not.toContain(secretRef);
+    /* `secretRef` is pinned by the public fork as well — a fork pins its upstream's cards by
+       definition — so it is NOT unique to the private bundle. It is still a sound needle
+       here because the leak is read from a call that names the PRIVATE bundle and no other
+       fetch happens in the same outcome; recorded rather than left implicit, because the
+       search cell one describe-block up charged a false AC3 leak on exactly this property
+       going unasserted. The control needle IS disjoint, which `disjointPair` guarantees. */
+    expect(refsOf(w.secret.slug)).not.toContain(shownRef);
     const who = await actors();
 
     const fetchRelease = await verb("mcpFetchRelease");
@@ -231,8 +282,14 @@ describe("T220 AC3 — the lineage channel", () => {
     /* Premises before the bind: the fork really is public and really does carry a lineage
        pointing at the private bundle. Without both, an absent `forkedFrom` below is a fork
        that was never forked. */
+    /* `lineage` is THREE columns in the schema — `lineage_owner_id`, `lineage_slug`,
+       `lineage_version` — not one. The single-column spelling threw `column "lineage" does
+       not exist`, and in the blind runs I read that red as the module bind because every
+       other cell in the file was redding there. A red naming a plausible wrong cause,
+       inside my own premise. */
     const rows = await w.scratch.query(
-      `select slug, visibility, lineage from "bundle" where slug in ($1, $2) order by slug`,
+      `select slug, visibility, lineage_slug, lineage_owner_id from "bundle"
+        where slug in ($1, $2) order by slug`,
       [w.forkOfSecret.slug, w.secret.slug],
     );
     const fork = rows.find((r) => r.slug === w.forkOfSecret.slug);
@@ -241,7 +298,10 @@ describe("T220 AC3 — the lineage channel", () => {
       "public",
     );
     expect(upstream?.visibility).toBe("private");
-    expect(fork?.lineage, "the fork carries no lineage, so there is nothing to omit").toBeTruthy();
+    expect(
+      fork?.lineage_slug,
+      "the fork carries no lineage, so there is nothing to omit",
+    ).toBe(w.secret.slug);
 
     const who = await actors();
     const provenance = await verb("mcpProvenance");
