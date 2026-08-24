@@ -452,20 +452,32 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
       ).toEqual({ repin: true, deprecation: true, digest: false });
     });
 
-    it("SETS false rather than toggling — a second link for the same kind cannot re-subscribe", async () => {
+    it("SETS false rather than toggling — spending a link while the preference is ALREADY off leaves it off", async () => {
       const account = await seedAccount("ac6-toggle");
-      const first = await enqueueAndDrain(account);
-      await unsubscribe(db, first.sent[0]!.unsubscribeToken);
-      expect((await getPreferences(db, actorFor(account), account)).fork).toBe(false);
+      const delivery = await enqueueAndDrain(account);
+      const token = delivery.sent[0]!.unsubscribeToken;
 
-      /* Re-subscribe, mint a fresh token through a new event, then spend it. A TOGGLE would
-         turn `fork` back ON here; a SET leaves it off. */
-      await setPreferences(db, actorFor(account), account, { fork: true });
-      await enqueue(db, { kind: "fork", accountId: account, subject: { slug: "s2", fork: "f2" } });
-      const second = new RecordingDelivery();
-      await deliverPending(db, second);
-      await unsubscribe(db, second.sent[0]!.unsubscribeToken);
-      expect((await getPreferences(db, actorFor(account), account)).fork).toBe(false);
+      /*
+       * **The preference goes off WITHOUT spending the token, and that is the whole cell.**
+       *
+       * An earlier version of this drove unsubscribe, re-subscribed, then unsubscribed again —
+       * and was VACUOUS: toggling from `true` and setting `false` give the same answer, so it
+       * reddened 0 of 42 under a mutation that made `clearPreference` a toggle. The subject's
+       * state agreed with the expected value, which is the shape that cannot discriminate.
+       *
+       * Reaching `unsubscribe` with the matching preference ALREADY false is the only state
+       * that separates them, and `setPreferences` is the only way to get there: `enqueue` is
+       * preference-gated, so no later event can mint a second token while the kind is off.
+       */
+      await setPreferences(db, actorFor(account), account, { fork: false });
+
+      await unsubscribe(db, token);
+      expect(
+        (await getPreferences(db, actorFor(account), account)).fork,
+        "D-190-03: `unsubscribe` SETS false and never toggles. A toggle would read `false` here " +
+          "and flip it back to `true` — RE-SUBSCRIBING somebody who just clicked an unsubscribe " +
+          "link, which is the one outcome the link must never produce.",
+      ).toBe(false);
     });
 
     it("a spent token is refused with the published sentence, which quotes no token", async () => {
@@ -688,8 +700,14 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
       await enqueueRepinEvents(db, "solver-a", "2.0.0");
       expect(
         await queueRows(pinner),
-        "`(kind, account_id, subject_digest)` is equal for both, so the unique key collapses them",
+        "one recipient, one row. `selectDistinct` in `accountsPinningCard` is what collapses the " +
+          "two bundles to one owner, so only ONE insert is attempted — the unique key is a " +
+          "second line of defence here and is never reached.",
       ).toHaveLength(1);
+      /* The attribution above is measured, not assumed: removing `onConflictDoNothing` reds the
+         two-spellings and concurrent-callers cells and leaves THIS one green, which is what says
+         the collapse happens one level earlier than the constraint. The comment used to credit
+         the unique key and was wrong about its own mechanism. */
     });
 
     it("D-190-09(2): the PUBLISHER is excluded from its own repin fan-out", async () => {
