@@ -35,6 +35,46 @@ export const metadata: Metadata = {
  */
 const ANONYMOUS: Actor = Object.freeze({ kind: "anonymous" });
 
+/**
+ * AC1 IS A NEGATIVE ABOUT THE BUILD, AND MOVING THE READ OFF `content/` DOES NOT SATISFY IT
+ * (D-260-05).
+ *
+ * Next prerenders a page it cannot see a request-time dependency in, and it cannot see one in
+ * a drizzle query: with no `searchParams`, no `cookies()` and no `headers()`, all three
+ * shelves came out `○ Static` in the build's route table — read from Postgres ONCE, at
+ * deploy, and frozen there. That is the same defect the cutover exists to remove, one store
+ * further along, and nothing in the source shows it.
+ *
+ * ── Why this spelling and not `connection()`, which is the prettier one ──
+ *
+ * `connection()` is Next 16's request-time marker and its own documented example is a
+ * synchronous database driver, so it was the first choice and it is the wrong one HERE:
+ * **measured, it throws ``connection` was called outside a request scope` when a page function
+ * is invoked directly.** D-260-09 rules a per-route cell that renders each of these three
+ * shelves against a seeded store, and in a `node` environment the only way to render one is to
+ * call its default export — so `connection()` would red that cell against a correct page. A
+ * route segment export is a module-level declaration: it makes the same claim to the compiler
+ * and leaves the function callable.
+ *
+ * `revalidate = 0` would do equally well. `dynamic` is the spelling the rest of this codebase
+ * would recognise, and `t262`'s per-request guard names `dynamic = "force-dynamic"` by hand as
+ * the deliberate-dynamic value it would widen for.
+ *
+ * ── The version caveat, left here because the task that trips it will not be looking ──
+ *
+ * Next 16 REMOVES `dynamic`, `dynamicParams`, `revalidate` and `fetchCache` once
+ * `cacheComponents` is enabled, and it is absent from this version's route segment config
+ * table for that reason. `cacheComponents` is off in `next.config.ts` today, which is why this
+ * works and why `use cache` was unavailable to B-15. **The follow-up that enables it repo-wide
+ * has to replace this line on all three routes**, and `connection()` is what it should replace
+ * it with — by then the rendering path is the framework's, not a directly-invoked function.
+ *
+ * AC5 is untouched either way: it asks that the first paint need no JavaScript, which is a
+ * statement about the HTML the server sends and not about when it was rendered. The shelf is
+ * still fully server-rendered, now rather than at deploy.
+ */
+export const dynamic = "force-dynamic";
+
 export default async function NodesPage() {
   const { db } = getSharedDbClient();
 
