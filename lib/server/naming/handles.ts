@@ -42,7 +42,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { schema, type Db } from "@/lib/db";
 import "./constraint";
 import { handleTakenError, HandleTakenError, invalidNameError, namingStoreError } from "./errors";
-import { isNameSegment } from "./grammar";
+import { isHandle, isNameSegment, MAX_HANDLE_LENGTH } from "./grammar";
 import { firstFreeSuggestion, firstWindow } from "./suggest";
 import type { Availability } from "./types";
 
@@ -81,10 +81,24 @@ async function existingHandles(
 export async function checkHandle(db: Db, handle: string): Promise<Availability> {
   /* D-70-14a: the grammar's refusal is its own reason. No `suggestion` goes with it —
      nothing legal can be derived from a name that is not, and offering one would be the
-     module guessing at what the caller meant. */
-  if (!isNameSegment(handle)) return { available: false, reason: "illegal" };
+     module guessing at what the caller meant.
 
-  const candidates = firstWindow(handle);
+     `isHandle`, not `isNameSegment`: past 32 a handle is not well-formed (D-70-15), so it
+     leaves by THIS path rather than by a new one, and D-70-18's "forbidden for `illegal`"
+     is what makes AC2 fall out instead of being coded. A truncated-to-32 alternative is
+     never offered, and it is this early return that refuses it — nothing downstream has to
+     remember not to. */
+  if (!isHandle(handle)) return { available: false, reason: "illegal" };
+
+  /* `MAX_HANDLE_LENGTH` threaded into the generator, or the module contradicts itself at
+     exactly the boundary it just defended (D-071-01(3)): a taken 32-character handle is
+     well-formed, D-70-18 then REQUIRES a suggestion for its refusal, and a stem cut against
+     `MAX_NAME_LENGTH` returns `<32 chars>-2` — 34 characters, which the line above now calls
+     illegal and which `allocateHandle` refuses. That is availability and allocation
+     disagreeing through the one input the bound did not reach, which is the defect D-70-13
+     was raised for. Shortening was ruled over a carve-out at D-70-20 and again here: the
+     suggestion is bounded, so it stays offerable and allocatable. */
+  const candidates = firstWindow(handle, () => true, MAX_HANDLE_LENGTH);
   const existing = await existingHandles(db, [handle, ...candidates]);
   const status = existing.get(handle);
   if (status === undefined) return { available: true };
@@ -106,6 +120,7 @@ export async function checkHandle(db: Db, handle: string): Promise<Availability>
     () => true,
     async (names) => new Set((await existingHandles(db, names)).keys()),
     { candidates, taken: new Set(existing.keys()) },
+    MAX_HANDLE_LENGTH,
   );
   return suggestion === undefined
     ? { available: false, reason }
@@ -136,7 +151,12 @@ export async function checkHandle(db: Db, handle: string): Promise<Availability>
  * parameter (D-13).
  */
 export async function allocateHandle(db: Db, accountId: string, handle: string): Promise<void> {
-  if (!isNameSegment(handle)) throw invalidNameError("allocateHandle", handle, "handle");
+  /* The SECOND door, and it is not redundant with `checkHandle` (AC1). A bound that only
+     guarded the query would let the write through: `changeHandle` reaches here directly and
+     D-50-07 rules out a `checkHandle` pre-flight, so a caller can allocate a name nothing
+     ever answered a question about. `handle` is this table's primary key and AC4 forbids
+     ever deleting the row, so a name admitted here is admitted permanently. */
+  if (!isHandle(handle)) throw invalidNameError("allocateHandle", handle, "handle");
 
   try {
     const [row] = await db
@@ -178,6 +198,16 @@ export async function allocateHandle(db: Db, accountId: string, handle: string):
  * here.
  */
 export async function releaseHandle(db: Db, accountId: string, handle: string): Promise<void> {
+  /* `isNameSegment` and NOT `isHandle`, deliberately (D-071-02 F5, ratified). D-70-15 names
+     two doors and this is not one of them. The check here exists for the surrogate reason in
+     this file's header — an unpaired UTF-16 surrogate has no UTF-8 encoding and would reach
+     a `text` column as U+FFFD — which is a claim about the alphabet and not about length.
+     Adding the product bound would change the refusal CLASS for an input that can never
+     name a row: `allocateHandle` is the only writer, it now refuses past 32, and nothing
+     over-length was ever registered. A release naming a handle this account does not hold
+     already updates nothing and raises nothing (D-70-02), so the bound would have no
+     observable consequence to assert — a guard nobody can falsify described as a guard is
+     how a later reader comes to rely on nothing. */
   if (!isNameSegment(handle)) throw invalidNameError("releaseHandle", handle, "handle");
 
   try {
