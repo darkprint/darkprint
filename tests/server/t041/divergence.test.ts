@@ -228,3 +228,44 @@ describe("D-40-L: the four published witnesses, and the number each one used to 
     });
   }
 });
+
+/* ============================================================
+   The refusal AGREES with the formula's, in kind and in text
+   ============================================================ */
+
+describe("D-40-L: the walk refuses with the serialiser's own error, not merely with its class", () => {
+  /**
+   * §T041 rules the repair as *the walk throws the same bare `TypeError` the formula does*.
+   * `toBeInstanceOf(TypeError)` admits a `TypeError` this module coins for a different reason,
+   * so the pin is EQUALITY against what the formula produced on the same input — derived per
+   * run rather than transcribed, which keeps it independent of the host's wording.
+   *
+   * Both errors come out of the same spec step: `ToLength(Get(v,"length"))` reaching `ToNumber`
+   * on a BigInt. If they ever stop matching, one of the two stopped being that step.
+   */
+  for (const channel of BIGINT_CHANNELS) {
+    it(`matches the formula's own message when ${channel.name}`, () => {
+      const build = () => ({ k: trappedArray(channel.make()) });
+
+      const messageOf = (call: () => unknown): string => {
+        try {
+          call();
+        } catch (err) {
+          return err instanceof Error ? `${err.constructor.name}: ${err.message}` : String(err);
+        }
+        return "did not throw";
+      };
+
+      const fromFormula = messageOf(() => formula(build()));
+      expect(fromFormula, "the premise: the ruled formula refuses this input").not.toBe(
+        "did not throw",
+      );
+      expect(
+        messageOf(() => measureSubmission("probe", build(), TIGHT)),
+        `${channel.name}: both refusals are ToNumber applied to a BigInt inside ` +
+          `ToLength(Get(v,"length")). A different error means one of the two is no longer ` +
+          `that step.`,
+      ).toBe(fromFormula);
+    });
+  }
+});
