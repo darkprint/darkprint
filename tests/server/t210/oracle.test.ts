@@ -42,7 +42,7 @@ import { termUsageIndex } from "@/components/ontology/TermTable";
 import { getRegistry } from "@/lib/content";
 
 import { anonymous, dropScratchDatabases, seededWorld } from "./fixtures";
-import { assertUsage, bind } from "./contract";
+import { assertCandidate, assertUsage, bind } from "./contract";
 
 afterAll(async () => {
   await dropScratchDatabases();
@@ -127,23 +127,43 @@ describe("the seeded archive, against the shipped component", () => {
     expect(usage!.cards).toBeGreaterThan(0);
   });
 
-  it("`candidates()` over the seeded archive is EMPTY, and that is the ruled answer", async () => {
+  it("`candidates()` over the seeded archive is ONE INELIGIBLE local term, not an empty list", async () => {
     const { scratch } = await seededWorld();
     const candidates = await bind("candidates");
     const list = await candidates(scratch.db, anonymous);
 
-    /* D-210-08's measurement, asserted rather than recalled. WITHOUT D-210-05's local filter
-       this returns ten terms and all ten are CORE — a proposal to promote the core into the
-       core. WITH it, the archive's only local term clears neither threshold and the list is
-       empty.
+    /* ── this cell asserted EMPTY and was WRONG, and the correction is the finding ──
+       D-210-08 records "with [the local filter] the seed's list is EMPTY — `lupo/pii-handling`
+       at 2 cards / 1 bundle / 1 author clears neither threshold". That parenthetical was
+       written under the PRE-D-210-02 reading, in which `candidates()` returned only the
+       QUALIFYING set. D-210-02 replaced that reading: the list is every counted LOCAL term with
+       its counts and both booleans, and the ELIGIBLE SUBSET is the conjunction.
 
-       An empty list is a weak assertion on its own and is labelled as such: it is satisfied by
-       a `candidates()` that always returns `[]`. It is here because it is the OTHER half of a
-       pair — `ac5-candidates.test.ts` shows the same function returning four rows over a
-       synthetic world, so the two together say the emptiness is a filter rather than a
-       constant. Neither cell is worth much without the other. */
+       `lupo/pii-handling` is counted and is local, so under the governing ruling it MUST be in
+       the list, ineligible. Measured on the merged tree: exactly one row, 2 / 1 / 1, both
+       booleans false — which is D-210-08's own three numbers, so only its conclusion was stale,
+       never its measurement.
+
+       The module is right and this suite was wrong. Recorded here rather than quietly rewritten
+       because a blind suite wrong about a published contract means the contract failed to bind,
+       and because an EMPTY assertion is the weaker cell in any case: `[]` is satisfied by a
+       `candidates()` that always returns a constant, where the row below pins the ineligibility
+       itself. */
     expect(Array.isArray(list)).toBe(true);
-    expect(list).toHaveLength(0);
+    const rows = (list as unknown[]).map((row, i) => assertCandidate(row, `candidates()[${i}]`));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toEqual({
+      termId: "lupo/pii-handling",
+      cards: 2,
+      blueprints: 1,
+      authors: 1,
+      meetsAuthors: false,
+      meetsBlueprints: false,
+    });
+    /* The eligible subset over the real archive IS empty, which is what D-210-08 was reaching
+       for and is still true. Asserted as the derived quantity rather than as the list's length,
+       so the two readings can never be confused again. */
+    expect(rows.filter((r) => r.meetsAuthors && r.meetsBlueprints)).toEqual([]);
   });
 
   it("`usageOf` agrees with `usage()` across the whole archive, not a sampled part of it", async () => {

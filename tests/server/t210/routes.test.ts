@@ -57,7 +57,12 @@ afterAll(async () => {
  * layout rather than a contract — the mistake D-80-07 ruled on.
  */
 async function handlerFor(path: string): Promise<(request: Request) => Promise<Response>> {
-  const rel = path.replace(/^\/api\//, "");
+  /* The QUERY STRING is stripped before the specifier is built. It was not, once, and the red
+     that produced named the missing module `@/app/api/ontology-usage?term=validation/route` —
+     a message that reads as "the route is absent" for a route that is present. A red reporting
+     a plausible wrong cause is worse than no red: this one would have been filed against the
+     implementer. */
+  const rel = path.replace(/^\/api\//, "").split("?")[0];
   const attempts = [`@/app/api/${rel}/route`, `@/app/api/${rel}/route.ts`];
   const failures: string[] = [];
   for (const specifier of attempts) {
@@ -93,9 +98,40 @@ async function handlerFor(path: string): Promise<(request: Request) => Promise<R
  * later suite in the same worker would fail against a name that no longer exists — a failure
  * that names somebody else's file and has nothing to do with them.
  */
+/**
+ * Evicts the process-wide pool `getSharedDbClient()` caches, so the next handler builds a new
+ * one against whatever `DATABASE_URL` says now.
+ *
+ * Without this the route half is a lie, and it was one until the first merged run. The client
+ * is cached on `globalThis` behind `Symbol.for("darkprint.db.sharedClient")` (`lib/db/client.ts:50-65`)
+ * — deliberately, so Next's hot reload cannot leak a pool — so the FIRST route cell in a worker
+ * binds the pool to its own scratch database and every later cell in the same file silently
+ * queries THAT one. Measured: three candidate cells reported an empty list because they were
+ * asking the AC1 world, which has no local terms. The module was right and my harness was
+ * wrong, and the failure looked exactly like a route returning nothing.
+ */
+async function evictSharedClient(): Promise<void> {
+  const key = Symbol.for("darkprint.db.sharedClient");
+  const g = globalThis as typeof globalThis & Record<symbol, { close?: () => Promise<void> } | undefined>;
+  const existing = g[key];
+  if (existing !== undefined) {
+    /* Closed rather than merely dropped: an abandoned pool keeps its Postgres connections open
+       for the lifetime of the worker, and this file opens one per cell. */
+    try {
+      await existing.close?.();
+    } catch {
+      /* A pool whose database has already been dropped throws on close. Nothing to recover:
+         the handle is being discarded either way, and raising here would replace a real result
+         with a teardown error. */
+    }
+    delete g[key];
+  }
+}
+
 async function get(path: string, url: string): Promise<{ status: number; body: unknown }> {
   const previous = process.env.DATABASE_URL;
   process.env.DATABASE_URL = url;
+  await evictSharedClient();
   try {
     const GET = await handlerFor(path);
     const response = await GET(new Request(`http://localhost${path}`));
@@ -106,6 +142,10 @@ async function get(path: string, url: string): Promise<{ status: number; body: u
   } finally {
     if (previous === undefined) delete process.env.DATABASE_URL;
     else process.env.DATABASE_URL = previous;
+    /* Evicted on the way out as well as on the way in. This file's databases are dropped in
+       `afterAll`, and a pool left cached on `globalThis` pointing at a dropped database would
+       fail the next suite in this worker with an error naming somebody else's file. */
+    await evictSharedClient();
   }
 }
 
