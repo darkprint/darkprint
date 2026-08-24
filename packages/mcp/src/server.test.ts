@@ -61,7 +61,10 @@ const RATE_LIMITED = {
   type: "https://darkprint.io/problems/rate-limited",
   title: "Rate limited",
   status: 429,
-  detail: "read: a limit of 600 requests per hour applies. Try again after 2099-01-01T00:00:00.000Z.",
+  /* `rateLimitDetail`'s form, byte for byte (`limits/errors.ts:182`). It carries the instant
+     TOO, which is what made the first version of the `resetAt` cell below vacuous — see
+     there. */
+  detail: "read: limit of 600 per hour reached; resets at 2099-01-01T00:00:00.000Z.",
   instance: "/api/mcp/search",
   limit: 600,
   remaining: 0,
@@ -160,9 +163,21 @@ describe("AC6: an unkeyed client is limited and told so in a form an agent can a
        byte (D-230-09: "`detail` is the admissible form byte for byte"), so asserting the
        number rather than the sentence keeps this cell from pinning T230's wording. */
     expect(text, "the ceiling").toContain("600");
-    expect(text, "the reset instant, machine-readable and not regexed out of a sentence").toContain(
-      "2099-01-01T00:00:00.000Z",
-    );
+    expect(text, "the reset instant").toContain("2099-01-01T00:00:00.000Z");
+
+    /* ── this assertion is the one that measures the `resetAt` MEMBER, and the obvious one
+       above does not ──
+
+       Measured, not reasoned: deleting the `resetAt` branch from `rateLimitMessage` reddened
+       0 of 10 cells. `detail` is the admissible form byte for byte and the form ends
+       `resets at <instant>`, so the instant is in the text whether or not this client ever
+       looked at the member — the assertion above passes against a client that reads only
+       `detail`, which is precisely the client D-230-09 published a machine-readable member to
+       stop people writing.
+
+       `about ... from now` can only be produced by `new Date(problem.resetAt)`. It is the one
+       string in the message that no `detail` can supply. */
+    expect(text, "the member was PARSED, not the sentence copied").toContain("from now");
     expect(text.toLowerCase(), "that a key exists and raises the ceiling").toContain("key");
     expect(text, "how a caller supplies one, or the affordance is not actionable").toContain(
       "DARKPRINT_API_KEY",
@@ -171,6 +186,24 @@ describe("AC6: an unkeyed client is limited and told so in a form an agent can a
     /* The failure this cell exists to exclude, named rather than merely not admitted: a bare
        status code is a refusal an agent retries against immediately and forever. */
     expect(text, "an opaque refusal is the failure mode the criterion names").not.toBe("429");
+  });
+
+  it("reports the reset instant from a 429 that carries no `detail` at all", async () => {
+    /* The isolating cell. With `detail` absent the member is the ONLY source of the instant,
+       so this reds under any client that reads the sentence instead of the field — including
+       an older registry whose form has not got one. */
+    const membersOnly = { status: 429, limit: 600, remaining: 0, resetAt: "2099-01-01T00:00:00.000Z", keysAvailable: true };
+    const [, call] = await session(
+      [
+        INITIALIZE,
+        { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "search", arguments: { task: "x" } } },
+      ],
+      answering(problem429(membersOnly)),
+    );
+    const text = (call?.result as { content: { text: string }[] }).content[0].text;
+
+    expect(text).toContain("2099-01-01T00:00:00.000Z");
+    expect(text, "the ceiling survives an absent `detail` too").toContain("600");
   });
 
   it("says nothing about keys when the registry does not offer them", async () => {

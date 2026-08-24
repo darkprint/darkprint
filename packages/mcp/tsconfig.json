@@ -14,5 +14,10 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  /* The colocated suite is a REPO instrument, not part of the distributable: it imports
+     vitest, whose own types do not resolve under this file's `moduleResolution: "node"`,
+     and shipping a test into `dist` would put the harness in the published package. Root
+     `vitest.config.ts` collects it through the packages glob D-220-08 added. */
+  "exclude": ["src/**/*.test.ts"]
 }
