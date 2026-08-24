@@ -106,10 +106,15 @@ export async function enqueue(db: Db, event: NotificationEvent): Promise<void> {
 export async function enqueueRepinEvents(db: Db, cardId: string, version: string): Promise<void> {
   const recipients = await withStore("enqueueRepinEvents", async () => await accountsPinningCard(db, cardId));
   for (const accountId of recipients) {
-    /* `card` is the BARE id and never `id@version`, which is T110's ruling for `Repin.card` on
-       the same quantity ("it is also the route the panel links to, `/nodes/<card>`, and both
-       versions are already beside it"). The two keys are separate members rather than one ref
-       so a reader needs no parser to render either. */
-    await enqueue(db, { kind: "repin", accountId, subject: { card: cardId, version } });
+    /* D-190-07: `{ cardId, version }`, EXACTLY those two keys, and the spelling is the ruling's
+       rather than T110's. `Repin.card` names the same quantity and is the older spelling; this
+       ruling is later and matches this verb's own parameter name, so a reader moving between
+       the two is told which is which here rather than guessing.
+
+       The value is the BARE id and never `id@version` — T110's reasoning on the same quantity,
+       now stated in the ruling. The two keys are separate members rather than one ref so a
+       reader needs no parser to render either, and the digest over them gives one row per
+       recipient per new version: two versions of one card are two rows by construction. */
+    await enqueue(db, { kind: "repin", accountId, subject: { cardId, version } });
   }
 }

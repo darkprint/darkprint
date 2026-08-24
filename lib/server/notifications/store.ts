@@ -318,6 +318,15 @@ export async function ensureToken(db: Db, accountId: string, kind: EventKind): P
  * **DELETE ... RETURNING, one statement, and that is AC6's single-use property.** A read
  * followed by a delete would let two simultaneous clicks on one link both find the row and
  * both act; here exactly one of them deletes it and the other gets nothing back.
+ *
+ * **This is the ONLY delete in the module, and `unsubscribe` is its only caller — which is
+ * D-190-07(2) held structurally rather than by convention.** Token rows are deleted ON USE
+ * ONLY; a preference write never touches them. Under D-190-06 the token IS the delivery
+ * capability, so a `setPreferences` that pruned tokens would kill every outstanding
+ * unsubscribe link whenever the reader changed any unrelated setting. The discriminating
+ * fixture is sanctioned: mint while the kind is ON, turn it off through `setPreferences`,
+ * then spend the token — it must still work, and it does here because nothing on that path
+ * can reach this statement.
  */
 export async function takeToken(
   db: Db,
