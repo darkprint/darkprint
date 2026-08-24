@@ -139,3 +139,17 @@ export async function reportsAtDigest(db: Db, digest: string): Promise<Aggregabl
 
   return rows.map((row) => ({ model: row.model, costUnits: Number(row.costUnits) }));
 }
+
+/**
+ * Remove every run report at one release digest. T120's deletion calls this in the SAME
+ * transaction as the release destruction, and only for digests that destruction is about
+ * to orphan (D-120-04) -- quantified over `release.digest` ACROSS ALL BUNDLES, because an
+ * unmodified fork shares the upstream's digest (D-05-01) and a surviving fork keeps the
+ * reports anchored. No actor: authorization is the caller's, made at the deletion
+ * boundary; this verb exists so no other task ever writes this module's table.
+ */
+export async function forgetReportsAt(db: Db, digest: string): Promise<void> {
+  await withStore("forgetReportsAt", async () => {
+    await db.delete(schema.runReport).where(eq(schema.runReport.releaseDigest, digest));
+  });
+}

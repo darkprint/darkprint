@@ -93,3 +93,4 @@ export async function submitReport(db: Db, actor: Actor, report: RunReport): Pro
     await insertRunReport(db, accountId, checked);
   });
 }
+

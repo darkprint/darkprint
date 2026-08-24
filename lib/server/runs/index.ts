@@ -85,3 +85,10 @@ export { RunReportRefusedError, RunReportStoreError } from "./errors";
 
 export { reportedCost } from "./read";
 export { submitReport } from "./write";
+
+/* D-120-04: T120's deletion must not orphan run reports at a digest it is about to
+   destroy, and it must not write this module's table -- one table, one author. The verb
+   is deliberately digest-scoped and transaction-friendly: the caller quantifies over
+   `release.digest` ACROSS ALL BUNDLES (an unmodified fork shares the upstream's digest,
+   D-05-01, so a surviving fork keeps the reports anchored and this is never called). */
+export { forgetReportsAt } from "./store";
