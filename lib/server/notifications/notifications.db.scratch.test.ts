@@ -283,6 +283,29 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
       expect(after.updatedAt?.getTime()).toBe(sentinel.getTime());
     });
 
+    it("D-190-11 clarified: a known key carrying a NON-BOOLEAN contributes nothing, so it writes nothing", async () => {
+      const account = await seedAccount("set-illformed");
+      await setPreferences(db, actorFor(account), account, { fork: false });
+      const before = await accountRowStamp(account);
+      const sentinel = await pinUpdatedAt(account);
+
+      /* `digest` is a KNOWN key, so this survives the unknown-key filter and fails only the
+         boolean one. It is the exact input the two readings of D-190-11 disagreed on, ruled for
+         the narrower: "empty after filtering" means after BOTH filters, so this contributes no
+         well-formed entry and must not bump T050's column as the consequence of nothing.
+         Unreachable from HTTP — the PATCH route answers it 400 — so the cast is how it is
+         reached at all, and this cell is the only thing holding the module-level behaviour. */
+      await setPreferences(db, actorFor(account), account, { ...({ digest: 3 } as object) });
+
+      const after = await accountRowStamp(account);
+      expect(after.preferences, "the column is byte-unchanged").toEqual(before.preferences);
+      expect(
+        after.updatedAt?.getTime(),
+        "D-190-11 clarified: contribution, not presence. A known key holding an unusable value " +
+          "names no preference, and writing for it bumps `updated_at` for nothing.",
+      ).toBe(sentinel.getTime());
+    });
+
     it("D-190-11: normalisation-to-total survives — one known key still writes all four", async () => {
       const account = await seedAccount("set-total");
       /* The other direction, and without it "writes nothing" would be equally true of an

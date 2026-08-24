@@ -108,10 +108,11 @@ export async function getPreferences(db: Db, actor: Actor, accountId: string): P
  * writes all four, so the column becomes total at the first genuine write and stays total. What
  * is gone is only the write that changed nothing.
  *
- * The test is KEY PRESENCE after unknown-key filtering, which is the ruling's own wording — not
- * whether the resulting four differ from the current four. `{ digest: false }` against an
- * already-false digest is a real patch about a real preference and writes; the ruled line is
- * about a caller that named no preference at all.
+ * The test is **CONTRIBUTION, not difference** (D-190-11 as clarified): a patch is empty when it
+ * contributes no well-formed entry after BOTH filters — unknown keys, and known keys carrying a
+ * value this module declines to use. `{ digest: 3 }` therefore writes nothing. `{ fork: false }`
+ * against an already-false fork DOES write, because it contributed a usable entry; the ruled line
+ * is about a caller that named no usable preference at all, never about whether anything moved.
  */
 export async function setPreferences(
   db: Db,
@@ -158,25 +159,30 @@ export async function setPreferences(
  * authority to change a setting — is never inherited.
  */
 /**
- * Whether `patch` names any of the four at all — D-190-11's test, and it is about PRESENCE.
+ * Whether `patch` contributes any WELL-FORMED entry — D-190-11 as clarified, and the boundary is
+ * **contribution, not difference**.
  *
- * Deliberately `Object.hasOwn` and not `readOffered`: the ruling says "empty after unknown-key
- * filtering", so what disqualifies a key is being unknown, not carrying a value this module
- * declines to use. `{ digest: 3 }` therefore WRITES the filled four while changing no
- * preference — it named a real preference badly rather than naming none.
+ * "Empty after filtering" means after BOTH filters: a key this module does not know, and a known
+ * key carrying a value it declines to use, each contribute nothing. So `{ digest: 3 }` writes
+ * nothing, on the ruling's own rationale — a write, and T050's `updated_at` bumped, as the
+ * consequence of nothing.
  *
- * **The narrower reading is defensible and I am not taking it**, because it is not what the
- * ruling says and this is a round charge: a patch whose only known key holds a non-boolean also
- * changes nothing, so bumping `updated_at` for it is the same "consequence of nothing". The two
- * readings differ on exactly one input, which the PATCH route already answers 400, so nothing
- * reaches it from HTTP. Flagged for the adversary rather than decided quietly.
+ * I first shipped this as `Object.hasOwn`, reading "unknown-key filtering" as the membership
+ * filter alone, and declared the narrower reading as the one I was not taking. It was ruled the
+ * other way, and the clarified line is better: the two filters exist for the same purpose, so
+ * splitting them would have made `{ digest: 3 }` and `{ sms: 3 }` behave differently for no
+ * reason a caller could see.
  *
- * `Object.hasOwn` for the reason `can` and `visibleTo` read every field that way: a `digest` that
- * exists only on a prototype has not been named, and authority is never inherited.
+ * **Contribution and not difference** is the other half, and it is why this asks `readOffered`
+ * rather than comparing against `current`: `{ fork: false }` on an already-false fork contributes
+ * a well-formed entry, so it is a real write and bumps the stamp. Only a caller that named no
+ * usable preference at all is the no-op.
+ *
+ * `readOffered` carries the `Object.hasOwn` gate, so a `digest` existing only on a prototype has
+ * not been named here either — authority is never inherited.
  */
 function offersAKnownKey(patch: Partial<Preferences>): boolean {
-  if (typeof patch !== "object" || patch === null) return false;
-  return EVENT_KINDS.some((kind) => Object.hasOwn(patch, kind));
+  return EVENT_KINDS.some((kind) => readOffered(patch, kind) !== undefined);
 }
 
 function readOffered(patch: Partial<Preferences>, kind: EventKind): boolean | undefined {
