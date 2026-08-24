@@ -381,6 +381,21 @@ export function watchEgress(allow: readonly Allowed[]): Egress {
 
   const record = (args: readonly unknown[]): void => {
     const first = args[0];
+    /* `net.connect(options, cb)` does NOT reach `Socket.prototype.connect` as
+       `(options, cb)`. `net.createConnection` runs Node's own `normalizeArgs` first and
+       passes the RESULT — the array `[options, cb]` — as a single argument, which the
+       prototype method recognises by a symbol stamped on it. So the options object is one
+       level down, and reading `.host` off the array answers `undefined` for every socket.
+
+       FOUND BY DRIVING THE OBSERVER, NOT BY READING IT. Before this line every connection
+       recorded as `localhost:` with an empty port, which made the DATABASE'S OWN socket
+       fail the allow list — so AC5's cells would have reported foreign egress against a
+       module that made no network call at all, and the cause would have looked like a
+       finding rather than like a broken instrument. */
+    if (Array.isArray(first)) {
+      record(first as readonly unknown[]);
+      return;
+    }
     if (typeof first === "object" && first !== null) {
       const o = first as { host?: unknown; port?: unknown; path?: unknown };
       if (typeof o.path === "string") connections.push(`unix:${o.path}`);
