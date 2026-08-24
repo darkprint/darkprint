@@ -46,7 +46,45 @@ export interface BlueprintViewInput {
  */
 export function toBlueprintView(input: BlueprintViewInput): Blueprint {
   const { blueprint, analysis, community } = input;
-  const { manifest } = blueprint;
+  /* Delegation, not computation: every derived value below is produced by the same three
+     functions with the same options the sibling's registry callers use, so there is ONE
+     implementation of doc 2 SS8's formulas and the two paths cannot drift (D-261-10; the
+     `termUsageOver`/`termUsageIndex` pattern, ratified at D-260-07, applied here). */
+  return blueprintViewOver({
+    manifest: blueprint.manifest,
+    digest: blueprint.digest,
+    cardRefs: blueprint.nodes.map((n) => n.ref),
+    graph: graphForBlueprint(blueprint, { cardsInRegistry: true }),
+    requiredAgents: requiredAgents(blueprint),
+    requiredTools: requiredTools(blueprint),
+    analysis,
+    community,
+    diagnostics: input.diagnostics,
+  });
+}
+
+/**
+ * The projection's assembled-values entry point (D-261-10): what `toBlueprintView` reads
+ * off a `ResolvedBlueprint`, taken as the five already-computed values instead — because
+ * the registry holds the OUTPUTS (`BlueprintSummary` + `BlueprintSchematic` + `Scores`)
+ * and no published reader returns the resolver's input type. The six metric formulas,
+ * the band-ordinal strip and the seeded-community sentences live HERE alone; a registry
+ * page and the archive path render one implementation.
+ */
+export interface AssembledViewInput {
+  manifest: import("@/lib/core").BundleManifest;
+  digest: string;
+  cardRefs: readonly string[];
+  graph: Blueprint["graph"];
+  requiredAgents: readonly string[];
+  requiredTools: readonly string[];
+  analysis: BlueprintAnalysis;
+  community: CommunitySignals;
+  diagnostics?: readonly Diagnostic[];
+}
+
+export function blueprintViewOver(input: AssembledViewInput): Blueprint {
+  const { manifest, analysis, community } = input;
 
   const { autonomyClass, isDarkFactory, level, label } = analysis.autonomy;
 
@@ -71,12 +109,15 @@ export function toBlueprintView(input: BlueprintViewInput): Blueprint {
       blurb: AUTONOMY_BLURB[autonomyClass],
     },
     metrics: metricsFor(analysis, community),
-    /* The one caller looking at the archive, so the one caller that can promise a page
-       exists behind every card ref. That promise is what lets the schematic link a node
-       to its card (spec part 3); see `GraphSeedOptions`. */
-    graph: graphForBlueprint(blueprint, { cardsInRegistry: true }),
-    requiredAgents: requiredAgents(blueprint),
-    requiredTools: requiredTools(blueprint),
+    /* For the archive caller these three arrive from `graphForBlueprint(blueprint,
+       { cardsInRegistry: true })` and its two siblings via the delegate above — the one
+       caller that can promise a page behind every card ref (spec part 3, `GraphSeedOptions`).
+       Registry callers hand in `BlueprintSchematic`'s members, computed by the identical
+       calls (`registry/graphs.ts`). Copied, not aliased, so a frozen input cannot make one
+       caller's `Blueprint` mutable and the other's not. */
+    graph: input.graph,
+    requiredAgents: [...input.requiredAgents],
+    requiredTools: [...input.requiredTools],
     createdAt: manifest.createdAt ?? "",
     updatedAt: manifest.updatedAt ?? manifest.createdAt ?? "",
     downloads: community.downloads,
@@ -110,8 +151,8 @@ export function toBlueprintView(input: BlueprintViewInput): Blueprint {
       phaseCoverage: analysis.phaseCoverage,
       diagnostics: [...(input.diagnostics ?? analysis.diagnostics)],
     },
-    digest: blueprint.digest,
-    cardRefs: blueprint.nodes.map((n) => n.ref),
+    digest: input.digest,
+    cardRefs: [...input.cardRefs],
   };
 }
 

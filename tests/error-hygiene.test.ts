@@ -284,7 +284,11 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
     /* 48 -> 50 at T220's merge: lib/server/mcp publishes McpRefusedError and McpStoreError
        (D-220-06), exactly two, ExportError wrapped at the boundary so the surface refuses
        with one voice. Derived here. */
-    ).toBe(50);
+    /* 50 -> 51 at T131's merge (`ProfileRefusedError`, D-131-12's round) — derived at the merge
+       commit by the walk, the first class added to an ALREADY-SHIPPED barrel (the guard's
+       protection gates the enumeration of barrels, not the classes inside them — measured by
+       T131's implementer, which predicted this exact red). */
+    ).toBe(51);
 
     const rendered: string[] = [];
     const traceless: string[] = [];

@@ -255,7 +255,7 @@ export const PUBLISHED_READERS = {
   graphsOf:
     "graphsOf(db: Db, actor: Actor, keys: readonly BlueprintKey[]): " +
     "Promise<ReadonlyMap<string, { graph: BlueprintGraph; requiredAgents: readonly " +
-    "string[]; requiredTools: readonly string[] }>>",
+    "string[]; requiredTools: readonly string[]; diagnostics: readonly Diagnostic[] }>>",
   scoresFor:
     "scoresFor(db: Db, actor: Actor, keys: readonly BlueprintKey[]): " +
     "Promise<ReadonlyMap<string, Scores>>",

@@ -125,7 +125,8 @@ export const PUBLISHED = {
   graphsOf:
     "graphsOf(db: Db, actor: Actor, keys: readonly BlueprintKey[]): " +
     "Promise<ReadonlyMap<string, { graph: BlueprintGraph; requiredAgents: readonly " +
-    "string[]; requiredTools: readonly string[] }>> — D-132-01, keyed " +
+    "string[]; requiredTools: readonly string[]; diagnostics: readonly Diagnostic[] " +
+    "(D-261-07(2), the resolver's non-error list) }>> — D-132-01, keyed " +
     "`${ownerHandle}/${slug}`, BATCH so /blueprints makes one call; an absent entry means " +
     "not visible or not resolvable and is a VALUE, not a refusal",
   scoresFor:

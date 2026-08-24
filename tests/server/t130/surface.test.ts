@@ -87,7 +87,7 @@ describe("the barrel publishes exactly what the block names", () => {
 });
 
 describe("ProfileRecord is the shape the block declares", () => {
-  it("carries exactly the three published members and nothing else", async () => {
+  it("carries exactly the seven published members and nothing else", async () => {
     const getProfile = await bind("getProfile");
     const record = await getProfile(s.db, account(owner.id, owner.handle), owner.handle);
     asProfileRecord(record, `getProfile(db, owner, "${owner.handle}")`);
