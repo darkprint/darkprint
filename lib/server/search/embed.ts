@@ -161,6 +161,15 @@ const MODEL_ROOT = "models";
  */
 const MODEL_DTYPE = "q8";
 
+/**
+ * The text the width is proved against at load.
+ *
+ * A literal rather than an empty string: every text reaches the same 384 columns, so the
+ * content is irrelevant to the measurement, and a reader should not have to wonder whether
+ * the empty case was chosen for a reason it no longer has.
+ */
+const WIDTH_PROBE = "dimension probe";
+
 /** The shape this module uses, written out rather than imported. See `load()`. */
 interface Encoder {
   (text: string, options: { pooling: "mean"; normalize: boolean }): Promise<{
@@ -196,6 +205,7 @@ interface TransformersModule {
 let loading: Promise<Encoder | undefined> | undefined;
 
 async function load(): Promise<Encoder | undefined> {
+  let extract: Encoder;
   try {
     /* The specifier is a VARIABLE, and both halves of that are load-bearing.
        
@@ -220,14 +230,44 @@ async function load(): Promise<Encoder | undefined> {
     mod.env.allowLocalModels = true;
     mod.env.localModelPath = MODEL_ROOT;
 
-    return await mod.pipeline("feature-extraction", MODEL_ID, { dtype: MODEL_DTYPE });
+    extract = await mod.pipeline("feature-extraction", MODEL_ID, { dtype: MODEL_DTYPE });
   } catch {
     /* Swallowed, and it is the one place in this module that swallows anything. The two
        reachable causes — the package is not installed, the model directory is not
        provisioned — are the SAME condition from a caller's point of view: there is no
-       encoder on this machine. `withSearchStore` seals real faults; this is not one. */
+       encoder on this machine. `withSearchStore` seals real faults; this is not one.
+
+       ONLY THE LOAD IS INSIDE THIS BLOCK, and the width probe below is deliberately outside
+       it: an ABSENT encoder degrades, a WRONG one does not, and the two must not be able to
+       collapse into each other here. */
     return undefined;
   }
+
+  /* THE WIDTH IS PROVED ONCE, HERE, AND NOT ON EVERY CALL (D-300-06's arm 3).
+
+     A directory holding a model of another width is a MISPROVISIONING, not an absence, and
+     it stays LOUD: absent is legible and self-announcing, wrong is a defect somebody has to
+     go and find, so degrading on it would be the worse failure. What moved is WHERE it
+     surfaces. The check used to run inside `embed`, which since D-300-06 F4.2 means inside
+     `publish()`'s transaction, once per card — so a misprovisioned box announced itself on
+     the fifty-seventh card of a publish that then rolled back. Now it announces itself once
+     per process, at load, naming the directory, before a single row is written.
+
+     `loading` memoises this rejection, so every later caller re-throws the same named fault
+     rather than re-probing a model that cannot have changed under a running process. That
+     is also why `encoderAvailable()` THROWS here rather than answering `false`: answering
+     false would let a wrong model masquerade as an absent one, which is the exact collapse
+     this arm exists to prevent. */
+  const probe = await extract(WIDTH_PROBE, { pooling: "mean", normalize: true });
+  if (probe.data.length !== EMBEDDING_DIMENSIONS) {
+    throw new Error(
+      `The encoder in ${MODEL_ROOT}/${MODEL_ID} produced ${probe.data.length} dimensions, ` +
+        `but \`release_embedding.embedding\` and \`card_version_embedding.embedding\` are ` +
+        `\`vector(${EMBEDDING_DIMENSIONS})\` (D-200-02) and pgvector refuses any other width. ` +
+        `That directory holds a model this schema cannot store.`,
+    );
+  }
+  return extract;
 }
 
 function encoder(): Promise<Encoder | undefined> {
@@ -262,22 +302,11 @@ export async function embed(text: string): Promise<number[] | undefined> {
   const extract = await encoder();
   if (extract === undefined) return undefined;
 
+  /* No width check here any more: `load` proved it once for this process (D-300-06's arm 3).
+     Re-checking per call would re-measure a constant, and it put the failure inside a
+     publish transaction instead of at the point the model was chosen. */
   const output = await extract(text, { pooling: "mean", normalize: true });
-  const vector = Array.from(output.data);
-
-  /* A width mismatch is NOT the absent-encoder case and is not degraded into it. It means
-     the provisioned directory holds a different model, and the alternative to a throw here
-     is a pgvector insert that fails further away with a message about a column. Loud, with
-     the number, because the operator can only fix what the message names. */
-  if (vector.length !== EMBEDDING_DIMENSIONS) {
-    throw new Error(
-      `The encoder in ${MODEL_ROOT}/${MODEL_ID} produced ${vector.length} dimensions, ` +
-        `but \`release_embedding.embedding\` and \`card_version_embedding.embedding\` are ` +
-        `\`vector(${EMBEDDING_DIMENSIONS})\` (D-200-02) and pgvector refuses any other width. ` +
-        `That directory holds a model this schema cannot store.`,
-    );
-  }
-  return vector;
+  return Array.from(output.data);
 }
 
 /**
