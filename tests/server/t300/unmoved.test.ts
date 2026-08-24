@@ -46,6 +46,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { findWord } from "@/lib/server/search/text";
+import { SIMILAR_MIN, embed } from "@/lib/server/search/embed";
 
 import {
   PROVISIONING_CAVEAT,
@@ -172,6 +173,17 @@ let w: World;
  * two corpora, and putting them in one file is what keeps the second from being read as a
  * separate subject rather than as this one's control.
  */
+/**
+ * The largest cosine between `missToken` and any STORED T200 release vector, on this run's
+ * draw, and the number the cell below decides on.
+ *
+ * Read off `release_embedding` rather than recomputed from the manifest: the stored vector is
+ * what the searcher's SQL actually compares against, so reconstructing the document here
+ * would introduce a second derivation that could disagree with the module for reasons that
+ * have nothing to do with the property being tested.
+ */
+let missMaxCosine = Number.NaN;
+
 let live: Scratch;
 let liveWorld: LiveWorld;
 const liveBefore = new Map<string, Results>();
@@ -209,6 +221,19 @@ beforeAll(async () => {
 
     for (const probe of PROBES) {
       after.set(probe.label, await search(probe.name, s.db, anonymous, probe.params()));
+    }
+
+    /* The draw's own number, measured against the vectors the searcher reads. `embedding` is
+       `vector(384)` rendered as `[a,b,...]`; both sides are unit-normalised by the encoder,
+       so the dot product IS the cosine. */
+    const queryVector = await embed(w.missToken);
+    if (queryVector !== undefined) {
+      const stored = (await releaseEmbeddings(s)).map((row) =>
+        row.embedding.replace(/^\[|\]$/g, "").split(",").map(Number),
+      );
+      missMaxCosine = Math.max(
+        ...stored.map((v) => v.reduce((acc, x, i) => acc + x * queryVector[i], 0)),
+      );
     }
 
     /* The same experiment over English prose. Its own database, so a vector written for one
@@ -322,35 +347,78 @@ describe("the channel is live over this world, or the file below measures nothin
     ).toEqual([]);
   });
 
-  it("MY STATED LIMIT WAS FALSE: T200's own tokens DO reach the channel", () => {
+  it("the channel agrees with its own published cutoff on THIS draw, either way", () => {
     setup.check();
     const miss = after.get("a blueprint query matching nothing") as Results;
-    const seen = channels(miss);
+    const semantic = channels(miss).filter((c) => c === "semantic").length;
+
     expect(
-      seen.filter((c) => c === "semantic").length,
-      `THIS CELL ASSERTED THE OPPOSITE TWICE AND WAS WRONG BOTH TIMES. The record matters ` +
-        `more than the assertion, so it is here rather than in a report nobody reads.\n` +
-        `  I first wrote it as "the channel fires over T200's world" and it reddened. I then ` +
-        `flipped it to "the channel CANNOT reach T200's world", called that an independent ` +
-        `second witness for D-300-04 D3, and said it was STRONGER than D3's own reason ` +
-        `because it would survive someone wiring a publish trigger into those fixtures. The ` +
-        `implementer challenged that and it is false.\n` +
-        `  MY ERROR WAS THE PROBE FAMILY. I measured with English paraphrases, which are the ` +
-        `hardest possible case for a high cosine, and then generalised from one family to a ` +
-        `property of the whole world. T200's 240 cells do not search with English. They search ` +
-        `with MINTED TOKENS, and \`fixtures.ts:166\` builds every one of them as ` +
-        `\`prefix + base26(pid) + "q" + base26(counter)\` — so within a run they all share the ` +
-        `\`<pid>q\` infix and are near-duplicate STRINGS of each other. A subword tokenizer sees ` +
-        `heavy overlap, and \`queryToken\` is IN the documents. \`missToken\` is near a document ` +
-        `precisely because it looks like the token that document contains.\n` +
-        `  Measured end-to-end against the LIVE world rather than a reconstruction, with both ` +
-        `vector tables populated: \`q=missToken\` answers THREE hits, every one of them ` +
-        `\`similar:purpose\`. \`soloToken\` and \`descToken\` answer one lexical hit and two ` +
-        `semantic ones each. Only the English probe answers nothing.\n` +
-        `  SO T200's WORLD IS NOT UNUSUALLY SAFE FROM THE CHANNEL, IT IS UNUSUALLY EXPOSED TO ` +
-        `IT, because its search tokens are minted to be near-identical to one another.\n` +
-        `  channels by rank: ${seen.join(", ") || "(no hits)"}`,
-    ).toBeGreaterThan(0);
+      Number.isNaN(missMaxCosine),
+      "the premise: the encoder is present, so there is a cosine to decide on",
+    ).toBe(false);
+
+    /* ── WHY THIS CELL IS A BICONDITIONAL AND NOT AN ASSERTION ──
+
+       It asserted "the tokens DO reach the channel" and it was PID-FLAKY: 36/36, 36/36,
+       then one red in ~12ms on the same tree and the same database. The causal path is real
+       and runs through `base26(pid)`. `fixtures.ts:166` mints every T200 token from the
+       process id, the minted tokens' cosines sit within ~0.06 of `SIMILAR_MIN`, and my own
+       confirmation measured six draws in 0.217-0.328 — a floor 0.017 above the cutoff. A
+       draw below it makes the sentence false of that run while leaving the mechanism true,
+       which is a flake by construction and exactly what this project calls a red with no
+       causal path to its subject.
+
+       Neither obvious repair is good enough. Gating the assertion on the draw leaves a cell
+       that can only pass on a low draw, which is the shape I spent this round charging other
+       people for. Pinning the seed would need `word()` changed, and `word()` is T200's,
+       shared by 240 merged cells.
+
+       So the cell tests the IMPLICATION IN BOTH DIRECTIONS, which is total, deterministic
+       given the draw, and falsifiable on either branch:
+
+           cosine >= SIMILAR_MIN  =>  a semantic hit must arrive
+           cosine <  SIMILAR_MIN  =>  no semantic hit may arrive
+
+       That is strictly MORE than the flaky version tested. The old cell could only ever say
+       "the exposure is real on this draw". This one says the searcher's SQL floor agrees with
+       the constant `embed.ts` publishes — `lte(distance, 1 - SIMILAR_MIN)` against a cosine
+       computed directly from the stored vector — which nothing else in this suite checks and
+       which a wrong comparison operator or an off-by-one on `1 - tau` would break. */
+    const shouldReach = missMaxCosine >= SIMILAR_MIN;
+    expect(
+      semantic > 0,
+      `The searcher and its own published cutoff must agree about this draw.\n` +
+        `  q = missToken, and the largest cosine to any STORED T200 release vector is ` +
+        `${missMaxCosine.toFixed(4)} against SIMILAR_MIN = ${SIMILAR_MIN}.\n` +
+        `  So the channel ${shouldReach ? "MUST" : "must NOT"} return a semantic hit here, and ` +
+        `it returned ${semantic}.\n` +
+        `  ── what a red means, by branch ──\n` +
+        `  cosine ABOVE the cutoff and no hit: the tail is being dropped somewhere between the ` +
+        `distance query and the response — a filter, a k of zero, or a threshold applied twice.\n` +
+        `  cosine BELOW the cutoff and a hit: the SQL floor does not mean what the constant ` +
+        `says. \`similarCandidates\` filters on \`lte(distance, 1 - SIMILAR_MIN)\`, so an ` +
+        `operator flip or a missing \`1 -\` puts rows in the tail that the published number ` +
+        `excludes, and the calibration table stops describing what ships.\n` +
+        `  NEITHER branch is about the pid draw. Which branch runs is; whether the branch ` +
+        `holds is not.`,
+    ).toBe(shouldReach);
+  });
+
+  it("and the exposure the cell above measures is REAL, which is what AC2 rests on", () => {
+    setup.check();
+    expect(
+      missMaxCosine,
+      `The durable claim, separated from the flaky one so it cannot go down with it.\n` +
+        `  T200's tokens are near-duplicate STRINGS of each other — \`fixtures.ts:166\` builds ` +
+        `every one as \`prefix + base26(pid) + "q" + base26(counter)\`, so they share the ` +
+        `\`<pid>q\` infix, and \`queryToken\` is IN the documents. \`missToken\` is near a ` +
+        `document precisely because it looks like the token that document contains.\n` +
+        `  That puts its cosine in the SAME BAND as the cutoff rather than far below it, which ` +
+        `is the fact AC2 over T200 actually turns on. This cell asserts the band, not the side ` +
+        `of the line — 0.10 is a floor no draw in seven measured has come near, and it stays ` +
+        `true on a draw that happens to fall below \`SIMILAR_MIN\`.\n` +
+        `  measured this run: ${missMaxCosine.toFixed(4)}, against a cutoff of ${SIMILAR_MIN}`,
+    ).toBeGreaterThan(0.1);
   });
 
   it("so AC2 over T200 rests on those fixtures holding NO embeddings, and on nothing else", () => {
