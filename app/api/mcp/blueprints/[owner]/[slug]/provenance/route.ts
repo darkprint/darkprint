@@ -22,21 +22,26 @@
 
 import { getSharedDbClient } from "@/lib/db";
 import { ok } from "@/lib/server/http";
-import { mcpProvenance, withMcpErrors } from "@/lib/server/mcp";
+import { withLimitsErrors } from "@/lib/server/limits";
+import { enforceMcpLimit, mcpProvenance, withMcpErrors } from "@/lib/server/mcp";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ owner: string; slug: string }> },
 ): Promise<Response> {
-  return withMcpErrors(request, async () => {
-    const { owner, slug } = await params;
-    const { db } = getSharedDbClient();
+  return withLimitsErrors(request, () =>
+    withMcpErrors(request, async () => {
+      const { owner, slug } = await params;
+      const { db } = getSharedDbClient();
+      await enforceMcpLimit(db, request);
 
-    /* Written out rather than read off the request, and that is the criterion rather than a
-       shortcut. D-220-03 makes the MCP surface public-only for EVERY caller, and
-       `mcpProvenance` overrides whatever it is handed — so passing `actorFrom(request)` here
-       would put a session cookie in a signature that ignores it and invite the next reader
-       to assume it widens the answer. This route cannot widen the surface even by accident. */
-    return ok(await mcpProvenance(db, { kind: "anonymous" }, owner, slug));
-  });
+      /* Written out rather than read off the request, and that is the criterion rather than a
+         shortcut. D-220-03 makes the MCP surface public-only for EVERY caller, and
+         `mcpProvenance` overrides whatever it is handed — so passing `actorFrom(request)`
+         here would put a session cookie in a signature that ignores it and invite the next
+         reader to assume it widens the answer. This route cannot widen the surface even by
+         accident. */
+      return ok(await mcpProvenance(db, { kind: "anonymous" }, owner, slug));
+    }),
+  );
 }

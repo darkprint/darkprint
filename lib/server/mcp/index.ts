@@ -47,7 +47,7 @@ export { withMcpStore } from "./store";
    route handlers and nothing else (D-01); T080, T050, T110 and T230 put theirs in the same
    place. Published because `app/api/mcp/**` is this task's own (D-220-10) and a route that
    cannot name the wrapper cannot use it. */
-export { withMcpErrors } from "./http";
+export { enforceMcpLimit, mcpSubject, withMcpErrors } from "./http";
 
 export { mcpSearch } from "./search";
 export { mcpReadCard } from "./read-card";

@@ -31,18 +31,22 @@
 
 import { getSharedDbClient } from "@/lib/db";
 import { ok } from "@/lib/server/http";
-import { mcpFetchRelease, withMcpErrors } from "@/lib/server/mcp";
+import { withLimitsErrors } from "@/lib/server/limits";
+import { enforceMcpLimit, mcpFetchRelease, withMcpErrors } from "@/lib/server/mcp";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ owner: string; slug: string; digest: string }> },
 ): Promise<Response> {
-  return withMcpErrors(request, async () => {
-    const { owner, slug, digest } = await params;
-    const { db } = getSharedDbClient();
+  return withLimitsErrors(request, () =>
+    withMcpErrors(request, async () => {
+      const { owner, slug, digest } = await params;
+      const { db } = getSharedDbClient();
+      await enforceMcpLimit(db, request);
 
-    /* Public-only for every caller (D-220-03); see the provenance route's note. */
-    const files = await mcpFetchRelease(db, { kind: "anonymous" }, owner, slug, digest);
-    return ok({ files: files.map((file) => file.path) });
-  });
+      /* Public-only for every caller (D-220-03); see the provenance route's note. */
+      const files = await mcpFetchRelease(db, { kind: "anonymous" }, owner, slug, digest);
+      return ok({ files: files.map((file) => file.path) });
+    }),
+  );
 }
