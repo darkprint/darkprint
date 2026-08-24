@@ -139,11 +139,8 @@ describe("D-261-07(6): the blueprint CLI spelling moves with the URL", () => {
    * command the page actually builds — and after B-09 a bare slug names nothing that
    * resolves.
    */
-  it.each([
-    ["the blueprint detail page", () => blueprintPage()],
-    [BUNDLE_LOAD, () => sources([BUNDLE_LOAD], 1)[0].raw],
-  ] as const)("%s emits an owner-qualified clone command", (_label, read) => {
-    const raw = read();
+  it("the blueprint detail page emits an owner-qualified clone command", () => {
+    const raw = blueprintPage();
     const commands = [...raw.matchAll(/darkprint clone ([^`"'\n]*)/g)].map(([, rest]) => rest.trim());
 
     expect(
@@ -154,9 +151,9 @@ describe("D-261-07(6): the blueprint CLI spelling moves with the URL", () => {
     ).toBeGreaterThan(0);
 
     for (const rest of commands) {
-      // `card ...` is the node verb and is ruled unchanged; it does not appear in these two
-      // files today and is skipped rather than asserted about, so this cell stays about
-      // blueprints even if a file ever carries both.
+      // `card ...` is the node verb and is ruled unchanged; it does not appear on this
+      // page today and is skipped rather than asserted about, so this cell stays about
+      // blueprints even if one file ever carries both.
       if (rest.startsWith("card ")) continue;
       expect(
         rest,
@@ -168,6 +165,51 @@ describe("D-261-07(6): the blueprint CLI spelling moves with the URL", () => {
           `D-261-07(6) rules this spelling becomes \`darkprint clone {ownerHandle}/{slug}\`.`,
       ).toMatch(/\$\{[^}]*(owner|handle)[^}]*\}\//i);
     }
+  });
+
+  /**
+   * `components/bundle/load.ts` used to be the second arm of the cell above, and that was
+   * WRONG IN BOTH DIRECTIONS — the finding is D-261-16's.
+   *
+   * It still spells the pre-B-09 `darkprint clone ${slug}` at `:200`, and it reaches no
+   * reader: `publishedBundleSections` is called only by `bundleView`, `bundleView` has no
+   * callers, `ownedBundleParams` has no callers. A closed cluster with no external entry
+   * point, left behind when `/u/[username]/[slug]` became an unconditional redirector.
+   * Measured repo-wide excluding `node_modules` and `.next`.
+   *
+   * So the old cell charged a reader-facing copy defect against code no reader can reach —
+   * AND it would have gone GREEN if that dead code were simply deleted while the live page
+   * stayed wrong. It bound a FILE instead of a rendered surface.
+   *
+   * The honest claim in its place is the one that is actually true and actually load-bearing:
+   * the stale spelling is unreachable, and must stay unreachable until it is deleted
+   * (D-261-16 assigns that deletion to the orchestrator's merge-adjacent commit). If anyone
+   * wires this cluster back onto a page while it still carries the old command, this reds.
+   */
+  it("the stale clone spelling in components/bundle/load.ts reaches no reader", () => {
+    const [load] = sources([BUNDLE_LOAD], 1);
+    const stale = /darkprint clone \$\{slug\}/.test(load.raw);
+    if (!stale) return; // deleted under D-261-16; nothing left to be unreachable.
+
+    /* Named, not walked: these are every module that could put a clone line on screen. A
+       walk that stopped matching would report "no callers" for the wrong reason. */
+    const CALLERS = [
+      "app/blueprints/[owner]/[slug]/page.tsx",
+      "app/nodes/[...id]/page.tsx",
+      "components/bundle/BundleHeader.tsx",
+      "components/blueprint/CloneMenu.tsx",
+      "components/blueprint/DownloadPanel.tsx",
+    ];
+    const wired = sources(CALLERS, CALLERS.length).filter((file) =>
+      /\b(publishedBundleSections|bundleView|ownedBundleParams)\b/.test(file.raw),
+    );
+
+    expect(
+      wired.map((f) => f.path),
+      "a rendering surface now imports the dead bundle-view cluster, which still spells " +
+        "`darkprint clone ${slug}` — the pre-B-09 command that resolves to nothing. Either " +
+        "delete the cluster (D-261-16) or fix its spelling before wiring it to a page.",
+    ).toEqual([]);
   });
 
   it(`${NODE_PAGE} keeps the withdrawn card verb unchanged`, () => {

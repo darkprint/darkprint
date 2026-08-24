@@ -62,9 +62,12 @@ let previousUrl: string | undefined;
 
 /** Invoke the redirector the way Next invokes it, and say what it did. */
 async function visit(slug: string, query: Record<string, string> = {}) {
-  const mod = (await import("@/app/blueprints/[slug]/page")) as {
+  const mod = (await import("@/app/blueprints/[owner]/page")) as {
     default?: (props: {
-      params: Promise<{ slug: string }>;
+      /* The slot is named `owner` and the value is the legacy SLUG (D-261-17): one param
+         name per slot at the runtime matcher, so the redirector shares the canonical
+         route's first segment rather than owning a `[slug]` slot of its own. */
+      params: Promise<{ owner: string }>;
       searchParams: Promise<Record<string, string>>;
     }) => unknown;
   };
@@ -73,7 +76,7 @@ async function visit(slug: string, query: Record<string, string> = {}) {
     throw new Error(`${ROUTES.redirector} has no default export to invoke.`);
   }
   return await outcomeOf(() =>
-    page({ params: Promise.resolve({ slug }), searchParams: Promise.resolve(query) }),
+    page({ params: Promise.resolve({ owner: slug }), searchParams: Promise.resolve(query) }),
   );
 }
 

@@ -1,131 +1,150 @@
 /* ============================================================
-   T261 — the route tree the migration produces, and the page it
-   forecloses.
+   T261 / D-261-17 — the route tree, held against BOTH validators,
+   because buildable is not routable.
 
-   ── the near-miss this file is written out of ──
-   The first instrument I reached for was `getSortedRoutes`
-   (`next/dist/shared/lib/router/utils/sorted-routes.js`), which
-   throws on D-261-02's ruled shape:
+   ── this file's first version drew the wrong conclusion ──
+   It measured that `validateAppPaths` accepts
+   `app/blueprints/[slug]` beside `app/blueprints/[owner]/[slug]`,
+   and concluded D-261-02's ruled shape was buildable — treating
+   the `getSortedRoutes` throw it had also seen as coming from an
+   instrument the App Router does not run. That was wrong, and the
+   shipped tree is the proof: the redirector lives in the SHARED
+   `[owner]` slot, not in a `[slug]` slot of its own.
 
-     "You cannot use different slug names for the same dynamic
-      path ('slug' !== 'owner')."
+   Next validates routes TWICE and both govern:
 
-   That is a TRUE throw from an instrument the App Router build
-   DOES NOT RUN. `next/dist/build/index.js:715` calls
-   `validateAppPaths`, whose own comment says it replaces that
-   logic; it groups routes by FULL normalized structure, and a
-   one-segment wildcard structure is not the two-segment one, so
-   they do not conflict. Re-measured on the validator that runs,
-   D-261-02's shape is buildable — and it is pinned here so the
-   next reader does not have to rediscover which of the two
-   validators is the live one.
+     validateAppPaths      build/validate-app-paths.js
+                           called from build/index.js:715
+                           groups by FULL normalized structure, so a
+                           one-segment shape beside a two-segment one
+                           does not conflict -> ACCEPTS the pair
 
-   ── the consequence, which is the point ──
-   The redirector at `app/blueprints/[slug]/` and a page at
-   `app/blueprints/[owner]/` are the SAME structure with different
-   slug names, and that pair really does throw. So for as long as
-   the redirector lives, NO PAGE MAY EVER SIT AT
-   `/blueprints/{owner}` — T261's `Owns` line reads
-   `app/blueprints/[owner]/**` and means, in practice,
-   `app/blueprints/[owner]/[slug]/**` only.
+     getSortedRoutes       shared/lib/router/utils/sorted-routes.js
+                           called from server/route-matcher-managers/
+                           default-route-matcher-manager.js at RUNTIME,
+                           over the App Router's dynamic matchers, when
+                           the server sorts routes for matching
+                           -> THROWS "You cannot use different slug
+                              names for the same dynamic path"
 
-   A future owner-index attempt would otherwise fail inside
-   `next build`, in a message about slug names, at a moment when
-   nobody is looking for a ruling. It fails here instead, with the
-   ruling's name on it.
+   So the refused shape BUILDS CLEAN AND FAILS WHEN THE SERVER
+   MATCHES. Only real HTTP finds it, which is why the round needed a
+   curl window to discover what a green build had hidden.
 
-   ── every cell binds the validator LAST ──
-   `validateAppPaths` is reached through a deep `next/dist` path.
-   Binding it at file scope would make an absent or renamed module
-   red every cell below with a message about route shapes, which
-   would be a claim about Next's packaging wearing the clothes of a
-   claim about this repository's routes.
+   ── what this file asserts now ──
+   The SHIPPED shape passes both. The refused shape passes one and
+   fails the other, and it is the SECOND one that decides. And the
+   runtime call site is asserted to still exist, because the whole
+   claim above rests on it and a silent move would leave these cells
+   measuring a validator nobody runs.
    ============================================================ */
+
+import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
 type Validate = (paths: string[]) => unknown;
 
-/** Bound per cell, never at file scope. See the header. */
-async function validator(): Promise<Validate> {
+/** Bound per cell, never at file scope: an absent module must not red every claim here. */
+async function buildValidator(): Promise<Validate> {
   const mod = await import("next/dist/build/validate-app-paths.js");
   const fn = (mod as { validateAppPaths?: Validate }).validateAppPaths;
   if (typeof fn !== "function") {
-    throw new Error(
-      "`next/dist/build/validate-app-paths.js` no longer exports `validateAppPaths`. " +
-        "Next's app-path validation has moved; find where `build/index.js` calls it now " +
-        "before trusting anything below.",
-    );
+    throw new Error("`validateAppPaths` is gone; find what `build/index.js` calls instead.");
   }
   return fn;
 }
 
-/** Whether a set of app paths survives the validator the build actually runs. */
-async function accepts(paths: string[]): Promise<{ ok: boolean; message: string }> {
-  const validate = await validator();
+async function matchSorter(): Promise<Validate> {
+  const mod = await import("next/dist/shared/lib/router/utils/sorted-routes.js");
+  const fn = (mod as { getSortedRoutes?: Validate }).getSortedRoutes;
+  if (typeof fn !== "function") {
+    throw new Error("`getSortedRoutes` is gone; find what the route matcher sorts with instead.");
+  }
+  return fn;
+}
+
+async function verdict(validate: Promise<Validate>, paths: string[]) {
+  const fn = await validate;
   try {
-    validate(paths);
+    fn(paths);
     return { ok: true, message: "" };
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : String(error) };
   }
 }
 
-const REDIRECTOR = "/blueprints/[slug]/page";
-const CANONICAL = "/blueprints/[owner]/[slug]/page";
-const SHELF = "/blueprints/page";
-const OWNER_INDEX = "/blueprints/[owner]/page";
+/* App-path spellings for the build validator, and bare pathnames for the matcher: the two
+   take different shapes, which is itself part of why they are easy to confuse. */
+const SHIPPED_APP = ["/blueprints/page", "/blueprints/[owner]/page", "/blueprints/[owner]/[slug]/page"];
+const SHIPPED_PATHS = ["/blueprints", "/blueprints/[owner]", "/blueprints/[owner]/[slug]"];
+const REFUSED_APP = ["/blueprints/page", "/blueprints/[slug]/page", "/blueprints/[owner]/[slug]/page"];
+const REFUSED_PATHS = ["/blueprints", "/blueprints/[slug]", "/blueprints/[owner]/[slug]"];
 
-describe("D-261-02's ruled route shape is buildable", () => {
-  it("accepts the redirector beside the canonical detail route", async () => {
-    const result = await accepts([SHELF, REDIRECTOR, CANONICAL]);
+describe("D-261-17: the shipped shape passes BOTH validators", () => {
+  it("builds", async () => {
+    const r = await verdict(buildValidator(), SHIPPED_APP);
+    expect(r.ok, `the shipped app paths are rejected at build:\n${r.message}`).toBe(true);
+  });
+
+  it("routes", async () => {
+    const r = await verdict(matchSorter(), SHIPPED_PATHS);
     expect(
-      result.ok,
-      `the ruled shape is rejected by the validator \`next build\` runs:\n${result.message}\n\n` +
-        `If this reds, D-261-02's mechanism does not exist and AC1 has no carrier. Do not ` +
-        `"fix" it by renaming a segment — the segment names are the ruling.`,
+      r.ok,
+      `the shipped routes are rejected by the RUNTIME matcher:\n${r.message}\n\n` +
+        `This is the check a green build does not make. One param name per slot is why the ` +
+        `legacy redirector shares \`[owner]\` instead of owning a \`[slug]\` slot.`,
     ).toBe(true);
-  });
-
-  /*
-   * The positive control, and without it the cell above is resolution rather than
-   * discrimination: a validator that accepted everything would pass it. This pair is the
-   * one the migration must never produce, so the control and the foreclosure are the same
-   * measurement read twice.
-   */
-  it("still rejects a genuinely ambiguous pair, so the acceptance above means something", async () => {
-    const result = await accepts([REDIRECTOR, OWNER_INDEX]);
-    expect(
-      result.ok,
-      "`validateAppPaths` accepted `[slug]` and `[owner]` as siblings at one level. It has " +
-        "stopped discriminating, so every acceptance in this file is vacuous.",
-    ).toBe(false);
-    expect(result.message).toMatch(/Ambiguous|slug names/i);
-  });
-
-  it("accepts the canonical route on its own, and the shipped /u tree", async () => {
-    // Two negative controls: the acceptance is not an artefact of the redirector's presence,
-    // and the validator agrees with a tree this repository already ships and builds.
-    expect((await accepts([SHELF, CANONICAL])).ok).toBe(true);
-    expect((await accepts(["/u/[username]/page", "/u/[username]/[slug]/page"])).ok).toBe(true);
   });
 });
 
-describe("and it forecloses a page at /blueprints/{owner}", () => {
+describe("D-261-17: the refused shape is the one that separates them", () => {
   /*
-   * D-261-07's record, pinned suite-side.
-   *
-   * This is the same fact as the positive control above, asserted as a CONSTRAINT ON THIS
-   * TASK rather than as a property of Next: `Owns: app/blueprints/[owner]/**` cannot mean
-   * an owner index while the redirector holds `[slug]`.
+   * The whole ruling in two cells. If BOTH of these ever agreed — either both accepting or
+   * both rejecting — the distinction this file exists for would be gone, and so would the
+   * reason the shipped tree is shaped the way it is.
    */
-  it("cannot host an owner index while the redirector holds [slug]", async () => {
-    const result = await accepts([SHELF, REDIRECTOR, CANONICAL, OWNER_INDEX]);
+  it("BUILDS CLEAN, which is what made it look correct", async () => {
+    const r = await verdict(buildValidator(), REFUSED_APP);
     expect(
-      result.ok,
-      "an owner index at `/blueprints/{owner}` now builds, which means the redirector has " +
-        "left `app/blueprints/[slug]/`. Either B-09's old-URL 308 is gone — AC1 — or it moved " +
-        "somewhere this suite does not know about. Find it before adding the index.",
+      r.ok,
+      "`validateAppPaths` now rejects `[slug]` beside `[owner]/[slug]`. That is a stricter " +
+        "build than the one this round measured, and it would mean a green build no longer " +
+        "hides the defect — good news, and this file's argument needs rewriting rather than " +
+        "patching.",
+    ).toBe(true);
+  });
+
+  it("and FAILS AT THE RUNTIME MATCHER, which is what actually decides", async () => {
+    const r = await verdict(matchSorter(), REFUSED_PATHS);
+    expect(
+      r.ok,
+      "`getSortedRoutes` now ACCEPTS two param names in one slot. If that is real, the " +
+        "shared-slot redirector is no longer forced and D-261-02's original shape becomes " +
+        "available again — but nothing should be moved on this cell alone: the throw is what " +
+        "the shipped tree was built around.",
     ).toBe(false);
+    expect(r.message).toMatch(/different slug names/i);
+  });
+});
+
+describe("D-261-17: the runtime validator is really on the request path", () => {
+  /*
+   * Everything above rests on `getSortedRoutes` being reachable at request-matching time
+   * rather than being a Pages-era leftover — which is exactly the thing this file got wrong
+   * the first time. Asserted against the call site so the claim cannot rot silently: if the
+   * matcher stops sorting with it, these cells are measuring a validator nobody runs, and
+   * that is a different world from one where they simply pass.
+   */
+  it("the route matcher manager still sorts with getSortedRoutes", () => {
+    const path = "node_modules/next/dist/server/route-matcher-managers/default-route-matcher-manager.js";
+    const source = readFileSync(path, "utf8");
+    expect(
+      source,
+      `${path} no longer calls \`getSortedRoutes\`. The runtime half of D-261-17 rests on ` +
+        `this call: without it, "the router refuses two param names in one slot" may no ` +
+        `longer be true, and the cells above would be asserting a property of a module that ` +
+        `is no longer on the request path.`,
+    ).toContain("getSortedRoutes");
   });
 });

@@ -73,7 +73,10 @@ interface Frozen {
 const FROZEN: readonly Frozen[] = [
   {
     path: "components/panes/archive-labels.test.ts",
-    blob: "4c2d7d6be93bc55ffa0376b0447e875298794751",
+    blob: "7d66eabdb801ab0c58969fe6e940e26e8066a6cb" /* RE-PINNED DELIBERATELY at the T261 merge, cause named as the pin's own message
+      demands: D-261-05's granted `PAGE_FILE` repoint. Diff attributed before re-pinning —
+      3+/2-, the constant, its new D-261-05 citation comment, and one prose line naming the
+      moved path. No assertion touched. */,
     why:
       "NAMED by AC5. It is the file whose module-scope `sourceFile(PAGE_FILE)` read of " +
       "`app/blueprints/[slug]/page.tsx` deletes all 878 of its lines from the run on ENOENT " +
@@ -82,7 +85,12 @@ const FROZEN: readonly Frozen[] = [
   },
   {
     path: "components/blueprint/severity-word.test.ts",
-    blob: "62b96351510caf366c56dbc5d1a1040e2b0d0d87",
+    blob: "94e57ccf317418e096b7d3f81bbabf20df61974b" /* RE-PINNED DELIBERATELY, and this one needed a RULING first. The diff is 1+/1-: a
+      single docblock line naming the moved page path. `granted` below said NO on the
+      measured ground that this file reads no page file — true, and D-261-05's enumeration
+      listed the files that READ a moved path and missed the one that merely NAMES it in
+      prose. I refused to re-pin a named must-pass-unchanged test on my own reading; that
+      refusal is why D-261-15 exists, and it admits this file to the grant. */,
     why:
       "NAMED by AC5. It is also the only instrument holding the PROP SHAPES of `BundlePanel` " +
       "and `Explainability` against the cutover (see `ac5-prop-shapes.test.ts`), and it holds " +
@@ -91,7 +99,10 @@ const FROZEN: readonly Frozen[] = [
   },
   {
     path: "components/blueprint/download-name.test.ts",
-    blob: "0c145f76b5dd9535c9b200e74c46f0f595593895",
+    blob: "86234a5351772a263b1db94d00387880e6213ce1" /* RE-PINNED DELIBERATELY: D-261-11's ruled rewrite off page-invocation onto the
+      component-with-props idiom, 89+/37-. The largest diff of the eight and the most
+      clearly granted — a page whose body opens a database cannot be invoked directly,
+      whatever its segment export says. */,
     why:
       "`import Page from \"@/app/blueprints/[slug]/page\"` is a RESOLUTION-TIME binding: when " +
       "the route moves this breaks `typecheck` and `build`, not merely this suite. It is the " +

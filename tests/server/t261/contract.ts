@@ -92,7 +92,11 @@ export function legacyBlueprintPath(slug: string): string {
  * foreclosing any page at `/blueprints/{owner}`.
  */
 export const ROUTES = {
-  redirector: "app/blueprints/[slug]/page.tsx",
+  /* The legacy-slug redirector lives in the SHARED `[owner]` slot, not in a `[slug]` slot
+     of its own — D-261-17: Next allows ONE param name per slot at the runtime matcher, so
+     `[slug]` beside `[owner]/[slug]` builds clean and throws when the server sorts routes.
+     The segment is spelled `owner` and the VALUE arriving is the pre-B-09 slug. */
+  redirector: "app/blueprints/[owner]/page.tsx",
   canonical: "app/blueprints/[owner]/[slug]/page.tsx",
   nodes: "app/nodes/[...id]/page.tsx",
   ontology: "app/ontology/[...term]/page.tsx",
