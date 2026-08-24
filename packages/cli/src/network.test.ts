@@ -254,9 +254,11 @@ describe("runCli", () => {
     expect(code).toBe(0);
   });
 
-  it("sends findings to stdout and refusals to stderr, and exits 2 on an unknown command", async () => {
+  it("sends findings to stdout and refusals to stderr, and exits 1 on an unknown command", async () => {
     const io = collectingIo();
-    expect(await runCli(["frobnicate"], io)).toBe(2);
+    /* 1 and not 2: `packages/mcp/src/cli.ts` shipped 1 for an unknown command before this
+       task existed, and C1 grants that file for a dispatcher extension only. */
+    expect(await runCli(["frobnicate"], io)).toBe(1);
     expect(io.stderr.join("")).toContain("unknown command");
     expect(io.stdout.join("")).toBe("");
   });

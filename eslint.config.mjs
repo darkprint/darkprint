@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The distributable T270 bundles with esbuild (`packages/cli/build.mjs`), gitignored by
+    // `packages/mcp/.gitignore`. It is generated, minifiable, third-party code in part — it
+    // carries a bundled `yaml` — and linting it reports 33 problems nobody here can act on.
+    // Added when the build first produced output: before T270 nothing ever ran that build,
+    // so the directory did not exist and the glob had nothing to match.
+    "packages/*/dist/**",
     // `.claude/skills/**` was ignored here while two third-party skills were vendored in
     // it, on the grounds that somebody else's source ships its own lint config and running
     // ours over it reports warnings nobody here can act on. Both were deleted on

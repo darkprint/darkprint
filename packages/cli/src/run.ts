@@ -36,14 +36,20 @@ Environment:
  * Run one command.
  *
  * Returns the exit code rather than setting one: a caller that is a test wants the number,
- * and a caller that is the bin shim can assign it. 0 for success, 1 for a refusal or a
- * bundle carrying errors, 2 for a command line this does not understand.
+ * and a caller that is the bin shim can assign it.
+ *
+ * **0 for success, 1 for everything else, and the flatness is deliberate.** A usage error
+ * would conventionally be 2, and `packages/mcp/src/cli.ts` already shipped 1 for an unknown
+ * command and 0 for an explicit `--help`. C1 grants that file for a dispatcher extension
+ * ONLY, so introducing a 2 would change an exit code T220 shipped — through a delegation
+ * rather than through a decision anybody made. The published convention wins over the
+ * conventional one; if a 2 is wanted it is a ruling, not a refactor.
  */
 export async function runCli(argv: readonly string[], io: Io): Promise<number> {
   const command = argv[0];
   if (command === undefined || command === "--help" || command === "-h") {
     io.err(USAGE);
-    return command === undefined ? 2 : 0;
+    return command === undefined ? 1 : 0;
   }
 
   try {
@@ -56,7 +62,7 @@ export async function runCli(argv: readonly string[], io: Io): Promise<number> {
         return await runBump(argv.slice(1), io);
       default:
         io.err(`darkprint: unknown command \`${command}\`.\n\n${USAGE}`);
-        return 2;
+        return 1;
     }
   } catch (thrown) {
     /* `message` alone, deliberately: a stack or a `cause` chain would put an endpoint or a
@@ -89,7 +95,7 @@ async function runClone(args: readonly string[], io: Io): Promise<number> {
   const target = positional[0];
   if (target === undefined) {
     io.err("clone: name a blueprint as <owner>/<slug>.\n");
-    return 2;
+    return 1;
   }
 
   const result = await clone(target, {
@@ -107,7 +113,7 @@ async function runBump(args: readonly string[], io: Io): Promise<number> {
   const declare = flags.declare;
   if (declare === undefined) {
     io.err("bump: give --declare <version>.\n");
-    return 2;
+    return 1;
   }
 
   const diagnostics = await bump(positional[0] ?? ".", declare, {
