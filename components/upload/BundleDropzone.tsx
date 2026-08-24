@@ -21,9 +21,13 @@ import { Button } from "@/components/ui/Button";
 /* ------------------------------------------------------------------ */
 /*  Files in, a Bundle out                                             */
 /*                                                                     */
-/*  Everything here is pure and browser-side: the wizard never sends a  */
-/*  byte anywhere, so the same knowledge the archive reader has about   */
-/*  what a bundle is made of has to live on this side of the wire too.  */
+/*  Everything in THIS file is pure and browser-side, and the reason    */
+/*  survives T263 even though its old phrasing did not. It used to say  */
+/*  the wizard never sends a byte anywhere; the wizard now posts to     */
+/*  /api/bundles at its last step. What is unchanged is that the        */
+/*  classifier decides what a bundle is made of BEFORE anything is      */
+/*  sent, in the tab, so the same knowledge the archive reader has      */
+/*  still has to live on this side of the wire too.                     */
 /* ------------------------------------------------------------------ */
 
 /** One document the browser handed us — a picked file, a dropped file, or a paste. */
@@ -77,6 +81,22 @@ export interface BundleDetails {
   description: string;
   category: string;
   tags: string[];
+  /**
+   * The release version this submission declares. **Optional, and the `?` is load-bearing
+   * rather than tidy.**
+   *
+   * `BundleManifest` has no version field, so this is the one entry in this interface that
+   * is not "as the manifest sees it": it is `PublishInput.version`, which `publish`
+   * requires and which nothing in a dropped folder is obliged to supply. It is read here
+   * anyway because `detailsFromManifest` is the only reader of a dropped `blueprint.yaml`
+   * in this codebase, and a second one written beside it is how two opinions about a
+   * document start.
+   *
+   * Optional because `dropzone.test.ts` builds a `BundleDetails` literal by hand and is a
+   * must-pass-unchanged test under D-263-06 — a required member would red it at the type
+   * level, which is a test failing for a reason that has nothing to do with what it checks.
+   */
+  version?: string;
 }
 
 const TOPOLOGY_EXT = /\.(dot|gv)$/i;
@@ -287,6 +307,14 @@ export function detailsFromManifest(doc: Record<string, unknown>): Partial<Bundl
   if (category !== undefined) out.category = category;
   const tags = tagList(doc.tags);
   if (tags.length > 0) out.tags = tags;
+  /* `version` is read although `BundleManifest` does not declare it, and that is D-263-09's
+     wording taken literally: prefill "from `doc.version` when a dropped manifest carries the
+     key even though the type does not name it". The archive's own `blueprint.yaml` does not
+     write one today, so this is nearly always absent — it is here so a folder that DOES
+     carry one does not make the author retype it, and never as a claim that the field is
+     part of the manifest format. */
+  const version = field(doc.version);
+  if (version !== undefined) out.version = version;
   return out;
 }
 
@@ -403,8 +431,12 @@ function plural(n: number, word: string): string {
 }
 
 /**
- * Step 1: choose the files, drop them, or paste the source. Nothing leaves the tab —
- * the files are read with `File.text()` and handed straight to the validator.
+ * Step 1: choose the files, drop them, or paste the source.
+ *
+ * Nothing leaves the tab AT THIS STEP — the files are read with `File.text()` and handed
+ * straight to the validator, which is compiled into the page. Since T263 the wizard's last
+ * step does send the bundle, to `POST /api/bundles`, so the old unqualified version of this
+ * sentence became false: selection and validation are still local, publishing is not.
  */
 export function BundleDropzone({
   files,
@@ -544,8 +576,20 @@ export function BundleDropzone({
               <span className="font-mono text-cyan">.dot</span> graph and the{" "}
               <span className="font-mono text-cyan">.yaml</span> cards it pins
             </p>
+            {/* ── D-263-12: this line said "nothing is uploaded" and it had to go ──
+                It was unconditional rendered copy on the upload control itself, and after
+                T263 this route publishes, so it was false about the very gesture it
+                describes. What is still true is the SEQUENCE — dropping a folder reads it
+                and nothing more — so the sentence keeps that and names where publishing
+                actually happens instead of denying that it does.
+
+                Not the same case as the vocabulary note further down this file, which
+                D-263-01 kept: that one's subject is an unreadable overlay, which is not
+                sent anywhere after any cutover, so its claim stayed true. Subject decides
+                it, not which file the sentence lives in. */}
             <p className="text-xs text-dim">
-              or click to browse, the files are read in this tab and nothing is uploaded
+              or click to browse. Selecting a folder reads it here; the last step is where
+              you publish it.
             </p>
             {/* Both folders a reader can arrive with, named at the target itself rather
                 than only in the page header three paragraphs up: this is where somebody
