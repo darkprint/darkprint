@@ -160,7 +160,7 @@ describe("an outlier beyond 3 sigma is excluded and the exclusion is visible", (
    * Each differs from the truth in `runs`, in `excluded` AND in `median`, so no single
    * field is carrying this cell alone.
    */
-  it("returns neither the ungrouped nor the unfiltered answer", async () => {
+  it("returns neither of the two pre-registered wrong tuples", async () => {
     const scratch = setup.require();
     const digest = await freshDigest(scratch, "ac4x");
     await plantReports(scratch, [

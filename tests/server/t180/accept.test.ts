@@ -279,6 +279,14 @@ describe("an anonymous submission is refused before the write", () => {
    * exact failure D-180-03 exists to prevent. The digest here EXISTS, so the trigger cannot
    * do the refusing for the module the way it does at an absent digest: any row that lands
    * is the module's own.
+   *
+   * **Measured scope, from the adversary sweep: deleting the account guard entirely reds
+   * the cell above and NOT this one.** With no `accountId` the insert violates
+   * `account_id NOT NULL` and the database refuses it, so nothing lands and the row count
+   * holds. This cell discriminates a refusal moved AFTER a SUCCESSFUL insert — which it
+   * does, that mutation reds it — and not a guard removed altogether. Same family as the
+   * unknown-digest cell: the database is a second guard on the same criterion, and the
+   * cell must not be counted as evidence the module needs no guard of its own.
    */
   it("leaves no row behind, at a digest that exists", async () => {
     const scratch = setup.require();

@@ -248,7 +248,20 @@ export async function auditRows(scratch: Scratch): Promise<Row[]> {
    ============================================================ */
 
 export const MODAL_MODEL = "claude-sonnet-4-5";
-export const MINORITY_MODEL = "gpt-4o";
+
+/**
+ * Chosen to sort BEFORE `MODAL_MODEL`, and that is the whole point of the name.
+ *
+ * **It was `gpt-4o` and the adversary sweep found that inert.** `claude-sonnet-4-5` sorts
+ * before `gpt-4o`, so the modal group was also the alphabetically first group, and a
+ * mutation replacing "take the modal group" with "take the first sorted group" reddened
+ * `names the modal model` not at all — the two readings agreed on the fixture. A cell
+ * asserting a value its subject's other path already produces tests nothing.
+ *
+ * `azure-gpt-4o` sorts before `claude-sonnet-4-5`, so modal and alphabetically-first now
+ * DISAGREE and the mutation reds.
+ */
+export const MINORITY_MODEL = "azure-gpt-4o";
 
 /** Twelve costs on `MODAL_MODEL`; the last is the 3-sigma outlier. */
 export const MODAL_COSTS = [10, 12, 14, 15, 17, 19, 21, 23, 26, 29, 33, 400] as const;
