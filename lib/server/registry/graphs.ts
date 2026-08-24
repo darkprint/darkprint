@@ -9,10 +9,23 @@
    ── BATCH, and that is the whole point ──
    A client-side-filtering shelf needs a schematic for EVERY tile on
    EVERY request, so a per-blueprint reader would be N calls where
-   this is one. It issues **no statement of its own**: `loadSnapshot`
-   already selects whole `release` and `card_version` rows, so the
-   DOT, the local vocabulary and the archived YAML are in hand by
-   the time the index is built, and this file spends only CPU.
+   this is one.
+
+   **The statement count, stated exactly rather than as "no extra
+   queries", which is what the first draft of this comment claimed
+   and is false.** `loadSnapshot`'s four, plus ONE PER DISTINCT
+   ONTOLOGY VERSION, and nothing per blueprint. The reassembly
+   material really is free — `loadSnapshot` already selects whole
+   `release` and `card_version` rows, so the DOT, the local
+   vocabulary and the archived YAML are in hand by the time the
+   index is built and `ReleaseSource` only stops them being dropped.
+   The ONTOLOGY is not free: `openView` reads its version row, and
+   it deliberately holds no module-scope cache (its own header says
+   a cache is T080's projection concern, which is `ViewCache`
+   below). So the total is `4 + K` where K counts distinct base
+   versions among releases with no overlay, plus one for each
+   release that has one. K is 1 on today's corpus and is bounded by
+   N in the worst case; it is never zero when anything is drawn.
 
    ── it consumes the current-release rule, it does not restate it ──
    Which release a blueprint IS is D-80-03's decision and it is
