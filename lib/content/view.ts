@@ -35,7 +35,7 @@ import { graphForBlueprint, requiredAgents, requiredTools } from "@/lib/graph-se
  * graph of eleven nodes reaches it with a person still standing in it. That claim now
  * belongs to `isDarkFactory` alone, which counts the human nodes rather than the share.
  */
-const AUTONOMY_BLURB: Record<AutonomyClass, string> = {
+export const AUTONOMY_BLURB: Record<AutonomyClass, string> = {
   assisted: "A person acts at most of the nodes, and the agents work under that hand.",
   supervised:
     "Agents do the work, and a person approves the moves this graph treats as critical.",
