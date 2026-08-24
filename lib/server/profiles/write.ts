@@ -118,8 +118,22 @@ function validPin(value: unknown): PinnedRef | undefined {
  * call rather than a refusal: "at most two" has no floor.
  *
  * **The whole write is one transaction**, so a caller never observes an account with the old
- * pins deleted and the new ones not yet written. Two concurrent `setPins` for one account
- * serialise on the unique index rather than interleaving into a mixed set.
+ * pins deleted and the new ones not yet written.
+ *
+ * **What two concurrent `setPins` for one account actually do, stated exactly — the first
+ * version of this comment said they "serialise on the unique index", and they do not.** They
+ * cannot interleave into a mixed set, which is the outcome worth having and which the unique
+ * index really does give. But under READ COMMITTED the loser does not queue and then succeed:
+ * B can `DELETE`, find nothing to remove because A has not inserted yet, and then collide with
+ * A's committed `(account_id, position)` rows — so **B's transaction aborts on 23505 and
+ * reaches its caller as a store fault rather than as a completed write.** Stored state is
+ * always exactly one caller's pins and never a blend; the price is that the other caller is
+ * told the store failed when what happened is that it lost a race.
+ *
+ * Closing that needs the two writers serialised on something — a `SELECT … FOR UPDATE` on the
+ * account row, or a transaction-scoped advisory lock keyed on the account — and both reach
+ * past this function (the first takes a lock in a table T050 owns), so this records the
+ * behaviour rather than picking one unbidden.
  *
  * Returns `ProfileRecord` — the block's own shape, so a caller that just wrote gets the
  * resolved, actor-filtered read back without a second round trip. That read runs AFTER the
