@@ -49,3 +49,10 @@ export { planTransfer, transferBundle } from "./transfer";
 export { deleteAccount, planDeletion } from "./deletion";
 
 export { withLifecycleErrors } from "./http";
+
+/* `isTombstone`, published at the T190 merge: `notifications/store.ts` had to COPY
+   `TOMBSTONE_PREFIX` because nothing here exported the predicate, and recorded that as a
+   divergence — a second source for one fact that goes quietly false if the marker ever
+   changes. Publishing the writer's own predicate closes it. The parameter is the one
+   column it reads, so callers holding narrower rows than `AccountRow` can use it. */
+export { isTombstone } from "./store";

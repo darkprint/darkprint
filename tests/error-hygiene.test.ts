@@ -288,7 +288,12 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
        commit by the walk, the first class added to an ALREADY-SHIPPED barrel (the guard's
        protection gates the enumeration of barrels, not the classes inside them — measured by
        T131's implementer, which predicted this exact red). */
-    ).toBe(51);
+    /* 51 -> 53 at T190's merge: lib/server/notifications publishes NotificationStoreError and
+       UnsubscribeInvalidError, exactly two — the base NotificationError stays off the barrel
+       on purpose, so the walk counts leaves and not the family. The carried prediction said
+       52; the derived count at 7735db9 said 53, and the derived number is the one this
+       equality records. */
+    ).toBe(53);
 
     const rendered: string[] = [];
     const traceless: string[] = [];

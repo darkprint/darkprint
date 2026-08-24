@@ -46,6 +46,7 @@ import { schema, type Db } from "@/lib/db";
 import { NotAccountOwnerError } from "@/lib/server/accounts";
 import { NotificationError, notificationStoreError } from "./errors";
 import type { EventKind, Preferences } from "./types";
+import { isTombstone } from "@/lib/server/lifecycle";
 
 /**
  * A rejection that is somebody's decision rather than the database failing.
@@ -69,22 +70,10 @@ export async function withStore<T>(operation: string, work: () => Promise<T>): P
 
 /* --------------------- the account behind a notification --------------------- */
 
-/**
- * D-120-01's tombstone marker, COPIED rather than imported, and this is a reported divergence.
- *
- * `lib/server/lifecycle/deletion.ts:207` writes `githubId: \`${TOMBSTONE_PREFIX}${accountId}\``
- * and `lifecycle/store.ts:120` declares `TOMBSTONE_PREFIX = "deleted:"`. **Neither the constant
- * nor `isTombstone` is published from that module's barrel**, and reaching for a deep path is
- * the thing every barrel header in this repository forbids — so D-190-02(2)'s instruction was
- * to bind the concrete predicate from `deletion.ts`'s own writes and report it, which is this
- * comment.
- *
- * The cost is honest and is the reason it is written down: this is a SECOND SOURCE for one
- * fact, and nothing reconciles the two. If T120 ever changes its marker, this predicate goes
- * quietly false and `enqueue` starts writing rows for graves again. The fix is a published
- * predicate on `@/lib/server/lifecycle`, which is T120's to add and not this task's.
- */
-const TOMBSTONE_PREFIX = "deleted:";
+/* D-190-02(2)'s reported divergence, CLOSED at the T190 merge: this file used to carry its
+   own copy of `TOMBSTONE_PREFIX` because the lifecycle barrel published neither the constant
+   nor the predicate. `isTombstone` is now on `@/lib/server/lifecycle`, so graves are tested
+   against the writer's own predicate and there is no second source left to drift. */
 
 /** What `enqueue` needs to know about an account before it writes anything. */
 export interface AccountState {
@@ -110,7 +99,7 @@ export async function accountStateFor(db: Db, accountId: string): Promise<Accoun
     .where(eq(schema.account.id, accountId))
     .limit(1);
   if (row === undefined) return undefined;
-  return { tombstoned: row.githubId.startsWith(TOMBSTONE_PREFIX), stored: row.preferences };
+  return { tombstoned: isTombstone(row), stored: row.preferences };
 }
 
 /** The stored preferences column alone, or `undefined` if no such account. Read-only, no lock. */

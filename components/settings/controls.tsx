@@ -25,14 +25,16 @@ import { cx } from "@/lib/format";
    disabled" check and fails this one.
 
    What is still off, and why it is off rather than reworded:
-   the notification switches, because `AccountRecord` carries no
-   `notifications` member and T190 has not built the column; and the
-   two danger-zone actions, because no route deletes an account or
-   transfers a bundle. **Their REASONS changed even though their
-   state did not** — "no account to delete" became false the day
-   accounts landed — so each says what is actually missing now
-   (D-262-15). D-78 asks whether the CLAIM is still true, not
-   whether the control still works.
+   the notification switches, because this page is not wired to
+   T190's preferences API and no mail sends — the earlier reason
+   here ("T190 has not built the column") went false at T190's
+   merge, the third time this paragraph's reasons outlived their
+   facts. **Their REASONS changed even though their state did
+   not** — "no account to delete" became false the day accounts
+   landed, and T120 has since shipped delete and transfer routes —
+   so each says what is actually missing now (D-262-15). D-78 asks
+   whether the CLAIM is still true, not whether the control still
+   works.
 
    `readOnly` is gone from the text fields, but the reason it was
    there survives in what replaced it: an editable input keeps its

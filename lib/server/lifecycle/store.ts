@@ -154,7 +154,7 @@ export async function accountById(
  * the author line has to survive — which is exactly what leaves `resolveOwner` answering for
  * a grave. This is the check that closes the consequence keeping the handle opened.
  */
-export function isTombstone(row: AccountRow): boolean {
+export function isTombstone(row: Pick<AccountRow, "githubId">): boolean {
   return row.githubId.startsWith(TOMBSTONE_PREFIX);
 }
 
