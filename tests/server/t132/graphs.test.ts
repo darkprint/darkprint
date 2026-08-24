@@ -201,21 +201,32 @@ describe("D-132-01: one call, keyed owner/slug", () => {
   /**
    * D-260-21 is a COST ruling, and this is the only cell in the suite that can see it.
    *
-   * The three fixtures are the SAME content bundle seeded under three slugs, so a per-key
-   * implementation pays exactly three times what it pays for one and the arithmetic is an
-   * identity rather than an estimate. A reader sharing one snapshot and one ontology view
-   * across the batch is strictly cheaper than that; a reader looping `loadSnapshot` per key
-   * is exactly equal to it.
+   * ── the first version of this cell was very nearly unfailable, and a pre-registered
+   *    mutation is what found that ──
+   * It asserted `q(3) < 3 * q(1)`. Write the cost as `F + n*P`, a fixed part and a per-key
+   * part: the correct reader gives `F + 3P < 3F + 3P`, which holds for ANY positive F, and a
+   * reader looping `loadSnapshot` once per key gives `F + 3(P+S) < 3F + 3(P+S)`, which also
+   * holds. **The comparison was true whatever the reader did**, and a mutation that put a
+   * whole snapshot inside the loop reddened nothing. A ratio against a total cannot see a
+   * per-key cost while a fixed cost is in the total with it.
+   *
+   * So the claim is made against the MARGINAL cost instead, which is what D-260-21 is about:
+   * one more tile on the shelf must not cost another index. `snapshot.ts` fixes that price —
+   * "Four queries, fixed, whatever the registry's size" — and `graphs.ts` prices itself in
+   * its own header as `4 + K`. Measured on this fixture: 0 keys 0 statements, 1 key 6, 2
+   * keys 8, 3 keys 10, 5 keys 14. Four statements fixed, two per key, no snapshot in the
+   * loop.
    *
    * The baseline is asserted non-zero first: `countQueries` patches the pool this suite hands
    * in, and a reader that issued its statements some other way would make both numbers zero
-   * and turn `0 < 0` into a red against correct code. A zero here is a claim about the
+   * and turn the comparison into a red against correct code. A zero here is a claim about the
    * instrument and the message says so.
    */
-  it("does not pay per key: three copies of one bundle cost less than three calls", async () => {
+  it("does not pay an index per key: the marginal cost of a key is under one snapshot", async () => {
+    const none = await countQueries(s, () => graphsOf(anonymous, []));
     const one = await countQueries(s, () => graphsOf(anonymous, [key(TWIN_SLUGS[0])]));
-    const three = await countQueries(s, () =>
-      graphsOf(anonymous, TWIN_SLUGS.map((slug) => key(slug))),
+    const many = await countQueries(s, () =>
+      graphsOf(anonymous, [...TWIN_SLUGS, "guarded-merge-bot", "frontline-triage"].map((slug) => key(slug))),
     );
     expect(
       one.queries,
@@ -224,15 +235,24 @@ describe("D-132-01: one call, keyed owner/slug", () => {
         `the database some other way and THIS CELL MEASURES NOTHING — it is not evidence that ` +
         `the reader is cheap. Diagnose the instrument before reading the comparison below.`,
     ).toBeGreaterThan(0);
-    expect(one.result.size).toBe(1);
-    expect(three.result.size).toBe(3);
     expect(
-      three.queries,
-      `D-260-21: "\`/blueprints\` under D-260-05 + D-260-06 is N snapshots + 3N score queries ` +
-        `+ the graph reader on every load". These three keys are the same bundle under three ` +
-        `slugs, so a per-key loop costs exactly 3 x ${one.queries} = ${3 * one.queries} and a ` +
-        `batch costs less. Measured: one key ${one.queries}, three keys ${three.queries}.`,
-    ).toBeLessThan(3 * one.queries);
+      none.queries,
+      `An empty batch must answer without a statement — \`graphs.ts\` says so in its own ` +
+        `docblock, and a shelf with every tile filtered out is the case it is about.`,
+    ).toBe(0);
+    expect(one.result.size).toBe(1);
+    expect(many.result.size).toBe(5);
+
+    const marginal = (many.queries - one.queries) / 4;
+    expect(
+      marginal,
+      `D-260-21: "N snapshots + 3N score queries + the graph reader on every load, growing ` +
+        `with a registry whose whole point under AC1 is that it grows between deploys". ` +
+        `\`loadSnapshot\` is four statements fixed whatever the registry holds, so a reader ` +
+        `that loops it pays at least four per key and one that batches pays the ontology read ` +
+        `alone. Measured here: ${one.queries} statements for one key, ${many.queries} for ` +
+        `five, marginal ${marginal} per key. Four or more means the index is inside the loop.`,
+    ).toBeLessThan(4);
   });
 });
 

@@ -217,28 +217,36 @@ describe("D-132-04 C-A: one call, keyed owner/slug", () => {
    * As in `graphs.test.ts`, the baseline is asserted non-zero first: a zero is a claim about
    * the instrument, and this cell would otherwise turn one into a red against correct code.
    */
-  it("does not pay three queries per key", async () => {
-    const second = await insertBundle(s, { owner, slug: "stamped-twin" });
-    await stampScorecard(s, second.releaseId, { ...STAMP, ontologyVersion: "0.1.0" });
-    const keys = [
-      { ownerHandle: owner.handle, slug: stamped.slug },
-      { ownerHandle: owner.handle, slug: second.slug },
-    ];
+  it("does not pay three queries per key: five keys cost no more than one", async () => {
+    /* Asserted against the MARGINAL cost, not against a ratio of totals. The first version
+       of this cell compared `q(2) < 2 * q(1)`, and with a fixed part in both totals that
+       comparison is true whatever the reader does per key — see the same correction, and the
+       mutation that found it, in `graphs.test.ts`'s cost cell. Measured on this fixture:
+       `scoresFor` is FLAT, the same statement count for one key and for five, which is the
+       property D-260-21 asked for stated exactly. */
+    const twins = [stamped.slug];
+    for (const tag of ["twin-b", "twin-c", "twin-d", "twin-e"]) {
+      const extra = await insertBundle(s, { owner, slug: `stamped-${tag}` });
+      await stampScorecard(s, extra.releaseId, { ...STAMP, ontologyVersion: "0.1.0" });
+      twins.push(extra.slug);
+    }
+    const keys = twins.map((slug) => ({ ownerHandle: owner.handle, slug }));
     const one = await countQueries(s, () => scoresFor(anonymous, [keys[0]]));
-    const two = await countQueries(s, () => scoresFor(anonymous, keys));
+    const five = await countQueries(s, () => scoresFor(anonymous, keys));
     expect(
       one.queries,
       `The query counter saw nothing, so this cell measures nothing — see the same guard in ` +
         `\`graphs.test.ts\`. Diagnose the instrument before reading the comparison.`,
     ).toBeGreaterThan(0);
-    expect(two.result.size).toBe(2);
+    expect(five.result.size).toBe(5);
     expect(
-      two.queries,
-      `The two keys are identically shaped bundles, so a per-key implementation costs exactly ` +
-        `2 x ${one.queries} = ${2 * one.queries}. Measured: one key ${one.queries}, two keys ` +
-        `${two.queries}. D-260-21: per-tile \`scoresOf\` is "three queries x N", and shipping ` +
-        `the batch reader without the batch is shipping the name and not the fix.`,
-    ).toBeLessThan(2 * one.queries);
+      five.queries - one.queries,
+      `D-260-21: "\`scoresOf\` has no batch form either — three \`db.select\` calls PER ` +
+        `BLUEPRINT — and D-260-06 makes that worse rather than better", because a ` +
+        `client-side-filtering page needs a scorecard for EVERY tile on EVERY request. Four ` +
+        `more keys must not cost another full answer. Measured: one key ${one.queries} ` +
+        `statements, five keys ${five.queries}.`,
+    ).toBeLessThan(one.queries);
   });
 });
 
