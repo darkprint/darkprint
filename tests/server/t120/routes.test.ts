@@ -40,6 +40,7 @@ import { RecordedSetup, keysOf, type Namespace, type UnknownFn } from "./contrac
 import {
   bundleRow,
   publishBundle,
+  resolvingCorpus,
   scratchDatabase,
   seedAccount,
   type Account,
@@ -214,6 +215,34 @@ describe("T120 D-120-14/18 — the four published routes exist and are served", 
     /* The preview is the whole reason this route exists, so the cell that proves it is a
        preview is the one that reads the row back. */
     expect(await bundleRow(scratch, bundleId)).toEqual(before);
+  });
+
+  it("a COLLIDING preview is 200 with `collides: true`, never 409", async () => {
+    const { alice, bob, scratch } = world.require();
+
+    /* Alice and Bob both hold a bundle at this slug, so the transfer WOULD be refused — and
+       the preview must not be. **A preview that refused would be the act.** The two `plan*`
+       verbs exist because AC3 needs the collision observable without performing it, so a 409
+       here would make the only surface that can answer *would this work* answer by failing;
+       the 409 belongs to the POST, where the act is attempted.
+
+       Both ends are asserted in one cell on purpose: `status` alone is satisfied by a preview
+       that found no collision, and `collides` alone is satisfied by a 409 carrying a body. */
+    const contested = await publishBundle(scratch, alice, "rt-contested", "public");
+    await publishBundle(scratch, bob, "rt-contested", "public", { corpus: resolvingCorpus(1) });
+
+    const response = await call(
+      "GET",
+      `/api/transfer/plan?bundleId=${contested.bundleId}&toHandle=${bob.handle}`,
+      { cookie: cookieFor(alice) },
+    );
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { plan?: Record<string, unknown> };
+    expect(body.plan?.collides).toBe(true);
+    expect(body.plan?.slug).toBe("rt-contested");
+
+    /* And it previewed rather than acted. */
+    expect((await bundleRow(scratch, contested.bundleId))?.owner_id).toBe(alice.accountId);
   });
 
   it("`GET /api/account/delete/plan` previews the SESSION account, no body id", async () => {
