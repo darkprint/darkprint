@@ -49,6 +49,7 @@ import {
   dropScratchDatabases,
   mark,
   plantAccount,
+  plantedToken,
   recordingDelivery,
   scratchDatabase,
   sessionCookie,
@@ -226,25 +227,66 @@ describe("T190 routes: GET /api/account/notifications/unsubscribe", () => {
     ).toBe(false);
   });
 
-  it.each(["", "not-a-token"])("answers 404 for the token %o", async (token) => {
+  /**
+   * D-190-12 amended this route's published statuses to `200 | 400 | 404`, and the amendment
+   * came out of this round: I asserted 404 here from a block that listed only `200 | 404`, the
+   * implementation answered 400, and the ruling moved the BLOCK rather than the code — the
+   * implementer's reasoning was better than mine and my own oracle argument did not survive
+   * contact ("the caller already knows whether it sent a token").
+   *
+   * These cells are REPOINTED at the amended block, not loosened. The ruling's actual content
+   * is that a missing token and a dead token are DIFFERENT debugging facts, so the last cell
+   * asserts the difference rather than merely accepting each status on its own — an assertion
+   * that took both would be green against an implementation that had collapsed them.
+   */
+  it.each(["", "   "])("answers 400 for the empty token %o", async (token) => {
     const scratch = await setup.require();
     const answer = await withRoutesPointedAt(scratch.url, () =>
       callRoute("unsubscribe", { query: `token=${encodeURIComponent(token)}` }),
     );
     expect(
       answer.status,
-      `D-190-05 publishes \`| 404\` on this route. It answered ${answer.status}: ${answer.body}`,
-    ).toBe(404);
+      `D-190-12 publishes \`400 for an EMPTY or ABSENT token\`. It answered ${answer.status}: ` +
+        `${answer.body}`,
+    ).toBe(400);
   });
 
-  it("answers 404 with no token parameter at all", async () => {
+  it("answers 400 with no token parameter at all", async () => {
     const scratch = await setup.require();
     const answer = await withRoutesPointedAt(scratch.url, () => callRoute("unsubscribe"));
     expect(
       answer.status,
-      `a request with no \`token\` answered ${answer.status}: ${answer.body}. The published ` +
-        `answers are 200 and 404, and a missing parameter is not a 200.`,
+      `D-190-12: an ABSENT token is a 400. It answered ${answer.status}: ${answer.body}`,
+    ).toBe(400);
+  });
+
+  it("answers 404 for a well-formed token that names nothing", async () => {
+    const scratch = await setup.require();
+    const answer = await withRoutesPointedAt(scratch.url, () =>
+      callRoute("unsubscribe", { query: `token=${encodeURIComponent(plantedToken())}` }),
+    );
+    expect(
+      answer.status,
+      `a token that is present and simply unknown is a DEAD token, which D-190-12 keeps at 404. ` +
+        `It answered ${answer.status}: ${answer.body}`,
     ).toBe(404);
+  });
+
+  /** The ruling's own claim: the two cases are different debugging facts. */
+  it("a missing token and a dead token are DISTINGUISHABLE", async () => {
+    const scratch = await setup.require();
+    const missing = await withRoutesPointedAt(scratch.url, () => callRoute("unsubscribe"));
+    const dead = await withRoutesPointedAt(scratch.url, () =>
+      callRoute("unsubscribe", { query: `token=${encodeURIComponent(plantedToken())}` }),
+    );
+    expect(
+      missing.status,
+      `D-190-12 ratifies the split for a stated reason — "a missing token and a dead token are ` +
+        `different debugging facts and the caller already knows which it sent". Both answered ` +
+        `${missing.status}, so the distinction the ruling bought does not exist.\n` +
+        `  Asserted as a DIFFERENCE, not as two independent statuses: cells that check each ` +
+        `alone are both green against an implementation that collapsed them onto one code.`,
+    ).not.toBe(dead.status);
   });
 });
 

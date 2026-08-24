@@ -411,6 +411,67 @@ describe("T190: an operator passes both preference verbs (D-190-05)", () => {
   });
 });
 
+describe("T190 AC4: a stored non-boolean is not a preference this module wrote", () => {
+  /**
+   * MY HALF'S GAP, found by my own sweep and closed here.
+   *
+   * Mutation M13 replaced `fillPreferences`'s `typeof value === "boolean" ? value : DEFAULT`
+   * with a coercion, and it redded exactly ONE cell in the whole merged suite — the
+   * implementer's, not one of mine. A scoped zero is a claim about its scope: the suite caught
+   * it, my half did not, and I had pre-registered a zero here without registering that the
+   * zero would be MINE.
+   *
+   * What it costs is AC4's own clause one step down. The column is `jsonb` and nothing stops a
+   * hand-edited row, a migration, or a future writer from leaving a string in it. `"false"` is
+   * TRUTHY, so a coercing implementation reads a stored `"false"` as `digest: true` — the
+   * account is subscribed to the one thing AC4 says is off by default, and every cell that sets
+   * a real boolean stays green.
+   *
+   * `"false"` specifically, and not `"true"` or `1`: it is the value whose coerced reading is
+   * the OPPOSITE of its plain meaning, so it separates "falls back to the default" from "was
+   * coerced" in a single cell. A `1` would coerce to `true` and agree with the `repin` default
+   * by accident.
+   */
+  it.each([
+    { label: 'the string "false"', stored: "false", kind: "digest" as const, expect_: false },
+    { label: 'the string "true"', stored: "true", kind: "digest" as const, expect_: false },
+    { label: "the number 1", stored: 1, kind: "digest" as const, expect_: false },
+    { label: "null", stored: null, kind: "digest" as const, expect_: false },
+    { label: 'the string "false" under an ON default', stored: "false", kind: "fork" as const, expect_: true },
+  ])("$label falls back to the published default, never a coercion", async ({ stored, kind, expect_ }) => {
+    const scratch = await setup.require();
+    const account = await plantAccount(scratch, mark("m13").toLowerCase(), { [kind]: stored });
+
+    /* The premise: the non-boolean really is in the column. Without it this cell is about an
+       empty column and passes for the wrong reason. */
+    expect(
+      (await preferencesColumn(scratch, account.accountId))?.[kind],
+      "the fixture did not persist the non-boolean, so nothing here is being read back",
+    ).toEqual(stored);
+
+    const getPreferences = await bind("getPreferences");
+    const answered = (await getPreferences(scratch.db, account.actor, account.accountId)) as Record<
+      string,
+      boolean
+    >;
+
+    expect(
+      answered[kind],
+      `\`${kind}\` is stored as ${JSON.stringify(stored)} and read back as ` +
+        `${String(answered[kind])}; it must fall back to \`DEFAULT_PREFERENCES.${kind}\` ` +
+        `(${String(DEFAULT_PREFERENCES_PIN[kind])}).\n` +
+        `  Only a real \`boolean\` is a preference this module wrote. A coercion reads the ` +
+        `string "false" as TRUE — it is truthy — which subscribes an account to the one kind ` +
+        `AC4 says is off by default, while every cell that stores a real boolean stays green.`,
+    ).toBe(expect_);
+
+    expect(
+      typeof answered[kind],
+      "the answered value is not a boolean, so `Preferences` is not four booleans here",
+    ).toBe("boolean");
+  });
+});
+
 describe("T190 D-190-08: the two decisions that decide what a cell may assert", () => {
   /**
    * (3) "`enqueue` declines SILENTLY at all four gates (preference off, tombstone, private
