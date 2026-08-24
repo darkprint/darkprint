@@ -19,6 +19,7 @@ import { searchBlueprints } from "@/lib/server/search";
    `lib/server/search/blueprints.ts` takes it. `lib/types` deliberately never imports
    `lib/core`, so the manifest is not on the contract the components read. */
 import type { BundleManifest } from "@/lib/server/types";
+import { AUTONOMY_BLURB } from "@/lib/format";
 import type { Author, Blueprint, BlueprintAnalysisView } from "@/lib/types";
 
 // SEAM-01/SEAM-02 LIVE: the shelf is read from search (T200) and the registry (T080) rather
@@ -234,10 +235,10 @@ function manifestOf(manifest: unknown): Partial<BundleManifest> {
  * the archive, which is D-260-08's third direction — the figure did not become real, it
  * vanished — and there is no marker to move because there was never a marker on this page.
  *
- * `blurb` is the one that should not stay this way: `AUTONOMY_BLURB` is a module constant
- * in `lib/content/view.ts` and is not exported, so the choice was an empty string or a
- * second copy of four sentences of shipped copy that an author may edit. The copy would go
- * stale silently; the empty string is visibly empty. Reported rather than worked around.
+ * `blurb` is NOT among them any more. It was an empty string here, because the constant was
+ * module-private and the only consumable path would have tripped D-260-05(a)'s token; it now
+ * lives in `lib/format.ts` and is read from there (D-260-30), so a required field carrying a
+ * placeholder is one fewer thing on this page.
  */
 function viewOf(
   bp: { ownerHandle: string; slug: string; manifest: unknown; digest: string; cardRefs: readonly string[] },
@@ -269,7 +270,12 @@ function viewOf(
       label: scorecard.autonomy.label,
       isDarkFactory: scorecard.autonomy.isDarkFactory,
       level: scorecard.autonomy.level,
-      blurb: "",
+      /* The engine owns the class and its label; the sentence under them is the site's,
+         and it is keyed on the class rather than on the 1-to-4 band for the reason doc 2
+         §1.1 gives. Read from `lib/format.ts` (D-260-30) so the shelf and the archive-backed
+         page say the same thing about a class — a second copy of four sentences of shipped
+         copy is a second copy the day an author edits one. */
+      blurb: AUTONOMY_BLURB[scorecard.autonomy.autonomyClass],
     },
     metrics: [],
     graph: drawing.graph,
