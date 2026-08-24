@@ -26,18 +26,32 @@
    it is more complete than any writer in this product, which is
    the T200 shape this project has already paid for once.
 
-   ── the oracle, and why one side is still pinned to a literal ──
-   `scoresOf` is MERGED, separately authored, and is exactly the
-   singular form of this reader. Agreement with it is the strongest
-   cell here, because D-260-24's actual defect is TWO READERS
-   DISAGREEING about what makes a scorecard complete — reintroduced
-   at the batch form is the same defect one table over.
+   ── the oracle collapsed, and the literals are why that is
+      survivable ──
+   `scoresOf` is MERGED and separately authored, and is exactly the
+   singular form of this reader, so agreement with it was written
+   as the strongest cell here: D-260-24's actual defect is TWO
+   READERS DISAGREEING about what makes a scorecard complete, and
+   reintroducing that at the batch form is the same defect one
+   table over.
 
-   But an equality cannot see a shared move: if both readers
-   dropped the fourth-field rule together, every agreement cell
-   stays green. So the arithmetic is also pinned to literals this
-   file typed — the empty map over writer-written releases, and the
-   stamped payloads read back field by field.
+   AGAINST THE IMPLEMENTATION THAT ARRIVED, THAT ORACLE IS A
+   TAUTOLOGY. `scoresOf` is now `scoresFor` with one key — same
+   body, `.get()` of the result — so the three cells named
+   "agrees with `scoresOf`" compare one function with itself. The
+   de-duplication is defensible and nothing here charges it, but
+   the shape is worth naming: an oracle can be separately authored,
+   merged, and still be re-pointed at its own subject afterwards.
+   They are kept and labelled rather than deleted, because they red
+   again the day the two readers are split.
+
+   What carries the weight instead is the discipline applied before
+   any of that was known. An equality cannot see a shared move — if
+   both readers dropped the fourth-field rule together every
+   agreement cell would stay green — so one side of every
+   comparison is pinned to a LITERAL this file typed: the empty map
+   over writer-written releases, and the stamped payloads read back
+   field by field.
    ============================================================ */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -256,7 +270,7 @@ describe("D-260-24: no release this product can publish has a scorecard", () => 
     ).toEqual([]);
   });
 
-  it("agrees with `scoresOf`, key by key, over the writer-written store", async () => {
+  it("agrees with `scoresOf`, key by key, over the writer-written store (a tautology against this implementation)", async () => {
     const map = await scoresFor(anonymous, written);
     const scoresOf = await bindScoresOf();
     for (const key of written) {
@@ -318,7 +332,7 @@ describe("the stand-in fixture: a scorecard no writer in this product can produc
     ).not.toBe(row?.id);
   });
 
-  it("stand-in: agrees with `scoresOf` on the stamped release too", async () => {
+  it("stand-in: agrees with `scoresOf` on the stamped release too (a tautology against this implementation)", async () => {
     const map = await scoresFor(anonymous, [{ ownerHandle: owner.handle, slug: stamped.slug }]);
     const scoresOf = await bindScoresOf();
     const singular = await scoresOf(s.db, anonymous, owner.handle, stamped.slug);

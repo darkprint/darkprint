@@ -40,7 +40,6 @@ import {
   anonymous,
   bind,
   dropScratchDatabases,
-  dotFor,
   keyOf,
   leakSurface,
   mark,
@@ -160,12 +159,19 @@ beforeAll(async () => {
           "join account a on a.id = b.owner_id where a.handle = $1 and b.slug = $2",
         [side.owner.handle, side.publicSlug],
       );
+      /* The stored DOT is in the admissible set, and T080's own privacy fixture deliberately
+         left it OUT — "deliberately NOT the stored `dot`, which names the private card refs
+         and which no published reader returns". THAT SENTENCE STOPS BEING TRUE WITH THIS
+         TASK: `BlueprintGraph.dot` is served from that column, so those bytes are now
+         something a response may legitimately carry and a tell colliding with them would red
+         a reader that leaked nothing. */
       admissible.push(
         side.owner.handle,
         side.publicSlug,
         `${side.owner.handle}/${side.publicSlug}`,
         row?.card_refs,
         row?.manifest,
+        row?.dot,
       );
     }
     assertTellsCannotOverMatch([...sides.A.tells, ...sides.B.tells], admissible);
@@ -447,6 +453,5 @@ describe("AC6 named cases", () => {
         `ref through a field nothing else on the page reads — the same shape as \`cardRefs\`, ` +
         `which D-80-01 had to filter for exactly this reason.`,
     ).toEqual([]);
-    expect(dotFor([]).length, "dotFor is imported for the fixture helpers this file shares").toBeGreaterThan(0);
   });
 });
