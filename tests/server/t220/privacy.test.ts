@@ -243,31 +243,43 @@ describe("T220 AC3 — the lineage channel", () => {
     expect(upstream?.visibility).toBe("private");
     expect(fork?.lineage, "the fork carries no lineage, so there is nothing to omit").toBeTruthy();
 
+    const who = await actors();
     const provenance = await verb("mcpProvenance");
-    const got = await outcome(
-      () =>
-        provenance(
-          w.scratch.db,
-          anonymous,
-          w.forkOfSecret.ownerHandle,
-          w.forkOfSecret.slug,
-        ) as Promise<unknown>,
-    );
 
-    /* The needle is the upstream's SLUG here rather than a digest, and that is sound in this
-       one place precisely because the caller did NOT supply it: the call names the fork, and
-       the private slug can only appear by being read out of `lineage`. */
-    expect(
-      reveals(got, w.secret.slug),
-      "the private upstream's slug reached an anonymous caller through `forkedFrom`. " +
-        "D-220-05: a fork of a non-public upstream presents as an original.",
-    ).toBe(false);
-    if (got.ok) {
-      expect(
-        (got.value as { forkedFrom?: unknown }).forkedFrom,
-        "`forkedFrom` is present for a fork whose upstream is unreadable. It is omitted " +
-          "WHOLE — a partial one still says the fork is a fork of something hidden.",
-      ).toBeUndefined();
+    /* All THREE actors, not just anonymous. Under D-220-03 the upstream is unreadable to
+       every caller because every reader is called anonymously — so the owner, who can read
+       that bundle everywhere else in the product, must not see its slug here either. An
+       anonymous-only cell is blind to a module that forwards the caller's identity, which
+       is the single most likely way this rule gets broken. */
+    const leaked: string[] = [];
+    const present: string[] = [];
+    for (const { label, actor } of who) {
+      const got = await outcome(
+        () =>
+          provenance(
+            w.scratch.db,
+            actor,
+            w.forkOfSecret.ownerHandle,
+            w.forkOfSecret.slug,
+          ) as Promise<unknown>,
+      );
+      /* The needle is the upstream's SLUG here rather than a digest, and that is sound in
+         this one place precisely because the caller did NOT supply it: the call names the
+         FORK, and the private slug can only appear by being read out of `lineage`. */
+      if (reveals(got, w.secret.slug)) leaked.push(label);
+      if (got.ok && (got.value as { forkedFrom?: unknown }).forkedFrom !== undefined) {
+        present.push(label);
+      }
     }
+    expect(
+      leaked,
+      "the private upstream's slug reached these actors through `forkedFrom`. D-220-05: a " +
+        "fork of a non-public upstream presents as an original.",
+    ).toEqual([]);
+    expect(
+      present,
+      "`forkedFrom` is present for a fork whose upstream is unreadable. It is omitted " +
+        "WHOLE — a partial one still says the fork is a fork of something hidden.",
+    ).toEqual([]);
   });
 });

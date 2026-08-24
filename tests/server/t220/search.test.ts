@@ -131,6 +131,43 @@ describe("T220 AC5 — the honesty clause, composed through", () => {
     ).toBe(false);
   });
 
+  it("treats a task that tokenises to nothing as a listing, not as a query", async () => {
+    const w = await world();
+    /* THE ONLY INPUT THAT SEPARATES THE LAW FROM `ordered = task !== ""`.
+       Found by deriving the pre-registered sweep rather than by running it: through this
+       composition the two are otherwise EXACTLY equivalent, because a non-empty `q` always
+       reaches `ranked(...)` (where every surviving hit has evidence) and an empty one always
+       reaches `unranked(...)`. So the cheap wrong implementation would have reddened 0 of 49
+       cells and the sweep would have called it covered.
+
+       `normalise` is `toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim()`, so a
+       punctuation-only task normalises to `""` and `words("")` is `[]` — a NON-EMPTY task
+       that carries no query. An agent sending `"???"` is not a contrived input. */
+    const punctuation = "??? ...";
+    const bp = await searchBlueprints(w.scratch.db as never, anonymous, { q: punctuation });
+    const listing = await searchBlueprints(w.scratch.db as never, anonymous, { q: "" });
+    /* The premise, and it is the whole claim: T200 answers this identically to the empty
+       listing. If that ever stops being true the cell is wrong, not the module. */
+    expect(bp.ordered).toBe(false);
+    expect(bp.hits.length).toBe(listing.hits.length);
+    expect(bp.hits.length).toBeGreaterThan(0);
+
+    const mcpSearch = await verb("mcpSearch");
+    const result = (await mcpSearch(w.scratch.db, anonymous, punctuation)) as {
+      hits: { evidence: readonly string[] }[];
+      ordered: boolean;
+    };
+
+    expect(result.hits.length).toBeGreaterThan(0);
+    expect(
+      result.ordered,
+      "`ordered` was true for a task that carries no query words. That is what " +
+        "`ordered = task !== \"\"` answers, and it agrees with the law on every OTHER input " +
+        "this suite sends — which is why this cell exists.",
+    ).toBe(false);
+    expect(result.hits.every((h) => h.evidence.length === 0)).toBe(true);
+  });
+
   it("a task that matches something answers hits and claims to be ordered", async () => {
     const w = await world();
     const token = knownToken();
@@ -149,7 +186,10 @@ describe("T220 AC5 — the honesty clause, composed through", () => {
 
   it("`ordered` is the composed law and not a quantity of this task's own", async () => {
     const w = await world();
-    const tasks = ["", knownToken(), MISS];
+    /* Four tasks, and the punctuation one is here for the same reason it has a cell of its
+       own: it is the only member whose law disagrees with `task !== ""`. Three tasks made
+       this cell blind to that implementation. */
+    const tasks = ["", knownToken(), MISS, "??? ..."];
 
     /* The oracle is T200's shipped module, not a reimplementation here, and the identity is
        exact rather than approximate: `(A ++ B).every(p) === A.every(p) && B.every(p)`.
