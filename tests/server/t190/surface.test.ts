@@ -38,6 +38,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   BARREL_FILE,
+  EXACT_ARITY,
   MIN_ARITY,
   NOTIFICATIONS,
   PUBLISHED,
@@ -76,6 +77,29 @@ describe("T190 surface: the Published signatures block's names are exported", ()
         `carrying a default, and an optional \`?\` erases at runtime, so a shorter answer means ` +
         `a parameter the block publishes as required is missing or defaulted.`,
     ).toBeGreaterThanOrEqual(wanted);
+  });
+
+  /**
+   * Where a ruling spells the last parameter, the arity is an EQUALITY.
+   *
+   * `>=` admits both spellings of an optional trailing parameter and so enforces neither:
+   * `d = undefined` answers 3 and a bare `d?` answers 4, and both clear a `>= 3` bound. The
+   * equality admits only the ruled one.
+   *
+   * That distinction is here because I got it backwards once — I recorded `?` as answering 3
+   * and reported that the spelling could not be checked without a new instrument. It can, with
+   * this one, by asserting the number instead of a floor.
+   */
+  it.each(Object.keys(EXACT_ARITY))("`%s` has EXACTLY its ruled arity", async (name) => {
+    const wanted = EXACT_ARITY[name]!;
+    const fn = await bind(name as never);
+    expect(
+      fn.length,
+      `\`${name}\` answers Function.length ${fn.length}; the ruled signature gives ${wanted}.\n` +
+        `  ${fn.length === wanted + 1 ? "That is the arity of the OPTIONAL spelling: a bare `?` erases to a plain parameter with no default emitted. The ruling spells this parameter `= undefined` (\"the arity spelling, per T250's rule\") precisely so the published arity stays readable." : "The published block spells this parameter list exactly."}\n` +
+        `  Asserted as an equality and not a bound: \`>= ${wanted}\` admits both spellings and ` +
+        `so enforces neither.`,
+    ).toBe(wanted);
   });
 
   /**

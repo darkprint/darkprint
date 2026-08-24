@@ -195,11 +195,34 @@ export const MIN_ARITY: Record<string, number> = {
   enqueue: 2,
   unsubscribe: 2,
   deliverPending: 2,
-  /* Still 3 after D-190-09(2) added `publisherAccountId`: the ruling spells it
-     `string | undefined = undefined` ("the arity spelling, per T250's rule"), and
-     `Function.length` stops at the first parameter carrying a default. A `publisherAccountId?:
-     string` would answer 3 as well — `?` erases at runtime — so this bound cannot tell the two
-     spellings apart and does not claim to. */
+  enqueueRepinEvents: 3,
+};
+
+/**
+ * The two verbs whose LAST parameter a ruling spells, asserted as an EQUALITY rather than a bound.
+ *
+ * This corrects a factual error of mine. I recorded that `publisherAccountId?: string` would
+ * answer `Function.length === 3` "because `?` erases at runtime", concluded that no assertion
+ * could tell the ruled spelling from the optional one, and reported that conclusion. The
+ * premise is BACKWARDS and it is measurable in one line:
+ *
+ *     ((a, b, c, d = undefined) => {}).length === 3
+ *     ((a, b, c, d)             => {}).length === 4
+ *
+ * `?` erases to a PLAIN parameter with no default emitted, so it answers 4, not 3. Confirmed
+ * through `tsc` on both spellings, not just in plain JS.
+ *
+ * So the two spellings ARE distinguishable, and `>=` was the only thing hiding it: 3 and 4 both
+ * satisfy `>= 3`. An equality admits `= undefined` and refuses `?`. That is the ruled spelling
+ * enforced by tightening the instrument already here, not by building a new one.
+ *
+ * Only these two, and only because D-190-09(2) and the published block spell their defaults
+ * ("the arity spelling, per T250's rule"). The other five keep the lower bound: no ruling names
+ * their parameter list as a spelling, and an equality there would red on a trailing optional
+ * parameter added for a good reason later.
+ */
+export const EXACT_ARITY: Record<string, number> = {
+  deliverPending: 2,
   enqueueRepinEvents: 3,
 };
 
