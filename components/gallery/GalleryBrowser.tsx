@@ -13,6 +13,7 @@ import type { AutonomyClass, Blueprint } from "@/lib/types";
 import { cx } from "@/lib/format";
 import { ContentRow } from "@/components/ui/ContentRow";
 import { PHASE_ORDER, phaseLabel } from "@/components/ui/PhaseCoverage";
+import { blueprintHref } from "@/lib/href";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // TODO(SEAM-02) (cited at line 93): GET /api/blueprints?q&tag&cat&phase&autonomy&df&forks&sort
@@ -555,8 +556,14 @@ export function GalleryBrowser({
                   <ul className="flex flex-col gap-1.5 rounded-md border border-line bg-surface-2/50 px-3 py-2.5">
                     {rolled.map((fork) => (
                       <li key={fork.slug} className="flex flex-col gap-0.5">
+                        {/* The canonical bundle URL (B-09). `/u/<owner>/<slug>` becomes a
+                            308 onto it under D-261-08(1), and an internal link aimed at a
+                            redirect costs every reader a hop for nothing — the refusal
+                            `next.config.ts` already records for `/which-tasks`. One granted
+                            line from T261 (D-261-09); the fork rows themselves are
+                            untouched and stay seeded. */}
                         <Link
-                          href={`/u/${fork.owner}/${fork.slug}`}
+                          href={blueprintHref(fork.owner, fork.slug)}
                           className="font-mono text-[11px] text-cyan transition-colors hoverable:hover:text-cyan-bright"
                         >
                           {fork.owner} / {fork.slug}

@@ -44,7 +44,7 @@
    That is the author's own trade, made with the number in front of them. The panel spent
    one commit outside the body grid at the full width of the body, where six-column drawings
    measured 10.4 CSS px and were both whole and readable; the layout won, and
-   `app/blueprints/[slug]/page.tsx` carries the argument. What this file will not do is
+   `app/blueprints/[owner]/[slug]/page.tsx` carries the argument. What this file will not do is
    quietly restate the trade as a success — `draws its type at the size this column allows`
    asserts the achieved numbers, one per blueprint, so any further shrinkage fails and any
    improvement fails too and gets celebrated.
@@ -181,7 +181,8 @@ const MAX_BLANK_SHARE = 0.25;
 
 /* --------------------- the canvas, read where it lives --------------------- */
 
-const PAGE_FILE = "app/blueprints/[slug]/page.tsx";
+/* D-261-05: the path moved with B-09 and a path-constant repoint is NOT a weakening — AC5's prohibition binds assertions and behaviour, not file-location strings. A module-scope read that throws ENOENT deletes a whole suite from the run, which is worse than any weakening. */
+const PAGE_FILE = "app/blueprints/[owner]/[slug]/page.tsx";
 const PANES_FILE = "components/panes/SynchronisedPanes.tsx";
 const GRAPH_PANE_FILE = "components/panes/GraphPane.tsx";
 const PAGE_SOURCE = sourceFile(PAGE_FILE);

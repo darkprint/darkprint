@@ -57,7 +57,12 @@ export function FileTree({
   files: readonly BundleFile[];
   /** The strip above the listing. */
   lastChange: { message: string; digest: string; at: string };
-  /** Who made it, so the strip can draw the avatar and link the profile. */
+  /**
+   * Who made it, so the strip can draw the avatar and name the handle.
+   *
+   * Named, not linked: an author handle holds no account (D-250-11), so there is no profile
+   * to reach. See the strip below for why both of the old click targets had to go.
+   */
   author: Author;
   /** Where a file row points, when the file is really on disk. */
   hrefFor?: (file: BundleFile) => string | undefined;
@@ -77,13 +82,21 @@ export function FileTree({
       </h2>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-surface-2 px-5 py-3.5">
-        <Avatar author={author} size="sm" link />
-        <Link
-          href={`/u/${author.username}`}
-          className="font-mono text-[11px] text-dim transition-colors hoverable:hover:text-cyan"
-        >
-          {author.username}
-        </Link>
+        {/* The AUTHOR, and it is rendered as text on purpose (D-261-06, D-260-25's end
+            state (d)). The archive's six author handles hold no accounts — D-250-11 rules
+            that the import creates none — and `release.manifest.author` keeps the original
+            handle because re-attribution moves ownership and not authorship (D-250-18). So
+            a handle here names somebody who has no profile, and a link to `/u/<handle>` was
+            a rendered promise of a page that 404s. A handle as text is the archive telling
+            the truth; the OWNER, who does hold an account, keeps both of its click targets
+            in `BundleHeader`.
+
+            Two things had to go, not one. `Avatar` builds its own `/u/{handle}` link when
+            it is passed `link` (`components/ui/Avatar.tsx:66-69`), so dropping the visible
+            `<Link>` alone left the avatar still linking: one `href=` in this file and two
+            click targets on the screen. The `link` prop comes off with it. */}
+        <Avatar author={author} size="sm" />
+        <span className="font-mono text-[11px] text-dim">{author.username}</span>
         <span className="min-w-0 flex-1 truncate text-sm text-fg">
           {lastChange.message}
         </span>

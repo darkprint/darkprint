@@ -19,6 +19,8 @@ import {
   bundleFilePaths,
   bundleHref,
 } from "@/lib/content/bundle-export";
+import { SITE_ORIGIN } from "@/lib/content/bundle-export";
+import { blueprintFileHref, cardFileHref } from "@/lib/href";
 import { OWNED_BUNDLES } from "@/lib/data/bundles";
 import { getAuthor } from "@/lib/data";
 import { profileFor } from "@/lib/data/profiles";
@@ -274,4 +276,104 @@ export function bundleView(username: string, slug: string): BundleView | undefin
       resolves: bundle.drift?.tone !== "blocked",
     },
   };
+}
+
+/* --------------------- the registry path --------------------- */
+
+/**
+ * The listing a release really has, from the paths the export module reports.
+ *
+ * `publishedFiles` above answers the same question off the archive; this answers it off
+ * `releaseFiles`, and the per-file sentences come from the one `PUBLISHED_FILE_NOTE` table
+ * so the two cannot describe one folder differently. Split out rather than duplicated for
+ * the reason D-260-07 split `termUsageOver` out of `termUsageIndex`: two corpora, one
+ * computation.
+ */
+export function filesFromPaths(paths: readonly string[], at: string): BundleFile[] {
+  const files: BundleFile[] = [];
+  let cards = 0;
+  for (const path of paths) {
+    if (path.startsWith(`${BUNDLE_CARDS_DIR}/`)) {
+      cards += 1;
+      continue;
+    }
+    const meta = PUBLISHED_FILE_NOTE[path];
+    if (meta === undefined) continue;
+    files.push({
+      path,
+      kind: meta.kind,
+      change: meta.note,
+      state: path === TOPOLOGY_DOT ? "source" : path === BUNDLE_VOCABULARY ? "verbatim" : "generated",
+      at,
+    });
+  }
+  files.push({
+    path: `${BUNDLE_CARDS_DIR}/`,
+    kind: "dir",
+    change: `${cards} pinned card${cards === 1 ? "" : "s"}, one document each`,
+    state: "pinned",
+    at,
+  });
+  files.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  return files;
+}
+
+/**
+ * A one-character stand-in used only to take `blueprintFileHref`'s prefix.
+ *
+ * The brace expansion has to be appended to the release's base URL, and that base is
+ * `blueprintFileHref`'s to spell. Asking it for a known path and cutting the path back off
+ * keeps ONE author for the shape — rebuilding the prefix here would be the second spelling
+ * that drifts the day the route moves. A single unreserved character, so nothing is
+ * percent-encoded into a different length on the way through.
+ */
+const PATH_PROBE = "x";
+
+/**
+ * The whole folder in one `curl`, at the release's immutable digest address.
+ *
+ * This replaces `bundleDownloadCommand`, whose URLs point into `public/bundles/<slug>/` —
+ * the mirror `scripts/generate-bundles.ts` writes from `content/` before a build. A
+ * blueprint published since the last deploy has no folder there at all, so AC3 and AC4
+ * could not both hold on it (D-261-04). The mirror is untouched and out of this task's
+ * reach; the page stops linking it.
+ *
+ * The digest and not the version, because a command a reader pastes into a terminal
+ * tomorrow must fetch the folder the page was describing today — the immutable promise
+ * `/mcp` already calls load-bearing.
+ *
+ * Brace expansion and `-o "<slug>/#1"` are kept verbatim from the command this replaces:
+ * `#1` is `curl`'s own back-reference to the expansion, so each file lands under its own
+ * name inside a folder that resolves as a bundle, and `--fail-early` means a folder is
+ * never written half-fetched. It lives here rather than in `lib/href.ts` because a shell
+ * command is not an href, and because `SITE_ORIGIN` would otherwise pull `lib/content`
+ * into every client bundle that imports a link builder.
+ */
+export function releaseDownloadCommand(
+  ownerHandle: string,
+  slug: string,
+  release: { digest: string },
+  files: readonly string[],
+): string {
+  const base = `${SITE_ORIGIN}${blueprintFileHref(ownerHandle, slug, release, PATH_PROBE)}`.slice(
+    0,
+    -PATH_PROBE.length,
+  );
+  return `curl --fail-early -fsSL --create-dirs -o "${slug}/#1" "${base}{${files.join(",")}}"`;
+}
+
+/**
+ * One card document in one command, at its registry address.
+ *
+ * The card half of `releaseDownloadCommand`, replacing `cardDownloadCommand`'s
+ * `public/cards/<ref>.yaml` for the same reason (D-261-04): the static mirror is a build
+ * artefact of `content/` and a card published since the last deploy is not in it.
+ *
+ * No braces, no `#1` and no `--create-dirs`: one URL, one file, landing in the working
+ * directory under its own name, which is what `-O` means and the one case where `-O` is the
+ * right flag. `--fail-early` has nothing to be early about with a single URL and is left
+ * off rather than carried as decoration — the shipped command's own reasoning, kept.
+ */
+export function cardFileDownloadCommand(ref: string): string {
+  return `curl -fsSL -O "${SITE_ORIGIN}${cardFileHref(ref)}"`;
 }

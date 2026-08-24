@@ -3,6 +3,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 
 import { BeatCaption } from "./BeatCaption";
 import { BlueprintWalk } from "./blueprint/BlueprintWalk";
+import { ARCHIVE_OWNER, blueprintHref } from "@/lib/href";
 
 /* ============================================================
    Beat 2: a graph, and then the file the graph is a picture of.
@@ -115,7 +116,7 @@ export function SectionBlueprint() {
           }
         />
 
-        <BeatCaption href={`/blueprints/${STARTER}`} cta="Inspect a blueprint">
+        <BeatCaption href={blueprintHref(ARCHIVE_OWNER, STARTER)} cta="Inspect a blueprint">
           A blueprint pins the handoffs, loops, checkpoints, and deliberate absences that
           make a workflow reusable. The files stay plain enough to inspect before your
           harness runs them.

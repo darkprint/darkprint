@@ -193,7 +193,7 @@ describe("the switch is thrown by the page that owns the panel", () => {
    */
   it("keeps the radar scorecard alongside the provenance-aware evidence layers", () => {
     const read = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
-    const page = read("app/blueprints/[slug]/page.tsx");
+    const page = read("app/blueprints/[owner]/[slug]/page.tsx");
     expect(page).toContain("<EvidenceLayers");
     expect(page).toContain("<ScoreRadar");
     expect(page).toContain("<MetricBars");

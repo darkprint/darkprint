@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { MetaPill } from "@/components/ui/MetaPill";
 import { CARD_SHELL } from "@/components/ui/ContentCard";
 import { ContentRow, ROW_GRID, RowThumbFrame } from "@/components/ui/ContentRow";
+import { blueprintHref } from "@/lib/href";
 
 /* ============================================================
    Your blueprints: one list, public and private together, one row TEMPLATE for all of it.
@@ -112,11 +113,18 @@ function DraftRow({ row, owner }: { row: OwnedRow; owner: boolean }) {
       {/* ---------- zone 2: what the draft claims about itself ---------- */}
       <div className="flex min-w-0 flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* The owner's row points at the owner's own view of the bundle. A visitor never
-              reaches a `DraftRow` at all — every bundle a visitor's list holds resolves to
-              a `blueprint` and takes the `ContentRow` branch above instead. */}
+          {/* The owner's row points at the owner's view of the bundle, which is now the
+              CANONICAL page rather than `/u/<owner>/<slug>`: B-09 gave a bundle one name,
+              and D-261-08(1) has that page absorb the private/draft branch and serve the
+              owner view per actor. So this destination is correct only BECAUSE of that
+              absorb — the two stand or fall together (D-261-09, one granted line from
+              T261). Pointing at the old route instead would cost a 308 hop, which this
+              repository refuses for internal links.
+
+              A visitor never reaches a `DraftRow` at all — every bundle a visitor's list
+              holds resolves to a `blueprint` and takes the `ContentRow` branch above. */}
           <Link
-            href={`/u/${bundle.owner}/${bundle.slug}`}
+            href={blueprintHref(bundle.owner, bundle.slug)}
             className="font-display text-lg font-semibold text-cyan transition-colors hoverable:hover:text-cyan-bright"
           >
             {bundle.slug}

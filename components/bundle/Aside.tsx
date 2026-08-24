@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import type { Release, UpstreamMoved } from "@/lib/data/bundles";
 import { cx, prettyDate } from "@/lib/format";
-import { nodeHref } from "@/lib/href";
+import { blueprintHref, nodeHref } from "@/lib/href";
 import { Button } from "@/components/ui/Button";
 import { MetaPill } from "@/components/ui/MetaPill";
 
@@ -93,10 +93,21 @@ export function VisibilitySwitch({
         Publishing runs the validator over your graph and gives the copy a scorecard of its
         own. It does not change the upstream, and the lineage line stays.
       </p>
+      {/* HALF OF THIS SENTENCE BECAME FALSE AND HALF DID NOT, so it is rewritten rather
+          than deleted — D-262-15's move, where two `DangerRow` reasons were rewritten
+          because there was an account and there was ownership and what was missing was the
+          ROUTE. Measured here the same way: `bundle.visibility` is a real column, the
+          canonical page reads it per request and the pill above states it (AC6, D-261-01),
+          so "nothing stores a visibility" is false and the marker cannot keep saying it.
+          The switch still writes nothing — there is no per-bundle visibility route in
+          `app/api/**`, only the ACCOUNT default at `/api/account/default-visibility`, and
+          SEAM-67 is still a TODO at the head of this file — so the switched-off half stays
+          true and stays said. Deleting the whole line would be D-78's removed-early
+          direction for the half that is still a limit. */}
       <p className="mt-2 font-mono text-[11px] text-amber">
         {blocked
           ? "◐ seeded · this bundle does not resolve, so it could not publish even with a registry behind it"
-          : "◐ seeded · the switch is drawn and switched off: nothing stores a visibility"}
+          : "◐ seeded · the visibility above is stored and read; the switch is drawn and switched off because no route accepts the change"}
       </p>
     </section>
   );
@@ -247,8 +258,14 @@ export function Forks({
         <ul className="mt-3 flex flex-col gap-3">
           {forks.map((fork) => (
             <li key={`${fork.owner}/${fork.slug}`} className="flex flex-col gap-1">
+              {/* The CANONICAL bundle URL, not `/u/<owner>/<slug>` (B-09, D-261-08(1)).
+                  That route is becoming a 308 onto this one, and pointing an internal link
+                  at a redirect costs every reader a hop for nothing — the refusal this
+                  repository already records for `/which-tasks` in `next.config.ts`. The
+                  forks themselves stay seeded and out of scope; only where the row POINTS
+                  moves, because a fork is a bundle and a bundle now has one name. */}
               <Link
-                href={`/u/${fork.owner}/${fork.slug}`}
+                href={blueprintHref(fork.owner, fork.slug)}
                 className="font-mono text-[12px] text-cyan transition-colors hoverable:hover:text-cyan-bright"
               >
                 {fork.owner} / {fork.slug}
