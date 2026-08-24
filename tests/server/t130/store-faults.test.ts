@@ -14,7 +14,7 @@
 
    ── the sites are derived from the contract, not found in code ──
    I was asked not to read the implementation and did not need to.
-   **All three published functions take `db: Db`**, so a store
+   **Every function the block publishes takes `db: Db`** (three at T130's merge; the count has since grown at ruled amendments and the property quantifies over the block, not the number), so a store
    fault is reachable from every one of them, and the published
    block enumerates them. The property below is therefore
    quantified over the whole published surface rather than over
