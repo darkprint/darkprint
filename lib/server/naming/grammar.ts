@@ -85,6 +85,43 @@ export function isNameSegment(value: string): boolean {
 }
 
 /**
+ * The longest handle the **product** will accept (D-70-15, owner-ruled 2026-08-18), and it
+ * is a SECOND bound beside `MAX_NAME_LENGTH` rather than a replacement for it. The two
+ * answer different questions: 255 is what a btree index tuple holds on every page size
+ * Postgres supports, and 32 is what a handle can be without the display defeating the
+ * reservation.
+ *
+ * **The argument is B-05, not tidiness.** A handle is permanently reserved *as protection
+ * against impersonation*, and it is written into the bytes of every card its owner
+ * publishes. At 255 a chip or a profile header truncates, so `sol-antczak-aaaaaa...`
+ * renders as `sol-antczak...` — the reservation machinery defends the exact string while
+ * the display defends nothing. 32 is chosen so nothing truncates, which closes the vector
+ * instead of mitigating it. Measured rather than assumed: every handle in `content/` is
+ * 4-11 characters (`orin`, `lupo`, `hachi`, `k0bra`, `mara-veil`, `sol-antczak`), so 32 is
+ * about three times the longest real one.
+ */
+export const MAX_HANDLE_LENGTH = 32;
+
+/**
+ * A handle: one `CARD_ID` segment, inside the product bound.
+ *
+ * **Deliberately NOT folded into `isNameSegment`, and that is the whole shape of the fix**
+ * (D-071-01(1)). Three callers read `isNameSegment` with three meanings — handles here,
+ * slugs through `checkSlug`, and term namespaces through `validateNamespace` — and only
+ * the first is bounded at 32. Bounding the shared predicate would refuse the 200-character
+ * slug AC3 requires to stay legal and would reach the term namespaces the section puts out
+ * of scope. So the narrower bound gets a narrower predicate, and each door names the one
+ * it means.
+ *
+ * Length first, for the reason `isNameSegment` gives: the alphabet is single-byte ASCII, so
+ * a character count is a byte count and no encoding step sits between this bound and the
+ * one the store applies.
+ */
+export function isHandle(value: string): boolean {
+  return value.length <= MAX_HANDLE_LENGTH && isNameSegment(value);
+}
+
+/**
  * `card/bad-id` for both validators, and it is a deliberate reuse rather than a
  * missing code: `DiagnosticCode` is a closed union in `lib/core/diagnostics.ts`,
  * which this task may not edit, and `card/bad-id` is the code the engine itself

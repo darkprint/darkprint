@@ -18,11 +18,22 @@
    warning travels with it and is not this module's to enforce: a
    boundary test that *imports* the bound moves with it and asserts
    nothing, so the number belongs in such a test as a literal.
+
+   `MAX_HANDLE_LENGTH` joins it for the same reason and on the same
+   precedent (D-071-01(4)): D-70-15's product bound is published, so
+   a caller must be able to name it rather than retype 32. The same
+   warning applies unchanged — a cell that imports it to bound
+   itself asserts only that the module agrees with itself.
+
+   `isHandle` is deliberately NOT here. The bound is the published
+   fact; the predicate that applies it is this folder's own spelling
+   and is reached through `checkHandle` and `allocateHandle`, which
+   is what a caller outside the folder actually has business asking.
    ============================================================ */
 
 export type { Availability } from "./types";
 export { checkHandle, allocateHandle, releaseHandle } from "./handles";
 export { checkSlug } from "./slugs";
 export { isReservedSlug } from "./reserved";
-export { MAX_NAME_LENGTH, validateCardId, validateNamespace } from "./grammar";
+export { MAX_HANDLE_LENGTH, MAX_NAME_LENGTH, validateCardId, validateNamespace } from "./grammar";
 export { HandleTakenError, InvalidNameError, NamingStoreError } from "./errors";
