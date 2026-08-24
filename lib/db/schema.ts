@@ -623,3 +623,103 @@ export const cardVersionEmbedding = pgTable("card_version_embedding", {
   embedding: vector("embedding", { dimensions: 384 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/* ============================================================
+   T190 — notifications (D-190-01, extension only)
+
+   Appended under D-190-01's bounds: NEW tables and a NEW enum
+   type, nothing altered. The ten base tables and the five base
+   enums are untouched, so `tests/server/t005/existing.test.ts`
+   measures the same delta it measured yesterday — its AC7 cell
+   diffs only `BASE_TABLES`, and its enum cell compares only the
+   five in `baseline.json`.
+
+   `account.notification_preferences` already exists and needed no
+   migration: T000 shipped it `jsonb NOT NULL DEFAULT '{}'` with a
+   comment reserving it for this task. This task owns its SHAPE,
+   which is why the shape lives in `lib/server/notifications` as
+   four booleans over a published default rather than as four
+   columns here.
+   ============================================================ */
+
+/**
+ * The four events `lib/data/account.ts:92-117` seeds, in that file's own order.
+ *
+ * Declared semantically rather than alphabetically, which is the house style for four of
+ * the five base enums. `tests/enum-declaration-order.test.ts` pins `target_kind` alone and
+ * for a reason that does not reach here: **nothing sorts this column in SQL.** The unique
+ * index below is an equality lookup, and the drain orders by `created_at`. A later reader
+ * that does sort it must cast to text, exactly as D-140-10 made `saves` do.
+ */
+export const notificationKind = pgEnum("notification_kind", ["repin", "fork", "deprecation", "digest"]);
+
+/* --------------------- notification_queue (T190, B-19) --------------------- */
+
+/**
+ * One row per notification owed to one account, and **the row IS the idempotency**
+ * (D-190-01). The unique key is `(kind, account_id, subject_digest)` and `enqueue` inserts
+ * with the conflict caught, so a fan-out retried after a partial failure inserts nothing
+ * twice — AC5 without a status column and without a counter, which is the shape that passes
+ * sequential tests and double-delivers under concurrent workers.
+ *
+ * `subject_digest` is `contentDigest(canonicalJson(subject))`, both published from
+ * `@/lib/core`. **No digest is authored here.** `Record<string, string>` has no canonical
+ * byte form of its own, so two spellings of one subject would otherwise be two rows;
+ * `canonicalJson` sorts keys by code unit and is what makes them collide.
+ *
+ * `subject` is kept BESIDE its digest rather than derived back out of it: a digest is
+ * one-way, and `deliverPending` has to hand the subject to the mailer. The pair is not two
+ * sources for one fact — the digest is the key, the jsonb is the payload, and only the
+ * digest is ever compared.
+ *
+ * **`delivered_at` is a drain cursor, not a retry state machine** (D-190-02). D-190-01
+ * forbids "a status column and a counter" — a mechanism that decides whether to send again
+ * by counting attempts. This column answers a different question, "has this row been handed
+ * to the mailer yet", it is written exactly once, and it never counts. Rows are RETAINED
+ * after delivery: deleting them would return the unique key to a state where the same event
+ * re-enqueues, which is the idempotency AC5 rests on.
+ */
+export const notificationQueue = pgTable("notification_queue", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  kind: notificationKind("kind").notNull(),
+  accountId: uuid("account_id").notNull().references(() => account.id),
+  subject: jsonb("subject").notNull(),
+  subjectDigest: text("subject_digest").notNull(),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("notification_queue_kind_account_subject_key").on(t.kind, t.accountId, t.subjectDigest),
+  /* The drain's own query, which is `delivered_at is null order by created_at`. Partial, so
+     the index holds only what is still owed rather than growing with every row ever
+     delivered — the retention rule above is what makes that distinction worth having. */
+  index("notification_queue_pending_idx")
+    .on(t.createdAt)
+    .where(sql`${t.deliveredAt} is null`),
+]);
+
+/* --------------------- unsubscribe_token (T190, AC6) --------------------- */
+
+/**
+ * AC6's working unsubscribe, STORED rather than signed (D-190-01).
+ *
+ * "No longer valid" needs revocation; a row deleted on use IS revocation. A signed token
+ * would put key management on a task with no key owner, and would have no way to stop being
+ * valid.
+ *
+ * **Its own table, not a column on the queue row** (D-190-03). A token deleted on use would
+ * take the queue row with it, and that row is the idempotency key AC5 rests on — the two
+ * lifetimes are genuinely different and a shared row cannot hold both.
+ *
+ * Unique on `(account_id, kind)` rather than one token per email: `enqueue` reuses the
+ * account's existing token for that kind, so every email about one kind carries one link.
+ * The link names the KIND and never the account (AC6) — `token` is opaque and this row is
+ * the only thing that resolves it.
+ */
+export const unsubscribeToken = pgTable("unsubscribe_token", {
+  token: text("token").primaryKey(),
+  accountId: uuid("account_id").notNull().references(() => account.id),
+  kind: notificationKind("kind").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("unsubscribe_token_account_kind_key").on(t.accountId, t.kind),
+]);
