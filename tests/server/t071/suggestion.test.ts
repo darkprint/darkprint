@@ -199,7 +199,7 @@ describe("D-071-01(3): the stem shortens, so the suggestion stays inside the bou
       ).toBeLessThanOrEqual(MAX_HANDLE_LENGTH);
     });
 
-    it(`and that suggestion is itself \`available\` — the disagreement D-70-13 names`, async () => {
+    it(`and the ${length}-character handle's suggestion is itself \`available\` — the disagreement D-70-13 names`, async () => {
       /* The behavioural half, and it is not redundant with the length assertion above: a
          suggestion could sit inside the bound and still be a name somebody holds, or one the
          grammar refuses for a reason that has nothing to do with length. This asks the module
@@ -226,7 +226,7 @@ describe("D-071-01(3): the stem shortens, so the suggestion stays inside the bou
       ).toBe(true);
     });
 
-    it(`and \`allocateHandle\` accepts it — "at most ${MAX_HANDLE_LENGTH} and allocatable"`, async () => {
+    it(`and \`allocateHandle\` accepts the ${length}-character handle's suggestion — "at most ${MAX_HANDLE_LENGTH} and allocatable"`, async () => {
       /* The ruling requires both, and the second does not follow from the first: `checkHandle`
          answering `available` is a claim by the query door about a name the WRITE door has
          never seen, which is the whole reason AC1 insists on both.
