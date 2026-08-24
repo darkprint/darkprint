@@ -20,6 +20,10 @@
    table — which reads exactly like a deletion that worked.
    ============================================================ */
 
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { RecordedSetup } from "./contract";
@@ -73,6 +77,85 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await world.optional()?.scratch.drop();
+});
+
+/* ============================================================
+   the premise under D-120-19's recorded latent hazard
+
+   Handback B is RECORDED LATENT rather than charged: a ghost's
+   note under a bundle that has gone private aborts the deletion
+   with T170's class, because `deleteNote` resolves the note's
+   parent and refuses one it cannot read. It is latent because
+   NOTHING IN THE PRODUCT FLIPS `bundle.visibility` — a bundle is
+   public or private from its first publish and stays there.
+
+   That is a claim about the tree, and a claim about the tree
+   goes stale silently. So it is driven rather than asserted:
+   every `.ts`/`.tsx` under `lib/`, `app/` and `scripts/` is
+   scanned for a drizzle update against the bundle table, and
+   every such site must be one whose `set(...)` leaves
+   `visibility` alone. The day a visibility verb ships, this cell
+   reds and the latent hazard becomes live — which is exactly
+   when somebody needs to be told.
+   ============================================================ */
+
+const SOURCE_ROOTS = ["lib", "app", "scripts"] as const;
+const REPO = fileURLToPath(new URL("../../../", import.meta.url));
+
+function sourceFiles(): string[] {
+  const out: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === "node_modules" || entry.name === ".next") continue;
+        walk(full);
+        continue;
+      }
+      /* Colocated tests are excluded: a fixture is entitled to write any column, and the
+         claim is about what the PRODUCT does. `tests/**` is outside these roots already. */
+      if (/\.(ts|tsx)$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) out.push(full);
+    }
+  };
+  for (const root of SOURCE_ROOTS) walk(join(REPO, root));
+  return out;
+}
+
+describe("T120 premise — D-120-19's latent hazard stays latent", () => {
+  it("no shipped writer sets `bundle.visibility`, which is why handback B is latent", () => {
+    const offenders: string[] = [];
+    let sites = 0;
+    for (const file of sourceFiles()) {
+      const text = readFileSync(file, "utf8");
+      /* Each update against the bundle table, with the 400 characters that follow it — long
+         enough to reach the `set({...})` that goes with it and short enough not to run into
+         the next statement. */
+      for (const match of text.matchAll(/\.update\(\s*schema\.bundle\s*\)/g)) {
+        sites += 1;
+        const window = text.slice(match.index ?? 0, (match.index ?? 0) + 400);
+        if (/\bvisibility\s*:/.test(window)) {
+          offenders.push(`${file.slice(REPO.length)} @ ${match.index}`);
+        }
+      }
+    }
+
+    /* Fail closed. A scan that finds no update site at all is a broken scan reporting the
+       same all-clear as a clean tree — T120's own transfer holds two of them, so zero is
+       impossible on a tree where this task is merged. */
+    expect(
+      sites,
+      "the scan found no `update(schema.bundle)` site anywhere. T120's own `transferBundle` " +
+        "holds two, so this is a broken instrument reporting an all-clear.",
+    ).toBeGreaterThanOrEqual(2);
+
+    expect(
+      offenders,
+      "a shipped writer now sets `bundle.visibility`. D-120-19 records handback B as LATENT " +
+        "on exactly this premise: a ghost's note under a bundle that went private aborts the " +
+        "deletion with T170's `NoteStoreError`, because `deleteNote` resolves the note's " +
+        "parent and refuses one it cannot read. The hazard is live from this commit.",
+    ).toEqual([]);
+  });
 });
 
 describe("T120 instruments — the fixtures write what the cells will look for", () => {
