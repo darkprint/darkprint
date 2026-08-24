@@ -129,7 +129,7 @@ describe("the published URL is served", () => {
 });
 
 describe(`${AUTHOR_ROUTE} answers 200 ProfileRecord`, () => {
-  it("answers the record's three members, with `joinedAt` as an ISO string", async () => {
+  it("answers the record's seven members, with `joinedAt` as an ISO string", async () => {
     const answer = await callRoute(path(owner.handle));
     expect(answer.status).toBe(200);
     const body = asWireProfileRecord(await answer.json(), `${AUTHOR_ROUTE} 200 body`);
