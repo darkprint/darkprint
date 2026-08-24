@@ -281,7 +281,10 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
     /* 45 -> 48 at T120's merge: lifecycle publishes DeletionRefusedError,
        LifecycleStoreError and TransferRefusedError -- exactly three, pinned by its own
        surface cell so a re-export cannot double-count. Derived here. */
-    ).toBe(48);
+    /* 48 -> 50 at T220's merge: lib/server/mcp publishes McpRefusedError and McpStoreError
+       (D-220-06), exactly two, ExportError wrapped at the boundary so the surface refuses
+       with one voice. Derived here. */
+    ).toBe(50);
 
     const rendered: string[] = [];
     const traceless: string[] = [];

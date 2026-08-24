@@ -1,0 +1,19 @@
+{
+  "name": "darkprint",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Read the DarkPrint registry from inside an agent session, over MCP.",
+  "license": "MIT",
+  "bin": {
+    "darkprint": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
