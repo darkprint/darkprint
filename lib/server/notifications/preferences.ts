@@ -23,7 +23,7 @@ import { NotAccountOwnerError } from "@/lib/server/accounts";
 import { can, type Actor } from "@/lib/server/policy";
 import { DEFAULT_PREFERENCES } from "./defaults";
 import { storedPreferencesFor, withStore, writePreferences } from "./store";
-import type { EventKind, Preferences } from "./types";
+import { EVENT_KINDS, type EventKind, type Preferences } from "./types";
 
 /**
  * The refusal, in T050's parameterised family (D-190-05 ratifies a third instance of it).
@@ -98,9 +98,21 @@ export async function getPreferences(db: Db, actor: Actor, accountId: string): P
  * `fillPreferences` refuses to coerce: `"false"` is truthy, and a caller that can turn a
  * preference on by sending a string has found a way past the switch the account actually holds.
  *
- * **`setPreferences({})` is a no-op that answers the current four** (D-190-05). It still writes,
- * because the written object is the filled current state and writing it is what makes the
- * column total for an account whose row is still `{}` — the answer is the same either way.
+ * **`setPreferences({})` performs NO WRITE and answers the current four** (D-190-11, a round
+ * charge against my earlier reading). I had it write the filled four, arguing that writing is
+ * what makes the column total. The tell that settles it is the side effect: `writePreferences`
+ * bumps `updated_at`, a column **T050 owns**, so under my reading an empty PATCH from any client
+ * mutated another module's column as the consequence of nothing. "No-op" plainly means no write.
+ *
+ * **Normalisation-to-total survives, on REAL writes.** A patch carrying at least one known key
+ * writes all four, so the column becomes total at the first genuine write and stays total. What
+ * is gone is only the write that changed nothing.
+ *
+ * The test is **CONTRIBUTION, not difference** (D-190-11 as clarified): a patch is empty when it
+ * contributes no well-formed entry after BOTH filters — unknown keys, and known keys carrying a
+ * value this module declines to use. `{ digest: 3 }` therefore writes nothing. `{ fork: false }`
+ * against an already-false fork DOES write, because it contributed a usable entry; the ruled line
+ * is about a caller that named no usable preference at all, never about whether anything moved.
  */
 export async function setPreferences(
   db: Db,
@@ -117,6 +129,11 @@ export async function setPreferences(
        does not hold, which is a session and a row disagreeing. */
     if (row === undefined) throw notThisAccountsOwner("setPreferences");
     const current = fillPreferences(row.stored);
+
+    /* D-190-11. Returned BEFORE any write, so an empty-after-filtering patch touches neither
+       `notification_preferences` nor `updated_at`. The answer is the filled current four, which
+       is what it would have been either way — the difference is entirely in the side effect. */
+    if (!offersAKnownKey(patch)) return current;
 
     const one = (kind: EventKind): boolean => readOffered(patch, kind) ?? current[kind];
     /* Member by member for `fillPreferences`'s reason: an accumulated record cast to
@@ -141,6 +158,33 @@ export async function setPreferences(
  * whose `digest` exists only on a prototype has not offered one, and authority — here, the
  * authority to change a setting — is never inherited.
  */
+/**
+ * Whether `patch` contributes any WELL-FORMED entry — D-190-11 as clarified, and the boundary is
+ * **contribution, not difference**.
+ *
+ * "Empty after filtering" means after BOTH filters: a key this module does not know, and a known
+ * key carrying a value it declines to use, each contribute nothing. So `{ digest: 3 }` writes
+ * nothing, on the ruling's own rationale — a write, and T050's `updated_at` bumped, as the
+ * consequence of nothing.
+ *
+ * I first shipped this as `Object.hasOwn`, reading "unknown-key filtering" as the membership
+ * filter alone, and declared the narrower reading as the one I was not taking. It was ruled the
+ * other way, and the clarified line is better: the two filters exist for the same purpose, so
+ * splitting them would have made `{ digest: 3 }` and `{ sms: 3 }` behave differently for no
+ * reason a caller could see.
+ *
+ * **Contribution and not difference** is the other half, and it is why this asks `readOffered`
+ * rather than comparing against `current`: `{ fork: false }` on an already-false fork contributes
+ * a well-formed entry, so it is a real write and bumps the stamp. Only a caller that named no
+ * usable preference at all is the no-op.
+ *
+ * `readOffered` carries the `Object.hasOwn` gate, so a `digest` existing only on a prototype has
+ * not been named here either — authority is never inherited.
+ */
+function offersAKnownKey(patch: Partial<Preferences>): boolean {
+  return EVENT_KINDS.some((kind) => readOffered(patch, kind) !== undefined);
+}
+
 function readOffered(patch: Partial<Preferences>, kind: EventKind): boolean | undefined {
   if (typeof patch !== "object" || patch === null || !Object.hasOwn(patch, kind)) return undefined;
   const offered = (patch as Record<string, unknown>)[kind];
