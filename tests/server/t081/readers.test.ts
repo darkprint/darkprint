@@ -10,27 +10,38 @@
    substring of the SQL it ran, quantified over the whole surface
    with a floor so an empty case list reds.
 
-   ── the domain is the thirteen readers, and the floor is a set
-      equality rather than a count ──
-   A count of 13 is satisfied by thirteen of anything. What is
+   ── the domain is §T080's published readers, and the floor is a
+      set equality rather than a count ──
+   A count of 16 is satisfied by sixteen of anything. What is
    asserted is that the set of read functions on the barrel EQUALS
-   §T080's published thirteen, so the day a fourteenth reader lands
-   and this loop does not know about it, the floor reds instead of
-   the sweep quietly measuring twelve.
+   the published list, so a reader that DISAPPEARS reds the floor
+   instead of the sweep quietly measuring one fewer.
+
+   **The other direction was claimed here and this file cannot
+   check it.** The original wording said a reader landing that this
+   loop does not know about would red the floor. It does not:
+   `present` is filtered THROUGH `READER_NAMES` before the
+   comparison, so `present` is a subset of it by construction and no
+   barrel addition can move either side. Measured at T132, which
+   added three readers — this file stayed green and
+   `surface.test.ts`'s barrel-agreement check reddened alone, which
+   is where that direction actually lives. Corrected rather than
+   carried, because a guard credited with a protection it does not
+   have is how the protection stops being looked for.
 
    ── why each reader gets its own dead pool ──
    A pool per call, never one shared. A module that memoised a
    snapshot against a `Db` instance would fault on the first reader
-   and answer from cache for the twelve after it, and the sweep
-   would report twelve greens for a reason that has nothing to do
-   with the wrapper. The cost is thirteen refused connections,
+   and answer from cache for every one after it, and the sweep
+   would report greens for a reason that has nothing to do with
+   the wrapper. The cost is one refused connection per reader,
    which is microseconds on a loopback port nothing is listening on.
 
    ── the tests declared here are static ──
-   Thirteen `it`s from a module-scope loop over a constant, each
-   loading the module inside itself. A file whose subject does not
-   exist then prints thirteen reds rather than one collection
-   failure, and nothing is hidden behind a hook.
+   One `it` per published reader from a module-scope loop over a
+   constant, each loading the module inside itself. A file whose
+   subject does not exist then prints one red per reader rather than
+   one collection failure, and nothing is hidden behind a hook.
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
@@ -74,7 +85,7 @@ async function faultOf(
 }
 
 describe("AC2/AC3 — the domain is §T080's published read surface", () => {
-  it("the barrel's read functions are exactly the thirteen the block publishes", async () => {
+  it("the barrel's read functions are exactly the sixteen the block publishes", async () => {
     const mod = await loadRegistry();
     const present = READER_NAMES.filter((name) => typeof mod[name] === "function").sort();
 
@@ -82,13 +93,14 @@ describe("AC2/AC3 — the domain is §T080's published read surface", () => {
       READER_NAMES.length,
       "The loop below quantifies over this list. An empty or shortened one turns every sweep " +
         "in this file into a green over nothing, which is the failure AC3's floor clause names.",
-    ).toBe(13);
+    ).toBe(16);
 
     expect(
       present,
       "A published reader is missing from the barrel, so the AC2 sweep below is measuring a " +
-        "smaller surface than the criterion quantifies over. The thirteen are §T080's " +
-        "Published signatures block, and AC2's \"every published read\" is that block.",
+        "smaller surface than the criterion quantifies over. The sixteen are §T080's " +
+        "Published signatures block as T132 amended it, and AC2's \"every published read\" " +
+        "is that block.",
     ).toEqual([...READER_NAMES].sort());
   });
 });
@@ -291,6 +303,9 @@ describe("the sweep's own case count", () => {
         "quantified over, asserted as a set so a silently shortened loop reds here rather " +
         "than reporting a clean sweep of a smaller domain.",
     ).toEqual([...READER_NAMES].sort());
-    expect(driven.size).toBe(13);
+    /* The literal beside the set equality, so shrinking BOTH the list and this number in one
+       edit still takes a second decision. Thirteen at T081's merge; sixteen since T132's
+       three ruled amendments to §T080's block. */
+    expect(driven.size).toBe(16);
   }, 60_000);
 });

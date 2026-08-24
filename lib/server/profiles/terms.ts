@@ -29,33 +29,43 @@
    still pinned by a current release. Ids are de-duplicated, so a
    term carried across five releases counts once.
 
-   **The shape is decided by `parseOntologyTerms`, not here.**
-   `release.local_vocabulary` is `jsonb` and T010 publishes its
-   input as `vocabulary?: unknown` (`archive/types.ts:31`), so the
-   column's interpretation is held by no type anywhere and any
-   caller of `addRelease` can store any shape. This file consumes
-   `lib/content/ontology-file.ts`'s parser — the same one T090
-   consumes — rather than writing a second opinion about what a
-   stored vocabulary is. It is the shared standard, so it cannot
-   disagree with itself.
+   **The shape is `StoredVocabulary`, and this file no longer has
+   an opinion about it (D-132-02 C-7).**
+   `release.local_vocabulary` is `jsonb`, and until T133 its
+   interpretation was held by no type anywhere: T010 published the
+   writer's input as `vocabulary?: unknown`, so any caller of
+   `addRelease` could store any shape and three modules each read it
+   their own way. T133 ended that — the column has one published
+   shape, `StoredVocabulary`, and one published reading of it,
+   `parseStoredVocabulary` on `@/lib/server/archive`, which
+   `addRelease` and `lib/server/export/vocabulary.ts` already
+   consume. This file consumes it too, so there is one reader of
+   this column again.
 
-   ── Where this DIVERGES from `lib/server/export/vocabulary.ts` ──
-   That module's `storedVocabulary` is the only other reader of
-   this column, it is NOT on T090's barrel, and it additionally
-   requires `text` to be a string (D-90-03), refusing a release
-   stored before that amendment. This file does not require `text`,
-   because `text` exists so `exportBundle` can write the author's
-   own bytes into a folder unaltered, and a COUNT emits no bytes.
-   So a `{ terms }` row with no `text` is refused by T090 and
-   counted here, deliberately.
+   ── The divergence this file used to carry, and why it is gone ──
+   It read the column through `parseOntologyTerms` directly and
+   therefore did NOT require `text`, on the argument that `text`
+   exists so `exportBundle` can write the author's own bytes into a
+   folder unaltered while a COUNT emits no bytes. So a `{ terms }`
+   row with no `text` was refused by T090 and counted here,
+   deliberately, and D-130-07 upheld it.
 
-   Said out loud because a cross-task divergence on a merged
-   precedent is invisible to every instrument this run has — both
-   suites stay green and only a session holding two modules at once
-   sees it. The durable fix is T090 publishing its reader; this is
-   reported, not worked around silently.
+   **D-132-02 withdrew that licence and the reading is now STRICT:
+   such a row is not a `StoredVocabulary`, `addRelease` refuses to
+   create one, and counting it is counting a row the column says was
+   never legal.** The cost is real and is stated rather than
+   discovered: a release stored in that shape BEFORE T133 published
+   the type takes this handle's profile from a count to a refusal.
+   That is the same cost D-130-07 priced in the other direction, and
+   the difference is that the column now has an answer.
 
-   A value the parser cannot read is REFUSED rather than skipped,
+   A reader more permissive than its column is not a reader
+   disagreeing about the shape, and D-132-01 would have allowed one
+   here on condition it said so against `StoredVocabulary` by name.
+   The licence went unexercised: there is no permissive branch to
+   name, and this paragraph is the record that there was a choice.
+
+   A value the reading cannot accept is REFUSED rather than skipped,
    which is the behaviour D-90-03 already ruled for this column.
    Skipping would make the count silently wrong, and a count that
    is quietly short is the failure AC1 exists to prevent, arriving
@@ -72,13 +82,10 @@
    ============================================================ */
 
 import { and, eq, inArray } from "drizzle-orm";
-import { parseOntologyTerms } from "@/lib/content/ontology-file";
+import { parseStoredVocabulary } from "@/lib/server/archive";
 import { schema, type Db } from "@/lib/db";
 
 import { MalformedStoredVocabularyError } from "./errors";
-
-/** The name the parser's diagnostics quote. A column, since that is where the bytes are. */
-const STORED_VOCABULARY = "release.local_vocabulary";
 
 /**
  * How many distinct `<handle>/…` terms this handle has published, across every release of
@@ -119,9 +126,9 @@ export async function countNamespacedTerms(
        the shipped shape and it was wrong — the store answered, so naming it as failing is
        false about a component that was working, which is `http.ts`'s own argument about
        foreign faults arriving one layer in. Its own class, its own `type`. */
-    let terms;
+    let stored;
     try {
-      terms = parseOntologyTerms(row.vocabulary, STORED_VOCABULARY);
+      stored = parseStoredVocabulary(row.vocabulary, "getProfile");
     } catch (cause) {
       /* `getProfile`, not `countNamespacedTerms`: `operation` is the PUBLISHED reader
          throughout this module, and the ruling that the two wrapped statements share one
@@ -129,7 +136,10 @@ export async function countNamespacedTerms(
          CLASS and its `type`, which is D-130-10's whole point — not the operation. */
       throw new MalformedStoredVocabularyError("getProfile", cause);
     }
-    for (const term of terms) {
+    /* `undefined` is the release declaring no local vocabulary, which is the ordinary case
+       and contributes nothing — never an error, and never a skipped refusal either: the
+       reading above has already refused everything that is neither absent nor the shape. */
+    for (const term of stored?.terms ?? []) {
       if (term.id.startsWith(prefix)) ids.add(term.id);
     }
   }

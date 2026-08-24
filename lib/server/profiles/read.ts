@@ -12,7 +12,7 @@
 import { eq } from "drizzle-orm";
 import { getPublicAuthor } from "@/lib/server/accounts";
 import type { Actor } from "@/lib/server/policy";
-import { blueprints } from "@/lib/server/registry";
+import { blueprints, cardsOwnedBy } from "@/lib/server/registry";
 import { schema, type Db } from "@/lib/db";
 
 import { withProfileStore } from "./store";
@@ -67,11 +67,20 @@ export async function getProfile(
 
   const owned = (await blueprints(db, actor)).filter((b) => b.ownerHandle === handle);
 
+  /* T132, D-132-02 reading (a): cards this handle OWNS, not cards the index carries for it.
+     The two differ by a card no release pins, and `cardsOwnedBy` is the reader T080 published
+     for exactly that difference — so the count cannot be quietly short, and the actor half of
+     it is still T080's decision rather than a second `readable()` here (D-130-04). Counted
+     from the list rather than asked for as a number, because AC1's sentence is that anything
+     countable is counted and never stored as a counter. */
+  const cards = await cardsOwnedBy(db, actor, handle);
+
   return {
     author,
     joinedAt: row.createdAt,
     counts: {
       blueprints: owned.length,
+      cards: cards.length,
       terms: await withProfileStore("getProfile", () =>
         countNamespacedTerms(db, row.id, handle, owned.map((b) => b.slug)),
       ),

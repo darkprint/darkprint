@@ -100,7 +100,7 @@ describe("ProfileRecord is the shape the block declares", () => {
     ).toEqual([...RECORD_KEYS]);
   });
 
-  it("carries exactly the two published counts and nothing else", async () => {
+  it("carries exactly the three published counts and nothing else", async () => {
     const getProfile = await bind("getProfile");
     const record = asProfileRecord(
       await getProfile(s.db, account(owner.id, owner.handle), owner.handle),
