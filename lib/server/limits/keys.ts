@@ -304,3 +304,22 @@ export async function resolveKey(db: Db, secret: string): Promise<ResolvedKey | 
     return row === undefined ? undefined : (rowToRecord(row) as ResolvedKey);
   });
 }
+
+/**
+ * Revoke every un-revoked key of one account, by account id rather than off an actor.
+ * D-120-10: `resolveKey` never joins `account`, so a deleted account's keys would keep
+ * authenticating at the key tier forever -- and `revokeKey` binds its WHERE to the
+ * CALLER's accountId, so an operator deleting somebody else's account would silently
+ * revoke nothing through the published per-key verb. T120's `deleteAccount` calls this in
+ * the same transaction as the tombstone. No actor for the same reason as
+ * `forgetReportsAt`: the authorization decision is the deletion boundary's, and this verb
+ * exists so no other task writes this module's table.
+ */
+export async function revokeKeysFor(db: Db, accountId: string): Promise<void> {
+  await withStore("revokeKeysFor", async () => {
+    await db
+      .update(schema.apiKey)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(schema.apiKey.accountId, accountId), isNull(schema.apiKey.revokedAt)));
+  });
+}

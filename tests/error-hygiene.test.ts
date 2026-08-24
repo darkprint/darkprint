@@ -269,7 +269,13 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
        produce belongs to a merged module and leaves unaltered under D-50-08. Derived HERE, at the merge
        commit, against the domain this guard resolves from `backend`: the figure in the handback was a
        report until this run, and a carried number is somebody else's measurement of a different tree. */
-    ).toBe(40);
+    /* 40 -> 44 at the T160+T180 double merge: `lib/server/ballot` publishes BallotRefusedError
+       and BallotStoreError, `lib/server/runs` publishes RunReportRefusedError and RunsStoreError.
+       Two each, both adversary-verified with the walk re-falsified per module (an enumerable own
+       field reds both arities naming the barrel). Derived at THIS merge against the tree landed in;
+       both sessions computed 42 from the same base of 40 and were told the second merge would face
+       a different figure -- this is that figure. */
+    ).toBe(44);
 
     const rendered: string[] = [];
     const traceless: string[] = [];
