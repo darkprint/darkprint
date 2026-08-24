@@ -50,14 +50,29 @@ export async function reembedRelease(db: Db, bundleId: string, digest: string): 
     const release = await getRelease(db, bundleId, digest);
     if (release === undefined) return;
 
+    /* NO ENCODER, NOTHING WRITTEN, NO REFUSAL (D-300-05). The model directory is an
+       explicit operator step and a machine without it must keep publishing: the vector is
+       an ADDITIONAL recall channel, so its absence narrows what search can reach and
+       breaks nothing that worked before. Returning here rather than inside the loop
+       because the answer is a property of the process, not of this release — one absent
+       encoder cannot embed the cards either. */
+    const manifestVector = await embed(manifestText(release.manifest));
+    if (manifestVector === undefined) return;
+
     /* `onConflictDoNothing` and not an upsert, and the difference is the whole criterion: a
        second call must leave `embedding` AND `created_at` byte-identical, and an upsert
        would rewrite both with values that only happen to match. It also makes two
        concurrent triggers safe without a transaction — the loser of the race writes
-       nothing, which is exactly what it should have written. */
+       nothing, which is exactly what it should have written.
+
+       AC6 survives the new derivation unchanged, and it is the encoder that makes that
+       true rather than this line: the ruled model is deterministic across PROCESSES, not
+       merely within one — measured byte-identical over four texts across three separate
+       pids, which is the axis a salted hash fails and the one the old FNV derivation was
+       written by hand to survive. */
     await db
       .insert(schema.releaseEmbedding)
-      .values({ releaseId: release.id, embedding: embed(manifestText(release.manifest)) })
+      .values({ releaseId: release.id, embedding: manifestVector })
       .onConflictDoNothing();
 
     await embedCards(db, release.cardRefs);
@@ -67,11 +82,17 @@ export async function reembedRelease(db: Db, bundleId: string, digest: string): 
 /**
  * The manifest as one document.
  *
- * Field order is fixed so the text is a function of the release and of nothing else — the
- * vector is a bag of 3-grams and would survive a reordering, but AC6's determinism claim is
- * about the whole derivation and a reader should not have to work out that this line does
- * not matter. `manifest` is `jsonb` and arrives unvalidated, so every field is guarded the
- * way `registry/snapshot.ts` guards the same column.
+ * Field order is fixed so the text is a function of the release and of nothing else. Under
+ * the 3-gram derivation this was belt-and-braces — a bag of 3-grams survives a reordering —
+ * and **under the encoder it is load-bearing**: a transformer reads the document as a
+ * sequence, so two orderings of the same fields are two different vectors. `manifest` is
+ * `jsonb` and arrives unvalidated, so every field is guarded the way `registry/snapshot.ts`
+ * guards the same column.
+ *
+ * THE LIST STAYS WIDE, and that is ruled rather than inherited (D-300-04 D6). D-300-01
+ * names `title + summary + description` as the purpose, and it named it as the CORE of the
+ * document and not as a replacement for this list: `slug`, `category` and `tags` stay in,
+ * so two releases differing only in `category` embed differently.
  */
 function manifestText(manifest: BundleManifest): string {
   const parts: string[] = [];
@@ -117,10 +138,18 @@ function cardText(card: NodeCard): string {
  * `bundle/unpinned-card` at publish, and there is nothing here to attach a vector to.
  *
  * VISIBILITY IS NOT CONSULTED, and that is deliberate rather than an omission (D-200-25).
- * These tables are storage and not the answer: nothing reads them, and D-200-07's
- * public-only rule is applied at the three searchers, where a caller can actually observe
- * it. D-82 excludes private content from the SEARCHABLE INDEX, which is not the storage a
- * vector lives in.
+ * D-200-07's public-only rule is applied at the three searchers, where a caller can
+ * actually observe it. D-82 excludes private content from the SEARCHABLE INDEX, which is
+ * not the storage a vector lives in.
+ *
+ * **The premise this rested on has CHANGED and the conclusion has not.** It used to read
+ * "nothing reads these tables", which stopped being true at T300: D-300-02 gives them their
+ * first reader, and `blueprints.ts`/`cards.ts` now query them by cosine distance. That
+ * makes the reasoning MORE load-bearing rather than less — an unfiltered vector table is
+ * now reachable by a query, so the searchers' own filtering is the only thing keeping a
+ * private card out of a result set, and it is written there (`semanticCandidates` narrows
+ * to the public universe before it ranks). A vector for a private card exists and is never
+ * an answer.
  *
  * Two reasons, and the second is the stronger one:
  *
@@ -148,9 +177,14 @@ async function embedCards(db: Db, pins: readonly string[]): Promise<void> {
 
   for (const row of rows) {
     if (!wanted.has(cardRef(row.cardId, row.version))) continue;
+    const vector = await embed(cardText(row.body as NodeCard));
+    /* Unreachable in practice — the caller returned already if the encoder was absent —
+       and checked anyway, because the alternative to checking is passing `undefined` into
+       a `NOT NULL vector(384)` column and reading about it in a driver message. */
+    if (vector === undefined) return;
     await db
       .insert(schema.cardVersionEmbedding)
-      .values({ cardVersionId: row.id, embedding: embed(cardText(row.body as NodeCard)) })
+      .values({ cardVersionId: row.id, embedding: vector })
       .onConflictDoNothing();
   }
 }

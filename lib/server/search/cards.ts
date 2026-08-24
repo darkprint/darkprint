@@ -18,18 +18,22 @@
    instead, which is where a caller reading the module finds it.
    ============================================================ */
 
-import { CORE_PHASE_IDS } from "@/lib/core";
+import { asc, eq, lte, sql } from "drizzle-orm";
+import { cardRef, CORE_PHASE_IDS } from "@/lib/core";
 import type { Db } from "@/lib/db";
+import { schema } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
 import { getLatestOntologyVersion } from "@/lib/server/ontology";
 import { cards, phases, type CardSummary } from "@/lib/server/registry";
 import type { NodeCard, OntologyTerm } from "@/lib/server/types";
+import { embed, SEMANTIC_K, SIMILAR_EVIDENCE, SIMILAR_MIN } from "./embed";
 import { flag, sortKey, value } from "./params";
 import {
   cmpString,
   evidenceFor,
   queryWords,
   ranked,
+  rankedWithSimilar,
   unranked,
   type Field,
   type Scored,
@@ -168,7 +172,69 @@ async function search(db: Db, params: Record<string, string>): Promise<Results<C
   if (query.length === 0) {
     return unranked(hits.map((hit) => hit.item), facets);
   }
-  return ranked(hits, facets);
+
+  /* D-300-02's other half. Cards are embedded SEPARATELY from the blueprints that pin them
+     (D-300-01) precisely so this can answer: a harness looking for a NODE that does a thing
+     gets the node, rather than a whole blueprint it then has to read. */
+  const found = new Set(hits.map((hit) => hit.item.ref));
+  const tail = await similarCandidates(
+    db,
+    params.q ?? "",
+    candidates.filter((row) => !found.has(row.ref)),
+  );
+  if (tail.length === 0) return ranked(hits, facets);
+  return rankedWithSimilar(hits, tail, facets);
+}
+
+/**
+ * The card versions whose stored spec vector is nearest the query, among those the lexical
+ * pass did not already find.
+ *
+ * The reasoning is `blueprints.ts`'s `similarCandidates` and is not repeated: the candidate
+ * set carries the visibility rule and the filters, the narrowing happens in SQL so `LIMIT`
+ * cannot be spent on rows that will be dropped, and `<=>` is a cosine DISTANCE converted
+ * once by `1 - SIMILAR_MIN`.
+ *
+ * What differs is the identity. A card's is its `ref`, `id@version`, built through
+ * `lib/core`'s own `cardRef` rather than by interpolating a `@` here — the canonical form is
+ * that module's decision, `reembedRelease` already reads the same table through it, and two
+ * spellings of one ref is how a tail comes to match nothing while looking correct.
+ */
+async function similarCandidates(
+  db: Db,
+  q: string,
+  candidates: readonly CardSummary[],
+): Promise<Scored<CardSummary>[]> {
+  if (candidates.length === 0) return [];
+
+  const queryVector = await embed(q);
+  if (queryVector === undefined) return [];
+
+  const distance = sql<number>`${schema.cardVersionEmbedding.embedding} <=> ${JSON.stringify(queryVector)}::vector`;
+
+  const rows = await db
+    .select({
+      cardId: schema.cardVersion.cardId,
+      version: schema.cardVersion.version,
+      distance,
+    })
+    .from(schema.cardVersionEmbedding)
+    .innerJoin(
+      schema.cardVersion,
+      eq(schema.cardVersion.id, schema.cardVersionEmbedding.cardVersionId),
+    )
+    .where(lte(distance, 1 - SIMILAR_MIN))
+    .orderBy(asc(distance))
+    .limit(SEMANTIC_K);
+
+  const byRef = new Map(candidates.map((row) => [row.ref, row]));
+  const tail: Scored<CardSummary>[] = [];
+  for (const row of rows) {
+    const card = byRef.get(cardRef(row.cardId, row.version));
+    if (card === undefined) continue;
+    tail.push({ item: card, evidence: [SIMILAR_EVIDENCE], identity: card.ref });
+  }
+  return tail;
 }
 
 /**

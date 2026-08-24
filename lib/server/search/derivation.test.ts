@@ -19,49 +19,133 @@
 
 import { describe, expect, it } from "vitest";
 
-import { EMBEDDING_DIMENSIONS, embed } from "./embed";
+import { EMBEDDING_DIMENSIONS, embed, encoderAvailable, SIMILAR_MIN } from "./embed";
 import { flag, oneOf, searchParams, sortKey, value } from "./params";
 import { evidenceFor, ranked, unranked, type Field, type Scored } from "./rank";
 import { findWord, normalise, trigrams } from "./text";
 
 /* --------------------- the derivation --------------------- */
 
+/**
+ * WHICH WORLD THIS RUN IS IN, resolved once and ANNOUNCED rather than assumed.
+ *
+ * The derivation is now a sentence-encoder (D-300-01) whose weights are provisioned by an
+ * explicit operator step, not by `npm ci` (D-300-05). So these cells have two worlds, and
+ * the dangerous one is not the world without an encoder — it is a suite that cannot tell
+ * them apart and reports green in both.
+ *
+ * Every vector cell below is `skipIf`'d on the encoder, and the first cell asserts WHICH
+ * world it is in unconditionally. That way a skipped count is a fact a reader can act on,
+ * and no cell here can be vacuously green: with no encoder, the degradation contract is
+ * what gets measured, and it is a real criterion (D-300-05) rather than a stand-down.
+ */
+const HAVE_ENCODER = await encoderAvailable();
+
 describe("the stored vector", () => {
-  it("is 384 wide, because pgvector refuses any other width", () => {
-    expect(EMBEDDING_DIMENSIONS).toBe(384);
-    expect(embed("a factory that plans and implements")).toHaveLength(384);
+  it("reports which derivation this run measured, so a skip is never silent", async () => {
+    /* Unconditional and deliberately unskippable. It fails only if `encoderAvailable` and
+       `embed` DISAGREE about whether this machine can encode — the one state in which every
+       other cell in this block is reading the wrong world.
+
+       AWAITED rather than returned as a `.resolves` chain. An un-awaited assertion resolves
+       after the cell has already passed, so it can report a failure it cannot fail on —
+       which would make the one unskippable cell in this block the one incapable of redding. */
+    expect(typeof HAVE_ENCODER).toBe("boolean");
+    const answer = await embed("a factory that plans and implements");
+    if (HAVE_ENCODER) expect(Array.isArray(answer)).toBe(true);
+    else expect(answer).toBeUndefined();
   });
 
-  it("is a function of the text and of nothing else", () => {
+  it.skipIf(!HAVE_ENCODER)("is 384 wide, because pgvector refuses any other width", async () => {
+    expect(EMBEDDING_DIMENSIONS).toBe(384);
+    expect(await embed("a factory that plans and implements")).toHaveLength(384);
+  });
+
+  it.skipIf(!HAVE_ENCODER)("is a function of the text and of nothing else", async () => {
     // AC6's determinism claim, at the one layer that can break it. A derivation seeded from
     // anything ambient — a salted string hash, iteration order, the clock — reproduces a
     // different vector on the next call, and the delete-and-re-embed cell is what would
     // eventually catch it, one process restart later.
-    const once = embed("retrieval augmented generation");
-    const twice = embed("retrieval augmented generation");
+    //
+    // WITHIN one process is the WEAKER half and it is all a cell here can reach. The
+    // encoder was measured byte-identical ACROSS three separate pids over four texts, which
+    // is the axis a salted hash actually fails; that measurement is recorded in
+    // `reembed.ts` beside the write it licenses, because no cell in this file can restart
+    // the process it is running in.
+    const once = await embed("retrieval augmented generation");
+    const twice = await embed("retrieval augmented generation");
     expect(twice).toEqual(once);
   });
 
-  it("is L2-normalised, so cosine distance is about content and not length", () => {
-    const vector = embed("planning implementation testing debugging deployment");
-    const length = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0));
-    expect(length).toBeCloseTo(1, 12);
-  });
+  it.skipIf(!HAVE_ENCODER)(
+    "is L2-normalised, so cosine distance is about content and not length",
+    async () => {
+      const vector = (await embed("planning implementation testing debugging deployment")) ?? [];
+      const length = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0));
+      // 6 places, not 12: the encoder normalises in float32 and lands at 1.000000049.
+      expect(length).toBeCloseTo(1, 6);
+    },
+  );
 
-  it("answers the zero vector for a text with nothing in it, rather than dividing by zero", () => {
-    const vector = embed("   ---   ");
-    expect(vector).toHaveLength(384);
-    expect(vector.every((value) => value === 0)).toBe(true);
-  });
+  it.skipIf(!HAVE_ENCODER)(
+    "gives a text with nothing in it an ORDINARY unit vector, with no special case",
+    async () => {
+      /* ── REPLACES the zero-vector cell, and the replacement is reported rather than
+         quiet (granted by D-300-06 F3) ──
 
-  it("separates two documents that share no word", () => {
+         The cell here used to assert that `embed("   ---   ")` was all zeros, and under the
+         3-gram derivation that was true and load-bearing: a text with no letters had no
+         3-grams, so the sum of squares was 0 and normalising it would have divided by zero.
+
+         The encoder has no such state. `""` and `"   ---   "` both tokenize to the CLS/SEP
+         pair and come back with all 384 components non-zero at unit length — MEASURED on
+         the ruled model, not reasoned from the architecture. So the old assertion is not
+         merely unnecessary, it is FALSE of the module it guards, and keeping it would red a
+         correct implementation.
+
+         What replaces it is the property that IS true and that a caller still depends on:
+         an empty document is representable, legal in a `vector(384) NOT NULL` column, and
+         gets no special standing. The assertion EXCLUDES the old behaviour rather than
+         merely admitting the new one — a module that still answered zeros would fail this
+         cell, which is what stops the replacement from being a weakening. */
+      const empty = (await embed("   ---   ")) ?? [];
+      expect(empty).toHaveLength(EMBEDDING_DIMENSIONS);
+      expect(empty.some((value) => value !== 0)).toBe(true);
+      expect(Math.sqrt(empty.reduce((sum, value) => sum + value * value, 0))).toBeCloseTo(1, 6);
+    },
+  );
+
+  it.skipIf(!HAVE_ENCODER)("separates two documents that share no word", async () => {
     // The property the whole-token derivation could not have: it is checked as a
     // DIFFERENCE rather than as a similarity, because two random vectors are also
     // dissimilar and only the contrast says the derivation carries content.
-    const near = cosine(embed("orchestration"), embed("orchestrator"));
-    const far = cosine(embed("orchestration"), embed("bicycle"));
+    const near = cosine((await embed("orchestration")) ?? [], (await embed("orchestrator")) ?? []);
+    const far = cosine((await embed("orchestration")) ?? [], (await embed("bicycle")) ?? []);
     expect(near).toBeGreaterThan(far);
   });
+
+  it.skipIf(!HAVE_ENCODER)("puts a paraphrase above a stranger, which is what AC1 buys", async () => {
+    /* AC1's shape at the derivation layer, where it can be checked without a database. The
+       query shares NO content word with the document it should reach, and shares one with
+       the document it should not — so a lexical derivation would rank these BACKWARDS, and
+       this cell is the one that separates the encoder from everything T200 shipped. */
+    const query = (await embed("rival bots settle a dispute by themselves")) ?? [];
+    const paraphrased = (await embed("two agents argue and a consensus node negotiates one answer")) ?? [];
+    const stranger = (await embed("rival bicycle couriers race across the city")) ?? [];
+    expect(cosine(query, paraphrased)).toBeGreaterThan(cosine(query, stranger));
+    // And the one it should reach clears the published floor it is filtered by.
+    expect(cosine(query, paraphrased)).toBeGreaterThanOrEqual(SIMILAR_MIN);
+  });
+
+  it.skipIf(HAVE_ENCODER)(
+    "degrades to no vector at all when no encoder is provisioned, rather than throwing",
+    async () => {
+      /* D-300-05's graceful degradation, and it is a CRITERION rather than a stand-down:
+         on a machine with no model directory `reembedRelease` must write nothing and the
+         searchers must stay lexical, which is only possible if this answers a value. */
+      await expect(embed("a factory that plans and implements")).resolves.toBeUndefined();
+    },
+  );
 });
 
 function cosine(a: readonly number[], b: readonly number[]): number {
