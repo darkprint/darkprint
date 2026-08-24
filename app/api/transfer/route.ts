@@ -8,10 +8,18 @@
    entirely — and that the block governs. The `docs/**` fix is the
    orchestrator's.
 
-   `withSession` before `withLifecycleErrors`: an unauthenticated
-   request must never reach the handler at all (T000's AC3), and
-   the wrapper's job begins once there is a body to run. That
-   ordering is also what makes `transferBundle`'s `not-signed-in`
+   `withSession` is the outermost wrapper, and what
+   T000's AC3 actually rests on is that it is PRESENT rather than
+   that it is outermost — measured, not assumed: swapping the two
+   wrappers reds **0 of 30** cells, because the guard RETURNS its
+   401 rather than throwing and an error boundary passes a
+   returned `Response` through untouched. Removing the guard reds
+   the 401 cell, which is the claim that cell really makes.
+   Outermost is kept as the shipped convention (T230, T110) and
+   because it keeps the boundary's arms about the verb's failures
+   rather than the transport's.
+
+   The guard is also what makes `transferBundle`'s `not-signed-in`
    arm unreachable through HTTP, exactly as D-110-10 records for
    `forkBundle` — the arm exists for the module boundary, where an
    anonymous `Actor` does arrive.

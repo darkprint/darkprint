@@ -3,13 +3,23 @@
    Two properties, and neither needs a database:
 
    1. **T000's AC3**: an unauthenticated request never reaches a
-      handler. `withSession` is the outermost wrapper on all four,
-      so a missing cookie is 401 `problem+json` before anything
-      else runs — which is also what makes `planTransfer`'s and
+      handler. A missing cookie is 401 `problem+json` on all four
+      — which is also what makes `planTransfer`'s and
       `transferBundle`'s `not-signed-in` arm unreachable through
       HTTP, exactly as D-110-10 records for `forkBundle`. That arm
       still exists because both verbs are called at the module
       boundary too.
+
+      **What these cells measure is the guard's PRESENCE, not its
+      position, and that was measured rather than assumed.**
+      Swapping `withSession` and `withLifecycleErrors` reds **0 of
+      30** — the guard RETURNS its 401 rather than throwing, and an
+      error boundary passes a returned `Response` through
+      untouched, so the two orders are observationally identical
+      here. Removing the guard reds exactly one, this file's own
+      `GET /api/account/delete/plan` cell. The route docblocks used
+      to claim AC3 rested on the ORDER; they were corrected to what
+      the zero showed.
    2. **The presence check is the ROUTE's**, and it runs before
       `getSharedDbClient()` — so a preview missing a query
       parameter is a 400 rather than a `null` reaching

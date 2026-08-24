@@ -31,11 +31,19 @@
    HAPPENED and this one is a named preview, and a route task
    quietly harmonising them would be overruling a ruling.
 
-   `withSession` before `withLifecycleErrors`, for T000's AC3: an
-   unauthenticated request must never reach the handler. That is
-   also what keeps `planTransfer`'s `not-signed-in` arm
-   unreachable through HTTP, exactly as D-110-10 records for
-   `forkBundle`.
+   `withSession` is the outermost wrapper, and what
+   T000's AC3 actually rests on is that it is PRESENT rather than
+   that it is outermost — measured, not assumed: swapping the two
+   wrappers reds **0 of 30** cells, because the guard RETURNS its
+   401 rather than throwing and an error boundary passes a
+   returned `Response` through untouched. Removing the guard reds
+   the 401 cell, which is the claim that cell really makes.
+   Outermost is kept as the shipped convention (T230, T110) and
+   because it keeps the boundary's arms about the verb's failures
+   rather than the transport's.
+
+   The guard is also what keeps `planTransfer`'s `not-signed-in`
+   arm unreachable through HTTP (D-110-10).
 
    **Not rate limited**, on T230's own partition argument: the
    buckets B-17 is about are the ones a crawler hits, and

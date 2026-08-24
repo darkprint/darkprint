@@ -34,7 +34,16 @@
    deliberate and ruled (D-120-19): that body is the record of
    what HAPPENED, this one is a named preview of what WOULD.
 
-   `withSession` before `withLifecycleErrors`, for T000's AC3.
+   `withSession` is the outermost wrapper, and what
+   T000's AC3 actually rests on is that it is PRESENT rather than
+   that it is outermost — measured, not assumed: swapping the two
+   wrappers reds **0 of 30** cells, because the guard RETURNS its
+   401 rather than throwing and an error boundary passes a
+   returned `Response` through untouched. Removing the guard reds
+   the 401 cell, which is the claim that cell really makes.
+   Outermost is kept as the shipped convention (T230, T110) and
+   because it keeps the boundary's arms about the verb's failures
+   rather than the transport's.
    ============================================================ */
 
 import { getSharedDbClient } from "@/lib/db";
