@@ -18,5 +18,4 @@ export { CliError } from "./errors";
 export type { BundleDirectory } from "./layout";
 export { readBundleDirectory } from "./layout";
 
-export type { ValidateResult } from "./validate";
 export { validate } from "./validate";

@@ -9,44 +9,45 @@
    `@/lib/server/engine` owns and a second copy is what AC1 exists
    to catch.
 
-   AC6: this file reaches nothing. Its imports are the engine, the
-   directory reader and `node:fs` through it — no fetch, no
-   credential, no environment.
+   AC6: this file reaches nothing. Its imports are the engine and
+   the directory reader — no fetch, no credential, no environment.
    ============================================================ */
 
+import { sortDiagnostics, type LoadBundleResult } from "@/lib/core";
 import { validateBundle } from "@/lib/server/engine";
-import type { LoadBundleResult } from "@/lib/core";
-import { readBundleDirectory, type BundleDirectory } from "./layout";
-
-/** `validate`'s answer: the engine's own result, plus what was read to get it. */
-export interface ValidateResult {
-  /**
-   * `validateBundle`'s return, unaltered and NOT restated (D-270-03b). Re-sorting,
-   * re-shaping or filtering it here would put a second author on the document AC1
-   * compares byte for byte.
-   */
-  result: LoadBundleResult;
-  /** What the reader found, so a renderer can say the manifest was stubbed. */
-  directory: BundleDirectory;
-}
+import { readBundleDirectory } from "./layout";
 
 /**
  * Validate the bundle directory at `dir`.
+ *
+ * Returns the engine's OWN result type (D-270-03(2)), not a wrapper around it: AC1 is an
+ * equality between two `LoadBundleResult`s, the CLI's over a directory and the server's
+ * over the same bytes, and a wrapper would make that equality false for a correct CLI. A
+ * caller wanting to know whether the manifest was stubbed calls `readBundleDirectory`,
+ * which is on the barrel for exactly that.
  *
  * Local and offline (AC6). Throws `CliError` for a directory with no `blueprint.dot`; a
  * bundle that resolves WITH errors is an answer rather than a throw, which is the same
  * split `/api/validate/bundle` makes at 200 and for the same reason — a broken bundle is
  * a result the caller asked for.
  */
-export function validate(dir: string): ValidateResult {
+export function validate(dir: string): LoadBundleResult {
   const directory = readBundleDirectory(dir);
+  const result = validateBundle({
+    manifest: directory.manifest,
+    dot: directory.dot,
+    cardFiles: directory.cardFiles,
+    ...(directory.extensions === undefined ? {} : { extensions: directory.extensions }),
+  });
+
+  /* Returned untouched on the ordinary path, so AC1's byte-identity is a property of the
+     code rather than an argument about whether re-sorting an already-sorted array is the
+     identity. Only the two-vocabularies case (D-270-04(3)) rebuilds the list, and it
+     re-sorts because a diagnostic appended after `validateBundle` returned would otherwise
+     sit outside the severity-first order every other reader of this array relies on. */
+  if (directory.vocabularyConflict === undefined) return result;
   return {
-    directory,
-    result: validateBundle({
-      manifest: directory.manifest,
-      dot: directory.dot,
-      cardFiles: directory.cardFiles,
-      ...(directory.extensions === undefined ? {} : { extensions: directory.extensions }),
-    }),
+    ...result,
+    diagnostics: sortDiagnostics([directory.vocabularyConflict, ...result.diagnostics]),
   };
 }

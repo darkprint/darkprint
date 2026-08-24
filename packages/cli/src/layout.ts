@@ -19,7 +19,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 
-import { CORE_ONTOLOGY, type BundleManifest, type OntologyTerm } from "@/lib/core";
+import { CORE_ONTOLOGY, error, type BundleManifest, type Diagnostic, type OntologyTerm } from "@/lib/core";
 import { ONTOLOGY_EXTENSIONS_FILE } from "@/lib/content/ontology-file";
 import { validateVocabularySource } from "@/lib/server/engine";
 import { CliError } from "./errors";
@@ -54,6 +54,13 @@ export interface BundleDirectory {
    */
   manifestFile: string | undefined;
   extensions: readonly OntologyTerm[] | undefined;
+  /**
+   * D-270-04(3): both vocabulary spellings present and DIFFERENT. A `Diagnostic` rather
+   * than a throw or a new class, because that is what the ruling names and what every
+   * other load complaint already is — and because a bundle with two overlays is still a
+   * bundle worth reporting the rest of.
+   */
+  vocabularyConflict: Diagnostic | undefined;
 }
 
 /**
@@ -80,13 +87,15 @@ export function readBundleDirectory(dir: string): BundleDirectory {
       ? stubManifest(root)
       : readManifest(root, manifestFile, stubManifest(root));
 
+  const vocabulary = readVocabulary(root, entries);
   return {
     root,
     dot,
     cardFiles: readCards(root),
     manifest,
     manifestFile,
-    extensions: readVocabulary(root, entries),
+    extensions: vocabulary.extensions,
+    vocabularyConflict: vocabulary.conflict,
   };
 }
 
@@ -145,15 +154,17 @@ function readCards(root: string): Record<string, string> {
 }
 
 /**
- * The local overlay, read from BOTH spellings, and the widening is disclosed rather than
- * quiet.
+ * The local overlay, at BOTH spellings D-270-04(3) names.
  *
  * `exportBundle` writes it at `ontology/extensions.yaml` — a subdirectory — while the
  * wizard's `VOCABULARY_NAME` matches a FLAT `extensions.yaml`, because a browser drop
- * hands it a file list with no folder. So a cloned bundle and an uploaded one spell the
- * same document two ways, and a reader binding either alone misses the other. The export
- * spelling wins when both exist: it is the one `clone` writes, and `ONTOLOGY_EXTENSIONS_FILE`
- * is the archive's own name for the document.
+ * hands it a file list with no folder. C6 promises both that `validate` accepts the
+ * wizard's layout and that `clone`'s output folder is validatable, and those two promises
+ * name different paths, so both are read.
+ *
+ * Two files that AGREE are one document spelled twice and are fine. Two that DIFFER get a
+ * diagnostic naming both paths and NO silent precedence: picking one would score the
+ * bundle against a vocabulary the author did not necessarily mean, and say nothing.
  *
  * The source is handed to `validateVocabularySource`, which is the SAME function
  * `/api/validate/bundle` calls to turn a submitted `vocabulary` string into `extensions`
@@ -166,13 +177,35 @@ function readCards(root: string): Record<string, string> {
  * the server scores a broken overlay against the curated core alone and tells the caller
  * nothing. AC1 measures the CLI against the server, not against what the server should do.
  */
-function readVocabulary(root: string, entries: readonly string[]): readonly OntologyTerm[] | undefined {
-  const flat = entries.find((name) => FLAT_VOCABULARY_NAME.test(name));
-  const text =
-    readFileIn(root, ONTOLOGY_EXTENSIONS_FILE) ??
-    (flat === undefined ? undefined : readFileIn(root, flat));
-  if (text === undefined) return undefined;
-  return validateVocabularySource(text).terms;
+function readVocabulary(
+  root: string,
+  entries: readonly string[],
+): { extensions: readonly OntologyTerm[] | undefined; conflict: Diagnostic | undefined } {
+  const flatName = entries.find((name) => FLAT_VOCABULARY_NAME.test(name));
+  const nested = readFileIn(root, ONTOLOGY_EXTENSIONS_FILE);
+  const flat = flatName === undefined ? undefined : readFileIn(root, flatName);
+
+  if (nested !== undefined && flat !== undefined && nested !== flat) {
+    return {
+      extensions: undefined,
+      conflict: error(
+        /* The engine's own code for a complaint about this document: `validateVocabularySource`
+           reports a vocabulary it cannot read as `card/parse-error` against the same file. A
+           second opinion about which namespace a vocabulary complaint lives in would be a new
+           code nobody owns, and D-270-04(3) rules this travels as an ordinary Diagnostic. */
+        "card/parse-error",
+        `This bundle carries two different local vocabularies, at \`${ONTOLOGY_EXTENSIONS_FILE}\` and \`${flatName}\`. Neither was used, because choosing one would score the blueprint against terms you may not have meant.`,
+        {
+          hint: `Delete one of the two files, or make them identical.`,
+          location: { file: ONTOLOGY_EXTENSIONS_FILE },
+        },
+      ),
+    };
+  }
+
+  const text = nested ?? flat;
+  if (text === undefined) return { extensions: undefined, conflict: undefined };
+  return { extensions: validateVocabularySource(text).terms, conflict: undefined };
 }
 
 /**

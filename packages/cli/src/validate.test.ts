@@ -18,6 +18,7 @@ import { parse as parseYaml } from "yaml";
 
 import { cardRef, parseCardRef, parseDot, type BundleManifest, type CardRef } from "@/lib/core";
 import { validateBundle, validateVocabularySource } from "@/lib/server/engine";
+import { readBundleDirectory } from "./layout";
 import { validate } from "./validate";
 
 const SLUGS = readdirSync("content/blueprints").sort();
@@ -93,7 +94,7 @@ describe("AC1 — the CLI and the server disagree about nothing", () => {
        shape a matcher might call equal. `toEqual` on two arrays of objects would pass for
        two orders of the same diagnostics, and the order is the half of this criterion a
        reimplementation gets wrong. */
-    expect(JSON.stringify(cli.result.diagnostics)).toBe(JSON.stringify(server.diagnostics));
+    expect(JSON.stringify(cli.diagnostics)).toBe(JSON.stringify(server.diagnostics));
 
     /* The premise, asserted rather than assumed: a bundle whose diagnostics are empty on
        both sides would satisfy the line above while measuring nothing. */
@@ -101,8 +102,8 @@ describe("AC1 — the CLI and the server disagree about nothing", () => {
   });
 
   it("reads the exported folder with no manifest in it, which is what makes D3's stub load-bearing", () => {
-    const cli = validate(`public/bundles/${SLUGS[0]}`);
-    expect(cli.directory.manifestFile).toBeUndefined();
-    expect(cli.directory.manifest.ontologyVersion).toBe("0.1.0");
+    const read = readBundleDirectory(`public/bundles/${SLUGS[0]}`);
+    expect(read.manifestFile).toBeUndefined();
+    expect(read.manifest.ontologyVersion).toBe("0.1.0");
   });
 });
