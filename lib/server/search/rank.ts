@@ -132,13 +132,61 @@ export function ranked<T>(
   candidates: readonly Scored<T>[],
   facets: Record<string, readonly string[]>,
 ): Results<T> {
-  const sorted = [...candidates].sort(
-    (a, b) =>
-      b.evidence.length - a.evidence.length ||
-      cmpString(evidenceKey(a.evidence), evidenceKey(b.evidence)) ||
-      cmpString(a.identity, b.identity),
+  return finish([...candidates].sort(byRelevance), facets);
+}
+
+function byRelevance<T>(a: Scored<T>, b: Scored<T>): number {
+  return (
+    b.evidence.length - a.evidence.length ||
+    cmpString(evidenceKey(a.evidence), evidenceKey(b.evidence)) ||
+    cmpString(a.identity, b.identity)
   );
-  return finish(sorted, facets);
+}
+
+/**
+ * The lexical ranking, with the vector channel's own finds APPENDED BEHIND IT (D-300-02,
+ * granted to T300 by D-300-04 D4 as this module's one change).
+ *
+ * ── Why the tail is concatenated rather than sorted in ──
+ *
+ * AC3 says a semantic-only hit never outranks a lexical one, and the ONLY construction that
+ * makes that true for every input is putting it after the last of them. Feeding the tail
+ * through `byRelevance` would not: `similar:purpose` scores 1 like any single-field match,
+ * and `similar:` sorts alphabetically between `owner:` and `slug:`, so a hit found only by
+ * cosine distance would interleave into the middle of the lexical block on the second sort
+ * key. That is not a tuning question, it is the comparator doing exactly what it was
+ * written to do — which is why the tail is kept out of it entirely.
+ *
+ * `similar` arrives in ascending cosine distance and KEEPS that order. It is an order the
+ * archive does not explain, and the response says so: every hit in it carries the same
+ * marker, so nothing about the tail claims a lexically-explainable rank.
+ *
+ * ── D-200-20's contiguity survives BY CONSTRUCTION, and this is why ──
+ *
+ * The property is that hits with byte-identical evidence occupy a contiguous block. Every
+ * tail hit carries exactly `[SIMILAR_EVIDENCE]`, so the tail is one block and it is
+ * contiguous because it is a suffix. It cannot SPLIT a lexical block either, and that does
+ * not depend on the sort: `similar` is not a field name in either searcher's `FIELDS`
+ * — blueprints match on slug/owner/title/summary/description/category/tag/card, cards on
+ * id/name/action/spec/type/tool/phase/risk — so no lexical hit can carry this evidence and
+ * no lexical block extends past the join.
+ *
+ * ── `ordered` is still DERIVED, and it is still the same law ──
+ *
+ * Through `finish`, unamended. A tail hit has non-empty evidence, so a response carrying
+ * one computes `ordered: true` — which D-300-04 D1 ruled honest, and honest only because
+ * the marker NAMES the channel and `SIMILAR_MIN`/`SEMANTIC_K` are published with the
+ * calibration that produced them. The claim being made is "these came back because they
+ * are near your query through the published channel", and that is checkable against the
+ * archive by anyone willing to encode the query. Nothing here decides that; it is recorded
+ * because this is the line where the law is evaluated.
+ */
+export function rankedWithSimilar<T>(
+  lexical: readonly Scored<T>[],
+  similar: readonly Scored<T>[],
+  facets: Record<string, readonly string[]>,
+): Results<T> {
+  return finish([...[...lexical].sort(byRelevance), ...similar], facets);
 }
 
 /**
