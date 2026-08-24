@@ -247,3 +247,205 @@ export const COMPOSABLE = [
   "@/lib/server/search",
   "@/lib/server/limits",
 ] as const;
+
+/* --------------------- outcomes, and why they are not `rejects` --------------------- */
+
+/**
+ * What a call did: answered, or refused.
+ *
+ * Every AC3 cell in this suite is written against this rather than against
+ * `expect(...).rejects.toThrow()`, and the reason is charge 6 in the T220 log: **the
+ * published block names no error class**, while `mcpReadCard: Promise<string>` and
+ * `mcpProvenance: Promise<Provenance>` are total return types that must refuse somehow.
+ * Three resolutions are live — a new `McpError`, the composed modules' classes passing
+ * through, or `| undefined` on the return type — and a blind cell that picks one reports a
+ * defect against an implementer who followed the contract.
+ *
+ * So the criterion is asserted in the form it is actually written in: *private content is
+ * unreachable*. Unreachable is a claim about what came BACK, and it is true of a throw, of
+ * an `undefined` and of an empty list alike. It is false of exactly one thing, which is the
+ * private bytes arriving — and `rejects.toThrow()` cannot see that difference at all: a
+ * suite's own absent-module rejection satisfies a bare `rejects.toThrow()`, so the cell
+ * passes against a module that does not exist.
+ */
+export type Outcome = { ok: true; value: unknown } | { ok: false; error: unknown };
+
+export async function outcome(fn: () => Promise<unknown>): Promise<Outcome> {
+  try {
+    return { ok: true, value: await fn() };
+  } catch (error) {
+    return { ok: false, error };
+  }
+}
+
+/**
+ * Every string reachable from a value, errors and their `cause` chains included.
+ *
+ * Written for a LEAK scan, which is why it does not stop where D-13's hygiene clause does.
+ * That clause rewards an error whose payload is non-enumerable — `rateLimitedError` hangs
+ * its context off a symbol precisely so `Object.keys`, `JSON.stringify` and a spread all
+ * skip it — and an enumerable-only walk over that shape reads `{}` and reports no leak
+ * while the payload sits there. So this reads `message`, `stack`, `cause` transitively, own
+ * enumerable AND non-enumerable properties, and symbol-keyed ones.
+ *
+ * Cycles are closed on identity rather than on depth: a `cause` chain can be circular and a
+ * depth cap would turn a leak scan into a scan of the first few frames.
+ */
+export function stringsIn(value: unknown): string[] {
+  const found: string[] = [];
+  const seen = new Set<unknown>();
+
+  const walk = (v: unknown): void => {
+    if (typeof v === "string") {
+      found.push(v);
+      return;
+    }
+    if (v === null || (typeof v !== "object" && typeof v !== "function")) return;
+    if (seen.has(v)) return;
+    seen.add(v);
+
+    if (v instanceof Error) {
+      found.push(v.name, v.message);
+      if (typeof v.stack === "string") found.push(v.stack);
+      /* REDUNDANT TODAY, AND KEPT — measured rather than assumed. `new Error(m, {cause})`
+         installs `cause` as a NON-ENUMERABLE OWN property (`Object.keys` answers `[]`,
+         `Reflect.ownKeys` answers `stack,message,cause`), so the general walk below already
+         reaches it: deleting this line alone reddened 0 of 15 instrument cells. It is a
+         waiting guard rather than dead code, and the 2x2 is what separates the two — with
+         the walk below narrowed to `Object.keys` as well, the `cause` cell RED. Both
+         mutations together red 2; either alone reds 1 and 0. */
+      walk((v as { cause?: unknown }).cause);
+    }
+    if (Array.isArray(v)) {
+      for (const item of v) walk(item);
+      return;
+    }
+    if (v instanceof Uint8Array) {
+      found.push(new TextDecoder().decode(v));
+      return;
+    }
+    for (const key of Reflect.ownKeys(v as object)) {
+      let held: unknown;
+      try {
+        held = (v as Record<PropertyKey, unknown>)[key];
+      } catch {
+        continue; // a throwing getter is not a leak this scan can read
+      }
+      if (typeof key === "string") found.push(key);
+      walk(held);
+    }
+  };
+
+  walk(value);
+  return found;
+}
+
+/**
+ * Whether `needle` appears anywhere in what a call produced.
+ *
+ * The needle is always a string only the private fixture carries, so a hit is a leak and
+ * not a coincidence. Substring rather than equality: private bytes can arrive embedded in
+ * a larger document, which is the shape a whole-value comparison misses.
+ */
+export function reveals(result: Outcome, needle: string): boolean {
+  const subject = result.ok ? result.value : result.error;
+  return stringsIn(subject).some((s) => s.includes(needle));
+}
+
+/* --------------------- AC1's source scan, and its instrument --------------------- */
+
+/**
+ * `text` with every comment blanked and every string body blanked, preserving offsets.
+ *
+ * Blanked rather than deleted so a reported index still points where a reader would look,
+ * and so two adjacent tokens cannot be fused into a third by the removal.
+ *
+ * String bodies go too, and that is deliberate: an import specifier is a string, so the
+ * scan below reads specifiers from the parsed statement rather than from free text, and a
+ * function name mentioned inside an unrelated string literal — an error message naming
+ * `serveCard`, which is exactly what a well-written refusal would do — must not red.
+ */
+export function strip(text: string): string {
+  const out = text.split("");
+  let i = 0;
+  const n = text.length;
+  const blank = (from: number, to: number, keepNewlines: boolean): void => {
+    for (let k = from; k < to && k < n; k += 1) {
+      if (keepNewlines && out[k] === "\n") continue;
+      out[k] = " ";
+    }
+  };
+  while (i < n) {
+    const two = text.slice(i, i + 2);
+    if (two === "//") {
+      let j = i;
+      while (j < n && text[j] !== "\n") j += 1;
+      blank(i, j, false);
+      i = j;
+      continue;
+    }
+    if (two === "/*") {
+      const end = text.indexOf("*/", i + 2);
+      const j = end === -1 ? n : end + 2;
+      blank(i, j, true);
+      i = j;
+      continue;
+    }
+    const ch = text[i];
+    if (ch === '"' || ch === "'" || ch === "`") {
+      let j = i + 1;
+      while (j < n) {
+        if (text[j] === "\\") {
+          j += 2;
+          continue;
+        }
+        if (text[j] === ch) break;
+        j += 1;
+      }
+      /* The quotes are KEPT and only the body is blanked, so the statement still parses as
+         `from " "` and the specifier extraction below reads a recognisable shape. */
+      blank(i + 1, j, true);
+      i = Math.min(j + 1, n);
+      continue;
+    }
+    i += 1;
+  }
+  return out.join("");
+}
+
+export interface Imported {
+  file: string;
+  specifier: string;
+  names: string[];
+}
+
+/**
+ * Every static import, read off the stripped source and re-read for its specifier.
+ *
+ * The specifier is taken from the ORIGINAL text at the offsets the stripped text reports,
+ * because `strip` blanked the string bodies. That split is the point: the shape is decided
+ * on code with no prose in it, and the value is then read from the bytes.
+ */
+export function importsOf(file: string, text: string): Imported[] {
+  const stripped = strip(text);
+  const found: Imported[] = [];
+  const re = /import\s+([\s\S]*?)\s*from\s*(["'])/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(stripped)) !== null) {
+    const quote = m[2];
+    const start = m.index + m[0].length;
+    const end = text.indexOf(quote, start);
+    if (end === -1) continue;
+    const specifier = text.slice(start, end);
+    const clause = m[1];
+    const braced = /\{([\s\S]*)\}/.exec(clause);
+    const names = (braced?.[1] ?? clause)
+      .split(",")
+      .map((part) => part.replace(/\btype\b/g, "").trim())
+      .map((part) => (part.includes(" as ") ? part.slice(0, part.indexOf(" as ")).trim() : part))
+      .map((part) => part.replace(/^\*\s*/, "").trim())
+      .filter((part) => part.length > 0 && /^[A-Za-z_$][\w$]*$/.test(part));
+    found.push({ file, specifier, names });
+  }
+  return found;
+}
