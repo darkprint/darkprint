@@ -71,22 +71,31 @@ export const SEMANTIC_K = 10;
  * The cosine-similarity floor a candidate must clear to join the tail, published WITH its
  * calibration because the number alone would not be honest (D-300-04 D3, D-300-06).
  *
- * ── The calibration, measured 2026-08-24 over the seeded corpus ──
+ * ── The calibration, measured 2026-08-24 over the seeded corpus, ON THE SHIPPED WEIGHTS ──
  *
  * Nine blueprint purposes and 57 card versions built by `manifestText`/`cardText` below,
- * encoded by the ruled encoder, against nine paraphrase queries. Columns are how many of
- * the nine true targets a cutoff keeps, and how many of the 72 query-to-wrong-blueprint
- * pairs it admits:
+ * encoded by `models/all-MiniLM-L6-v2` at `dtype: "q8"` — the exact file this repository
+ * vendors — against nine paraphrase queries. Columns are how many of the nine true targets a
+ * cutoff keeps, and how many of the 72 query-to-wrong-blueprint pairs it admits:
  *
  *     tau 0.10 — keeps 9/9, admits 33/72 (45.8%)
  *     tau 0.15 — keeps 9/9, admits 21/72 (29.2%)
- *     tau 0.20 — keeps 8/9, admits 15/72 (20.8%)   <- ruled
- *     tau 0.25 — keeps 7/9, admits  8/72 (11.1%)
+ *     tau 0.20 — keeps 8/9, admits 14/72 (19.4%)   <- ruled
+ *     tau 0.25 — keeps 7/9, admits  7/72 ( 9.7%)
  *     tau 0.30 — keeps 5/9, admits  4/72 ( 5.6%)
- *     tau 0.35 — keeps 2/9, admits  1/72 ( 1.4%)
+ *     tau 0.35 — keeps 2/9, admits  3/72 ( 4.2%)
  *
- * cos(correct pair) runs min 0.157, median 0.308, max 0.613; cos(distractor pair) has
- * median 0.089 and p90 0.263. **The two distributions overlap and there is no clean gap**,
+ * cos(correct pair) runs min 0.152, median 0.301, max 0.600; cos(distractor pair) has
+ * median 0.093 and p90 0.247. Rank-1 on 7 of the 9.
+ *
+ * **MEASURED TWICE, AND THE SECOND RUN IS THE ONE THAT COUNTS.** The first calibration was
+ * taken on the full-precision weights, before D-300-05 resolved toward the quantised file.
+ * Quantisation changes every vector, so a table measured on fp32 would have described a
+ * model this repository does not ship — the precise failure the "published WITH its
+ * calibration" condition exists to prevent. Re-measured on q8: the cutoff is unchanged and
+ * the encoder is slightly BETTER, rank-1 going 6/9 to 7/9.
+ *
+ * **The two distributions overlap and there is no clean gap**,
  * so every value here trades recall against tail noise and none of them is a natural
  * boundary. That is a property of the encoder rather than of this corpus: MiniLM is trained
  * on symmetric sentence pairs and this is a six-word query against a mean-pooled document
@@ -95,9 +104,15 @@ export const SEMANTIC_K = 10;
  * ── Why 0.20 rather than the 0.35 this task was dispatched with ──
  *
  * 0.35 was ruled before the calibration existed and keeps TWO of the nine. It discards
- * `schema-forge-etl`, which the query *"reshape data between different table layouts"*
- * retrieves at RANK 1 and cosine 0.157 — a correct answer to exactly the paraphrase AC1 is
- * written about, thrown away by the cutoff.
+ * seven correct rank-1 answers, among them `adversarial-consensus-line` at 0.321 — which is
+ * the ONE query in the set sharing no content word at all with its target, and therefore the
+ * only one that tests AC1 in its strict form. A cutoff that drops the single strict case
+ * fails the criterion outright.
+ *
+ * (`schema-forge-etl` at 0.152 is below even the ruled floor and is NOT retrieved by this
+ * channel. It is named here because an earlier version of this note called it an AC1 case,
+ * which was wrong: its query shares the word `data` with the document, so the lexical pass
+ * reaches it and the vector channel is not what it depends on.)
  *
  * The asymmetry is the argument, and it is the ruling's operative sentence: **a false
  * negative fails AC1 outright; a false positive is a disclosed, marked, bounded tail row**
@@ -106,9 +121,11 @@ export const SEMANTIC_K = 10;
  *
  * ── A limit stated rather than left to surface as somebody's red ──
  *
- * The channel is not uniformly good. Over the 57-card corpus the query *"take in a new
- * request and understand what is being asked"* reaches `job-intake@1.0.0` at rank 26 and
- * cosine 0.129, and no cutoff rescues it — a cutoff filters, it does not reorder. AC1 is
+ * The channel is not uniformly good, and it is WORSE on the shipped weights than on the
+ * full-precision ones. Over the 57-card corpus the query *"take in a new request and
+ * understand what is being asked"* reaches `job-intake@1.0.0` at rank 34 of 57 and cosine
+ * 0.106 (fp32: rank 26, 0.129), and no cutoff rescues it — a cutoff filters, it does not
+ * reorder. That is the price of the quantised file, paid where it is visible. AC1 is
  * stated over blueprints, so this is outside it, but it is a real bound on what the tail
  * can do and it belongs next to the number rather than in a defect report later.
  *
@@ -130,6 +147,20 @@ export const SIMILAR_MIN = 0.2;
 const MODEL_ID = "all-MiniLM-L6-v2";
 const MODEL_ROOT = "models";
 
+/**
+ * The precision, NAMED rather than defaulted (D-300-05, arm (a)).
+ *
+ * `models/all-MiniLM-L6-v2/onnx/` holds `model_quantized.onnx` and nothing else, and the
+ * library's default for Node is fp32 — it would look for `model.onnx`, not find it, and this
+ * module would degrade to "no encoder" on a machine that has one. So the dtype is not a
+ * tuning knob here, it selects the only file that exists.
+ *
+ * The upstream FILENAME is kept rather than renamed to `model.onnx`. Renaming would make the
+ * directory look full-precision and hide, from anyone reading the tree, which weights the
+ * committed calibration was measured against.
+ */
+const MODEL_DTYPE = "q8";
+
 /** The shape this module uses, written out rather than imported. See `load()`. */
 interface Encoder {
   (text: string, options: { pooling: "mean"; normalize: boolean }): Promise<{
@@ -143,7 +174,11 @@ interface TransformersModule {
     allowLocalModels: boolean;
     localModelPath: string;
   };
-  pipeline: (task: "feature-extraction", model: string) => Promise<Encoder>;
+  pipeline: (
+    task: "feature-extraction",
+    model: string,
+    options: { dtype: string },
+  ) => Promise<Encoder>;
 }
 
 /**
@@ -185,7 +220,7 @@ async function load(): Promise<Encoder | undefined> {
     mod.env.allowLocalModels = true;
     mod.env.localModelPath = MODEL_ROOT;
 
-    return await mod.pipeline("feature-extraction", MODEL_ID);
+    return await mod.pipeline("feature-extraction", MODEL_ID, { dtype: MODEL_DTYPE });
   } catch {
     /* Swallowed, and it is the one place in this module that swallows anything. The two
        reachable causes — the package is not installed, the model directory is not
