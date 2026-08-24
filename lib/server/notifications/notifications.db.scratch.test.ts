@@ -161,6 +161,17 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
     return { preferences: row?.preferences, updatedAt: row?.updatedAt ?? null };
   }
 
+  /**
+   * Establish real connections before a race cell.
+   *
+   * A cold `pg` pool opens them lazily, so two "concurrent" callers serialise on connection setup
+   * and the window never opens — measured elsewhere in this run as 1 of 8 racing cold against 24
+   * of 24 warmed. Without this, a race cell is green against the broken code too.
+   */
+  async function warmPool(): Promise<void> {
+    await Promise.all(Array.from({ length: 6 }, async () => await db.execute(sql`select 1`)));
+  }
+
   async function queueRows(accountId?: string): Promise<{ kind: string; subject: unknown; deliveredAt: Date | null }[]> {
     const rows = await db
       .select({
@@ -338,6 +349,49 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
       ).not.toBe(sentinel.getTime());
     });
 
+    it("D-190-12 / F2: two concurrent callers on DIFFERENT kinds both land, 5 of 5", async () => {
+      /* The adversary's measured shape, driven five times because its charge was measured five
+         times: the read-modify-write lost one write 5 of 5 before the lock. One run proves
+         nothing here — a race that happens to serialise is green against the broken code too. */
+      for (let round = 0; round < 5; round += 1) {
+        const account = await seedAccount(`f2-set-${round}`);
+        await warmPool();
+
+        await Promise.all([
+          setPreferences(db, actorFor(account), account, { fork: false }),
+          setPreferences(db, actorFor(account), account, { digest: true }),
+        ]);
+
+        expect(
+          await getPreferences(db, actorFor(account), account),
+          `round ${round}: both callers patched a DIFFERENT kind, so both changes must survive. ` +
+            `Without a locked read the second caller computes all four from the value it read ` +
+            `before the first wrote, and erases it — the lost update D-190-12 charges. A plain ` +
+            `transaction does NOT fix this: under READ COMMITTED both reads succeed and only the ` +
+            `WRITE waits.`,
+        ).toEqual({ repin: true, fork: false, deprecation: true, digest: true });
+      }
+    }, 120_000);
+
+    it("D-190-12 / F2: two concurrent callers on the SAME kind agree, and neither sees a raw 23505", async () => {
+      /* The companion the same-caller shape needs: two writers of one key have two legitimate
+         interleavings, so the deterministic claims are that the column stays well-formed and that
+         no caller is handed a driver code. */
+      for (let round = 0; round < 5; round += 1) {
+        const account = await seedAccount(`f2-same-${round}`);
+        await warmPool();
+        const results = await Promise.all([
+          setPreferences(db, actorFor(account), account, { digest: true }),
+          setPreferences(db, actorFor(account), account, { digest: true }),
+        ]);
+        for (const answered of results) expect(answered.digest).toBe(true);
+        expect(
+          Object.keys((await storedColumn(account)) as object).sort(),
+          `round ${round}: the column stays total and well-formed under contention`,
+        ).toEqual(["deprecation", "digest", "fork", "repin"]);
+      }
+    }, 120_000);
+
     it("a non-owner is refused with the published sentence, and it names no account", async () => {
       const mine = await seedAccount("set-mine");
       const yours = await seedAccount("set-yours");
@@ -417,12 +471,7 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
       const account = await seedAccount("ac5-race");
       const subject = { slug: "race", fork: "one" };
 
-      /* **The pool is warmed first, and without this the cell cannot fail.** A cold `pg` pool
-         opens connections lazily, so two "concurrent" callers serialise on connection setup and
-         the race never opens — measured elsewhere in this run as 1 of 8 racing cold against 24
-         of 24 warmed. Six parallel trivial queries establish the connections before the two
-         callers below contend for anything that matters. */
-      await Promise.all(Array.from({ length: 6 }, async () => await db.execute(sql`select 1`)));
+      await warmPool();
 
       await Promise.all([
         enqueue(db, { kind: "fork", accountId: account, subject }),
@@ -663,6 +712,39 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
       ).toEqual(["f2", "f3"]);
     });
 
+    it("D-190-12 / F2: two concurrent unsubscribes on DIFFERENT kinds both land, 5 of 5", async () => {
+      /*
+       * The adversary's second measured shape, and the worst state in the module: both tokens
+       * were consumed while only one flip survived, so a reader was left with **no link and the
+       * mail still coming** — 4 of 5 runs before the fix. Driven five times for the same reason.
+       *
+       * `fork` and `repin` are different kinds, so the two tokens are different rows and the
+       * DELETEs never contend. Everything that contends is the account row, which is exactly
+       * where the lock had to go.
+       */
+      for (let round = 0; round < 5; round += 1) {
+        const account = await seedAccount(`f2-unsub-${round}`);
+        await enqueue(db, { kind: "fork", accountId: account, subject: { slug: "s", fork: "f" } });
+        await enqueue(db, { kind: "repin", accountId: account, subject: { cardId: "c", version: "1" } });
+        const mail = new RecordingDelivery();
+        await deliverPending(db, mail);
+        const tokenOf = (kind: string): string =>
+          mail.sent.find((m) => m.kind === kind)!.unsubscribeToken;
+        await warmPool();
+
+        await Promise.all([unsubscribe(db, tokenOf("fork")), unsubscribe(db, tokenOf("repin"))]);
+
+        const after = await getPreferences(db, actorFor(account), account);
+        expect(
+          { fork: after.fork, repin: after.repin },
+          `round ${round}: BOTH tokens were spent, so both preferences must be off. Losing one ` +
+            `flip here is the worst state in the module — a reader with no unsubscribe link left ` +
+            `and the mail still arriving, which is AC6's "working" failing at its own moment.`,
+        ).toEqual({ fork: false, repin: false });
+        expect(after.deprecation, "and nothing else moved").toBe(true);
+      }
+    }, 120_000);
+
     it("D-190-07(2): a preference write NEVER deletes a token — mint ON, set OFF, spend it", async () => {
       const account = await seedAccount("d07-2");
       const delivery = await enqueueAndDrain(account);
@@ -712,9 +794,7 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
         await enqueue(db, { kind: "fork", accountId: account, subject: { slug: "s", fork } });
       }
 
-      /* Warmed, for the same reason as the concurrent-enqueue cell: a cold pool serialises the
-         two callers on connection setup and the overlap the lock exists for never opens. */
-      await Promise.all(Array.from({ length: 6 }, async () => await db.execute(sql`select 1`)));
+      await warmPool();
 
       const first = new RecordingDelivery();
       const second = new RecordingDelivery();
