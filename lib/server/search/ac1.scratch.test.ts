@@ -165,6 +165,14 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
   const CONSENSUS =
     "Two agents solve the same task from opposite temperatures, then a consensus node " +
     "negotiates a single answer, re-opening the debate when they clash.";
+  /**
+   * A paraphrase of `CONSENSUS` that carries NO occurrence of the word the AC3 cell queries
+   * with. That is what makes it reachable only through the vector channel, and it is the
+   * whole reason this third blueprint exists — see the cell.
+   */
+  const ARBITER =
+    "Two competing agents argue opposite proposals and an arbiter reconciles them into one " +
+    "agreed outcome, re-opening the dispute when they disagree.";
   const JANITOR =
     "Sweeps stale records overnight on a schedule, compacting tables and archiving rows " +
     "nobody has read in ninety days.";
@@ -198,20 +206,57 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
   });
 
   it("AC3: a semantic-only hit never outranks a lexical one, and the law still computes", async () => {
-    await seedAndEmbed();
-    // "consensus" is IN the first blueprint lexically; the vector may also reach the other.
+    /* ── THIS CELL WAS INERT AND THE PREMISES BELOW ARE THE REPAIR ──
+
+       The first version guarded its only real assertion — `if (firstSemantic !== -1)` — and
+       the fixture produced `lexical: 1, semantic: 0`, so that line NEVER EXECUTED. A cell
+       named for AC3's ordering had never once asserted AC3's ordering, and it passed. The
+       two-blueprint world could not produce a mixed response at all: `data-janitor` measures
+       cosine 0.125 against `q=consensus`, below the 0.20 cutoff.
+
+       Found by auditing my own cells for a shape the blind author had just reported in one
+       of its own — a probe that cannot reach the condition it names.
+
+       The fixture is only half the fix. A world that reaches the condition today can stop
+       reaching it tomorrow, because `SIMILAR_MIN` is a published constant somebody may
+       re-calibrate and these cosines sit within 0.06 of it. So both channels are asserted
+       NON-EMPTY as premises: if this world ever goes quiet again, it reds here with a
+       message saying so, instead of passing while measuring nothing. */
+    const owner = await seedAndEmbed();
+    const arbiter = await publish({
+      owner,
+      slug: "rival-solvers",
+      title: "Rival Solvers Arbitration",
+      summary: ARBITER,
+    });
+    await reembedRelease(client.db, arbiter.bundleId, arbiter.digest);
+
+    /* `consensus` is in the first blueprint's slug, title, summary and card ref, so it is a
+       LEXICAL hit; it is absent from `ARBITER`, which the vector channel reaches at 0.2599
+       and which therefore arrives marked. One of each is what AC3 is about. */
     const results = await searchBlueprints(client.db, ANON, { q: "consensus" });
     const lexical = results.hits.filter((h) => !h.evidence.includes(SIMILAR_EVIDENCE));
     const semantic = results.hits.filter((h) => h.evidence.includes(SIMILAR_EVIDENCE));
-    expect(lexical.length).toBeGreaterThan(0);
 
+    expect(
+      lexical.length,
+      "no lexical hit: AC3 compares the two channels and this world has only one",
+    ).toBeGreaterThan(0);
+    expect(
+      semantic.length,
+      `no semantic-only hit: the vector channel returned nothing, so the ordering assertion ` +
+        `below would measure NOTHING. This is the premise that failed silently in the first ` +
+        `version of this cell. Check SIMILAR_MIN against cos(q="consensus", ARBITER) ~ 0.26 ` +
+        `before repairing anything else.`,
+    ).toBeGreaterThan(0);
+
+    /* UNGUARDED, which is the point: with both premises held there is no input on which
+       this line does not run. */
     const lastLexical = results.hits.findLastIndex((h) => !h.evidence.includes(SIMILAR_EVIDENCE));
     const firstSemantic = results.hits.findIndex((h) => h.evidence.includes(SIMILAR_EVIDENCE));
-    if (firstSemantic !== -1) expect(firstSemantic).toBeGreaterThan(lastLexical);
+    expect(firstSemantic).toBeGreaterThan(lastLexical);
 
-    expect(results.ordered).toBe(results.hits.every((h) => h.evidence.length > 0));
     expect(results.ordered).toBe(true);
-    void semantic;
   });
 
   it("a PRIVATE blueprint with a stored vector is never an answer", async () => {
