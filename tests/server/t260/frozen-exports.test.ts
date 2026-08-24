@@ -204,9 +204,9 @@ describe("D-260-01: the file two Forbidden routes import from", () => {
   });
 
   it("binds at runtime, so the pins below are about behaviour and not about the parser", async () => {
-    const module = await termTable();
+    const bound = await termTable();
     const absent = CONSUMED_VALUES.filter(
-      (name) => (module as unknown as Record<string, unknown>)[name] === undefined,
+      (name) => (bound as unknown as Record<string, unknown>)[name] === undefined,
     );
     expect(
       absent,
@@ -232,8 +232,8 @@ describe("D-260-01: `markerWeight` prices a marker the way the engine does", () 
    */
   it.each(Object.keys(CONFIGURED_WEIGHTS))("prices the core marker %s from the config", async (id) => {
     const term = riskTerm({ id });
-    const module = await termTable();
-    expect(module.markerWeight(term)).toBe(expectedWeight(term));
+    const bound = await termTable();
+    expect(bound.markerWeight(term)).toBe(expectedWeight(term));
   });
 
   /*
@@ -253,8 +253,8 @@ describe("D-260-01: `markerWeight` prices a marker the way the engine does", () 
     const term = riskTerm({ id: "unbounded-loop", defaultWeight: 99 });
     expect(expectedWeight(term), "the oracle itself must read config-first").toBe(1.5);
 
-    const module = await termTable();
-    const answer = module.markerWeight(term);
+    const bound = await termTable();
+    const answer = bound.markerWeight(term);
     expect(
       answer,
       `\`markerWeight\` answered ${String(answer)} for a marker that is priced 1.5 in ` +
@@ -278,11 +278,11 @@ describe("D-260-01: `markerWeight` prices a marker the way the engine does", () 
     const priced = riskTerm({ id: "lupo/priced-at-zero", defaultWeight: 0 });
     const unpriced = riskTerm({ id: "lupo/never-priced" });
 
-    const module = await termTable();
-    expect(module.markerWeight(priced), "`||` collapses a declared 0 into undefined").toBe(0);
-    expect(module.markerWeight(priced)).not.toBeUndefined();
-    expect(module.markerWeight(unpriced)).toBeUndefined();
-    expect(module.markerWeight(unpriced)).not.toBe(0);
+    const bound = await termTable();
+    expect(bound.markerWeight(priced), "`||` collapses a declared 0 into undefined").toBe(0);
+    expect(bound.markerWeight(priced)).not.toBeUndefined();
+    expect(bound.markerWeight(unpriced)).toBeUndefined();
+    expect(bound.markerWeight(unpriced)).not.toBe(0);
   });
 
   /** The shipped local marker, from the vocabulary rather than from a literal. */
@@ -290,8 +290,8 @@ describe("D-260-01: `markerWeight` prices a marker the way the engine does", () 
     const term = riskTerm({ id: "lupo/pii-handling", defaultWeight: 0.5 });
     expect(CONFIGURED_WEIGHTS[term.id], "premise: it must NOT be in the config").toBeUndefined();
 
-    const module = await termTable();
-    expect(module.markerWeight(term)).toBe(0.5);
+    const bound = await termTable();
+    expect(bound.markerWeight(term)).toBe(0.5);
   });
 
   /**
@@ -308,8 +308,8 @@ describe("D-260-01: `markerWeight` prices a marker the way the engine does", () 
       const term = riskTerm({ id: "unbounded-loop", kind, defaultWeight: 7 });
       expect(expectedWeight(term)).toBeUndefined();
 
-      const module = await termTable();
-      const answer = module.markerWeight(term);
+      const bound = await termTable();
+      const answer = bound.markerWeight(term);
       expect(
         answer,
         `\`markerWeight\` priced a ${kind} at ${String(answer)}. Only a risk marker carries ` +
@@ -321,9 +321,9 @@ describe("D-260-01: `markerWeight` prices a marker the way the engine does", () 
   );
 
   it("takes exactly one declared parameter", async () => {
-    const module = await termTable();
+    const bound = await termTable();
     expect(
-      module.markerWeight.length,
+      bound.markerWeight.length,
       "a second required parameter is a signature change under D-260-01, and both Forbidden " +
         "consumers call it with one argument (`[...id]:836`, `[...term]:183`).",
     ).toBe(1);
@@ -341,7 +341,7 @@ describe("D-260-01: `formatWeight` renders a weight", () => {
    * The consumers interpolate the result and never inspect it, so no reading of them can
    * produce this table. It is admissible because D-260-01's criterion is literally
    * "unchanged" — the shipped output IS the specification here — and inventing a format
-   * would red a correct module. Every number below is one the archive can actually produce:
+   * would red a correct bound. Every number below is one the archive can actually produce:
    * the seven configured weights, the one local weight, and `unknownMarkerWeight`.
    */
   const GOLDEN: readonly (readonly [number, string])[] = [
@@ -353,8 +353,8 @@ describe("D-260-01: `formatWeight` renders a weight", () => {
   ];
 
   it.each(GOLDEN)("formats %d as %s", async (weight, rendered) => {
-    const module = await termTable();
-    expect(module.formatWeight(weight)).toBe(rendered);
+    const bound = await termTable();
+    expect(bound.formatWeight(weight)).toBe(rendered);
   });
 
   /*
@@ -367,12 +367,12 @@ describe("D-260-01: `formatWeight` renders a weight", () => {
    * happens to catch it; `typeof` says which criterion was violated.
    */
   it("returns a primitive string, because one consumer interpolates it into a sentence", async () => {
-    const module = await termTable();
-    const answer: unknown = module.formatWeight(1.5);
+    const bound = await termTable();
+    const answer: unknown = bound.formatWeight(1.5);
     expect(typeof answer, "`[...term]/page.tsx:468` puts this inside a template literal").toBe(
       "string",
     );
-    expect(`${module.formatWeight(1.5)}`).not.toContain("object");
+    expect(`${bound.formatWeight(1.5)}`).not.toContain("object");
   });
 
   /*
@@ -382,13 +382,13 @@ describe("D-260-01: `formatWeight` renders a weight", () => {
    * and 2 onto the same rendering, which on the page is two different risks priced alike.
    */
   it("renders the shipped weights distinguishably", async () => {
-    const module = await termTable();
+    const bound = await termTable();
     const weights = [...new Set([...Object.values(CONFIGURED_WEIGHTS), 0.5, 0])];
     expect(weights.length, "premise: the shipped weights must be distinct to begin with").toBe(
       new Set(weights).size,
     );
 
-    const rendered = weights.map((weight) => module.formatWeight(weight));
+    const rendered = weights.map((weight) => bound.formatWeight(weight));
     expect(
       new Set(rendered).size,
       `${weights.length} distinct weights rendered as ${new Set(rendered).size} distinct ` +
@@ -399,13 +399,13 @@ describe("D-260-01: `formatWeight` renders a weight", () => {
   it("renders `unknownMarkerWeight` too, because a Forbidden route prints exactly that", async () => {
     /* `app/ontology/[...term]/page.tsx:443` and `:468`. It is 0, and 0 is the value most
        likely to fall out of a truthiness guard added during a rewrite. */
-    const module = await termTable();
-    expect(module.formatWeight(DARKPRINT_CONFIG.security.unknownMarkerWeight)).toBe("0.00");
+    const bound = await termTable();
+    expect(bound.formatWeight(DARKPRINT_CONFIG.security.unknownMarkerWeight)).toBe("0.00");
   });
 
   it("takes exactly one declared parameter", async () => {
-    const module = await termTable();
-    expect(module.formatWeight.length).toBe(1);
+    const bound = await termTable();
+    expect(bound.formatWeight.length).toBe(1);
   });
 });
 
@@ -431,8 +431,8 @@ describe("D-260-01: `termUsageIndex` answers what the Forbidden route asks it", 
    */
   it("is a map keyed by term id, over a non-empty archive", async () => {
     const registry = getRegistry();
-    const module = await termTable();
-    const index = module.termUsageIndex(registry);
+    const bound = await termTable();
+    const index = bound.termUsageIndex(registry);
 
     expect(typeof index.get, "the consumer calls `.get`").toBe("function");
     /* The premise. An index of size 0 satisfies every per-entry assertion below at once,
@@ -447,8 +447,8 @@ describe("D-260-01: `termUsageIndex` answers what the Forbidden route asks it", 
   });
 
   it("keys entries by ids the vocabulary knows", async () => {
-    const module = await termTable();
-    const index = module.termUsageIndex(getRegistry());
+    const bound = await termTable();
+    const index = bound.termUsageIndex(getRegistry());
     const unknown = [...index.keys()].filter((id) => typeof id !== "string" || id.length === 0);
     expect(unknown, "a key that is not a term id cannot be found by `usageIndex.get(term.id)`").toEqual(
       [],
@@ -457,8 +457,8 @@ describe("D-260-01: `termUsageIndex` answers what the Forbidden route asks it", 
 
   it("puts CARD IDS in `.cards` and BLUEPRINT SLUGS in `.blueprints`", async () => {
     const registry = getRegistry();
-    const module = await termTable();
-    const index = module.termUsageIndex(registry);
+    const bound = await termTable();
+    const index = bound.termUsageIndex(registry);
 
     const badCards: string[] = [];
     const badBlueprints: string[] = [];
@@ -504,20 +504,20 @@ describe("D-260-01: `termUsageIndex` answers what the Forbidden route asks it", 
    * whether the term is used — which typechecks and breaks only on the terms nothing names.
    */
   it("`NO_USAGE` carries exactly the fields a real entry carries", async () => {
-    const module = await termTable();
-    const index = module.termUsageIndex(getRegistry());
+    const bound = await termTable();
+    const index = bound.termUsageIndex(getRegistry());
     const [, entry] = [...index.entries()][0] ?? [];
     expect(entry, "premise: there is a real entry to compare against").toBeDefined();
 
-    expect(Object.keys(module.NO_USAGE).sort()).toEqual(Object.keys(entry!).sort());
-    for (const [key, value] of Object.entries(module.NO_USAGE)) {
+    expect(Object.keys(bound.NO_USAGE).sort()).toEqual(Object.keys(entry!).sort());
+    for (const [key, value] of Object.entries(bound.NO_USAGE)) {
       expect(Array.isArray(value), `NO_USAGE.${key} is the empty case of a list`).toBe(true);
       expect(value as unknown[], `NO_USAGE.${key} must be empty`).toEqual([]);
     }
   });
 
   it("takes exactly one declared parameter", async () => {
-    const module = await termTable();
-    expect(module.termUsageIndex.length).toBe(1);
+    const bound = await termTable();
+    expect(bound.termUsageIndex.length).toBe(1);
   });
 });
