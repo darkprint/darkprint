@@ -30,15 +30,21 @@ import {
 
 /**
  * What a blueprint's current release stores that its RECORD does not carry: the DOT
- * topology, the local vocabulary overlay and the pins in the order they were written.
+ * topology and the local vocabulary overlay.
  *
- * `BlueprintSummary` is the index's answer and deliberately projects those away — nothing
- * reading the index wants a DOT source. `graphsOf` needs all three to reassemble the
- * bundle, and the alternative to keeping them here is a second query issued under a second
- * copy of D-80-03's current-release rule, which is the duplicate-decision defect this
- * project charges more than any other (D-132-01: extract, never duplicate). These are
- * references to rows `loadSnapshot` has already read and would otherwise drop on the floor,
- * so retaining them costs no statement and no copy.
+ * `BlueprintSummary` is the index's answer and deliberately projects both away — nothing
+ * reading the index wants a DOT source. `graphsOf` needs them to reassemble the bundle,
+ * and the alternative to keeping them here is a second query issued under a second copy of
+ * D-80-03's current-release rule, which is the duplicate-decision defect this project
+ * charges more than any other (D-132-01: extract, never duplicate). These are references to
+ * rows `loadSnapshot` has already read and would otherwise drop on the floor, so retaining
+ * them costs no statement and no copy.
+ *
+ * **The pins are deliberately NOT here.** An earlier version carried `release.card_refs`
+ * so a reassembly could read them in the order they were stored, as `export/build.ts` does.
+ * That is wrong for this reader: the column holds the pins AS WRITTEN and `parseCardRef`
+ * trims, so a padded spelling misses the canonical keys the index is built on. A caller
+ * wants `BlueprintSummary.cardRefs`, which is canonical and visibility-filtered already.
  */
 export interface ReleaseSource {
   dot: string;
