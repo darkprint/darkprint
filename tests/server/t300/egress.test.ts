@@ -208,12 +208,49 @@ describe("the observer can see what it is looking for", () => {
            download SUCCEED, and the cell would pass or time out rather than say what
            happened. What is asserted is the RECORD, never the throw. */
       }
-      await new Promise<void>((resolve, reject) => {
-        const socket = net.connect({ host: "127.0.0.1", port }, () => {
-          socket.end();
+      /* THE FOREIGN SOCKET IS OPENED THE WAY `pg` OPENS ITS OWN, and that is a correction
+         to an earlier version of this cell rather than a flourish. `net.connect(...)` — in
+         either spelling, options or positional — runs Node's `normalizeArgs` and reaches
+         `Socket.prototype.connect` as ONE marked array. `pg` does not go through it:
+         `node_modules/pg/lib/connection.js:45` is `this.stream.connect(port, host)`, a
+         DIRECT call on the socket instance with a leading NUMBER, and a unix DSN reaches
+         `client.js:179` as a single PATH string with no host at all.
+
+         So driving `net.connect` proves the recorder handles the one shape the database
+         never uses. Three shapes are driven here — marked array, direct leading-number,
+         direct path — and the allow-listed ones must come back NOT foreign while the
+         ephemeral one does. Verified against all five admissible shapes before this suite
+         took its first database window. */
+      await new Promise<void>((resolve) => {
+        const viaNet = net.connect({ host: "127.0.0.1", port });
+        viaNet.on("error", () => resolve());
+        viaNet.on("connect", () => {
+          viaNet.end();
           resolve();
         });
-        socket.on("error", reject);
+      });
+      for (const allowed of allow) {
+        await new Promise<void>((resolve) => {
+          /* `new Socket().connect(port, host)` — byte for byte what `pg` calls. */
+          const direct = new net.Socket();
+          direct.on("error", () => resolve());
+          direct.on("connect", () => {
+            direct.end();
+            resolve();
+          });
+          direct.connect(allowed.port, allowed.host);
+        });
+      }
+      await new Promise<void>((resolve) => {
+        /* The IPC spelling: one path, no host. A recorder classifying on `host` alone
+           reports the database's own socket as foreign for a third reason. */
+        const ipc = new net.Socket();
+        ipc.on("error", () => resolve());
+        ipc.on("connect", () => {
+          ipc.end();
+          resolve();
+        });
+        ipc.connect("/tmp/.s.PGSQL.5432");
       });
     } finally {
       const seen = close(watcher);
@@ -230,9 +267,18 @@ describe("the observer can see what it is looking for", () => {
       expect(
         seen.foreign,
         `and the transport arm separately, because it is the one that cannot be evaded by a ` +
-          `module that captured \`fetch\` at import time. A socket to a port the allow list ` +
-          `does not carry has to come back named.\n` +
-          `  allow list: ${allow.map((a) => `${a.host}:${a.port}`).join(", ")}`,
+          `module that captured \`fetch\` at import time.\n` +
+          `  This is green-against-red rather than a zero: the SAME window opened the ` +
+          `ephemeral port and every allow-listed endpoint, through the three shapes that ` +
+          `reach \`Socket.prototype.connect\` — the marked array \`net.connect\` produces, ` +
+          `the direct leading-number call \`pg\` produces, and the direct path an IPC DSN ` +
+          `produces. Exactly one of them may come back named.\n` +
+          `  If an allow-listed endpoint appears here, the recorder is mis-reading a shape ` +
+          `and AC5's cells below would report the DATABASE as network egress — a red that ` +
+          `reads as a finding and is a broken watcher. That happened once already, when the ` +
+          `recorder read \`.host\` off the array \`normalizeArgs\` hands the method.\n` +
+          `  allow list: ${allow.map((a) => `${a.host}:${a.port}`).join(", ")}\n` +
+          `  everything the window saw: ${JSON.stringify(seen.connections)}`,
       ).toEqual([`127.0.0.1:${port}`]);
     }
   });
