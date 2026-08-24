@@ -25,6 +25,7 @@
    is the defect this run has charged more than any other.
    ============================================================ */
 
+import { asc, eq, lte, sql } from "drizzle-orm";
 import type { Db } from "@/lib/db";
 import { schema } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
@@ -37,8 +38,17 @@ import {
   tags,
   type BlueprintSummary,
 } from "@/lib/server/registry";
+import { embed, SEMANTIC_K, SIMILAR_EVIDENCE, SIMILAR_MIN } from "./embed";
 import { flag, oneOf, sortKey, value } from "./params";
-import { evidenceFor, queryWords, ranked, unranked, type Field, type Scored } from "./rank";
+import {
+  evidenceFor,
+  queryWords,
+  ranked,
+  rankedWithSimilar,
+  unranked,
+  type Field,
+  type Scored,
+} from "./rank";
 import { withSearchStore } from "./store";
 import type { Results } from "./types";
 import { PUBLIC_ONLY } from "./visibility";
@@ -200,7 +210,7 @@ async function search(
   for (const bp of candidates) {
     const evidence = evidenceFor(bp, FIELDS, query);
     if (query.length > 0 && evidence === undefined) continue;
-    hits.push({ item: bp, evidence: evidence ?? [], identity: `${bp.slug}/${bp.ownerHandle}` });
+    hits.push({ item: bp, evidence: evidence ?? [], identity: identityOf(bp) });
   }
 
   /* An explicit ordering instruction, or none. `sort=slug` and no `sort` at all reach the
@@ -219,7 +229,104 @@ async function search(
       facets,
     );
   }
-  return ranked(hits, facets);
+
+  /* D-300-02: the vector tables gain their first reader here. Only the candidates the
+     lexical pass did NOT already return, so the channel can only ADD recall and can never
+     move a rank — which is what keeps AC2 true, and the reason the tail is computed from
+     `candidates` (post-filter) rather than from `all`. */
+  const found = new Set(hits.map((hit) => hit.identity));
+  const tail = await similarCandidates(
+    db,
+    params.q ?? "",
+    candidates.filter((bp) => !found.has(identityOf(bp))),
+  );
+  if (tail.length === 0) return ranked(hits, facets);
+  return rankedWithSimilar(hits, tail, facets);
+}
+
+/** The key a hit is identified by, in one place because the tail has to agree with it. */
+function identityOf(bp: BlueprintSummary): string {
+  return `${bp.slug}/${bp.ownerHandle}`;
+}
+
+/**
+ * The blueprints whose stored purpose vector is nearest the query, among those the lexical
+ * pass did not already find.
+ *
+ * ── The candidate set is passed IN, and that is the visibility rule ──
+ *
+ * `release_embedding` holds a row for every embedded release, private ones included —
+ * `reembedRelease` deliberately does not consult visibility (D-200-25), because a vector
+ * that is skipped while a blueprint is private has nothing to trigger it on the day the
+ * blueprint goes public. So the table is NOT a public index and must never be treated as
+ * one. The narrowing happens here, against the set T080 already answered under
+ * `PUBLIC_ONLY` and already filtered by `tag`, `cat`, `phase` and the rest.
+ *
+ * It is narrowed IN SQL rather than after the fact, and the difference is not performance:
+ * `LIMIT` applied before the filter would let private or filtered-out rows consume the
+ * budget and silently return fewer than `SEMANTIC_K` results a caller was entitled to.
+ *
+ * ── The distance, and the sign that is easy to get backwards ──
+ *
+ * `<=>` is pgvector's COSINE DISTANCE, so it runs 0 (identical) to 2 (opposite), while
+ * `SIMILAR_MIN` is a cosine SIMILARITY floor. `similarity = 1 - distance` is the whole of
+ * the conversion and it is written once, here. Both vectors are unit length — the encoder
+ * normalises and so did every stored row — so the two readings are exact rather than
+ * approximate.
+ *
+ * The ordering is `ASC` on distance, which is DESCENDING similarity: nearest first.
+ */
+async function similarCandidates(
+  db: Db,
+  q: string,
+  candidates: readonly BlueprintSummary[],
+): Promise<Scored<BlueprintSummary>[]> {
+  if (candidates.length === 0) return [];
+
+  /* No encoder on this machine means no tail, and it costs one resolved promise to find
+     out rather than a query (D-300-05). The lexical answer above is already complete. */
+  const queryVector = await embed(q);
+  if (queryVector === undefined) return [];
+
+  /* `JSON.stringify` of a `number[]` is exactly pgvector's text form, `[0.1,0.2,…]`, and it
+     travels as a BOUND PARAMETER rather than interpolated text. */
+  /* PARENTHESISED, and it is not decoration. `<=>` is a user-defined operator, and
+     PostgreSQL gives every such operator HIGHER precedence than a comparison — so
+     `embedding <=> $1 <= $2` does already parse as `(embedding <=> $1) <= $2`. The
+     parentheses are here so a reader does not have to know that to check the filter,
+     because the wrong reading is silently a different query rather than an error. */
+  const distance = sql<number>`(${schema.releaseEmbedding.embedding} <=> ${JSON.stringify(queryVector)}::vector)`;
+
+  const rows = await db
+    .select({
+      handle: schema.account.handle,
+      slug: schema.bundle.slug,
+      digest: schema.release.digest,
+      distance,
+    })
+    .from(schema.releaseEmbedding)
+    .innerJoin(schema.release, eq(schema.release.id, schema.releaseEmbedding.releaseId))
+    .innerJoin(schema.bundle, eq(schema.bundle.id, schema.release.bundleId))
+    .innerJoin(schema.account, eq(schema.account.id, schema.bundle.ownerId))
+    .where(lte(distance, 1 - SIMILAR_MIN))
+    .orderBy(asc(distance))
+    .limit(SEMANTIC_K);
+
+  /* Matched on the WHOLE identity plus the digest rather than on the digest alone. A digest
+     is content-addressed and `bundleDigest` takes no version, so two bundles holding
+     identical content legitimately share one (D-200-03) — matching on it alone would let a
+     vector stored for one blueprint answer for another. The digest is still checked,
+     because it is how T080 says WHICH release is current: an older release's vector is a
+     vector for text this blueprint no longer publishes. */
+  const byIdentity = new Map(candidates.map((bp) => [`${bp.slug}/${bp.ownerHandle}#${bp.digest}`, bp]));
+  const tail: Scored<BlueprintSummary>[] = [];
+  for (const row of rows) {
+    if (row.handle === null) continue;
+    const bp = byIdentity.get(`${row.slug}/${row.handle}#${row.digest}`);
+    if (bp === undefined) continue;
+    tail.push({ item: bp, evidence: [SIMILAR_EVIDENCE], identity: identityOf(bp) });
+  }
+  return tail;
 }
 
 /**

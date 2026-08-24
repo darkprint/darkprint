@@ -19,49 +19,179 @@
 
 import { describe, expect, it } from "vitest";
 
-import { EMBEDDING_DIMENSIONS, embed } from "./embed";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+
+import {
+  EMBEDDING_DIMENSIONS,
+  embed,
+  encoderAvailable,
+  MODEL_BLOB,
+  MODEL_FILE,
+  SIMILAR_EVIDENCE,
+  SIMILAR_MIN,
+} from "./embed";
 import { flag, oneOf, searchParams, sortKey, value } from "./params";
-import { evidenceFor, ranked, unranked, type Field, type Scored } from "./rank";
+import { evidenceFor, ranked, rankedWithSimilar, unranked, type Field, type Scored } from "./rank";
 import { findWord, normalise, trigrams } from "./text";
 
 /* --------------------- the derivation --------------------- */
 
+/**
+ * WHICH WORLD THIS RUN IS IN, resolved once and ANNOUNCED rather than assumed.
+ *
+ * The derivation is now a sentence-encoder (D-300-01) whose weights are provisioned by an
+ * explicit operator step, not by `npm ci` (D-300-05). So these cells have two worlds, and
+ * the dangerous one is not the world without an encoder — it is a suite that cannot tell
+ * them apart and reports green in both.
+ *
+ * Every vector cell below is `skipIf`'d on the encoder, and the first cell asserts WHICH
+ * world it is in unconditionally. That way a skipped count is a fact a reader can act on,
+ * and no cell here can be vacuously green: with no encoder, the degradation contract is
+ * what gets measured, and it is a real criterion (D-300-05) rather than a stand-down.
+ */
+const HAVE_ENCODER = await encoderAvailable();
+
+describe("the vendored weights", () => {
+  it("are the exact bytes the calibration was measured on (D-300-08)", () => {
+    /* THE PIN, MADE LOAD-BEARING. `MODEL_BLOB` is a constant, and a constant nothing reads
+       is decoration — this is the something that reads it.
+
+       What it defends is not the file's existence but the CALIBRATION's subject. Every
+       number in `SIMILAR_MIN`'s table is a measurement of these bytes, so a swapped blob
+       moves every vector in the archive while the committed table goes on reading as
+       still-measured.
+
+       THE WIDTH PROBE IN `load()` CANNOT CATCH THAT, and this was driven rather than
+       argued: `model_uint8.onnx` from the same upstream repository, dropped in place of the
+       pinned file, LOADS, passes the width probe at 384 dimensions, and passes all thirty
+       other cells in this file — every vector-property cell included. This cell was the only
+       red. A wrong model that happens to be the right width is invisible to everything else
+       the module checks, which is the whole reason a digest is here.
+
+       Both the length and the digest, because they fail differently: a truncated or
+       partially-checked-out file is caught by the cheap comparison with a legible number,
+       and a same-length substitution is caught by the expensive one. */
+    const bytes = readFileSync(MODEL_FILE);
+    expect(bytes.byteLength, `${MODEL_FILE} is not the vendored file: wrong length`).toBe(
+      MODEL_BLOB.bytes,
+    );
+    expect(
+      createHash("sha256").update(bytes).digest("hex"),
+      `${MODEL_FILE} does not match MODEL_SHA256.\n` +
+        `  The published SIMILAR_MIN calibration is a measurement of the pinned bytes. If ` +
+        `these weights were deliberately changed, the table in embed.ts must be RE-MEASURED ` +
+        `and this constant updated in the same commit; if they were not, this is a bad ` +
+        `merge or a corrupted checkout and the file should be restored.`,
+    ).toBe(MODEL_BLOB.sha256);
+  });
+});
+
 describe("the stored vector", () => {
-  it("is 384 wide, because pgvector refuses any other width", () => {
-    expect(EMBEDDING_DIMENSIONS).toBe(384);
-    expect(embed("a factory that plans and implements")).toHaveLength(384);
+  it("reports which derivation this run measured, so a skip is never silent", async () => {
+    /* Unconditional and deliberately unskippable. It fails only if `encoderAvailable` and
+       `embed` DISAGREE about whether this machine can encode — the one state in which every
+       other cell in this block is reading the wrong world.
+
+       AWAITED rather than returned as a `.resolves` chain. An un-awaited assertion resolves
+       after the cell has already passed, so it can report a failure it cannot fail on —
+       which would make the one unskippable cell in this block the one incapable of redding. */
+    expect(typeof HAVE_ENCODER).toBe("boolean");
+    const answer = await embed("a factory that plans and implements");
+    if (HAVE_ENCODER) expect(Array.isArray(answer)).toBe(true);
+    else expect(answer).toBeUndefined();
   });
 
-  it("is a function of the text and of nothing else", () => {
+  it.skipIf(!HAVE_ENCODER)("is 384 wide, because pgvector refuses any other width", async () => {
+    expect(EMBEDDING_DIMENSIONS).toBe(384);
+    expect(await embed("a factory that plans and implements")).toHaveLength(384);
+  });
+
+  it.skipIf(!HAVE_ENCODER)("is a function of the text and of nothing else", async () => {
     // AC6's determinism claim, at the one layer that can break it. A derivation seeded from
     // anything ambient — a salted string hash, iteration order, the clock — reproduces a
     // different vector on the next call, and the delete-and-re-embed cell is what would
     // eventually catch it, one process restart later.
-    const once = embed("retrieval augmented generation");
-    const twice = embed("retrieval augmented generation");
+    //
+    // WITHIN one process is the WEAKER half and it is all a cell here can reach. The
+    // encoder was measured byte-identical ACROSS three separate pids over four texts, which
+    // is the axis a salted hash actually fails; that measurement is recorded in
+    // `reembed.ts` beside the write it licenses, because no cell in this file can restart
+    // the process it is running in.
+    const once = await embed("retrieval augmented generation");
+    const twice = await embed("retrieval augmented generation");
     expect(twice).toEqual(once);
   });
 
-  it("is L2-normalised, so cosine distance is about content and not length", () => {
-    const vector = embed("planning implementation testing debugging deployment");
-    const length = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0));
-    expect(length).toBeCloseTo(1, 12);
-  });
+  it.skipIf(!HAVE_ENCODER)(
+    "is L2-normalised, so cosine distance is about content and not length",
+    async () => {
+      const vector = (await embed("planning implementation testing debugging deployment")) ?? [];
+      const length = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0));
+      // 6 places, not 12: the encoder normalises in float32 and lands at 1.000000049.
+      expect(length).toBeCloseTo(1, 6);
+    },
+  );
 
-  it("answers the zero vector for a text with nothing in it, rather than dividing by zero", () => {
-    const vector = embed("   ---   ");
-    expect(vector).toHaveLength(384);
-    expect(vector.every((value) => value === 0)).toBe(true);
-  });
+  it.skipIf(!HAVE_ENCODER)(
+    "gives a text with nothing in it an ORDINARY unit vector, with no special case",
+    async () => {
+      /* ── REPLACES the zero-vector cell, and the replacement is reported rather than
+         quiet (granted by D-300-06 F3) ──
 
-  it("separates two documents that share no word", () => {
+         The cell here used to assert that `embed("   ---   ")` was all zeros, and under the
+         3-gram derivation that was true and load-bearing: a text with no letters had no
+         3-grams, so the sum of squares was 0 and normalising it would have divided by zero.
+
+         The encoder has no such state. `""` and `"   ---   "` both tokenize to the CLS/SEP
+         pair and come back with all 384 components non-zero at unit length — MEASURED on
+         the ruled model, not reasoned from the architecture. So the old assertion is not
+         merely unnecessary, it is FALSE of the module it guards, and keeping it would red a
+         correct implementation.
+
+         What replaces it is the property that IS true and that a caller still depends on:
+         an empty document is representable, legal in a `vector(384) NOT NULL` column, and
+         gets no special standing. The assertion EXCLUDES the old behaviour rather than
+         merely admitting the new one — a module that still answered zeros would fail this
+         cell, which is what stops the replacement from being a weakening. */
+      const empty = (await embed("   ---   ")) ?? [];
+      expect(empty).toHaveLength(EMBEDDING_DIMENSIONS);
+      expect(empty.some((value) => value !== 0)).toBe(true);
+      expect(Math.sqrt(empty.reduce((sum, value) => sum + value * value, 0))).toBeCloseTo(1, 6);
+    },
+  );
+
+  it.skipIf(!HAVE_ENCODER)("separates two documents that share no word", async () => {
     // The property the whole-token derivation could not have: it is checked as a
     // DIFFERENCE rather than as a similarity, because two random vectors are also
     // dissimilar and only the contrast says the derivation carries content.
-    const near = cosine(embed("orchestration"), embed("orchestrator"));
-    const far = cosine(embed("orchestration"), embed("bicycle"));
+    const near = cosine((await embed("orchestration")) ?? [], (await embed("orchestrator")) ?? []);
+    const far = cosine((await embed("orchestration")) ?? [], (await embed("bicycle")) ?? []);
     expect(near).toBeGreaterThan(far);
   });
+
+  it.skipIf(!HAVE_ENCODER)("puts a paraphrase above a stranger, which is what AC1 buys", async () => {
+    /* AC1's shape at the derivation layer, where it can be checked without a database. The
+       query shares NO content word with the document it should reach, and shares one with
+       the document it should not — so a lexical derivation would rank these BACKWARDS, and
+       this cell is the one that separates the encoder from everything T200 shipped. */
+    const query = (await embed("rival bots settle a dispute by themselves")) ?? [];
+    const paraphrased = (await embed("two agents argue and a consensus node negotiates one answer")) ?? [];
+    const stranger = (await embed("rival bicycle couriers race across the city")) ?? [];
+    expect(cosine(query, paraphrased)).toBeGreaterThan(cosine(query, stranger));
+    // And the one it should reach clears the published floor it is filtered by.
+    expect(cosine(query, paraphrased)).toBeGreaterThanOrEqual(SIMILAR_MIN);
+  });
+
+  it.skipIf(HAVE_ENCODER)(
+    "degrades to no vector at all when no encoder is provisioned, rather than throwing",
+    async () => {
+      /* D-300-05's graceful degradation, and it is a CRITERION rather than a stand-down:
+         on a machine with no model directory `reembedRelease` must write nothing and the
+         searchers must stay lexical, which is only possible if this answers a value. */
+      await expect(embed("a factory that plans and implements")).resolves.toBeUndefined();
+    },
+  );
 });
 
 function cosine(a: readonly number[], b: readonly number[]): number {
@@ -184,6 +314,56 @@ describe("the ranking", () => {
        why the field is derived from the hits rather than from the branch that made them. */
     expect(unranked([], {}).ordered).toBe(true);
     expect(ranked([], {}).ordered).toBe(true);
+  });
+
+  it("puts the vector channel's finds BEHIND every lexical hit (AC3)", () => {
+    /* AC3's whole content, and it is checked against the arrangement that BREAKS it rather
+       than a comfortable one. `similar:purpose` scores 1, exactly like `title:x`, and
+       `similar:` sorts between `owner:` and `slug:` — so a tail fed through the ordinary
+       comparator would land BETWEEN these two lexical hits instead of after both. The
+       fixture is built so that a wrong implementation reorders visibly. */
+    const results = rankedWithSimilar(
+      [candidate("slug-hit", ["slug:x"]), candidate("owner-hit", ["owner:x"])],
+      [candidate("vector-only", [SIMILAR_EVIDENCE])],
+      {},
+    );
+    expect(results.hits.map((hit) => hit.item)).toEqual(["owner-hit", "slug-hit", "vector-only"]);
+  });
+
+  it("keeps the tail contiguous and never splits a lexical block (D-200-20)", () => {
+    const results = rankedWithSimilar(
+      [candidate("a", ["title:x"]), candidate("c", ["title:x"]), candidate("b", ["tag:x"])],
+      [candidate("v1", [SIMILAR_EVIDENCE]), candidate("v2", [SIMILAR_EVIDENCE])],
+      {},
+    );
+    expect(blocks(results.hits.map((hit) => hit.evidence))).toEqual([
+      ["tag:x"],
+      ["title:x", "title:x"],
+      [SIMILAR_EVIDENCE, SIMILAR_EVIDENCE],
+    ]);
+  });
+
+  it("preserves the tail's own distance order rather than re-sorting it", () => {
+    /* The tail arrives nearest-first from pgvector and every entry carries byte-identical
+       evidence, so ANY comparator would fall through to the identity tiebreak and sort it
+       alphabetically. `zeta` before `alpha` is the fixture that tells the two apart. */
+    const results = rankedWithSimilar(
+      [],
+      [candidate("zeta", [SIMILAR_EVIDENCE]), candidate("alpha", [SIMILAR_EVIDENCE])],
+      {},
+    );
+    expect(results.hits.map((hit) => hit.item)).toEqual(["zeta", "alpha"]);
+  });
+
+  it("stays ordered:true with a tail, and that is the law computing (D-300-04 D1)", () => {
+    /* Not an amendment — `finish` evaluates the same `every(evidence.length > 0)` it always
+       did. Recorded as a cell because the ruling this task was DISPATCHED with said an
+       all-semantic response was `ordered: false`, which the unamended law does not compute;
+       D-300-04 D1 resolved that toward the marker, and this is what the resolution means in
+       the code. */
+    const allSemantic = rankedWithSimilar([], [candidate("v", [SIMILAR_EVIDENCE])], {});
+    expect(allSemantic.ordered).toBe(true);
+    expect(rankedWithSimilar([], [], {}).ordered).toBe(true);
   });
 
   it("hands back the facets it was given, hits or no hits", () => {
