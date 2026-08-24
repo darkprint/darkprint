@@ -154,8 +154,12 @@ describe.skipIf(!hasDb)("lib/server/lifecycle against Postgres", () => {
     await makeCard(alice, "card-a", "1.0.0", "public");
     const { id } = await makeBundle(alice, "triage", "public", ["card-a@1.0.0"]);
 
-    await transferBundle(db, actorFor(alice, "alice"), id, "bob");
+    const moved = await transferBundle(db, actorFor(alice, "alice"), id, "bob");
 
+    /* The positive half is asserted BESIDE the non-effect, and it is not decoration: without
+       it this cell passes against a `transferBundle` that does nothing at all, which is the
+       shape every "X is unchanged" assertion degenerates into. */
+    expect(moved.ownerId).toBe(bob);
     const [card] = await db.select().from(schema.cardVersion).where(eq(schema.cardVersion.cardId, "card-a"));
     expect(card!.ownerId).toBe(alice);
   });
