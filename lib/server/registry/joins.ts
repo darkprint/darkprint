@@ -29,3 +29,21 @@ export async function usersOf(db: Db, actor: Actor, cardId: string): Promise<rea
 export async function duplicates(db: Db, actor: Actor): Promise<readonly (readonly CardSummary[])[]> {
   return withRegistryStore("duplicates", async () => (await loadSnapshot(db, actor)).duplicates);
 }
+
+/**
+ * The batch form of `usersOf`, owed under D-260-21 and armed the moment T260's shelves went
+ * dynamic: `/nodes` was paying one full snapshot (four statements) PER CARD per page load.
+ * ONE snapshot, every id answered from its `usersById` index. Ids nothing pins answer an
+ * empty list rather than being omitted — a map that omits what nothing names drops exactly
+ * the rows a caller is iterating (D-210-09's reason, applied here).
+ */
+export async function usersOfMany(
+  db: Db,
+  actor: Actor,
+  cardIds: readonly string[],
+): Promise<ReadonlyMap<string, readonly BlueprintSummary[]>> {
+  return withRegistryStore("usersOfMany", async () => {
+    const snapshot = await loadSnapshot(db, actor);
+    return new Map(cardIds.map((id) => [id, snapshot.usersById.get(id) ?? []]));
+  });
+}

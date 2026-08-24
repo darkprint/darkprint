@@ -225,6 +225,10 @@ export const T081_NAMES = Object.keys(PUBLISHED_T081) as PublishedT081Name[];
  * words: *an addition is a contract amendment and belongs in the block*. Leaving them out
  * would have narrowed AC2's "every" to thirteen of sixteen while the criterion still said
  * every, which is the failure that check exists to prevent.
+ *
+ * **Seventeen since T260's merge**: `usersOfMany` (D-260-31), the batch form of `usersOf`
+ * armed when the /nodes cutover turned its 53-snapshots-per-load disclosure into a
+ * per-request cost. Added here for the same reason as T132's three.
  */
 export const PUBLISHED_READERS = {
   blueprints: "blueprints(db: Db, actor: Actor): Promise<readonly BlueprintSummary[]>",
@@ -258,6 +262,9 @@ export const PUBLISHED_READERS = {
   cardsOwnedBy:
     "cardsOwnedBy(db: Db, actor: Actor, ownerHandle: string): " +
     "Promise<readonly CardSummary[]>",
+  usersOfMany:
+    "usersOfMany(db: Db, actor: Actor, cardIds: readonly string[]): " +
+    "Promise<ReadonlyMap<string, readonly BlueprintSummary[]>>",
 } as const;
 
 export type ReaderName = keyof typeof PUBLISHED_READERS;
@@ -365,6 +372,13 @@ export const READER_PROBES: Record<ReaderName, ReaderProbe> = {
     args: [PROBE.ownerHandle],
     variantArgs: [VARIANT.ownerHandle],
     supplied: [PROBE.ownerHandle],
+  },
+  /* Non-empty for the same reason as the two batch readers above: an empty id list answers
+     an empty Map without a statement. */
+  usersOfMany: {
+    args: [[PROBE.cardId]],
+    variantArgs: [[VARIANT.cardId]],
+    supplied: [PROBE.cardId],
   },
 };
 

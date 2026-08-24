@@ -44,7 +44,7 @@ export { withRegistryErrors } from "./http";
 export { blueprint, blueprints } from "./blueprints";
 export { card, cards, cardsOwnedBy, latestCards, versionsOf } from "./cards";
 export { graphsOf } from "./graphs";
-export { duplicates, usersOf } from "./joins";
+export { duplicates, usersOf, usersOfMany } from "./joins";
 export { cardsByPhase, categories, phases, tags } from "./facets";
 export { scoresFor, scoresOf } from "./scores";
 

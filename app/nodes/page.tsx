@@ -9,7 +9,7 @@ import { getSharedDbClient } from "@/lib/db";
 import { getPublicAuthor } from "@/lib/server/accounts";
 import { getLatestOntologyVersion, openView } from "@/lib/server/ontology";
 import type { Actor } from "@/lib/server/policy";
-import { latestCards, usersOf } from "@/lib/server/registry";
+import { latestCards, usersOfMany } from "@/lib/server/registry";
 import type { Author } from "@/lib/types";
 
 // SEAM-07 LIVE: the card library is read from the registry (T080) rather than from
@@ -127,20 +127,14 @@ export default async function NodesPage() {
    * same union could be assembled from `blueprints()`'s `cardRefs`, and that assembly would
    * be a second implementation of a join the registry already publishes.
    *
-   * **A DISCLOSED COST: this is one registry snapshot per card.** `usersOf` reads
-   * `usersById` off a snapshot it loads on every call, and there is no batch form on the
-   * published surface, so 53 cards are 53 snapshots. Concurrent rather than sequential,
-   * which bounds the wall clock and not the query count. A batch reader belongs to T080 —
-   * the shape `graphsOf` is taking — and this is a one-line swap when it lands. Deriving it
-   * here to avoid the cost is the trade this file is refusing to make.
+   * `usersOfMany` is the batch form that comment promised: ONE snapshot, every id answered
+   * from its `usersById` index. The per-row `usersOf` disclosure that stood here priced 53
+   * snapshots per page load; T260's cutover made the page dynamic and turned that price
+   * from a build-time cost into a per-request one, which is what armed the swap.
    */
+  const usersByCard = await usersOfMany(db, ANONYMOUS, records.map((record) => record.id));
   const usedIn = new Map(
-    await Promise.all(
-      records.map(
-        async (record) =>
-          [record.id, (await usersOf(db, ANONYMOUS, record.id)).length] as const,
-      ),
-    ),
+    records.map((record) => [record.id, (usersByCard.get(record.id) ?? []).length] as const),
   );
 
   const nodes: NodeSummary[] = records.map((record) => {
