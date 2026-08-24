@@ -25,6 +25,7 @@
 import type { Db } from "@/lib/db";
 import { getAccount, resolveOwner } from "@/lib/server/accounts";
 import { addRelease, createBundle, getBundle, listReleases, type BundleRecord } from "@/lib/server/archive";
+import { enqueue } from "@/lib/server/notifications";
 import { can, type Actor } from "@/lib/server/policy";
 import { noSuchBundle, noSuchRelease, notSignedIn, slugTaken } from "./errors";
 
@@ -134,6 +135,44 @@ export async function forkBundle(db: Db, actor: Actor, from: ForkSource, to: For
       ...(source.vocabulary === undefined ? {} : { vocabulary: source.vocabulary }),
       ...(source.analysis === undefined ? {} : { analysis: source.analysis }),
     });
+
+    /* ── T190's ONE granted call site (D-190-04) ──
+       **AC1 is a filter at the SOURCE, and this `if` is that filter.** "A private fork
+       produces no email under any preference" is enforceable only here: `enqueue` is never
+       CALLED for a private fork, so no preference and no later sender can undo it. The
+       alternative — a visibility check inside `enqueue`, or in whatever eventually mails —
+       passes the same tests and leaks the moment a second sender exists, because `subject` is
+       `Record<string, string>` and a visibility travelling in it is readable by every later
+       reader of the row.
+
+       T110's own merged AC3 cell is what makes this structural rather than a promise: it
+       snapshots every row in every table around a PRIVATE fork and reds on any new row
+       carrying the upstream author's id, naming "the notification table T190 has not built
+       yet". That cell drives `forkBundle`, so the emission is guarded by a merged test only
+       while it lives inside `forkBundle`.
+
+       **Inside the transaction, deliberately, and the cost is real.** Outside it, an enqueue
+       that failed after the commit would either lose the announcement silently or report a
+       fault for a fork that had already succeeded — a caller told its fork failed when it did
+       not. Inside, the fork and its announcement land together or neither does, and a retry is
+       a clean retry. What that buys is paid for in contention: two simultaneous forks of one
+       upstream serialise briefly on the upstream author's `unsubscribe_token` row, because
+       `ensureToken`'s conflict waits on the first transaction to commit. Milliseconds, on a
+       path that already writes two rows, and it is written down rather than discovered.
+
+       The recipient is the UPSTREAM author. `subject.fork` is the new bundle's id, which is
+       what makes two forks of one blueprint two notifications rather than one — the unique key
+       is `(kind, account_id, subject_digest)`, so a subject naming only the upstream slug would
+       announce the first forker and silently swallow every one after. `subject.slug` is the
+       upstream's own slug, so the author is told which of theirs it was. Both are ids the seam
+       resolves, exactly as it resolves `accountId` into an address (D-190-03). */
+    if (visibility === "public") {
+      await enqueue(tx, {
+        kind: "fork",
+        accountId: upstream.ownerId,
+        subject: { slug: upstream.slug, fork: bundle.id },
+      });
+    }
 
     return bundle;
   });
