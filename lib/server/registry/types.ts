@@ -86,4 +86,12 @@ export interface BlueprintSchematic {
   requiredAgents: readonly string[];
   /** Every tool capability the graph asks for, as its ontology label, distinct, in graph order. */
   requiredTools: readonly string[];
+  /**
+   * The resolver's own list for this release, sorted as `resolveBundle` sorts it —
+   * D-261-07(2): the detail page's Evidence section renders these and had no reader
+   * (the shelf's `viewOf` writes `diagnostics: []` and says so). NON-error by
+   * construction: `draw()` answers absent for a release with error diagnostics, so what
+   * this carries is the notes-and-warnings layer of a blueprint that ships.
+   */
+  diagnostics: readonly import("@/lib/core").Diagnostic[];
 }

@@ -191,6 +191,9 @@ async function draw(
     graph: graphForBlueprint(resolved.blueprint, { cardsInRegistry: true }),
     requiredAgents: Object.freeze(requiredAgents(resolved.blueprint)),
     requiredTools: Object.freeze(requiredTools(resolved.blueprint)),
+    /* D-261-07(2): carried rather than dropped — this list was already in hand for the
+       `hasErrors` gate above, and the Evidence section it feeds had no other reader. */
+    diagnostics: Object.freeze(resolved.diagnostics),
   });
 }
 
