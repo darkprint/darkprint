@@ -145,6 +145,48 @@ describe("AC1 — byte-identical diagnostics to the server, over the nine", () =
 
     expect(actual.diagnostics).toEqual(server.diagnostics);
   });
+
+  it("carries the card KEY FORM, which the nine archive bundles cannot exercise", async () => {
+    /* MEASURED COVERAGE HOLE, confirmed independently before writing this.
+       Over the nine archive bundles the server half produces 11 diagnostics and **ZERO of
+       them carry a `location.file` at all** — not merely no card key. So every equality cell
+       above is blind to how the CLI keys its card files: a reader keying them `<name>.yaml`
+       instead of `cards/<name>.yaml` changes nothing any of them can see.
+
+       The anti-tautology cell above does not close it either: an empty `cardFiles` produces
+       only `blueprint.dot` and `null` locations.
+
+       A deliberately BROKEN CARD is what reaches the key. Its `card/parse-error` diagnostics
+       carry `location.file` = `cards/<ref>.yaml` — the key itself — so the comparison finally
+       has the key form inside it. Measured on this exact fixture, not assumed. */
+    const entry = ARCHIVE[0];
+    const keys = Object.keys(entry.bundle.cardFiles);
+    expect(keys.length, "the fixture bundle pins no cards").toBeGreaterThan(0);
+    expect(keys[0]).toMatch(/^cards\//);
+
+    const cardFiles = { ...entry.bundle.cardFiles, [keys[0]]: "id: [unclosed\n  not: valid: yaml:\n" };
+    const dir = writeBundleFolder({ ...entry.bundle, cardFiles }, { manifest: "blueprint.yaml" });
+
+    const server = validateBundle({
+      manifest: entry.bundle.manifest,
+      dot: entry.bundle.dot,
+      cardFiles,
+      extensions: EXTENSIONS,
+    });
+
+    /* The premise that makes this cell non-vacuous, and the one the archive fixtures fail:
+       at least one diagnostic must name the card KEY. Without it this is another comparison
+       that cannot see the thing it was written for. */
+    const keyed = server.diagnostics.filter((diagnostic) =>
+      (diagnostic.location?.file ?? "").startsWith("cards/"),
+    );
+    expect(keyed.length, "the broken-card fixture produced no card-keyed diagnostic").toBeGreaterThan(0);
+
+    const validate = await bindVerb("validate");
+    const actual = (await validate(dir as never)) as { diagnostics: unknown };
+
+    expect(actual.diagnostics).toEqual(server.diagnostics);
+  });
 });
 
 describe("the `<dir>` contract — the wizard's accepted layout (D-270-01 C6)", () => {

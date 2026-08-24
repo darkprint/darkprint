@@ -1,0 +1,116 @@
+/* ============================================================
+   T270 — a stub registry, for the two NETWORK verbs
+
+   `clone` and `bump` reach the server (D-270-01 C8, D-270-05 (2)).
+   The blind suite drives them IN-PROCESS, which is D-220-09's
+   construction, and this is what stands in for the registry.
+
+   ── why the seam is `fetch` and not an invented client ──
+   D-270-05 (2) publishes `RegistryOptions { baseUrl, apiKey?,
+   fetch }` as the verbs' LAST parameter, `= undefined`, resolved
+   through `optionsFromEnv(process.env)` when absent — and
+   `optionsFromEnv` reads the AMBIENT `fetch`. So replacing
+   `globalThis.fetch` drives the success path through the published
+   configuration rather than through a seam this suite made up. It
+   also works through `runCli(argv, io)`, which takes no options
+   parameter at all and is the only surface where the verbs' own
+   argument lists — still the implementer's — do not have to be
+   guessed.
+
+   ── the router matches loosely, ON PURPOSE ──
+   It keys on `/provenance`, `/releases/` and `/files/` rather than
+   on a full URL. The exact path a verb builds is the implementer's
+   and is not published, so an exact-match stub would 404 on a
+   spelling difference and red AC4 with "bytes differ" — a
+   confident, plausible, WRONG cause. Matching the route family
+   keeps the cell's failure about the bytes, which is what AC4 is
+   actually about. `calls` records every URL so a cell can say what
+   was asked for when a match is missed.
+   ============================================================ */
+
+import type { ExportedFile } from "@/lib/content/bundle-export";
+
+import { ARCHIVE } from "./fixtures";
+import { computedExport } from "./references";
+
+export interface StubRegistry {
+  readonly base: string;
+  readonly digest: string;
+  readonly files: readonly ExportedFile[];
+  /** Every URL the CLI asked for, in order. */
+  readonly calls: string[];
+  /** Requests that matched no route — a cell reports these rather than guessing. */
+  readonly unmatched: string[];
+  restore(): void;
+}
+
+/**
+ * Serve one archive bundle as a published release, over a replaced `globalThis.fetch`.
+ *
+ * `owner`/`slug` are the caller's to choose; the stub answers for any of them, because which
+ * two-part key a cell uses is not what any criterion is about.
+ */
+export function stubRegistry(
+  slug: string,
+  options: { readonly releases?: readonly { version: string; digest: string }[] } = {},
+): StubRegistry {
+  const entry = ARCHIVE.find((bundle) => bundle.slug === slug);
+  if (entry === undefined) throw new Error(`no archive bundle \`${slug}\``);
+
+  const files = computedExport(slug);
+  /* The engine's own answer, not a recomputation. `resolveBundle` sets
+     `blueprint.digest = bundleDigest({ dot, cardDigests })` at `lib/core/bundle/resolve.ts:749`,
+     so taking it off the resolved blueprint means the digest the stub serves is the digest the
+     registry would have stored. A digest computed here could differ, and a CLI that verifies
+     what it downloaded would then red AC4 for a reason that is about this fixture. */
+  const digest = entry.blueprint.digest;
+  const releases = options.releases ?? [{ version: "1.0.0", digest }];
+
+  const calls: string[] = [];
+  const unmatched: string[] = [];
+  const real = globalThis.fetch;
+  const base = "https://registry.invalid";
+
+  const json = (body: unknown): Response =>
+    new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    calls.push(url);
+
+    if (url.includes("/provenance")) {
+      return json({ publishedBy: "someone", releases });
+    }
+    if (url.includes("/releases/")) {
+      /* The MCP releases route answers NAMES and not bytes, by its own header. Reproduced
+         rather than simplified: a stub that returned bytes here would let a CLI pass AC4
+         without ever calling the files route, which is not how the server works. */
+      return json(files.map((file) => file.path));
+    }
+    if (url.includes("/files/")) {
+      const match = files.find((file) => url.endsWith(file.path));
+      if (match === undefined) {
+        unmatched.push(url);
+        return new Response("not found", { status: 404 });
+      }
+      return new Response(match.text, { status: 200 });
+    }
+
+    unmatched.push(url);
+    return new Response("not found", { status: 404 });
+  }) as typeof globalThis.fetch;
+
+  return {
+    base,
+    digest,
+    files,
+    calls,
+    unmatched,
+    restore: () => {
+      globalThis.fetch = real;
+    },
+  };
+}

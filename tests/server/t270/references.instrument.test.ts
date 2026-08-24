@@ -17,10 +17,19 @@
      assembly here reds rather than producing a plausible folder
      nothing serves.
 
-     the BUMP pairs are real published card versions, whose right
-     answer `lib/content/read.test.ts` is already asserting, rather
-     than a card mutated here — a card I mutated would make the
-     expected level my own opinion.
+     the BUMP pairs are two snapshots of a real archive blueprint
+     differing in one pinned ref, moved between two versions the
+     archive actually publishes — so the change being priced is one
+     the registry could really contain.
+
+     They were CARD pairs until D-270-05 (1) named the subject as
+     the BUNDLE. `inferBump` over cards and `inferBlueprintBump`
+     over snapshots are different functions over different inputs
+     producing different reasons, so those cells were comparing the
+     CLI against the wrong oracle — green, and wrong. The section
+     named no subject at all when they were written. The old
+     reference is deleted rather than repointed: left in place it
+     would still resolve and still pass its own cells.
 
    And each is shown to DISCRIMINATE, not merely to resolve: a
    reference that answers the same thing for a good input and a bad
@@ -33,11 +42,11 @@ import { hasErrors } from "@/lib/core";
 
 import { ARCHIVE, OVERLAY_SLUG } from "./fixtures";
 import {
-  CARD_PAIRS,
-  CARD_PAIRS_ERROR,
   computedExport,
   generatedExport,
   serverBumpDiagnostics,
+  SNAPSHOT_PAIRS,
+  SNAPSHOT_PAIRS_ERROR,
 } from "./references";
 
 describe("AC4's export reference agrees with what the site actually publishes", () => {
@@ -75,56 +84,43 @@ describe("AC4's export reference agrees with what the site actually publishes", 
 
 describe("AC2's bump reference discriminates", () => {
   it("built its pairs at all", () => {
-    /* The captured module-scope premise. `CARD_PAIRS` answers `[]` rather than throwing when
-       construction fails, because a throw at module scope reported `(0 test)` and deleted the
-       export cells in this file along with the bump ones. `[]` would instead make every
-       `it.each` below expand to NOTHING and report a clean run over four cells that never
-       existed — so this cell is the only thing standing between that and a false green. */
-    expect(CARD_PAIRS_ERROR, "card pairs failed to build").toBeUndefined();
-    expect(CARD_PAIRS.length).toBeGreaterThan(0);
+    /* The captured module-scope premise. `SNAPSHOT_PAIRS` answers `[]` rather than throwing,
+       because a throw at module scope reports `(0 test)` and deletes every cell in the file —
+       the export cells included. But `[]` makes every `it.each` below expand to NOTHING and
+       report a clean run over cells that never existed, so this is the only thing standing
+       between that and a false green. */
+    expect(SNAPSHOT_PAIRS_ERROR, "snapshot pairs failed to build").toBeUndefined();
+    expect(SNAPSHOT_PAIRS.length).toBeGreaterThan(0);
   });
 
-  it("found real published pairs to drive", () => {
-    /* Named rather than counted, so a card leaving the archive says which one. */
-    expect(CARD_PAIRS.map((pair) => pair.id)).toEqual([
-      "acceptance-verifier",
-      "bounded-retry",
-      "intent-router",
-      "schema-gate",
-    ]);
-  });
-
-  it.each(CARD_PAIRS.map((pair) => [pair.id, pair] as const))(
-    "%s — the engine infers a real bump level, so a smaller declaration is refusable",
-    (_id, pair) => {
+  it.each(SNAPSHOT_PAIRS.map((pair) => [pair.slug, pair] as const))(
+    "%s — the engine prices the moved ref, so a smaller declaration is refusable",
+    (_slug, pair) => {
       /* The premise every AC2 cell rests on and the one that would silently delete them all.
-         `inferBump` answering `none` means the two versions are indistinguishable to the
-         engine — and then NO declaration is "below the inferred one", so an AC2 cell built on
-         that pair passes against a CLI that refuses nothing. */
-      expect(pair.inferred.level).not.toBe("none");
+         `inferBlueprintBump` answering `none` means the two snapshots are indistinguishable to
+         the engine — and then NO declaration is "below the inferred one", so an AC2 cell built
+         on that pair passes against a CLI that refuses nothing. */
+      expect(pair.inferred.level, `moving \`${pair.movedId}\` priced nothing`).not.toBe("none");
       expect(pair.inferred.reasons.length).toBeGreaterThan(0);
     },
   );
 
-  it.each(CARD_PAIRS.map((pair) => [pair.id, pair] as const))(
+  it.each(SNAPSHOT_PAIRS.map((pair) => [pair.slug, pair] as const))(
     "%s — the reasons live in `hint`, and `message` alone is the sentence AC2 forbids",
-    (_id, pair) => {
-      /* THE FINDING, and it was found by this cell redding rather than by reading the module.
-         `checkDeclaredBump` puts the verdict in `message` and the engine's reasons in `hint`:
+    (_slug, pair) => {
+      /* D-270-04 (2), which this suite measured and the section now states.
 
            message: "Version `1.0.0` is unchanged from `1.0.0`, but the changes require a
-                     minor bump."
-           hint:    "Publish `1.1.0` or higher. optional input `assertions` was added."
+                     major bump."
+           hint:    "Publish `2.0.0` or higher. <the engine's reasons>"
 
-         AC2's block says printing "too small" WITHOUT the engine's reasons "satisfies the
-         verb and fails the user". `message` IS that sentence. So a CLI rendering
-         `diagnostic.message` and dropping `hint` — the obvious implementation, since
-         `message` is the obvious field — fails AC2 while looking entirely correct.
+         `message` IS the reasons-free "too small" sentence AC2 says "satisfies the verb and
+         fails the user". So a CLI rendering `diagnostic.message` and dropping `hint` fails AC2
+         while looking entirely correct, and `.message` is the obvious field.
 
-         Asserted in BOTH directions, because only the pair of them locates the content:
-         `message` must NOT carry the reasons and `hint` MUST. A single positive assertion
-         over the concatenation would pass against a module that moved them into `message`,
-         and then this pin would stop describing where they are. */
+         Asserted in BOTH directions, because only the pair of them locates the content: a
+         single positive assertion over the concatenation would pass against a module that
+         moved the reasons into `message`, and the pin would stop describing where they are. */
       const [diagnostic] = serverBumpDiagnostics(pair, pair.previousVersion);
 
       for (const reason of pair.inferred.reasons) {
@@ -134,16 +130,12 @@ describe("AC2's bump reference discriminates", () => {
     },
   );
 
-  it.each(CARD_PAIRS.map((pair) => [pair.id, pair] as const))(
-    "%s — refuses a declaration below the inferred level",
-    (_id, pair) => {
-      /* Re-declaring the previous version is unambiguously "not higher", which is the one
-         reading of "below the inferred one" nothing disputes. */
+  it.each(SNAPSHOT_PAIRS.map((pair) => [pair.slug, pair] as const))(
+    "%s — refuses a declaration that is not higher",
+    (_slug, pair) => {
       const diagnostics = serverBumpDiagnostics(pair, pair.previousVersion);
-
       expect(hasErrors(diagnostics)).toBe(true);
-      /* The whole rendered diagnostic — what a CLI carrying both fields would show. This is
-         the shape AC2's own cell will compare the CLI against once the barrel is published. */
+
       const rendered = diagnostics
         .map((diagnostic) => `${diagnostic.message} ${diagnostic.hint ?? ""}`)
         .join("\n");
@@ -151,14 +143,19 @@ describe("AC2's bump reference discriminates", () => {
     },
   );
 
-  it.each(CARD_PAIRS.map((pair) => [pair.id, pair] as const))(
-    "%s — accepts the version the archive actually published",
-    (_id, pair) => {
-      /* THE NEAR MISS, and the cell that separates a reference that works from one that
-         merely refuses. It differs from the cell above by one argument, and the answer must
-         flip. Without it, a `checkDeclaredBump` that refused EVERYTHING would pass every
-         refusal cell here and AC2 would be green against a CLI that rejects valid bumps. */
-      expect(serverBumpDiagnostics(pair, pair.nextVersion)).toEqual([]);
+  it.each(SNAPSHOT_PAIRS.map((pair) => [pair.slug, pair] as const))(
+    "%s — accepts a declaration at or above the inferred level",
+    (_slug, pair) => {
+      /* THE NEAR MISS. One argument different from the cell above and the answer must flip.
+         Without it, a `checkDeclaredBump` that refused EVERYTHING would pass every refusal
+         cell here and AC2 would be green against a CLI that rejects valid bumps.
+
+         The satisfying version is computed from the inferred level rather than typed, so this
+         stays correct for a pair the engine prices `minor` and one it prices `major`. */
+      const satisfying = { major: "2.0.0", minor: "1.1.0", patch: "1.0.1", none: "1.0.1" }[
+        pair.inferred.level
+      ];
+      expect(serverBumpDiagnostics(pair, satisfying)).toEqual([]);
     },
   );
 });

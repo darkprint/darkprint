@@ -26,11 +26,12 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { BumpAnalysis, Diagnostic, NodeCard } from "@/lib/core";
-import { inferBump, loadCard } from "@/lib/core";
+import type { BumpAnalysis, Diagnostic } from "@/lib/core";
+
 import type { ExportedFile } from "@/lib/content/bundle-export";
 import { exportBundle } from "@/lib/content/bundle-export";
-import { checkDeclaredBump } from "@/lib/server/versioning";
+import type { BlueprintSnapshot } from "@/lib/server/versioning";
+import { checkDeclaredBump, inferBlueprintBump } from "@/lib/server/versioning";
 import { contentOntology, contentVocabulary } from "@/lib/content/read";
 
 import { ARCHIVE } from "./fixtures";
@@ -115,80 +116,102 @@ export function generatedExport(slug: string): readonly ExportedFile[] {
 
 /* ==================== AC2: what the server says about a bump ==================== */
 
-/** A published card pair: the same id at two versions, both already in the archive. */
-export interface CardPair {
-  readonly id: string;
-  readonly previousVersion: string;
-  readonly nextVersion: string;
-  readonly previous: NodeCard;
-  readonly next: NodeCard;
-  /** `inferBump(previous, next)` — the level the ENGINE requires, and its reasons. */
+/*
+ * RETARGETED at D-270-05 (1), and the retarget is the point.
+ *
+ * This section used to build `inferBump` over CARD pairs. That was the CARD subject — a
+ * different function over different inputs producing different reasons — and every AC2 cell
+ * built on it would have compared the CLI against the wrong oracle while looking entirely
+ * green. The section named no subject at all when those pairs were written; the ruling now
+ * names it, and it is the BUNDLE.
+ *
+ * The card-pair reference is not merely repointed, it is DELETED. Left in place it would
+ * still resolve, still pass its own instrument cells, and still be available to a later cell
+ * that reached for the nearest bump helper.
+ */
+
+/** Two snapshots of one blueprint, differing in a way the engine must price. */
+export interface SnapshotPair {
+  readonly slug: string;
+  /** Which pinned card id was moved between the two snapshots. */
+  readonly movedId: string;
+  readonly previous: BlueprintSnapshot;
+  readonly next: BlueprintSnapshot;
+  /** `inferBlueprintBump(previous, next)` — the level the ENGINE requires, and its reasons. */
   readonly inferred: BumpAnalysis;
+  /** A version string the archive treats as this blueprint's current release. */
+  readonly previousVersion: string;
 }
 
-/**
- * Every card id `content/cards/` publishes at two or more versions, as ordered pairs.
- *
- * Real published pairs rather than a hand-mutated card, deliberately. `lib/content/read.test.ts`
- * already holds the archive to *"publishes every card version at a number `inferBump` agrees
- * with"*, so these pairs are known-good inputs whose right answer another task's test is
- * already asserting — which is exactly the kind of driver a blind author is entitled to use.
- * A card I mutated myself would make the expected bump level my own opinion.
- */
-/**
- * Why this cannot throw at module scope.
- *
- * It did, on the first run: `loadCard` was called without an `ontology` and raised, and
- * because this is a module-scope constant the WHOLE FILE reported `(0 test)` — the export
- * cells beside it, which depend on none of this, were deleted along with the bump cells. A
- * premise evaluated at module scope does not red a cell, it removes every cell in the file.
- *
- * So the failure is CAPTURED and `CARD_PAIRS_ERROR` carries it to exactly one cell, which is
- * the same rule as putting per-criterion reds in the cells rather than in a `beforeAll`.
- */
-export let CARD_PAIRS_ERROR: string | undefined;
+export let SNAPSHOT_PAIRS_ERROR: string | undefined;
 
-export const CARD_PAIRS: readonly CardPair[] = (() => {
+/**
+ * One pair per archive blueprint that pins a twice-published card id.
+ *
+ * Built by moving a pinned ref from the archive's version to the OTHER published version of
+ * the same id — which is exactly D-270-05's "two releases of one blueprint differing in a
+ * pinned ref", and is constructible precisely because four card ids ship at two versions.
+ *
+ * The refs come out of the resolved blueprint rather than being parsed out of the DOT here:
+ * `entry.bundle` already went through the engine, so `cardRefs` is what the engine saw.
+ *
+ * Captured rather than thrown, for the reason the card-pair version was: a module-scope throw
+ * reports `(0 test)` and deletes every cell in the file, including ones that depend on none
+ * of this.
+ */
+export const SNAPSHOT_PAIRS: readonly SnapshotPair[] = (() => {
   try {
-    return buildCardPairs();
+    return buildSnapshotPairs();
   } catch (err) {
-    CARD_PAIRS_ERROR = err instanceof Error ? err.message : String(err);
+    SNAPSHOT_PAIRS_ERROR = err instanceof Error ? err.message : String(err);
     return [];
   }
 })();
 
-function buildCardPairs(): CardPair[] {
+function buildSnapshotPairs(): SnapshotPair[] {
   const dir = join(REPO, "content", "cards");
-  const byId = new Map<string, string[]>();
-
+  const versionsById = new Map<string, string[]>();
   for (const name of readdirSync(dir).sort()) {
     const match = name.match(/^(.+)@(\d+\.\d+\.\d+)\.yaml$/);
     if (match === null) continue;
-    byId.set(match[1], [...(byId.get(match[1]) ?? []), match[2]]);
+    versionsById.set(match[1], [...(versionsById.get(match[1]) ?? []), match[2]]);
   }
 
-  const pairs: CardPair[] = [];
-  for (const [id, versions] of [...byId].sort(([a], [b]) => (a < b ? -1 : 1))) {
-    if (versions.length < 2) continue;
-    const sorted = versions.slice().sort();
-    const previousVersion = sorted[0];
-    const nextVersion = sorted[sorted.length - 1];
+  const pairs: SnapshotPair[] = [];
+  for (const entry of ARCHIVE) {
+    const refs = entry.cardFiles.map((card) =>
+      card.file.replace(/^cards\//, "").replace(/\.yaml$/, ""),
+    );
 
-    const previous = readCard(dir, id, previousVersion);
-    const next = readCard(dir, id, nextVersion);
-    pairs.push({
-      id,
-      previousVersion,
-      nextVersion,
-      previous,
-      next,
-      inferred: inferBump(previous, next),
-    });
+    for (const ref of refs) {
+      const at = ref.lastIndexOf("@");
+      const id = ref.slice(0, at);
+      const version = ref.slice(at + 1);
+      const others = (versionsById.get(id) ?? []).filter((candidate) => candidate !== version);
+      if (others.length === 0) continue;
+
+      const moved = `${id}@${others[0]}`;
+      const next: BlueprintSnapshot = {
+        dot: entry.bundle.dot,
+        cardRefs: refs.map((candidate) => (candidate === ref ? moved : candidate)),
+      };
+      pairs.push({
+        slug: entry.slug,
+        movedId: id,
+        previous: { dot: entry.bundle.dot, cardRefs: refs },
+        next,
+        inferred: inferBlueprintBump({ dot: entry.bundle.dot, cardRefs: refs }, next),
+        /* The archive publishes one release per blueprint at 1.0.0; the version a cell
+           declares AGAINST is what matters, and this is the string the refusal will quote. */
+        previousVersion: "1.0.0",
+      });
+      break;
+    }
   }
 
   if (pairs.length === 0) {
     throw new Error(
-      "`content/cards/` publishes no card id at two versions.\n" +
+      "no archive blueprint pins a card id published at two versions.\n" +
         "  Every AC2 cell is quantified over these pairs, so an empty list reports a pass per " +
         "cell that never ran. BROKEN TEST.",
     );
@@ -196,47 +219,16 @@ function buildCardPairs(): CardPair[] {
   return pairs;
 }
 
-function readCard(dir: string, id: string, version: string): NodeCard {
-  const file = `${id}@${version}.yaml`;
-  /* `contentOntology()` and not `ontologyView(CORE_ONTOLOGY)`: the archive's cards are
-     written against the core PLUS the local overlay, and validating one against the core
-     alone reports every local term as unknown. The view is the merged reader's own, so this
-     cannot drift from what the build validated these same files with.
-
-     `previous` is deliberately NOT passed. With it, `validateCard` runs the version-chain
-     check itself and would fold the very bump verdict AC2 is about into the card load —
-     making the driver and the thing under test the same call. */
-  const validation = loadCard(readFileSync(join(dir, file), "utf8"), {
-    file,
-    ontology: contentOntology(),
-  });
-  if (validation.card === undefined) {
-    throw new Error(
-      `\`${file}\` did not load as a card: ` +
-        `${validation.diagnostics.map((d) => d.message).join("; ")}\n` +
-        `  This is an archive the build already validates, so a failure here is a BROKEN TEST.`,
-    );
-  }
-  return validation.card;
-}
-
 /**
- * What the SERVER says when a caller declares `declared` against `pair`.
+ * What the SERVER says when a caller declares `declared` against a snapshot pair.
  *
- * `checkDeclaredBump` is T025's, consumed never restated — it is the function whose "own
- * shape" D-270-01 C8 cites when it restates `--declare` as a version string. Its message
- * already carries `inferred.reasons.join("; ")`, which is AC2's *"naming the reasons"* with
- * an author it already has, and the reason a CLI that renders this diagnostic cannot lose
- * them while a CLI that rewrites the sentence can.
- *
- * Subject is `"card"` here. A bundle-level `bump` would pass `"bundle"`, and which one the
- * CLI uses follows from D-270-01 C8's *"the folder is a blueprint"* — bound at the cell, not
- * assumed here, so this helper serves either reading.
+ * `checkDeclaredBump("bundle", ...)` — the BUNDLE subject, per D-270-05 (1). Its message
+ * already carries the verdict and its `hint` carries `inferred.reasons`, which is the split
+ * D-270-04 (2) rules and the reason a CLI rendering `message` alone fails AC2.
  */
 export function serverBumpDiagnostics(
-  pair: CardPair,
+  pair: SnapshotPair,
   declared: string,
-  subject: "card" | "bundle" = "card",
 ): readonly Diagnostic[] {
-  return checkDeclaredBump(subject, pair.previousVersion, declared, pair.inferred);
+  return checkDeclaredBump("bundle", pair.previousVersion, declared, pair.inferred);
 }
