@@ -113,13 +113,44 @@ export async function accountStateFor(db: Db, accountId: string): Promise<Accoun
   return { tombstoned: row.githubId.startsWith(TOMBSTONE_PREFIX), stored: row.preferences };
 }
 
-/** The stored preferences column alone, or `undefined` if no such account. */
+/** The stored preferences column alone, or `undefined` if no such account. Read-only, no lock. */
 export async function storedPreferencesFor(db: Db, accountId: string): Promise<{ stored: unknown } | undefined> {
   const [row] = await db
     .select({ preferences: schema.account.notificationPreferences })
     .from(schema.account)
     .where(eq(schema.account.id, accountId))
     .limit(1);
+  return row === undefined ? undefined : { stored: row.preferences };
+}
+
+/**
+ * The same read, taking a ROW LOCK — the read half of every preference write (D-190-12).
+ *
+ * **`SELECT ... FOR UPDATE`, and a transaction alone would not have been enough.** The charge is a
+ * lost update: two callers patching DIFFERENT kinds each read the column, each compute all four,
+ * and the second write erases the first — measured deterministically, 5 of 5 through
+ * `setPreferences` and 4 of 5 through `unsubscribe`. Wrapping the read and the write in a
+ * transaction does **not** fix that on its own: under READ COMMITTED both transactions read the
+ * same old value happily, and the second `UPDATE` merely waits for the first to commit before
+ * writing a value it computed from the stale read. The lock is what makes the second caller wait
+ * *before* it reads, so it computes from the winner's result.
+ *
+ * Row-level and not table-level: two callers patching different ACCOUNTS never contend.
+ *
+ * **Why the lock rather than `jsonb_set` per key**, which D-190-12 offers as the alternative:
+ * `fillPreferences` is the single authority on what a missing or ill-formed key means (AC4's "a
+ * missing key must not read as `true` anywhere", and the refusal to coerce `"false"`). Expressing
+ * that in SQL would put the fill rule in two places in two languages, which is the two-authors
+ * defect this repository charges hardest — and it is a rule with real edges, not a `coalesce`.
+ * The lock keeps one author and pays a row lock for it.
+ */
+export async function lockPreferencesFor(db: Db, accountId: string): Promise<{ stored: unknown } | undefined> {
+  const [row] = await db
+    .select({ preferences: schema.account.notificationPreferences })
+    .from(schema.account)
+    .where(eq(schema.account.id, accountId))
+    .limit(1)
+    .for("update");
   return row === undefined ? undefined : { stored: row.preferences };
 }
 

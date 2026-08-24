@@ -22,7 +22,7 @@ import type { Db } from "@/lib/db";
 import { NotAccountOwnerError } from "@/lib/server/accounts";
 import { can, type Actor } from "@/lib/server/policy";
 import { DEFAULT_PREFERENCES } from "./defaults";
-import { storedPreferencesFor, withStore, writePreferences } from "./store";
+import { lockPreferencesFor, storedPreferencesFor, withStore, writePreferences } from "./store";
 import { EVENT_KINDS, type EventKind, type Preferences } from "./types";
 
 /**
@@ -121,8 +121,13 @@ export async function setPreferences(
   patch: Partial<Preferences>,
 ): Promise<Preferences> {
   if (!can(actor, "write", { kind: "account", accountId })) throw notThisAccountsOwner("setPreferences");
-  return await withStore("setPreferences", async () => {
-    const row = await storedPreferencesFor(db, accountId);
+  return await withStore("setPreferences", async () => await db.transaction(async (tx) => {
+    /* D-190-12. The read is LOCKED and the write shares its transaction, so a second caller
+       patching a different kind waits here rather than reading the value this one is about to
+       replace. The `Db` handed to the read and the write below is `tx` throughout: reading
+       through `db` inside a transaction would take the lock on a different connection and hold
+       nothing at all. */
+    const row = await lockPreferencesFor(tx, accountId);
     /* No row, and the not-owner form is the honest one inside the admissible set: you are not
        the owner of an account that does not exist. It is also unreachable from HTTP, where the
        session names the account — a caller reaching it has passed `can` with an id the table
@@ -146,9 +151,9 @@ export async function setPreferences(
       deprecation: one("deprecation"),
       digest: one("digest"),
     };
-    await writePreferences(db, accountId, next);
+    await writePreferences(tx, accountId, next);
     return next;
-  });
+  }));
 }
 
 /**
@@ -202,7 +207,11 @@ function readOffered(patch: Partial<Preferences>, kind: EventKind): boolean | un
  * caller able to reach it without a token would be able to change a setting it was never granted.
  */
 export async function clearPreference(db: Db, accountId: string, kind: EventKind): Promise<void> {
-  const row = await storedPreferencesFor(db, accountId);
+  /* Locked for `setPreferences`'s reason (D-190-12), and `db` here is the CALLER'S transaction:
+     `unsubscribe` consumes the token and flips the preference atomically, so this function must
+     never open one of its own — a nested transaction would commit the flip independently of the
+     token's deletion and put back the F3 gap the shared transaction closes. */
+  const row = await lockPreferencesFor(db, accountId);
   const current = fillPreferences(row?.stored);
   const one = (each: EventKind): boolean => (each === kind ? false : current[each]);
   const next: Preferences = {

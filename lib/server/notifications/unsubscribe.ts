@@ -42,13 +42,31 @@ import type { EventKind } from "./types";
  * tell anybody holding a random string whether it was ever real.
  */
 export async function unsubscribe(db: Db, token: string): Promise<{ kind: EventKind }> {
-  return await withStore("unsubscribe", async () => {
-    const taken = await takeToken(db, token);
+  return await withStore("unsubscribe", async () => await db.transaction(async (tx) => {
+    /*
+     * **One transaction, and it closes TWO charged defects at once (D-190-12).**
+     *
+     * F3: consuming the token and flipping the preference were two independent statements, so a
+     * failure between them left the reader with no link AND still subscribed — AC6's word
+     * "working" failing at its own moment, and the one state from which there is no way back
+     * except an operator.
+     *
+     * F2, the same defect one level up and the one the adversary measured: two concurrent
+     * unsubscribes on DIFFERENT kinds each consumed their token and each computed all four
+     * preferences from the same stale read, so one flip was lost while BOTH tokens were spent —
+     * a reader left with no link and the mail still coming, 4 of 5 runs. `clearPreference` takes
+     * a `SELECT ... FOR UPDATE` on the account row, so inside this transaction the second caller
+     * waits before reading rather than after computing.
+     *
+     * The token DELETE comes first and the account lock second, in both callers, so two
+     * unsubscribes acquire in one order and cannot deadlock.
+     */
+    const taken = await takeToken(tx, token);
     if (taken === undefined) throw unsubscribeInvalidError();
-    await clearPreference(db, taken.accountId, taken.kind);
+    await clearPreference(tx, taken.accountId, taken.kind);
     /* The kind, and never the account id (AC6: the token "names the kind rather than carrying
        an account id in the clear"). The caller is an anonymous click; telling it whose account
        it just changed would make the token an account-identity oracle. */
     return { kind: taken.kind };
-  });
+  }));
 }
