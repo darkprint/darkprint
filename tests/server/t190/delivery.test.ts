@@ -51,6 +51,7 @@ import {
   scratchDatabase,
   subjectDigest,
   tokenRows,
+  warmPool,
 } from "./contract";
 
 const setup = deferred<Scratch>(() => scratchDatabase("deliver"));
@@ -504,5 +505,151 @@ describe("T190 D-190-06: delivery is gated on the token, and the window closes",
     const again = recordingDelivery();
     await deliverPending(scratch.db, again.delivery);
     expect(again.attempts, "a second drain re-sent already-delivered rows").toEqual([]);
+  });
+});
+
+describe("T190 D-190-09(1): two concurrent drains do not double-send", () => {
+  /**
+   * The cell shape the ruling names, verbatim: "two concurrent drains, total sends across both
+   * equal the pending set exactly once, one of the two answering 0."
+   *
+   * ── why this criterion needed a ruling at all ──
+   * D-190-02(3) stamps `delivered_at` on the send's RESOLUTION, which forces send-then-stamp.
+   * So two drains reading one pending set both see every row unstamped and both send it, and
+   * no reordering fixes that without building the at-most-once shape D-190-02(3) rules
+   * against. AC5's sentence is "retries without delivering TWICE" and a concurrent retry is a
+   * retry, so the property is made true with a TRY-advisory lock rather than documented away.
+   *
+   * ── the two things that make this cell able to fail ──
+   * Both are the same hazard from opposite sides, and without either one this cell is green
+   * against an implementation with no lock at all:
+   *
+   *   1. THE POOL IS WARMED. A cold `pg` pool serialises concurrent callers — the first
+   *      `connect` wins and the rest queue — so the two drains would run one after the other,
+   *      the second would find nothing pending, and it would honestly answer 0. That is the
+   *      passing shape, produced by a pool rather than by a lock.
+   *
+   *   2. THE SEND IS SLOW. Even warmed, an instant send lets the first pass finish before the
+   *      second reads. `sendMs` holds the first pass open across the second's start, which is
+   *      the only arrangement where "both read one pending set" actually happens.
+   *
+   * With the lock: one drain sends all three and answers 3, the other fails the try and answers
+   * 0 without sending. Without it: both send all three, total six, and neither answers 0.
+   *
+   * ── what is NOT asserted ──
+   * WHICH of the two wins. That is a race and pinning it would be a flake by construction; the
+   * ruling's own words are "one of the two answering 0", not "the second".
+   */
+  it("total sends equal the pending set exactly once, and one drain answers 0", async () => {
+    const scratch = await setup.require();
+    const account = await plantAccount(scratch, mark("d9-lock").toLowerCase(), { fork: true });
+
+    const enqueue = await bind("enqueue");
+    for (const subject of THREE) {
+      await enqueue(scratch.db, { kind: "fork", accountId: account.accountId, subject });
+    }
+
+    const pending = (await queueRows(scratch, account.accountId)).filter(
+      (r) => r.deliveredAt === null,
+    );
+    expect(
+      pending,
+      "the fixture did not leave three pending rows, so `exactly once across both drains` is " +
+        "a claim about a set this cell never built.",
+    ).toHaveLength(3);
+
+    /* Four connections: two drains, each needing one for its lock and its reads. */
+    await warmPool(scratch, 4);
+
+    const deliverPending = await bind("deliverPending");
+    const a = recordingDelivery(() => false, 120);
+    const b = recordingDelivery(() => false, 120);
+
+    /* Both issued before either is awaited. */
+    const started = [
+      Promise.resolve(deliverPending(scratch.db, a.delivery)),
+      Promise.resolve(deliverPending(scratch.db, b.delivery)),
+    ];
+    const [answeredA, answeredB] = await Promise.all(started);
+
+    const totalSends = a.attempts.length + b.attempts.length;
+    expect(
+      totalSends,
+      `D-190-09(1): two concurrent drains attempted ${totalSends} sends over a pending set of ` +
+        `3.\n` +
+        `  a: ${JSON.stringify(a.attempts.map((m) => m.subject))}\n` +
+        `  b: ${JSON.stringify(b.attempts.map((m) => m.subject))}\n` +
+        `  Six is every row sent twice, which is AC5's "delivering twice" reached by a second ` +
+        `caller rather than by a retry. \`deliverPending\` takes a TRY-advisory lock around ` +
+        `the pass, keyed by a published constant in \`deliver.ts\`, on \`migrate.ts\`'s ` +
+        `\`MIGRATION_LOCK_KEY\` precedent.`,
+    ).toBe(3);
+
+    /* And each row exactly once, not three sends that happen to be two of one and one of
+       another — a count alone admits that. */
+    for (const subject of THREE) {
+      const total = deliveredCountFor(a, "fork", subject) + deliveredCountFor(b, "fork", subject);
+      expect(
+        total,
+        `\`${JSON.stringify(subject)}\` was delivered ${total} time(s) across both drains.`,
+      ).toBe(1);
+    }
+
+    expect(
+      [answeredA, answeredB].map(Number).sort((x, y) => x - y),
+      `D-190-09(1): the two drains answered ${describe_(answeredA)} and ` +
+        `${describe_(answeredB)}; the ruling requires one of them to be 0 — "0 as the honest ` +
+        `answer to 'how many did THIS call send' while a drain is in progress", with ` +
+        `try-semantics so nothing blocks.\n` +
+        `  Which of the two wins is a RACE and is deliberately not pinned: asserting "the ` +
+        `second answers 0" would be a flake by construction.`,
+    ).toEqual([0, 3]);
+
+    /* One drain made NO attempt at all.
+       This is not redundant beside the `[0, 3]` above, and it is not the clause it first looks
+       like. Under D-190-08(5) a drain swallows per-row failures and returns how many WENT — so
+       a drain that attempted all three and had all three refused also answers 0. That shape
+       satisfies the equality above while double-sending, and this clause is what excludes it.
+
+       What it does NOT do — stated because the obvious reading is wrong — is distinguish TRY
+       semantics from a BLOCKING lock. A blocking loser waits out the winner's ~360ms of slow
+       sends, then acquires, finds nothing pending and honestly answers 0 with no attempts:
+       identical on every assertion in this cell. Telling the two apart needs a wall-clock
+       bound, and a timing assertion on a host this contended is a flake by construction — it
+       would pass on an idle machine and red on a loaded one against an implementation that is
+       right, which is the most expensive kind of red there is. So the distinction is left
+       UNMEASURED and said so, rather than asserted badly. `try` matters here for liveness
+       under a stuck drain, not for AC5, and AC5 is what this file is for. */
+    expect(
+      a.attempts.length === 0 || b.attempts.length === 0,
+      "both drains attempted sends, so neither took the lock's early exit — and a drain whose " +
+        "sends all failed would report 0 while having sent, which is the shape the count " +
+        "equality above cannot see.",
+    ).toBe(true);
+  });
+
+  /** And the lock is RELEASED: a later drain works normally, or every cell after one is dead. */
+  it("a drain after the pass completes still delivers", async () => {
+    const scratch = await setup.require();
+    const account = await plantAccount(scratch, mark("d9-after").toLowerCase(), { fork: true });
+
+    const enqueue = await bind("enqueue");
+    await enqueue(scratch.db, { kind: "fork", accountId: account.accountId, subject: THREE[0]! });
+
+    const deliverPending = await bind("deliverPending");
+    const first = recordingDelivery();
+    await deliverPending(scratch.db, first.delivery);
+    expect(first.delivered, "the first drain delivered nothing").toHaveLength(1);
+
+    await enqueue(scratch.db, { kind: "fork", accountId: account.accountId, subject: THREE[1]! });
+    const second = recordingDelivery();
+    const answered = await deliverPending(scratch.db, second.delivery);
+
+    expect(
+      answered,
+      `a drain after a completed pass answered ${describe_(answered)}. The advisory lock is ` +
+        `held around the PASS and released with it; a lock that outlived its pass would make ` +
+        `every subsequent drain in the process answer 0 and the queue would never drain again.`,
+    ).toBe(1);
   });
 });

@@ -167,7 +167,9 @@ export const PUBLISHED = {
   deliverPending:
     "deliverPending(db: Db, delivery: NotificationDelivery, limit: number | undefined = " +
     "undefined): Promise<number>",
-  enqueueRepinEvents: "enqueueRepinEvents(db: Db, cardId: string, version: string): Promise<void>",
+  enqueueRepinEvents:
+    "enqueueRepinEvents(db: Db, cardId: string, version: string, publisherAccountId: string | " +
+    "undefined = undefined): Promise<void>",
   DEFAULT_PREFERENCES: "DEFAULT_PREFERENCES: Preferences",
 } as const;
 
@@ -193,6 +195,11 @@ export const MIN_ARITY: Record<string, number> = {
   enqueue: 2,
   unsubscribe: 2,
   deliverPending: 2,
+  /* Still 3 after D-190-09(2) added `publisherAccountId`: the ruling spells it
+     `string | undefined = undefined` ("the arity spelling, per T250's rule"), and
+     `Function.length` stops at the first parameter carrying a default. A `publisherAccountId?:
+     string` would answer 3 as well — `?` erases at runtime — so this bound cannot tell the two
+     spellings apart and does not claim to. */
   enqueueRepinEvents: 3,
 };
 
@@ -794,6 +801,16 @@ export interface RecordingDelivery {
  */
 export function recordingDelivery(
   failOn: (callIndex: number, message: DeliveredMessage) => boolean = () => false,
+  /**
+   * Milliseconds each send takes before it settles.
+   *
+   * Zero everywhere except D-190-09's concurrent-drain cell, and load-bearing there: with an
+   * instant send the first drain can finish its whole pass before the second one reads, and
+   * then an implementation with NO advisory lock passes the cell — the second drain finds
+   * nothing pending and honestly answers 0. A send slow enough to hold the first pass open
+   * while the second starts is what makes the two implementations answer differently.
+   */
+  sendMs = 0,
 ): RecordingDelivery {
   const attempts: DeliveredMessage[] = [];
   const delivered: DeliveredMessage[] = [];
@@ -805,6 +822,7 @@ export function recordingDelivery(
     delivery: {
       async send(message: DeliveredMessage): Promise<void> {
         attempts.push(message);
+        if (sendMs > 0) await new Promise((resolve) => setTimeout(resolve, sendMs));
         if (failOn(attempts.length, message)) {
           failed.push(message);
           throw new Error(`recordingDelivery: refusing send #${attempts.length} on purpose.`);

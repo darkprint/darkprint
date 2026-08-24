@@ -253,3 +253,70 @@ describe("T190: `enqueueRepinEvents` notifies the accounts that pin the card", (
     ).toHaveLength(2);
   });
 });
+
+describe("T190 D-190-09(2): the publishing account is excluded from its own repin", () => {
+  /**
+   * "`enqueueRepinEvents` gains `publisherAccountId: string | undefined = undefined` (the arity
+   * spelling, per T250's rule): when present, that account is EXCLUDED from the recipients. An
+   * account that pins a card and then publishes its new version must not announce the publish
+   * to itself — the same refusal T110 made for a fork announced to its own author."
+   *
+   * The discriminating fixture is an account that is BOTH publisher and pinner. Exclude the
+   * publisher when it pins nothing and the cell is green against an implementation that never
+   * excludes anybody, because that account was never in the recipient set to begin with.
+   *
+   * Driven in a PAIR, and the pair is the instrument: the same account, the same card, one
+   * call passing the publisher and one omitting it. A cell asserting only the exclusion cannot
+   * tell "excluded" from "not a recipient in the first place"; a cell asserting only the
+   * default cannot see the exclusion at all. The two together pin the parameter as the thing
+   * that made the difference.
+   */
+  it("is a recipient when the publisher is not named, and not one when it is", async () => {
+    const world = await setup.require();
+    const enqueueRepinEvents = await bind("enqueueRepinEvents");
+
+    /* Half one: the DEFAULT. `world.pinner` owns a published bundle pinning this card, so it
+       is in the recipient set — and this half proves it, which is what makes half two mean
+       "removed" rather than "absent". */
+    const beforeDefault = await queueRows(world.scratch, world.pinner.accountId);
+    await enqueueRepinEvents(world.scratch.db, world.card.id, "8.8.1");
+    const withDefault = (await queueRows(world.scratch, world.pinner.accountId)).slice(
+      beforeDefault.length,
+    );
+    expect(
+      withDefault,
+      `the pinner is not a recipient even with no publisher named, so the exclusion half below ` +
+        `would be asserting a zero it gets for free. D-190-09(2) spells the parameter ` +
+        `\`string | undefined = undefined\`, so omitting it excludes nobody.`,
+    ).toHaveLength(1);
+
+    /* Half two: the SAME account, the SAME card, named as the publisher. */
+    const beforeExcluded = await queueRows(world.scratch, world.pinner.accountId);
+    await enqueueRepinEvents(world.scratch.db, world.card.id, "8.8.2", world.pinner.accountId);
+
+    expect(
+      (await queueRows(world.scratch, world.pinner.accountId)).slice(beforeExcluded.length),
+      `D-190-09(2): the account named as \`publisherAccountId\` was queued a repin for the ` +
+        `version it published itself. "An account that pins a card and then publishes its new ` +
+        `version must not announce the publish to itself."\n` +
+        `  The version differs from the call above (8.8.2 vs 8.8.1), so this zero is the ` +
+        `exclusion and not the unique key collapsing a repeat.`,
+    ).toEqual([]);
+  });
+
+  /** And the exclusion is ONE account, not the whole fan-out. */
+  it("excluding the publisher leaves every other pinner notified", async () => {
+    const world = await setup.require();
+    const beforePrivate = await queueRows(world.scratch, world.privatePinner.accountId);
+
+    const enqueueRepinEvents = await bind("enqueueRepinEvents");
+    await enqueueRepinEvents(world.scratch.db, world.card.id, "8.8.3", world.pinner.accountId);
+
+    expect(
+      (await queueRows(world.scratch, world.privatePinner.accountId)).slice(beforePrivate.length),
+      `naming a publisher silenced a DIFFERENT account's repin. The exclusion removes one ` +
+        `account from the recipients, and an implementation that skips the whole fan-out when ` +
+        `the parameter is present passes the cell above and loses every other pinner.`,
+    ).toHaveLength(1);
+  });
+});
