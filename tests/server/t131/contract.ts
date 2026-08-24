@@ -757,10 +757,28 @@ function cardSource(card: NodeCard): string {
   ].join("\n");
 }
 
-/** Plausible DOT for `release.dot`, which is NOT NULL. Nothing published reads it. */
-export function dotFor(refs: readonly CardRef[]): string {
+/**
+ * Plausible DOT for `release.dot`, which is NOT NULL. Nothing published reads it.
+ *
+ * **`name` is not decoration — it is a FIXTURE CORRECTION charged against this suite at first
+ * contact, and the defect it fixes made nine `validated` cells red against a correct module.**
+ *
+ * `bundleDigest({ dot, cardDigests })` reads neither owner nor slug — D-05-01 already records
+ * that, as the reason `release.digest` cannot be made unique — so this function returned the
+ * SAME bytes for every bundle seeded with no cards, and therefore the same digest. Since
+ * `run_report.release_digest` is matched by value, one report then reached EVERY empty bundle in
+ * the scratch database, and `validated` correctly counted them all: the observed answers ran
+ * 2, 4, 5, 7, 10, 12, 13 against expected 1s and 2s, monotonically increasing in declaration
+ * order, which is the signature of accumulation and not of a wrong count.
+ *
+ * A real blueprint's graph differs from another's; a fixture where they are byte-identical is the
+ * degenerate case, not the normal one. Naming the graph restores that. **The two cells that
+ * deliberately need a shared digest are unaffected: both construct the second release by passing
+ * the first's `digest` explicitly**, which is what a T110 fork does and what those cells are about.
+ */
+export function dotFor(refs: readonly CardRef[], name = "fixture"): string {
   const nodes = refs.map((ref, i) => `  n${i} [card="${ref}"];`).join("\n");
-  return `digraph fixture {\n${nodes}\n}\n`;
+  return `digraph "${name}" {\n${nodes}\n}\n`;
 }
 
 export interface CardFixture {
@@ -848,7 +866,8 @@ export async function insertBundle(
   const cards = o.cards ?? [];
   const cardRefs = cards.map((c) => c.ref);
   const cardDigests = cards.map((c) => c.digest);
-  const dot = dotFor(cardRefs);
+  /* Named per bundle, so two bundles are two digests unless a caller deliberately reuses one. */
+  const dot = dotFor(cardRefs, `${o.owner.handle}/${o.slug}`);
   const digest = bundleDigest({ dot, cardDigests });
   const [releaseRow] = await s.query(
     "insert into release " +

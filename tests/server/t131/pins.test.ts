@@ -250,6 +250,13 @@ describe("AC3: a pin at a deleted target is omitted, not nulled", () => {
       authorHandle: o.account.handle,
     });
     const doomed = await insertBundle(s, { owner: o.account, slug: "doomed", cards: [card] });
+    /* A SECOND bundle pinning the same card, and the first version of this cell did not have it —
+       which made the card no survivor at all. A node pin resolves through the PIN INDEX, which
+       carries only versions some CURRENT RELEASE pins (C-10), so deleting `doomed` also unpinned
+       the card and BOTH entries went absent: the cell reported `[]` where it expected the card,
+       and it was the fixture that could not reach its own named condition, not the module. The
+       card survives the deletion only if something else still pins it. */
+    await insertBundle(s, { owner: o.account, slug: "keeper", cards: [card] });
 
     const setPins = await bind("setPins");
     await setPins(s.db, o.actor, o.account.id, [blueprintPin(doomed.slug), nodePin(card.ref)]);

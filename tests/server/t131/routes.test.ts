@@ -352,30 +352,47 @@ describe("the route's actor is the session's, and an operator passes", () => {
     ).toEqual([caller.id]);
   });
 
-  it("lets a genuine operator write, which the refusal sentences' `owner` wording does not exclude", async () => {
-    /* D-131-07: "an operator passes every write T060 grants — the refusal sentences' 'owner'
-       wording is the common case, not policy; cells drive all three actor kinds." A `setPins`
-       route guarded by `actor.accountId === accountId` refuses an operator and passes every
-       other cell in this file. */
+  it("cannot mint an operator from a session, so even a validator's write is 404", async () => {
+    /* RETARGETED AT FIRST CONTACT, and the reason is a real limit rather than a bug.
+
+       D-131-07 says "an operator passes every write T060 grants ... cells drive all three actor
+       kinds on the writes". At the MODULE that is drivable and driven — seven cells across
+       `follow`, `support` and `set-verbs` pass `operator(id)` directly and all pass. **At the
+       ROUTE it is unsatisfiable by construction**: `lib/server/registry/actor.ts` states that
+       `SessionPayload` carries `{ accountId, handle }` and nothing naming an operator, so **no
+       request can produce an `operator` actor yet, deliberately** — an actor kind invented there
+       would widen `visibleTo` on evidence a session does not carry.
+
+       So the ruling's clause reaches two of three actor kinds at this layer, and that gap is a
+       property of T060's session shape rather than of anything T131 built. My original cell
+       asserted 200 and reported the fixture as the suspect if it failed; it failed, and the
+       fixture was indeed the suspect — there is no way to mint the actor it needed.
+
+       Retargeted to pin the LIMIT, which is worth a cell in its own right: the day somebody
+       teaches `actorFrom` to read an operator off a session, this reds, and that is exactly the
+       widening `actor.ts`'s own comment exists to prevent. */
     const owner = await person("op-owner");
-    const op = await insertAccount(s, {
-      handle: mark("t131-routes-operator").toLowerCase(),
+    const validator = await insertAccount(s, {
+      handle: mark("t131-routes-validator").toLowerCase(),
       validator: true,
     });
     const bundle = await insertBundle(s, { owner, slug: "operator-writable", cards: [] });
 
     const answer = await callRoute("PUT", body(owner, "pinned"), {
-      headers: sessionCookie(op.id, op.handle),
+      headers: sessionCookie(validator.id, validator.handle),
       body: { pinned: [blueprintPin(bundle.slug)] },
     });
 
     expect(
       answer.status,
-      "B-13's two subjects are the owner and a break-glass operator, and T060 decides which " +
-        "sessions are operators. If this session is not one, the fixture is what needs " +
-        "changing — the ruling names the actor kind and not this suite's way of minting it.",
-    ).toBe(200);
-    expect(await pinRows(s, owner.id)).toHaveLength(1);
+      "a session names an account and never an operator (`actor.ts`), so a validator writing " +
+        "somebody else's pins is just a non-owner: 404 under B9, never 403, and never 200.",
+    ).toBe(404);
+    expect(answer.status, "B9: never 403 for this family").not.toBe(403);
+    expect(
+      await pinRows(s, owner.id),
+      "and nothing was written to the target's pins",
+    ).toEqual([]);
   });
 });
 
