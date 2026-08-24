@@ -15,7 +15,7 @@ contract seams](architecture/seams.md), the matching `TODO(SEAM-xx)` comment in 
 the same change. This document does not get updated speculatively or on a schedule — see
 [12 · Maintenance protocol](#12-maintenance-protocol-and-revision-log).
 
-**Last verified against commit `7cba5c6` on 2026-08-24.**
+**Last verified against commit `670dee1` (`t260-verified`) on 2026-08-24.**
 
 **Stack summary.** Next.js 16.2.11 (App Router, Turbopack, no Pages Router code), React
 19.2.4, TypeScript 5 (`tsc --noEmit` as the type gate), Tailwind CSS v4 (CSS-first
