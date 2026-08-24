@@ -35,19 +35,26 @@ CREATE TYPE "public"."pin_kind" AS ENUM('blueprint', 'node');
 -- reasoning for `save`, and the reason `toggleFollow` cannot double-count under
 -- two concurrent callers the way a SELECT-then-INSERT would.
 --
--- ON DELETE CASCADE ON BOTH SIDES, RATIFIED AT D-131-08 AS A CRITERION'S
--- OBSERVABILITY RATHER THAN A STYLE CHOICE. AC4 asks that the watcher count
--- equal the follower count, which is only a real criterion if a derived count
--- and an incremented counter can be told apart -- and the one fixture that
--- separates them is a follower's `account` row deleted behind the module's
--- back. With CASCADE a derived count drops and a counter does not. Without it
--- the delete raises 23503 instead, and a cell whose two outcomes mean opposite
--- things is not a measurement (`test/t130-profiles` `32556b7`,
--- `follow.test.ts`'s header, which reported the hole it could not close).
+-- NO ACTION, like every other foreign key into `account`. A cascading key stood
+-- here and was REVOKED at D-131-11, after `tests/server/t120/instruments.test.ts`
+-- redded naming all five of this migration's keys.
+--
+-- The argument for it was that AC4's derived-versus-stored discriminator needs a
+-- follower's `account` row deleted behind the module's back. The premise was
+-- false: T120 never deletes an account row -- D-120-01 rules the tombstone
+-- BECAUSE the structure refuses the delete -- so a cascading key removes the
+-- structural fact that ruling rests on, and a cell driving an account delete was
+-- testing a state the product cannot reach.
+--
+-- The discriminator does not need it. T130's blind author could not separate a
+-- derived count from a counter because NO FOLLOW TABLE EXISTED
+-- (`test/t130-profiles` `32556b7`, `follow.test.ts`'s header, which reported the
+-- hole and declined to fake it). This table is the fix: delete a row from
+-- `follow` directly and watch `watchers` move, touching `account` not at all.
 CREATE TABLE "follow" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"follower_id" uuid NOT NULL REFERENCES "public"."account"("id") ON DELETE CASCADE,
-	"followed_id" uuid NOT NULL REFERENCES "public"."account"("id") ON DELETE CASCADE,
+	"follower_id" uuid NOT NULL REFERENCES "public"."account"("id"),
+	"followed_id" uuid NOT NULL REFERENCES "public"."account"("id"),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 
@@ -71,7 +78,7 @@ CREATE TABLE "follow" (
 -- `getProfile` where the criterion can be observed.
 CREATE TABLE "profile_pin" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"account_id" uuid NOT NULL REFERENCES "public"."account"("id") ON DELETE CASCADE,
+	"account_id" uuid NOT NULL REFERENCES "public"."account"("id"),
 	"position" smallint NOT NULL,
 	"kind" "public"."pin_kind" NOT NULL,
 	"ref" text NOT NULL,
@@ -94,8 +101,8 @@ CREATE TABLE "profile_pin" (
 -- name an account either. The door is shut on both sides.
 CREATE TABLE "account_support" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"supporter_id" uuid NOT NULL REFERENCES "public"."account"("id") ON DELETE CASCADE,
-	"supported_id" uuid NOT NULL REFERENCES "public"."account"("id") ON DELETE CASCADE,
+	"supporter_id" uuid NOT NULL REFERENCES "public"."account"("id"),
+	"supported_id" uuid NOT NULL REFERENCES "public"."account"("id"),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 

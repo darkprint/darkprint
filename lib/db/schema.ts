@@ -665,20 +665,27 @@ export const pinKind = pgEnum("pin_kind", ["blueprint", "node"]);
  * double-count under two concurrent callers the way a `SELECT`-then-`INSERT`
  * would.
  *
- * **`onDelete: "cascade"` on BOTH sides is a criterion's observability, ruled at
- * D-131-08 rather than chosen.** AC4 — "the watcher count equals the follower
- * count" — is only a real criterion if a derived count and an incremented
- * counter can be told apart, and the one fixture that separates them is a
- * FOLLOWER's account row deleted behind the module's back: a derived count drops
- * and a counter does not. Without the cascade that delete raises 23503 instead,
- * and a cell whose two outcomes mean opposite things is not a measurement. The
- * blind author of T130 reported exactly this hole and declined to fake it
- * (`test/t130-profiles` `32556b7`, `follow.test.ts`).
+ * **NO ACTION on both sides, and the CASCADE that stood here was REVOKED at
+ * D-131-11 after a merged guard caught it.** I argued for the cascade on the
+ * grounds that AC4's derived-versus-stored discriminator needs a FOLLOWER's
+ * account row deleted behind the module's back, and the premise was false:
+ * **T120 never deletes an account row — D-120-01 rules the tombstone precisely
+ * BECAUSE the structure refuses the delete**, so a cascading key removes the
+ * structural fact that ruling rests on, and `tests/server/t120/instruments.test.ts`
+ * reds naming all five keys.
+ *
+ * **The discriminator does not need it and never did.** T130's blind author
+ * could not separate a derived count from a counter because **no follow table
+ * existed** (`test/t130-profiles` `32556b7`, `follow.test.ts`'s header, which
+ * reported the hole and declined to fake it). This table is the fix: a cell
+ * deletes a row from `follow` directly and watches `watchers` move, touching
+ * `account` not at all. The cascade bought a fixture for a state the product
+ * cannot reach, at the cost of a merged task's premise.
  */
 export const follow = pgTable("follow", {
   id: uuid("id").primaryKey().defaultRandom(),
-  followerId: uuid("follower_id").notNull().references(() => account.id, { onDelete: "cascade" }),
-  followedId: uuid("followed_id").notNull().references(() => account.id, { onDelete: "cascade" }),
+  followerId: uuid("follower_id").notNull().references(() => account.id),
+  followedId: uuid("followed_id").notNull().references(() => account.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   uniqueIndex("follow_follower_followed_key").on(t.followerId, t.followedId),
@@ -718,7 +725,7 @@ export const follow = pgTable("follow", {
  */
 export const profilePin = pgTable("profile_pin", {
   id: uuid("id").primaryKey().defaultRandom(),
-  accountId: uuid("account_id").notNull().references(() => account.id, { onDelete: "cascade" }),
+  accountId: uuid("account_id").notNull().references(() => account.id),
   position: smallint("position").notNull(),
   kind: pinKind("kind").notNull(),
   ref: text("ref").notNull(),
@@ -750,8 +757,8 @@ export const profilePin = pgTable("profile_pin", {
  */
 export const accountSupport = pgTable("account_support", {
   id: uuid("id").primaryKey().defaultRandom(),
-  supporterId: uuid("supporter_id").notNull().references(() => account.id, { onDelete: "cascade" }),
-  supportedId: uuid("supported_id").notNull().references(() => account.id, { onDelete: "cascade" }),
+  supporterId: uuid("supporter_id").notNull().references(() => account.id),
+  supportedId: uuid("supported_id").notNull().references(() => account.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   uniqueIndex("account_support_supporter_supported_key").on(t.supporterId, t.supportedId),
