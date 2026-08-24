@@ -378,10 +378,14 @@ describe("T220 — the task is prose, not a query string", () => {
     /* D-300-07 arm (a): the subject here is the LEXICAL conjunction, so the oracle drives
        with an explicit `sort` — D-300-06 F6's own law gives the vector channel nothing under
        one (a shared link's answer must not grow), and the emptiness stays a byte-for-byte
-       measurement of `evidenceFor` rather than an assertion about the tail. */
+       measurement of `evidenceFor` rather than an assertion about the tail. `"slug"` and not
+       a shelf spelling: the searcher's own whitelist is `SORT_KEYS = ["slug"]`, and an
+       unrecognised value falls back to NO sort under D-200-37's rule — measured here, where
+       `sort: "recency"` silently kept the channel live and this premise red on a semantic
+       hit. */
     const bothOracle = await searchBlueprints(w.scratch.db as never, anonymous, {
       q: `${token} ${MISS}`,
-      sort: "recency",
+      sort: "slug",
     });
     expect(oneOracle.hits.length).toBeGreaterThan(0);
     expect(bothOracle.hits).toHaveLength(0);
