@@ -18,12 +18,19 @@
    names the channel rather than asserting a score (D-300-04 D5).
 
    ── The encoder is OPTIONAL AT RUNTIME, and that is structural ──
-   D-300-05. The weights are not vendored through npm — measured,
-   not assumed: `@huggingface/transformers` is 9.5MB and carries no
-   `.onnx` file at all, and with `allowRemoteModels = false` on a
-   fresh install it throws rather than encoding. So the model
-   directory is provisioned as an explicit operator step, and this
-   module has to answer for the machine where it is absent.
+   D-300-05, ARM (a): the weights are VENDORED IN THIS REPOSITORY,
+   under `models/`, so a bare checkout carries them and nothing is
+   fetched or provisioned by hand. They are not vendored through
+   npm, which is the thing that turned out to be impossible —
+   measured, not assumed: `@huggingface/transformers` is 9.5MB and
+   carries no `.onnx` file at all, and with
+   `allowRemoteModels = false` on a fresh install it throws rather
+   than encoding.
+
+   The degrade path stays anyway, and it is not vestigial: the
+   directory can be absent in a sparse or partial checkout, and the
+   package can be absent wherever `node_modules` is not installed.
+   This module has to answer for the machine where either is.
 
    It answers with `undefined` rather than a throw, for `errors.ts`'s
    own convention: an absent encoder is a VALUE. `reembedRelease`
@@ -161,6 +168,54 @@ const MODEL_ROOT = "models";
  */
 const MODEL_DTYPE = "q8";
 
+/**
+ * The text the width is proved against at load.
+ *
+ * A literal rather than an empty string: every text reaches the same 384 columns, so the
+ * content is irrelevant to the measurement, and a reader should not have to wonder whether
+ * the empty case was chosen for a reason it no longer has.
+ */
+const WIDTH_PROBE = "dimension probe";
+
+/**
+ * The exact bytes this repository vendors, frozen (D-300-08).
+ *
+ * ── Why a constant, when git already content-addresses the blob ──
+ *
+ * Because the CALIBRATION does. `SIMILAR_MIN`'s table below is a measurement of THESE bytes,
+ * and every number in it moves if the file does. A swapped blob — a bad merge, a corrupted
+ * checkout, a well-meant re-quantise to a smaller variant — changes every vector in the
+ * archive while the committed table goes on reading as still-measured. The width probe
+ * cannot catch that: `model.onnx` and `model_quantized.onnx` are both 384 wide, so the two
+ * most likely wrong files pass it. This pin is what makes the swap loud.
+ *
+ * Raised by the adversary, whose argument was this module's own docblock turned on the blob.
+ * The digest was measured INDEPENDENTLY on both sides before it was written down, and that
+ * agreement is what the constant freezes rather than either side's single reading.
+ *
+ * ── Where it is compared, and why not at load ──
+ *
+ * A constant nothing reads is decoration, so it is compared — by a cell, in
+ * `derivation.test.ts`, which digests the file and fails against these two values.
+ *
+ * The alternative was verifying inside `load()`, once per process. Declined, with the
+ * reason: the realistic way these bytes go wrong is a COMMIT — a merge, a re-vendor, a
+ * partial checkout — and a test catches that before it ships, which is where you want it.
+ * Verifying at load would instead hash 23MB on every cold start, inside the release-write
+ * transaction D-300-07 just finished pricing, to guard against post-checkout tampering that
+ * this repository does not model and that a compromised host defeats anyway. It would move
+ * the cost to production and the detection to after deployment, which is the wrong end of
+ * both.
+ */
+const MODEL_SHA256 = "afdb6f1a0e45b715d0bb9b11772f032c399babd23bfc31fed1c170afc848bdb1";
+const MODEL_BYTES = 22_972_370;
+
+/** The vendored weights, relative to the repository root. Exported so the pin has a subject. */
+export const MODEL_FILE = `${MODEL_ROOT}/${MODEL_ID}/onnx/model_quantized.onnx`;
+
+/** The frozen identity of `MODEL_FILE`. Compared by `derivation.test.ts`; see `MODEL_SHA256`. */
+export const MODEL_BLOB = Object.freeze({ sha256: MODEL_SHA256, bytes: MODEL_BYTES });
+
 /** The shape this module uses, written out rather than imported. See `load()`. */
 interface Encoder {
   (text: string, options: { pooling: "mean"; normalize: boolean }): Promise<{
@@ -186,8 +241,12 @@ interface TransformersModule {
  *
  * The PROMISE is memoised rather than the result, so concurrent callers share one load
  * instead of racing several ONNX sessions into memory — a publish and a query can arrive
- * together and the model is ~90MB of weights either way. Measured on the ruled encoder:
- * 207ms warm, and 16ms per document once it is up.
+ * together and each would otherwise build its own session over the same 23MB graph.
+ *
+ * Measured on THE VENDORED FILE, not on the full-precision one the first draft of this
+ * comment was timed against: 438ms to first vector in a cold process (dynamic import, ONNX
+ * session, and the width probe below), then 4.5ms per blueprint purpose and 1.4ms per query.
+ * D-300-07 prices the cold load against the publish transaction that pays it.
  *
  * A failed load is memoised too, and deliberately. Absence here is a missing directory on
  * disk, which does not heal between two calls in one process; retrying it would pay the
@@ -196,6 +255,7 @@ interface TransformersModule {
 let loading: Promise<Encoder | undefined> | undefined;
 
 async function load(): Promise<Encoder | undefined> {
+  let extract: Encoder;
   try {
     /* The specifier is a VARIABLE, and both halves of that are load-bearing.
        
@@ -220,14 +280,44 @@ async function load(): Promise<Encoder | undefined> {
     mod.env.allowLocalModels = true;
     mod.env.localModelPath = MODEL_ROOT;
 
-    return await mod.pipeline("feature-extraction", MODEL_ID, { dtype: MODEL_DTYPE });
+    extract = await mod.pipeline("feature-extraction", MODEL_ID, { dtype: MODEL_DTYPE });
   } catch {
     /* Swallowed, and it is the one place in this module that swallows anything. The two
        reachable causes — the package is not installed, the model directory is not
        provisioned — are the SAME condition from a caller's point of view: there is no
-       encoder on this machine. `withSearchStore` seals real faults; this is not one. */
+       encoder on this machine. `withSearchStore` seals real faults; this is not one.
+
+       ONLY THE LOAD IS INSIDE THIS BLOCK, and the width probe below is deliberately outside
+       it: an ABSENT encoder degrades, a WRONG one does not, and the two must not be able to
+       collapse into each other here. */
     return undefined;
   }
+
+  /* THE WIDTH IS PROVED ONCE, HERE, AND NOT ON EVERY CALL (D-300-06's arm 3).
+
+     A directory holding a model of another width is a MISPROVISIONING, not an absence, and
+     it stays LOUD: absent is legible and self-announcing, wrong is a defect somebody has to
+     go and find, so degrading on it would be the worse failure. What moved is WHERE it
+     surfaces. The check used to run inside `embed`, which since D-300-06 F4.2 means inside
+     `publish()`'s transaction, once per card — so a misprovisioned box announced itself on
+     the fifty-seventh card of a publish that then rolled back. Now it announces itself once
+     per process, at load, naming the directory, before a single row is written.
+
+     `loading` memoises this rejection, so every later caller re-throws the same named fault
+     rather than re-probing a model that cannot have changed under a running process. That
+     is also why `encoderAvailable()` THROWS here rather than answering `false`: answering
+     false would let a wrong model masquerade as an absent one, which is the exact collapse
+     this arm exists to prevent. */
+  const probe = await extract(WIDTH_PROBE, { pooling: "mean", normalize: true });
+  if (probe.data.length !== EMBEDDING_DIMENSIONS) {
+    throw new Error(
+      `The encoder in ${MODEL_ROOT}/${MODEL_ID} produced ${probe.data.length} dimensions, ` +
+        `but \`release_embedding.embedding\` and \`card_version_embedding.embedding\` are ` +
+        `\`vector(${EMBEDDING_DIMENSIONS})\` (D-200-02) and pgvector refuses any other width. ` +
+        `That directory holds a model this schema cannot store.`,
+    );
+  }
+  return extract;
 }
 
 function encoder(): Promise<Encoder | undefined> {
@@ -262,22 +352,11 @@ export async function embed(text: string): Promise<number[] | undefined> {
   const extract = await encoder();
   if (extract === undefined) return undefined;
 
+  /* No width check here any more: `load` proved it once for this process (D-300-06's arm 3).
+     Re-checking per call would re-measure a constant, and it put the failure inside a
+     publish transaction instead of at the point the model was chosen. */
   const output = await extract(text, { pooling: "mean", normalize: true });
-  const vector = Array.from(output.data);
-
-  /* A width mismatch is NOT the absent-encoder case and is not degraded into it. It means
-     the provisioned directory holds a different model, and the alternative to a throw here
-     is a pgvector insert that fails further away with a message about a column. Loud, with
-     the number, because the operator can only fix what the message names. */
-  if (vector.length !== EMBEDDING_DIMENSIONS) {
-    throw new Error(
-      `The encoder in ${MODEL_ROOT}/${MODEL_ID} produced ${vector.length} dimensions, ` +
-        `but \`release_embedding.embedding\` and \`card_version_embedding.embedding\` are ` +
-        `\`vector(${EMBEDDING_DIMENSIONS})\` (D-200-02) and pgvector refuses any other width. ` +
-        `That directory holds a model this schema cannot store.`,
-    );
-  }
-  return vector;
+  return Array.from(output.data);
 }
 
 /**

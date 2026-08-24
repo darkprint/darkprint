@@ -19,7 +19,18 @@
 
 import { describe, expect, it } from "vitest";
 
-import { EMBEDDING_DIMENSIONS, embed, encoderAvailable, SIMILAR_EVIDENCE, SIMILAR_MIN } from "./embed";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+
+import {
+  EMBEDDING_DIMENSIONS,
+  embed,
+  encoderAvailable,
+  MODEL_BLOB,
+  MODEL_FILE,
+  SIMILAR_EVIDENCE,
+  SIMILAR_MIN,
+} from "./embed";
 import { flag, oneOf, searchParams, sortKey, value } from "./params";
 import { evidenceFor, ranked, rankedWithSimilar, unranked, type Field, type Scored } from "./rank";
 import { findWord, normalise, trigrams } from "./text";
@@ -40,6 +51,41 @@ import { findWord, normalise, trigrams } from "./text";
  * what gets measured, and it is a real criterion (D-300-05) rather than a stand-down.
  */
 const HAVE_ENCODER = await encoderAvailable();
+
+describe("the vendored weights", () => {
+  it("are the exact bytes the calibration was measured on (D-300-08)", () => {
+    /* THE PIN, MADE LOAD-BEARING. `MODEL_BLOB` is a constant, and a constant nothing reads
+       is decoration — this is the something that reads it.
+
+       What it defends is not the file's existence but the CALIBRATION's subject. Every
+       number in `SIMILAR_MIN`'s table is a measurement of these bytes, so a swapped blob
+       moves every vector in the archive while the committed table goes on reading as
+       still-measured.
+
+       THE WIDTH PROBE IN `load()` CANNOT CATCH THAT, and this was driven rather than
+       argued: `model_uint8.onnx` from the same upstream repository, dropped in place of the
+       pinned file, LOADS, passes the width probe at 384 dimensions, and passes all thirty
+       other cells in this file — every vector-property cell included. This cell was the only
+       red. A wrong model that happens to be the right width is invisible to everything else
+       the module checks, which is the whole reason a digest is here.
+
+       Both the length and the digest, because they fail differently: a truncated or
+       partially-checked-out file is caught by the cheap comparison with a legible number,
+       and a same-length substitution is caught by the expensive one. */
+    const bytes = readFileSync(MODEL_FILE);
+    expect(bytes.byteLength, `${MODEL_FILE} is not the vendored file: wrong length`).toBe(
+      MODEL_BLOB.bytes,
+    );
+    expect(
+      createHash("sha256").update(bytes).digest("hex"),
+      `${MODEL_FILE} does not match MODEL_SHA256.\n` +
+        `  The published SIMILAR_MIN calibration is a measurement of the pinned bytes. If ` +
+        `these weights were deliberately changed, the table in embed.ts must be RE-MEASURED ` +
+        `and this constant updated in the same commit; if they were not, this is a bad ` +
+        `merge or a corrupted checkout and the file should be restored.`,
+    ).toBe(MODEL_BLOB.sha256);
+  });
+});
 
 describe("the stored vector", () => {
   it("reports which derivation this run measured, so a skip is never silent", async () => {
