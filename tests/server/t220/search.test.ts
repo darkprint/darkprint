@@ -177,6 +177,94 @@ describe("T220 AC5 — the honesty clause, composed through", () => {
   });
 });
 
+describe("T220 AC5 — the evidence D-220-04 restored", () => {
+  /* The field this suite charged as missing before any cell was written, and the reason the
+     charge mattered: without it `ordered: true` is the relevance-number-with-no-published-
+     derivation that `/mcp`'s own OPEN row refuses, and an agent has no way to check the
+     claim. These three cells are what the field buys. */
+
+  it("gives every hit non-empty evidence exactly when the answer claims to be ordered", async () => {
+    const w = await world();
+    const token = knownToken();
+    /* Before the bind, and it is what makes the biconditional discriminating: the two tasks
+       must land on OPPOSITE sides of the law, or "evidence agrees with ordered" is checked
+       twice against the same truth value. */
+    const ranked = await searchBlueprints(w.scratch.db as never, anonymous, { q: token });
+    const listing = await searchBlueprints(w.scratch.db as never, anonymous, { q: "" });
+    expect(ranked.ordered).toBe(true);
+    expect(listing.ordered).toBe(false);
+
+    const mcpSearch = await verb("mcpSearch");
+
+    for (const task of [token, ""]) {
+      const result = (await mcpSearch(w.scratch.db, anonymous, task)) as {
+        hits: { evidence: readonly string[] }[];
+        ordered: boolean;
+      };
+      expect(result.hits.length, `task ${JSON.stringify(task)} matched nothing`).toBeGreaterThan(0);
+      /* AC5's law, now checkable by the CALLER rather than only from inside the process —
+         which is the whole difference D-220-04 made. */
+      expect(
+        result.hits.every((h) => h.evidence.length > 0),
+        `task ${JSON.stringify(task)}: \`ordered\` is ${result.ordered} but the evidence ` +
+          "does not agree with it.",
+      ).toBe(result.ordered);
+    }
+  });
+
+  it("carries T200's own evidence strings, not a restatement of the query", async () => {
+    const w = await world();
+    const token = knownToken();
+    const bp = await searchBlueprints(w.scratch.db as never, anonymous, { q: token });
+    expect(bp.hits.length).toBeGreaterThan(0);
+    /* The oracle is T200's shipped `Hit.evidence`, keyed by the same ref the block pins. */
+    const expected = new Map(
+      bp.hits.map((h) => [`${h.item.ownerHandle}/${h.item.slug}`, [...h.evidence].sort()]),
+    );
+    /* The premise D-200-09 makes the point of: evidence names the FIELD that matched and the
+       word in the DOCUMENT, `<field>:<token>`, so it is not the query echoed back. */
+    const sample = [...expected.values()][0]!;
+    expect(sample.length).toBeGreaterThan(0);
+    expect(sample.every((e) => e.includes(":"))).toBe(true);
+
+    const mcpSearch = await verb("mcpSearch");
+    const result = (await mcpSearch(w.scratch.db, anonymous, token)) as {
+      hits: { kind: string; ref: string; evidence: readonly string[] }[];
+    };
+
+    const wrong = result.hits
+      .filter((h) => h.kind === "blueprint")
+      .filter((h) => {
+        const want = expected.get(h.ref);
+        return want === undefined || JSON.stringify([...h.evidence].sort()) !== JSON.stringify(want);
+      })
+      .map((h) => `${h.ref}: ${JSON.stringify(h.evidence)} want ${JSON.stringify(expected.get(h.ref))}`);
+    expect(wrong, "evidence is composed through from T200, not recomputed here").toEqual([]);
+  });
+
+  it("gives empty evidence to every hit of an unordered listing", async () => {
+    const w = await world();
+    const bp = await searchBlueprints(w.scratch.db as never, anonymous, { q: "" });
+    /* T200 DISCARDS evidence for a listing rather than never computing it, and `ordered`
+       follows. So the empty task is the case where a module that carried evidence anyway
+       would be claiming a rank it did not make. */
+    expect(bp.hits.length).toBeGreaterThan(0);
+    expect(bp.hits.every((h) => h.evidence.length === 0)).toBe(true);
+
+    const mcpSearch = await verb("mcpSearch");
+    const result = (await mcpSearch(w.scratch.db, anonymous, "")) as {
+      hits: { evidence: readonly string[] }[];
+      ordered: boolean;
+    };
+    expect(result.ordered).toBe(false);
+    expect(
+      result.hits.filter((h) => h.evidence.length > 0).length,
+      "an unranked listing carries no evidence — every hit sits in the registry's own key " +
+        "order, which is not a rank the archive explains.",
+    ).toBe(0);
+  });
+});
+
 describe("T220 — the task is prose, not a query string", () => {
   /* Charge 9 in the T220 log, flagged to the orchestrator before it was written. The verb
      takes "the task, in the agent's own words" (`/mcp`, and the block's own Contract line).
@@ -238,10 +326,8 @@ describe("T220 — the task is prose, not a query string", () => {
 });
 
 describe("T220 — what a hit carries", () => {
-  it("gives every hit a kind, a ref, a digest and a non-empty author", async () => {
+  it("carries `author` for a blueprint hit and OMITS it for a card hit", async () => {
     const w = await world();
-    /* Before the bind: the shelf holds both kinds, so a hit set carrying only one of them
-       is a finding rather than an accident of the fixture. */
     const bp = await searchBlueprints(w.scratch.db as never, anonymous, { q: "" });
     const cards = await searchCards(w.scratch.db as never, anonymous, { q: "" });
     expect(bp.hits.length).toBeGreaterThan(0);
@@ -249,26 +335,57 @@ describe("T220 — what a hit carries", () => {
 
     const mcpSearch = await verb("mcpSearch");
     const result = (await mcpSearch(w.scratch.db, anonymous, "")) as {
-      hits: { kind: string; ref: string; author: string; digest: string }[];
+      hits: { kind: string; ref: string; author?: string; digest: string }[];
     };
-    expect(result.hits.length).toBeGreaterThan(0);
 
-    const bad = result.hits.filter(
-      (h) =>
-        !["blueprint", "card"].includes(h.kind) ||
-        typeof h.ref !== "string" ||
-        h.ref === "" ||
-        typeof h.digest !== "string" ||
-        h.digest === "" ||
-        typeof h.author !== "string" ||
-        h.author === "",
-    );
-    /* `author` is held to being a non-empty string and to nothing more. Charge 1: the block
-       does not rule whether it is the owner handle (`darkprint` for all nine after T250) or
-       `manifest.author` (one of six handles holding no accounts, D-250-18). Both are
-       non-empty strings; `undefined` — which is what BOTH sources' optional types permit —
-       is not. */
-    expect(bad.map((h) => JSON.stringify(h))).toEqual([]);
+    /* D-220-05. `author` is the OWNER HANDLE for a blueprint and is OMITTED for a card, and
+       the ruling took the card half from the structural fact this suite charged before the
+       cells were written: `CardSummary` carries no owner field, so filling it would need a
+       per-hit join T220 is told not to invent.
+
+       Asserted STRUCTURALLY rather than against the literal `darkprint`: `author` must equal
+       the owner half of the hit's own ref. A cell pinning the constant would pass against a
+       module that hardcoded it, and every seeded blueprint has the same owner after T250. */
+    const blueprints = result.hits.filter((h) => h.kind === "blueprint");
+    const cardHits = result.hits.filter((h) => h.kind === "card");
+    expect(blueprints.length).toBeGreaterThan(0);
+    expect(cardHits.length).toBeGreaterThan(0);
+
+    expect(
+      blueprints.filter((h) => h.author !== h.ref.split("/")[0]).map((h) => JSON.stringify(h)),
+      "a blueprint hit's `author` is its owner handle, which is also the first half of its " +
+        "`ownerHandle/slug` ref (D-220-05, D-220-13).",
+    ).toEqual([]);
+    expect(
+      cardHits.filter((h) => h.author !== undefined).map((h) => JSON.stringify(h)),
+      "a card hit carries no author. `manifest.author`/`card.author` are the stale claims " +
+        "T250 deliberately left in place (D-250-18), naming six handles that hold no " +
+        "account — an agent cannot act on one.",
+    ).toEqual([]);
+  });
+
+  it("omits `author` on a card hit rather than setting it to undefined", async () => {
+    const w = await world();
+    const cards = await searchCards(w.scratch.db as never, anonymous, { q: "" });
+    expect(cards.hits.length).toBeGreaterThan(0);
+
+    const mcpSearch = await verb("mcpSearch");
+    const result = (await mcpSearch(w.scratch.db, anonymous, "")) as {
+      hits: Record<string, unknown>[];
+    };
+    const cardHits = result.hits.filter((h) => h.kind === "card");
+    expect(cardHits.length).toBeGreaterThan(0);
+
+    /* The stricter reading of D-220-05's "OMITTED", in its OWN cell so the sweep can tell
+       the two apart. This repository distinguishes the spellings deliberately —
+       `PublicAuthor.bio` is documented as "Omitted when the account has no bio — never
+       `null`, never present-and-undefined" — so absence is the reading the codebase already
+       holds. A red HERE and a green above means the key is present carrying `undefined`,
+       which is a one-line fix and not a failed criterion. */
+    expect(
+      cardHits.filter((h) => Object.hasOwn(h, "author")).map((h) => JSON.stringify(h)),
+      "`author` is present on a card hit carrying `undefined`. D-220-05 omits it.",
+    ).toEqual([]);
   });
 
   it("gives distinct refs to two versions of one card", async () => {
@@ -304,5 +421,62 @@ describe("T220 — what a hit carries", () => {
       "Two card hits share a `ref`. The library carries four ids at two versions each, so a " +
         "ref spelled as the bare id names two different documents with one string.",
     ).toBe(cardHits.length);
+  });
+
+  it("spells a blueprint ref `ownerHandle/slug` and a card ref `id@version`", async () => {
+    const w = await world();
+    const bp = await searchBlueprints(w.scratch.db as never, anonymous, { q: "" });
+    const cards = await searchCards(w.scratch.db as never, anonymous, { q: "" });
+    /* The oracles' own keys, so the expected strings are T080's answer rather than this
+       file's idea of it. Built before the bind. */
+    const bpRefs = new Set(bp.hits.map((h) => `${h.item.ownerHandle}/${h.item.slug}`));
+    const cardRefs = new Set(cards.hits.map((h) => h.item.ref));
+    expect(bpRefs.size).toBeGreaterThan(0);
+    expect(cardRefs.size).toBeGreaterThan(0);
+
+    const mcpSearch = await verb("mcpSearch");
+    const result = (await mcpSearch(w.scratch.db, anonymous, "")) as {
+      hits: { kind: string; ref: string }[];
+    };
+
+    /* D-220-13 pinned both spellings and recorded that `/mcp`'s slug-only and bare-id forms
+       are STALE, predating B-09's multi-owner key. */
+    const strayBp = result.hits.filter((h) => h.kind === "blueprint" && !bpRefs.has(h.ref));
+    const strayCard = result.hits.filter((h) => h.kind === "card" && !cardRefs.has(h.ref));
+    expect(strayBp.map((h) => h.ref), "blueprint refs are `ownerHandle/slug`").toEqual([]);
+    expect(strayCard.map((h) => h.ref), "card refs are `id@version`").toEqual([]);
+  });
+
+  it("concatenates blueprints then cards, with no interleaving by score", async () => {
+    const w = await world();
+    const token = knownToken();
+    /* The premise that makes this cell able to fail: the token must match BOTH kinds, or a
+       hit list of one kind satisfies "no interleaving" by having nothing to interleave. */
+    const bp = await searchBlueprints(w.scratch.db as never, anonymous, { q: token });
+    const cards = await searchCards(w.scratch.db as never, anonymous, { q: token });
+    const task = bp.hits.length > 0 && cards.hits.length > 0 ? token : "";
+    const both = task === "" ? "the empty listing" : `\`${token}\``;
+    const bpN = task === "" ? undefined : bp.hits.length;
+    void bpN;
+
+    const mcpSearch = await verb("mcpSearch");
+    const result = (await mcpSearch(w.scratch.db, anonymous, task)) as {
+      hits: { kind: string }[];
+    };
+    const kinds = result.hits.map((h) => h.kind);
+    expect(kinds.filter((k) => k === "blueprint").length, `${both} matched no blueprint`)
+      .toBeGreaterThan(0);
+    expect(kinds.filter((k) => k === "card").length, `${both} matched no card`).toBeGreaterThan(0);
+
+    /* D-220-14: concatenation blueprints-then-cards. Interleaving by score would be the
+       second ranking D-220-02 forbids, and it is invisible to every other cell here — a
+       merged list has the same length and the same members either way. */
+    const firstCard = kinds.indexOf("card");
+    const lastBlueprint = kinds.lastIndexOf("blueprint");
+    expect(
+      lastBlueprint,
+      `kinds: ${kinds.join(",")} — a blueprint appears after a card, so the two shelves were ` +
+        "merged by score rather than concatenated.",
+    ).toBeLessThan(firstCard);
   });
 });

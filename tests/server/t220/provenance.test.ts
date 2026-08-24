@@ -10,20 +10,19 @@
    asserted. Two things are not, and both are charged rather than
    guessed:
 
-   `publishedBy` — charge 1/2 in the T220 log. After T250's
-   re-attribution the owner of all nine seeded blueprints is
-   `darkprint`, while `manifest.author` names one of six handles
-   holding no account (D-250-18: re-attribution moves OWNERSHIP, not
-   AUTHORSHIP, and both facts are true). The block rules neither, so
-   these cells hold it to being a non-empty string — which both
-   readings satisfy and `undefined` does not.
+   Both were charged as unruled before these cells were written and
+   both were ruled at D-220-05, so both are now pinned exactly:
+   `publishedBy` is the OWNER's handle — `darkprint` for every seeded
+   blueprint after T250 — and NOT `manifest.author`, which names one
+   of six handles holding no account and which T250 deliberately left
+   in place (D-250-18: re-attribution moved OWNERSHIP, not
+   AUTHORSHIP, and both facts are true). `forkedFrom` resolves
+   `lineage.ownerId` — a UUID in the store — to a handle.
 
-   `forkedFrom.owner` — charge 2. `BundleRecord.lineage` stores
-   `ownerId`, a uuid, while `PublishInput.lineage` takes
-   `ownerHandle`. A uuid there is unusable by the agent this surface
-   exists for, but the block does not say which, so `owner` is held
-   to being a non-empty string and `slug` and `version` — which are
-   unambiguous — are pinned exactly.
+   The seeded blueprints make the two readings DISAGREE rather than
+   coincide, which is what lets these cells discriminate: every one
+   of the nine is owned by `darkprint` and carries a manifest author
+   that is not.
    ============================================================ */
 
 import { afterAll, describe, expect, it } from "vitest";
@@ -86,10 +85,12 @@ describe("T220 — inspect provenance", () => {
     expect(got.forkedFrom, "this bundle was published with a lineage").toBeDefined();
     expect(got.forkedFrom?.slug).toBe(w.twice);
     expect(got.forkedFrom?.version).toBe("1.0.0");
-    /* Charge 2: `owner` is unruled between a handle and a uuid, so only its inhabitedness is
-       pinned. If the ruling lands on a handle, this tightens to `w.registry.handle`. */
-    expect(typeof got.forkedFrom?.owner).toBe("string");
-    expect(got.forkedFrom?.owner).not.toBe("");
+    /* D-220-05 settled charge 2: `forkedFrom` resolves `lineage.ownerId` — a UUID in the
+       store — to a HANDLE. Pinned exactly now, and the uuid is excluded by name rather than
+       merely admitting the handle: `toBeTruthy()` would pass on the uuid, which is the
+       reading that makes the field unusable for the agent this surface exists for. */
+    expect(got.forkedFrom?.owner).toBe(w.registry.handle);
+    expect(got.forkedFrom?.owner).not.toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-/);
   });
 
   it("omits `forkedFrom` for a bundle that is not a fork", async () => {
@@ -122,11 +123,17 @@ describe("T220 — inspect provenance", () => {
       w.twice,
     )) as Provenance;
 
-    /* Charge 1/2: held to being a non-empty string and no more. `darkprint` (the owner) and
-       one of the six manifest handles are both admissible readings today and the block
-       rules neither; `undefined` is what BOTH candidate sources' optional types permit and
-       is what this excludes. */
-    expect(typeof got.publishedBy).toBe("string");
-    expect(got.publishedBy).not.toBe("");
+    /* D-220-05 settled charge 1: `publishedBy` is the OWNER's handle. Pinned exactly, and
+       the six manifest handles are excluded by name — those are the stale claims T250
+       deliberately left in place (D-250-18), and an agent cannot act on a handle that holds
+       no account. This blueprint's manifest carries one of them, so the two readings really
+       do disagree here rather than coinciding. */
+    expect(got.publishedBy).toBe(w.registry.handle);
+    expect(
+      ["hachi", "k0bra", "lupo", "mara-veil", "orin", "sol-antczak"],
+      "`publishedBy` carried the manifest's author rather than the owner. Re-attribution " +
+        "moved OWNERSHIP, not AUTHORSHIP (D-250-18) — both facts are true and this field " +
+        "is the ownership one.",
+    ).not.toContain(got.publishedBy);
   });
 });

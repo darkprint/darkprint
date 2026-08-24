@@ -28,10 +28,11 @@ import { fileURLToPath } from "node:url";
 
 import { afterAll, describe, expect, it } from "vitest";
 
-import { verb } from "./contract";
-import { anonymous, dropScratchDatabases, refsOf, seededWorld } from "./fixtures";
+import { outcome, verb } from "./contract";
+import { anonymous, dropScratchDatabases, privateWorld, refsOf, seededWorld } from "./fixtures";
 
 const world = seededWorld();
+const priv = privateWorld();
 
 /** The authoring document for one ref, read off `content/cards`. */
 function authored(ref: string): string {
@@ -86,5 +87,54 @@ describe("T220 — read a card returns the YAML as published", () => {
     const readCard = await verb("mcpReadCard");
     expect(await readCard(w.scratch.db, anonymous, ref2!)).toBe(doc2);
     expect(await readCard(w.scratch.db, anonymous, ref1)).toBe(doc1);
+  });
+});
+
+describe("T220 — one sentence for three refusals (D-220-06, B-03)", () => {
+  /* `McpRefusedError` answers absent, unparseable AND private with ONE sentence. That is
+     B-03's 404-over-403 rule one layer down: a distinct refusal for "it exists but is not
+     yours" reinstates exactly the leak the shared answer closes, and it is the kind of
+     defect that ships because each refusal is individually reasonable.
+
+     Written against the private world, which is the only fixture carrying all three. */
+  it("refuses an absent, an unparseable and a private ref identically", async () => {
+    const w = await priv();
+    /* Premises before the bind. The three refs really are three different causes: one names
+       no row, one cannot be parsed at all, and one names a row that exists and is private. */
+    const absent = "t220-no-such-card@9.9.9";
+    const unparseable = "not a card ref at all";
+    const privateRef = w.privateCard.ref;
+    expect(new Set([absent, unparseable, privateRef]).size).toBe(3);
+    const rows = await w.scratch.query(
+      `select visibility from "card_version" where card_id = $1`,
+      [privateRef.split("@")[0]],
+    );
+    expect(rows[0]?.visibility, "the private ref must name a row that EXISTS").toBe("private");
+
+    const readCard = await verb("mcpReadCard");
+    const outcomes = await Promise.all(
+      [absent, unparseable, privateRef].map((ref) =>
+        outcome(() => readCard(w.scratch.db, anonymous, ref) as Promise<unknown>),
+      ),
+    );
+
+    /* All three must refuse, and refuse the SAME way. Compared by class name plus message
+       rather than by identity: two correct refusals carry different stacks. */
+    const shapes = outcomes.map((got) =>
+      got.ok
+        ? `answered ${JSON.stringify(got.value)}`
+        : `${(got.error as Error).name}: ${(got.error as Error).message}`,
+    );
+    expect(
+      new Set(shapes).size,
+      `absent / unparseable / private answered differently:\n  ${shapes.join("\n  ")}\n` +
+        "  B-03 gives all three one sentence. A distinguishable refusal for the private one " +
+        "says which refs exist.",
+    ).toBe(1);
+    /* And the shared answer must be a refusal rather than a shared success — three
+       identical `undefined`s would satisfy the equality above while returning nothing to
+       anybody, which the public-card cell in privacy.test.ts is the control against. */
+    expect(outcomes.every((got) => !got.ok)).toBe(true);
+    expect(shapes[0]).toContain("McpRefusedError");
   });
 });

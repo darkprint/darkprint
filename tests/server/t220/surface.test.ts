@@ -28,6 +28,7 @@ import {
   MCP,
   PUBLISHED,
   PUBLISHED_ARITY,
+  PUBLISHED_CLASSES,
   PUBLISHED_NAMES,
   describe_,
   loadMcp,
@@ -82,6 +83,28 @@ describe("T220 — the barrel publishes the four verbs", () => {
           "  A count one HIGH is usually an optional parameter spelled `?` where the ruling " +
           "requires `= undefined` — `?` erases at runtime and still counts.",
       ).toBe(PUBLISHED_ARITY[name]);
+    });
+  }
+
+  for (const name of PUBLISHED_CLASSES) {
+    it(`publishes \`${name}\` and it is an Error subclass`, async () => {
+      const mod = await loadMcp();
+      const held = Object.keys(mod).sort();
+      const ctor = mod[name];
+      expect(
+        ctor,
+        `${MCP} exports: ${held.join(", ") || "(nothing)"}.\n` +
+          "  D-220-06 rules two classes for this surface. A class no barrel exports is a " +
+          "class a caller cannot branch on, which is the defect D-133-02 F3 names.",
+      ).toBeDefined();
+      /* `prototype instanceof Error` is the language's own answer, so no name pattern
+         decides membership — the same predicate `tests/error-hygiene.test.ts` builds its
+         domain from. */
+      expect(
+        typeof ctor === "function" &&
+          (ctor as { prototype?: unknown }).prototype instanceof Error,
+        `\`${name}\` is ${describe_(ctor)}, not an Error subclass.`,
+      ).toBe(true);
     });
   }
 

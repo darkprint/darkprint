@@ -73,6 +73,25 @@ export const PUBLISHED = {
 
 export type PublishedName = keyof typeof PUBLISHED;
 
+/**
+ * The two classes D-220-06 rules, after this suite charged the block for publishing none.
+ *
+ * `McpRefusedError` answers absent, unparseable AND private with ONE sentence (B-03's
+ * 404-over-403 rule: a distinct refusal for "it exists but is not yours" reinstates the leak
+ * the status code closed). `McpStoreError` is D-13's seal, and D-220-06 ratifies it as
+ * T220's OWN boundary because `getBundle` and `listReleases` are unsealed bare selects.
+ *
+ * `ExportError` is WRAPPED here rather than passed through, so the four-verb surface refuses
+ * with one voice instead of leaking its dependencies' taxonomy — which is the opposite of
+ * D-50-08's pass-through rule and is ruled that way deliberately.
+ *
+ * Not counted against `tests/error-hygiene.test.ts` by anything here: that guard is an
+ * EQUALITY whose domain is `git ls-tree -d <backend sha> lib/server/`, so a module in a
+ * worktree cannot move it. It goes 40 -> 42 at the merge, derived there, and T160 and T180
+ * move the same figure from the same base — whoever lands last faces a different number.
+ */
+export const PUBLISHED_CLASSES = ["McpRefusedError", "McpStoreError"] as const;
+
 /** Four, in the order the block publishes them. */
 export const PUBLISHED_NAMES = Object.keys(PUBLISHED) as PublishedName[];
 

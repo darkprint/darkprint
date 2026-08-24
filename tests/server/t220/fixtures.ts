@@ -389,6 +389,16 @@ export interface Private {
   /** Public, owned by `alpha`. The control that proves the verbs can see anything at all. */
   shown: { ownerHandle: string; slug: string; digest: string; refs: readonly CardRef[] };
   /**
+   * A PUBLIC bundle whose lineage points at the PRIVATE one.
+   *
+   * D-220-05: `forkedFrom` is OMITTED WHOLE when the upstream is unreadable, because a fork
+   * of a non-public upstream that names it leaks by lineage — AC3 through a field nobody
+   * thinks of as content. Published by `alpha`, the only actor that can see the upstream's
+   * cards: `publishCard` resolves them through `getCard(db, actor, …)`, and a publisher who
+   * cannot see an existing row calls `addCard` and dies on the unique index.
+   */
+  forkOfSecret: { ownerHandle: string; slug: string };
+  /**
    * A private card pinned by no bundle, so `mcpReadCard` is asked about it directly.
    *
    * `nonce` is a string the CALLER never supplies — it sits inside the document body, not in
@@ -458,6 +468,26 @@ export function privateWorld(): () => Promise<Private> {
 
     const secret = await put(secretSlug, "private");
     const shown = await put(shownSlug, "public");
+
+    /* The lineage leak's subject: public, and forked from the private one. */
+    const forkOfSecretSlug = "t220-fork-of-secret";
+    const secretBytes = content(secretSlug);
+    await publish(
+      db as never,
+      alpha.actor,
+      {
+        ownerHandle: alpha.handle,
+        slug: forkOfSecretSlug,
+        version: SEED_VERSION,
+        manifest: { ...secretBytes.manifest, slug: forkOfSecretSlug },
+        dot: secretBytes.dot,
+        cardFiles: { ...secretBytes.cardFiles },
+        ...(vocabulary === undefined ? {} : { vocabulary: vocabulary as never }),
+        visibility: "public",
+        lineage: { ownerHandle: alpha.handle, slug: secretSlug, version: SEED_VERSION },
+      } as never,
+      undefined,
+    );
 
     /* Two unpinned cards, one private and one public, written through `addCard` — which is
        the writer `publish` itself calls (`publish.ts:371`), not a hand-built INSERT. They
@@ -534,6 +564,7 @@ export function privateWorld(): () => Promise<Private> {
       beta,
       secret,
       shown,
+      forkOfSecret: { ownerHandle: alpha.handle, slug: forkOfSecretSlug },
       privateCard: {
         ref: cardRef(priv.body.id, priv.body.version),
         source: priv.source,

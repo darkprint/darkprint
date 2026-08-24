@@ -220,3 +220,54 @@ describe("T220 AC3 — the three actors agree", () => {
     expect(new Set(shapes).size, `answers: ${JSON.stringify(shapes)}`).toBe(1);
   });
 });
+
+describe("T220 AC3 — the lineage channel", () => {
+  /* D-220-05 names this one explicitly: `forkedFrom` is OMITTED WHOLE when the upstream is
+     unreadable, *"or AC3 leaks by lineage"*. It is the AC3 violation that hides in a field
+     nobody thinks of as content — the fork itself is public and its own provenance is a
+     legitimate read, and the disclosure is three words inside the answer. */
+  it("omits `forkedFrom` entirely when the upstream is private", async () => {
+    const w = await world();
+    /* Premises before the bind: the fork really is public and really does carry a lineage
+       pointing at the private bundle. Without both, an absent `forkedFrom` below is a fork
+       that was never forked. */
+    const rows = await w.scratch.query(
+      `select slug, visibility, lineage from "bundle" where slug in ($1, $2) order by slug`,
+      [w.forkOfSecret.slug, w.secret.slug],
+    );
+    const fork = rows.find((r) => r.slug === w.forkOfSecret.slug);
+    const upstream = rows.find((r) => r.slug === w.secret.slug);
+    expect(fork?.visibility, "the fork must be public, or this measures ordinary privacy").toBe(
+      "public",
+    );
+    expect(upstream?.visibility).toBe("private");
+    expect(fork?.lineage, "the fork carries no lineage, so there is nothing to omit").toBeTruthy();
+
+    const provenance = await verb("mcpProvenance");
+    const got = await outcome(
+      () =>
+        provenance(
+          w.scratch.db,
+          anonymous,
+          w.forkOfSecret.ownerHandle,
+          w.forkOfSecret.slug,
+        ) as Promise<unknown>,
+    );
+
+    /* The needle is the upstream's SLUG here rather than a digest, and that is sound in this
+       one place precisely because the caller did NOT supply it: the call names the fork, and
+       the private slug can only appear by being read out of `lineage`. */
+    expect(
+      reveals(got, w.secret.slug),
+      "the private upstream's slug reached an anonymous caller through `forkedFrom`. " +
+        "D-220-05: a fork of a non-public upstream presents as an original.",
+    ).toBe(false);
+    if (got.ok) {
+      expect(
+        (got.value as { forkedFrom?: unknown }).forkedFrom,
+        "`forkedFrom` is present for a fork whose upstream is unreadable. It is omitted " +
+          "WHOLE — a partial one still says the fork is a fork of something hidden.",
+      ).toBeUndefined();
+    }
+  });
+});
