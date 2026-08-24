@@ -296,12 +296,18 @@ describe("T190 D-190-09(2): the publishing account is excluded from its own repi
    */
   it("is a recipient when the publisher is not named, and not one when it is", async () => {
     const world = await armed(await setup.require());
-    const enqueueRepinEvents = await bind("enqueueRepinEvents");
 
     /* Half one: the DEFAULT. `world.pinner` owns a published bundle pinning this card, so it
        is in the recipient set — and this half proves it, which is what makes half two mean
        "removed" rather than "absent". */
     const beforeDefault = await queueRows(world.scratch, world.pinner.accountId);
+
+    /* Bound HERE and not above, after the premise read. This cell was the one in the file
+       that bound first, and the blind run showed the cost precisely: its eight siblings red
+       with "`notification_queue` could not be read", naming the migration, and this one redded
+       with "the barrel does not load", naming the module. Both are true and only one is the
+       NEAREST unmet condition. A cell that binds early reports the furthest cause it can see. */
+    const enqueueRepinEvents = await bind("enqueueRepinEvents");
     await enqueueRepinEvents(world.scratch.db, world.card.id, "8.8.1");
     const withDefault = (await queueRows(world.scratch, world.pinner.accountId)).slice(
       beforeDefault.length,
