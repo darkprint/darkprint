@@ -80,13 +80,18 @@ async function visit(slug: string, query: Record<string, string> = {}) {
   );
 }
 
-async function seedFor(handle: string, githubId: string, slug: string): Promise<void> {
+/**
+ * The archive's cards, seeded ONCE for the whole fixture.
+ *
+ * Not once per owner, and the distinction is a schema fact rather than a tidiness
+ * preference: `card_version_id_version_key` is unique on `(cardId, version)` GLOBALLY
+ * (`lib/db/schema.ts:245`), while `bundle_owner_slug_key` is `(ownerId, slug)` — B-09 made
+ * bundle slugs per-owner and left card versions global. Seeding the same card under a
+ * second owner raises `23505` inside `beforeAll`, which stands the whole run down as
+ * SKIPS rather than reds — measured, the first time this file ran.
+ */
+async function seedCardsOnce(ownerId: string): Promise<void> {
   const db = testDb!.client.db;
-  const [account] = await db
-    .insert(schema.account)
-    .values({ githubId, githubLogin: githubId, handle })
-    .returning();
-
   const entry = readContent()[0];
   const seen = new Set<string>();
   for (const file of entry.cardFiles) {
@@ -95,15 +100,18 @@ async function seedFor(handle: string, githubId: string, slug: string): Promise<
     seen.add(ref);
     const body = entry.blueprint.cards.get(ref);
     if (body === undefined) continue;
-    await addCard(db, {
-      cardId: body.id,
-      version: body.version,
-      ownerId: account.id,
-      body,
-      source: file.text,
-    });
+    await addCard(db, { cardId: body.id, version: body.version, ownerId, body, source: file.text });
   }
+}
 
+async function seedFor(handle: string, githubId: string, slug: string): Promise<string> {
+  const db = testDb!.client.db;
+  const [account] = await db
+    .insert(schema.account)
+    .values({ githubId, githubLogin: githubId, handle })
+    .returning();
+
+  const entry = readContent()[0];
   const bundle = await createBundle(db, { ownerId: account.id, slug, visibility: "public" });
   const vocabulary = contentVocabulary();
   await addRelease(db, {
@@ -122,6 +130,7 @@ async function seedFor(handle: string, githubId: string, slug: string): Promise<
       phaseCoverage: entry.analysis.phaseCoverage,
     },
   });
+  return account.id;
 }
 
 beforeAll(async () => {
@@ -135,7 +144,10 @@ beforeAll(async () => {
     terms: CORE_ONTOLOGY.terms,
   });
 
-  await seedFor(SOLE, "t261-sole", ONLY_SLUG);
+  /* Cards first and once — see `seedCardsOnce`. The three bundles below all pin the same
+     refs, which is exactly the shape B-09 permits: one card library, three owners. */
+  const soleId = await seedFor(SOLE, "t261-sole", ONLY_SLUG);
+  await seedCardsOnce(soleId);
   await seedFor(RIVAL_A, "t261-rival-a", SHARED_SLUG);
   await seedFor(RIVAL_B, "t261-rival-b", SHARED_SLUG);
 }, 240_000);
