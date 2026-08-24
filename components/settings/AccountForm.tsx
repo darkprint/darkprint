@@ -200,6 +200,13 @@ export function AccountForm({
               </>
             }
           >
+            {/* D-70-15's product bound, 32. Written as a literal and NOT imported from
+                `@/lib/server/naming`: this is a client component, and that barrel reaches
+                `lib/db` and pulls the driver into the browser bundle. The duplication is
+                the safe direction anyway — AC4 requires the server to refuse 33 REGARDLESS
+                of this attribute, because a client cap is a convenience and not
+                enforcement. Anything that can send a PATCH can send 33 characters, and
+                `allocateHandle` is what stops it. */}
             <PrefixedField
               id="handle"
               prefix="darkprint.io/u/"
@@ -207,6 +214,7 @@ export function AccountForm({
               onChange={setHandle}
               label="Handle"
               placeholder="choose one"
+              maxLength={32}
             />
           </Field>
 

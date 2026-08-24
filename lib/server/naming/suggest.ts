@@ -14,7 +14,13 @@
    were held, which is the case the ruling forbids and which was
    reachable with eight rows. Two things changed: the search widens
    until it finds one, and the stem is cut short enough that a
-   suffix still fits inside `MAX_NAME_LENGTH`.
+   suffix still fits inside the bound.
+
+   **The bound is the CALLER's, not this file's** (D-071-01(3)).
+   `MAX_NAME_LENGTH` is only the default. A handle door passes
+   `MAX_HANDLE_LENGTH`, because after D-70-15 the two name kinds
+   stopped sharing a ceiling and a stem cut against the wrong one
+   yields a candidate the other door refuses.
 
    **The window is queried exactly, never sampled.** An earlier
    design fetched "the taken variants" with a `LIKE` and a `LIMIT`,
@@ -42,6 +48,15 @@ const WINDOWS = 16;
 /**
  * The candidate `name` yields for suffix `-n`: **shortened, not only appended** (D-70-20).
  *
+ * **`bound` is per call, and it has to be** (D-071-01(3)). Two doors generate candidates
+ * with different ceilings — a slug may run to `MAX_NAME_LENGTH`, a handle stops at
+ * `MAX_HANDLE_LENGTH` — so a stem cut against one constant produces an illegal name at the
+ * other. Reading `MAX_NAME_LENGTH` here would offer a taken 32-character handle
+ * `<32 chars>-2`, which is 34 and which `allocateHandle` refuses: availability and
+ * allocation disagreeing through the input the bound did not reach, D-70-13's species
+ * exactly. Defaulted so the slug side, which is not this task's to edit, keeps the
+ * behaviour it had.
+ *
  * Identical to appending for everything shorter than the bound, which is every real
  * handle and slug — the archive's longest are 11 and 26 characters. It matters at the
  * boundary, where D-70-18's "required" clause is otherwise unsatisfiable: a name of
@@ -58,9 +73,9 @@ const WINDOWS = 16;
  * Trailing hyphens are trimmed because the cut can land on one and `a-` is not a legal
  * segment.
  */
-export function suggestionCandidate(name: string, n: number): string {
+export function suggestionCandidate(name: string, n: number, bound: number = MAX_NAME_LENGTH): string {
   const suffix = `-${n}`;
-  const room = MAX_NAME_LENGTH - suffix.length;
+  const room = bound - suffix.length;
   const stem = name.length <= room ? name : name.slice(0, room).replace(/-+$/, "");
   return `${stem}${suffix}`;
 }
@@ -71,17 +86,34 @@ export function suggestionCandidate(name: string, n: number): string {
  *
  * Both filters are applied rather than assumed: appending `-2` to a legal segment
  * does yield a legal segment today, and that is exactly the property that stops
- * holding when the grammar is tightened somewhere else.
+ * holding when the grammar is tightened somewhere else. That is no longer hypothetical —
+ * D-70-15 tightened it for handles — so `bound` is checked here beside `isNameSegment`,
+ * which admits up to `MAX_NAME_LENGTH` whatever the caller asked for and therefore cannot
+ * be what keeps a handle candidate legal.
+ *
+ * **`candidate.length <= bound` is redundant, and it is labelled rather than described as
+ * a guard.** Measured, not assumed: deleting that conjunct alone reds nothing, because
+ * `suggestionCandidate` already cuts the stem against the same `bound`. Deleting it
+ * *together with* the shortening reds exactly as many cells as deleting the shortening
+ * alone — so it does not catch a broken generator, it only changes how one fails: with it,
+ * the window empties and the caller gets no suggestion (a D-70-18 violation); without it,
+ * the window fills with over-length names (a D-70-13 one). Kept as a cheap assertion of
+ * the postcondition at the point a reader looks for it, and kept honest about being
+ * unfalsifiable by any cell here — the T010 precedent, that an unfalsifiable check called
+ * a guard is how a later reader comes to rely on nothing.
  */
 export function suggestionWindow(
   name: string,
   from: number,
   admissible: (candidate: string) => boolean,
+  bound: number = MAX_NAME_LENGTH,
 ): string[] {
   const candidates: string[] = [];
   for (let n = from; n < from + WINDOW; n++) {
-    const candidate = suggestionCandidate(name, n);
-    if (isNameSegment(candidate) && admissible(candidate)) candidates.push(candidate);
+    const candidate = suggestionCandidate(name, n, bound);
+    if (isNameSegment(candidate) && candidate.length <= bound && admissible(candidate)) {
+      candidates.push(candidate);
+    }
   }
   return candidates;
 }
@@ -105,10 +137,13 @@ export async function firstFreeSuggestion(
   admissible: (candidate: string) => boolean,
   lookup: (names: readonly string[]) => Promise<Set<string>>,
   asked: AskedWindow,
+  bound: number = MAX_NAME_LENGTH,
 ): Promise<string | undefined> {
   for (let window = 0; window < WINDOWS; window++) {
     const candidates =
-      window === 0 ? asked.candidates : suggestionWindow(name, 2 + window * WINDOW, admissible);
+      window === 0
+        ? asked.candidates
+        : suggestionWindow(name, 2 + window * WINDOW, admissible, bound);
     const taken = window === 0 ? asked.taken : await lookup(candidates);
     const free = candidates.find((candidate) => !taken.has(candidate));
     if (free !== undefined) return free;
@@ -120,6 +155,7 @@ export async function firstFreeSuggestion(
 export function firstWindow(
   name: string,
   admissible: (candidate: string) => boolean = () => true,
+  bound: number = MAX_NAME_LENGTH,
 ): string[] {
-  return suggestionWindow(name, 2, admissible);
+  return suggestionWindow(name, 2, admissible, bound);
 }
