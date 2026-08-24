@@ -70,14 +70,27 @@ export function twoReleaseVersions(): { older: string; newer: string } {
  * `owner`/`slug` are the caller's to choose; the stub answers for any of them, because which
  * two-part key a cell uses is not what any criterion is about.
  */
+/** `decodeURIComponent` throws on a malformed escape; a stub must not die on one. */
+function safeDecode(url: string): string {
+  try {
+    return decodeURIComponent(url);
+  } catch {
+    return url;
+  }
+}
+
 export function stubRegistry(
   slug: string,
-  options: { readonly releases?: readonly { version: string; digest: string }[] } = {},
+  options: {
+    readonly releases?: readonly { version: string; digest: string }[];
+    /** Serve THESE files instead of the archive's own export — AC2's rewritten previous. */
+    readonly files?: readonly ExportedFile[];
+  } = {},
 ): StubRegistry {
   const entry = ARCHIVE.find((bundle) => bundle.slug === slug);
   if (entry === undefined) throw new Error(`no archive bundle \`${slug}\``);
 
-  const files = computedExport(slug);
+  const files = options.files ?? computedExport(slug);
   /* The engine's own answer, not a recomputation. `resolveBundle` sets
      `blueprint.digest = bundleDigest({ dot, cardDigests })` at `lib/core/bundle/resolve.ts:749`,
      so taking it off the resolved blueprint means the digest the stub serves is the digest the
@@ -105,13 +118,39 @@ export function stubRegistry(
       return json({ publishedBy: "someone", releases });
     }
     if (url.includes("/releases/")) {
-      /* The MCP releases route answers NAMES and not bytes, by its own header. Reproduced
-         rather than simplified: a stub that returned bytes here would let a CLI pass AC4
-         without ever calling the files route, which is not how the server works. */
-      return json(files.map((file) => file.path));
+      /* `{ files: [...] }`, NOT a bare array — the route's own envelope,
+         `app/api/mcp/releases/[owner]/[slug]/d/[digest]/route.ts:49`:
+             return ok({ files: files.map((file) => file.path) });
+         and `ok()` adds no wrapper of its own (`lib/server/http/ok.ts:13`).
+
+         THIS STUB SHIPPED THE BARE ARRAY AND IT COST THIRTEEN FALSE REDS AT FIRST CONTACT.
+         A CLI reading `body.files` off an array got `undefined`, resolved zero files, never
+         called the files route, wrote nothing, and reported `files: []` — and the reds landed
+         on AC4's byte equality, on `--out`, on `--version`, and on all six AC2 rendering cells
+         (whose `previous` snapshot then had no `cardRefs`, so every card read as newly pinned).
+         Four unrelated-looking symptoms, one fixture defect, and every one of them would have
+         been charged to an implementer that was right.
+
+         The route answers NAMES and not bytes, by its own header, and that half was correct
+         here from the start: a stub returning bytes would let a CLI pass AC4 without ever
+         calling the files route. It was the ENVELOPE that was invented. E1 warned that a
+         loose stub can red for a stub reason wearing a CLI cause; this is that, and the
+         `calls` list is what made it findable in one step. */
+      return json({ files: files.map((file) => file.path) });
     }
     if (url.includes("/files/")) {
-      const match = files.find((file) => url.endsWith(file.path));
+      /* DECODED before matching. The CLI percent-encodes the path segments it builds —
+         `sha256%3A…`, `cards/acceptance-verifier%402.0.0.yaml` — and that is correct client
+         behaviour: `bundle-export.ts`'s own note records that both spellings were measured to
+         return 200, and Next decodes `[...path]` before a route handler ever sees it. So the
+         REAL server compares decoded names and this stub has to as well.
+
+         Matching raw cost a second round of false reds: every `/files/` request missed, the
+         stub 404'd, and the CLI faithfully rendered the registry's own 404 sentence — which
+         then looked like a CLI defect in twenty-five cells. The decode is what makes this
+         stub answer the question the real route answers. */
+      const wanted = safeDecode(url);
+      const match = files.find((file) => wanted.endsWith(file.path));
       if (match === undefined) {
         unmatched.push(url);
         return new Response("not found", { status: 404 });

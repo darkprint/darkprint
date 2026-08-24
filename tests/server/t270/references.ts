@@ -38,6 +38,9 @@ import { ARCHIVE } from "./fixtures";
 
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 
+/** `bundle-export.ts`'s own constant name for the topology file, consumed not retyped. */
+const TOPOLOGY = "blueprint.dot";
+
 /* ==================== AC4: what the server exports ==================== */
 
 /**
@@ -141,6 +144,22 @@ export interface SnapshotPair {
   readonly inferred: BumpAnalysis;
   /** A version string the archive treats as this blueprint's current release. */
   readonly previousVersion: string;
+  /**
+   * The export the registry serves AS the previous release — the archive's own files with one
+   * card pin rewritten to the other published version of the same id.
+   *
+   * This is the correction that first contact forced. The pairs used to hold a HYPOTHETICAL
+   * `next` (the archive's refs with one moved) while the folder written to disk was the
+   * archive UNCHANGED and the stub served the archive UNCHANGED — so the CLI saw
+   * previous == next, inferred `none`, and correctly answered "is enough" on eleven cells that
+   * charged it with losing the reasons. The reasons were never there to lose: my two snapshots
+   * described a change that existed nowhere on disk or on the wire.
+   *
+   * Now the DIFFERENCE IS REAL and lives where the CLI can see it: the served release pins the
+   * other version, the local folder pins the archive's, and `inferred` is computed over those
+   * same two snapshots rather than over a pair only this file knew about.
+   */
+  readonly previousFiles: readonly ExportedFile[];
 }
 
 export let SNAPSHOT_PAIRS_ERROR: string | undefined;
@@ -169,9 +188,9 @@ export const SNAPSHOT_PAIRS: readonly SnapshotPair[] = (() => {
 })();
 
 function buildSnapshotPairs(): SnapshotPair[] {
-  const dir = join(REPO, "content", "cards");
+  const cardsDir = join(REPO, "content", "cards");
   const versionsById = new Map<string, string[]>();
-  for (const name of readdirSync(dir).sort()) {
+  for (const name of readdirSync(cardsDir).sort()) {
     const match = name.match(/^(.+)@(\d+\.\d+\.\d+)\.yaml$/);
     if (match === null) continue;
     versionsById.set(match[1], [...(versionsById.get(match[1]) ?? []), match[2]]);
@@ -179,31 +198,53 @@ function buildSnapshotPairs(): SnapshotPair[] {
 
   const pairs: SnapshotPair[] = [];
   for (const entry of ARCHIVE) {
-    const refs = entry.cardFiles.map((card) =>
-      card.file.replace(/^cards\//, "").replace(/\.yaml$/, ""),
-    );
+    /* Refs off the engine's own resolved nodes, D-270-07 (3)'s symmetric derivation — not
+       parsed out of the DOT by a second rule that could disagree with the one the CLI uses. */
+    const refs = entry.blueprint.nodes.map((node) => node.ref);
 
     for (const ref of refs) {
       const at = ref.lastIndexOf("@");
       const id = ref.slice(0, at);
       const version = ref.slice(at + 1);
-      const others = (versionsById.get(id) ?? []).filter((candidate) => candidate !== version);
-      if (others.length === 0) continue;
+      const other = (versionsById.get(id) ?? []).find((candidate) => candidate !== version);
+      if (other === undefined) continue;
 
-      const moved = `${id}@${others[0]}`;
-      const next: BlueprintSnapshot = {
-        dot: entry.bundle.dot,
-        cardRefs: refs.map((candidate) => (candidate === ref ? moved : candidate)),
+      /* The pin as the DOT writes it. If this substring is absent the rewrite would silently
+         no-op and the pair would describe a change that is not in the served bytes — the exact
+         defect this rebuild exists to remove — so it is checked rather than assumed. */
+      const pin = `card="${id}@${version}"`;
+      if (!entry.bundle.dot.includes(pin)) continue;
+      const previousDot = entry.bundle.dot.replace(pin, `card="${id}@${other}"`);
+
+      const movedFrom = `cards/${id}@${version}.yaml`;
+      const movedTo = `cards/${id}@${other}.yaml`;
+      let otherText: string;
+      try {
+        otherText = readFileSync(join(cardsDir, `${id}@${other}.yaml`), "utf8");
+      } catch {
+        continue;
+      }
+
+      const previousFiles = computedExport(entry.slug)
+        .filter((file) => file.path !== movedFrom)
+        .map((file) => (file.path === TOPOLOGY ? { path: TOPOLOGY, text: previousDot } : file))
+        .concat([{ path: movedTo, text: otherText }])
+        .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+
+      const previous: BlueprintSnapshot = {
+        dot: previousDot,
+        cardRefs: refs.map((candidate) => (candidate === ref ? `${id}@${other}` : candidate)),
       };
+      const next: BlueprintSnapshot = { dot: entry.bundle.dot, cardRefs: refs };
+
       pairs.push({
         slug: entry.slug,
         movedId: id,
-        previous: { dot: entry.bundle.dot, cardRefs: refs },
+        previous,
         next,
-        inferred: inferBlueprintBump({ dot: entry.bundle.dot, cardRefs: refs }, next),
-        /* The archive publishes one release per blueprint at 1.0.0; the version a cell
-           declares AGAINST is what matters, and this is the string the refusal will quote. */
+        inferred: inferBlueprintBump(previous, next),
         previousVersion: "1.0.0",
+        previousFiles,
       });
       break;
     }
@@ -211,7 +252,7 @@ function buildSnapshotPairs(): SnapshotPair[] {
 
   if (pairs.length === 0) {
     throw new Error(
-      "no archive blueprint pins a card id published at two versions.\n" +
+      "no archive blueprint pins a card id published at two versions with a rewritable DOT pin.\n" +
         "  Every AC2 cell is quantified over these pairs, so an empty list reports a pass per " +
         "cell that never ran. BROKEN TEST.",
     );

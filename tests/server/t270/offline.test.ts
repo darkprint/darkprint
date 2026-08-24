@@ -32,7 +32,16 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import { validateBundle } from "@/lib/server/engine";
 
 import { bindVerb, loadCli, recordingIo, RUN_CLI } from "./contract";
-import { ARCHIVE, cleanupFolders, EXTENSIONS, writeBundleFolder } from "./fixtures";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+import { ARCHIVE, cleanupFolders, EXTENSIONS, OVERLAY_SLUG, writeBundleFolder } from "./fixtures";
+
+/** The archive's own overlay bytes — the same source the AC1 cells use. */
+const VOCABULARY_TEXT = readFileSync(
+  fileURLToPath(new URL("../../../content/ontology/extensions.yaml", import.meta.url)),
+  "utf8",
+);
 
 afterAll(cleanupFolders);
 
@@ -58,7 +67,15 @@ describe("AC6 — `validate` reaches nothing", () => {
     "%s — validates with `fetch` throwing, and never calls it",
     async (slug) => {
       const entry = ARCHIVE.find((bundle) => bundle.slug === slug)!;
-      const dir = writeBundleFolder(entry.bundle, { manifest: "blueprint.yaml" });
+      /* The overlay bundle needs its overlay ON DISK, or the CLI resolves against the curated
+         core while the server half below is handed `extensions` — a legitimate disagreement
+         about a folder the two halves were not given equally. Exactly the AC1 cells' own
+         construction; omitting it here cost one false red at first contact, on
+         `frontline-triage` alone, which is the 1-of-9 the overlay measurement predicted. */
+      const dir = writeBundleFolder(entry.bundle, {
+        manifest: "blueprint.yaml",
+        ...(slug === OVERLAY_SLUG ? { vocabulary: VOCABULARY_TEXT } : {}),
+      });
 
       const server = validateBundle({
         manifest: entry.bundle.manifest,

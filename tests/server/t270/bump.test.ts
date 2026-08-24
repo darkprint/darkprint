@@ -70,7 +70,13 @@ describe("AC2 — the rendered refusal keeps the engine's reasons", () => {
       const dir = writeBundleFolder(entry.bundle, { manifest: "blueprint.yaml" });
 
       registry = stubRegistry(slug, {
-        releases: [{ version: pair.previousVersion, digest: "0".repeat(64) }],
+        releases: [{ version: pair.previousVersion, digest: "sha256:" + "0".repeat(64) }],
+        /* The rewritten previous, same as the success cells. Two of the five stub calls in
+           this file were missed by the first repair because it matched on a digest spelling
+           rather than enumerating the call sites — and the two it missed were exactly the
+           cells that then charged the CLI with losing reasons it had never been given a
+           difference to report. Repair by enumeration, never by pattern. */
+        files: pair.previousFiles,
       });
       previousUrl = process.env.DARKPRINT_URL;
       process.env.DARKPRINT_URL = registry.base;
@@ -111,7 +117,13 @@ describe("AC2 — the rendered refusal keeps the engine's reasons", () => {
       const dir = writeBundleFolder(entry.bundle, { manifest: "blueprint.yaml" });
 
       registry = stubRegistry(slug, {
-        releases: [{ version: pair.previousVersion, digest: "0".repeat(64) }],
+        releases: [{ version: pair.previousVersion, digest: "sha256:" + "0".repeat(64) }],
+        /* The rewritten previous, same as the success cells. Two of the five stub calls in
+           this file were missed by the first repair because it matched on a digest spelling
+           rather than enumerating the call sites — and the two it missed were exactly the
+           cells that then charged the CLI with losing reasons it had never been given a
+           difference to report. Repair by enumeration, never by pattern. */
+        files: pair.previousFiles,
       });
       previousUrl = process.env.DARKPRINT_URL;
       process.env.DARKPRINT_URL = registry.base;
@@ -152,8 +164,13 @@ describe("D-270-06 — `bump`'s published spelling and its SUCCESS path", () => 
          stays correct whether the engine prices the moved ref `minor` or `major`. */
       const entry = ARCHIVE.find((bundle) => bundle.slug === slug)!;
       const dir = writeBundleFolder(entry.bundle, { manifest: "blueprint.yaml" });
+      /* Serve the REWRITTEN previous — the archive's files with one card pin moved to the
+         other published version. Without this the served release equals the local folder, the
+         engine infers `none`, and the CLI correctly answers "is enough" while this cell charges
+         it with losing reasons that were never there. That is what first contact measured. */
       registry = stubRegistry(slug, {
         releases: [{ version: pair.previousVersion, digest: "sha256:" + "0".repeat(64) }],
+        files: pair.previousFiles,
       });
 
       const satisfying = { major: "2.0.0", minor: "1.1.0", patch: "1.0.1", none: "1.0.1" }[
@@ -187,8 +204,13 @@ describe("D-270-06 — `bump`'s published spelling and its SUCCESS path", () => 
          to both. */
       const entry = ARCHIVE.find((bundle) => bundle.slug === slug)!;
       const dir = writeBundleFolder(entry.bundle, { manifest: "blueprint.yaml" });
+      /* Serve the REWRITTEN previous — the archive's files with one card pin moved to the
+         other published version. Without this the served release equals the local folder, the
+         engine infers `none`, and the CLI correctly answers "is enough" while this cell charges
+         it with losing reasons that were never there. That is what first contact measured. */
       registry = stubRegistry(slug, {
         releases: [{ version: pair.previousVersion, digest: "sha256:" + "0".repeat(64) }],
+        files: pair.previousFiles,
       });
       previousUrl = process.env.DARKPRINT_URL;
       process.env.DARKPRINT_URL = registry.base;
