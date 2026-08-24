@@ -118,14 +118,41 @@ beforeAll(async () => {
        takes `{dot, cardDigests}`, so every release below carries the same digest and the
        only thing that differs between a pair is the manifest field the pair is named for.
        That is what makes the D6 cells isolate one field rather than one bundle. */
-    const release = async (slug: string, o: { category?: string; tags?: readonly string[] }) => {
+    /**
+     * `manifestSlug` is a SEPARATE parameter from the bundle's slug, and the D6 cells are
+     * worthless without it.
+     *
+     * `manifestText` embeds `manifest.slug` (D-300-04 D6's wide list). The bundle slug has to
+     * be unique per owner, so each release below sits on its own bundle — and the first
+     * version of this fixture let the manifest slug follow it. The two releases in each pair
+     * therefore differed in the named field AND in the slug, so their vectors differed
+     * because of the SLUG and the named field was never the reason.
+     *
+     * MEASURED, not reasoned about: deleting `manifest.category` from `manifestText`
+     * outright reddened 0 of 77 cells, and deleting the whole `tags` loop reddened 0 of 77.
+     * Both D6 cells passed against a module that had stopped embedding the field each one is
+     * named for. They were reading the slug difference the whole time.
+     *
+     * The cell's own comment claimed the pair "differ in exactly one manifest field and in
+     * nothing else — same title, same summary, same description, same card, same digest".
+     * That sentence enumerated everything that was equal and silently omitted the one thing
+     * that was not, which is how it survived being read.
+     *
+     * `manifest.slug` is jsonb this fixture controls and nothing else in these cells reads
+     * it, so pinning it to one constant across a pair is safe and makes the named field the
+     * ONLY difference in the embedded document.
+     */
+    const release = async (
+      slug: string,
+      o: { manifestSlug: string; category?: string; tags?: readonly string[] },
+    ) => {
       const bundle = await insertBundle(s, { owner, slug, visibility: "public" });
       return insertRelease(s, {
         bundle,
         version: "1.0.0",
         cards: [card],
         manifest: manifest({
-          slug,
+          slug: o.manifestSlug,
           title: PROSE.title,
           summary: PROSE.summary,
           description: PROSE.description,
@@ -135,14 +162,19 @@ beforeAll(async () => {
       });
     };
 
+    const catSlug = mark("t300-cat-shared");
+    const tagSlug = mark("t300-tag-shared");
     c = {
       owner,
       card,
-      alone: await release(mark("t300-alone"), {}),
-      withCategory: await release(mark("t300-cat-yes"), { category: "logistics" }),
-      plainCategory: await release(mark("t300-cat-no"), {}),
-      withTags: await release(mark("t300-tag-yes"), { tags: ["overnight", "inventory"] }),
-      plainTags: await release(mark("t300-tag-no"), {}),
+      alone: await release(mark("t300-alone"), { manifestSlug: mark("t300-alone-m") }),
+      /* Each PAIR shares one manifest slug, so the embedded documents differ in the named
+         field and in nothing else. The two pairs use different slugs from each other so a
+         cross-pair coincidence cannot make either look right. */
+      withCategory: await release(mark("t300-cat-yes"), { manifestSlug: catSlug, category: "logistics" }),
+      plainCategory: await release(mark("t300-cat-no"), { manifestSlug: catSlug }),
+      withTags: await release(mark("t300-tag-yes"), { manifestSlug: tagSlug, tags: ["overnight", "inventory"] }),
+      plainTags: await release(mark("t300-tag-no"), { manifestSlug: tagSlug }),
     };
     reembed = await bind("reembedRelease");
   });
