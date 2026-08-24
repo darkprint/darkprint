@@ -1,0 +1,222 @@
+/* ============================================================
+   T220 AC3 — private content is unreachable through every operation
+
+   AC3 spans four verbs, so it is ONE filter through readers that
+   already take an `Actor`, never four checks — T080's twelve, same
+   rule. D-220-03 makes the filter stronger than "the caller may not
+   see it": **every reader is called with `{ kind: "anonymous" }`**,
+   so the MCP surface is public-only for EVERY caller. The owner of a
+   private bundle gets nothing through MCP for their own bundle, and
+   so does an operator.
+
+   That is the shape these cells are built on and it is what makes
+   them worth running: three actors who disagree everywhere else in
+   this codebase must AGREE here, and agreeing on "nothing" is
+   satisfiable by a broken module that answers nothing to anybody.
+   So each cell carries a disagreeing control — the identically
+   constructed PUBLIC row, which all three must reach.
+
+   ── the needle is never something the caller supplied ──
+   A refusal is entitled to quote its own input: "no such bundle:
+   alpha/secret" is B-03-correct, not a leak. So every needle below
+   is a string the caller did not send — a stored digest, a card ref
+   the private bundle pins, a nonce inside a document body. A needle
+   taken from the caller's own arguments would charge a correct
+   module.
+
+   ── and the outcome is read, not the exception ──
+   The block publishes no error class (charge 6 in the T220 log) and
+   `mcpReadCard: Promise<string>` is a total type that must refuse
+   somehow. `rejects.toThrow()` cannot express AC3 here: this suite's
+   OWN absent-module rejection satisfies it, so the cell would pass
+   against a module that does not exist. `reveals()` asks the
+   question the criterion actually asks — did the private bytes come
+   back — and answers it for a throw, an `undefined` and an empty
+   list alike.
+   ============================================================ */
+
+import { afterAll, describe, expect, it } from "vitest";
+
+import { outcome, reveals, verb } from "./contract";
+import { account, anonymous, dropScratchDatabases, operator, privateWorld, refsOf } from "./fixtures";
+
+const world = privateWorld();
+
+afterAll(async () => {
+  await dropScratchDatabases();
+});
+
+/** The three actors AC3 is quantified over, built per world because two carry ids. */
+async function actors(): Promise<{ label: string; actor: unknown }[]> {
+  const w = await world();
+  return [
+    { label: "anonymous", actor: anonymous },
+    /* The private bundle's OWN OWNER. Under D-220-03 they see nothing through MCP either,
+       which is the surprising half of the rule and the one worth a cell. */
+    { label: "the owner", actor: account(w.alpha.accountId, w.alpha.handle) },
+    { label: "an operator", actor: operator(w.beta.accountId) },
+  ];
+}
+
+describe("T220 AC3 — search", () => {
+  it("never carries the private bundle's digest, to any of the three actors", async () => {
+    const w = await world();
+    /* Premises before the bind. The two digests are distinct, and neither is anything the
+       caller sends — `mcpSearch` takes only a task string. */
+    expect(w.secret.digest).not.toBe(w.shown.digest);
+    const who = await actors();
+
+    const mcpSearch = await verb("mcpSearch");
+    const leaked: string[] = [];
+    const missed: string[] = [];
+    for (const { label, actor } of who) {
+      const got = await outcome(() => mcpSearch(w.scratch.db, actor, "") as Promise<unknown>);
+      if (reveals(got, w.secret.digest)) leaked.push(label);
+      /* The disagreeing control, in the same cell so the two cannot drift apart: the PUBLIC
+         bundle must be reachable by the same call. Without it "the private digest is absent"
+         is satisfied by a search that returns nothing at all. */
+      if (!reveals(got, w.shown.digest)) missed.push(label);
+    }
+    expect(leaked, "the private bundle's digest reached these actors").toEqual([]);
+    expect(
+      missed,
+      "these actors could not reach the PUBLIC bundle either, so the cell above proves " +
+        "nothing: a search that answers nobody passes it.",
+    ).toEqual([]);
+  });
+});
+
+describe("T220 AC3 — read a card", () => {
+  it("never returns the private card's body, and always returns the public one", async () => {
+    const w = await world();
+    expect(w.privateCard.nonce).not.toBe(w.publicCard.nonce);
+    /* The nonce really is in the stored document and really is not in the ref, which is what
+       makes it a leak needle rather than an echo of the caller's own argument. */
+    expect(w.privateCard.source).toContain(w.privateCard.nonce);
+    expect(w.privateCard.ref).not.toContain(w.privateCard.nonce);
+    const who = await actors();
+
+    const readCard = await verb("mcpReadCard");
+    const leaked: string[] = [];
+    const missed: string[] = [];
+    for (const { label, actor } of who) {
+      const priv = await outcome(
+        () => readCard(w.scratch.db, actor, w.privateCard.ref) as Promise<unknown>,
+      );
+      if (reveals(priv, w.privateCard.nonce)) leaked.push(label);
+      const pub = await outcome(
+        () => readCard(w.scratch.db, actor, w.publicCard.ref) as Promise<unknown>,
+      );
+      if (!reveals(pub, w.publicCard.nonce)) missed.push(label);
+    }
+    expect(leaked, "the private card's body reached these actors").toEqual([]);
+    expect(
+      missed,
+      "these actors could not read the PUBLIC card either. Both cards are pinned by no " +
+        "bundle and differ only in `visibility`, so a reader that cannot reach an unpinned " +
+        "card satisfies the privacy assertion while reading nothing.",
+    ).toEqual([]);
+  });
+});
+
+describe("T220 AC3 — inspect provenance", () => {
+  it("never discloses the private bundle's releases, and does disclose the public one's", async () => {
+    const w = await world();
+    /* The needle is the stored digest; the caller sends only owner and slug. */
+    expect(w.secret.digest).not.toBe(w.shown.digest);
+    const who = await actors();
+
+    const provenance = await verb("mcpProvenance");
+    const leaked: string[] = [];
+    const missed: string[] = [];
+    for (const { label, actor } of who) {
+      const priv = await outcome(
+        () => provenance(w.scratch.db, actor, w.secret.ownerHandle, w.secret.slug) as Promise<unknown>,
+      );
+      if (reveals(priv, w.secret.digest)) leaked.push(label);
+      const pub = await outcome(
+        () => provenance(w.scratch.db, actor, w.shown.ownerHandle, w.shown.slug) as Promise<unknown>,
+      );
+      if (!reveals(pub, w.shown.digest)) missed.push(label);
+    }
+    expect(leaked, "a private release digest reached these actors").toEqual([]);
+    expect(
+      missed,
+      "these actors could not inspect the PUBLIC bundle either, so the refusal above is not " +
+        "about visibility.",
+    ).toEqual([]);
+  });
+});
+
+describe("T220 AC3 — fetch a release", () => {
+  it("never returns the private release's files, and does return the public one's", async () => {
+    const w = await world();
+    /* The needle is a card ref the private bundle PINS — inside the folder, never in the
+       argument list — and the control needle is the public bundle's own. The fixture's
+       `disjointPair` guarantees they cannot be the same string. */
+    const secretRef = refsOf(w.secret.slug)[0]!;
+    const shownRef = refsOf(w.shown.slug)[0]!;
+    expect(secretRef).not.toBe(shownRef);
+    expect(refsOf(w.shown.slug)).not.toContain(secretRef);
+    const who = await actors();
+
+    const fetchRelease = await verb("mcpFetchRelease");
+    const leaked: string[] = [];
+    const missed: string[] = [];
+    for (const { label, actor } of who) {
+      const priv = await outcome(
+        () =>
+          fetchRelease(
+            w.scratch.db,
+            actor,
+            w.secret.ownerHandle,
+            w.secret.slug,
+            w.secret.digest,
+          ) as Promise<unknown>,
+      );
+      if (reveals(priv, secretRef)) leaked.push(label);
+      const pub = await outcome(
+        () =>
+          fetchRelease(
+            w.scratch.db,
+            actor,
+            w.shown.ownerHandle,
+            w.shown.slug,
+            w.shown.digest,
+          ) as Promise<unknown>,
+      );
+      if (!reveals(pub, shownRef)) missed.push(label);
+    }
+    expect(leaked, "a private release's contents reached these actors").toEqual([]);
+    expect(
+      missed,
+      "these actors could not fetch the PUBLIC release either, so nothing above is about " +
+        "visibility.",
+    ).toEqual([]);
+  });
+});
+
+describe("T220 AC3 — the three actors agree", () => {
+  /* AC3 is ONE filter, not four checks, and this is the cell that says so. If the three
+     actors ever disagree, some reader is being handed the caller's identity instead of
+     `{ kind: "anonymous" }` — which is D-220-03's rule and the thing a per-verb assertion
+     cannot see, because each verb would still be internally consistent. */
+  it("answer the same thing about the private bundle, whoever asks", async () => {
+    const w = await world();
+    const who = await actors();
+    expect(who).toHaveLength(3);
+
+    const provenance = await verb("mcpProvenance");
+    const shapes: string[] = [];
+    for (const { actor } of who) {
+      const got = await outcome(
+        () => provenance(w.scratch.db, actor, w.secret.ownerHandle, w.secret.slug) as Promise<unknown>,
+      );
+      /* Compared by SHAPE rather than by identity: a throw carries a stack that differs
+         between calls, so two correct refusals would never be `toEqual`. What must agree is
+         whether it refused and, when it answered, what it answered. */
+      shapes.push(got.ok ? `answered ${JSON.stringify(got.value)}` : "refused");
+    }
+    expect(new Set(shapes).size, `answers: ${JSON.stringify(shapes)}`).toBe(1);
+  });
+});

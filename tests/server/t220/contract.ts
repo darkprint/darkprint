@@ -109,6 +109,44 @@ export const ADVERTISED = [
   "fetch a release",
 ] as const;
 
+/**
+ * The operation names read OFF `app/mcp/page.tsx`, not off the constant above.
+ *
+ * The constant is a transcription and comparing it to `PUBLISHED_NAMES.length` is 4 === 4
+ * with both fours written in this file — a cell that passes against an absent module and
+ * reads as coverage. Measured: it was the one cell in the whole suite that passed in the
+ * blind position, which is exactly how a tautology announces itself.
+ *
+ * The page is the advertised contract (D-220-01 (3)) and it is Forbidden to both halves, so
+ * reading it is the only way this claim gets a second author. Comments are stripped first
+ * for the reason `purity.test.ts` states at length: the page's own docblock discusses the
+ * operations in prose, and a raw scan would count the discussion.
+ */
+export function advertisedOperations(pageSource: string): string[] {
+  const code = strip(pageSource);
+  const start = code.indexOf("const OPERATIONS");
+  if (start === -1) {
+    throw new Error(
+      "`const OPERATIONS` is not in app/mcp/page.tsx. D-220-01 (3) names lines 85-110 as the " +
+        "advertised contract; if the array was renamed, this reader needs updating and the " +
+        "count below is not a finding about the module.",
+    );
+  }
+  const end = code.indexOf("] as const;", start);
+  const block = code.slice(start, end === -1 ? undefined : end);
+  /* The names come from the ORIGINAL text at the offsets the stripped block reports, because
+     `strip` blanks string bodies — same split as the AC1 import scan. */
+  const names: string[] = [];
+  const re = /name:\s*"/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(block)) !== null) {
+    const from = start + m.index + m[0].length;
+    const to = pageSource.indexOf('"', from);
+    if (to !== -1) names.push(pageSource.slice(from, to));
+  }
+  return names;
+}
+
 let mcpModule: Promise<Namespace> | undefined;
 
 /**

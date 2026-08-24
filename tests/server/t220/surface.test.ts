@@ -17,10 +17,14 @@
    fifth, and that is asserted against the page's own count.
    ============================================================ */
 
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import {
   ADVERTISED,
+  advertisedOperations,
   MCP,
   PUBLISHED,
   PUBLISHED_ARITY,
@@ -39,7 +43,28 @@ describe("T220 — the barrel publishes the four verbs", () => {
   }
 
   it("publishes exactly as many operations as /mcp advertises", async () => {
-    expect(PUBLISHED_NAMES).toHaveLength(ADVERTISED.length);
+    /* Read off the page rather than off this file's own transcription. The transcription
+       compared to `PUBLISHED_NAMES.length` is 4 === 4 with both fours written here, and it
+       was measured passing in the blind position — a cell that cannot fail, reading as
+       coverage of the advertised contract. `app/mcp/page.tsx` is Forbidden to both halves,
+       which is what makes it a second author rather than a copy. */
+    const page = readFileSync(
+      fileURLToPath(new URL("../../../app/mcp/page.tsx", import.meta.url)),
+      "utf8",
+    );
+    const advertised = advertisedOperations(page);
+    expect(
+      advertised,
+      "the page's own OPERATIONS table is where the four names live",
+    ).toEqual([...ADVERTISED]);
+
+    const mod = await loadMcp();
+    const exported = PUBLISHED_NAMES.filter((n) => mod[n] !== undefined);
+    expect(
+      exported,
+      `/mcp advertises ${advertised.length} operations (${advertised.join(", ")}) and they ` +
+        "may not be renamed (D-220-01 (3)). The barrel must publish one verb for each.",
+    ).toHaveLength(advertised.length);
   });
 
   /* Arity is pinned because two spellings of an optional parameter differ observably here

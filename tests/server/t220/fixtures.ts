@@ -388,11 +388,18 @@ export interface Private {
   secret: { ownerHandle: string; slug: string; digest: string; refs: readonly CardRef[] };
   /** Public, owned by `alpha`. The control that proves the verbs can see anything at all. */
   shown: { ownerHandle: string; slug: string; digest: string; refs: readonly CardRef[] };
-  /** A private card pinned by no bundle, so `mcpReadCard` is asked about it directly. */
-  privateCard: { ref: CardRef; source: string };
+  /**
+   * A private card pinned by no bundle, so `mcpReadCard` is asked about it directly.
+   *
+   * `nonce` is a string the CALLER never supplies — it sits inside the document body, not in
+   * the ref. That distinction is the whole reliability of the leak scan: a refusal is
+   * entitled to quote the ref it was given ("no such card: x@1.0.0" is B-03-correct), so a
+   * needle taken from the caller's own input would charge a correct module with a leak.
+   */
+  privateCard: { ref: CardRef; source: string; nonce: string };
   /** The same construction, PUBLIC. Without it "private is unreachable" is satisfiable by
       a reader that cannot reach an unpinned card at all. */
-  publicCard: { ref: CardRef; source: string };
+  publicCard: { ref: CardRef; source: string; nonce: string };
 }
 
 /**
@@ -462,14 +469,14 @@ export function privateWorld(): () => Promise<Private> {
        with a neighbouring run in the same database — there is no neighbouring run, and the
        uniqueness is what makes that true rather than assumed. */
     const stamp = randomUUID().slice(0, 8);
-    const card = (id: string): { body: NodeCard; source: string } => {
+    const card = (id: string, nonce: string): { body: NodeCard; source: string } => {
       const body: NodeCard = {
         id,
         name: "T220 fixture",
         type: CORE_ONTOLOGY.terms.filter((t) => t.kind === "node-type")[0]!.id,
         phases: [],
         action: "fixture",
-        spec: "A card written by the T220 fixture layer through addCard, the writer publish itself calls.",
+        spec: `A card written by the T220 fixture layer through addCard, the writer publish itself calls. nonce ${nonce}`,
         tools: [],
         mcp: [],
         params: {},
@@ -500,8 +507,10 @@ export function privateWorld(): () => Promise<Private> {
       return { body, source };
     };
 
-    const priv = card(`t220-private-${stamp}`);
-    const pub = card(`t220-public-${stamp}`);
+    const privNonce = `t220-secret-nonce-${randomUUID()}`;
+    const pubNonce = `t220-shown-nonce-${randomUUID()}`;
+    const priv = card(`t220-private-${stamp}`, privNonce);
+    const pub = card(`t220-public-${stamp}`, pubNonce);
     await addCard(db as never, {
       cardId: priv.body.id,
       version: priv.body.version,
@@ -525,8 +534,16 @@ export function privateWorld(): () => Promise<Private> {
       beta,
       secret,
       shown,
-      privateCard: { ref: cardRef(priv.body.id, priv.body.version), source: priv.source },
-      publicCard: { ref: cardRef(pub.body.id, pub.body.version), source: pub.source },
+      privateCard: {
+        ref: cardRef(priv.body.id, priv.body.version),
+        source: priv.source,
+        nonce: privNonce,
+      },
+      publicCard: {
+        ref: cardRef(pub.body.id, pub.body.version),
+        source: pub.source,
+        nonce: pubNonce,
+      },
     };
   });
 }
