@@ -113,9 +113,34 @@ afterAll(async () => {
   await dropScratchDatabases();
 });
 
+/**
+ * Arm every account in the shared world with `repin: true`, at the START of each cell.
+ *
+ * This file shares ONE scratch database and ONE published upstream across its cells, because
+ * publishing two bundles through T100 per cell would dominate its runtime. Shared fixtures are
+ * fine; shared MUTABLE state restored at the END of a cell is not, and that is what this
+ * replaces.
+ *
+ * The `repin` OFF cell below used to set the preference false and put it back on its last
+ * line. That restore does not run when the cell FAILS — and the cell fails exactly when the
+ * preference gate is broken, which is the one moment it matters. Four later cells would then
+ * red with "an account that pins the card was not notified", pointing at the derivation, while
+ * the real cause was a leftover boolean two cells up. A red that reports a plausible wrong
+ * cause is worse than a red that reports none: it sends the implementer to the wrong file with
+ * a confident message in hand.
+ *
+ * So no cell here depends on another cell's cleanup. Each one states what it needs.
+ */
+async function armed(world: RepinWorld): Promise<RepinWorld> {
+  for (const account of [world.pinner, world.privatePinner, world.bystander]) {
+    await setPreferencesColumn(world.scratch, account.accountId, { repin: true });
+  }
+  return world;
+}
+
 describe("T190: `enqueueRepinEvents` notifies the accounts that pin the card", () => {
   it("the owner of a bundle pinning the card gets exactly one row", async () => {
-    const world = await setup.require();
+    const world = await armed(await setup.require());
     const before = await queueRows(world.scratch, world.pinner.accountId);
 
     const enqueueRepinEvents = await bind("enqueueRepinEvents");
@@ -153,7 +178,7 @@ describe("T190: `enqueueRepinEvents` notifies the accounts that pin the card", (
    * is the recipient's own, and telling people about their own private work announces nothing.
    */
   it("the owner of a PRIVATE bundle pinning the card is notified too", async () => {
-    const world = await setup.require();
+    const world = await armed(await setup.require());
     const before = await queueRows(world.scratch, world.privatePinner.accountId);
 
     const enqueueRepinEvents = await bind("enqueueRepinEvents");
@@ -170,7 +195,8 @@ describe("T190: `enqueueRepinEvents` notifies the accounts that pin the card", (
 
   /** The control that makes the two zeros below mean anything: not everyone is notified. */
   it("an account that pins nothing is not notified", async () => {
-    const world = await setup.require();
+    /* Armed, so this zero is "not a recipient" and cannot be "the preference is off". */
+    const world = await armed(await setup.require());
     const before = await queueRows(world.scratch, world.bystander.accountId);
 
     const enqueueRepinEvents = await bind("enqueueRepinEvents");
@@ -184,7 +210,7 @@ describe("T190: `enqueueRepinEvents` notifies the accounts that pin the card", (
   });
 
   it("a card nobody pins notifies nobody", async () => {
-    const world = await setup.require();
+    const world = await armed(await setup.require());
     const before = await queueRows(world.scratch);
 
     const enqueueRepinEvents = await bind("enqueueRepinEvents");
@@ -203,7 +229,7 @@ describe("T190: `enqueueRepinEvents` notifies the accounts that pin the card", (
    * bypass the one place the check lives.
    */
   it("an account with `repin` OFF is not notified", async () => {
-    const world = await setup.require();
+    const world = await armed(await setup.require());
     await setPreferencesColumn(world.scratch, world.pinner.accountId, { repin: false });
     const before = await queueRows(world.scratch, world.pinner.accountId);
 
@@ -216,14 +242,11 @@ describe("T190: `enqueueRepinEvents` notifies the accounts that pin the card", (
         `rows without going through the one place the preference is checked, the criterion ` +
         `holds for the fork path and leaks here.`,
     ).toEqual([]);
-
-    /* Put it back: this fixture is shared with the cells above. */
-    await setPreferencesColumn(world.scratch, world.pinner.accountId, { repin: true });
   });
 
   /** Twice for one `(card, version)` is once, which is the same unique key AC5 rests on. */
   it("repeating one repin does not queue a second row", async () => {
-    const world = await setup.require();
+    const world = await armed(await setup.require());
     const before = await queueRows(world.scratch, world.pinner.accountId);
 
     const enqueueRepinEvents = await bind("enqueueRepinEvents");
@@ -239,7 +262,7 @@ describe("T190: `enqueueRepinEvents` notifies the accounts that pin the card", (
 
   /** And a DIFFERENT version is a different event, or the second repin is never announced. */
   it("a second version of the same card is a second row", async () => {
-    const world = await setup.require();
+    const world = await armed(await setup.require());
     const before = await queueRows(world.scratch, world.pinner.accountId);
 
     const enqueueRepinEvents = await bind("enqueueRepinEvents");
@@ -272,7 +295,7 @@ describe("T190 D-190-09(2): the publishing account is excluded from its own repi
    * that made the difference.
    */
   it("is a recipient when the publisher is not named, and not one when it is", async () => {
-    const world = await setup.require();
+    const world = await armed(await setup.require());
     const enqueueRepinEvents = await bind("enqueueRepinEvents");
 
     /* Half one: the DEFAULT. `world.pinner` owns a published bundle pinning this card, so it
@@ -306,7 +329,7 @@ describe("T190 D-190-09(2): the publishing account is excluded from its own repi
 
   /** And the exclusion is ONE account, not the whole fan-out. */
   it("excluding the publisher leaves every other pinner notified", async () => {
-    const world = await setup.require();
+    const world = await armed(await setup.require());
     const beforePrivate = await queueRows(world.scratch, world.privatePinner.accountId);
 
     const enqueueRepinEvents = await bind("enqueueRepinEvents");
