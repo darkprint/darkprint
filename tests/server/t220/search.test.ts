@@ -78,6 +78,21 @@ function knownToken(): string {
 /** In nothing at all, and not a substring of anything seeded. */
 const MISS = "zzqxvj-no-such-token-220";
 
+/* D-300-07's lexical-only narrowing, applied at T300's merge in the same commit as the
+   channel it admits. T220's world is built through `publish()`, which writes vectors since
+   f30e664 — so once the retrieval half exists, a token that matches nothing LEXICALLY can
+   still return a marked semantic tail, and an emptiness assertion over the whole response
+   asserts the tail's absence, the opposite of the composed contract. These cells' subjects
+   are lexical: the premise and the property both narrow to hits WITHOUT the channel marker.
+   The prefix duplicates D-300-06's published grammar deliberately narrowly — its exact value
+   is pinned by T300's own suite, so a drift reds there, not silently here. Before the merge
+   no hit carries a marker and the filter is the identity, which is what lets this amendment
+   land green in the same commit. */
+const SEMANTIC_MARKER = "similar:";
+function lexicalOnly<H extends { evidence?: readonly string[] }>(hits: readonly H[]): readonly H[] {
+  return hits.filter((h) => !(h.evidence ?? []).some((e) => String(e).startsWith(SEMANTIC_MARKER)));
+}
+
 afterAll(async () => {
   await dropScratchDatabases();
 });
@@ -89,8 +104,14 @@ describe("T220 AC5 — the honesty clause, composed through", () => {
        zero below is the law and not a broken fixture. */
     const oracleBp = await searchBlueprints(w.scratch.db as never, anonymous, { q: MISS });
     const oracleCard = await searchCards(w.scratch.db as never, anonymous, { q: MISS });
-    expect(oracleBp.hits, "the miss token must match no blueprint").toHaveLength(0);
-    expect(oracleCard.hits, "the miss token must match no card").toHaveLength(0);
+    expect(
+      lexicalOnly(oracleBp.hits),
+      "the miss token must match no blueprint LEXICALLY (D-300-07: a marked semantic tail is admissible)",
+    ).toHaveLength(0);
+    expect(
+      lexicalOnly(oracleCard.hits),
+      "the miss token must match no card LEXICALLY (D-300-07)",
+    ).toHaveLength(0);
 
     const mcpSearch = await verb("mcpSearch");
     const result = (await mcpSearch(w.scratch.db, anonymous, MISS)) as {
@@ -98,7 +119,11 @@ describe("T220 AC5 — the honesty clause, composed through", () => {
       ordered: boolean;
     };
 
-    expect(result.hits).toHaveLength(0);
+    /* D-300-07: the response may carry a marked semantic tail once T300 lands; what this
+       cell's subject forbids is a LEXICAL hit for a token that matches nothing, and an
+       `ordered` claim decided by a branch. Both halves survive the amendment: the lexical
+       part is empty, and `ordered` must still be `true` over whatever the response is. */
+    expect(lexicalOnly(result.hits as { evidence?: readonly string[] }[])).toHaveLength(0);
     expect(
       result.ordered,
       "D-200-09's named trap: `[].every(...)` is `true`, so an empty result MAKES a ranking " +
@@ -350,8 +375,17 @@ describe("T220 — the task is prose, not a query string", () => {
     /* Both premises measured before the bind: the one-word task really does match, and the
        two-word task really does not. Without them a green below is two zeros agreeing. */
     const oneOracle = await searchBlueprints(w.scratch.db as never, anonymous, { q: token });
+    /* D-300-07 arm (a): the subject here is the LEXICAL conjunction, so the oracle drives
+       with an explicit `sort` — D-300-06 F6's own law gives the vector channel nothing under
+       one (a shared link's answer must not grow), and the emptiness stays a byte-for-byte
+       measurement of `evidenceFor` rather than an assertion about the tail. `"slug"` and not
+       a shelf spelling: the searcher's own whitelist is `SORT_KEYS = ["slug"]`, and an
+       unrecognised value falls back to NO sort under D-200-37's rule — measured here, where
+       `sort: "recency"` silently kept the channel live and this premise red on a semantic
+       hit. */
     const bothOracle = await searchBlueprints(w.scratch.db as never, anonymous, {
       q: `${token} ${MISS}`,
+      sort: "slug",
     });
     expect(oneOracle.hits.length).toBeGreaterThan(0);
     expect(bothOracle.hits).toHaveLength(0);
@@ -365,7 +399,11 @@ describe("T220 — the task is prose, not a query string", () => {
        second word that matches nothing empties the answer. This is the opposite of the
        intersection a reviewer expects, and it is the composed rule rather than a new one. */
     expect(one.hits.length).toBeGreaterThan(0);
-    expect(both.hits).toHaveLength(0);
+    /* D-300-07: `mcpSearch` has no `sort` to suppress the channel with, so the conjunction's
+       claim narrows to the half it owns — the second word empties the LEXICAL answer; a
+       marked tail retrieved on the first word's strength alone is the composed surface's
+       contract, not a conjunction failure. */
+    expect(lexicalOnly(both.hits as { evidence?: readonly string[] }[])).toHaveLength(0);
   });
 });
 
