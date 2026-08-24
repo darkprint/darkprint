@@ -55,4 +55,8 @@ export { recordDownload } from "./downloads";
    which is the second copy of the container format T100 published its codec to prevent. */
 export { readPersisted } from "./persisted";
 export { serveFile } from "./serve-file";
+/* D-261-04's pre-visit reader: the ReleaseRef-keyed file list a download panel renders.
+   Landed by the orchestrator ahead of T261's cutover; resolution is serveFile's, consumed. */
+export type { ReleaseFiles } from "./release-files";
+export { releaseFiles } from "./release-files";
 export { serveCard } from "./serve-card";
