@@ -370,9 +370,9 @@ describe("AC2/AC3: every published reader seals what the driver throws", () => {
     expect(
       READERS.length,
       "An empty or shortened case list would make every assertion below pass over nothing. " +
-        "Thirteen readers are published from the barrel; the partition test above is what keeps " +
+        "Sixteen readers are published (13 + T132's three, D-132-01/03) from the barrel; the partition test above is what keeps " +
         "this number honest as the surface changes.",
-    ).toBe(13);
+    ).toBe(16);
 
     const leaked: string[] = [];
     const unreached: string[] = [];
