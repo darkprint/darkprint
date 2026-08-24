@@ -24,3 +24,8 @@ export type { CloneOptions, CloneResult } from "./clone";
 export { clone } from "./clone";
 
 export type { RegistryOverrides } from "./registry";
+
+export type { BumpOptions } from "./bump";
+export { bump } from "./bump";
+
+export { runCli } from "./run";

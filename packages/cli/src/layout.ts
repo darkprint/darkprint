@@ -90,8 +90,8 @@ export function readBundleDirectory(dir: string): BundleDirectory {
   const manifestFile = entries.find((name) => MANIFEST_NAME.test(name));
   const manifest =
     manifestFile === undefined
-      ? stubManifest(root)
-      : readManifest(root, manifestFile, stubManifest(root));
+      ? stubManifestFor(basename(root))
+      : readManifest(root, manifestFile, stubManifestFor(basename(root)));
 
   const vocabulary = readVocabulary(root, entries);
   return {
@@ -224,8 +224,7 @@ function readVocabulary(
  * of which runs here. Measured against the tree rather than reasoned about, because it is
  * the premise AC1's byte-identity rests on.
  */
-function stubManifest(root: string): BundleManifest {
-  const name = basename(root);
+export function stubManifestFor(name: string): BundleManifest {
   return {
     slug: slugFrom(name) || "untitled-blueprint",
     title: name,
