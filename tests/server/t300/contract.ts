@@ -112,6 +112,41 @@ export const RETRIEVES_MEANS_IN_SET = true;
  */
 export const STATED_LIMIT_CARD_RANK = "one strict card query lands rank 26 of 57 at any tau";
 
+/**
+ * WHY AN AC1 RED MAY NOT BE AN AC1 FINDING, AND HOW TO TELL.
+ *
+ * Appended to the message of every cell that can red because the ENCODER IS NOT PRESENT
+ * rather than because a criterion failed.
+ *
+ * Until D-300-05 lands — the owner's arm choice for how the weights arrive — provisioning is
+ * NOT reproducible from a clean checkout. The implementer's worktree carries a hand-placed
+ * model directory and symlinked packages, disclosed and deliberately absent from
+ * `package.json`; a worktree that has not been provisioned by hand has no encoder at all, so
+ * `embed()` answers nothing, `reembedRelease` writes no vector, the two tables stay empty and
+ * EVERY semantic-channel cell in this suite reds with an empty tail.
+ *
+ * That is a red reporting a plausible WRONG CAUSE, which is the failure mode this repository
+ * has paid for most often: the cell names the criterion, the criterion is not what failed,
+ * and the finding lands on the half that followed the contract. So the diagnosis is made
+ * available at the one place it is decidable — the vector tables — and every downstream cell
+ * carries this note.
+ *
+ * THE ORDER OF READING, when a semantic cell reds:
+ *   1. did the `vector tables are populated` premise in the same file red FIRST? Then this
+ *      worktree has no encoder and NOTHING below it measured a criterion. Stop, and report a
+ *      provisioning gap rather than a defect.
+ *   2. did that premise PASS and the criterion cell still red? Then vectors were written, the
+ *      channel had something to read, and the red is about retrieval. That one is a finding.
+ */
+export const PROVISIONING_CAVEAT =
+  "\n  BEFORE CHARGING THIS AS A DEFECT: check whether the `vector tables are populated` " +
+  "premise in this same file passed. Until D-300-05 rules the owner's arm, the encoder is " +
+  "hand-provisioned in the implementer's worktree and absent from a clean checkout — no " +
+  "model, no vector, empty tables, and every semantic cell here reds with an empty tail for " +
+  "a reason that has nothing to do with retrieval. A red under an unpopulated table is a " +
+  "PROVISIONING GAP in the worktree that ran it, not a failed criterion, and reporting it as " +
+  "one puts the finding on the half that followed the contract.";
+
 /* --------------------- the vector channel's marker --------------------- */
 
 /**

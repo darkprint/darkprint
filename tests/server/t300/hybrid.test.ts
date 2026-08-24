@@ -48,6 +48,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
+  PROVISIONING_CAVEAT,
   SIMILAR_MARKER,
   channels,
   isSimilarEvidence,
@@ -67,8 +68,10 @@ import {
 } from "../t200/contract";
 import {
   anonymous,
+  cardVersionEmbeddings,
   dropScratchDatabases,
   recordedSetup,
+  releaseEmbeddings,
   scratchDatabase,
   type Scratch,
 } from "../t200/fixtures";
@@ -77,6 +80,7 @@ import { buildWorld, type World } from "./world";
 let s: Scratch;
 let w: World;
 let mixed: Results;
+let vectors = { releases: -1, cards: -1 };
 const setup = recordedSetup("the T300 mixed-channel world");
 
 beforeAll(async () => {
@@ -87,6 +91,10 @@ beforeAll(async () => {
     for (const shelf of w.shelves) {
       await reembed(s.db, shelf.release.bundleId, shelf.release.digest);
     }
+    vectors = {
+      releases: (await releaseEmbeddings(s)).length,
+      cards: (await cardVersionEmbeddings(s)).length,
+    };
     mixed = await search("searchBlueprints", s.db, anonymous, { q: w.lexicalWord });
   });
 }, 120_000);
@@ -98,6 +106,25 @@ afterAll(async () => {
 const WHERE = "searchBlueprints({q: <a word in one title>})";
 
 describe("the fixture actually produces a mixed set", () => {
+  /**
+   * The provisioning premise, first in the file so a reader hits it before any criterion.
+   *
+   * Every cell below that names the vector channel reds identically whether the channel is
+   * wrong or ABSENT, and until D-300-05 rules the owner's arm the encoder is hand-placed in
+   * one worktree and missing from every other. A suite that could not tell those apart would
+   * report a provisioning gap as three AC3 defects against the half that followed the
+   * contract.
+   */
+  it("the vector tables are populated, or nothing below this measures a criterion", () => {
+    setup.check();
+    expect(
+      vectors,
+      `THE FIRST CELL TO READ IF ANYTHING IN THIS FILE REDS. The \`beforeAll\` calls ` +
+        `\`reembedRelease\` for all four releases; four release vectors and four card ` +
+        `vectors are what that should leave behind.` + PROVISIONING_CAVEAT,
+    ).toEqual({ releases: 4, cards: 4 });
+  });
+
   it("the lexical word reaches exactly one blueprint, and reaches it lexically", () => {
     setup.check();
     const lexical = mixed.hits.filter((hit) => !hit.evidence.some(isSimilarEvidence));
@@ -128,7 +155,8 @@ describe("the fixture actually produces a mixed set", () => {
         `and the vector pass can. A zero here means this file reported clean about a channel ` +
         `that never fired.\n` +
         `  channels by rank: ${seen.join(", ")}\n` +
-        `  evidence by rank: ${JSON.stringify(mixed.hits.map((h) => h.evidence))}`,
+        `  evidence by rank: ${JSON.stringify(mixed.hits.map((h) => h.evidence))}` +
+        PROVISIONING_CAVEAT,
     ).toBeGreaterThan(0);
   });
 });
@@ -158,7 +186,7 @@ describe("AC3 the two channels stay apart and the tail stays behind", () => {
       `D-300-04 D5 pins ONE value. Asserted as equality rather than as "they all agree", ` +
         `because "they all agree" is satisfied by a per-hit score that happened to tie and is ` +
         `satisfied vacuously by a tail of one — the assertion has to exclude the bad output, ` +
-        `not merely admit the good one.`,
+        `not merely admit the good one.` + PROVISIONING_CAVEAT,
     ).toEqual([SIMILAR_MARKER]);
   });
 
@@ -234,7 +262,7 @@ describe("AC6 the two honesty properties hold over the mixed set", () => {
       `D-300-01: semantic-only hits "join the TAIL". Stated as the ranks they occupy rather ` +
         `than as a pairwise comparison, because a suffix is one claim a reader can check ` +
         `against the printed channel list.\n` +
-        `  channels by rank: ${seen.join(", ")}`,
+        `  channels by rank: ${seen.join(", ")}` + PROVISIONING_CAVEAT,
     ).toEqual(expectedSuffix);
   });
 });

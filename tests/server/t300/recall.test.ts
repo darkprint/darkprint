@@ -58,6 +58,7 @@ import {
   missingSimilarMarker,
   sharedWords,
   violatesMarkerConstant,
+  PROVISIONING_CAVEAT,
 } from "./contract";
 import {
   bind,
@@ -168,9 +169,15 @@ describe("the input is separating, measured rather than asserted", () => {
         `there is nothing to read and the channel CANNOT fire — which is exactly why T200's ` +
         `240 cells are unmoved by construction.\n` +
         `  So an AC1 cell over an un-embedded world measures an empty table and reports the ` +
-        `silence as a missing feature. This premise is what stops that. The \`beforeAll\` ` +
-        `calls \`reembedRelease\` for all four releases; a zero here means that call did ` +
-        `nothing, and the finding belongs to AC4 rather than to AC1.`,
+        `silence as a missing feature. This premise is what stops that, and it is the FIRST ` +
+        `thing to read when anything below it reds.\n` +
+        `  A zero here has two causes and they belong to different halves. Either ` +
+        `\`reembedRelease\` ran and wrote nothing, which is an AC4 finding; or THIS WORKTREE ` +
+        `HAS NO ENCODER, which is not a finding about anyone's code. Until D-300-05 rules the ` +
+        `owner's arm the model is hand-placed in the implementer's tree and absent from a ` +
+        `clean checkout, so a suite run anywhere else writes no vectors by construction.\n` +
+        `  The two are told apart by whether \`reembedRelease\` threw: a writer that ran and ` +
+        `declined to write is a defect, a writer with no weights to run is a provisioning gap.`,
     ).toBe(4);
     expect(cards.length, "each of the four blueprints pins exactly one card").toBe(4);
   });
@@ -205,7 +212,7 @@ describe("AC1 a paraphrase retrieves what it paraphrases", () => {
         `  Published cut at the time of writing: tau ${PUBLISHED_CUT.similarMin}, ` +
         `k ${PUBLISHED_CUT.topK}. This corpus was written without seeing the implementer's ` +
         `calibration queries, so a red here is an independent measurement disagreeing with ` +
-        `that table rather than a restatement of it.`,
+        `that table rather than a restatement of it.` + PROVISIONING_CAVEAT,
     ).toContain(`blueprint:${w.owner.handle}/${w.service.slug}`);
     expect(RETRIEVES_MEANS_IN_SET, "the reading this cell is built on").toBe(true);
   });
@@ -227,7 +234,8 @@ describe("AC1 a paraphrase retrieves what it paraphrases", () => {
       hit?.evidence,
       `D-300-04 D5 pins the marker as the constant ${JSON.stringify(SIMILAR_MARKER)}, and a ` +
         `hit reached ONLY by the vector channel carries that and nothing else — it has no ` +
-        `\`field:token\` to offer, which is the honest position rather than a degraded one.`,
+        `\`field:token\` to offer, which is the honest position rather than a degraded one.` +
+        PROVISIONING_CAVEAT,
     ).toEqual([SIMILAR_MARKER]);
   });
 
@@ -302,7 +310,8 @@ describe("AC1 has two subjects, because cards are embedded separately", () => {
         `  STATED LIMIT, recorded by the implementer before this suite ran so it does not ` +
         `arrive here as a new finding: ${STATED_LIMIT_CARD_RANK}. That is an encoder limit ` +
         `over the card corpus and is outside AC1's blueprint scope — but this cell asks for ` +
-        `MEMBERSHIP rather than rank, so the limit does not excuse an absence.`,
+        `MEMBERSHIP rather than rank, so the limit does not excuse an absence.` +
+        PROVISIONING_CAVEAT,
     ).toContain(target);
     const hit = answer.hits.find((h) => itemKey(h.item) === target);
     const channel = channelOf(hit?.evidence ?? []);

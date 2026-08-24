@@ -47,7 +47,13 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { findWord } from "@/lib/server/search/text";
 
-import { SIMILAR_MARKER, channelOf, channels, isSimilarEvidence } from "./contract";
+import {
+  PROVISIONING_CAVEAT,
+  SIMILAR_MARKER,
+  channelOf,
+  channels,
+  isSimilarEvidence,
+} from "./contract";
 import {
   bind,
   itemKey,
@@ -179,7 +185,7 @@ describe("D-300-04 D3's mechanism, verified rather than argued", () => {
       `the control for every comparison below: phase B is supposed to be the SAME world with ` +
         `its vectors present. If the pass wrote nothing, phase B is phase A and every ` +
         `"unmoved" cell in this file passes without comparing two different states.\n` +
-        `  Four releases, and each pins one card version.`,
+        `  Four releases, and each pins one card version.` + PROVISIONING_CAVEAT,
     ).toEqual({ releases: 4, cards: 4 });
   });
 
@@ -252,7 +258,7 @@ describe("the channel is live over this world, or the file below measures nothin
         `so a semantic hit here is the channel firing over the very world whose lexical ` +
         `guarantees the rest of this file claims are unmoved.\n` +
         `  phase A: ${JSON.stringify((before.get("the live probe") as Results)?.hits.map((h) => h.evidence))}\n` +
-        `  phase B: ${JSON.stringify(results?.hits.map((h) => h.evidence))}`,
+        `  phase B: ${JSON.stringify(results?.hits.map((h) => h.evidence))}` + PROVISIONING_CAVEAT,
     ).toBeGreaterThan(0);
   });
 });
