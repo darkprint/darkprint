@@ -278,7 +278,10 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
     /* 44 -> 45 at T210's merge: `lib/server/terms` publishes TermStoreError and nothing
        else. Derived here; T120 lands next from the same base and faces 47 -> 48 arithmetic
        of its own, derived at ITS merge. */
-    ).toBe(45);
+    /* 45 -> 48 at T120's merge: lifecycle publishes DeletionRefusedError,
+       LifecycleStoreError and TransferRefusedError -- exactly three, pinned by its own
+       surface cell so a re-export cannot double-count. Derived here. */
+    ).toBe(48);
 
     const rendered: string[] = [];
     const traceless: string[] = [];
