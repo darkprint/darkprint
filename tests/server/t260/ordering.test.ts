@@ -46,7 +46,7 @@
 import { describe, expect, it } from "vitest";
 
 import { sources } from "./contract";
-import { BROWSERS, ROUTES, calledNames, parse, propertyNames } from "./partition";
+import { BROWSERS, ROUTES, assignedKeys, calledNames, parse, propertyNames } from "./partition";
 
 describe("D-260-11: `/blueprints` keeps its recency order, client-side", () => {
   it("still orders by `updatedAt` falling back to `createdAt`", () => {
@@ -115,14 +115,64 @@ describe("D-260-11: `/blueprints` keeps its recency order, client-side", () => {
   it("the route does not delegate the ordering to the API", () => {
     const [source] = sources([ROUTES.blueprints], 1);
     const sf = parse(source.path, source.raw);
-    const names = propertyNames(sf);
+
+    /*
+     * THIS CELL WAS WRONG AND IT REDDENED A CORRECT CUTOVER. Corrected at the adversary
+     * round, 2026-08-24, against `feat/t260-browse` at `9b4ebf5`.
+     *
+     * It asserted that the route names NEITHER `updatedAt` NOR `createdAt` — reasoning that
+     * a route touching the timestamps must be ordering with them. That conflates reading a
+     * field with ordering by it, and the conflation makes the criterion unsatisfiable: the
+     * order is held CLIENT-SIDE (D-260-11), the comparator lives in `GalleryBrowser`, and a
+     * route cannot hand a client comparator two fields without naming them.
+     *
+     * The implementation names them at `app/blueprints/page.tsx:294-295` to project them
+     * into the view model with the shipped `?? ""` coalescing, and its comment records the
+     * measurement this suite declared it could not make: `"2026-07-01".localeCompare("")` is
+     * `1`, so a bundle carrying neither date sorts LAST and then by title — D-260-11's
+     * second half, the gap I declared under D-260-18 and was ruled not to build. It was
+     * built and measured against the shipped comparator rather than reasoned about.
+     *
+     * What the criterion actually forbids is an ORDERING on the route, so that is what is
+     * asserted: no comparator, no sort, on the server. Reading the tree and not the text,
+     * because the correct implementation DISCUSSES `localeCompare` in a comment three lines
+     * above the projection — a raw-text matcher reds on the explanation of why the route
+     * does not sort.
+     */
+    const called = calledNames(sf);
+    const ordering = called.filter((name) =>
+      ["sort", "toSorted", "localeCompare"].includes(name),
+    );
 
     expect(
-      names.has("updatedAt") || names.has("createdAt"),
-      `${ROUTES.blueprints} orders the shelf itself. D-260-11 holds the order CLIENT-SIDE, ` +
-        `in ${BROWSERS.blueprints}, because that is where it is today and because the shelf ` +
-        `has to re-order after every filter change without a round trip. A server-side sort ` +
-        `is not wrong on the first paint and is wrong on every one after it.`,
-    ).toBe(false);
+      ordering,
+      `${ROUTES.blueprints} orders the shelf itself: ${ordering.join(", ")}.\n\n` +
+        `D-260-11 holds the order CLIENT-SIDE, in ${BROWSERS.blueprints}, because that is ` +
+        `where it is today and because the shelf has to re-order after every filter change ` +
+        `without a round trip. A server-side sort is not wrong on the first paint and is ` +
+        `wrong on every one after it.\n\n` +
+        `Projecting \`createdAt\`/\`updatedAt\` into the props is NOT ordering and does not ` +
+        `red here — the client comparator needs both fields, so the route has to pass them.`,
+    ).toEqual([]);
+
+    /*
+     * The premise, and it fails outside the negative: if the route stopped projecting the
+     * timestamps, this cell would pass while the client comparator lost its input and the
+     * shelf silently reordered.
+     *
+     * `assignedKeys` and NOT `propertyNames`. The first version of this premise used the
+     * latter and DID NOT FIRE when the projection was deleted — `manifest.createdAt` still
+     * appears one line below, inside the `updatedAt` fallback, so the token was present
+     * while the prop was gone. Found by falsifying the repair rather than by re-reading it:
+     * a corrected cell that has not been mutated is a cell whose correction is unmeasured.
+     */
+    const produced = assignedKeys(sf);
+    expect(
+      produced.has("updatedAt") && produced.has("createdAt"),
+      `${ROUTES.blueprints} no longer projects both timestamps into the shelf's props. ` +
+        `\`GalleryBrowser\` orders on \`updatedAt ?? createdAt\`, so dropping either leaves ` +
+        `the comparator reading \`undefined\` — and \`undefined.localeCompare\` throws, which ` +
+        `is why the shipped coalescing is \`?? ""\` (\`lib/content/view.ts:104-105\`).`,
+    ).toBe(true);
   });
 });

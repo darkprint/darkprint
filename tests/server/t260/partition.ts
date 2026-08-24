@@ -442,3 +442,23 @@ export function importedFrom(sf: ts.SourceFile, specifier: string): string[] {
   walk(sf);
   return out;
 }
+
+/**
+ * Property names used as an object-literal KEY, never as a property being read.
+ *
+ * `propertyNames` unions both, which makes it useless as a premise about what a file
+ * PRODUCES: measured at the adversary round, deleting `createdAt: manifest.createdAt ?? ""`
+ * from `app/blueprints/page.tsx` left the premise green, because `manifest.createdAt` still
+ * appears one line below inside the `updatedAt` fallback. The premise read as coverage and
+ * measured nothing.
+ */
+export function assignedKeys(sf: ts.SourceFile): Set<string> {
+  const out = new Set<string>();
+  const walk = (node: ts.Node) => {
+    if (ts.isPropertyAssignment(node) && ts.isIdentifier(node.name)) out.add(node.name.text);
+    if (ts.isShorthandPropertyAssignment(node)) out.add(node.name.text);
+    node.forEachChild(walk);
+  };
+  walk(sf);
+  return out;
+}
