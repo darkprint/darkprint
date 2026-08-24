@@ -63,7 +63,7 @@ import { AccountForm } from "@/components/settings/AccountForm";
 import type { AccountRecord } from "@/lib/server/accounts";
 
 import { invalidNamePrefix, rejects, unavailable, bind } from "./contract";
-import { type HandleField, handleFieldsIn, handleInputIn, meansExactly } from "./sources";
+import { type HandleField, capOf, handleFieldsIn, handleInputIn, meansExactly } from "./sources";
 import {
   MAX_HANDLE_LENGTH,
   allReservedHandles,
@@ -249,12 +249,17 @@ describe("AC4, the client half: the handle field carries maxLength={32}", () => 
         `the handle field becomes an input; if the control changed shape, the source cell above ` +
         `still holds AC4 and this one needs re-pointing rather than deleting.`,
     ).toBeTypeOf("string");
+    /* The attribute NAME is read case-insensitively and its VALUE exactly — see `capOf`. This
+       assertion first ran matching the lowercase spelling and reported a dropped prop against a
+       tag that carried `maxLength="32"`, because React 19 leaves this attribute camel-cased
+       while lowercasing `tabIndex` beside it. HTML attribute names are case-insensitive, so the
+       cap was reaching the browser and the red named the wrong file. */
     expect(
-      input,
-      `the handle input rendered as \`${input}\`. AC4's cap has to reach the element: an ` +
+      capOf(input as string),
+      `the handle input rendered as \`${input}\`. AC4's cap has to reach the ELEMENT: an ` +
         `attribute accepted as a prop and dropped before the \`<input>\` is a cap no browser ` +
         `ever applies, and the source scan cannot tell that apart from a correct forwarding.`,
-    ).toMatch(new RegExp(`\\bmaxlength="${MAX_HANDLE_LENGTH}"`));
+    ).toBe(String(MAX_HANDLE_LENGTH));
   });
 });
 

@@ -136,6 +136,31 @@ export function handleInputIn(markup: string): string | undefined {
   return undefined;
 }
 
+/**
+ * The `maxlength` an `<input>` tag carries, read case-INSENSITIVELY on the attribute NAME and
+ * exactly on its value.
+ *
+ * Both halves are the result of a measurement rather than a preference, and the first one cost
+ * a false charge that was one message from being sent. React 19.2.4 serialises `maxLength` as
+ * `maxLength="32"` — it maps `className` to `class` and `tabIndex` to `tabindex` in the same
+ * output, and leaves this one camel-cased. Probed directly rather than recalled:
+ *
+ *     renderToStaticMarkup(h("input", { maxLength: 32 }))  ->  <input maxLength="32"/>
+ *     renderToStaticMarkup(h("input", { tabIndex: 3 }))    ->  <input tabindex="3"/>
+ *
+ * HTML attribute names are ASCII case-insensitive, so `maxLength="32"` in serialised markup IS
+ * the `maxlength` attribute to every parser and the cap reaches the browser. A reader matching
+ * the lowercase spelling answers "absent" for a cap that is present — and the cell built on it
+ * reports "an attribute accepted as a prop and dropped before the `<input>`", which is the
+ * opposite of what happened and names the wrong file for whoever reads the red.
+ *
+ * The VALUE stays exact. Case-insensitivity is a property of HTML attribute names and of
+ * nothing else here: a cap of 320 is not a cap of 32 in any casing.
+ */
+export function capOf(tag: string): string | undefined {
+  return /\bmaxlength\s*=\s*"([^"]*)"/i.exec(tag)?.[1];
+}
+
 /* ============================================================
    AC5 — the archive's author handles, read out of YAML
    ============================================================ */

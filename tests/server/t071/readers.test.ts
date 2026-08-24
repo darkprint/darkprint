@@ -30,7 +30,7 @@
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
-import { authorsIn, handleFieldsIn, handleInputIn, meansExactly } from "./sources";
+import { authorsIn, capOf, handleFieldsIn, handleInputIn, meansExactly } from "./sources";
 
 const NO_CAP = `export const F = () => (<span><Field id="handle"><PrefixedField id="handle" value={v} /></Field></span>);`;
 const CAP_32 = `export const F = () => (<span><Field id="handle"><PrefixedField id="handle" maxLength={32} value={v} /></Field></span>);`;
@@ -69,11 +69,32 @@ describe("AC4 reader", () => {
   it("A6 ignores an element that is not the handle field", () => {
     expect(handleFieldsIn("x.tsx", OTHER_ID)).toEqual([]);
   });
-  it("A7 the markup reader separates capped from uncapped", () => {
-    expect(handleInputIn('<input id="handle" maxlength="32"/>')).toMatch(/maxlength="32"/);
-    expect(handleInputIn('<input id="handle"/>')).not.toMatch(/maxlength/);
-    expect(handleInputIn('<input id="email" maxlength="32"/>')).toBeUndefined();
+  it("A7 the markup reader picks the right input and no other", () => {
+    expect(handleInputIn('<input id="handle" maxLength="32"/>')).toContain('id="handle"');
+    expect(handleInputIn('<input id="email" maxLength="32"/>')).toBeUndefined();
     expect(handleInputIn("<span>nothing</span>")).toBeUndefined();
+  });
+
+  it("A8 `capOf` reads BOTH casings — the false charge this cell exists to stop", () => {
+    /* React 19.2.4 emits `maxLength="32"` and lowercases `tabIndex` in the same tag; HTML
+       attribute names are case-insensitive, so both spellings ARE the cap. A reader matching
+       only the lowercase form answers "absent" for a cap that is present, and the cell built on
+       it charges a dropped prop against a tag that carries one. That happened, at first contact,
+       and this is the case that would have caught it before the run. */
+    expect(capOf('<input id="handle" maxLength="32"/>')).toBe("32");
+    expect(capOf('<input id="handle" maxlength="32"/>')).toBe("32");
+    expect(capOf('<input id="handle" MAXLENGTH="32"/>')).toBe("32");
+  });
+
+  it("A9 `capOf` still separates absent, wrong-number and empty — the repair did not weaken it", () => {
+    /* A repair removes a red as readily by weakening the cell as by fixing it, so the three
+       shapes the assertion must still exclude are asserted here rather than assumed. The VALUE
+       stays exact: case-insensitivity is a property of HTML attribute NAMES and of nothing
+       else, and a cap of 320 is not a cap of 32 in any casing. */
+    expect(capOf('<input id="handle"/>')).toBeUndefined();
+    expect(capOf('<input id="handle" maxLength="320"/>')).toBe("320");
+    expect(capOf('<input id="handle" maxLength=""/>')).toBe("");
+    expect(capOf('<input id="handle" data-maxlength-note="32"/>')).toBeUndefined();
   });
 });
 
