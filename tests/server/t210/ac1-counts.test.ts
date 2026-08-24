@@ -86,7 +86,7 @@ describe("AC1 — one card, two blueprints", () => {
 });
 
 describe("D-210-08 — blueprints are counted by the two-part key", () => {
-  it("`alice/collide` and `bob/collide` are TWO blueprints, not one", async () => {
+  it("five two-part keys over four slugs report FIVE blueprints", async () => {
     const { scratch } = await collideWorld();
     const usageOf = await bind("usageOf");
 
@@ -96,18 +96,27 @@ describe("D-210-08 — blueprints are counted by the two-part key", () => {
     );
 
     /* The assertion EXCLUDES the bad output rather than admitting the good one. The failure
-       this cell exists to catch reports `blueprints: 1`, because the shipped component keys
-       its blueprint set on the SLUG (`TermTable.tsx:209`) and both of these are `collide`.
-       `toBeGreaterThan(0)` would admit it; `toEqual` does not.
+       this cell exists to catch reports `blueprints: 4`, because the shipped component keys its
+       blueprint set on the SLUG (`TermTable.tsx:209`) and `alice/collide` and `bob/collide`
+       collapse into one. Off by exactly one, deliberately: a fixture where the wrong reading
+       produced an absence rather than a number would be caught by any cell at all.
 
-       The premise that the two slugs really do collide is asserted in `world-premises.test.ts`
-       — without it, a 2 here would be satisfied by two blueprints that never shared a slug and
-       the cell would measure nothing about the key at all. */
+       This is the ONLY place in either half where the question is decided. The implementer's
+       second axis is the build-time index over the seeded archive, and the seed publishes every
+       bundle under one account — slug and two-part key are 1:1 there, so agreement between
+       those two instruments is not evidence about the key.
+
+       The premise that the two slugs really do collide, and that there really are four of them,
+       is asserted in `world-premises.test.ts`. Without it a 5 here would be satisfied by five
+       blueprints that never shared a slug and the cell would measure nothing about the key. */
     expect(usage).toEqual({
       termId: COLLIDE.term,
       cards: COLLIDE.expectedCards,
       blueprints: COLLIDE.expectedBlueprints,
       authors: COLLIDE.expectedAuthors,
     });
+    /* Stated separately so a red says which reading was taken, rather than only that a number
+       was wrong. `distinctSlugs` is the answer the other reading gives. */
+    expect(usage.blueprints).not.toBe(COLLIDE.distinctSlugs);
   });
 });

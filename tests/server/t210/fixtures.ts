@@ -371,33 +371,49 @@ export const ac1World = recorded("the AC1 world (one card, two blueprints)", asy
  */
 export const COLLIDE = {
   term: "decision",
-  slug: "collide",
-  handles: ["alice", "bob"] as const,
-  card: (handle: string) =>
-    ({
-      id: `t210-collide-${handle}`,
-      type: "decision",
-      author: handle,
-    }) satisfies CardSpec,
-  expectedBlueprints: 2,
-  /** Two cards because a card id is global: one document per owner keeps the two graphs valid. */
-  expectedCards: 2,
-  expectedAuthors: 2,
+  /**
+   * FIVE two-part keys over FOUR distinct slugs, which is what makes the two readings differ
+   * by a number rather than by an argument.
+   *
+   * `alice/collide` and `bob/collide` share a slug. Under D-210-08's ruled two-part key this
+   * world holds five blueprints; under the shipped component's slug set (`TermTable.tsx:209`)
+   * it holds four. The implementer's own second axis — the build-time index over the seeded
+   * archive — CANNOT see this distinction at all, because the seed publishes everything under
+   * one account and slug and key are 1:1 there. So this fixture is the only place in either
+   * half where the key question is decided, and it is deliberately built so a wrong answer is
+   * off by exactly one rather than absent.
+   */
+  bundles: [
+    { handle: "alice", slug: "collide" },
+    { handle: "bob", slug: "collide" },
+    { handle: "alice", slug: "second" },
+    { handle: "bob", slug: "third" },
+    { handle: "carol", slug: "fourth" },
+  ] as const,
+  card: { id: "t210-collide-card", type: "decision", author: "ada" } satisfies CardSpec,
+  expectedBlueprints: 5,
+  /** Distinct SLUGS, which is the wrong answer, named so the cell can exclude it explicitly. */
+  distinctSlugs: 4,
+  expectedCards: 1,
+  expectedAuthors: 1,
 };
 
-export const collideWorld = recorded("the two-part-key world (alice/collide, bob/collide)", async () => {
+export const collideWorld = recorded("the two-part-key world (5 keys over 4 slugs)", async () => {
   const scratch = await emptyWorld();
-  const owners = [];
-  for (const handle of COLLIDE.handles) {
-    const owner = await makeOwner(scratch.db, handle);
-    owners.push(owner);
-    await publishBundle(scratch.db, {
-      owner,
-      slug: COLLIDE.slug,
-      cards: [COLLIDE.card(handle)],
-    });
+  const owners = new Map<string, Owner>();
+  for (const entry of COLLIDE.bundles) {
+    let owner = owners.get(entry.handle);
+    if (owner === undefined) {
+      owner = await makeOwner(scratch.db, entry.handle);
+      owners.set(entry.handle, owner);
+    }
+    /* One card DOCUMENT pinned by all five bundles, byte for byte. `addCard` stores the first
+       and the rest resolve to the same row, so the card count stays 1 and the only thing that
+       varies across the five is which blueprint pins it — which is exactly the quantity under
+       test. */
+    await publishBundle(scratch.db, { owner, slug: entry.slug, cards: [COLLIDE.card] });
   }
-  return { scratch, owners };
+  return { scratch, owners: [...owners.values()] };
 });
 
 /* --------------------- AC2: a card naming a term twice --------------------- */
@@ -476,6 +492,32 @@ export const AC3 = {
   expectedBlueprints: 2,
   expectedCards: 1,
   expectedAuthors: 1,
+
+  /**
+   * A term named ONLY by content inside the private bundle, and a local one beside it.
+   *
+   * D-210-03's amendment is why these exist. The ratified identity discriminator — the private
+   * bundle's owner and an anonymous caller get IDENTICAL records — separates a PER-ACTOR fold
+   * and nothing else. An index built once for an operator lets private content into every
+   * count for everybody, which moves both sides of that equality together and leaves it GREEN.
+   *
+   * So the absolute half is needed beside the relative half: a term that exists only in private
+   * content must count ZERO, and a local term that exists only in private content must not be
+   * a promotion candidate. Those two cells red against a global break; the identity cell
+   * cannot.
+   *
+   * `privateOnlyLocal` is namespaced so it reaches `candidates()`'s domain at all — under
+   * D-210-05 a core-only id would be filtered out for the wrong reason and the cell would be
+   * green about the filter rather than about the privacy.
+   */
+  privateOnlyTerm: "irreversible-action",
+  privateOnlyLocal: "mallory/private-marker",
+  privateOnlyCard: {
+    id: "t210-ac3-private-only",
+    type: "agent",
+    markers: ["irreversible-action", "mallory/private-marker"],
+    author: "mallory-claims-this",
+  } satisfies CardSpec,
 };
 
 export const ac3World = recorded("the AC3 world (a private bundle naming a public term)", async () => {
@@ -485,11 +527,16 @@ export const ac3World = recorded("the AC3 world (a private bundle naming a publi
   for (const slug of AC3.publicSlugs) {
     await publishBundle(scratch.db, { owner: ada, slug, cards: [AC3.card] });
   }
+  /* The private bundle carries BOTH cards: the shared one, whose contribution the relative
+     cells watch, and the private-only one, whose contribution the absolute cells watch. One
+     bundle rather than two so a single visibility decision governs both, which is what makes a
+     global break show up in both places at once. */
   await publishBundle(scratch.db, {
     owner: mallory,
     slug: AC3.privateSlug,
-    cards: [AC3.card],
+    cards: [AC3.card, AC3.privateOnlyCard],
     visibility: "private",
+    vocabulary: localVocabulary([localMarker(AC3.privateOnlyLocal)]),
   });
   return { scratch, ada, mallory };
 });

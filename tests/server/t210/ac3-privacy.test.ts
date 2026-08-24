@@ -39,7 +39,7 @@ import {
   dropScratchDatabases,
   operator,
 } from "./fixtures";
-import { assertUsage, bind } from "./contract";
+import { assertCandidate, assertUsage, bind } from "./contract";
 
 afterAll(async () => {
   await dropScratchDatabases();
@@ -142,6 +142,88 @@ describe("AC3 — a private bundle moves no number, for anybody", () => {
        Four separate equalities against a constant would each be right about their own subject
        and none of them would show the shape of the divergence. */
     expect(seen).toEqual(Object.fromEntries(actors.map(([label]) => [label, EXPECTED])));
+  });
+
+  it("A TERM NAMED ONLY BY PRIVATE CONTENT COUNTS ZERO — the absolute half", async () => {
+    const { scratch, mallory } = await ac3World();
+    const usageOf = await bind("usageOf");
+
+    /* D-210-03's amendment, and the reason this cell exists beside the identity cells above.
+       The ratified discriminator — owner and anonymous get IDENTICAL records — separates a
+       PER-ACTOR fold and NOTHING ELSE. An index built once for an operator, or once with no
+       visibility filter at all, lets private content into every count for everybody: both sides
+       of that equality move together and every identity cell in this file stays GREEN.
+
+       This is the cell that reds against that. Zero is an ABSOLUTE claim, so it cannot be
+       satisfied by two wrong answers agreeing with each other. Asserted for the private
+       bundle's own owner as well, because that is the actor for whom a per-actor fold would
+       report the largest number — so one cell covers both breaks. */
+    for (const [label, actor] of [
+      ["anonymous", anonymous],
+      ["the private bundle's owner", { kind: "account", accountId: mallory.accountId, handle: mallory.handle }],
+      ["operator", operator(mallory.accountId)],
+    ] as const) {
+      const usage = assertUsage(
+        await usageOf(scratch.db, actor, AC3.privateOnlyTerm),
+        `usageOf(${AC3.privateOnlyTerm}) as ${label}`,
+      );
+      expect(usage, `\`${AC3.privateOnlyTerm}\` counted for ${label}`).toEqual({
+        termId: AC3.privateOnlyTerm,
+        cards: 0,
+        blueprints: 0,
+        authors: 0,
+      });
+    }
+  });
+
+  it("a term named only by private content has NO ROW in `usage()` either", async () => {
+    const { scratch, mallory } = await ac3World();
+    const usage = await bind("usage");
+
+    for (const [label, actor] of [
+      ["anonymous", anonymous],
+      ["the private bundle's owner", { kind: "account", accountId: mallory.accountId, handle: mallory.handle }],
+    ] as const) {
+      const rows = ((await usage(scratch.db, actor)) as unknown[]).map((row, i) =>
+        assertUsage(row, `usage() as ${label} [${i}]`),
+      );
+      const ids = new Set(rows.map((r) => r.termId));
+      /* `usage()` carries every COUNTED term, so a private-only term must be absent rather than
+         present at zero — the mirror of AC4's rule, and a second surface on which the leak
+         would show. A list reader that leaked would be invisible to the per-term cell above if
+         the two were computed by different routes. */
+      expect(ids.has(AC3.privateOnlyTerm), `usage() leaked the private-only term to ${label}`).toBe(false);
+      expect(ids.has(AC3.privateOnlyLocal), `usage() leaked the private-only local term to ${label}`).toBe(false);
+      /* And the list is not simply empty, so the absence above is a filter rather than nothing. */
+      expect(ids.has(AC3.term)).toBe(true);
+    }
+  });
+
+  it("A PRIVATE-ONLY LOCAL TERM IS NOT A PROMOTION CANDIDATE", async () => {
+    const { scratch, mallory } = await ac3World();
+    const candidates = await bind("candidates");
+
+    for (const [label, actor] of [
+      ["anonymous", anonymous],
+      ["the private bundle's owner", { kind: "account", accountId: mallory.accountId, handle: mallory.handle }],
+      ["operator", operator(mallory.accountId)],
+    ] as const) {
+      const list = await candidates(scratch.db, actor);
+      expect(Array.isArray(list)).toBe(true);
+      const ids = (list as unknown[]).map((row, i) =>
+        assertCandidate(row, `candidates() as ${label} [${i}]`).termId,
+      );
+      /* This is D-82's own sentence as a test: the shared vocabulary must not be steerable with
+         content nobody can see. A local term that exists ONLY inside a private bundle reaching
+         the promotion list is that harm in its most literal form — an author proposing a term
+         into the curated core on the strength of blueprints no one else can read.
+
+         `world-premises.test.ts` asserts the term is namespaced, so a `false` here is about
+         privacy rather than about D-210-05's local filter removing it for another reason. */
+      expect(ids, `\`${AC3.privateOnlyLocal}\` reached the candidate list for ${label}`).not.toContain(
+        AC3.privateOnlyLocal,
+      );
+    }
   });
 
   it("`usage()` is actor-independent too, over its whole list", async () => {

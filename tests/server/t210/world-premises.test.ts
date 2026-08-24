@@ -121,20 +121,25 @@ describe("AC1's world really pins one card in two blueprints", () => {
 });
 
 describe("the two-part-key world really collides on the slug", () => {
-  it("two accounts publish the SAME slug, so slug alone cannot tell them apart", async () => {
+  it("five distinct two-part keys stand over four distinct slugs", async () => {
     const { scratch } = await collideWorld();
     const rows = await visible(scratch.db, anonymous);
     const naming = rows.filter((r) => sitesOf(r.card).includes(COLLIDE.term));
     expect(naming).toHaveLength(COLLIDE.expectedCards);
 
     const keys = [...new Set(naming.flatMap((r) => r.usedIn.map(keyOf)))].sort();
-    const slugs = [...new Set(naming.flatMap((r) => r.usedIn.map((b) => b.slug)))];
+    const slugs = [...new Set(naming.flatMap((r) => r.usedIn.map((b) => b.slug)))].sort();
 
-    /* The whole point of the world: two by the ruled key, ONE by the shipped component's.
-       Asserting both directions, because a fixture that collided by accident and a fixture
-       that failed to collide look identical from the key side alone. */
+    /* Both numbers, because the fixture is only useful if they DIFFER. Asserting the five alone
+       would be satisfied by five blueprints that never shared a slug, and the AC1 cell resting
+       on this premise would then measure nothing about the key at all. */
     expect(keys).toHaveLength(COLLIDE.expectedBlueprints);
-    expect(slugs).toEqual([COLLIDE.slug]);
+    expect(slugs).toHaveLength(COLLIDE.distinctSlugs);
+    expect(keys.length).toBeGreaterThan(slugs.length);
+
+    /* And the collision is where it was planted, rather than anywhere convenient. */
+    expect(keys).toContain("alice/collide");
+    expect(keys).toContain("bob/collide");
   });
 });
 
@@ -203,6 +208,44 @@ describe("AC3's world really hides a private bundle from a stranger and shows it
        that could no longer have happened, and its green would be worth nothing. */
     expect(keys).toContain(`${mallory.handle}/${AC3.privateSlug}`);
     expect(keys).toHaveLength(AC3.expectedBlueprints + 1);
+  });
+});
+
+describe("AC3's private-only content really is private and really is there", () => {
+  it("the private-only card is INVISIBLE to a stranger", async () => {
+    const { scratch } = await ac3World();
+    const rows = await visible(scratch.db, anonymous);
+    const all = new Set(rows.flatMap((r) => sitesOf(r.card)));
+    /* The premise for the absolute AC3 cells. If a stranger could already see this term, a
+       count of zero would be the ordinary visibility filter doing its job and the cell would
+       say nothing about the index. */
+    expect(rows.some((r) => r.id === AC3.privateOnlyCard.id)).toBe(false);
+    expect(all.has(AC3.privateOnlyTerm)).toBe(false);
+    expect(all.has(AC3.privateOnlyLocal)).toBe(false);
+  });
+
+  it("and it really EXISTS — its owner sees both terms on it", async () => {
+    const { scratch, mallory } = await ac3World();
+    const rows = await visible(scratch.db, {
+      kind: "account",
+      accountId: mallory.accountId,
+      handle: mallory.handle,
+    });
+    const card = rows.find((r) => r.id === AC3.privateOnlyCard.id);
+    expect(card, "the private-only card was never published").toBeDefined();
+    const sites = sitesOf(card!.card);
+    /* Both halves matter. A zero for a term nothing ever named is AC4's criterion, not AC3's —
+       the absolute cells are only about privacy if the content is really in the store and
+       really names these ids. */
+    expect(sites).toContain(AC3.privateOnlyTerm);
+    expect(sites).toContain(AC3.privateOnlyLocal);
+  });
+
+  it("the private-only local id is namespaced, so it is inside candidates()'s domain", () => {
+    /* Under D-210-05 a core-only id would be filtered out of the candidate list for the WRONG
+       reason, and the "not a candidate" cell would be green about the local filter rather than
+       about privacy. */
+    expect(splitTermId(AC3.privateOnlyLocal).namespace).toBeDefined();
   });
 });
 
