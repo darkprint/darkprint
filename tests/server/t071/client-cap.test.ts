@@ -169,11 +169,16 @@ const RENDERED_ACCOUNT: AccountRecord = {
 };
 
 function renderedSettingsMarkup(): string {
-  /* `children` passed as the third argument rather than as a prop: `react/no-children-prop`
-     refuses the prop form, and the two are the same thing to React. §05 and §06 arrive as
-     children in production; `null` is enough here, because AC4's subject is §02's input. */
+  /* `children: null` as a PROP, with the lint rule disabled by name: `react/no-children-prop`
+     refuses the prop form while tsc refuses the third-argument form for a REQUIRED `children`
+     — the two rules pull opposite ways and exactly one can be satisfied silently. The prop
+     form is the one tsc can check, so it wins and the lint exception carries the reason.
+     `null` is a legal ReactNode and enough here, because AC4's subject is §02's input;
+     §05/§06 arrive as children in production. (Board red found by T261's implementer:
+     the third-argument spelling typechecked nowhere while running everywhere.) */
   return renderToStaticMarkup(
-    createElement(AccountForm, { account: RENDERED_ACCOUNT, counts: null }, null),
+    // eslint-disable-next-line react/no-children-prop -- tsc requires the prop form here; see above
+    createElement(AccountForm, { account: RENDERED_ACCOUNT, counts: null, children: null }),
   );
 }
 
