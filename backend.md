@@ -18597,7 +18597,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
   from a derived count. **AC4 is unobservable before the table exists**, which is why the table is
   `Owns` here and not an afterthought.
 
-- **State:** todo
+- **State:** in progress
 - **Depends on:** T130, T180
 - **Owns:** `lib/db/schema.ts` (extension only), `lib/db/migrations/**`, `lib/server/profiles/**` (extension), `app/api/authors/**` (extension)
 - **Created by:** D-130-06, the owner's decision of 2026-08-20, splitting T130 rather than blocking it behind a schema task.
@@ -20887,7 +20887,7 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 
 ### T190, Notifications and email fan-out
 
-- **State:** todo
+- **State:** in progress
 - **Depends on:** T020, T050, T100, T110
 - **Blocks:** —
 - **Owns:** `lib/server/notifications/**`, `app/api/account/notifications/**`, ~~`app/api/internal/events/**`~~ (struck at D-190-05 — no auth mechanism exists for an internal route and an unauthenticated `enqueue` ingress is a mail-injection surface; no AC needs HTTP event ingress), plus `lib/db/schema.ts` (extension only), `lib/db/migrations/0005_notifications.up/down.sql`, and **one granted call site in `lib/server/lineage/fork.ts` (D-190-04)**
