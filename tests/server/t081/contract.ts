@@ -213,9 +213,18 @@ export type PublishedT081Name = keyof typeof PUBLISHED_T081;
 export const T081_NAMES = Object.keys(PUBLISHED_T081) as PublishedT081Name[];
 
 /**
- * The thirteen readers backend.md §T080's Published signatures block names, and the
- * only surface AC2's "every published read wraps" can mean. Quoted rather than
- * re-derived, so a red against this list is a disagreement with a published block.
+ * The readers backend.md §T080's Published signatures block names, and the only surface
+ * AC2's "every published read wraps" can mean. Quoted rather than re-derived, so a red
+ * against this list is a disagreement with a published block.
+ *
+ * **Thirteen at T081's merge, sixteen since T132.** The last three are that task's ruled
+ * amendments to T080's merged record — `graphsOf` and `scoresFor` (D-132-01, the batch
+ * readers owed to T260 under D-260-14 and D-260-21) and `cardsOwnedBy` (D-132-02 reading
+ * (a), the reader `counts.cards` needed). They are added HERE rather than left out because
+ * `surface.test.ts`'s barrel-agreement check is the thing that caught them, in its own
+ * words: *an addition is a contract amendment and belongs in the block*. Leaving them out
+ * would have narrowed AC2's "every" to thirteen of sixteen while the criterion still said
+ * every, which is the failure that check exists to prevent.
  */
 export const PUBLISHED_READERS = {
   blueprints: "blueprints(db: Db, actor: Actor): Promise<readonly BlueprintSummary[]>",
@@ -239,6 +248,16 @@ export const PUBLISHED_READERS = {
   scoresOf:
     "scoresOf(db: Db, actor: Actor, ownerHandle: string, slug: string): " +
     "Promise<Scores | undefined>",
+  graphsOf:
+    "graphsOf(db: Db, actor: Actor, keys: readonly BlueprintKey[]): " +
+    "Promise<ReadonlyMap<string, { graph: BlueprintGraph; requiredAgents: readonly " +
+    "string[]; requiredTools: readonly string[] }>>",
+  scoresFor:
+    "scoresFor(db: Db, actor: Actor, keys: readonly BlueprintKey[]): " +
+    "Promise<ReadonlyMap<string, Scores>>",
+  cardsOwnedBy:
+    "cardsOwnedBy(db: Db, actor: Actor, ownerHandle: string): " +
+    "Promise<readonly CardSummary[]>",
 } as const;
 
 export type ReaderName = keyof typeof PUBLISHED_READERS;
@@ -328,6 +347,24 @@ export const READER_PROBES: Record<ReaderName, ReaderProbe> = {
     args: [PROBE.ownerHandle, PROBE.slug],
     variantArgs: [VARIANT.ownerHandle, VARIANT.slug],
     supplied: [PROBE.ownerHandle, PROBE.slug],
+  },
+  /* The two batch readers take a LIST, and it must be non-empty here. Both answer an empty
+     map for an empty one without issuing a statement — deliberate, and it would make this
+     probe resolve instead of reaching the driver, which is a green measuring nothing. */
+  graphsOf: {
+    args: [[{ ownerHandle: PROBE.ownerHandle, slug: PROBE.slug }]],
+    variantArgs: [[{ ownerHandle: VARIANT.ownerHandle, slug: VARIANT.slug }]],
+    supplied: [PROBE.ownerHandle, PROBE.slug],
+  },
+  scoresFor: {
+    args: [[{ ownerHandle: PROBE.ownerHandle, slug: PROBE.slug }]],
+    variantArgs: [[{ ownerHandle: VARIANT.ownerHandle, slug: VARIANT.slug }]],
+    supplied: [PROBE.ownerHandle, PROBE.slug],
+  },
+  cardsOwnedBy: {
+    args: [PROBE.ownerHandle],
+    variantArgs: [VARIANT.ownerHandle],
+    supplied: [PROBE.ownerHandle],
   },
 };
 

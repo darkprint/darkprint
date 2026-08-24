@@ -17,6 +17,15 @@ import type {
   PhaseCoverage,
   SecurityResult,
 } from "@/lib/server/types";
+/* The only import in this module that does not come through T000's barrel, and it is
+   deliberate rather than an oversight. `BlueprintGraph` is `lib/types.ts`'s — the shape
+   React Flow is seeded from — and `@/lib/server/types` re-exports `lib/core`'s domain types
+   only, so there is nowhere on a server barrel to reach it from. `lib/server/types.ts` is
+   T000's and not this task's to widen, and a second declaration here is the drift that file
+   exists to prevent. Callers name it from `@/lib/types` too, which is where `ContentRow`
+   already reads it, so this module re-exports nothing (D-133-02 F4 cuts the other way here:
+   a caller binding `graphsOf` is not short of a place to get the type). */
+import type { BlueprintGraph } from "@/lib/types";
 
 /** What identifies a blueprint since B-09: the owner's handle and the slug, together. */
 export interface BlueprintKey {
@@ -56,4 +65,25 @@ export interface Scores {
   security: SecurityResult;
   phaseCoverage: PhaseCoverage;
   ontologyVersion: string;
+}
+
+/**
+ * What a blueprint row draws with: the schematic, and the two capability lists printed
+ * beside it (D-132-01, owed to T260 under D-260-14).
+ *
+ * Separate from `BlueprintSummary` rather than folded into it, because the index answers
+ * this record only for a caller that asks: reassembling a bundle costs a YAML parse and a
+ * layout pass per blueprint, and a shelf that wanted only titles would pay for every
+ * drawing it never rendered.
+ *
+ * The three members are exactly `lib/content/view.ts`'s, which is the build-time model this
+ * replaces — same names, same meanings, computed by the same three functions — so a row
+ * cutting over from the archive to the read API draws the same picture.
+ */
+export interface BlueprintSchematic {
+  graph: BlueprintGraph;
+  /** Every distinct model or agent the graph asks for, in graph order. */
+  requiredAgents: readonly string[];
+  /** Every tool capability the graph asks for, as its ontology label, distinct, in graph order. */
+  requiredTools: readonly string[];
 }

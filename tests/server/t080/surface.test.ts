@@ -25,18 +25,32 @@ describe("T080 published signatures", () => {
   /**
    * A guard on THIS SUITE, not on the module — the only test in the tree that passes with
    * `lib/server/registry/**` absent, and it is labelled so that is not read as coverage.
-   * `READER_NAMES` is what `privacy.test.ts` iterates, so a later edit trimming it silently
-   * shrinks the AC6 sweep from thirteen readers to twelve without failing anything. The
-   * count is the thing the sweep's claim rests on, so it is asserted rather than trusted.
+   * An edit trimming `READER_NAMES` silently shrinks the loop above without failing
+   * anything, so the count is asserted rather than trusted.
+   *
+   * **Its original reason was wrong and is corrected here rather than carried.** It said
+   * `READER_NAMES` is what `privacy.test.ts` iterates; that suite imports the `ReaderName`
+   * TYPE and iterates its own hand-written `CALLS` table, because AC6 needs arguments per
+   * reader that no name can supply. So this number never guarded the sweep's width, and
+   * saying it did would have made a real gap invisible — see `contract.ts`'s note on the
+   * three readers T132 added that `CALLS` does not yet cover (D-132-02 C-8).
    */
-  it("keeps this suite's reader table at the thirteen the contract publishes", () => {
+  it("keeps this suite's reader table at the sixteen the contract publishes", () => {
     expect(
       READER_NAMES.length,
-      `D-80-02b added \`scoresOf\` because AC7 was unreachable through any published ` +
-        `surface: "none of the twelve readers returns a score". AC6 is asserted across ` +
-        `all thirteen, and this is what keeps that number honest.`,
-    ).toBe(13);
+      `Thirteen at T080's merge — D-80-02b added \`scoresOf\` because AC7 was unreachable ` +
+        `through any published surface: "none of the twelve readers returns a score". T132 ` +
+        `added three amendments to this merged record: \`graphsOf\` and \`scoresFor\` ` +
+        `(D-132-01, owed to T260) and \`cardsOwnedBy\` (D-132-02, the reader ` +
+        `\`counts.cards\` needed). \`PUBLISHED\` is an equality over reader names, so an ` +
+        `addition reds this BY DESIGN and the amendment lands in the same commit — the ` +
+        `sanctioned path D-260-14 names. If this number moved without a ruling, that is the ` +
+        `defect it exists to catch.`,
+    ).toBe(16);
     expect(PUBLISHED.scoresOf).toContain("scoresOf(db: Db, actor: Actor");
+    expect(PUBLISHED.graphsOf).toContain("graphsOf(db: Db, actor: Actor");
+    expect(PUBLISHED.scoresFor).toContain("scoresFor(db: Db, actor: Actor");
+    expect(PUBLISHED.cardsOwnedBy).toContain("cardsOwnedBy(db: Db, actor: Actor");
   });
 
   /**
