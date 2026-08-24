@@ -8,7 +8,18 @@ import { readSession } from "@/components/profile/session";
 import { blueprintHref, searchSuffix } from "@/lib/href";
 
 /* ============================================================
-   /blueprints/[slug] — the pre-B-09 URL, and nothing else.
+   /blueprints/[<one segment>] — the pre-B-09 URL, and nothing else.
+
+   ── Why the directory is named `[owner]` when the value is a SLUG ──
+   Next refuses two different param names in one segment slot: with the canonical page at
+   `[owner]/[slug]/`, a sibling `[slug]/` here throws *"You cannot use different slug names
+   for the same dynamic path ('owner' !== 'slug')"* at ROUTING time. The build does not
+   catch it — it emitted a route table listing both — so this was found by starting a
+   server and asking for the URL, which is the only thing that could have found it.
+
+   The name is Next's constraint and NOT a claim about the value: what arrives here is the
+   old single-segment blueprint slug, and it is bound to `legacySlug` on the first line of
+   the page so nothing downstream reads the parameter's name as its meaning.
 
    This route used to BE the blueprint page. B-09 made a slug unique per owner rather than
    per registry, so a one-segment URL stopped naming a resource, and D-261-01 put the page
@@ -54,8 +65,11 @@ import { blueprintHref, searchSuffix } from "@/lib/href";
  */
 export const dynamic = "force-dynamic";
 
-export default async function Page({ params, searchParams }: PageProps<"/blueprints/[slug]">) {
-  const { slug } = await params;
+export default async function Page({ params, searchParams }: PageProps<"/blueprints/[owner]">) {
+  /* The segment is named `owner` because Next requires one name per slot (see above); the
+     VALUE is the pre-B-09 slug. Renamed on arrival so no line below reads it as an owner. */
+  const { owner: legacySlug } = await params;
+  const slug = legacySlug;
   const query = searchSuffix(await searchParams);
 
   const session = await readSession();
