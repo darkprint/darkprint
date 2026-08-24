@@ -34,7 +34,10 @@ import { fileURLToPath } from "node:url";
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
 
 /** Extensions git tracks that are legitimately binary and are never source. */
-const BINARY = /\.(png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf|eot|pdf|zip|gz|mp4|webm)$/i;
+// `onnx` joined at T300's merge: the vendored quantised encoder is genuinely binary, and its
+// content is pinned by digest in its own falsified cell (D-300-08) — this guard's job here is
+// only to not misread model weights as source.
+const BINARY = /\.(png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf|eot|pdf|zip|gz|mp4|webm|onnx)$/i;
 
 /**
  * Tracked files **and** untracked-but-not-ignored ones.
