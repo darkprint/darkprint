@@ -13,7 +13,7 @@
 import type { AutonomyClass, Author, Blueprint, Metric } from "@/lib/types";
 import type { BlueprintAnalysis, Diagnostic, ResolvedBlueprint } from "@/lib/core";
 import { DARKPRINT_CONFIG } from "@/lib/core";
-import { autonomyStatement } from "@/lib/format";
+import { AUTONOMY_BLURB, autonomyStatement } from "@/lib/format";
 import { getAuthor } from "@/lib/data/users";
 import type { CommunitySignals } from "@/lib/data/community";
 import { graphForBlueprint, requiredAgents, requiredTools } from "@/lib/graph-seed";
@@ -35,15 +35,6 @@ import { graphForBlueprint, requiredAgents, requiredTools } from "@/lib/graph-se
  * graph of eleven nodes reaches it with a person still standing in it. That claim now
  * belongs to `isDarkFactory` alone, which counts the human nodes rather than the share.
  */
-export const AUTONOMY_BLURB: Record<AutonomyClass, string> = {
-  assisted: "A person acts at most of the nodes, and the agents work under that hand.",
-  supervised:
-    "Agents do the work, and a person approves the moves this graph treats as critical.",
-  conditional:
-    "The graph runs inside the guardrails its author drew and calls a person for the cases it names.",
-  "closed-loop":
-    "The line runs from the specification to the delivery without stopping for an approval.",
-};
 
 /* --------------------- the bridge --------------------- */
 

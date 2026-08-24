@@ -1,4 +1,4 @@
-import type { MetricSource, AgentNodeKind } from "./types";
+import type { AutonomyClass, MetricSource, AgentNodeKind } from "./types";
 
 /** Compact number formatting: 1200 -> "1.2k". */
 export function compact(n: number): string {
@@ -102,6 +102,20 @@ export const AUTONOMY_LABELS: Record<1 | 2 | 3 | 4, string> = {
   4: "Closed-loop",
 };
 
+
+/* Moved from `lib/content/view.ts` (D-260-30): exported there first, but the only consumable
+   path was the deep import `@/lib/content/view`, whose specifier contains `@/lib/content` as a
+   substring — and D-260-05(a) reds a route file on that token. The one consumer imports back
+   from here over an edge that already existed. */
+export const AUTONOMY_BLURB: Record<AutonomyClass, string> = {
+  assisted: "A person acts at most of the nodes, and the agents work under that hand.",
+  supervised:
+    "Agents do the work, and a person approves the moves this graph treats as critical.",
+  conditional:
+    "The graph runs inside the guardrails its author drew and calls a person for the cases it names.",
+  "closed-loop":
+    "The line runs from the specification to the delivery without stopping for an approval.",
+};
 /**
  * The engine's autonomy sentence, with the band ordinal taken out.
  *
