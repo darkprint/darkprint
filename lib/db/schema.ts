@@ -865,3 +865,39 @@ export const unsubscribeToken = pgTable("unsubscribe_token", {
 }, (t) => [
   uniqueIndex("unsubscribe_token_account_kind_key").on(t.accountId, t.kind),
 ]);
+
+/* ============================================================
+   Federated sign-in identities (0006_identities)
+
+   A second provider could not be added by widening `account`:
+   `github_id` is NOT NULL and unique, and the ten base tables'
+   column shape is frozen by `tests/server/t005/existing.test.ts`
+   with one licensed delta. So identity moved OUT to its own table
+   and `account` was left untouched — an extension, the same shape
+   T131 and T190 took.
+
+   `account.github_id` therefore keeps holding a value for every
+   account, GitHub-authored or not. That is not new: `lib/server/
+   seed/run.ts` has always written `"0"` there for the registry
+   actor, which is not a GitHub id either. For an account whose
+   first provider is Google it holds `google:<sub>` — namespaced so
+   it cannot collide with a real GitHub id, and inert, because THIS
+   table is what every sign-in resolves against.
+   ============================================================ */
+export const accountIdentity = pgTable("account_identity", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  /** `"github" | "google"` — text rather than an enum, so a third provider is data. */
+  provider: text("provider").notNull(),
+  /** The provider's own stable subject id. Never an email: emails move between people. */
+  providerId: text("provider_id").notNull(),
+  accountId: uuid("account_id").notNull().references(() => account.id),
+  /** The address the provider asserted AT LINK TIME, kept as the record of why two
+      identities were joined. Never read as the account's current email. */
+  email: text("email"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  /* The constraint the upsert races against, rather than a read-then-write: two concurrent
+     first sign-ins for one provider identity leave one row, and the loser reads it. */
+  uniqueIndex("account_identity_provider_key").on(t.provider, t.providerId),
+  index("account_identity_account_id_idx").on(t.accountId),
+]);

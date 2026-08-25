@@ -239,7 +239,8 @@ sequenceDiagram
 
 ## 5.6 · Signing in and finishing an account
 
-Signing in is real and completes end to end: `GET /api/auth/github/login` starts B-02's
+Signing in is real and completes end to end, **through either of two providers** since
+2026-08-25: `GET /api/auth/github/login` or `GET /api/auth/google/login` starts B-02's
 OAuth dance, the callback exchanges the code, upserts the account and mints the session
 cookie. What the callback CANNOT do is choose a handle — T050 AC1 makes a session with
 `handle: null` "signed in and INCOMPLETE", because a handle is allocated once and reserved
@@ -250,6 +251,13 @@ reader arrived signed in with no visible difference from being signed out, havin
 `/settings` unaided to discover the one field gating publishing. `/welcome` closes it — the
 callback sends a null-handle account there, and the route bounces a finished account back
 to `/`, so it is safe to link at any time.
+
+**Two providers, one account, when the address is proven.** A Google identity whose
+**verified** address already belongs to an account links to it (`resolveFromProvider`,
+`lib/server/accounts/identities.ts`) instead of minting a second one — so a reader who used
+GitHub in January and Google in March lands in the same place. An **unverified** address
+never links: that is the account-takeover path, and the cost of refusing is a duplicate
+account, which is recoverable.
 
 **Still not reachable from here:** the MCP server and the CLI are `private: true` and
 unpublished, so `npx -y darkprint mcp` fails for a reader even though both run locally

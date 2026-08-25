@@ -17,6 +17,7 @@ import { SectionNote, SettingsSection } from "@/components/settings/controls";
 import { AccountForm } from "@/components/settings/AccountForm";
 import { readSession } from "@/components/profile/session";
 import { profileHref } from "@/components/profile/author";
+import { SignInButtons } from "@/components/auth/SignInButtons";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // SEAM-43 LIVE: GET /api/account, read in-process here rather than over HTTP.
@@ -170,9 +171,7 @@ function SignedOut() {
           This page is your account, so it needs to know who you are. Sign in with GitHub
           and it opens on your own profile, handle, email and default visibility.
         </p>
-        <ButtonLink href="/api/auth/github/login" variant="primary">
-          Sign in with GitHub
-        </ButtonLink>
+        <SignInButtons />
         <p className="font-mono text-[11px] leading-relaxed text-dim">
           DarkPrint reads your GitHub handle and nothing else. Everything you publish here
           stays here.

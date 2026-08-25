@@ -980,8 +980,20 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
         expect(before.tables).toContain("unsubscribe_token");
         expect(before.types).toContain("notification_kind");
 
-        const rolled = await migrateDown(own.client.pool, 1);
-        expect(rolled, "exactly one step, and it is mine").toEqual(["0005_notifications"]);
+        /* Stepwise until THIS migration comes off, rather than `migrateDown(pool, 1)`.
+           The single step was correct while `0005` was the newest migration and became
+           wrong the moment `0006_identities` landed on top of it — the assertion was
+           encoding "mine is last", which is a fact about the calendar rather than about
+           this migration. Rolling until the id appears keeps the criterion (0005 comes off
+           cleanly, stepwise, and takes only its own objects) and survives every migration
+           added after it. */
+        const rolled: string[] = [];
+        while (!rolled.includes("0005_notifications")) {
+          const step = await migrateDown(own.client.pool, 1);
+          expect(step, "each step rolls back exactly one migration").toHaveLength(1);
+          rolled.push(...step);
+        }
+        expect(rolled.at(-1), "and the last one off is mine").toBe("0005_notifications");
 
         const after = await objects();
         expect(after.tables).not.toContain("notification_queue");
@@ -999,8 +1011,12 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
           "and it added nothing either",
         ).toEqual([]);
 
+        /* Everything that came off goes back on, newest last — the mirror of the loop
+           above, and named the same way rather than by count, for the same reason. */
         const reapplied = await migrateUp(own.client.pool);
-        expect(reapplied).toEqual(["0005_notifications"]);
+        expect(reapplied.sort(), "exactly what was rolled back, and nothing else").toEqual(
+          [...rolled].sort(),
+        );
         expect(await objects(), "re-applying restores exactly the same schema").toEqual(before);
       } finally {
         await own.drop();

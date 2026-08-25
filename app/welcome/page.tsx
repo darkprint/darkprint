@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { WelcomeForm } from "@/components/welcome/WelcomeForm";
-import { ButtonLink } from "@/components/ui/Button";
+import { SignInButtons } from "@/components/auth/SignInButtons";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { readSession } from "@/components/profile/session";
 
@@ -48,13 +48,11 @@ function SignedOut() {
       <SectionHeading
         as="h1"
         eyebrow="Account"
-        title="Finish signing up"
-        lead="This page finishes an account, so it needs to know which one. Sign in and it opens on the two fields that are left."
+        title="Sign in"
+        lead="Either provider signs you in to the same registry. If you have signed in before with the other one and the address is the same, they resolve to one account rather than two."
       />
       <div className="flex flex-col items-start gap-4 rounded-lg border border-line bg-surface-2/50 px-6 py-6">
-        <ButtonLink href="/api/auth/github/login" variant="primary">
-          Sign in with GitHub
-        </ButtonLink>
+        <SignInButtons />
         <p className="font-mono text-[11px] leading-relaxed text-dim">
           DarkPrint reads your GitHub handle and nothing else. Everything you publish here
           stays here.

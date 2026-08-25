@@ -11,6 +11,7 @@ import { SPEC_SEQUENCE, SANDBOX } from "@/components/spec/sequence";
 import { authorFor, profileHref } from "@/components/profile/author";
 import type { AccountRecord } from "@/lib/server/accounts";
 import { cx } from "@/lib/format";
+import { SIGN_IN_PROVIDERS } from "@/components/auth/SignInButtons";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // SEAM-42 is LIVE: GET /api/account behind the session cookie, GET /api/auth/github/login
@@ -196,7 +197,10 @@ function mobileLinks(
        choosing happens — collapsing them would offer a signed-in reader a second sign-in
        and hide the one row that would fix their account. */
     if (account === undefined || account === null) {
-      return [{ href: "/api/auth/github/login", label: "Sign in" }];
+      /* Both providers, from the one list that also feeds `/welcome` and `/settings`
+         (`components/auth/SignInButtons.tsx`). A single row naming GitHub is how this
+         menu keeps offering one provider after a second one ships. */
+      return SIGN_IN_PROVIDERS.map((provider) => ({ href: provider.href, label: provider.label }));
     }
     return ACCOUNT_MENU.flatMap((item) => {
       const href = accountMenuHref(item, account.author.handle);
@@ -455,7 +459,10 @@ export function SiteHeader() {
               className="ml-3 inline-flex h-8 w-8 shrink-0 animate-pulse rounded-full bg-surface-2"
             />
           ) : account === null ? (
-            <ButtonLink href="/api/auth/github/login" variant="outline" size="sm" className="ml-3">
+            /* `/welcome` rather than a provider directly: it is the one surface that offers
+               the choice, and hard-coding GitHub here would make the header disagree with
+               the menu beside it about how many ways in there are. */
+            <ButtonLink href="/welcome" variant="outline" size="sm" className="ml-3">
               Sign in
             </ButtonLink>
           ) : (

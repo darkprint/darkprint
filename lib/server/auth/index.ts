@@ -28,3 +28,5 @@ export {
 
 export type { GithubIdentity, GithubOAuthConfig } from "./github";
 export { githubAuthorizeUrl, githubOAuthConfigFromEnv, resolveGithubIdentity } from "./github";
+export type { GoogleIdentity, GoogleOAuthConfig } from "./google";
+export { googleAuthorizeUrl, googleOAuthConfigFromEnv, resolveGoogleIdentity } from "./google";

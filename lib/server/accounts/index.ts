@@ -36,6 +36,10 @@ export {
 } from "./errors";
 
 export { upsertFromGitHub } from "./github";
+/* The multi-provider door (0006). `upsertFromGitHub` stays published and unchanged:
+   it is what the GitHub callback has always called, and D-50-17 rules its error form. */
+export type { Provider, ProviderIdentity, ResolvedAccount } from "./identities";
+export { resolveFromProvider } from "./identities";
 /* `resolveOwner` is D-100-01's narrow amendment to this task: T100 names an owner by handle
    and `createBundle` takes an id, and no export of any barrel bridged the two. Published here
    rather than joined inline a third time — `lib/server/registry` already spells that join
