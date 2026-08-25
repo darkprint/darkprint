@@ -76,8 +76,20 @@ const CANONICAL = "/blueprints/[owner]/[slug]";
  * both maps" really is how a per-request route appears here — measured on routes whose
  * cutover is merged, rather than assumed from documentation.
  */
-const STAY_STATIC = ["/", "/mcp", "/skill", "/upload", "/what-a-blueprint-is"] as const;
-const STAY_DYNAMIC = ["/blueprints", "/nodes", "/ontology", "/settings", "/u/[username]"] as const;
+/* `/upload` moved lists at T280 (owner-instructed, 2026-08-25): it gained a data source —
+   the page resolves `?owner=&slug=` against the session and `draftBundle` per request so a
+   release can land in a pre-created draft — which is exactly the condition D-261-03 keys
+   on. The control's JOB is unchanged: a route with no data source going per-request is
+   still the drift this table reds on. */
+const STAY_STATIC = ["/", "/mcp", "/skill", "/what-a-blueprint-is"] as const;
+const STAY_DYNAMIC = [
+  "/blueprints",
+  "/nodes",
+  "/ontology",
+  "/settings",
+  "/u/[username]",
+  "/upload",
+] as const;
 
 describe("the build's route table", () => {
   /*

@@ -455,10 +455,10 @@ export function ScoringModel({
           </div>
         </div>
 
-        {/* ---------- the two filters, and the fact that neither has ever run ---------- */}
+        {/* ---------- the two filters, live against whatever a CLI reports ---------- */}
         <div className="panel flex flex-col gap-4 p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <PanelHeading>Cost and time, if they are ever reported</PanelHeading>
+            <PanelHeading>Cost and time, once they are reported</PanelHeading>
           </div>
           <dl className="flex flex-col gap-2 font-mono text-[12px]">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -476,28 +476,34 @@ export function ScoringModel({
               </dd>
             </div>
           </dl>
-          {/* The `○ not built` chip stood in the heading row, with `minRuns` and
-              `outlierZScore` between it and the sentence that explains what it means. It
-              introduces that sentence now, which is the shape the page around it already
-              uses in `app/reading-the-radar/page.tsx`'s `NotBuilt`: badge, then the claim,
-              in one line.
+          {/* T280: `POST /api/blueprints/{owner}/{slug}/runs` runs these two numbers over
+              whatever a CLI submits, so "if they are ever reported" above became "once" —
+              this panel's earlier premise, that neither filter had a pipeline to sit on,
+              is what changed.
 
-              Guardrails §2 is the reason to move it toward the sentence rather than away.
-              The paragraph carries this route's one honesty-ledger entry, held `open`
-              over `ScoringModel` — "nothing on this site measures a run, so these two
-              filters describe a design rather than a behaviour" — and its wording is
-              untouched here. What changes is that the qualifier and the qualified thing
-              are now one block instead of two separated by a definition list. */}
+              The badge did not become "live": `components/site/honesty.test.ts` and
+              `scoring-model.test.ts` both pin the paragraph's opening clause — "nothing on
+              this site measures a run, so these two filters describe a design rather than
+              a behaviour" — VERBATIM, and it is still true in the sense it was written for.
+              `submitReport` accepts a caller's claim on well-formedness alone (AC1) and
+              verifies nothing about it; the filters run for real now, but what they run
+              over is unverified self-report, never something DarkPrint watched happen.
+              Read `submitReport`'s own doc comment before touching this paragraph again —
+              the sentence is pinned in two files this one does not own. */}
           <p className="flex flex-wrap items-start gap-2 text-sm leading-relaxed text-muted">
             <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
               <span aria-hidden>○</span>
-              not built
+              never verified
             </span>
             <span className="prose-lane">
               Nothing on this site measures a run, so these two filters describe a design
-              rather than a behaviour. There is no runner and no endpoint to report to, and
-              the cost and time figures in the registry are seeded rows that say so on every
-              card carrying one.
+              rather than a behaviour it can confirm for itself. They run for real: a
+              caller submits a report to the runs endpoint keyed to a release digest, and
+              these two numbers are what it passes through before the figure reaches a
+              card. The CLI verb for submitting one is not built yet. Cost and time still never
+              land on the 0–100 axis either way (D-180-01): a real median is a stated
+              number in the reporter&rsquo;s own units, and a release with nothing reported yet
+              says so in as many words.
             </span>
           </p>
         </div>

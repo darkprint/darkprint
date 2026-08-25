@@ -3,7 +3,9 @@
 import { useState } from "react";
 
 import type { AccountRecord } from "@/lib/server/accounts";
+import type { EventKind, Preferences } from "@/lib/server/notifications";
 import { Button } from "@/components/ui/Button";
+import { patchJson } from "./live";
 import {
   ChoiceCard,
   Field,
@@ -19,26 +21,33 @@ import { ProfileFields } from "./ProfileFields";
 // SEAM-44 LIVE: PATCH /api/account/profile
 // SEAM-45 LIVE: PATCH /api/account/handle
 // SEAM-46 LIVE: PATCH /api/account/email
+// SEAM-47 LIVE: PATCH /api/account/notifications, fanned out from this component's own Save
+//   exactly as the other three fields are — see §03 below.
 // SEAM-48 LIVE: PATCH /api/account/default-visibility
-// SEAM-47: PATCH /api/account/notifications EXISTS (T190) — this page is not wired to it, see §03 below.
 
 /* ============================================================
-   Sections 01 to 04, and the one Save that writes them.
+   Sections 01 to 04, plus 03's four switches since T280, and the one Save that writes them.
 
-   ── Why one component for four sections ──
+   ── Why one component for five things ──
    The page has one `Save changes` at the foot, which is the shape a reader expects and
-   the shape it already had. That means one piece of state spanning four panels, so the
-   four panels are one component. §05 and §06 have no editable value in them and stay
-   server-rendered; they arrive here as `children` and are drawn above the footer, which
-   keeps the numbered order on screen identical to the rail.
+   the shape it already had. That means one piece of state spanning every field Save can
+   write, so profile, handle, email, default visibility AND the four notification switches
+   are one component's state. §05, §06 and §07 have no value this component's Save writes —
+   §06 mints and revokes immediately, over its own routes, and §07's two actions are each
+   their own confirm-and-act flow — so all three stay server-rendered and arrive here as
+   `children`, drawn above the footer, which keeps the numbered order on screen identical
+   to the rail.
 
-   ── Four routes, not one ──
-   T050 publishes a route per field group rather than one account write, so Save fans out
-   to whichever of the four actually changed. Nothing is sent for a field a reader did not
-   touch: a `PATCH` that rewrites a handle to its current value still takes the handle
-   through T070's grammar and still burns a rename, and `changeHandle` reserves the old
-   one. **Comparing against the record it was given is what makes Save idempotent**, and it
-   is the reason `saved` below holds a record rather than a boolean.
+   ── Five routes, not one ──
+   T050 and T190 each publish a route per field group rather than one account write, so
+   Save fans out to whichever of the five actually changed. Nothing is sent for a field a
+   reader did not touch: a `PATCH` that rewrites a handle to its current value still takes
+   the handle through T070's grammar and still burns a rename, and `changeHandle` reserves
+   the old one. **Comparing against the record it was given is what makes Save idempotent**,
+   and it is the reason `saved` below holds a record rather than a boolean — extended here
+   to a second baseline, `savedPreferences`, because `AccountRecord` carries no preferences
+   field (T050 explicitly does not own that column) and a second kind of value needs a
+   second kind of baseline to compare against.
 
    ── What is deliberately NOT here ──
    No client-side validation of the handle beyond "it is not empty". T070 owns the grammar,
@@ -48,39 +57,37 @@ import { ProfileFields } from "./ProfileFields";
    back.
    ============================================================ */
 
-/** What `PATCH /api/account/*` answers with, or the problem it answers with instead. */
-type Problem = { title?: string; detail?: string };
-
-async function patch(path: string, body: unknown): Promise<AccountRecord> {
-  const response = await fetch(path, {
-    method: "PATCH",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (response.ok) return (await response.json()) as AccountRecord;
-
-  /* The route's own wording, passed through rather than re-rendered. Every refusal on this
-     surface already has an author — T070's grammar, T050's email and visibility checks —
-     and a second wording here would be the drift D-50-08 forbids, arriving through the
-     client instead of through a barrel. */
-  const problem = (await response.json().catch(() => ({}))) as Problem;
-  throw new Error(problem.detail ?? problem.title ?? `Request failed (${response.status}).`);
-}
+/** The four switches' fallback, reached only when a caller renders this component with no
+    live `notifications` prop — production always passes the account's own, off
+    `getPreferences`. Mirrors `DEFAULT_PREFERENCES` (`lib/server/notifications/defaults.ts`)
+    as a literal rather than an import, for `PrefixedField`'s reason: this is a client
+    component and that barrel reaches `@/lib/db`. */
+const FALLBACK_PREFERENCES: Preferences = { repin: true, fork: true, deprecation: true, digest: false };
 
 export function AccountForm({
   account,
   counts,
+  notifications,
   children,
 }: {
   account: AccountRecord;
   /** §02's "Authored under this handle" block. Server-rendered: it is a database read. */
   counts: React.ReactNode;
-  /** §05 and §06, drawn between §04 and the footer so the numbered order matches the rail. */
+  /** The account's stored preferences (`getPreferences`, T190). Optional and defaulted so a
+      caller that renders this component without a session behind it — as
+      `tests/server/t071/client-cap.test.ts` does, to drive the handle field's rendered
+      `maxLength` — still gets a legal five-field form rather than a missing prop. */
+  notifications?: Preferences;
+  /** §05, §06 and §07, drawn between §04 and the footer so the numbered order matches the
+      rail. None of the three writes through this component's Save — see the header. */
   children: React.ReactNode;
 }) {
   /* The saved record, not the initial one. Save replaces it, so a second Save compares
      against what the account now holds and sends nothing for a field already written. */
   const [saved, setSaved] = useState(account);
+  /* The second baseline the header explains: `AccountRecord` has no preferences member, so
+     the four switches compare against their OWN saved copy rather than a field on `saved`. */
+  const [savedPreferences, setSavedPreferences] = useState(notifications ?? FALLBACK_PREFERENCES);
 
   const [handle, setHandle] = useState(account.author.handle ?? "");
   const [email, setEmail] = useState(account.email ?? "");
@@ -88,6 +95,7 @@ export function AccountForm({
   const [bio, setBio] = useState(account.author.bio ?? "");
   const [hue, setHue] = useState(account.author.avatarHue ?? 210);
   const [visibility, setVisibility] = useState(account.defaultVisibility);
+  const [preferences, setPreferences] = useState(savedPreferences);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
@@ -100,6 +108,7 @@ export function AccountForm({
     setBio(saved.author.bio ?? "");
     setHue(saved.author.avatarHue ?? 210);
     setVisibility(saved.defaultVisibility);
+    setPreferences(savedPreferences);
     setError(undefined);
     setDone(false);
   };
@@ -111,7 +120,13 @@ export function AccountForm({
     bio !== (saved.author.bio ?? "") ||
     hue !== (saved.author.avatarHue ?? 210);
   const visibilityChanged = visibility !== saved.defaultVisibility;
-  const dirty = handleChanged || emailChanged || profileChanged || visibilityChanged;
+  const preferencesChanged =
+    preferences.repin !== savedPreferences.repin ||
+    preferences.fork !== savedPreferences.fork ||
+    preferences.deprecation !== savedPreferences.deprecation ||
+    preferences.digest !== savedPreferences.digest;
+  const dirty =
+    handleChanged || emailChanged || profileChanged || visibilityChanged || preferencesChanged;
 
   const save = async () => {
     setBusy(true);
@@ -119,34 +134,50 @@ export function AccountForm({
     setDone(false);
     try {
       let record = saved;
-      /* Handle first. It is the only one of the four that can be refused on grounds a
+      /* Handle first. It is the only one of the five that can be refused on grounds a
          reader has to act on — taken, or outside T070's grammar — so failing here leaves
-         the other three unsent and the account exactly as it was, rather than half
+         the other four unsent and the account exactly as it was, rather than half
          written under a name that did not land. */
-      if (handleChanged) record = await patch("/api/account/handle", { handle });
+      if (handleChanged) record = await patchJson<AccountRecord>("/api/account/handle", { handle });
       if (emailChanged) {
         /* An emptied field is `null` and not `""`. `AccountRecord.email` is
            `string | null`, and `setEmail` treats the two differently: null clears the
            column, an empty string is a value that fails the address check. */
-        record = await patch("/api/account/email", { email: email === "" ? null : email });
+        record = await patchJson<AccountRecord>("/api/account/email", {
+          email: email === "" ? null : email,
+        });
       }
       if (profileChanged) {
-        record = await patch("/api/account/profile", {
+        record = await patchJson<AccountRecord>("/api/account/profile", {
           displayName: displayName === "" ? null : displayName,
           bio: bio === "" ? null : bio,
           avatarHue: hue,
         });
       }
       if (visibilityChanged) {
-        record = await patch("/api/account/default-visibility", { visibility });
+        record = await patchJson<AccountRecord>("/api/account/default-visibility", { visibility });
+      }
+      let nextPreferences = savedPreferences;
+      if (preferencesChanged) {
+        /* All four keys, not a diff: `setPreferences` accepts `Partial<Preferences>` and
+           writes exactly the keys it is offered, defaulting the rest to what is already
+           stored — sending the full local state is simplest and correct either way, and
+           matches how the other four fields already "send what was typed". */
+        const { preferences: written } = await patchJson<{ preferences: Preferences }>(
+          "/api/account/notifications",
+          preferences,
+        );
+        nextPreferences = written;
       }
       setSaved(record);
+      setSavedPreferences(nextPreferences);
       setHandle(record.author.handle ?? "");
       setEmail(record.email ?? "");
       setDisplayName(record.author.displayName ?? "");
       setBio(record.author.bio ?? "");
       setHue(record.author.avatarHue ?? 210);
       setVisibility(record.defaultVisibility);
+      setPreferences(nextPreferences);
       setDone(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Something went wrong.");
@@ -235,7 +266,7 @@ export function AccountForm({
         className="scroll-mt-24"
         step="03"
         title="Email & notifications"
-        note={<SectionNote tone="amber">◐ nothing sends</SectionNote>}
+        note={<SectionNote tone="amber">◐ no mail sends</SectionNote>}
       >
         <div className="flex flex-col gap-4">
           <Field
@@ -247,13 +278,13 @@ export function AccountForm({
             <TextField id="email" value={email} onChange={setEmail} type="email" mono />
           </Field>
 
-          {/* The three rows below are COPY, not settings, and the difference is the point.
-              The server side is real since T190 — stored preferences, GET/PATCH
-              /api/account/notifications — but this page reads a static fixture and calls
-              neither, so there is still no value here to read and nothing a switch could
-              write. They stay on the page rather than being deleted because they describe
-              what this section will offer, and each switch says what is actually missing
-              instead of the page's old blanket reason (D-262-14 G1). */}
+          {/* Live since T280: each switch flips `preferences` locally and `Save changes`
+              below fans the whole four-key object out to `PATCH /api/account/notifications`
+              exactly as it already does for handle, email, profile and visibility — one
+              button, one request per changed field group. What is NOT live is the mailer
+              behind them: `NotificationDelivery` is a published interface with no
+              implementation (`lib/server/notifications/types.ts`'s own header), so a
+              preference genuinely saves and nothing is ever sent because of it yet. */}
           <ul className="flex flex-col divide-y divide-line rounded-md border border-line">
             {NOTIFICATIONS.map((notification) => (
               <li key={notification.id} className="flex items-center gap-4 px-4 py-3.5">
@@ -264,18 +295,26 @@ export function AccountForm({
                   </span>
                 </span>
                 <Switch
-                  on={notification.on}
+                  on={preferences[notification.id]}
                   label={notification.title}
-                  reason="Nothing sends yet: this page is not wired to the preferences API, and no mail goes out."
+                  /* Without this, a flip made while Save's sequential PATCHes are in
+                     flight is silently overwritten by the stale closure's echo and the
+                     footer still says saved — the exact window `busy` exists to close. */
+                  busy={busy}
+                  onToggle={() =>
+                    setPreferences((current) => ({
+                      ...current,
+                      [notification.id]: !current[notification.id],
+                    }))
+                  }
                 />
               </li>
             ))}
           </ul>
           <p className="text-[13px] leading-relaxed text-muted">
-            Your email is stored and can be changed here. The three rows above are not
-            settings yet: the server can store them now, but this page is not wired to it
-            and no mail is sent, so the switches show what is planned rather than what is
-            on.
+            Your email and the four preferences above are stored on your account, and{" "}
+            <span className="text-fg">Save changes</span> writes both. What is not built yet
+            is the mailer itself: no mail goes out for any of them, whatever you choose here.
           </p>
         </div>
       </SettingsSection>
@@ -341,32 +380,37 @@ export function AccountForm({
 }
 
 /**
- * The three notification rows, as copy.
+ * The four notification rows, as copy — labels for `lib/server/notifications`' own
+ * `EventKind`s, in `EVENT_KINDS`' order, never a fixture.
  *
- * A constant here rather than a read, because there is nothing to read: this used to come
- * off `ACCOUNT.notifications` in `lib/data/account.ts`, a fixture with no column behind it.
- * Moving it here is not relocating data to satisfy a grep — the values are not data any
- * more, they are the section's own description of what it will hold, and the `on` flag is
- * the default each one would ship with rather than a state anybody set.
+ * This used to come off `ACCOUNT.notifications` in `lib/data/account.ts`, a fixture holding
+ * three of the four keys with no column behind any of them (the fourth, `deprecation`, was
+ * simply missing — a row this page had no way to switch because the server had nothing
+ * called that either). Both are gone: the state is `preferences` above, off `getPreferences`,
+ * and this constant is only ever the section's own description of what each key means. The
+ * three sentences quoted below are D-190-04's, the module's own account of each event's
+ * rule, not paraphrased here a second time.
  */
-const NOTIFICATIONS: readonly { id: string; title: string; note: string; on: boolean }[] = [
+const NOTIFICATIONS: readonly { id: EventKind; title: string; note: string }[] = [
   {
     id: "repin",
     title: "A card you pinned publishes a new version",
     note: "The one notification a version-pinned registry genuinely needs.",
-    on: true,
   },
   {
     id: "fork",
     title: "Somebody forks a blueprint you published",
-    note: "Off by default: a public blueprint being copied is the point, not an event.",
-    on: false,
+    note: "Public forks only: a private fork is never announced to its upstream author.",
+  },
+  {
+    id: "deprecation",
+    title: "A vocabulary term you authored is deprecated",
+    note: "Carries the successor term to it, when the registry has one.",
   },
   {
     id: "digest",
     title: "A weekly digest of what changed in the registry",
     note: "Off by default. Nothing on this site is urgent enough to arrive uninvited.",
-    on: false,
   },
 ];
 

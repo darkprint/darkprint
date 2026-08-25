@@ -7,10 +7,15 @@
    this file doubles as the inventory of what the module promises.
 
    ── What is published beyond the block, and why ──
-   T150's block publishes three functions and `SignalState`. Two
-   type names ship here on the saves barrel's precedent:
+   T150's block publishes three functions and `SignalState`.
+   `getSignalsMany` is T280's addition — the two star routes and a
+   listing page all need many targets' signals in one round trip
+   rather than one `getSignals` per row, and it is `getSignals`
+   read many times over rather than a second reader with its own
+   opinion about a zeroed target or a private one. Two type names
+   ship here on the saves barrel's precedent:
 
-   * `CounterTarget` — the shape all three functions take. The
+   * `CounterTarget` — the shape every function above takes. The
      block writes it inline at each of them, so without a name
      every consumer retypes the union — and **a third naming of the
      same three kinds is exactly what D-140-04 charged `seams.md`
@@ -72,5 +77,5 @@ export type { CounterTarget, CounterTargetKind, SignalState } from "./types";
 /* D-13's boundary. Two classes: one fault, and one decision this module authors. */
 export { CounterStoreError, NotSignedInError } from "./errors";
 
-export { getSignals } from "./read";
+export { getSignals, getSignalsMany } from "./read";
 export { recordDownload, toggleStar } from "./write";

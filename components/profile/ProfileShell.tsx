@@ -1,4 +1,3 @@
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileTabs } from "./ProfileTabs";
 import type { ProfileView } from "./load";
@@ -16,29 +15,31 @@ import type { ProfileTabId } from "./tabs";
  * list has every reason to think they are signed in as somebody — is not a reason any
  * more, because they are.
  *
- * **So the notice is narrowed rather than deleted (D-78, D-262-09).** What is left is the
- * half that is still true: several figures on this page have no backend behind them, and a
- * reader looking at their own profile should be told which. Retiring a claim is not the
- * same act as deleting it, and where a sentence is still true in a narrower sense the true
- * half survives.
+ * **T280: re-derived clause by clause, not just narrowed again.** The pass that first
+ * narrowed this (D-78, D-262-09) still called every community figure seeded. That is no
+ * longer true of all of them: `0004_social` and `0007_drafts` gave watchers, support,
+ * validated, downloads and stars each a real count (`components/profile/load.ts`'s own
+ * header has the ledger). What is left unwired is narrower and different in kind — no mail
+ * ever leaves this account, and no run pipeline instruments an actual execution behind the
+ * self-reported cost a run report carries — so the badge and the marker come off, and the
+ * one true residual sentence takes their place.
  */
 function OwnerNotice() {
   return (
     <div className="mb-5 flex flex-col gap-3 rounded-lg border border-line bg-surface-2/50 px-5 py-4">
       <div className="flex flex-wrap items-center gap-3">
         <span className="label">What is real here</span>
-        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-amber">
-          ◐ seeded
+        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-emerald">
+          ✓ counted
         </span>
-        <ComingSoonBadge />
       </div>
       <p className="text-[13px] leading-relaxed text-muted">
         This is your profile because your session names this handle. Your identity, your
-        join date and your saved list are real. What is counted is what the archive holds:
-        the published blueprints, the node cards and the vocabulary terms. Every community
-        figure here is still seeded, watchers and support and validated and downloads and
-        stars alike, because nothing counts them yet: there is no telemetry, no ballot and
-        no verified run report.
+        join date and your saved list are real, and so is everything counted on this page
+        now: the published blueprints, the node cards and the vocabulary terms, and the
+        watchers, support, validated, downloads and stars beside them. Two things are
+        still absent: no notification mail goes out yet, and no run pipeline measures an
+        actual execution behind a submitted run report&rsquo;s own numbers.
       </p>
     </div>
   );
@@ -60,23 +61,6 @@ export function ProfileShell({
   active: ProfileTabId;
   children: React.ReactNode;
 }) {
-  /* Summed here rather than carried on `ProfileView`: it is a fold over the same
-     `blueprints` and `cards` lists every tab already has, not a fact the loader needs to
-     know to answer any other question, and `ProfileHeader` is the one place either is
-     read. Both folds run over the PUBLIC lists only (`view.blueprints`/`view.cards`, not
-     `owned`/`ownedCards`): a private row has never been seen by anyone else, so it
-     contributes no stars by construction, and every private card's own support is seeded
-     at `0` for exactly that reason — so including it would add nothing anyway.
-
-     Both figures are still seeded and both keep their marker: `downloads` and `votes` come
-     off the archive's own fixtures and `support` off `starsFor`, and no counter has run
-     for any of them — `lib/server/counters` exists but `app/api/signals/**` does not
-     (D-262-07). */
-  const downloads = view.blueprints.reduce((n, b) => n + b.downloads, 0);
-  const stars =
-    view.blueprints.reduce((n, b) => n + b.votes, 0) +
-    view.cards.reduce((n, c) => n + c.support, 0);
-
   return (
     <div className="container-page py-10 lg:py-12">
       {view.owner && <OwnerNotice />}
@@ -85,16 +69,17 @@ export function ProfileShell({
         author={view.author}
         blueprints={view.blueprints.length}
         cards={view.cards.length}
-        downloads={downloads}
-        stars={stars}
-        validated={view.profile.validated}
-        /* `view.joinedAt`, not `view.profile.joinedAt`: this is the account's own
-           `created_at` now, off `getProfile`, and it is the one figure that has left the
-           seeded four. The fixture's date is still in `view.profile` and is not read. */
+        /* T280: every one of these five is `ProfileView`'s own field now, computed in
+           `load.ts` off `getProfile` (watchers, support, validated) and `getSignalsMany`
+           (downloads, stars) — no fold over a seeded fixture left to run here. */
+        downloads={view.downloads}
+        stars={view.stars}
+        validated={view.validated}
         joinedAt={view.joinedAt.toISOString()}
-        watchers={view.profile.watchers}
-        support={view.profile.support}
+        watchers={view.watchers}
+        support={view.support}
         owner={view.owner}
+        viewerSignedIn={view.viewerSignedIn}
       />
 
       <ProfileTabs

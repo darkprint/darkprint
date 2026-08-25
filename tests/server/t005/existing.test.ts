@@ -66,8 +66,20 @@ afterAll(async () => {
   await dropScratchDatabases();
 });
 
-/** The one delta AC7a licenses, written as the diff entry it produces. */
-const LICENSED_DELTA = "changed handle_reservation.account_id is_nullable: YES -> NO";
+/* Every delta a ruling licenses, written as the diff entries it produces. AC7a's cell is
+   T005's own. The five `bundle` columns are T280's (owner-instructed GitHub-style draft
+   creation, migration 0007_drafts): nullable additions, so every merged task's INSERT and
+   SELECT against `bundle` still binds — the freeze's reason (a moved base breaks eight
+   consumers silently) does not reach a nullable add, and the cells are enumerated here so
+   the NEXT alteration still reports itself by name instead of hiding behind a count. */
+const LICENSED_DELTAS = [
+  "added columns bundle.category",
+  "added columns bundle.description",
+  "added columns bundle.summary",
+  "added columns bundle.tags",
+  "added columns bundle.title",
+  "changed handle_reservation.account_id is_nullable: YES -> NO",
+];
 
 suite("T005 AC7 — the frozen baseline is a measurement", () => {
   it("`baseline.json` was captured from a real commit and covers all ten base tables and every base enum", () => {
@@ -111,7 +123,7 @@ suite("T005 AC7 — the frozen baseline is a measurement", () => {
   });
 });
 
-suite("T005 AC7 — the ten tables T000 shipped are untouched but for one named column", () => {
+suite("T005 AC7 — the ten tables T000 shipped are untouched but for the licensed cells", () => {
   it("all ten base tables are still present under their own names", () => {
     requireT005Shipped(scratch);
     expect(
@@ -121,7 +133,7 @@ suite("T005 AC7 — the ten tables T000 shipped are untouched but for one named 
     ).toEqual([]);
   });
 
-  it("AC7: the schema delta over those ten tables is exactly AC7a's one cell, and nothing else", async () => {
+  it("AC7: the schema delta over those ten tables is exactly the licensed cells, and nothing else", async () => {
     requireT005Shipped(scratch);
     const live = await shapeOf(scratch.query, BASE_TABLES);
     const delta = [
@@ -134,9 +146,9 @@ suite("T005 AC7 — the ten tables T000 shipped are untouched but for one named 
       delta,
       `${CONTRACT.ac7}\n  ${CONTRACT.ac7a}\n  Baseline captured from ${baseline.capturedFrom} ` +
         `(${baseline.migration}), which is base and not this tree.\n` +
-        `  Exactly one cell may move. Anything else here is an alteration to a table eight ` +
-        `merged tasks already query, and nothing downstream would find out until it broke.`,
-    ).toEqual([LICENSED_DELTA]);
+        `  Only the licensed cells may move. Anything else here is an alteration to a table ` +
+        `eight merged tasks already query, and nothing downstream would find out until it broke.`,
+    ).toEqual(LICENSED_DELTAS);
   }, 120_000);
 
   it("AC7: no base enum gained, lost or reordered a label", async () => {

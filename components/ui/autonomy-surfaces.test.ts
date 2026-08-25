@@ -226,11 +226,24 @@ describe("no surface prints a seeded index figure as a fact", () => {
    * would report the correct arrangement. What it catches is a surface that prints one of
    * these numbers and never says the word.
    */
+  /* AMENDED at T280 (owner-instructed wiring wave, 2026-08-25; blob re-pinned in
+     tests/server/t260/frozen-tests.test.ts in the same commit, cause named there). The
+     two profile surfaces now sum REAL signals — `getSignalsMany` over the account's own
+     bundles, watchers/support off `getProfile` — so demanding the word "seeded" of them
+     would demand the false claim this rule exists to prevent, in the other direction.
+     They are exempted BY NAME, not by category: any new file printing one of these reads
+     still owes the word until it can show a live source the way load.ts does. */
+  const LIVE_PRINTERS = new Set([
+    "components/profile/ProfileHeader.tsx",
+    "components/profile/ProfileShell.tsx",
+  ]);
+
   it("says seeded in every file that reads one", () => {
     const printers: string[] = [];
     for (const { path, text } of STRIPPED) {
       if (!SEEDED_READS.some((read) => text.includes(read))) continue;
       printers.push(path);
+      if (LIVE_PRINTERS.has(path)) continue;
       expect(text.toLowerCase(), `${path} prints an index figure and never says seeded`)
         .toContain("seeded");
     }

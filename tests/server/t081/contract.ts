@@ -265,6 +265,15 @@ export const PUBLISHED_READERS = {
   usersOfMany:
     "usersOfMany(db: Db, actor: Actor, cardIds: readonly string[]): " +
     "Promise<ReadonlyMap<string, readonly BlueprintSummary[]>>",
+  /* T280's two (backend.md §T280): the owner-shelf reader over `bundle` directly, drafts
+     included, and the draft shell for the detail page's zero-release branch. Both bypass
+     the snapshot on purpose — its release-skip is the public shelf's contract. */
+  ownedBundles:
+    "ownedBundles(db: Db, actor: Actor, handle: string): " +
+    "Promise<readonly OwnedBundleSummary[]>",
+  draftBundle:
+    "draftBundle(db: Db, actor: Actor, owner: string, slug: string): " +
+    "Promise<DraftBundle | undefined>",
 } as const;
 
 export type ReaderName = keyof typeof PUBLISHED_READERS;
@@ -379,6 +388,18 @@ export const READER_PROBES: Record<ReaderName, ReaderProbe> = {
     args: [[PROBE.cardId]],
     variantArgs: [[VARIANT.cardId]],
     supplied: [PROBE.cardId],
+  },
+  /* T280's two, probed like cardsOwnedBy/blueprint: both take caller-supplied names, so
+     both owe the variant arm and the fault sweep the moment they joined the barrel. */
+  ownedBundles: {
+    args: [PROBE.ownerHandle],
+    variantArgs: [VARIANT.ownerHandle],
+    supplied: [PROBE.ownerHandle],
+  },
+  draftBundle: {
+    args: [PROBE.ownerHandle, PROBE.slug],
+    variantArgs: [VARIANT.ownerHandle, VARIANT.slug],
+    supplied: [PROBE.ownerHandle, PROBE.slug],
   },
 };
 

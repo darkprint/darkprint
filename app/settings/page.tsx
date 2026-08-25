@@ -3,18 +3,18 @@ import type { Metadata } from "next";
 
 import { getSharedDbClient } from "@/lib/db";
 import { actorFrom, getAccount } from "@/lib/server/accounts";
+import { getBundle } from "@/lib/server/archive";
+import { getPreferences } from "@/lib/server/notifications";
 import { getProfile } from "@/lib/server/profiles";
-import { latestCards } from "@/lib/server/registry";
-import { blueprints } from "@/lib/server/registry";
+import { latestCards, ownedBundles } from "@/lib/server/registry";
 import { monthYear } from "@/lib/format";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { ButtonLink } from "@/components/ui/Button";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SideRail, type SideRailItem } from "@/components/ui/SideRail";
 import { SectionNote, SettingsSection } from "@/components/settings/controls";
 import { AccountForm } from "@/components/settings/AccountForm";
+import { ApiKeys } from "@/components/settings/ApiKeys";
+import { DangerZone, type TransferableBundle } from "@/components/settings/DangerZone";
 import { readSession } from "@/components/profile/session";
 import { profileHref } from "@/components/profile/author";
 import { SignInButtons } from "@/components/auth/SignInButtons";
@@ -23,59 +23,60 @@ import { SignInButtons } from "@/components/auth/SignInButtons";
 // SEAM-43 LIVE: GET /api/account, read in-process here rather than over HTTP.
 // SEAM-52 / SEAM-111 LIVE: the authored counts, off `@/lib/server/profiles` and
 //   `@/lib/server/registry` rather than a per-handle counts endpoint.
-// SEAM-45, SEAM-46, SEAM-48 LIVE: see `components/settings/AccountForm.tsx`.
-// SEAM-47 PLANNED: PATCH /api/account/notifications — no column holds one (T190).
-// SEAM-49 PLANNED: GET /api/account/validator — needs a ballot (T160).
-// SEAM-50 PLANNED: DELETE /api/account — no route deletes an account.
-// SEAM-51 PLANNED: POST /api/bundles/{owner}/{slug}/transfer — no route moves ownership.
+// SEAM-45, SEAM-46, SEAM-47, SEAM-48 LIVE: see `components/settings/AccountForm.tsx`.
+// SEAM-49 PLANNED: no per-account validator read exists. Ballot CASTING is LIVE since T280,
+//   at POST /api/blueprints/{owner}/{slug}/votes on a blueprint's own page — a different
+//   surface from this one, which only ever displayed the account's badge and weight.
+// SEAM-50 LIVE: GET /api/account/delete/plan, POST /api/account/delete — see
+//   `components/settings/DangerZone.tsx`.
+// SEAM-51 LIVE: GET /api/transfer/plan, POST /api/transfer — see `DangerZone.tsx`. (SEAM-51's
+//   own path, `POST /api/bundles/{owner}/{slug}/transfer`, was never built; D-120-14 records
+//   it stale in favour of the two routes actually shipped.)
+// NEW, no prior SEAM number: GET/POST /api/account/keys, DELETE /api/account/keys/[keyId] —
+//   see `components/settings/ApiKeys.tsx`.
 
 /* ============================================================
    /settings — what the registry knows about you.
 
-   Six sections on the documentation rail, in the register the
+   Seven sections on the documentation rail, in the register the
    Learn pages and the two detail pages already use.
 
    ── THE ONE THING TO UNDERSTAND BEFORE EDITING THIS FILE ──
-   There IS an account now, and this file used to open by saying
-   there was not. Every value below is a row in `account`, read per
-   request for the reader who asked, and `Save changes` writes it.
+   There IS an account now, and every value below is a row in
+   `account`, read per request for the reader who asked. Three
+   surfaces write it: `Save changes` (§01-§04), a switch's own
+   request (§06, minting and revoking a key), and a confirm step's
+   own request (§07, deleting or transferring). **A control is
+   enabled when a route exists for it and disabled when its only
+   effect would be to save something nothing stores**, and it says
+   which of the two it is either way. Never both enabled and inert,
+   never both disabled and functional (AC2). Enabling everything
+   passes a naive "nothing is disabled" check and fails that one.
 
-   That inverts the rule this file was built around, but it does not
-   retire it — it moves the line. **A control is enabled when a
-   route exists for it and disabled when its only effect would be to
-   save something nothing stores**, and it says which of the two it
-   is either way. Never both enabled and inert, never both disabled
-   and functional (AC2). Enabling everything passes a naive "nothing
-   is disabled" check and fails that one.
+   ── What T280 moved, and what it did not ──
+   Three surfaces were still on the wrong side of AC2 going into this
+   wave: §03's notification switches (no route wired), §06 API keys
+   (did not exist), and what is now §07 Danger zone (routes existed
+   since T120, never wired here). All three are live now — see
+   `components/settings/AccountForm.tsx`, `ApiKeys.tsx` and
+   `DangerZone.tsx`.
 
-   Doc 2 §0.4 and this project's two HIGH findings are still about
-   the same failure — a surface that looks like it works — and a
-   settings form is still the worst possible place for it. What
-   changed is which controls are on the wrong side of it: three, not
-   all of them.
+   What did NOT move: mail delivery. §03's switches save for real,
+   and nothing sends because of them — `NotificationDelivery` is a
+   published interface with no implementation. §05 validator status
+   stays read-only; ballot casting is real (T280 wires it) but it
+   lives on a blueprint's own page, not this one.
 
-   ── The three that would not save even now ──
-   §03's notification switches have no column (`AccountRecord`
-   carries no `notifications` member) and §06's two actions have no
-   route. They stay on the page, disabled, each naming what is
-   actually missing rather than the page's old blanket reason —
-   "no account to delete" became false the day accounts landed, and
-   D-78 asks whether the CLAIM is still true, not whether the
-   control still works.
-
-   §05 validator status is a split: the badge and the weight are
-   real reads off `AccountRecord` and their `◐` is gone, while
-   "validator voting is not built" is still true and stays.
-
-   An Appearance section stood at §06 and is deleted — see the note
-   where it was. Nothing in it was a setting. The honesty strip went
-   on naming it for weeks after it left; that is fixed here too.
+   An Appearance section stood at §06 and was deleted before this
+   wave — see the note that used to explain it, now gone with it: it
+   drew three cards about how the interface already behaves, and a
+   settings page is for settings.
    ============================================================ */
 
 export const metadata: Metadata = {
   title: "Settings",
   description:
-    "What the registry knows about you, and what it will never keep. Your profile, handle, email and default visibility are stored; notifications and validator voting are not built yet.",
+    "What the registry knows about you, and what it will never keep. Your profile, handle, email, default visibility, notification preferences and API keys are stored; casting a ballot happens on a blueprint's own page, and no mail goes out yet.",
 };
 
 /**
@@ -116,45 +117,17 @@ const SETTINGS_SECTIONS: readonly SideRailItem[] = [
     step: "05",
   },
   {
+    href: "#api-keys",
+    label: "API keys",
+    step: "06",
+  },
+  {
     href: "#danger-zone",
     label: "Danger zone",
-    step: "06",
+    step: "07",
     tone: "signal",
   },
 ];
-
-/** One row of §06: a description, and the control that would carry it out. */
-function DangerRow({
-  title,
-  children,
-  action,
-  why,
-}: {
-  title: string;
-  children: React.ReactNode;
-  action: string;
-  /** Why the button is off. Printed rather than left in a `title` attribute. */
-  why: string;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-5 rounded-md border border-line bg-surface p-4">
-      <div className="flex min-w-[280px] flex-1 flex-col gap-1">
-        <span className="text-sm text-fg">{title}</span>
-        <span className="text-[13px] leading-relaxed text-muted">{children}</span>
-      </div>
-      <div className="flex flex-col items-end gap-2">
-        {/* The `!` is load-bearing, not shorthand. `outline` carries
-            `hoverable:hover:border-cyan hoverable:hover:text-cyan`, and `:hover` still
-            matches a disabled button — so without `!important` this destructive control
-            would turn the interactive colour under the pointer. */}
-        <Button variant="outline" disabled className="border-signal/50! text-signal!">
-          {action}
-        </Button>
-        <span className="font-mono text-[11px] text-dim">{why}</span>
-      </div>
-    </div>
-  );
-}
 
 /** What a reader who is not signed in gets, in place of somebody else's account. */
 function SignedOut() {
@@ -216,14 +189,40 @@ export default async function Page() {
     handle === null
       ? 0
       : (await latestCards(db, actor)).filter((card) => card.card.author === handle).length;
-  const published = (await blueprints(db, actor)).length;
+
+  /* §03's four switches: the account's own stored preferences, filled from the published
+     default for any key its row has never written (`getPreferences`, T190). */
+  const preferences = await getPreferences(db, actor, session.accountId);
+
+  /* §07's Transfer picker: every bundle this account owns, joined against `getBundle` for the
+     id `POST /api/transfer` addresses by. `ownedBundles` is keyed by handle and serves the
+     profile shelf, which never needs a bundle id — so a handle-less account (T050 AC1) has
+     nothing to look it up by, and simply owns nothing transferable until it has one. */
+  const transferable: TransferableBundle[] =
+    handle === null
+      ? []
+      : (
+          await Promise.all(
+            (await ownedBundles(db, actor, handle)).map(async (row) => {
+              const bundle = await getBundle(db, account.accountId, row.slug);
+              if (bundle === undefined) return undefined;
+              const option: TransferableBundle = {
+                bundleId: bundle.id,
+                slug: row.slug,
+                visibility: row.visibility,
+              };
+              if (row.title !== undefined) option.title = row.title;
+              return option;
+            }),
+          )
+        ).filter((option): option is TransferableBundle => option !== undefined);
 
   return (
     <SideRail
       label="Settings"
       items={SETTINGS_SECTIONS}
       ariaLabel="Settings sections"
-      /* The one caller that takes the compact list. Six sections, no footer sequence, and
+      /* The one caller that takes the compact list. Seven sections, no footer sequence, and
          below `xl` the rail is not drawn at all — see `SideRail`'s own note. */
       compact
       footer={
@@ -248,19 +247,16 @@ export default async function Page() {
           lead="What the registry knows about you, and what it will never keep."
         />
 
-        {/* The honesty strip, narrowed to what is still true.
+        {/* The honesty strip, re-derived clause by clause for T280.
             ------------------------------------------------------------
-            It used to say nothing on this page was stored, that every value was a row in
-            `lib/data/account.ts`, and that Save was switched off. All three became false
-            together, so all three came off (D-78). What replaced them is the same kind of
-            statement about the same page: which controls write, and which two are still
-            waiting on something nobody has built.
+            Notifications and the danger zone were the strip's last two "does not save"
+            clauses, and T280 wires both — so this paragraph is rewritten rather than edited
+            in place, the same D-78 move the strip has been through twice before: state what
+            is actually true of the page today, not what is left of an older true sentence.
 
-            It also named `appearance` as a section that "stays in this browser". §06
-            Appearance was deleted on the author's instruction well before this cutover —
-            see the note where it stood — so the strip has been naming a section that is
-            not on the page. Fixed here rather than quietly: a reader who went looking for
-            it found nothing, twice over. */}
+            What survives is the one clause with nothing behind it either way: no mailer
+            exists (`NotificationDelivery` is a published interface, never implemented), so a
+            preference genuinely saves and no mail goes out because of it regardless. */}
         <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface-2/50 px-5 py-4">
           <div className="flex flex-wrap items-center gap-3">
             <span className="label">What saves</span>
@@ -269,19 +265,22 @@ export default async function Page() {
             </span>
           </div>
           <p className="text-[13px] leading-relaxed text-muted">
-            Your profile, handle, email and default visibility are stored on your account
-            and <span className="text-fg">Save changes</span> writes them. Two things here
-            still do not save, and both say so in their own head:{" "}
-            <span className="text-fg">notifications</span>, which nothing stores and which
-            send no mail, and <span className="text-fg">validator status</span>, which
-            needs a ballot nobody has built. The{" "}
-            <span className="text-fg">danger zone</span>&rsquo;s two actions have no route
-            behind them yet and are switched off rather than quietly doing nothing.
+            Your profile, handle, email, default visibility and notification preferences are
+            stored on your account, and <span className="text-fg">Save changes</span> writes
+            all five. Two sections write outside that button: an{" "}
+            <span className="text-fg">API key</span> mints and revokes immediately, and the{" "}
+            <span className="text-fg">danger zone</span>&rsquo;s two actions are live and
+            irreversible; each previews what it would do before it asks you to confirm.
+            What is still not built is the mailer itself: no mail goes out yet for any
+            notification, whatever you switch on, and{" "}
+            <span className="text-fg">validator status</span> below is a read-only summary:
+            casting a ballot happens on a blueprint&rsquo;s own page, not this one.
           </p>
         </div>
 
         <AccountForm
           account={account}
+          notifications={preferences}
           counts={
             <div className="flex flex-col gap-3 rounded-md border border-line bg-surface-2 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -318,14 +317,9 @@ export default async function Page() {
             step="05"
             title="Validator status"
             tone="amber"
-            note={<ComingSoonBadge />}
+            note={<SectionNote tone="amber">read-only here</SectionNote>}
           >
             <div className="flex flex-col gap-4">
-              {/* The badge and the weight are real reads off `AccountRecord`, so the `◐`
-                  that stood over them is gone. The paragraph under them has not moved: the
-                  ballot is T160 and is not built, so the three community metrics on every
-                  scorecard are still seeded. Two claims, one section, opposite directions
-                  (D-262-15). */}
               <div className="flex flex-wrap items-center gap-5">
                 {account.author.validator ? (
                   <Badge
@@ -344,16 +338,23 @@ export default async function Page() {
                   · weight ×{account.validatorWeight} on community metrics
                 </span>
               </div>
+              {/* T280 rewrites this paragraph rather than leaving it: ballot casting is live
+                  (`POST /api/blueprints/{owner}/{slug}/votes`), and a validator's weight is
+                  applied at read, on every ballot they cast — `lib/server/ballot/aggregate.ts`
+                  joins `account.validator_weight` into the weighted mean unconditionally, so
+                  "validator voting is not built" would be false to say now. What is still true
+                  is narrower: this PAGE has never let you cast one, and does not start here —
+                  a ballot is cast from a blueprint's own scorecard, not from a settings form. */}
               <p className="text-[13px] leading-relaxed text-muted">
-                The status above is your account&rsquo;s. What it does not do yet is
-                anything: validator voting is not built, so the three community metrics on
-                every scorecard are seeded and this weight carries nothing over anyone
-                else&rsquo;s reading.
+                The status above is your account&rsquo;s: a real badge and a real weight,
+                both read off it directly. Casting a ballot happens on a blueprint&rsquo;s own
+                page, where your weight (if you have one above the default) already counts
+                toward the three community metrics on its scorecard.
               </p>
             </div>
           </SettingsSection>
 
-          {/* §06 Appearance stood here and is deleted on the author's instruction.
+          {/* §06 Appearance stood here once and is deleted on the author's instruction.
               ------------------------------------------------------------
               It drew three cards — the dark ground, the cyanotype register and reduced
               motion — and none of them was a setting. The site has one theme, the blueprint
@@ -365,42 +366,30 @@ export default async function Page() {
 
               The two sentences it carried that were worth keeping are already elsewhere —
               `app/globals.css` documents both poles, and the reduced-motion rule is written
-              where it is honoured. */}
+              where it is honoured. §06 is API keys now, new at T280 — a different section
+              entirely, which happens to reuse the number Appearance left open. */}
 
           {/* ---------- 06 ---------- */}
           <SettingsSection
-            id="danger-zone"
+            id="api-keys"
             className="scroll-mt-24"
             step="06"
+            title="API keys"
+            note={<SectionNote>outside Save changes</SectionNote>}
+          >
+            <ApiKeys />
+          </SettingsSection>
+
+          {/* ---------- 07 ---------- */}
+          <SettingsSection
+            id="danger-zone"
+            className="scroll-mt-24"
+            step="07"
             title="Danger zone"
             tone="signal"
             note={<SectionNote tone="signal">irreversible</SectionNote>}
           >
-            <div className="flex flex-col gap-3">
-              {/* Both reasons are REWRITTEN, not deleted, and the distinction is D-78's.
-                  They read "no account to delete" and "no ownership to move", and both
-                  became false the day accounts and ownership landed — there is an account
-                  and there is ownership; what is missing is the route. The limitation
-                  genuinely survives, so the control stays off and only its reason moves
-                  (D-262-15). */}
-              <DangerRow
-                title="Delete account"
-                action="Delete account"
-                why="no route deletes an account yet"
-              >
-                Your handle is reserved, your private bundles are destroyed, and everything
-                you published stays. A pinned card cannot be withdrawn: {published} bundles
-                in the registry would stop resolving.
-              </DangerRow>
-              <DangerRow
-                title="Transfer a blueprint"
-                action="Transfer"
-                why="no route moves ownership yet"
-              >
-                Hand ownership to another handle. The digest does not change, because the
-                bundle is the same bytes. Only the author line moves.
-              </DangerRow>
-            </div>
+            <DangerZone handle={handle} transferable={transferable} />
           </SettingsSection>
         </AccountForm>
       </div>

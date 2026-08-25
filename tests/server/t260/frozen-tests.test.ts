@@ -58,20 +58,30 @@ interface Frozen {
 const FROZEN: readonly Frozen[] = [
   {
     path: "components/ui/autonomy-surfaces.test.ts",
-    blob: "922b8265db5929d6bd7c1098c6b53c33e10d3592",
-    owner: "nobody in this wave",
+    blob: "39cd161d64b8250178ffd309fded181cde10f58e" /* re-pinned DELIBERATELY at T280
+      (owner-instructed wiring wave, 2026-08-25): the seeded-figure rule gained a named
+      LIVE_PRINTERS exemption for the two profile surfaces whose downloads/stars sums went
+      live off `getSignalsMany`/`getProfile` — demanding "seeded" of a real count is the
+      false claim the rule guards against, mirrored. The rule was falsified after the
+      amendment: a probe file printing `.votes` with no marker still reds by name. The pin
+      fired exactly as designed; this is the deliberate re-pin its message demands. */,
+    owner: "nobody in this wave; amended by T280",
     why:
       "AC3 and D-260-02 name it. `:259` finds `components/gallery/GalleryBrowser.tsx` by EXACT PATH and asserts it lacks `value: \"downloads\"` and `value: \"votes\"`, carrying `expect(gallery).toBeDefined()` so a rename or a move REDS LOUDLY rather than passing vacuously. It is the only instrument in the repository holding D-31/D-57's popularity prohibition.",
   },
   {
     path: "components/site/honesty.test.ts",
-    blob: "a6143c8632bcfa5acd427fdb59b1e9b8954ec427" /* re-pinned DELIBERATELY at T260's merge:
-      T263's 528806a (D-263-12, the drop control stops saying nothing is uploaded) moved the
-      file through the backend merge — the T260 implementer never touched it (verified:
-      git log backend..feat/t260-browse -- <file> is empty but a merge commit). The pin
-      fired exactly as designed; updating it here, with the cause named, is the deliberate
+    blob: "d64124a24e3c9951a93e805b9c2e4dc450aa7d3e" /* re-pinned DELIBERATELY twice. At
+      T260's merge: T263's 528806a (D-263-12) moved the file through the backend merge —
+      the T260 implementer never touched it. At T280 (owner-instructed wiring wave,
+      2026-08-25, D-261-07(5)'s granted path): five ledger rows moved with the copy they
+      pin — /skill's publishing panel and metadata (three of four refusals went live, the
+      pin keeps the surviving one), /mcp's description and lead (the server went live, the
+      npm-unpublished warning is the claim that survives), and the /mcp status-column row
+      came OUT with its removal logged inline where it stood. The pin fired exactly as
+      designed both times; updating it here, with the cause named, is the deliberate
       re-pin its own message demands rather than the silent one it forbids. */,
-    owner: "nobody in this wave; amended by T263 under D-263-04",
+    owner: "nobody in this wave; amended by T263 under D-263-04, and by T280",
     why:
       "AC3 names it. It pins its sentences VERBATIM, so changing one is changing this file in the same commit with the new sentence pinned — which is the mechanism D-78's one-direction rule relies on. Note that none of its pinned surfaces is a T260 route (D-260-09), so this pin holds the file, not this task's honesty; `ac4-markers.test.ts` is the instrument for that.",
   },

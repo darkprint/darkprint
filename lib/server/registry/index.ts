@@ -1,7 +1,7 @@
 /* ============================================================
    DarkPrint backend — lib/server/registry public surface
-   Sixteen readers, each taking an `Actor`, plus the record shapes
-   they return, plus the fault path all sixteen share. Deep paths
+   Nineteen readers, each taking an `Actor`, plus the record shapes
+   they return, plus the fault path every one shares. Deep paths
    are internal; nothing outside this module should reach for one
    (T000 contract, D-01).
 
@@ -14,6 +14,10 @@
    T130's blocked `counts.cards`: the one card reader deliberately
    outside the pin index, because ownership and indexing are
    different questions and the count has to answer the first.
+   `usersOfMany` joined at T260's merge (D-260-31), and `draftBundle`
+   / `ownedBundles` at 0007_drafts (T280) — see `owned.ts` for why
+   those two read `bundle` directly rather than through the shared
+   snapshot every other reader here builds from.
 
    The message literal is NOT exported. A test that imports its
    expected message from the module under test asserts that the
@@ -26,6 +30,8 @@ export type {
   BlueprintSchematic,
   BlueprintSummary,
   CardSummary,
+  DraftBundle,
+  OwnedBundleSummary,
   Scores,
 } from "./types";
 /* `BlueprintSchematic.graph` is `lib/types.ts`'s `BlueprintGraph` and is NOT re-exported
@@ -42,6 +48,10 @@ export { withRegistryStore } from "./store";
 export { withRegistryErrors } from "./http";
 
 export { blueprint, blueprints } from "./blueprints";
+/* 0007_drafts (T280). Two readers over `bundle` directly — `owned.ts`'s header says why
+   they do not go through `loadSnapshot`, and in particular why its release-skip for the
+   public archive shelf is untouched by either. */
+export { draftBundle, ownedBundles } from "./owned";
 export { card, cards, cardsOwnedBy, latestCards, versionsOf } from "./cards";
 export { graphsOf } from "./graphs";
 export { duplicates, usersOf, usersOfMany } from "./joins";

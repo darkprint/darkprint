@@ -387,15 +387,21 @@ const CLAIMS: Claim[] = [
      preview left. A reader who has just been handed a folder asks where to put it. */
   {
     surface: "/skill · the publishing panel, under the page's own rule",
-    why: "the route ends with a reader holding a blueprint their own agent wrote, and the next question anybody holding one asks is where to put it. The answer is nowhere: there is no backend, no account, no private draft and no push from a client, and all four have to be refused on the page that just handed over the folder rather than only on `/towards-a-dark-factory/the-climb`",
-    says: "not built yet: an account of your own, a blueprint kept private while it is under construction, publishing one to the registry, and pushing a change to it straight from claude code",
+    /* AMENDED at T280 (owner-instructed, 2026-08-25). This row pinned a four-refusal
+       sentence; T050 (accounts), T263 (publish + per-release visibility) and T280's page
+       wiring made three of the four the false claim in the other direction. The pin moves
+       to the one refusal still true, which is the same claim this row always guarded:
+       the reader is told, on the page that handed them the folder, what they still
+       cannot do with it from where they sit. */
+    why: "the route ends with a reader holding a blueprint their own agent wrote, and the next question anybody holding one asks is where to put it. The answer is /upload now, and the residual limit has to be stated on the page that just handed over the folder: their agent cannot push it there itself (T270 todo, SEAM-96 open)",
+    says: "not built yet: pushing a change to it straight from claude code as you work",
     where: "open",
     html: SKILL_PAGE,
   },
   {
     surface: "/skill · metadata.description",
-    why: "the same kind of disclaimer where a reader who never opens the page reads it — a search result, a shared link's preview card, a browser history entry. `/install`'s said \"not built yet: nothing here runs\" until 2026-08-07, and that came out because it became false in the OTHER direction: `npx skills@latest add Brotherhood94/darkprint` runs. This route inherits the working half, so its description names what the command actually leaves on disk and then the two capabilities that are genuinely absent. The MCP limit is NOT in this string any more, and its absence is correct rather than an omission: it moved to `/mcp`, which is now a route with a description of its own",
-    says: "not built yet: accounts and publishing",
+    why: "the same kind of disclaimer where a reader who never opens the page reads it — a search result, a shared link's preview card, a browser history entry. `/install`'s said \"not built yet: nothing here runs\" until 2026-08-07, and that came out because it became false in the OTHER direction: `npx skills@latest add Brotherhood94/darkprint` runs. AMENDED at T280 for the same both-ways rule: accounts and publishing went live, so the description now names the one capability genuinely absent — a release cut from inside the reader's own agent",
+    says: "not built yet: releasing straight from your agent",
     where: "open",
     html: SKILL_METADATA_DESCRIPTION,
   },
@@ -431,25 +437,29 @@ const CLAIMS: Claim[] = [
      a sentence, and every other route in this ledger is held to words for the same reason. */
   {
     surface: "/mcp · metadata.description",
-    why: "the one description on the site where a shared link's preview card is all that stands between a reader and a command that looks runnable. It read \"Connect an agent client to DarkPrint, test the connection, search by task, inspect provenance, and fetch an exact blueprint release\" until 2026-08-11: five capabilities in the present tense, on a route `lib/mcp.ts` opens by saying has no server behind it. A reader who never opens the page has to be told anyway",
-    says: "there is no mcp server behind the registry yet",
+    /* AMENDED at T280 (owner-instructed, 2026-08-25). T220 shipped the four operations at
+       /api/mcp/** and the page copy was recorded owed (ARCHITECTURE.md's t220 row); T280
+       paid it. The description's job is unchanged: warn the reader the COMMAND is not
+       runnable — the truth just moved from "no server" to "no npm package". */
+    why: "the one description on the site where a shared link's preview card is all that stands between a reader and a command that looks runnable. The server answers now; what fails is the npx command itself, because nothing was ever published to npm under the name it invokes. A reader who never opens the page has to be told anyway",
+    says: "the darkprint package is not published to npm",
     where: "open",
     html: MCP_METADATA_DESCRIPTION,
   },
   {
     surface: "/mcp · the lead under the h1",
-    why: "the page prints real client configuration in its first section, because that is where a reader looks for it, and a snippet that is correct in every respect except the server it points at is the most convincing thing on the route. The sentence that qualifies it has to be above it and in the reader's path, not beside the snippet where it reads as a caveat about one client",
-    says: "there is no server behind this page, so what follows is the contract being proposed rather than one you can call",
+    why: "the page prints real client configuration in its first section, because that is where a reader looks for it, and a snippet that is correct in every respect except the package it invokes is the most convincing thing on the route. The sentence that qualifies it has to be above it and in the reader's path, not beside the snippet where it reads as a caveat about one client. AMENDED at T280: the server half went live, so the qualifier names the half that is still absent",
+    says: "running the command below still fails, because the darkprint package on npm does not exist yet",
     where: "open",
     html: MCP_PAGE,
   },
-  {
-    surface: "/mcp · the status column of the contract table",
-    why: "four operations with what each takes and returns is the shape of documentation for something that exists. The status is repeated per row rather than stated once above the table, because a four-row table under one caption is read as four built operations and a caption about something else",
-    says: "not built",
-    where: "open",
-    html: MCP_PAGE,
-  },
+  /* ---- /mcp · the status column — row REMOVED at T280 (owner-instructed, 2026-08-25) ----
+     It pinned "not built" per operation-row while the four operations had no handlers.
+     T220 built all four (lib/server/mcp, app/api/mcp/**) and T280 flipped the column to
+     "live", so the pinned string's presence became the false claim. The disclosure duty
+     this row carried did not leave the route: the npm-unpublished warning is pinned twice
+     above, in the description and in the lead. If an operation is ever unshipped, its row
+     comes back here with it — the same both-ways rule every removal in this file cites. */
 
   /* ---- /upload ----
      THREE rows stood here until T263 wired this route to the registry. Two came off in

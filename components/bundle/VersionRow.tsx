@@ -3,11 +3,11 @@ import { Button } from "@/components/ui/Button";
 /**
  * The row above the file listing: which snapshot you are looking at, and how many there are.
  *
- * The selector is drawn and switched off. Selecting a version would reload the listing and
- * the digest panel from a different snapshot, and there is exactly one snapshot of anything
- * here — the archive holds one folder per published bundle, and a private bundle's versions
- * are rows in a fixture. A dropdown that opens onto one option is worse than a control that
- * says it is not built.
+ * The selector is drawn and switched off. A bundle can carry several real releases now
+ * (T280: `listReleases` over `release`, append-only), so "there is exactly one snapshot" is
+ * no longer the reason — the reason is that switching the listing and the digest panel to a
+ * different release, in place, is designed and not built. A dropdown wired to reload nothing
+ * is worse than a control that says so.
  *
  * `Compare with upstream` renders only for a bundle that has one, for the same reason the
  * lineage line does: a control offering to compare a bundle with nothing would make lineage
@@ -38,7 +38,7 @@ export function VersionRow({
       <Button
         variant="outline"
         disabled
-        title="One snapshot exists. Choosing between versions is designed and not built."
+        title="Choosing between versions, in place, is designed and not built."
       >
         <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
           version

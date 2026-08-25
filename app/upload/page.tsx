@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { stringify as stringifyYaml } from "yaml";
 import { allBlueprints, bundleSource, bundleVocabulary, getRegistry } from "@/lib/content";
+import { getSharedDbClient } from "@/lib/db";
+import { actorFrom } from "@/lib/server/accounts";
+import { draftBundle } from "@/lib/server/registry";
 import { SKILL_ROUTE } from "@/lib/skill";
+import { readSession } from "@/components/profile/session";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { Eyebrow, SectionHeading } from "@/components/ui/SectionHeading";
-import { UploadFlow, type ExampleBundle } from "@/components/upload/UploadFlow";
+import { UploadFlow, type ExampleBundle, type PublishTarget } from "@/components/upload/UploadFlow";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // TODO(SEAM-95) (cited at line 138): folded into SEAM-27
@@ -80,6 +85,100 @@ function exampleBundle(): ExampleBundle {
   return { title: bp.title, files };
 }
 
+/** The first string value under `key`, when there is one — `searchParams` carries an array
+    for a repeated query key, and this route only ever reads one of each. */
+function firstString(
+  searchParams: Record<string, string | string[] | undefined>,
+  key: string,
+): string | undefined {
+  const raw = searchParams[key];
+  if (typeof raw === "string") return raw;
+  if (Array.isArray(raw) && typeof raw[0] === "string") return raw[0];
+  return undefined;
+}
+
+/**
+ * `?owner=&slug=`, resolved into a `PublishTarget` only once the session reading this
+ * page OWNS the addressed bundle — checked here, server-side, before the wizard ever
+ * sees the pin, rather than left to the client to ask and trust.
+ *
+ * Ownership is a literal handle match rather than a `can` call: `draftBundle` already
+ * enforces B-03 readability (a private bundle that is not the caller's answers
+ * `undefined`, the same as one that does not exist), and a stranger reading a PUBLIC
+ * bundle's owner/slug in the URL must still not have the wizard address a release at it
+ * on their behalf — only the owner may pin their own upload.
+ */
+async function resolveTarget(
+  searchParams: Record<string, string | string[] | undefined>,
+): Promise<PublishTarget | undefined> {
+  const owner = firstString(searchParams, "owner");
+  const slug = firstString(searchParams, "slug");
+  if (owner === undefined || slug === undefined) return undefined;
+
+  const session = await readSession();
+  if (session === undefined || session.handle !== owner) return undefined;
+
+  const { db } = getSharedDbClient();
+  const draft = await draftBundle(db, actorFrom(session), owner, slug);
+  if (draft === undefined) return undefined;
+
+  const target: PublishTarget = {
+    owner: draft.ownerHandle,
+    slug: draft.slug,
+    visibility: draft.visibility,
+  };
+  if (draft.title !== undefined) target.title = draft.title;
+  if (draft.summary !== undefined) target.summary = draft.summary;
+  if (draft.description !== undefined) target.description = draft.description;
+  if (draft.category !== undefined) target.category = draft.category;
+  if (draft.tags !== undefined) target.tags = draft.tags;
+  return target;
+}
+
+/**
+ * The wizard's own shape, empty — what a reader sees for the moment (typically well under
+ * a frame) `TargetedUploadFlow` takes to resolve `?owner=&slug=`.
+ *
+ * A skeleton rather than an untargeted `UploadFlow`: the two are different components, so
+ * swapping one for the other on resolve UNMOUNTS whichever rendered first and takes
+ * anything typed into it along — the mistake this shape avoids is a reader who started
+ * typing during the fallback losing it the instant the real wizard mounts.
+ */
+function UploadFlowSkeleton() {
+  return (
+    <div
+      className="panel flex min-h-[420px] items-center justify-center overflow-hidden"
+      aria-hidden
+    >
+      <span className="font-mono text-xs text-dim">Loading…</span>
+    </div>
+  );
+}
+
+/**
+ * The wizard itself, once `?owner=&slug=` has been resolved (or found absent).
+ *
+ * Async and therefore only reachable inside the `Suspense` boundary `UploadPage` wraps it
+ * in — see that function's own header for why the split exists. One more thing follows
+ * from the split, worth recording because it is not obvious from the two files alone:
+ * `renderToStaticMarkup` (`tests/server/t263/ac5-retired-copy.test.ts`'s own render
+ * technique, over `UploadPage` with no real `searchParams` promise) cannot await this
+ * component, and — same as `React.lazy` under that renderer — shows the boundary's
+ * fallback instead of crashing on it, which is what keeps that suite collectible.
+ */
+async function TargetedUploadFlow({
+  searchParams,
+}: {
+  searchParams: PageProps<"/upload">["searchParams"];
+}) {
+  // `?? {}` guards a call outside a real request — `searchParams` is never actually
+  // absent from a live Next request, but the render technique in the header note above
+  // passes this component no real promise at all, and an absent record answers "no pin"
+  // exactly the way an empty one does rather than throwing on the property read.
+  const target = await resolveTarget((await searchParams) ?? {});
+  return <UploadFlow example={exampleBundle()} {...(target === undefined ? {} : { target })} />;
+}
+
 /**
  * The page a reader arrives at with their own graph in hand.
  *
@@ -91,8 +190,19 @@ function exampleBundle(): ExampleBundle {
  * literal zero-human-node test, the sentence was also false about any graph with a gate
  * in it, `guarded-merge-bot` included. What the page asks for is a pipeline; what the
  * analyzer answers with is the class it belongs to.
+ *
+ * ── `searchParams`, and why the RESOLUTION is split into its own component ──
+ * `?owner=&slug=` (T280) pins the wizard to a bundle the reader already owns — `/u/*`'s
+ * DraftRow and the blueprint page's "Publish a release" link both build this URL, and
+ * resolving it needs a session-derived actor and a `Db` handle, both async. This function
+ * itself stays SYNCHRONOUS on purpose, with that work pushed into `TargetedUploadFlow`
+ * below and wrapped in `Suspense`: an async default export would make this route
+ * per-request either way (the same mechanism `cookies()` opts other routes into
+ * elsewhere in this codebase), but everything ABOVE the fold here — the header, the two
+ * disclosure paragraphs — needs neither a session nor a database row, and there is no
+ * reason to hold it behind a query that only some visits even carry.
  */
-export default function UploadPage() {
+export default function UploadPage({ searchParams }: PageProps<"/upload">) {
   return (
     <div className="container-page py-12">
       {/* `as="h1"`. The page a contributor lands on had no level-one heading at all: its
@@ -227,7 +337,9 @@ export default function UploadPage() {
       </p>
 
       <div className="mt-10">
-        <UploadFlow example={exampleBundle()} />
+        <Suspense fallback={<UploadFlowSkeleton />}>
+          <TargetedUploadFlow searchParams={searchParams} />
+        </Suspense>
       </div>
     </div>
   );

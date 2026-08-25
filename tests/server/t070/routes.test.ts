@@ -340,7 +340,7 @@ describe("the consequence D-70-14b did not aim at, tested in its own right", () 
   const SLUGS: ReadonlyArray<readonly [string, string]> = [
     [RESERVED_PROFILE_SEGMENTS[0], "a reserved segment"],
     [RESERVED_PROFILE_SEGMENTS[RESERVED_PROFILE_SEGMENTS.length - 1], "another reserved segment"],
-    ["overview", "the tab that has no segment, so not reserved"],
+    ["blueprints", "the tab that has no segment, so not reserved"],
     ["frontline-triage", "an ordinary slug"],
     ["Not A Slug", "a slug the grammar refuses"],
     [nameOfLength(MAX_NAME_LENGTH + 1), "a slug past the length bound"],

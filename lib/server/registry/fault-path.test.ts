@@ -137,6 +137,12 @@ const READERS: readonly { operation: string; invoke: (db: Db) => Promise<unknown
   { operation: "tags", invoke: (d) => registry.tags(d, ANON) },
   { operation: "categories", invoke: (d) => registry.categories(d, ANON) },
   { operation: "scoresOf", invoke: (d) => registry.scoresOf(d, ANON, PROBE_REF, PROBE_REF) },
+  /* 0007_drafts (T280). Both read `bundle` directly rather than through `loadSnapshot`
+     (`owned.ts`'s header), but the fault path is the same wrapper: `accountIdForHandle`'s
+     `select ... from "account"` is the first statement either makes, so a probe reaches
+     the driver before either reader's own row-shaping logic runs. */
+  { operation: "ownedBundles", invoke: (d) => registry.ownedBundles(d, ANON, PROBE_REF) },
+  { operation: "draftBundle", invoke: (d) => registry.draftBundle(d, ANON, PROBE_REF, PROBE_REF) },
 ];
 
 /**
@@ -369,14 +375,15 @@ describe("the barrel's fault surface is exactly one class, and its exports are p
 /* ------------------------------------------------------------------ */
 
 describe("AC2/AC3: every published reader seals what the driver throws", () => {
-  it("seventeen readers, each rejecting with its own operation and nothing from the statement", async () => {
+  it("nineteen readers, each rejecting with its own operation and nothing from the statement", async () => {
     expect(
       READERS.length,
       "An empty or shortened case list would make every assertion below pass over nothing. " +
-        "Seventeen readers are published (13 + T132's three, D-132-01/03, + usersOfMany at " +
-        "T260's merge, D-260-31) from the barrel; the partition test above is what keeps " +
-        "this number honest as the surface changes.",
-    ).toBe(17);
+        "Nineteen readers are published (13 + T132's three, D-132-01/03, + usersOfMany at " +
+        "T260's merge, D-260-31, + ownedBundles and draftBundle at 0007_drafts, T280) from " +
+        "the barrel; the partition test above is what keeps this number honest as the " +
+        "surface changes.",
+    ).toBe(19);
 
     const leaked: string[] = [];
     const unreached: string[] = [];
@@ -502,7 +509,7 @@ describe("D-81-01: the message varies with the operation and with nothing else",
     }
   });
 
-  it("the thirteen readers' messages are pairwise distinct", async () => {
+  it("the readers' messages are pairwise distinct", async () => {
     /* Without this, a constant string satisfies both invariances above perfectly and names
        nothing — which is the value-versus-presence failure at the level of the whole set
        rather than of one field. */
@@ -550,6 +557,19 @@ describe("AC4: a store fault answers problem+json 500 on every registry route", 
     const denied = words(driverText);
     for (const own of words("probe: the registry store failed.")) denied.delete(own);
     for (const { operation } of READERS) denied.delete(operation);
+    /* 0007_drafts (T280): `bundle` gained a column literally named `title`, so the sampled
+       statement — `select "id", … , "title", … from "bundle"` — now puts the WORD "title"
+       into `driverText`, and every problem+json body legitimately carries that exact word
+       too: `storeFailed()`'s own fixed `title: "Store failed"` key. Two unrelated things
+       happen to share one English word — a schema column name and RFC 9457's own field
+       name — and a word-based scan cannot tell them apart. Subtracted for the same reason
+       the module's message is, one line up: these five are the envelope's fixed KEYS,
+       present in every rendering this module ever produces regardless of what failed, and
+       are never the driver's to leak. `errors.ts`'s `title` field and RFC 9457 §3.1's own
+       vocabulary are what is admitted; a genuine leak still has to be a driver-derived word
+       that is NOT one of these five, which every other column and every SQL keyword still
+       is. */
+    for (const admissible of ["type", "title", "status", "detail", "instance"]) denied.delete(admissible);
 
     const wrong: string[] = [];
     const leaked: string[] = [];

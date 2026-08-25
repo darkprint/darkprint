@@ -33,11 +33,14 @@ export async function GET(request: Request): Promise<Response> {
       const { db } = getSharedDbClient();
       const record = await getAccount(db, actorFrom(session), session.accountId);
 
-      /* Unreachable, and unlisted in the contract's status line for that reason.
-         `getAccount` answers `undefined` when the actor may not read the row — here it
-         is reading its own — or when no such row exists, which needs an account deleted
-         out from under a live session, and T120 owns deletion and has not run. 404 over
-         403 either way (B-03): existence must not leak through a status code. */
+      /* `getAccount` answers `undefined` on two conditions: the actor may not read the
+         row — here it is reading its own, so that half never fires — or no such row
+         exists. The second half is reachable now that T120's `deleteAccount` is merged:
+         the session cookie is a self-verifying HMAC token (`lib/server/auth/session.ts`),
+         checked against nothing in the database, so a live session survives the account
+         it names being deleted out from under it until the cookie expires or the caller
+         signs out. 404 over 403 either way (B-03): existence must not leak through a
+         status code. */
       if (record === undefined) return notFound(request, "account: no such account.");
       return ok(record);
     }),

@@ -7,7 +7,8 @@ import { profileMetadata, profileView } from "@/components/profile/load";
 import { readSession } from "@/components/profile/session";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-61) (cited at line 39): GET /api/account/saves
+// SEAM-61 LIVE: the Saved tab, off `@/lib/server/saves` via `profileView`
+//   (see components/profile/load.ts) — not this file's own fetch.
 
 /* ============================================================
    /u/[username]/saved — the owner's bookmark list, and nobody else's.

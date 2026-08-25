@@ -157,6 +157,20 @@ export const bundle = pgTable("bundle", {
   lineageOwnerId: uuid("lineage_owner_id").references(() => account.id),
   lineageSlug: text("lineage_slug"),
   lineageVersion: text("lineage_version"),
+  /**
+   * 0007_drafts (T280): GitHub-style creation. B-06's "a bundle first exists at
+   * its first publish" is relaxed rather than replaced — a bundle may now also
+   * first exist at draft creation, the empty-repo analogy, with zero releases.
+   * All five nullable: every bundle `publish()` still creates directly carries
+   * none of them, and once a release exists its own manifest stays the
+   * authoritative title/summary — this column set is never a second copy of it.
+   * A release-first bundle's columns stay NULL forever.
+   */
+  title: text("title"),
+  summary: text("summary"),
+  description: text("description"),
+  category: text("category"),
+  tags: text("tags").array(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [

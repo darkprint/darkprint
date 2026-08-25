@@ -10,6 +10,12 @@ export type { BundleRecord, ReleaseRecord, StoredVocabulary } from "./types";
 export type { CreateBundleInput } from "./bundle";
 export { createBundle, getBundle } from "./bundle";
 
+/* 0007_drafts: GitHub-style creation. Owner-only writers over the same `bundle` row
+   `createBundle`/`getBundle` above already address — see `bundle.ts` for why a refusal
+   on either is a VALUE (`undefined`, B-03) and never a new error class. */
+export type { BundleDetailsPatch } from "./bundle";
+export { setBundleVisibility, updateBundleDetails } from "./bundle";
+
 export type { AddReleaseInput } from "./release";
 export { addRelease, getRelease, listReleases } from "./release";
 

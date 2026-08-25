@@ -5,7 +5,7 @@
 import type { Db } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
 import { actingAccountIdOrNull } from "./guards";
-import { hasStar, targetRow, withStore, type TargetRow } from "./store";
+import { hasStar, targetRow, targetRowsFor, withStore, type TargetRow } from "./store";
 import type { CounterTarget, SignalState } from "./types";
 
 /**
@@ -60,5 +60,46 @@ export async function getSignals(
     const accountId = actingAccountIdOrNull(actor);
     const starred = accountId === null ? false : await hasStar(db, row.id, accountId);
     return signalStateFrom(row, starred);
+  });
+}
+
+/**
+ * A `(kind, refId)` pair as a map key. Joined with a space: `kind` is one of three fixed
+ * enum members and never contains one, so the join cannot collide two distinct pairs
+ * onto one key the way a bare concatenation could.
+ */
+function keyOf(target: Pick<CounterTarget, "kind" | "refId">): string {
+  return `${target.kind} ${target.refId}`;
+}
+
+/**
+ * `getSignals`, for many targets in one round trip.
+ *
+ * **Answers in `targets`' own order, one entry per element — including a repeated
+ * target twice.** A caller rendering a page of cards asks for exactly the row order it
+ * means to draw, and `targetRowsFor`'s `SELECT` makes no promise about the order rows
+ * come back in; re-deriving the caller's order from the query result is this function's
+ * job, not a property to assume of the statement.
+ *
+ * **A target nothing has happened to answers three zeros, the same as `getSignals`,
+ * and creates no row** — `targetRowsFor` reads, it does not `ensureTargetRow`.
+ */
+export async function getSignalsMany(
+  db: Db,
+  actor: Actor,
+  targets: readonly CounterTarget[],
+): Promise<SignalState[]> {
+  return await withStore("getSignalsMany", async () => {
+    if (targets.length === 0) return [];
+    const accountId = actingAccountIdOrNull(actor);
+    const rows = await targetRowsFor(db, targets, accountId);
+
+    const byKey = new Map(rows.map((row) => [keyOf(row), row]));
+    return targets.map((target) => {
+      const row = byKey.get(keyOf(target));
+      return row === undefined
+        ? { starCount: 0, downloadCount: 0, noteCount: 0, starredByCaller: false }
+        : signalStateFrom(row, row.starredByCaller);
+    });
   });
 }

@@ -51,9 +51,17 @@ describe("D-263-05 — the frozen pair", () => {
 });
 
 describe("D-263-08 — the seam is HTTP, not a barrel", () => {
-  it("no file on the route imports a server module", () => {
+  it("no client-side file on the route imports a server module", () => {
     premise(files);
+    /* AMENDED at T280 (owner-instructed, 2026-08-25). `app/upload/page.tsx` became a
+       SERVER component that resolves `?owner=&slug=` through `draftBundle` with a
+       session-derived actor — the sitewide T260 pattern, and a resolution that cannot be
+       a client-trusted fetch (B-03). D-263-08's claim survives where it was ever true:
+       every CLIENT file's seam is HTTP, and the one exempted path is the server half by
+       name, not a category. */
+    const SERVER_HALF = new Set(["app/upload/page.tsx"]);
     const offenders = files
+      .filter((f) => !SERVER_HALF.has(f.path))
       .filter((f) => occurrences(f.code, /from\s+["']@\/lib\/server\//) > 0)
       .map((f) => f.path);
     expect(

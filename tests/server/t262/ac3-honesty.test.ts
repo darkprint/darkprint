@@ -188,13 +188,18 @@ const SURVIVORS: readonly { file: string; claim: Claim; ruling: string }[] = [
   {
     file: SETTINGS_ROUTE,
     claim: {
-      claim: "§05 still says validator voting is not built",
-      anyOf: ["Validator voting is not built", "validator voting is not built"],
+      claim: "§05 states where a ballot is actually cast",
+      /* AMENDED at T280 (owner-instructed, 2026-08-25). This cell pinned "validator voting
+         is not built" while T160 was `todo`; T160 merged and T280 published its route
+         (POST /api/blueprints/{owner}/{slug}/votes), so the pinned sentence became the
+         false claim D-78 forbids in the OTHER direction. The survivor is now the section's
+         true statement: casting happens on a blueprint's own page, not on /settings. */
+      anyOf: ["asting a ballot happens on a blueprint"],
     },
     ruling:
-      "D-262-19 and D-262-15. §05's BADGE comes off because `validatorSince` and " +
-      "`validatorWeight` are real reads, while this paragraph STAYS because T160 is `todo`. " +
-      "Same section, opposite directions.",
+      "D-262-19 and D-262-15, amended at T280. §05's badge came off when the reads went " +
+      "real; the paragraph moved when the WRITE went real too. The section still refuses " +
+      "to be a voting surface, which is the claim that survives.",
   },
   {
     file: SETTINGS_ROUTE,
@@ -360,14 +365,15 @@ describe("D-262-19: the badge comes off two sections and stays on one", () => {
     return n;
   };
 
-  it("exactly one `<ComingSoonBadge />` remains, the danger section's", () => {
+  it("no `<ComingSoonBadge />` remains on the page", () => {
     expect(
       usages(),
-      "D-262-19: the page-level strip's badge comes off (handle, email and default visibility " +
-        "have merged routes) and §05's comes off (`validatorSince`/`validatorWeight` are real " +
-        "reads), while the danger section's STAYS because what is missing there is the route. " +
-        "Three usages were counted on `backend` at `24a22c4`. Zero would mean the danger badge " +
-        "came off too, which is the false-claim direction D-78 forbids.",
-    ).toBe(1);
+      "D-262-19, amended at T280 (owner-instructed, 2026-08-25): the danger section's badge " +
+        "was the last one and its reason was 'what is missing there is the route' — T120's " +
+        "routes merged and T280 wired the page to them, so the badge's claim became the " +
+        "false one. Zero is now the honest count; a badge REAPPEARING here is the signal " +
+        "this cell watches for, because it would mean a settings control went dark again " +
+        "without its route going away.",
+    ).toBe(0);
   });
 });

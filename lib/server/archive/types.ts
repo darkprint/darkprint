@@ -32,12 +32,26 @@ export interface StoredVocabulary {
   terms?: readonly unknown[] | null;
 }
 
+/**
+ * 0007_drafts: the bundle's own details, present before any release exists and
+ * still readable afterward. Optional and never `null` on this record — `null`
+ * is the column's "not written" value and `toBundleRecord` turns it into an
+ * absent field, the same convention `PublicAuthor.bio` uses and for the same
+ * reason (D-50-09): an absent key is what a caller checking `"title" in record`
+ * or serializing to JSON both agree means "no title", where a `null` would be
+ * a second spelling of the same fact.
+ */
 export interface BundleRecord {
   id: string;
   ownerId: string;
   slug: string;
   visibility: "public" | "private";
   lineage?: { ownerId: string; slug: string; version: string };
+  title?: string;
+  summary?: string;
+  description?: string;
+  category?: string;
+  tags?: readonly string[];
   createdAt: Date;
   updatedAt: Date;
 }

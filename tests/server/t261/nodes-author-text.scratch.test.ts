@@ -19,13 +19,24 @@
    component would red a correct route.
 
    ── driveable, and that had to be checked ──
-   This page reads no session: `readSession`/`cookies()` occur ZERO
-   times in it, where the blueprint redirector and the canonical
-   detail page carry 3 and 2. A page that reads cookies throws
-   "`cookies` was called outside a request scope" under direct
-   invocation whatever its segment config says — measured this
-   window, and the reason two other members of this family are not
-   in it.
+   T280 gave this page a session-aware actor (`actorNow()`, the star/
+   signal/note reads) — `readSession()` now runs on every render,
+   where before this file's own measurement found zero calls. A page
+   that reads cookies throws "`cookies` was called outside a request
+   scope" under direct invocation whatever its segment config says,
+   which is what `readSession`'s own `cookies()` call does the moment
+   nothing has put a request store in scope for it.
+
+   This file drives the page directly regardless, on the same
+   reasoning `readSession`'s header states for `next/headers` itself:
+   nothing here ever sets a session cookie, so the true answer at
+   every call site below is "no session" either way. The `next/headers`
+   mock below supplies that answer without the real module's request-
+   scope guard, rather than asking every cell to route through an HTTP
+   layer this file has never needed. A test exercising a SIGNED-IN
+   reader could not take this shortcut and would need the rewrite the
+   blueprint page's own docblock describes for its two members of this
+   family; this file's four cells never need one.
 
    Fixture through `runImport`, the production path, so the author
    handle on the card is the one the product actually stores.
@@ -33,7 +44,15 @@
 
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+/* The mock `readSession`'s own header names as the request-scope guard's trigger.
+   `get` always answers `undefined` — no session cookie, ever — which is the true answer
+   at every call site in this file regardless: nothing below signs a reader in through a
+   cookie. Only `cookies` is stubbed; nothing else in this chain reaches `next/headers`. */
+vi.mock("next/headers", () => ({
+  cookies: async () => ({ get: () => undefined }),
+}));
 
 import NodePage from "@/app/nodes/[...id]/page";
 import { latestCards } from "@/lib/server/registry";

@@ -184,8 +184,11 @@ describe("the route keeps what ships apart from what does not", () => {
     expect(plainText(PAGE).match(/Coming soon/g) ?? []).toHaveLength(1);
   });
 
-  /** The four unbuilt capabilities, in the open, in one sentence rather than four claims. */
-  it("refuses the account, the private draft, publishing and the live push", () => {
+  /** The four capabilities, in the open, in one sentence rather than four claims. Since
+      T280 three are named as LIVE and one is still refused (the live push, T270 todo) —
+      the phrases are pinned either way, because a density pass dropping any of the four
+      is the same failure in both eras. */
+  it("names the account, the private draft and publishing as live, and refuses the live push", () => {
     for (const phrase of [
       "an account of your own",
       "kept private while it is under construction",

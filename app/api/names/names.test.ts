@@ -104,7 +104,7 @@ describe.skipIf(!hasDb)("app/api/names", () => {
     });
   });
 
-  it("D-70-09: an owner nobody is holds nothing, but the tabs still hold their four", async () => {
+  it("D-70-09: an owner nobody is holds nothing, but the tabs still hold their three", async () => {
     /* The case the `NOBODY` sentinel exists for. Short-circuiting an unknown owner to
        `{available:true}` would hand out `saved`, which is a profile tab for every handle
        and cannot become a bundle name for any of them. */
@@ -116,9 +116,17 @@ describe.skipIf(!hasDb)("app/api/names", () => {
       status: 200,
       body: { available: false, reason: "reserved", suggestion: "saved-2" },
     });
+    /* T280 made Blueprints the segmentless index tab, so `blueprints` left the reserved
+       set and is an ordinary available name now; `cards` still holds its segment. Both
+       directions asserted so the reservation list moving is visible here, not just in
+       tabs.test.ts. */
     expect(await slugRoute("mara-veil", "blueprints")).toEqual({
       status: 200,
-      body: { available: false, reason: "reserved", suggestion: "blueprints-2" },
+      body: { available: true },
+    });
+    expect(await slugRoute("mara-veil", "cards")).toEqual({
+      status: 200,
+      body: { available: false, reason: "reserved", suggestion: "cards-2" },
     });
   });
 

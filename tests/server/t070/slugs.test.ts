@@ -98,14 +98,14 @@ describe("AC1: each reserved slug is refused as a bundle name", () => {
     );
   });
 
-  it("does not refuse `overview`, whose tab has no segment of its own", async () => {
+  it("does not refuse `blueprints`, whose tab has no segment of its own", async () => {
     /* The half of AC1 the criterion does not state, and the one with teeth against an
-       over-broad guard: the overview tab is the profile index, so nothing occupies
-       `/u/<handle>/overview` and a bundle may be called that. An implementation reserving the
-       tab *ids* rather than their *segments* takes a name the product never claimed. */
+       over-broad guard: blueprints is the profile index as of T280, so nothing occupies
+       `/u/<handle>/blueprints` and a bundle may be called that. An implementation reserving
+       the tab *ids* rather than their *segments* takes a name the product never claimed. */
     const check = await bind("checkSlug");
     const owner = await createAccount(t);
-    await availableNow(() => check(db(t), owner, "overview"), 'checkSlug(db, owner, "overview")');
+    await availableNow(() => check(db(t), owner, "blueprints"), 'checkSlug(db, owner, "blueprints")');
   });
 
   it("does not refuse an ordinary slug, and gives it no reason", async () => {

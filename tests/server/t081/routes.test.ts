@@ -124,9 +124,20 @@ function statementCorpus(): Promise<{ sql: string; params: string }> {
  * name or a URL segment. Written out rather than waved at, because "still covers it" was the
  * first wording here and it was wider than the evidence.
  */
+/* "title" alone, admitted since T280 and deliberately NOT the envelope's other four
+   member names. `bundle` gained a `title` column (migration 0007), so "title" now appears
+   in the statements the published reads run — and it always was RFC 9457's own member
+   name in every served body, its VALUE pinned by the sibling describe below, so a column
+   cannot leak THROUGH it. `status` and `detail` are ALSO live column names elsewhere
+   (`handle_reservation.status`, `audit.detail`), which is exactly why they stay in the
+   deny set: no registry statement carries them today, and the day one does, this scan
+   should say so rather than have pre-forgiven it. Same collision and same resolution as
+   lib/server/registry/fault-path.test.ts's, narrowed after review. */
+const ENVELOPE_MEMBERS = ["title"];
+
 function allowedFor(name: RouteName): string[] {
   const probe = ROUTE_PROBES[name];
-  return [probe.path, ...probe.supplied, ...READER_NAMES];
+  return [probe.path, ...probe.supplied, ...READER_NAMES, ...ENVELOPE_MEMBERS];
 }
 
 /** Drive a published URL, and turn a THROWN handler into AC4's own failure message. */
@@ -171,17 +182,22 @@ async function readAnswer(name: RouteName, path: string): Promise<Answered> {
 }
 
 describe("AC4 — the route set is the one the contract quantifies over", () => {
-  it("the tree serves exactly eleven routes under the three owned trees", () => {
+  it("the tree serves exactly twenty-one routes under the three owned trees", () => {
+    /* Eleven were T080/T081's; T280 published ten more under the same trees (star, notes,
+       note edit, note vote and votes/runs on blueprints; star, notes, note edit, note vote
+       on cards — backend.md §T280). The sweep below still quantifies over T081's own
+       eleven, whose readers are the fixture's; the count here keeps refusing a route
+       NOBODY published, which is what it was written for. */
     const patterns = routeTable().map((r) => r.pattern);
     expect(
       patterns.length,
-      `AC4 says "on all eleven routes". The tree serves ${patterns.length}: ` +
-        `${patterns.join(", ")}.\n` +
+      `AC4 says "on all eleven routes", and T280 published ten more. The tree serves ` +
+        `${patterns.length}: ${patterns.join(", ")}.\n` +
         `  This is a floor over the sweep below rather than an opinion about layout — the ` +
         `paths are discovered, and D-80-07 makes the URLs the contract and the file layout ` +
-        `the implementation's. A twelfth route is a surface nobody published; a tenth is a ` +
-        `criterion this file would otherwise sweep without noticing.`,
-    ).toBe(11);
+        `the implementation's. A twenty-second route is a surface nobody published; a ` +
+        `twentieth is a criterion this file would otherwise sweep without noticing.`,
+    ).toBe(21);
   });
 
   it("every published URL, and every variant of one, resolves through Next's own matcher", () => {

@@ -2,6 +2,7 @@
 
 import { NodeCardSummary, type NodeSummary } from "@/components/nodes/NodeCardSummary";
 import { useQueryState } from "@/components/ui/useQueryState";
+import { shelfEmptyMessage } from "./parts";
 
 /* ============================================================
    Your cards: the same grid `/nodes` draws, over the other thing an account holds.
@@ -28,9 +29,10 @@ import { useQueryState } from "@/components/ui/useQueryState";
    the plain "used in N blueprints" line `/nodes` itself prints (always 0 for a private
    card, since nothing published can pin a ref the archive does not carry).
 
-   ── The visibility filter ──
+   ── The visibility filter, and the find box beside it ──
    Same mechanism as `OwnedBundles`: `useQueryState` reads `?visibility=`, written by the
-   same `VisibilityFilter` component, with no prop passed between them.
+   same `VisibilityFilter` component, and `?q=`, written by `FindBox` in the toolbar above
+   this shelf — no prop passed between either control and the list they narrow.
    ============================================================ */
 
 export function OwnedCards({
@@ -47,10 +49,21 @@ export function OwnedCards({
 
   const { params } = useQueryState();
   const visibility = params.get("visibility");
-  const visible =
+  const query = params.get("q") ?? "";
+  const needle = query.trim().toLowerCase();
+
+  const byVisibility =
     visibility === null
       ? cards
       : cards.filter((c) => (c.visibility ?? "public") === visibility);
+  const visible =
+    needle === ""
+      ? byVisibility
+      : byVisibility.filter((c) =>
+          [c.name, c.action, c.typeLabel, c.ref].some((field) =>
+            field.toLowerCase().includes(needle),
+          ),
+        );
 
   return (
     <section className="flex flex-col gap-5">
@@ -65,7 +78,7 @@ export function OwnedCards({
 
       {visible.length === 0 && (
         <p className="rounded-lg border border-dashed border-line bg-surface/40 px-5 py-8 text-center font-mono text-[13px] text-dim">
-          No {visibility} cards on this shelf.
+          {shelfEmptyMessage("cards", visibility, query)}
         </p>
       )}
 
@@ -87,8 +100,8 @@ export function OwnedCards({
             handle in its own <span className="font-mono text-fg">author</span> field; a
             private one is seeded whole, in{" "}
             <span className="font-mono text-fg">lib/data/cards.ts</span>, and nothing
-            stores it, the same arrangement a private blueprint has in{" "}
-            <span className="font-mono text-fg">lib/data/bundles.ts</span>.
+            stores it. A private blueprint no longer works this way: it is a real, private
+            row in the registry now, the same table a public one lives in.
           </p>
           <p>
             <span className="text-emerald">✓ counted</span>{" "}covers a public tile&apos;s

@@ -2,13 +2,25 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import type { NodeCard } from "@/lib/core";
-import { parseCardRef, shortDigest } from "@/lib/core";
+import { DARKPRINT_CONFIG, parseCardRef, shortDigest } from "@/lib/core";
 import { getSharedDbClient } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
-import { actorFrom, getPublicAuthor, resolveOwner } from "@/lib/server/accounts";
+import {
+  actorFrom,
+  getPublicAuthor,
+  publicAuthorsByIds,
+  resolveOwner,
+} from "@/lib/server/accounts";
+import { getAggregate } from "@/lib/server/ballot";
 import { getBundle, listReleases, parseStoredVocabulary } from "@/lib/server/archive";
-import { blueprint, card, graphsOf, scoresOf } from "@/lib/server/registry";
-import { releaseFiles, serveCard } from "@/lib/server/export";
+import { getSignals } from "@/lib/server/counters";
+import { forksOf } from "@/lib/server/lineage";
+import type { NoteRecord } from "@/lib/server/notes";
+import { listNotes } from "@/lib/server/notes";
+import { getProfile } from "@/lib/server/profiles";
+import { blueprint, card, draftBundle, graphsOf, scoresOf } from "@/lib/server/registry";
+import { reportedCost } from "@/lib/server/runs";
+import { releaseFiles, serveCardSource } from "@/lib/server/export";
 import {
   BUNDLE_AGENTS,
   BUNDLE_README,
@@ -17,7 +29,7 @@ import {
   cardFilePath,
 } from "@/lib/content/bundle-export";
 import { blueprintViewOver } from "@/lib/content/view";
-import { communityFor } from "@/lib/data/community";
+import type { CommunitySignals } from "@/lib/data/community";
 import type { Blueprint } from "@/lib/types";
 import { blueprintFileHref } from "@/lib/href";
 import {
@@ -43,14 +55,14 @@ import { DotBreakdown } from "@/components/panes/DotBreakdown";
 import { SynchronisedPanes } from "@/components/panes/SynchronisedPanes";
 import { BundlePanel, type BundleNode } from "@/components/blueprint/BundlePanel";
 import { BundleHeader } from "@/components/bundle/BundleHeader";
+import { DraftLanding, type DraftLandingBundle } from "@/components/bundle/DraftLanding";
 import { FileTree } from "@/components/bundle/FileTree";
 import { History } from "@/components/bundle/History";
-import { Forks, Releases } from "@/components/bundle/Aside";
+import { Forks, Releases, VisibilitySwitch } from "@/components/bundle/Aside";
+import { VoteControl } from "@/components/bundle/VoteControl";
 import { filesFromPaths, releaseDownloadCommand } from "@/components/bundle/load";
-import { OWNED_BUNDLES } from "@/lib/data/bundles";
-import { profileFor } from "@/lib/data/profiles";
 import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
-import { Comments } from "@/components/blueprint/Comments";
+import { Comments, type NoteView } from "@/components/blueprint/Comments";
 import { ForkAction } from "@/components/blueprint/ForkAction";
 import { ToolScopes } from "@/components/blueprint/Requirements";
 import { EvidenceLayers } from "@/components/blueprint/EvidenceLayers";
@@ -58,8 +70,10 @@ import { EvidenceLayers } from "@/components/blueprint/EvidenceLayers";
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // SEAM-03 LIVE: the blueprint is read from the registry (T080) per request.
 // SEAM-19 LIVE: the folder is served by `/api/files/blueprints/{owner}/{slug}/d/{digest}/…`.
-// TODO(SEAM-75): POST /api/blueprints/{owner}/{slug}/star, DELETE …
-// TODO(SEAM-79): POST /api/blueprints/{owner}/{slug}/comments
+// SEAM-75 LIVE (T280): POST /api/blueprints/{owner}/{slug}/star — the star pill.
+// SEAM-79 LIVE (T280): GET/POST /api/blueprints/{owner}/{slug}/notes and its /{noteId},
+// /{noteId}/vote siblings — `Comments`' `live` prop.
+// SEAM-20/57/67/70/71/74 LIVE (T280): watch, fork, visibility, votes — see the mounts below.
 
 /* ============================================================
    /blueprints/[owner]/[slug] — the canonical public page for a bundle.
@@ -160,6 +174,53 @@ function PanelLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * `blueprintViewOver` still takes a `community: CommunitySignals` (B7's, unchanged shape) —
+ * every field it feeds besides `metrics` (downloads, votes, comments, featured, seed) is a
+ * value this page no longer sources from `lib/data/community.ts` (T280's global rule: that
+ * fixture stops feeding pages this wave owns). Zero and empty are the honest values for a
+ * page that draws its community numbers from `star`, `VoteControl` and `Comments`' `live`
+ * mode instead — never a seeded stand-in with nowhere left to read it from.
+ */
+const EMPTY_COMMUNITY: CommunitySignals = {
+  downloads: 0,
+  votes: 0,
+  comments: [],
+  efficacy: 0,
+  reliability: 0,
+  transparency: 0,
+  cost: 0,
+};
+
+/**
+ * `NoteRecord` (server, `Date`, nullable `PublicAuthor` fields) -> `NoteView` (the wire
+ * shape `Comments`' `live` prop and `components/blueprint/Comments.tsx`'s own client-side
+ * `viewOf` both agree on — this is the SAME mapping run once here for the first page and
+ * again in the browser for every page after, because a server component and a `"use
+ * client"` file cannot share one function without crossing the boundary).
+ */
+function noteViewFrom(note: NoteRecord, viewerHandle: string | undefined): NoteView {
+  const handle = note.author.handle ?? "unknown";
+  // Destructured rather than `note.votes` below: a note's own up-vote count is a live
+  // `COUNT(note_vote)` and has nothing to do with `CommunitySignals.votes` (the seeded
+  // fixture figure `autonomy-surfaces.test.ts` polices), but the two read alike as a bare
+  // substring and this page dropped its own "seeded" sentence when `bp.votes` did.
+  const { votes } = note;
+  return {
+    id: note.id,
+    author: {
+      handle,
+      displayName: note.author.displayName ?? handle,
+      ...(note.author.avatarHue !== null ? { avatarHue: note.author.avatarHue } : {}),
+    },
+    body: note.body,
+    createdAt: note.createdAt.toISOString(),
+    votes,
+    deleted: note.deleted,
+    mine: viewerHandle !== undefined && note.author.handle === viewerHandle,
+  };
+}
+
 export default async function Page({ params }: PageProps<"/blueprints/[owner]/[slug]">) {
   const { owner, slug } = await params;
   const actor = await actorNow();
@@ -173,7 +234,42 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
      project charges hardest, and it is also how an existence oracle gets rebuilt one layer
      up after the API closed it. */
   const summary = await blueprint(db, actor, owner, slug);
-  if (summary === undefined) notFound();
+  if (summary === undefined) {
+    /* DRAFT BRANCH (0007_drafts, T280): a bundle that has an account and a name and no
+       release yet — GitHub's empty-repo state. `blueprint()` answered undefined for
+       exactly the same two reasons `draftBundle()` would (B-03: absent and unreadable
+       collapse to one answer), so trying it second is never a second visibility opinion —
+       it is the one question `blueprint()` cannot answer on its own, "is there a bundle
+       here with nothing published yet", asked of the reader built for it. */
+    const draft = await draftBundle(db, actor, owner, slug);
+    if (draft === undefined) notFound();
+
+    const account = await resolveOwner(db, owner);
+    const isOwner = actor.kind === "account" && account !== undefined && actor.accountId === account.accountId;
+    const publicOwner = await getPublicAuthor(db, owner);
+    const ownerAuthor = authorFor(
+      publicOwner ?? { handle: owner, displayName: null, avatarHue: null, validator: false },
+    );
+
+    const view: DraftLandingBundle = {
+      ownerHandle: draft.ownerHandle,
+      slug: draft.slug,
+      visibility: draft.visibility,
+      createdAt: draft.createdAt.toISOString(),
+      ...(draft.title !== undefined ? { title: draft.title } : {}),
+      ...(draft.summary !== undefined ? { summary: draft.summary } : {}),
+      ...(draft.description !== undefined ? { description: draft.description } : {}),
+    };
+
+    return (
+      <DraftLanding
+        draft={view}
+        owner={ownerAuthor}
+        isOwner={isOwner}
+        {...(isOwner ? { visibilityApi: `/api/bundles/${owner}/${slug}/visibility` } : {})}
+      />
+    );
+  }
 
   const key = { ownerHandle: owner, slug };
   const [drawings, scorecard] = await Promise.all([
@@ -206,6 +302,8 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
     avatarHue: null,
     validator: false,
   });
+  const isOwner = actor.kind === "account" && account !== undefined && actor.accountId === account.accountId;
+  const viewerHandle = actor.kind === "account" ? (actor.handle ?? undefined) : undefined;
 
   /* Releases, newest last, and the vocabulary the CURRENT release declares. One read
      answers three questions the archive answered with three: the version history, the
@@ -214,7 +312,54 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
   const current = releases.find((r) => r.digest === summary.digest);
   const folder = await releaseFiles(db, actor, { ownerHandle: owner, slug });
 
-  const community = communityFor(slug);
+  /* THE LIVE SIGNALS (T280), all keyed on the bundle's own row id — `BlueprintSummary`
+     carries none (`FavoriteStar.tsx`'s own header records why a save can't reach it
+     either), so every one of these reads waits on `record`, which is `getBundle`'s. That is
+     never a wider gate than the one already passed: `record` resolves whenever `summary`
+     does, because both come from the same row, and the `undefined` arm below is only the
+     theoretical race between the two reads a request-scoped page cannot close. */
+  let signals: Awaited<ReturnType<typeof getSignals>> | undefined;
+  let aggregate: Awaited<ReturnType<typeof getAggregate>> | undefined;
+  let cost: Awaited<ReturnType<typeof reportedCost>>;
+  let notesPage: Awaited<ReturnType<typeof listNotes>> = { notes: [], cursor: null };
+  let forkRows: Awaited<ReturnType<typeof forksOf>> = [];
+  if (record !== undefined) {
+    [signals, aggregate, cost, notesPage, forkRows] = await Promise.all([
+      getSignals(db, actor, { kind: "blueprint", refId: record.id }),
+      getAggregate(db, actor, record.id),
+      reportedCost(db, actor, summary.digest),
+      listNotes(db, actor, { kind: "blueprint", refId: record.id }),
+      forksOf(db, actor, record.id),
+    ]);
+  }
+
+  /* Public forks, resolved to their owners' handles: `forksOf` already answers only public
+     rows (its own doc — a private fork is invisible upstream in every direction, Q1), so the
+     page adds nothing to that filter. `BundleRecord.ownerId` is an account id and this
+     panel's rows want a handle, which is exactly what `publicAuthorsByIds` batches — one
+     query for however many distinct forkers there are, rather than one `getPublicAuthor`
+     per row. */
+  const forkOwnerIds = [...new Set(forkRows.map((f) => f.ownerId))];
+  const forkAuthors = forkOwnerIds.length === 0 ? new Map() : await publicAuthorsByIds(db, forkOwnerIds);
+  const publicForks = forkRows.map((f) => ({
+    owner: forkAuthors.get(f.ownerId)?.handle ?? "unknown",
+    slug: f.slug,
+    note: f.summary ?? "",
+  }));
+
+  /* The AUTHOR's real watcher count (T131, live since T280 wires a button onto it) —
+     `profileFor(owner).watchers` was the fixture this replaces; `getProfile` answers the
+     same shape `/u/<owner>` reads, over `count(*)` on `follow` rather than a seeded row. */
+  const ownerProfile = await getProfile(db, actor, owner);
+  const watchers = ownerProfile?.watchers ?? 0;
+
+  /* `blueprintViewOver` still takes a `community: CommunitySignals` for the fields `live`
+     does not cover (downloads, votes, comments, featured, seed) — see `EMPTY_COMMUNITY`'s
+     own doc for why this page hands it zeros rather than `communityFor(slug)`'s fixture.
+     `live` (B7's `AssembledViewInput` addition, `lib/content/view.ts`) is what turns the
+     three community axes and the cost axis real: the three read `aggregate.<k>.value`, the
+     cost axis follows D-180-01 (never normalized onto the 0–100 scorecard axis), and
+     `signals` travels with the bag for `sampleSize`-shaped reads elsewhere. */
   const bp: Blueprint = {
     ...blueprintViewOver({
       manifest: summary.manifest,
@@ -230,8 +375,9 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
         ontologyVersion: scorecard.ontologyVersion,
         diagnostics: [...drawing.diagnostics],
       },
-      community,
+      community: EMPTY_COMMUNITY,
       diagnostics: drawing.diagnostics,
+      live: { aggregate, cost, signals },
     }),
     /* The one field the projection cannot set: it builds from a manifest, and a manifest
        carries an author rather than an owner. */
@@ -267,16 +413,6 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
     command: releaseDownloadCommand(owner, slug, at, paths),
     cliCommand: `darkprint clone ${owner}/${slug}`,
   };
-
-  /* The band's two figures, both still seeded and both keeping their markers (D-78's
-     stays-direction, D-261-08(4)): forks come from `lib/data/bundles.ts` and the watcher
-     count from `lib/data/profiles.ts`, and neither has a column or a route. `publicForks`
-     stays computed over PUBLIC rows only — a private fork is never announced on its
-     upstream, which is what `/settings` §04 promises a reader. */
-  const publicForks = OWNED_BUNDLES.filter(
-    (b) => b.forkedFrom?.slug === slug && b.visibility === "public",
-  ).map((b) => ({ owner: b.owner, slug: b.slug, note: b.draft?.summary ?? "" }));
-  const watchers = profileFor(owner).watchers;
 
   const updatedAt = (current?.createdAt ?? record?.updatedAt ?? new Date()).toISOString();
   const shortened = `${summary.digest.slice(0, 13)}…`;
@@ -338,12 +474,14 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
      point is that such a blueprint gets the SAME page as the nine, source included, which
      is why the reduction was refused rather than disclosed and kept.
 
-     `serveCard` is the published per-card reader and it takes the same actor as everything
-     above, so a card private to somebody else is absent here exactly as it is absent from
-     `summary.cardRefs`. **Cost, disclosed: TWO reads per DISTINCT ref** — the resolved card and its document — deduplicated,
-     because a graph may instantiate one card at two nodes and the document does not differ.
-     Bytes rather than text on the wire is `ServedFile`'s shape, decoded once here; the panes
-     want a string. */
+     `serveCardSource` is the published per-card reader for a PAGE RENDER — `serveCard`'s
+     bytes minus B-14's download event (T280: `release-files.ts`'s own rule, "a listing is
+     not a download", extended to a card rendered inline on its own page). It takes the same
+     actor as everything above, so a card private to somebody else is absent here exactly as
+     it is absent from `summary.cardRefs`. **Cost, disclosed: TWO reads per DISTINCT ref** —
+     the resolved card and its document — deduplicated, because a graph may instantiate one
+     card at two nodes and the document does not differ. Bytes rather than text on the wire
+     is `ServedFile`'s shape, decoded once here; the panes want a string. */
   const distinctRefs = [...new Set(bp.cardRefs.filter((ref) => ref !== ""))];
   const resolved = new Map<string, NodeCard>();
   const documents = new Map<string, string>();
@@ -351,7 +489,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
     distinctRefs.map(async (ref) => {
       const [summaryFor, served] = await Promise.all([
         card(db, actor, ref),
-        serveCard(db, actor, ref),
+        serveCardSource(db, actor, ref),
       ]);
       if (summaryFor !== undefined) resolved.set(ref, summaryFor.card);
       if (served !== undefined) documents.set(ref, new TextDecoder().decode(served.bytes));
@@ -437,9 +575,41 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
       watchers={watchers}
       forks={publicForks.length}
       saveId={`blueprint:${bp.slug}`}
-      support={bp.votes}
+      /* No `support` any more: it read `bp.votes`, which was this page's stand-in for a
+         seeded star count before T280 wired a real one. `star` below is the live
+         replacement, and `bp.votes` is `EMPTY_COMMUNITY`'s `0` now — passing it through
+         would be printing an index figure with nothing behind it and no marker beside it,
+         which is `autonomy-surfaces.test.ts`'s own rule (`no surface prints a seeded
+         index figure as a fact`). `BundleHeader`'s `support === undefined` branch draws a
+         plain bookmark, which is the honest fallback for the one theoretical case below
+         where `star` itself is absent. */
       clone={clone}
-      note="support and fork counts are seeded · a snapshot over HTTP, not a clone"
+      /* T280: the three seeded halves of this note each got a live control of their own
+         (the star pill, Watch, Fork), so the sentence narrows to the one clause that is
+         still true of every bundle here — a page render is a snapshot over HTTP, never the
+         thing `git clone` would give a reader. Omitted rather than restated: it is exactly
+         `BundleHeader`'s own default for a bundle with a `clone`, so passing it again would
+         be a second place this sentence could drift from that default. */
+      star={{
+        api: `/api/blueprints/${owner}/${slug}/star`,
+        // `signals` is undefined only in the theoretical race `record`'s own comment
+        // names — zero and unstarred are the same answer `getSignals` gives a target
+        // nothing has happened to yet, so the fallback is the live reader's own zero.
+        count: signals?.starCount ?? 0,
+        starred: signals?.starredByCaller ?? false,
+        signedIn: actor.kind === "account",
+      }}
+      watch={{ api: `/api/authors/${owner}/watch`, watchers, signedIn: actor.kind === "account" }}
+      fork={{
+        api: `/api/bundles/${owner}/${slug}/fork`,
+        // `current` is `releases.find` over the same digest `blueprint()` just resolved,
+        // so absent here is only the theoretical race the block above names — falling
+        // back to the newest release rather than an empty string, which `forkBundle`'s
+        // own `noSuchRelease` would refuse either way.
+        sourceVersion: current?.version ?? releases.at(-1)?.version ?? "",
+        signedIn: actor.kind === "account",
+        ...(viewerHandle !== undefined ? { viewerHandle } : {}),
+      }}
       breadcrumb={
         <nav className="font-mono text-xs text-dim" aria-label="Breadcrumb">
           <Link href="/blueprints" className="transition-colors hover:text-cyan">
@@ -456,8 +626,9 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
            published. It belongs beside the digest, which is the other half of the same
            question, how old is what I am about to take. */
         <span className="font-mono text-[11px] text-dim">
-          version <span className="text-fg">{shortDigest(bp.digest)}</span> · 1 version ·
-          published {prettyDate(bp.createdAt)}
+          version <span className="text-fg">{shortDigest(bp.digest)}</span> ·{" "}
+          {releases.length} release{releases.length === 1 ? "" : "s"} · published{" "}
+          {prettyDate(bp.createdAt)}
         </span>
       }
     >
@@ -691,6 +862,20 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
             />
           </section>
 
+          {/* T280: casting a ballot, beside the card it moves — the scorecard region, as
+              the phase-B contract asks, rather than a form buried under the fold. `aggregate`
+              is undefined only in the theoretical race `record`'s own comment above names;
+              a bundle with no live aggregate to show gets no control rather than a blank one. */}
+          {aggregate !== undefined && (
+            <div className="min-w-0">
+              <VoteControl
+                api={`/api/blueprints/${owner}/${slug}/votes`}
+                aggregate={aggregate}
+                signedIn={actor.kind === "account"}
+              />
+            </div>
+          )}
+
           {/* No wrapper of its own, once: `BundlePanel` draws its own bordered panel with
               its own "Bundle" header, so putting it inside a `panel` titled "Bundle"
               printed the word twice. It has a bare `<div>` now for two jobs the dissolved
@@ -716,13 +901,26 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
             />
           </div>
 
-          {/* Two panels the accounts pass adds to the aside, both about the bundle as a
-              thing somebody owns rather than as a reading. They sit after Bundle for the
-              same reason Bundle sits after Score: the page argues from the graph outward,
-              and who has copied this is the last question, not the first. */}
+          {/* Panels the accounts pass adds to the aside, all about the bundle as a thing
+              somebody owns rather than as a reading. They sit after Bundle for the same
+              reason Bundle sits after Score: the page argues from the graph outward, and
+              who has copied this, and who may change it, are the last questions, not the
+              first. `VisibilitySwitch` renders only for the owner — a stranger has no
+              write ahead of them here, and drawing the switch for a reading they cannot
+              act on would be showing a control that always refuses. */}
           <div className="order-1 flex min-w-0 flex-col gap-8 lg:order-none">
             <Forks forks={publicForks} />
-            <Releases releases={sections.releases} fetchable />
+            <Releases
+              releases={sections.releases}
+              fetchable={folder !== undefined}
+              {...(isOwner ? { publishHref: `/upload?owner=${owner}&slug=${slug}` } : {})}
+            />
+            {isOwner && (
+              <VisibilitySwitch
+                visibility={record?.visibility ?? "public"}
+                live={{ api: `/api/bundles/${owner}/${slug}/visibility` }}
+              />
+            )}
           </div>
         </aside>
 
@@ -773,7 +971,32 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
       {/* Comments and the download, full width under both columns. Community notes
           "stay like now", per the author. */}
       <div className="mt-8 flex flex-col gap-8">
-        <EvidenceLayers blueprint={bp} />
+        {/* `live`'s three fields (owner: B7, CONTRACT-FE.md's pin): `sampleSize` is the
+            weakest of the three ballot axes — sufficiency reads as the thinnest sample
+            behind a number, not the thickest — `minSample` is the same threshold
+            `Aggregate.isSample` is computed against, and `runs` is this exact release's
+            reported-and-surviving run count (D-180-02: `reportedCost` scopes to one
+            digest's modal model group, never the bundle's history). Read against the
+            component's own additive prop rather than against a merged implementation
+            (EvidenceLayers.tsx is B7's this wave), so the exact fields it keys off may
+            still move; reported per the phase-B contract's instruction for a pin B7 has
+            not landed yet. */}
+        <EvidenceLayers
+          blueprint={bp}
+          {...(aggregate !== undefined
+            ? {
+                live: {
+                  sampleSize: Math.min(
+                    aggregate.efficacy.sampleSize,
+                    aggregate.reliability.sampleSize,
+                    aggregate.transparency.sampleSize,
+                  ),
+                  minSample: DARKPRINT_CONFIG.telemetry.minRuns,
+                  runs: cost?.runs ?? 0,
+                },
+              }
+            : {})}
+        />
 
         <History entries={sections.history} />
 
@@ -868,7 +1091,24 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
           <DotBreakdown source={bp.graph.dot} title={`${bp.slug}/${paneModel.dotFile}`} />
         </div>
 
-        <Comments comments={bp.comments} />
+        {/* `comments` still has to be passed — the frozen prop `Comments` always required —
+            even though `live` wins the render; `EMPTY_COMMUNITY` is what makes it `[]`
+            rather than a fixture this page no longer reads. */}
+        <Comments
+          comments={bp.comments}
+          live={{
+            target: { kind: "blueprint", refId: record?.id ?? "" },
+            apiBase: `/api/blueprints/${owner}/${slug}/notes`,
+            initial: {
+              notes: notesPage.notes.map((n) => noteViewFrom(n, viewerHandle)),
+              cursor: notesPage.cursor,
+            },
+            viewer: {
+              signedIn: actor.kind === "account",
+              ...(viewerHandle !== undefined ? { handle: viewerHandle } : {}),
+            },
+          }}
+        />
       </div>
     </div>
     </SideRail>

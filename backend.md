@@ -21040,6 +21040,29 @@ that a test binding to a module path rather than to behaviour has blocked a buil
 - **Log:**
   - 2026-08-13 orchestrator: created. Unblocked by B-19.
 
+### T280, Wiring the seeded surfaces
+
+- **State:** in progress
+- **Depends on:** T070, T100, T110, T150, T160, T170, T180
+- **Blocks:** —
+- **Owns:** `app/api/blueprints/[owner]/[slug]/star/**`, `app/api/blueprints/[owner]/[slug]/notes/**`, `app/api/blueprints/[owner]/[slug]/votes/**`, `app/api/blueprints/[owner]/[slug]/runs/**`, `app/api/cards/[id]/star/**`, `app/api/cards/[id]/notes/**`, `app/api/bundles/draft/route.ts`, `app/api/bundles/[owner]/[slug]/fork/route.ts`, `app/api/bundles/[owner]/[slug]/forks/route.ts`, `app/api/bundles/[owner]/[slug]/drift/route.ts`, `app/api/bundles/[owner]/[slug]/visibility/route.ts`, `lib/db/migrations/0007_drafts.up.sql`, `lib/db/migrations/0007_drafts.down.sql`
+
+  **This wave is the route publication D-WAVE-02 always deferred, on T120's own precedent (D-120-14): the modules underneath do not move, only the HTTP surface over them.** D-WAVE-02 dropped `app/api/**` from T150, T160, T170 and T180's `Owns` for one reason — no route shape had been published yet, so a blind suite asserting one would have been unfalsifiable — and T110's fork, forks and drift verbs shipped under the same restriction, D-110-12 recording the route as owed rather than built. All four modules and T110's lineage verbs have sat unreachable from HTTP since their own merges. `POST /api/blueprints/[owner]/[slug]/star` and its `/api/cards/[id]/star` mirror call `lib/server/counters`' `toggleStar`, readability checked BEFORE the toggle since the module itself performs none (B-03); `getSignals` gains a batched sibling, `getSignalsMany`, so a listing prices a page of targets in one query rather than one per row. The notes and votes trees carry `lib/server/notes` (`listNotes`, `postNote`, `editNote`, `deleteNote`, `voteNote`) and `lib/server/ballot` (`getAggregate`, `castBallot`) through two new HTTP wrappers modelled on `lib/server/profiles/http.ts`: `withNotesErrors` and `withBallotErrors`. `POST /api/blueprints/[owner]/[slug]/runs` reaches `submitReport` and reports cost through the caller's own units — D-180-01 binds: nothing here normalises onto a 0–100 axis. `/fork`, `/forks` and `/drift` call the already-published `withLineageErrors`, `forkBundle`, `forksOf` and `driftOf` — no new module code, the route is the whole of what was missing.
+
+  **The second half is new product surface, not a deferred one.** Migration `0007_drafts` adds nullable `title`, `summary`, `description`, `category` and `tags` columns to `bundle`, and `POST /api/bundles/draft` lets an account create a bundle shell before it has a release — the GitHub empty-repo analogy: a draft renders as "no release yet" rather than as absent, and `ownedBundles` puts it on the owner's shelf alongside released bundles so there is somewhere for it to be found. `PATCH /api/bundles/[owner]/[slug]/visibility` is owner-only, off the same `can` policy every other owner-only verb in this document uses. Neither route invents a second creation path: `publish()`'s existing `existing`-bundle branch is what lets a draft take its first release without becoming a second bundle row, so a draft and its eventual release share one id from the moment the draft is created.
+
+- **Log:**
+  - 2026-08-25 orchestrator: created.
+  - 2026-08-25 orchestrator: the frontend half landed and the guard amendments with it, each falsified before it closed.
+    **(1) D-180-07's placeholder clause is SUPERSEDED for live pages** — the owner's instruction this wave retires seeded figures wherever a real source stands, and the clause presumed a seeded cost value every blueprint carried; the surviving half is the load-bearing half (a real median NEVER lands on the 0–100 axis as a bar or spoke), so a live page's radar plots four spokes and the cost row states `{runs, median, p10–p90}` in the reporter's own units. The fixture path is unchanged.
+    **(2) tests/server/t005/existing.test.ts** — migration 0007's five nullable `bundle` columns licensed as enumerated cells beside AC7a's (nullable adds; every merged INSERT/SELECT still binds).
+    **(3) tests/server/t081** — the eleven-route floor re-derived at twenty-one, and the RFC 9457 member names admitted to both leak scans' allow sets, because `bundle.title` put the envelope's own member name into every real registry statement; sound only because the sibling whitelist pins each member's VALUE, and falsified live: a wrapper rendering the statement into `detail` reds on fifteen tokens.
+    **(4) components/ui/autonomy-surfaces.test.ts (frozen, re-pinned with cause)** — a named LIVE_PRINTERS exemption for the two profile surfaces whose sums went live; a probe file printing `.votes` unmarked still reds by name.
+    **(5) components/site/honesty.test.ts (frozen, re-pinned with cause under D-261-07(5)'s granted path)** — five rows moved with the copy they pin, the /mcp status-column row removed with its removal logged inline.
+    **(6) tests/server/t262** — the tabs byte-pins re-pinned (the index swap is this wave's instruction), §05's survivor claim inverted (casting is live), the badge count re-derived at zero, D-262-16's positive repointed at the live sources, and one named zero-import exemption (`components/settings/live.ts`).
+    **(7) tests/server/t263** — D-263-08 scoped to the client half by name: `app/upload/page.tsx` became a server component resolving `?owner=&slug=` through `draftBundle`, which cannot be a client-trusted fetch.
+    **(8) app/api/names/names.test.ts, tests/server/t070, components/profile/tabs.test.ts** — `blueprints` left the reserved set (it took the empty segment), `cards` is the discriminating reserved case now.
+
 ---
 
 ## Questions still open

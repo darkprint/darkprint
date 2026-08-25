@@ -66,27 +66,29 @@ describe("isReservedSlug: the four segments the profile tabs occupy", () => {
     });
   }
 
-  it("covers the four segments backend.md §T070 names, and no others exist to cover", () => {
+  it("covers the three segments backend.md §T070 names, and no others exist to cover", () => {
     /* A check on `components/profile/tabs.ts` rather than on T070: it states what the loop
-       above currently ranges over, so the coverage claim cannot go stale silently. §T070: "The
-       four reserved slugs are `blueprints`, `cards`, `saved`, `terms`." A red here means the
-       tabs changed and §T070's list has to change with them. */
-    expect([...RESERVED_PROFILE_SEGMENTS].sort()).toEqual(["blueprints", "cards", "saved", "terms"]);
+       above currently ranges over, so the coverage claim cannot go stale silently. §T070 (T280
+       revision): "The three reserved slugs are `cards`, `saved`, `terms`." Blueprints moved to
+       the segmentless index at T280, so a red here means the tabs changed and §T070's list has
+       to change with them. */
+    expect([...RESERVED_PROFILE_SEGMENTS].sort()).toEqual(["cards", "saved", "terms"]);
   });
 
-  it("does not reserve `overview`, whose tab has no segment of its own", async () => {
+  it("does not reserve `blueprints`, whose tab has no segment of its own", async () => {
     /* The discriminating case, and the reason the loop above reads `RESERVED_PROFILE_SEGMENTS`
-       and not `PROFILE_TABS`. The overview tab is the index — `profileTabHref` sends it to
-       `/u/<handle>` with an empty segment — so `/u/<handle>/overview` collides with nothing and
-       a bundle may be called `overview`. An implementation built from the tab *ids* rather than
-       their *segments* reserves a fifth name nobody asked it to. */
+       and not `PROFILE_TABS`. Blueprints is the index as of T280 — `profileTabHref` sends it to
+       `/u/<handle>` with an empty segment — so `/u/<handle>/blueprints` collides with nothing
+       and a bundle may be called `blueprints`. An implementation built from the tab *ids*
+       rather than their *segments* reserves a fourth name nobody asked it to. */
     const isReserved = await bind("isReservedSlug");
-    expect(isReserved("overview")).toBe(false);
+    expect(isReserved("blueprints")).toBe(false);
   });
 
   const ORDINARY = [
     "frontline-triage",
-    "blueprint", // singular: a reserved segment is `blueprints`
+    "blueprint", // singular, and never reserved either way
+    "overview", // the retired tab id: free the day the segment stopped being taken
     "card",
     "save",
     "term",
@@ -107,7 +109,7 @@ describe("isReservedSlug: the four segments the profile tabs occupy", () => {
 
   it("answers `boolean` for every one of them, never a truthy stand-in", async () => {
     const isReserved = await bind("isReservedSlug");
-    for (const slug of [...RESERVED_PROFILE_SEGMENTS, ...ORDINARY, "overview"]) {
+    for (const slug of [...RESERVED_PROFILE_SEGMENTS, ...ORDINARY, "blueprints"]) {
       expect(isReserved(slug), `isReservedSlug(${JSON.stringify(slug)})`).toBeTypeOf("boolean");
     }
   });

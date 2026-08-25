@@ -10,14 +10,17 @@ import { FavoriteStar } from "./FavoriteStar";
 import { TagPill } from "./TagPill";
 
 /**
- * The two index figures, marked as seeded at the point of display.
+ * What this tile draws numbers from, and what it does not.
  *
- * Doc 2 §0.4: nothing may be described as working that is not built, and there is no
- * ballot and no download counter. These are rows in `lib/data/community.ts`, and the tile
- * used to print them bare while `/how-to-build-a-dark-factory` said one click away that
- * the site has "no accounts, no votes and no telemetry". `◐` is the marker `/u/` and the
- * blueprint scorecard already use for exactly this class of number, and the glyph carries
- * a word beside it for a reader who cannot separate amber from dim.
+ * There used to be two seeded index figures here — downloads and votes, printed bare with
+ * a `◐` beside them, under a docblock citing doc 2 §0.4 for why they were marked. Both came
+ * off the tile before this pass, not in it: the footer below carries `forks` (a fact the
+ * CALLER counts, over the only population that can hold a public one) and `updatedAt`
+ * instead, and neither is a vote or a download count. T280 makes a real ballot and a real
+ * download counter exist elsewhere on the site (the blueprint detail page, `/u/<owner>`);
+ * this shelf still draws neither one, which is why the docblock that used to sit here — the
+ * one describing them — is gone rather than reworded to describe code this file no longer
+ * has.
  */
 /* ============================================================
    The tile, and where identity sits on it.

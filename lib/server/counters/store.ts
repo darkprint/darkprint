@@ -27,10 +27,10 @@
    than about today's call graph.
    ============================================================ */
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { schema, type Db } from "@/lib/db";
 import { CounterStoreError, NotSignedInError } from "./errors";
-import type { CounterTarget } from "./types";
+import type { CounterTarget, CounterTargetKind } from "./types";
 
 /** A rejection that is somebody's decision rather than the database failing. */
 function isDecision(err: unknown): boolean {
@@ -240,4 +240,64 @@ export async function bumpDownloadCount(db: Db, target: CounterTarget): Promise<
 export async function targetRowById(db: Db, id: string): Promise<TargetRow | undefined> {
   const [row] = await db.select(TARGET_COLUMNS).from(schema.target).where(eq(schema.target.id, id));
   return row;
+}
+
+/** One `target` row, found back by the `(kind, refId)` `getSignalsMany` asked for. */
+export interface TargetRowFor extends TargetRow {
+  kind: CounterTargetKind;
+  refId: string;
+  /** Whether `accountId` (the argument this row was fetched for) stars this target. */
+  starredByCaller: boolean;
+}
+
+/**
+ * Every `target` row any of `targets` names, plus whether `accountId` stars each one —
+ * in ONE statement rather than one `targetRow` and one `hasStar` per target, which is
+ * `getSignals`'s shape and would be `2 * targets.length` round trips here.
+ *
+ * The star check is a `LEFT JOIN` gated on `accountId` rather than a second query: with
+ * `accountId === null` (an anonymous or unidentified caller, `actingAccountIdOrNull`'s
+ * answer) the join condition is `sql\`false\``, so every row's `starredId` comes back
+ * `null` and no row is misread as starred by an account that was never asked about.
+ *
+ * Answers in NO PARTICULAR order and omits a target with no row — `getSignalsMany` is
+ * what restores the caller's order and fills the zeros, the same division `targetRow`
+ * and its own caller keep.
+ */
+export async function targetRowsFor(
+  db: Db,
+  targets: readonly CounterTarget[],
+  accountId: string | null,
+): Promise<TargetRowFor[]> {
+  if (targets.length === 0) return [];
+  const rows = await db
+    .select({
+      kind: schema.target.kind,
+      refId: schema.target.refId,
+      id: schema.target.id,
+      starCount: schema.target.starCount,
+      downloadCount: schema.target.downloadCount,
+      noteCount: schema.target.noteCount,
+      starredId: schema.targetActor.id,
+    })
+    .from(schema.target)
+    .leftJoin(
+      schema.targetActor,
+      and(
+        eq(schema.targetActor.targetId, schema.target.id),
+        eq(schema.targetActor.kind, "star"),
+        accountId === null ? sql`false` : eq(schema.targetActor.accountId, accountId),
+      ),
+    )
+    .where(or(...targets.map((t) => and(eq(schema.target.kind, t.kind), eq(schema.target.refId, t.refId)))));
+
+  return rows.map((row) => ({
+    kind: row.kind,
+    refId: row.refId,
+    id: row.id,
+    starCount: row.starCount,
+    downloadCount: row.downloadCount,
+    noteCount: row.noteCount,
+    starredByCaller: row.starredId !== null,
+  }));
 }

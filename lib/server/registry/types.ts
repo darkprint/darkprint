@@ -68,6 +68,52 @@ export interface Scores {
 }
 
 /**
+ * 0007_drafts: one row of the profile shelf, over `bundle` directly rather than through
+ * `loadSnapshot` — the release-skip that keeps a zero-release bundle off `blueprints()`
+ * (B-06: "a bundle first exists at its first publish") is by design for the PUBLIC
+ * archive shelf and stays untouched; the profile shelf is a different reader that wants
+ * the draft rows precisely because they have no release yet, the GitHub empty-repo
+ * analogy — "no release yet" is a thing to render, not a reason to omit the row.
+ *
+ * `title`/`summary` mirror `BundleRecord`'s absent-not-null convention: present only
+ * when the bundle carries its own (a draft, or a bundle whose owner has since edited its
+ * details), absent for a release-first bundle that has never had one written to this row.
+ * `currentVersion`/`digest`/`nodeCount` are all three absent together for a zero-release
+ * bundle and all three present together otherwise — there is no release to be current.
+ */
+export interface OwnedBundleSummary {
+  slug: string;
+  title?: string;
+  summary?: string;
+  visibility: "public" | "private";
+  updatedAt: Date;
+  releaseCount: number;
+  currentVersion?: string;
+  digest?: string;
+  /** The current release's `cardRefs.length` — one entry per DOT node, duplicates
+      included, matching `publish.ts`'s own "cardRefs is one entry per node". */
+  nodeCount?: number;
+}
+
+/**
+ * 0007_drafts: the bundle detail page's draft branch — the same row `ownedBundles`
+ * projects one field for, addressed by key the way `blueprint()` is, and `undefined` on
+ * the same B-03 terms (absent and unreadable answer alike).
+ */
+export interface DraftBundle {
+  ownerHandle: string;
+  slug: string;
+  visibility: "public" | "private";
+  title?: string;
+  summary?: string;
+  description?: string;
+  category?: string;
+  tags?: readonly string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
  * What a blueprint row draws with: the schematic, and the two capability lists printed
  * beside it (D-132-01, owed to T260 under D-260-14).
  *

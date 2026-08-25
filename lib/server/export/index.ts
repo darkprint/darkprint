@@ -60,3 +60,6 @@ export { serveFile } from "./serve-file";
 export type { ReleaseFiles } from "./release-files";
 export { releaseFiles } from "./release-files";
 export { serveCard } from "./serve-card";
+/* T280's page-render reader: `serveCard`'s bytes without B-14's download event
+   (`release-files.ts`'s "a listing is not a download," applied to a single card). */
+export { serveCardSource } from "./serve-card-source";

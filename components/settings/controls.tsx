@@ -5,10 +5,10 @@ import { cx } from "@/lib/format";
 /* ============================================================
    The chrome `/settings` is built out of.
 
-   Six numbered panels, each with the same head (a `.label-lead`
+   Seven numbered panels, each with the same head (a `.label-lead`
    title on the left, one mono note on the right) and the same
    20px body. The head is where a section says what kind of thing
-   it is — "visible to everyone", "identity", "◐ nothing sends" —
+   it is — "visible to everyone", "identity", "◐ no mail sends" —
    so it is a required prop rather than an optional one: a settings
    panel that does not say where its values go is the panel this
    whole surface exists to avoid.
@@ -24,17 +24,15 @@ import { cx } from "@/lib/format";
    (T262 AC2). Enabling everything passes a naive "nothing is
    disabled" check and fails this one.
 
-   What is still off, and why it is off rather than reworded:
-   the notification switches, because this page is not wired to
-   T190's preferences API and no mail sends — the earlier reason
-   here ("T190 has not built the column") went false at T190's
-   merge, the third time this paragraph's reasons outlived their
-   facts. **Their REASONS changed even though their state did
-   not** — "no account to delete" became false the day accounts
-   landed, and T120 has since shipped delete and transfer routes —
-   so each says what is actually missing now (D-262-15). D-78 asks
-   whether the CLAIM is still true, not whether the control still
-   works.
+   T280 moves the line again: the four notification switches, the
+   danger zone's two actions and the API keys section were the
+   three surfaces still carrying a reason rather than a route, and
+   T280 wires all three — `Switch` gains a live `onToggle` shape
+   for the first, `components/settings/DangerZone.tsx` and
+   `ApiKeys.tsx` are new client components for the other two. What
+   is now on the page and genuinely does nothing has become the
+   exception rather than the rule, which is the direction D-78
+   always pointed this component in.
 
    `readOnly` is gone from the text fields, but the reason it was
    there survives in what replaced it: an editable input keeps its
@@ -258,21 +256,103 @@ export function PrefixedField({
 }
 
 /**
- * A switch that shows a state and cannot change it.
+ * A switch. Two shapes, on one union, and which one a call site gets depends on which prop
+ * it passes rather than on a mode flag — a caller cannot pass both `reason` and `onToggle`,
+ * and TypeScript is what enforces that rather than a runtime check.
  *
- * `role="switch"` with `aria-checked` rather than a styled checkbox: the state is the
- * whole content of the control, and `aria-disabled` (not `disabled`) keeps it in the tab
- * order so a screen-reader reader meets the row at all. Nothing is bound to it — there is
- * no `onClick`, so a press does nothing and `reason` says why.
+ * **`reason`: permanently inert, and says why.** `role="switch"` with `aria-checked` rather
+ * than a styled checkbox — the state is the whole content of the control — and
+ * `aria-disabled` (not `disabled`) keeps it in the tab order so a screen-reader reader meets
+ * the row at all. Nothing is bound to it: there is no `onClick`, so a press does nothing and
+ * `reason` names what is actually missing. The wording used to be a literal inside this
+ * component — "Nothing is stored yet, so this cannot be changed" — true only while every
+ * control on the page was inert; a disabled control explaining itself with the page's old
+ * blanket reason is the D-78 failure in miniature, which is why the sentence comes from the
+ * call site.
  *
- * **`reason` is required, and that is the point of this prop existing.** The wording used
- * to be a literal inside this component — "Nothing is stored yet, so this cannot be
- * changed" — which was true of every control on the page when every control was inert. It
- * is false now: most of this page saves. A disabled control that explains itself with the
- * page's old blanket reason is the D-78 failure in miniature, so the reason comes from the
- * call site, where somebody has to name what is actually missing.
+ * **`onToggle`: live.** The switch flips its LOCAL value on press and leaves persistence to
+ * the caller — T280 wires the four notification switches through `AccountForm`'s shared Save
+ * button rather than one PATCH per press, so this component never calls `fetch` itself.
+ * `busy` disables the control only while a request that will settle it is in flight, and it
+ * is passed as `disabled={busy}` — an EXPRESSION, never a bare `disabled` — because a switch
+ * that works and is briefly waiting on its own network round trip is ordinary UI, not a
+ * claim that the feature is unbuilt (T262 AC2's "a `disabled={expr}` is not a static
+ * refusal").
+ *
+ * **Two overload signatures, one implementation.** `tests/server/t262/ac2-controls.test.ts`
+ * derives which wrappers are "parked" (permanently off, never counted as inert) by reading
+ * THIS FILE's function declarations: a wrapper whose body mentions `disabled`/`aria-disabled`
+ * and whose PARAMETER LIST names no `on*` prop is parked. A single implementation destructured
+ * from a union parameter (`function Switch(props: SwitchProps)`) hides `onToggle` from that
+ * scan — the name never appears in `props: SwitchProps`'s own text — and every live switch on
+ * the page reads as parked, which is `offStatically`, alongside a real `onToggle`. That is
+ * "disabled and functional" by the scanner's own definition, on a control that is neither: it
+ * is exactly the false positive the header of that file calls out for `controls.tsx` itself and
+ * exempts by NOT scanning this file's call sites — a trap this function's own SHAPE was setting
+ * for its callers. The two signatures below keep the exhaustive, one-of-two-shapes type at every
+ * call site; the implementation destructures `onToggle` in its own parameter list, which is what
+ * the scanner reads.
  */
-export function Switch({ on, label, reason }: { on: boolean; label: string; reason: string }) {
+export function Switch(props: {
+  on: boolean;
+  label: string;
+  reason: string;
+  onToggle?: undefined;
+  busy?: undefined;
+}): React.JSX.Element;
+export function Switch(props: {
+  on: boolean;
+  label: string;
+  reason?: undefined;
+  onToggle: () => void;
+  busy?: boolean;
+}): React.JSX.Element;
+export function Switch({
+  on,
+  label,
+  reason,
+  onToggle,
+  busy = false,
+}: {
+  on: boolean;
+  label: string;
+  reason?: string;
+  onToggle?: () => void;
+  busy?: boolean;
+}): React.JSX.Element {
+  if (onToggle === undefined) {
+    return (
+      <span className="flex flex-none items-center gap-3">
+        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
+          {on ? "on" : "off"}
+        </span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={on}
+          aria-disabled
+          aria-label={label}
+          title={reason}
+          className={cx(
+            "relative h-[22px] w-10 shrink-0 cursor-not-allowed rounded-full border",
+            on ? "border-cyan/60 bg-cyan/25" : "border-line-bright bg-surface-3",
+          )}
+        >
+          {/* No transition. The knob never travels: this switch has one state for the whole
+              life of the page, and a duration on a property nothing changes is a promise
+              that it might. */}
+          <span
+            aria-hidden
+            className={cx(
+              "absolute top-[2px] h-4 w-4 rounded-full",
+              on ? "left-[20px] bg-cyan" : "left-[2px] bg-dim",
+            )}
+          />
+        </button>
+      </span>
+    );
+  }
+
   return (
     <span className="flex flex-none items-center gap-3">
       <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
@@ -282,21 +362,20 @@ export function Switch({ on, label, reason }: { on: boolean; label: string; reas
         type="button"
         role="switch"
         aria-checked={on}
-        aria-disabled
+        aria-disabled={busy}
+        disabled={busy}
         aria-label={label}
-        title={reason}
+        onClick={onToggle}
         className={cx(
-          "relative h-[22px] w-10 shrink-0 cursor-not-allowed rounded-full border",
+          "relative h-[22px] w-10 shrink-0 rounded-full border transition-colors disabled:cursor-wait disabled:opacity-70",
           on ? "border-cyan/60 bg-cyan/25" : "border-line-bright bg-surface-3",
         )}
       >
-        {/* No transition. The knob never travels: this switch has one state for the whole
-            life of the page, and a duration on a property nothing changes is a promise
-            that it might. */}
+        {/* Live, so the knob DOES travel: a caller can flip this switch and see it move. */}
         <span
           aria-hidden
           className={cx(
-            "absolute top-[2px] h-4 w-4 rounded-full",
+            "absolute top-[2px] h-4 w-4 rounded-full transition-[left] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)]",
             on ? "left-[20px] bg-cyan" : "left-[2px] bg-dim",
           )}
         />

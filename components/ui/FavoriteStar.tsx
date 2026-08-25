@@ -39,7 +39,7 @@
    and the bookmark, layered above it, wins only over the small area it covers.
    ============================================================ */
 
-import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { compact, cx } from "@/lib/format";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
@@ -47,6 +47,10 @@ import { compact, cx } from "@/lib/format";
 // { kind, refId } (D-140-07). Its note that "mapping STORAGE_KEY onto the enum is T262's"
 // is corrected by D-262-04: the card half is mapped here, and the blueprint half assigns a
 // translation with nowhere to put it. SEAM-61 stays PLANNED for blueprints.
+// T280 wires `star`: the count pill reaches lib/server/counters' toggleStar through
+// POST /api/blueprints/{owner}/{slug}/star or /api/cards/{id}/star — see StarPill below.
+// D-262-07's one-direction rule still binds the OTHER pill: a caller with no `star` prop
+// keeps drawing the seeded glyph exactly as before.
 
 const STORAGE_KEY = "darkprint:favorites";
 
@@ -299,6 +303,7 @@ export function FavoriteStar({
   className,
   count,
   seeded = false,
+  star,
 }: {
   id: string;
   className?: string;
@@ -306,9 +311,27 @@ export function FavoriteStar({
   count?: number;
   /** Marks a count that is illustrative rather than read from a live service. */
   seeded?: boolean;
+  /**
+   * T280: the count pill over a real store. When present it wins over `count`/`seeded` —
+   * the two are mutually exclusive readings of the same pixel, one fixture and one live —
+   * and the seeded glyph never renders for a caller that supplies this.
+   */
+  star?: {
+    /** `POST /api/blueprints/{owner}/{slug}/star` or `POST /api/cards/{id}/star`. Toggles. */
+    api: string;
+    count: number;
+    starred: boolean;
+    signedIn: boolean;
+  };
 }) {
   const [favorited, toggle] = useFavorite(id);
   const label = favorited ? "Remove from favorites" : "Add to favorites";
+  /* Whether the bookmark renders beside a pill (seeded count or live star) or alone.
+     `className` belongs on whichever element is this component's own outer box — the
+     wrapping `<div>` when there is a pill, the button itself when there is not — and
+     putting it on both would apply a caller's positioning (`absolute right-2 top-2`,
+     say) to two overlapping elements instead of one. */
+  const hasPill = star !== undefined || count !== undefined;
 
   const button = (
     <button
@@ -323,9 +346,9 @@ export function FavoriteStar({
       title={label}
       className={cx(
         "inline-flex items-center justify-center border border-line bg-surface-2/90 p-1.5 backdrop-blur-sm transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-line-bright hoverable:active:scale-[0.94]",
-        count === undefined ? "rounded-full" : "gap-1.5 rounded-md px-2.5 py-1.5",
+        hasPill ? "gap-1.5 rounded-md px-2.5 py-1.5" : "rounded-full",
         favorited ? "text-amber" : "text-dim hoverable:hover:text-fg",
-        count === undefined && className,
+        !hasPill && className,
       )}
     >
       <svg
@@ -340,11 +363,18 @@ export function FavoriteStar({
       >
         <path d="M6.75 4.75A1.75 1.75 0 0 1 8.5 3h7a1.75 1.75 0 0 1 1.75 1.75V21L12 17.65 6.75 21V4.75z" />
       </svg>
-      {count !== undefined && (
-        <span className="text-xs font-medium">{favorited ? "Saved" : "Save"}</span>
-      )}
+      {hasPill && <span className="text-xs font-medium">{favorited ? "Saved" : "Save"}</span>}
     </button>
   );
+
+  if (star !== undefined) {
+    return (
+      <div className={cx("inline-flex items-stretch gap-2", className)}>
+        {button}
+        <StarPill star={star} />
+      </div>
+    );
+  }
 
   if (count !== undefined) {
     return (
@@ -384,3 +414,80 @@ export function FavoriteStar({
     button
   );
 }
+
+/**
+ * The count pill, live: a second toggle beside the bookmark, over `lib/server/counters`.
+ *
+ * A star and a save are different acts on this site (the header above says why) and they
+ * stay different controls here too — this is not the bookmark reused, it is a sibling with
+ * its own `aria-pressed` and its own request. Optimistic for the same reason the bookmark's
+ * account path is: a round trip before the pill moves reads as a dropped click.
+ *
+ * `!signedIn` disables rather than hides — a reader who is not signed in still learns the
+ * count is real and what pressing it would ask of them, which a missing control cannot say.
+ */
+function StarPill({ star }: { star: NonNullable<FavoriteStarProps["star"]> }) {
+  const [state, setState] = useState({ count: star.count, starred: star.starred });
+  const [pending, setPending] = useState(false);
+
+  const toggle = useCallback(() => {
+    if (!star.signedIn || pending) return;
+    const wanted = !state.starred;
+    const rollback = state;
+    setState({ starred: wanted, count: state.count + (wanted ? 1 : -1) });
+    setPending(true);
+    void (async () => {
+      try {
+        const response = await fetch(star.api, { method: "POST" });
+        if (!response.ok) throw new Error(String(response.status));
+        const json = (await response.json()) as {
+          signals: { starCount: number; starredByCaller: boolean };
+        };
+        setState({ count: json.signals.starCount, starred: json.signals.starredByCaller });
+      } catch {
+        setState(rollback);
+      } finally {
+        setPending(false);
+      }
+    })();
+  }, [star.api, star.signedIn, pending, state]);
+
+  const label = star.signedIn
+    ? state.starred
+      ? "Remove your star"
+      : "Star this"
+    : "Sign in to star this";
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      disabled={!star.signedIn}
+      aria-pressed={state.starred}
+      aria-label={`${label}. ${state.count} stars.`}
+      title={star.signedIn ? undefined : "Sign in to star this."}
+      className={cx(
+        "inline-flex items-center gap-1.5 rounded-md border px-2.5 font-mono text-[11px] transition-colors duration-[120ms]",
+        state.starred ? "border-cyan/50 bg-cyan/10 text-cyan" : "border-line bg-surface text-muted",
+        star.signedIn ? "hoverable:hover:border-line-bright" : "cursor-not-allowed opacity-70",
+      )}
+    >
+      <svg
+        aria-hidden
+        viewBox="0 0 24 24"
+        width={14}
+        height={14}
+        fill={state.starred ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth={1.75}
+        strokeLinejoin="round"
+      >
+        <path d="M12 3.5l2.47 5.006 5.53.804-4 3.9.944 5.507L12 16.9l-4.944 2.6.944-5.507-4-3.9 5.53-.804L12 3.5z" />
+      </svg>
+      {compact(state.count)}
+    </button>
+  );
+}
+
+/** Named so `StarPill`'s prop type can be pulled off the exported component's own props. */
+type FavoriteStarProps = Parameters<typeof FavoriteStar>[0];

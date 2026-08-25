@@ -2,10 +2,12 @@
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // TODO(SEAM-87) (cited at line 16): n/a — MCP stdio server, npx -y darkprint mcp
 /* ============================================================
-   What each MCP client's config will look like, once the registry
-   has a server to point at. Coming-soon content: see doc 2 §0.4 —
-   `InstallTabs.tsx` and `app/mcp/page.tsx` both say plainly
-   this isn't live, everywhere the capability is suggested.
+   What each MCP client's config looks like, once `darkprint` is on npm to run it. T280
+   gave the registry a server to point at — `/api/mcp/**`, and `packages/mcp` builds the
+   same stdio server from a checkout — so every snippet below is real configuration for a
+   real endpoint now. What still does not run is the command itself: `npx -y darkprint mcp`
+   answers a 404 from npm, because the package has never been published there. See doc 2
+   §0.4 — `InstallTabs.tsx` and `app/mcp/page.tsx` both say so, next to every one of these.
    ============================================================ */
 
 export interface McpClientSetup {

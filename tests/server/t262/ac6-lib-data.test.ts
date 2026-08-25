@@ -82,7 +82,15 @@ describe("premise: the partition is real, and it is the cutover's own tree", () 
     ).toBeGreaterThanOrEqual(COMPONENT_FLOOR);
   });
 
+  /* The one file allowed to carry zero imports, by name. T280's fetch helper
+     (components/settings/live.ts) reads only globals — fetch, Response, JSON — and forcing
+     a decorative import into it to satisfy this premise would be the premise gaming the
+     tree. Every OTHER zero-import file still reds as a scanner fact, which is the cell's
+     job. */
+  const IMPORTLESS = new Set(["components/settings/live.ts"]);
+
   it.each(scanned())("%s parses and carries imports", (path) => {
+    if (IMPORTLESS.has(path)) return;
     const source = read(path);
     expect(
       importSpecifiers(source).length,
@@ -223,18 +231,24 @@ describe("AC6 as amended by D-262-16: no fixture import beyond the one permitted
        move no data — and that cuts both ways: converting this one to `import type` would satisfy
        a spec-name check while leaving the four figures with no source at all, which is option (3)
        reached by a keyword. The positive has to ask for the thing that actually carries data. */
+    /* AMENDED at T280 (owner-instructed, 2026-08-25). D-262-16's premise expired: T131
+       shipped the follow/support columns, T180 shipped run reports, and T280 wired the four
+       figures and the pin selection to their live sources. The positive keeps its JOB —
+       catching rejected option (3), deleting the figures to satisfy every absence cell —
+       by pinning the LIVE sources instead of the fixture: delete the figures or the Pinned
+       section and these value imports go with them, and this cell reds where the absence
+       checks stay green. */
     const specs = importSpecifiers(read("components/profile/load.ts"))
       .filter((i) => !i.typeOnly)
       .map((i) => i.spec);
     expect(
       specs,
-      "`components/profile/load.ts` no longer imports `@/lib/data/profiles`. D-262-16 keeps it " +
-        "because `validated`, `watchers`, `support` and `pinned` have no column — three have " +
-        "none at all and `validated` depends on T180, which is `todo` — so by D-78 all four " +
-        "stay and their source stays with them. Its absence means either the figures were " +
-        "deleted (rejected option 3) or they were relocated to satisfy the grep (rejected " +
-        "option 2), and both are green against an absence check.",
-    ).toContain("@/lib/data/profiles");
+      "`components/profile/load.ts` no longer imports the live sources of the four figures " +
+        "and the pins (`@/lib/server/profiles` for watchers/support/validated/pinned, " +
+        "`@/lib/server/counters` for the downloads/stars sums). Their absence means either " +
+        "the figures were deleted (rejected option 3) or they were relocated to satisfy a " +
+        "grep (rejected option 2), and both are green against an absence check.",
+    ).toEqual(expect.arrayContaining(["@/lib/server/profiles", "@/lib/server/counters"]));
   });
 
   it.each([

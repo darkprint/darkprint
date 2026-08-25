@@ -9,17 +9,32 @@ looks wrong, raise it, don't edit it here.
 
 | Source | Count |
 |---|---:|
-| `page.tsx` files under `app/` | 25 |
-| Prerendered routes in `.next/prerender-manifest.json` | 14 |
+| `page.tsx` files under `app/` | 27 |
+| Prerendered routes in `.next/prerender-manifest.json` | 12 |
 | `dynamicRoutes` patterns in the manifest | 0 |
 
-Re-derived at the T261 merge (`97acee5`), and the SHAPE changed, not just the numbers:
-every registry-reading page is now server-rendered per request, so it appears in neither
-manifest map — the build's own route table prints only `○ (Static)` and `ƒ (Dynamic)`,
-and the `● (SSG)` legend line is gone because nothing uses `generateStaticParams` any
-more. The 14 prerendered routes are the static pages (spec, learn, upload shell, and
-framework-owned entries like `/_not-found`). The old reconciliation (24/27/26/165) died
-with the instance-level prerendering it counted.
+Re-derived from a clean `npm run build` against the T280 working tree (base commit
+`ad12f87`, `/new` and `0007_drafts` uncommitted on top of it). Two changes since the
+T261 merge (`97acee5`) that first re-derived this table at 25/14/0:
+
+1. **`/new` adds a 27th `page.tsx`, and the 25→27 gap is not one page** — `/welcome`
+   (T050, merged after the T261 re-derivation) was never folded into this count either;
+   this pass catches up both additions rather than only the one T280 makes.
+2. **`/upload` drops out of the prerendered set, 14→12 net of the one addition.**
+   `?owner=&slug=` (T280) resolves through `readSession()` inside a `Suspense` boundary
+   (`app/upload/page.tsx`'s own header explains the split), but this build has no
+   `experimental.ppr` — without partial prerendering, one dynamic API anywhere in the
+   tree still marks the whole route `ƒ`, Suspense boundary or not; the build's own table
+   prints `/upload` as `ƒ` where it used to print `○`. The 12 prerendered routes are now
+   exactly: `/`, `/build`, `/mcp`, `/skill`, the three `/spec/*` pages,
+   `/towards-a-dark-factory`, `/what-a-blueprint-is` (9 page routes) plus the three
+   framework-owned entries `/_global-error`, `/_not-found`, `/icon.svg`.
+
+The build's own route table still prints only `○ (Static)` and `ƒ (Dynamic)` — every
+registry-reading page renders per request since T261 and appears in neither manifest
+map, and the `● (SSG)` legend line stays gone because nothing uses
+`generateStaticParams` any more. The old reconciliation (24/27/26/165) died with the
+instance-level prerendering it counted.
 
 ## Access
 
@@ -89,7 +104,7 @@ a 404 detail that differed between them would reinstate the existence leak the s
 | `/api/files/blueprints/[owner]/[slug]/d/[digest]/[...path]` | `app/api/files/blueprints/[owner]/[slug]/d/[digest]/[...path]/route.ts` | GET | public, actor-filtered | The same file at the address that does not move. The other half of the split, and the reason it is a URL **segment** and not a query parameter: a reference that has to survive being written down cannot depend on a heuristic reading one segment's shape, so a digest can never resolve as a version by accident | SEAM-19 (partial) |
 | `/api/files/cards/[...ref]` | `app/api/files/cards/[...ref]/route.ts` | GET | public, actor-filtered | One card version at an address naming no blueprint. A catch-all because `CARD_ID` admits one namespace segment, so `berti/memory-probe@1.0.0.yaml` arrives as two segments and is one ref | SEAM-10 (partial) |
 | `/api/names/handles/[handle]` | `app/api/names/handles/[handle]/route.ts` | GET | public | Is this handle available? Answers `{ available, reason?, suggestion? }` at **200 always** — there is no 404, because "not found" **is** the available answer. `reason` is `taken` (an account holds it), `reserved` (released, and permanently unavailable to any other account) or `illegal` (fails the grammar or the single-segment rule). A suggestion accompanies exactly the first two — you can only offer an alternative to a name that is itself legal | — |
-| `/api/names/slugs/[owner]/[slug]` | `app/api/names/slugs/[owner]/[slug]/route.ts` | GET | public | The same question for a bundle slug under an owner, where `[owner]` is a **handle**. Uniqueness is per owner (B-09), so a slug another owner holds is `available`. The four profile-tab slugs — `blueprints`, `cards`, `saved`, `terms` — are `reserved` for **every** owner including one nobody is, because the reserved set is a property of the URL space rather than of an account | — |
+| `/api/names/slugs/[owner]/[slug]` | `app/api/names/slugs/[owner]/[slug]/route.ts` | GET | public | The same question for a bundle slug under an owner, where `[owner]` is a **handle**. Uniqueness is per owner (B-09), so a slug another owner holds is `available`. **Three** profile-tab slugs — `cards`, `saved`, `terms` — are `reserved` for **every** owner including one nobody is, because the reserved set is a property of the URL space rather than of an account. `blueprints` left the reserved set at T280: the tab it named took the segmentless slot instead (`components/profile/tabs.ts`'s `RESERVED_PROFILE_SEGMENTS`, filtered to non-empty segments), so a bundle may now be named `blueprints` | — |
 | `/api/account` | `app/api/account/route.ts` | GET | session | The signed-in account's own `AccountRecord`. `401` without a session; **`500` `problem+json` `store-failed`** when the store cannot answer (D-50-18) | — |
 | `/api/validate/bundle` | `app/api/validate/bundle/route.ts` | POST | public | `{ dot, cardFiles, manifest, vocabulary? }` → `LoadBundleResult` at **200 even with diagnostics** (B-03): a bundle that resolves with errors is an answer. `400 413` | SEAM-30 (superseded — its request shape could not be joined to the module's signatures) |
 | `/api/validate/dot` | `app/api/validate/dot/route.ts` | POST | public | `{ dot }` → `{ graph?, diagnostics }`. `400 413` | — |
@@ -128,6 +143,38 @@ at build time today. **Open question: does section 8 gain new seam ids for them,
 no page consuming it deliberately outside the seam model?** Not answerable without deciding what a
 seam is for, so it is recorded rather than guessed.
 
+### T280 — the six wired-module route surfaces, plus draft creation
+
+Added 2026-08-25. Five module-only backends (stars T150, notes T170, ballot T160, runs
+T180, lineage T110) gain their first route surface here, over a live account model; a
+sixth, `0007_drafts`, is new this wave rather than a wired-up module. Sixteen routes.
+
+| Path | File | Method | Access | Purpose | Seam |
+|---|---|---|---|---|---|
+| `/api/blueprints/{owner}/{slug}/star` | `app/api/blueprints/[owner]/[slug]/star/route.ts` | POST | session | Toggle the caller's star on a blueprint (T150's `toggleStar`). `toggleStar` performs no visibility check by design, so this route enforces B-03 itself — an owner nobody holds, a slug that owner never took, and a bundle this actor may not read all 404 before the toggle runs. Answers `{ signals: SignalState }` | SEAM-75 |
+| `/api/cards/{id}/star` | `app/api/cards/[id]/star/route.ts` | POST | session | Toggle the caller's star on a card, keyed by the bare id — never `id@version`, since B-10 aggregates a card's counters per id. `getLatestCard` resolving is this route's whole B-03 gate. `{ signals: SignalState }` | SEAM-76 |
+| `/api/blueprints/{owner}/{slug}/notes` | `app/api/blueprints/[owner]/[slug]/notes/route.ts` | GET, POST | GET public, actor-filtered; POST session | List notes (keyset `?after=`, tombstones included; an absent or unreadable parent answers an empty page, never a 404, B-03) / post one (`{ body }`, 1..2000 UTF-16 units, AC5) | SEAM-79, SEAM-82 |
+| `/api/blueprints/{owner}/{slug}/notes/{noteId}` | `app/api/blueprints/[owner]/[slug]/notes/[noteId]/route.ts` | PATCH, DELETE | actor-scoped (author, or an operator on either verb) — no `withSession` pre-check; an anonymous caller, a wrong author and a note that does not exist all 404 through the one `NotAccountOwnerError` `denied()` raises (B-03) | Edit / tombstone a note. `[owner]/[slug]` is namespacing only — both verbs authorize off the stored note's own author id, never a target the URL names | SEAM-79 |
+| `/api/blueprints/{owner}/{slug}/notes/{noteId}/vote` | `app/api/blueprints/[owner]/[slug]/notes/[noteId]/vote/route.ts` | POST | actor-scoped, a signed-in reader of the note's parent — no `withSession` pre-check; an anonymous caller 404s the same way an unreadable parent does | Idempotent upvote, unique `(noteId, accountId)`; no direction body — a note vote is up-only | SEAM-81 |
+| `/api/cards/{id}/notes` | `app/api/cards/[id]/notes/route.ts` | GET, POST | GET public, actor-filtered; POST session | Card mirror of the blueprint notes pair — `refId` is the bare card id, since a note's target is the id, not one version | SEAM-80, SEAM-82 |
+| `/api/cards/{id}/notes/{noteId}` | `app/api/cards/[id]/notes/[noteId]/route.ts` | PATCH, DELETE | actor-scoped (author, or an operator on either verb) — no session pre-check, same as the blueprint pair | Card mirror | SEAM-80 |
+| `/api/cards/{id}/notes/{noteId}/vote` | `app/api/cards/[id]/notes/[noteId]/vote/route.ts` | POST | actor-scoped, signed-in reader of the parent — no session pre-check | Card mirror | SEAM-81 |
+| `/api/blueprints/{owner}/{slug}/votes` | `app/api/blueprints/[owner]/[slug]/votes/route.ts` | GET, POST | GET public, actor-filtered; POST session | Ballot aggregate read (never 404s — an owner/slug that resolves to nothing reads as a fresh random id, so the module's own empty-aggregate VALUE stands, B-03) / cast `{ efficacy?, reliability?, transparency? }` (ints 0-100, `castBallot`'s own `requireScores` validates; upsert per account+bundle; the validator weight is joined live at read, never stored) | SEAM-74 |
+| `/api/blueprints/{owner}/{slug}/runs` | `app/api/blueprints/[owner]/[slug]/runs/route.ts` | POST | session | Submit a run cost report (D-180-01: the caller's own units, no normalisation). `releaseDigest` optional, defaults to the bundle's current release; a digest naming a real release of a DIFFERENT bundle is refused 404-shaped, checked before `submitReport` is ever called. Answers `{ reported: ReportedCostUnits }` | SEAM-84 |
+| `/api/bundles/{owner}/{slug}/fork` | `app/api/bundles/[owner]/[slug]/fork/route.ts` | POST | session | Fork into the caller's own account (visibility follows the forker's account default unless the body overrides it, D-110-09; `slug` defaults to the source's own). Answers the fork's `BundleRecord`, unwrapped | SEAM-70 |
+| `/api/bundles/{owner}/{slug}/forks` | `app/api/bundles/[owner]/[slug]/forks/route.ts` | GET | public, actor-filtered | `{ forks }` via `forksOf` — PUBLIC rows only regardless of who asks (Q1); an owner nobody holds, a slug that owner never took, and a bundle the caller may not read all answer the same empty list, never a 404 (B-03) | SEAM-71 |
+| `/api/bundles/{owner}/{slug}/drift` | `app/api/bundles/[owner]/[slug]/drift/route.ts` | GET | public, actor-filtered | `{ drift }` via `driftOf`; its own `{ tone: "ok", repins: [] }` sentinel answers "not there", "not readable" and "nothing to report" alike, never a 404 | — |
+| `/api/bundles/draft` | `app/api/bundles/draft/route.ts` | POST | session | Create an empty bundle, GitHub-style (`0007_drafts`): `{ slug, title, summary?, description?, category?, tags?, visibility? }`; the owner is always the session's own account, never a body field. `slug` through `checkSlug` first (illegal 400, reserved 409), then `createBundle`'s own unique index is the authoritative "taken" answer (409, `ArchiveConflictError`, closing the TOCTOU window a pure pre-check would leave). A handle-less session (T050 AC1) is refused `403 handle-required`. `visibility` defaults to the account's own default, never a route constant. Answers `{ bundle: { owner, slug, visibility, title, createdAt } }` — no release row | SEAM-114 |
+| `/api/bundles/{owner}/{slug}/visibility` | `app/api/bundles/[owner]/[slug]/visibility/route.ts` | PATCH | session, owner | `{ visibility }`, working identically on a draft (zero releases) and a published bundle — the same `bundle.visibility` column either way. Not-owner and absent both answer 404, through `setBundleVisibility`'s own `undefined` (B-03) | SEAM-67 |
+
+`lib/server/counters` and `lib/server/runs` gain no `http.ts` of their own — the star and
+runs routes map their typed refusals locally in the route file. `lib/server/notes` and
+`lib/server/ballot` each gain one (`withNotesErrors`, `withBallotErrors`), published from
+their barrels this wave for the reason every prior wrapper gives (D-01: a route outside the
+module may not deep-import `./http`). `lib/server/lineage`'s own `http.ts` **predates this
+wave** (T110, D-110-12) and was published with no caller until now — these three routes are
+its first.
+
 
 ## The routes
 
@@ -136,24 +183,25 @@ seam is for, so it is recorded rather than guessed.
 | `/` | `app/page.tsx:120` | public | Landing. Five beats; `SectionBlueprint` reads `bundleSource` and `SectionNodeIsCard` reads `cardSource`/`getNodeCard`, so the figures are drawn off the archive | LIVE | header/footer wordmark (`components/site/SiteHeader.tsx:241`, `components/site/SiteFooter.tsx:101`) |
 | `/blueprints` | `app/blueprints/page.tsx:57` | public | Blueprint index; per-request from `server/registry` since T260 (`force-dynamic`), `GalleryBrowser` still filters client-side from the query string | LIVE | header Browse (`SiteHeader.tsx:51`), footer Browse (`SiteFooter.tsx:65`), mobile "Find one" (`SiteHeader.tsx:428`), `/mcp:391`, `/upload` success screen (`components/upload/UploadFlow.tsx:1061`), every `TagPill` deep link |
 | `/blueprints/[owner]` | `app/blueprints/[owner]/page.tsx` | public | **The legacy-slug redirector** (T261, D-261-02): one segment slot shared with the canonical route because the router refuses two param names in one slot (D-261-17). Exactly one readable owner for the slug → `permanentRedirect` **308** to `/blueprints/{owner}/{slug}` with search params re-appended; zero or several → 404 (never a guessed owner) | — |
-| `/blueprints/[owner]/[slug]` | `app/blueprints/[owner]/[slug]/page.tsx` | public | **The canonical blueprint detail** under B-09's two-part key, per-request off the registry: files from `releaseFiles` (digest-addressed download commands), graph, cards, scorecard, evidence, history, notes. A readable bundle with no scorecard 404s, same as the shelf omits it (D-261-14, seeded-store-only state) | `ContentRow` rows on `/blueprints`, `Pinned`, `SavedList`, `components/bundle/Aside.tsx` |
-| `/build` | `app/build/page.tsx:117` | public | Worked sandbox over the five-node starter; three controls, 80 combinations verified through the engine at build time (`:78`) | LIVE (engine runs in the browser, `lib/starter/variants.ts:264`) | Learn menu and Learn rail via `SANDBOX` (`components/spec/sequence.ts:368`), footer Learn column, `/u/[username]/blueprints:94` ("New blueprint") |
-| `/mcp` | `app/mcp/page.tsx:149` | public | Design proposal for the MCP server: client config, four proposed operations, four open questions | PLANNED (every row prints `not built`, `:307`) | header Design menu (`SiteHeader.tsx:66`), footer Design column, `/skill:39` |
+| `/blueprints/[owner]/[slug]` | `app/blueprints/[owner]/[slug]/page.tsx` | public | **The canonical blueprint detail** under B-09's two-part key, per-request off the registry: files from `releaseFiles` (digest-addressed download commands), graph, cards, scorecard, evidence, history, notes. A readable bundle with no scorecard 404s, same as the shelf omits it (D-261-14, seeded-store-only state). **T280 gives `blueprint() === undefined` a second question rather than an immediate 404**: `draftBundle()` is tried next, and a bundle with an owner and a name but no release yet mounts `DraftLanding` instead — GitHub's empty-repo screen, with `Get the folder` disabled, no star/watch/fork (a target with no release is not one `lib/server/counters` keys), and the owner's own `VisibilitySwitch` and a `Publish your first release` link to `/upload?owner=&slug=`. The released branch wires star (`SEAM-75`), watch (`SEAM-57`), fork (`SEAM-70`), a `VoteControl` (`SEAM-74`), `Comments`' `live` mode (`SEAM-79`) and the owner-only `VisibilitySwitch` (`SEAM-67`) onto controls that used to be seeded or absent; card documents render through `serveCardSource`, not `serveCard`, so the page render itself no longer counts as a download | LIVE | `ContentRow` rows on `/blueprints`, `Pinned`, `SavedList`, `components/bundle/Aside.tsx`, `POST /api/bundles/draft`'s own redirect |
+| `/build` | `app/build/page.tsx:117` | public | Worked sandbox over the five-node starter; three controls, 80 combinations verified through the engine at build time (`:78`) | LIVE (engine runs in the browser, `lib/starter/variants.ts:264`) | Learn menu and Learn rail via `SANDBOX` (`components/spec/sequence.ts:368`), footer Learn column. **No longer linked from a "New blueprint" control** — that button moved to `/new` at T280 (`components/profile/ProfileHeader.tsx:158`, `SEAM-64`'s own note); `/build` is a Learn-sequence stop now, not a creation door |
+| `/mcp` | `app/mcp/page.tsx:149` | public | **Was** a design proposal (client config, four proposed operations, four open questions); T280 shipped the server the page used to only describe, and the copy rewrites in place rather than moving to a new route | LIVE (`lib/server/mcp` answers all four operations over `/api/mcp/**`, D-220-10) + PLANNED (`packages/mcp` is `private: true` and `darkprint` is not on npm — `npx -y darkprint mcp` still fails; ranking and excerpt size are still open questions) | header Design menu (`SiteHeader.tsx:66`), footer Design column, `/skill:39` |
+| `/new` | `app/new/page.tsx` | session, per-request | **The GitHub-style "Create repository" verb (0007_drafts, T280).** Three states, not one: no session shows the door in (`SignInButtons`) rather than a form that would 401 on submit; a session with `handle: null` (T050 AC1) is sent to finish signing up rather than shown a form that cannot name an owner; only a complete session sees `CreateBundleForm` — title, a slug derived from the title until touched directly (checked debounced against `GET /api/names/slugs/{owner}/{slug}`), summary, description, category, tags, and a visibility choice that starts on the account's own default (D-100-01). Submits `POST /api/bundles/draft` and on success navigates straight to the reserved bundle's own page, which mounts `DraftLanding` since it has no release yet | LIVE | `ProfileHeader`'s `New blueprint` button (owner view, `SEAM-64`), `/u/[username]`'s empty-state `Start a blueprint` action, `/skill`'s `accounts` row |
 | `/nodes` | `app/nodes/page.tsx:15` | public | Node-card library index, grouped by node type; per-request from `server/registry` since T260 (`force-dynamic`), `NodeBrowser` still filters client-side from the query string | LIVE | header Browse (`SiteHeader.tsx:52`), footer Browse, `/mcp:398` |
-| `/nodes/[...id]` | `app/nodes/[...id]/page.tsx:727` | public | One node card at its newest version: spec, interfaces, prohibitions, every field, version history, source. Catch-all so a namespaced id resolves. Per-request off the registry since T261 (`versionsOf`, batched `usersOfMany` history, `latestCards`, `serveCard`); author links resolve through `getPublicAuthor`, so an accountless handle renders as TEXT with no `/u/` href (D-260-25 end state, the round's F1) | LIVE + MOCK (`downloadsFor`/`starsFor`/`commentsFor`, `lib/data/node-community.ts`) | `NodeCardSummary` tiles on `/nodes`, `/u/[username]/cards` (`OwnedCards`, public and private rows), `Pinned`, `SavedList`, `nodeHref` from graph nodes and `components/bundle/Aside.tsx:203` |
+| `/nodes/[...id]` | `app/nodes/[...id]/page.tsx:811` | public | One node card at its newest version: spec, interfaces, prohibitions, every field, version history, source. Catch-all so a namespaced id resolves. Per-request off the registry since T261 (`versionsOf`, batched `usersOfMany` history, `latestCards`). **T280 wires the star pill (`getSignals`, `SEAM-76`) and `Comments`' `live` mode (`listNotes`/`postNote`/`voteNote` over the card, `SEAM-80`)**, and card documents render through `serveCardSource` rather than `serveCard` so the page render itself does not count as a download; author links resolve through `getPublicAuthor`, so an accountless handle renders as TEXT with no `/u/` href (D-260-25 end state, the round's F1). **`versionsOf` is still called with a hardcoded `ANONYMOUS` actor** (pre-existing, unchanged by T280) — the card's own content is resolved before `actor` is read at all, so a private card's owner sees the identical 404 a stranger does when reaching this page directly | LIVE | `NodeCardSummary` tiles on `/nodes`, `/u/[username]/cards` (`OwnedCards`, public and private rows), `Pinned`, `SavedList`, `nodeHref` from graph nodes and `components/bundle/Aside.tsx:203` |
 | `/ontology` | `app/ontology/page.tsx:77` | public | The vocabulary, browsable: five kinds, the core/local split; per-request from `server/ontology` since T260 (`force-dynamic`), usage counted from the registry | LIVE | header Browse (`SiteHeader.tsx:56`), footer Browse, `/spec/ontology`, `/u/[username]/terms:46` |
 | `/ontology/[...term]` | `app/ontology/[...term]/page.tsx:137` | public | One term: kind, definition, broader/narrower, weight, which cards name it. Catch-all so `lupo/pii-handling` resolves. Per-request off the registry since T261; local terms arrive as extensions via `searchTerms(origin: "local")`, so a LOCAL weight's provenance renders from the served vocabulary (the cell that earned D-261-13's retirement) | LIVE | `termHref` from `/ontology`, node-card chips, `/u/[username]/terms:62` |
 | `/reading-the-radar` | `app/reading-the-radar/page.tsx` | public | How a blueprint is graded: the scorecard, the three metric sources, the shipped weights | LIVE (reads `allBlueprints`) | Learn menu stop 05 (`sequence.ts:400`), footer Learn column, `components/blueprint/EvidenceLayers.tsx:93` |
-| `/settings` | `app/settings/page.tsx:142` | public · owner-view by fixture | Six account sections. Every control is `readOnly` or `disabled` except the three Public-profile fields, whose only effect is the preview beside them | MOCK (`lib/data/account.ts`) + LIVE (the three authored-under counts, `:156-161`) | account menu (`SiteHeader.tsx:136`), mobile "You" group |
+| `/settings` | `app/settings/page.tsx` | session, per-request | **Seven account sections**, one more than before T280: API keys joins as §06 and Danger zone moves to §07. Every section writes a real route now except mail delivery and the validator badge — Public profile, Account & handle, Email & notifications (the three switches PATCH real preferences, D-190-05), Default visibility, API keys (mint/list/revoke) and Danger zone (transfer, delete) are all LIVE; Validator status stays read-only, because nothing in the code proposes a granting process | LIVE + PLANNED (nothing sends mail even though preferences save for real, `NotificationDelivery` has no implementation; the validator badge has no granting route) | account menu (`SiteHeader.tsx:136`), mobile "You" group |
 | `/welcome` | `app/welcome/page.tsx` | session, per-request | **Where sign-in lands when sign-up is unfinished.** T050 AC1's `handle: null` state had no destination until this route existed: the callback sent it to `/` and the reader had to find `/settings` unaided. Three answers, not one page — no session renders the sign-in panel, a session that already holds a handle **307s to `/`** (so the URL is safe to link at any time and the callback can point at it unconditionally), and only the incomplete state renders the form. The handle is required and blocking; the display name is offered. Availability comes from `GET /api/names/handles/{handle}`, never re-derived in the browser | LIVE | `app/api/auth/github/callback/route.ts` on a null-handle account |
-| `/skill` | `app/skill/page.tsx:107` | public | The authoring skill: one install command that runs, then three things around it that do not | LIVE (command) + PLANNED (`UNBUILT`, `:22`) | header Design menu (`SiteHeader.tsx:67`), footer Design column, `/upload:140`, `/mcp:405`, `/install` 308 |
+| `/skill` | `app/skill/page.tsx:107` | public | The authoring skill: one install command that runs. Of the three things around it that used to be entirely unbuilt, T280 answers one and narrows a second: **accounts** now names real destinations (`/welcome`, `/new`, `/upload`) instead of describing an absence; **the interview reaching into MCP** narrows from "MCP is not built either" to "MCP is live now, and this skill does not call it yet"; **publishing straight from the editor** is still unbuilt, unchanged | LIVE (command, accounts) + PLANNED (`UNBUILT`: publish from the editor; the interview's own MCP call) | header Design menu (`SiteHeader.tsx:67`), footer Design column, `/upload:140`, `/mcp:405`, `/install` 308 |
 | `/spec/topology` | `app/spec/topology/page.tsx` | public | Layer 01: the DOT file and the validator checks over it | LIVE (reads `bundleSource`) | Learn menu stop 01, footer Learn column, `/what-a-blueprint-is` doors |
 | `/spec/card` | `app/spec/card/page.tsx` | public | Layer 02: the node card in YAML, annotated, with the field reference | LIVE (reads `getNodeCard`) | Learn menu stop 02, footer Learn column, `/what-a-blueprint-is` doors |
 | `/spec/ontology` | `app/spec/ontology/page.tsx` | public | Layer 03: the vocabulary format, the local overlay, the validator checks | LIVE (reads `getOntologyView`, `bundleVocabulary`) | Learn menu stop 03, footer Learn column, `/what-a-blueprint-is` doors, `/ontology:132` |
 | `/towards-a-dark-factory` | `app/towards-a-dark-factory/page.tsx` | public | The 1-to-5 organisational ladder and the argument about which work belongs to an agent | MOCK (hardcoded essay content, no archive read) | Learn menu stop 06 (`sequence.ts:415`), footer Learn column |
-| `/u/[username]` | `app/u/[username]/page.tsx:56` | public · owner-view by fixture | Profile overview: pinned and local vocabulary terms only, as of 2026-08-13 — the Blueprints and Node cards sections that used to draw a slice of each list here were removed, on the argument that `ProfileHeader`'s summary line and the tab strip's own counts already state those facts once. 6 pages | LIVE (blueprints, cards, terms counted off `content/`; pinned and terms are what actually renders) + MOCK (`profileFor`, `downloads`, `stars`, `validated` — read by `ProfileHeader` via `ProfileShell`, not this page directly) | account menu (`SiteHeader.tsx:132`), `AuthorChip` on every card and blueprint, `/settings:173` |
+| `/u/[username]` | `app/u/[username]/page.tsx:58` | session, per-request | **The profile's own index (T280): Blueprints took the segmentless slot.** Pinned above a live shelf of every bundle `username` holds, public and private together for the owner, public only for anyone else — `ownedBundles(db, actor, username)`, actor-scoped by construction, replacing the split owner/visitor row-building the old `/u/[username]/blueprints` route did by hand. A zero-release draft renders as its own row (`OwnedBundles`' `SummaryRow`, "no release yet") rather than being hidden, the GitHub empty-repo state. `Pinned` is unchanged in shape and reads `getProfile`'s real pin list. The old overview's terms teaser did not move down with it — Ontology terms stays its own tab. Owner-only: a `Start a blueprint` / `New blueprint` action opening `/new` | LIVE (`ownedBundles`, `getProfile`'s pins, T131/T280) + MOCK (the pinned mini-cards' own support pill still reads `starsFor`, `lib/data/node-community.ts` — `components/profile/load.ts`'s header names it the one `lib/data` import T280 leaves standing) | account menu (`SiteHeader.tsx:132`), `AuthorChip` on every card and blueprint, `/settings:173`, `ProfileHeader`'s `New blueprint` button (`SEAM-64`) |
 | `/u/[username]/[slug]` | `app/u/[username]/[slug]/page.tsx` | public | **An unconditional 308 redirector** to `/blueprints/{username}/{slug}` (T261): the owned-bundle repository view retired with the URL migration, and its `bundleView` cluster was deleted under D-261-16 | — |
-| `/u/[username]/blueprints` | `app/u/[username]/blueprints/page.tsx:65` | public · owner-view by fixture | Owner: the management list, public and private together, with a live `Visibility` filter. Visitor: the published shelf, no filter. 6 pages | MOCK (owner private rows) + LIVE (visitor rows and owner public rows, `:78`) | profile tab strip (`components/profile/tabs.ts:41`, mounted via `ProfileShell` on every profile page), account menu (`SiteHeader.tsx:133`), the overview's empty-state action when something is published but nothing is pinned (`app/u/[username]/page.tsx`) |
+| `/u/[username]/blueprints` | `app/u/[username]/blueprints/page.tsx` | public | **An unconditional 308 redirector** to `/u/[username]` (T280), the same shape `/u/[username]/[slug]` already uses for a bundle's own retired address. Blueprints moved onto the profile index and this route is only its old one; no lookup and no actor, since `username` is the whole of what the destination needs and a redirector that resolved it first would answer differently for a handle that exists and one that does not (B-03) | — | (nothing links here any more — `profileTabHref` returns `/u/<username>` for the Blueprints tab; kept live only for a bookmarked or shared old URL) |
 | `/u/[username]/cards` | `app/u/[username]/cards/page.tsx:48` | public · owner-view by fixture | Owner: every card authored under this handle, public and (as of 2026-08-13) private together, with a live `Visibility` filter. Visitor: published cards only, no filter. 6 pages | LIVE (public rows) + MOCK (owner private rows, `lib/data/cards.ts`) | profile tab strip, account menu (`SiteHeader.tsx:134`) |
 | `/u/[username]/saved` | `app/u/[username]/saved/page.tsx:32` | public · owner-view by fixture | Owner: the bookmark list. Visitor: the rule that a save is private and nothing else. 6 pages | MOCK (`SAVES`, `lib/data/bundles.ts:554`) | profile tab strip (owner only, `tabs.ts:43`), account menu (`SiteHeader.tsx:135`) |
 | `/u/[username]/terms` | `app/u/[username]/terms/page.tsx:35` | public · owner-view by fixture | Local vocabulary terms namespaced under this handle. Ownership read off the id prefix. 6 pages | LIVE | profile tab strip, `/u/[username]:191` |
@@ -165,17 +213,28 @@ seam is for, so it is recorded rather than guessed.
 
 ## Orphan routes
 
-**None.** Every one of the 24 `page.tsx` routes is reachable from the chrome or from an
-index page:
+**None.** Every one of the 27 `page.tsx` routes is reachable from the chrome, from an
+index page, or from a button that hands a reader the URL directly:
 
-- 15 top-level routes have a header entry, a Learn-menu entry or an account-menu entry.
-  `components/site/nav.test.ts` walks `app/*/page.tsx` and fails if one does not
-  (`"lists every top-level route in the header"`), and fails again if a header or footer
-  link resolves to no `page.tsx`.
-- The 6 dynamic detail routes (`/blueprints/[slug]`, `/nodes/[...id]`,
-  `/ontology/[...term]`, `/u/[username]`, `/u/[username]/[slug]`, and the four
-  `/u/[username]/*` tabs) are reached from their own index pages by construction, which is
-  why `nav.test.ts` does not cover them.
+- 14 top-level routes have a header entry, a Learn-menu entry or an account-menu entry:
+  `/`, `/blueprints`, `/build`, `/mcp`, `/nodes`, `/ontology`, `/reading-the-radar`,
+  `/settings`, `/skill`, the three `/spec/*` pages, `/towards-a-dark-factory`,
+  `/what-a-blueprint-is`. `components/site/nav.test.ts` walks `app/*/page.tsx` and fails
+  if one does not (`"lists every top-level route in the header"`), and fails again if a
+  header or footer link resolves to no `page.tsx`.
+- 10 dynamic detail/tab routes are reached from their own index pages by construction,
+  which is why `nav.test.ts` does not cover them: `/blueprints/[owner]`,
+  `/blueprints/[owner]/[slug]`, `/nodes/[...id]`, `/ontology/[...term]`, `/u/[username]`,
+  `/u/[username]/[slug]`, and the four `/u/[username]/*` tabs (`blueprints`, `cards`,
+  `saved`, `terms`).
+- 3 routes are reached from a button or an inbound link rather than the chrome — the same
+  shape, all three named in `nav.test.ts`'s own `ELSEWHERE` set: `/upload` (header/footer
+  Publish button), `/welcome` (the OAuth callback's redirect for an unfinished sign-up)
+  and, joining at T280, `/new` (`ProfileHeader`'s `New blueprint` button and `/u/[username]`'s
+  empty-state action — a creation form is a destination a button hands you, not a place a
+  reader browses).
+
+14 + 10 + 3 = 27.
 
 This matches `docs/audit/REPORT.md:291`: *"`UNREACHABLE-ROUTE`: zero found."*
 
@@ -234,6 +293,7 @@ flowchart TD
   blueprintSlug["/blueprints/:slug"]
   build["/build"]
   mcp["/mcp"]
+  newBundle["/new"]
   nodes["/nodes"]
   nodeId["/nodes/...id"]
   ontology["/ontology"]
@@ -246,8 +306,6 @@ flowchart TD
   specOntology["/spec/ontology"]
   darkFactory["/towards-a-dark-factory"]
   profile["/u/:username"]
-  ownedBundle["/u/:username/:slug"]
-  profileBlueprints["/u/:username/blueprints"]
   profileCards["/u/:username/cards"]
   profileSaved["/u/:username/saved"]
   profileTerms["/u/:username/terms"]
@@ -288,16 +346,19 @@ flowchart TD
   blueprintSlug -->|"pinned node tiles"| nodeId
   blueprintSlug -->|"EvidenceLayers"| radar
 
-  profile --> profileBlueprints
+  %% T280: Blueprints took the segmentless slot — profile's own shelf rows link straight
+  %% to blueprintSlug (blueprintHref), and /u/:username/blueprints (the tab's old address)
+  %% is a redirect nothing currently links to, so it is not drawn — the same treatment the
+  %% thirteen next.config.ts redirects already get in this graph.
+  profile --> blueprintSlug
+  profile -->|"New blueprint"| newBundle
   profile --> profileCards
   profile -->|"owner only"| profileSaved
   profile --> profileTerms
-  profileBlueprints --> ownedBundle
-  profileBlueprints -->|"New blueprint"| build
+  newBundle -.->|"draft created"| blueprintSlug
   settings --> profile
 
-  class home,blueprints,build,nodes,ontology,ontologyTerm,radar,whatIsBlueprint,specTopology,specCard,specOntology,profileCards,profileTerms live
+  class home,blueprints,build,nodes,nodeId,ontology,ontologyTerm,radar,whatIsBlueprint,specTopology,specCard,specOntology,profileCards,profileTerms,newBundle live
   class darkFactory,profileSaved mock
-  class mcp planned
-  class blueprintSlug,nodeId,settings,skill,profile,ownedBundle,profileBlueprints,upload mixed
+  class blueprintSlug,settings,skill,mcp,profile,upload mixed
 ```

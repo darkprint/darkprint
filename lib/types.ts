@@ -47,12 +47,38 @@ export interface Metric {
   key: MetricKey;
   /** Human label, e.g. "Autonomy". */
   label: string;
-  /** Normalized 0–100 for uniform display (radar/bars). */
-  value: number;
+  /**
+   * Normalized 0–100 for uniform display (radar/bars).
+   *
+   * `undefined` only for `cost` once a live run report is wired in (D-180-01): a
+   * caller-submitted cost has no reference model, exchange rate or hardware baseline to
+   * put it on this axis honestly, so the figure is never drawn as a bar or a radar
+   * spoke — `reported` below carries it instead, as stated numbers with their unit.
+   */
+  value: number | undefined;
   /** How the score is derived. Drives the colour-coded badge. */
   source: MetricSource;
   /** One-line explanation of what this score means / how it was found. */
   detail: string;
+  /**
+   * Set only when this row was computed from a real backend signal — a ballot aggregate
+   * or a run report — rather than from the fixture's seeded stand-in. Absent, never
+   * `false`, on every fixture-path row: "present means real" is the same shape
+   * `SignalState.starredByCaller` already uses.
+   */
+  live?: boolean;
+  /**
+   * How many accounts or runs stand behind a `live` figure: ballots cast for the three
+   * community axes, accepted reports for cost. Absent for the two `auto` rows, which are
+   * computed rather than sampled.
+   */
+  sampleSize?: number;
+  /**
+   * `cost` only, and only once a run report exists: the raw figures in the reporter's OWN
+   * units (D-180-01). None of `median`, `p10` or `p90` may be put on the 0–100 axis — they
+   * render as stated numbers, never as a bar or a spoke.
+   */
+  reported?: { runs: number; median: number; p10: number; p90: number };
 }
 
 /**

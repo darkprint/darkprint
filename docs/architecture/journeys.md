@@ -276,12 +276,21 @@ flowchart TD
   profile["PATCH /api/account/profile\ndisplay name, only when one was typed"]
   home["/ — signed in and complete"]
   publish["/upload can now publish:\nownerHandle comes from session.handle"]
+  myShelf["/u/:handle — your own bundle shelf\n(Blueprints is the profile's index now, T280)"]
 
   entry --> oauth --> callback --> hasHandle
   hasHandle -->|"yes, first sign-in"| welcome --> check --> claim --> profile --> home
   hasHandle -->|"no, returning"| home
   home --> publish
+  home -->|"account menu"| myShelf
 ```
+
+**Where a completed account's own content lives (T280).** Before this wave, `/u/[username]`
+was the profile's overview: pinned items and local terms only, with the reader's actual
+blueprints a click away on `/u/[username]/blueprints`. Blueprints took the segmentless slot
+instead — the account menu's own link now opens straight onto the shelf a signed-in reader
+came for, Pinned sitting above it rather than in front of it. §5.7 picks up from `myShelf`'s
+own `New blueprint` button.
 
 ```mermaid
 sequenceDiagram
@@ -308,4 +317,84 @@ sequenceDiagram
   API-->>User: 200 AccountRecord + RE-MINTED cookie (handle set) [D-50-06]
   User->>API: PATCH /api/account/profile (only if a name was typed)
   User->>WebUI: land on / , signed in and complete
+```
+
+---
+
+## 5.7 · Creating a blueprint from a blank slate
+
+Added 2026-08-25 (T280, `0007_drafts`). Real end to end, over a complete account
+(§5.6): a blueprint may now exist as a row before it has a release — GitHub's empty-repo
+state — reserved on `/new`, built locally by whichever means the reader chooses, and
+published into the same slug from `/upload`. `publish()` on that last step is an APPEND
+to the bundle `/new` already created, not a second creation — `PublishResult.created` is
+`false` the whole way through this journey, and true only for a bundle `/upload` creates
+from a bare graph with no `/new` visit first (§5.4, unchanged).
+
+```mermaid
+flowchart TD
+  myShelf["/u/:handle\n(the profile's own bundle shelf, T280)"]
+  newPage["/new\nreserve a slug and a title"]
+  form["title, slug (debounced availability check),\nsummary, description, category, tags, visibility"]
+  createPost["POST /api/bundles/draft"]
+  draftLanding["/blueprints/:owner/:slug\nblueprint() undefined, draftBundle() answers: DraftLanding renders"]
+  threeWays{"Three ways in, GitHub's own empty-repo panel"}
+  skillPath["Point the blueprint-writing skill\nat your own goal"]
+  handPath["Copy the starter folder layout\nand write blueprint.dot + cards by hand"]
+  localBuild["A folder on the user's own machine:\nblueprint.dot, cards/, README.md, AGENTS.md"]
+  uploadPinned["/upload?owner=&slug=\npinned to the exact draft (B6's prefill contract)"]
+  wizard["Steps 1-3: drop the folder or Load an example,\nvalidate in the tab — Details prefilled from the draft"]
+  publishStep["Step 4: Publish"]
+  detail["/blueprints/:owner/:slug\nblueprint() now resolves — the draft branch is gone"]
+  visibilitySwitch["VisibilitySwitch\n(owner, any time — draft or released)"]
+
+  myShelf -->|"New blueprint"| newPage --> form --> createPost --> draftLanding
+  draftLanding --> threeWays
+  threeWays -->|"Publish your first release"| uploadPinned
+  threeWays -->|"install the skill"| skillPath --> localBuild
+  threeWays -->|"start from the printed layout"| handPath --> localBuild
+  localBuild -->|"come back with a folder"| uploadPinned
+  uploadPinned --> wizard --> publishStep --> detail
+  draftLanding -->|"owner, any time"| visibilitySwitch
+  detail -->|"owner, any time"| visibilitySwitch
+```
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant WebUI as Web UI
+  participant API
+  participant DB as Postgres
+  participant Machine as User machine
+
+  User->>WebUI: "New blueprint" (profile shelf, or /skill's accounts row)
+  WebUI-->>User: GET /new
+  loop each keystroke in the slug field, debounced 350ms
+    WebUI->>API: GET /api/names/slugs/{owner}/{slug}
+    API-->>WebUI: available | taken + suggestion | illegal
+  end
+  User->>WebUI: Create blueprint
+  WebUI->>API: POST /api/bundles/draft [SEAM-114]
+  API->>DB: checkSlug, then createBundle — a bundle row, no release
+  DB-->>API: BundleRecord
+  API-->>WebUI: 200 { bundle: { owner, slug, visibility, title, createdAt } }
+  WebUI-->>User: redirect to /blueprints/{owner}/{slug}
+  Note over WebUI,API: blueprint() answers undefined, no release yet\ndraftBundle() answers the row just created — DraftLanding renders (B-03: absent and unreadable answer alike, so the same branch also covers a private draft nobody else may see)
+  User->>WebUI: "Publish your first release" (or install the skill, or copy the layout)
+  opt the build itself happens off-platform
+    Machine->>Machine: skill interview, or hand-authoring, produces\nblueprint.dot + cards/ + README.md + AGENTS.md
+  end
+  User->>WebUI: GET /upload?owner={owner}&slug={slug} [SEAM-68]
+  WebUI->>API: draftBundle(actor, owner, slug) — ownership checked server-side (session.handle === owner)
+  API-->>WebUI: the draft's own title/summary/description/category/tags
+  WebUI-->>User: wizard steps 1-3, Details prefilled
+  User->>WebUI: drop the folder, review the validation, Publish
+  WebUI->>API: POST /api/bundles [SEAM-69]
+  API->>DB: publish() — APPENDS the first release to the existing bundle\n(created: false — the bundle already existed from /new)
+  DB-->>API: PublishResult
+  API-->>WebUI: 200 PublishResult
+  WebUI-->>User: /blueprints/{owner}/{slug} — the draft branch is gone, the bundle is live
+  User->>WebUI: (any time, draft or released) flip visibility
+  WebUI->>API: PATCH /api/bundles/{owner}/{slug}/visibility [SEAM-67]
+  API-->>WebUI: { bundle: { visibility, ... } }
 ```

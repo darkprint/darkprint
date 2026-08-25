@@ -47,18 +47,18 @@ interface Frozen {
 const FROZEN: readonly Frozen[] = [
   {
     path: "components/site/nav.test.ts",
-    sha256: "02ebdd7c61ed272c7a3a846da20b0c0c8172e43cd3750974e68b5fcd95bbd6a3",
-    why: "AC5 names it must-pass-unchanged. D-262-06 turns that into a constraint on the cutover: it imports `ACCOUNT_MENU` as a module-scope array and reads `.href` off every row, and a static import of a static array is what a per-request session cannot be. AMENDED ONCE, by ruling (D-262-29, owner-stated 2026-08-25): `/welcome` was added as a route no header may link, its `ELSEWHERE` exemption edited this file, and this pin was moved in the SAME commit. The freeze fired correctly — an author editing a guard so their own change passes is exactly what it watches for — and the amendment is recorded rather than quietly re-baselined. The exemption was falsified before the pin moved: a throwaway top-level route still reds the assertion, so the guard was narrowed by one named route and not blunted.",
+    sha256: "d691ff4ccbfd2a8b9659c172262e036e151b122c3eb75118fe195ad6e54c9477",
+    why: "AC5 names it must-pass-unchanged. D-262-06 turns that into a constraint on the cutover: it imports `ACCOUNT_MENU` as a module-scope array and reads `.href` off every row, and a static import of a static array is what a per-request session cannot be. AMENDED ONCE, by ruling (D-262-29, owner-stated 2026-08-25): `/welcome` was added as a route no header may link, its `ELSEWHERE` exemption edited this file, and this pin was moved in the SAME commit. The freeze fired correctly — an author editing a guard so their own change passes is exactly what it watches for — and the amendment is recorded rather than quietly re-baselined. The exemption was falsified before the pin moved: a throwaway top-level route still reds the assertion, so the guard was narrowed by one named route and not blunted. AMENDED AGAIN at T280 (owner-instructed wiring wave, 2026-08-25): `/new` joined `ELSEWHERE` (a creation form reached from the profile shelf's own button, same reasoning as `/upload`), and the same falsification ran before this pin moved — a throwaway `app/zzz-probe` route still reds by name.",
   },
   {
     path: "components/profile/tabs.test.ts",
-    sha256: "0a3fe91d32c40e1d0dd3689645857b2e330ebb38c1d145937976e52dea24129a",
-    why: "AC5 names it, and D-262-02 established it stays whole only because D-262-01 kept the fixtures. If `lib/data/**` is deleted after all, three of its six suites lose their subject and this red is the first sign.",
+    sha256: "9c5b42eca8f18db9f435139228081e6ad0cc4cb9a75e66d264def791a8e06928",
+    why: "AC5 names it, and D-262-02 established it stays whole only because D-262-01 kept the fixtures. If `lib/data/**` is deleted after all, three of its six suites lose their subject and this red is the first sign. AMENDED at T280 (owner-instructed, 2026-08-25): the profile index became the bundle shelf, `blueprints` took the empty segment and `overview` left `PROFILE_TABS`, so the suite's root-tab cell now finds `blueprints`; re-pinned in the same commit as the tabs.ts change it reads.",
   },
   {
     path: "components/profile/tabs.ts",
-    sha256: "106965c086e6ee367390f64ab0e22b2569f2a98024020f90e257a3307cacfe54",
-    why: "D-262-03. `lib/server/naming/reserved.ts:13` imports `RESERVED_PROFILE_SEGMENTS` from it and `isReservedSlug()` is that import and nothing else, so merged T070's slug refusal is decided here. Add a sixth tab and the registry silently refuses a sixth name.",
+    sha256: "6ae570cfce5bb6ff60e1c78652176e38f0449e1340625b89ef9d5569997f6785",
+    why: "D-262-03. `lib/server/naming/reserved.ts:13` imports `RESERVED_PROFILE_SEGMENTS` from it and `isReservedSlug()` is that import and nothing else, so merged T070's slug refusal is decided here. Add a sixth tab and the registry silently refuses a sixth name. AMENDED at T280 (owner-instructed, 2026-08-25): `overview` left the table and `blueprints` took the empty segment, so the reserved set derives to cards/saved/terms — `blueprints` became an allocatable slug and t070's literals moved in the same commit. The freeze fired exactly as designed; the change it caught is the wave's own instruction, not an author dodging a guard.",
   },
 ];
 

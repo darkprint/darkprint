@@ -106,7 +106,7 @@ function Entry({
           size="sm"
           variant="outline"
           disabled
-          title="Nothing copies a snapshot into an account: there are no accounts."
+          title="Copying a snapshot into an account is designed and not built."
         >
           Take
         </Button>

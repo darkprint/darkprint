@@ -48,7 +48,7 @@ const SHORT: Record<MetricKey, string> = {
 /**
  * The scoring card as a radar. Pure SVG.
  *
- * The plotted axes are the five metrics that are magnitudes. **Autonomy is not one of
+ * The plotted axes are the metrics that are magnitudes. **Autonomy is never one of
  * them**, per doc 2 §1.1: a radial axis makes distance from the centre mean "more", so
  * plotting the band at 0.5 R would state that this blueprint is half of what it could
  * have been — the merit reading the principle rules out. Nothing about a graph with a
@@ -61,6 +61,13 @@ const SHORT: Record<MetricKey, string> = {
  * why the sixth axis is missing; the panel reorg pass cut it (the row below already
  * states the class), so nothing here says why anymore — that reasoning lives only in
  * this comment now.
+ *
+ * **Cost joins autonomy off the chart once a page is live-wired (D-180-01)**, whether or
+ * not a run has actually been reported: a caller-submitted figure has no reference model
+ * to sit on this axis honestly, so `lib/content/view.ts`'s `costMetric` hands it in with
+ * `value: undefined` and the filter below drops it the same way it drops autonomy. Five
+ * axes on the fixture path, four once cost is live — `MetricBars` carries the number
+ * either way, as text rather than a bar.
  *
  * The name and never the ordinal behind it, for the reason doc 2 §1.1 gives: the one
  * number a reader meets on this site is the organisational maturity ladder, and a second
@@ -84,8 +91,18 @@ export function ScoreRadar({
   plate?: boolean;
 }) {
   const { pad: LABEL_PAD, labelUnits } = geometry(size, render);
-  // Doc 2 §1.1: the band is not a length, so it is not a spoke.
-  const axes = metrics.filter((m) => m.key !== "autonomy");
+  /* Doc 2 §1.1: the band is not a length, so it is not a spoke. D-180-01 adds a second,
+     narrower exclusion once a page is live-wired: `cost` carries `value: undefined`
+     there, with or without a report on file (`lib/content/view.ts`'s `costMetric`),
+     because a caller-submitted figure with no reference model has nowhere honest to sit
+     on this axis — see that module's comment for the full reasoning. Filtering on
+     `value !== undefined` rather than on `key !== "cost"` keeps this general: the fixture
+     path's `cost` always carries a seeded number and is unaffected. The type guard
+     narrows `m.value` for every read below, which is why it is written this way rather
+     than as a bare boolean filter. */
+  const axes = metrics.filter(
+    (m): m is Metric & { value: number } => m.key !== "autonomy" && m.value !== undefined,
+  );
 
   const cx = size / 2;
   const cy = size / 2;
@@ -192,12 +209,18 @@ export function ScoreRadar({
         {axes.map((m, i) => {
           const dp = dataPoints[i];
           const lp = point(i, R + 24);
-          const meta = METRIC_SOURCE_META[m.source];
+          /* Same amber-for-empty rule as `MetricBars` (see its own comment): a live axis
+             standing at zero because nobody has voted or reported is a real number, not
+             a fabricated placeholder, and amber is how this site marks "nothing real
+             behind this figure" without inventing a fourth reading for it. A live axis
+             with a real sample keeps its ordinary source colour. */
+          const empty = m.live === true && (m.sampleSize ?? 0) === 0;
+          const color = empty ? "var(--color-amber)" : METRIC_SOURCE_META[m.source].color;
           const anchor =
             Math.abs(lp.x - cx) < 6 ? "middle" : lp.x > cx ? "start" : "end";
           return (
             <g key={m.key}>
-              <circle cx={dp.x} cy={dp.y} r={3} fill={meta.color} />
+              <circle cx={dp.x} cy={dp.y} r={3} fill={color} />
               <text
                 x={lp.x}
                 y={lp.y}
@@ -213,8 +236,11 @@ export function ScoreRadar({
                    entry are one object. All three sources clear 4.5:1 on this ground
                    (cyan 9.44, emerald 10.52, violet 7.43). The middle one used to read
                    amber and was remeasured when `METRIC_SOURCE_META.reported` moved off
-                   it — see the argument recorded above that constant in `lib/format.ts`. */
-                fill={meta.color}
+                   it — see the argument recorded above that constant in `lib/format.ts`.
+                   `color` overrides to amber only for a live-and-empty axis, per the
+                   comment above; every fixture-path axis keeps `meta.color` exactly as
+                   before. */
+                fill={color}
               >
                 {SHORT[m.key]}
               </text>

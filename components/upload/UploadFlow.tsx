@@ -11,6 +11,7 @@ import {
   parseSemver,
   sortDiagnostics,
   summarize,
+  type Diagnostic,
   type LoadBundleResult,
   type OntologyTerm,
 } from "@/lib/core";
@@ -19,7 +20,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { KindBadge } from "@/components/ui/Badge";
 import { TagPill } from "@/components/ui/TagPill";
 import { PhaseCoverageBadge } from "@/components/ui/PhaseCoverage";
-import { locationLabel } from "@/components/ui/DiagnosticList";
+import { DiagnosticList, locationLabel } from "@/components/ui/DiagnosticList";
 import {
   BundleDropzone,
   assembleBundle,
@@ -29,6 +30,7 @@ import {
   type BundleDetails,
   type UploadFile,
 } from "./BundleDropzone";
+import { SingleDocDropzone, type SingleDoc } from "./SingleDocDropzone";
 import { requiredAgents, requiredTools } from "@/lib/graph-seed";
 import { bundleProgress, type BundleProgress } from "./progress";
 import { ValidationReport, verdictLine } from "./ValidationReport";
@@ -42,7 +44,9 @@ import { publishBundle, type PublishOutcome, type PublishRefusedKind } from "./p
 // TODO(SEAM-30) (cited at line 555): POST /api/validate/bundle
 // TODO(SEAM-31) (cited at line 130): folded into SEAM-30
 // TODO(SEAM-32) (cited at line 1040): POST /api/validate/report
-// TODO(SEAM-33) (cited at line 69): POST /api/validate/card, POST /api/validate/ontology
+// SEAM-33: POST /api/validate/card, POST /api/validate/ontology — **LIVE** since T280.
+//   The effect near "SEAM-33, **LIVE**" below calls one or the other by `kind`. No TODO:
+//   the seam is closed for these two kinds; Blueprint still resolves in this tab (SEAM-30).
 // TODO(SEAM-34) (cited at line 600): folded into SEAM-27
 // TODO(SEAM-35) (cited at line 720): GET /api/slugs/available?slug=
 // SEAM-69: POST /api/bundles — **LIVE** since T263. `doPublish` calls it through
@@ -84,10 +88,13 @@ const STEPS: { id: StepId; label: string; heading: string }[] = [
 ];
 
 /**
- * The three registry surfaces. Only the first has an upload path today: the wizard
- * runs `resolveBundle`, which joins a DOT to the cards it pins, and a lone card or a
- * vocabulary extension is a different validation entirely. Saying so beats a selector
- * that quietly does nothing.
+ * The three registry surfaces, all three ready now — reading them ready is not the same
+ * as reading them published. Blueprint joins a DOT to the cards it pins and its wizard
+ * ends in a release; Node and Ontology check one document each against the curated core
+ * alone (`POST /api/validate/card`, `POST /api/validate/ontology`) and end in a report,
+ * never a release — the registry stores a lone card or vocabulary only pinned inside a
+ * bundle that publishes, and that path is not built. Step 4 says so for those two kinds
+ * rather than offering a Publish button the registry has nowhere to put.
  */
 const KINDS: {
   key: ContentKind;
@@ -108,14 +115,14 @@ const KINDS: {
     label: "Node",
     hint: "One reusable node card",
     color: "var(--color-amber)",
-    ready: false,
+    ready: true,
   },
   {
     key: "ontology",
     label: "Ontology",
     hint: "Typed vocabulary",
     color: "var(--color-violet)",
-    ready: false,
+    ready: true,
   },
 ];
 
@@ -126,7 +133,30 @@ const KIND_NOUN: Record<ContentKind, string> = {
   ontology: "ontology",
 };
 
-const inputCls =
+/** The endpoint a Node or Ontology `singleDoc` validates against. Never asked for `blueprint`
+    — that kind resolves in this tab (see the SEAM-30 note near the top of this file). */
+const VALIDATE_ENDPOINT: Partial<Record<ContentKind, string>> = {
+  node: "/api/validate/card",
+  ontology: "/api/validate/ontology",
+};
+
+/**
+ * What the endpoint above answered about `singleDoc`, mirroring `UploadSession`'s own
+ * shape in `./session.ts`: `checking` stays distinct from `idle` so a reader is never
+ * shown a verdict for the frame before its own request has landed, and a transport
+ * failure (`failed`) is a fact about the network rather than a diagnostic about the
+ * document — printing it as one would claim the validator said something it never saw.
+ */
+type SingleValidation =
+  | { state: "idle" }
+  | { state: "checking" }
+  | { state: "done"; diagnostics: Diagnostic[]; ok: boolean }
+  | { state: "failed"; detail: string };
+
+/** Exported so `components/upload/CreateBundleForm.tsx` renders the same field, on `/new`
+    — "match the site's cyanotype identity" by reusing the one definition rather than a
+    second string that can drift from it. */
+export const inputCls =
   "w-full bg-surface-2 border border-line rounded-md px-3 py-2 text-sm text-fg placeholder:text-dim transition-colors focus:border-cyan focus:outline-none";
 
 /** What a first release is numbered, per D-263-09. Also what `reset` puts back. */
@@ -187,6 +217,26 @@ const EMPTY_DETAILS: BundleDetails = {
      is a worse first experience than a first release numbered the way first releases are. */
   version: FIRST_VERSION,
 };
+
+/**
+ * `EMPTY_DETAILS`, prefilled from a pinned target's own stored fields.
+ *
+ * A dropped `blueprint.yaml` prefills the same way, through `detailsFromManifest` — this
+ * is the second source that can fill Details before the reader types anything, and it
+ * exists so a title and a summary given on `/new` are not retyped the moment the reader
+ * reaches `/upload` to publish into what `/new` just reserved.
+ */
+function detailsWithTarget(target: PublishTarget | undefined): BundleDetails {
+  if (target === undefined) return EMPTY_DETAILS;
+  return {
+    ...EMPTY_DETAILS,
+    ...(target.title === undefined ? {} : { title: target.title }),
+    ...(target.summary === undefined ? {} : { summary: target.summary }),
+    ...(target.description === undefined ? {} : { description: target.description }),
+    ...(target.category === undefined ? {} : { category: target.category }),
+    ...(target.tags === undefined ? {} : { tags: [...target.tags] }),
+  };
+}
 
 /* ------------------------------------------------------------------ */
 /*  The report, as a file                                              */
@@ -462,11 +512,36 @@ export interface ExampleBundle {
   files: UploadFile[];
 }
 
+/**
+ * A bundle this release is pinned to, per `?owner=&slug=` — `app/upload/page.tsx` builds
+ * one only once the session it read owns the addressed bundle (B-03: the check happens
+ * server-side, before the wizard ever sees the pin).
+ *
+ * `visibility` travels with it rather than being re-asked: `publish` ignores a submitted
+ * visibility on an append and keeps the bundle's own (`publish.ts`'s own comment — "not
+ * an occasion to rewrite the bundle row's visibility"), so re-offering the control would
+ * show a choice that cannot do anything. The four optional fields are what `POST
+ * /api/bundles/draft` or an earlier release already stored; present, they fill Details
+ * the same way a dropped `blueprint.yaml` does, so the reader is not retyping a title
+ * they already gave the bundle on `/new`.
+ */
+export interface PublishTarget {
+  owner: string;
+  slug: string;
+  visibility: "public" | "private";
+  title?: string;
+  summary?: string;
+  description?: string;
+  category?: string;
+  tags?: readonly string[];
+}
+
 /* ------------------------------------------------------------------ */
 /*  Chip field (tags)                                                  */
 /* ------------------------------------------------------------------ */
 
-function ChipField({
+/** Exported for the same reason `inputCls` is: `/new`'s Tags field is this field. */
+export function ChipField({
   id,
   label,
   placeholder,
@@ -690,11 +765,34 @@ function StepIndicator({
  * the two computed scores are the ones the registry would store. Nothing is uploaded —
  * step 4 says so in as many words.
  */
-export function UploadFlow({ example }: { example: ExampleBundle }) {
+export function UploadFlow({
+  example,
+  target,
+}: {
+  example: ExampleBundle;
+  /** `?owner=&slug=`, resolved and ownership-checked by `app/upload/page.tsx`. Absent for
+      the ordinary case — a reader arriving with no bundle already in mind. */
+  target?: PublishTarget;
+}) {
   const [step, setStep] = useState<StepId>(1);
   const [kind, setKind] = useState<ContentKind>("blueprint");
   const [files, setFiles] = useState<UploadFile[]>([]);
-  const [details, setDetails] = useState<BundleDetails>(EMPTY_DETAILS);
+  const [details, setDetails] = useState<BundleDetails>(() => detailsWithTarget(target));
+  /** One document — a lone node card or vocabulary — for the Node and Ontology kinds.
+      `files` above stays empty for those kinds, which is what keeps `canAdvance` and the
+      Blueprint-only derived state below correctly inert rather than needing a second
+      guard on every one of them. */
+  const [singleDoc, setSingleDoc] = useState<SingleDoc | undefined>(undefined);
+  /**
+   * What `POST /api/validate/card` or `POST /api/validate/ontology` answered about
+   * `singleDoc`, kept apart from `result` above because the two ask different servers:
+   * the blueprint pass runs `loadBundle` in this tab (SEAM-30 stays client-side, by
+   * design — see the header), while a lone document is checked over HTTP, and a network
+   * call has a `checking` and a `failed` state a synchronous call never needs.
+   */
+  const [singleValidationFetch, setSingleValidationFetch] = useState<SingleValidation>({
+    state: "idle",
+  });
   /**
    * What the registry said, once it has been asked. Absent while the reader is on the form.
    *
@@ -716,10 +814,15 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
    * promise a hidden default does not keep — and because a reader who can see the choice on
    * screen knows what will happen without knowing what their account default is.
    *
-   * `private` is the starting value. Publishing somebody's first upload to the world because
-   * they did not notice a control is the failure that cannot be undone by editing a setting.
+   * `private` is the starting value — UNLESS a `target` is pinned, in which case it is the
+   * bundle's OWN visibility and the choice is not offered again (`publish.ts`'s own rule:
+   * an append ignores a submitted visibility and keeps the bundle's). Publishing somebody's
+   * first upload to the world because they did not notice a control is the failure that
+   * cannot be undone by editing a setting.
    */
-  const [visibility, setVisibility] = useState<"public" | "private">("private");
+  const [visibility, setVisibility] = useState<"public" | "private">(
+    () => target?.visibility ?? "private",
+  );
   const session = useUploadSession();
 
   /* ---------- the whole pipeline, derived ---------- */
@@ -745,7 +848,10 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
 
   const errorCount = result === undefined ? 0 : summarize(result.diagnostics).error;
   const blocked = result === undefined || hasErrors(result.diagnostics);
-  const canAdvance = parts.dot !== undefined;
+  /* Blueprint gates on a topology; Node and Ontology gate on the one document they check —
+     neither carries a `.dot`, so `parts.dot` alone would lock the wizard on step 1 for both
+     kinds forever. */
+  const canAdvance = kind === "blueprint" ? parts.dot !== undefined : singleDoc !== undefined;
 
   /* The same three-state reading `ValidationReport` prints on the Preview step, so the
      Publish step and the footer counter cannot describe the bundle differently from the
@@ -767,6 +873,76 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
     () => (result?.blueprint === undefined ? [] : requiredTools(result.blueprint)),
     [result],
   );
+
+  /**
+   * SEAM-33, **LIVE**: a lone Node or Ontology document, checked over HTTP the moment it
+   * lands rather than on an explicit "check" press — the same automatic-on-drop behaviour
+   * the Blueprint kind already has via the synchronous `result` above, so a reader does
+   * not have to learn two different rhythms for three kinds of one wizard.
+   *
+   * `AbortController` per request (`WelcomeForm.tsx`'s own device, for the same race): a
+   * slow answer for the first paste landing after a fast one for the second would label
+   * the second document with the first's verdict.
+   */
+  useEffect(() => {
+    const endpoint = VALIDATE_ENDPOINT[kind];
+    // No setState on this branch — `singleValidation` below derives "idle" for exactly
+    // this condition, so there is nothing for the effect to synchronise. Writing it here
+    // too would be the same state expressed twice, decided by whichever assignment runs
+    // last on a given render.
+    if (endpoint === undefined || singleDoc === undefined) return;
+    const controller = new AbortController();
+    // Inside the async body rather than as the effect's first statement: a setState
+    // called directly in an effect's top-level statements is flagged by
+    // `react-hooks/set-state-in-effect` even when — as here — it is genuinely reporting
+    // that an async operation this effect owns has started, rather than deriving a value
+    // render already had.
+    void (async () => {
+      setSingleValidationFetch({ state: "checking" });
+      let response: Response;
+      try {
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "content-type": "application/json", accept: "application/json" },
+          body: JSON.stringify({ source: singleDoc.text }),
+          signal: controller.signal,
+        });
+      } catch {
+        if (controller.signal.aborted) return;
+        setSingleValidationFetch({ state: "failed", detail: "The validator could not be reached." });
+        return;
+      }
+      if (!response.ok) {
+        const problem = (await response.json().catch(() => ({}))) as { detail?: string };
+        setSingleValidationFetch({
+          state: "failed",
+          detail: problem.detail ?? `The validator answered ${response.status}.`,
+        });
+        return;
+      }
+      const body = (await response.json()) as { card?: unknown; terms?: unknown; diagnostics?: unknown };
+      const diagnostics = Array.isArray(body.diagnostics) ? (body.diagnostics as Diagnostic[]) : [];
+      // `ValidateCardResult`/`ValidateVocabularyResult` both carry their success field only
+      // when nothing of error severity was reported — the same rule `hasErrors` checks over
+      // a blueprint's diagnostics, read here off the field's presence instead of re-summing
+      // severities the response already resolved.
+      const ok = kind === "node" ? body.card !== undefined : body.terms !== undefined;
+      setSingleValidationFetch({ state: "done", diagnostics, ok });
+    })();
+    return () => controller.abort();
+  }, [kind, singleDoc]);
+
+  /**
+   * What the UI actually shows. `singleValidationFetch` only ever holds what a fetch
+   * found — "idle" is never written to it — so a stale "done" or "failed" cannot outlive
+   * the document or the kind it was about: clearing `singleDoc`, or switching to
+   * Blueprint, reads as idle here on the very next render rather than waiting for the
+   * effect above to notice and write it back.
+   */
+  const singleValidation: SingleValidation =
+    VALIDATE_ENDPOINT[kind] === undefined || singleDoc === undefined
+      ? { state: "idle" }
+      : singleValidationFetch;
 
   /* ---------- editing ---------- */
 
@@ -796,14 +972,20 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
     setDetails((d) => ({ ...d, tags: d.tags.filter((_, i) => i !== index) }));
   }
 
-  /** Everything gone: a different project, typed from scratch. */
+  /** Everything gone: a different project, typed from scratch.
+
+      `detailsWithTarget(target)` and not the bare `EMPTY_DETAILS`, and `target?.visibility`
+      and not the bare `"private"`: a pinned bundle's own fields and its own visibility are
+      not part of what "empty" means here — they describe the ADDRESS this release still
+      goes to, which a reader typing a fresh title has not changed their mind about. */
   function reset() {
     setOutcome(undefined);
     setStep(1);
     setKind("blueprint");
     setFiles([]);
-    setDetails(EMPTY_DETAILS);
-    setVisibility("private");
+    setSingleDoc(undefined);
+    setDetails(detailsWithTarget(target));
+    setVisibility(target?.visibility ?? "private");
   }
 
   /**
@@ -819,14 +1001,19 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
     setOutcome(undefined);
     setStep(1);
     setFiles([]);
+    setSingleDoc(undefined);
   }
 
   /* ---------- navigation ---------- */
 
-  function jump(target: StepId) {
-    // Can always step back; can only go forward once there is a topology to read.
-    if (target > step && !canAdvance) return;
-    setStep(target);
+  /* Parameter named `to`, not `target`: this component also takes a `target` PROP (the
+     pinned bundle), and a local binding of the same name would shadow it for the rest of
+     this function — harmless here since the body never reads the prop, but one keystroke
+     away from a bug the next edit introduces silently. */
+  function jump(to: StepId) {
+    // Can always step back; can only go forward once there is something to read.
+    if (to > step && !canAdvance) return;
+    setStep(to);
   }
 
   function next() {
@@ -891,9 +1078,14 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
     window.scrollTo({ top: y < 0 ? 0 : y });
   }, [step]);
 
-  // The slug the registry would key on. A dropped manifest owns its own — §4 makes it
-  // the blueprint's identity — so only a synthesised manifest gets one off the title.
+  // The slug the registry would key on. A pinned target wins outright — the release has
+  // to land on the bundle the URL named, whatever a dropped manifest's own `slug` field
+  // says (`publish`'s addressing is the body's top-level `slug`, never `manifest.slug`,
+  // which travels only as descriptive metadata). Absent a pin, a dropped manifest owns
+  // its own — §4 makes it the blueprint's identity — so only a synthesised manifest gets
+  // one off the title.
   const slug =
+    target?.slug ??
     bundle?.manifest.slug ??
     (details.title.trim() === "" ? "untitled-blueprint" : slugify(details.title));
 
@@ -1017,15 +1209,9 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
         <div className="mt-10">
         {step === 1 && (
           <div className="flex flex-col gap-8">
-            <BundleDropzone
-              files={files}
-              parts={parts}
-              onChange={takeFiles}
-              onLoadExample={loadExample}
-              exampleLabel={example.title}
-            />
-
-            {/* Content kind selector */}
+            {/* Content kind selector, ABOVE the drop target now: which one renders below
+                it depends on the answer, so a reader picks the kind before meeting a
+                target sized for it rather than after. */}
             <div className="flex flex-col gap-3">
               <span className="label" id="content-type-label">
                 Content type
@@ -1044,11 +1230,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                       onClick={() => setKind(k.key)}
                       disabled={!k.ready}
                       aria-pressed={active}
-                      aria-label={
-                        k.ready
-                          ? `${k.label}: ${k.hint}`
-                          : `${k.label}: ${k.hint}. This flow does not accept one yet.`
-                      }
+                      aria-label={`${k.label}: ${k.hint}`}
                       /* Both hovers gated: this selector is a tap target on the first
                          step, and an ungated `hover:` latches on a phone — the pressed
                          kind keeps the lit state right up to the route change, which on
@@ -1058,8 +1240,6 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                         active
                           ? "bg-surface-3 text-fg shadow-[inset_0_0_0_1px_var(--color-line-bright)]"
                           : "text-muted hoverable:hover:text-fg",
-                        !k.ready &&
-                          "cursor-not-allowed opacity-50 hoverable:hover:text-muted",
                       )}
                     >
                       <span
@@ -1071,25 +1251,86 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                       />
                       <span className="flex flex-col items-start leading-tight">
                         <span className="font-medium">{k.label}</span>
-                        <span className="text-[11px] text-dim">
-                          {k.ready ? k.hint : `${k.hint} · not yet`}
-                        </span>
+                        <span className="text-[11px] text-dim">{k.hint}</span>
                       </span>
                     </button>
                   );
                 })}
               </div>
               <p className="max-w-xl text-xs leading-relaxed text-dim">
-                The validator joins a DOT to the cards it pins, so a whole bundle is what
-                it knows how to read. A card on its own and a vocabulary extension each
-                need their own check, and neither is wired up yet.
+                {kind === "blueprint" ? (
+                  <>
+                    The validator joins a DOT to the cards it pins, so a whole bundle is
+                    what it knows how to read.
+                  </>
+                ) : (
+                  <>
+                    A {KIND_NOUN[kind]} on its own checks against the curated core
+                    vocabulary alone, the same reading a bundle&rsquo;s own cards get
+                    before any local overlay is layered on. Publishing one by itself is
+                    not built — the registry stores a {KIND_NOUN[kind]} today only pinned
+                    inside a blueprint bundle that publishes, and the last step here says
+                    so.
+                  </>
+                )}
               </p>
             </div>
+
+            {kind === "blueprint" ? (
+              <BundleDropzone
+                files={files}
+                parts={parts}
+                onChange={takeFiles}
+                onLoadExample={loadExample}
+                exampleLabel={example.title}
+              />
+            ) : (
+              <SingleDocDropzone doc={singleDoc} onChange={setSingleDoc} kindLabel={KIND_NOUN[kind]} />
+            )}
           </div>
         )}
 
-        {step === 2 && (
+        {step === 2 &&
+          (kind !== "blueprint" ? (
+            /* Node and Ontology check one document each; neither has a release, a
+               visibility or cards to read agents and tools off, so the whole of the
+               blueprint-only form below does not apply. Title is the one field a report
+               can use, and it is offered rather than asked for. */
+            <div className="grid max-w-3xl gap-5">
+              <p className="max-w-xl text-sm leading-relaxed text-muted">
+                A {KIND_NOUN[kind]} is checked on its own — no release, no visibility, no
+                derived agents or tools. Give it a title for the report, if you want one.
+              </p>
+              <div className="flex flex-col gap-2 sm:max-w-md">
+                <label className="label" htmlFor="single-title">
+                  Title
+                </label>
+                <input
+                  id="single-title"
+                  value={details.title}
+                  onChange={(e) => setField("title", e.target.value)}
+                  placeholder={`Untitled ${KIND_NOUN[kind]}`}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+          ) : (
           <div className="grid max-w-3xl gap-5">
+            {target !== undefined && (
+              /* The pin from `?owner=&slug=`. Placed first: everything below it — the
+                 slug caption, the visibility fieldset — reads differently once a reader
+                 knows this release already has an address, and the notice is what makes
+                 that legible before either one is reached. */
+              <p className="rounded-md border border-cyan/30 bg-cyan/5 px-4 py-3 text-sm leading-relaxed text-fg">
+                This release publishes into{" "}
+                <span className="font-mono text-cyan">
+                  {target.owner}/{target.slug}
+                </span>
+                . The slug and the visibility below are its own and are not asked again
+                here.
+              </p>
+            )}
+
             <p className="max-w-xl text-sm leading-relaxed text-muted">
               These fields become the bundle&rsquo;s manifest. A{" "}
               <span className="font-mono text-cyan">blueprint.yaml</span> in the
@@ -1112,6 +1353,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
               />
               <p className="font-mono text-[11px] text-dim">
                 slug <span className="text-muted">{slug}</span>
+                {target !== undefined && " (fixed — publishing into this bundle)"}
               </p>
             </div>
 
@@ -1215,61 +1457,80 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                 </p>
               </div>
 
-              <fieldset className="flex flex-col gap-2">
-                <legend className="label mb-2">Visibility</legend>
-                <div className="flex flex-wrap gap-2">
-                  {(
-                    [
-                      {
-                        value: "private" as const,
-                        label: "Private",
-                        hint: "Only you can read it",
-                        color: "var(--color-violet)",
-                      },
-                      {
-                        value: "public" as const,
-                        label: "Public",
-                        hint: "Anyone can read it",
-                        color: "var(--color-cyan)",
-                      },
-                    ] satisfies { value: "public" | "private"; label: string; hint: string; color: string }[]
-                  ).map((choice) => {
-                    const active = visibility === choice.value;
-                    return (
-                      <button
-                        key={choice.value}
-                        type="button"
-                        onClick={() => setVisibility(choice.value)}
-                        aria-pressed={active}
-                        aria-label={`${choice.label}: ${choice.hint}`}
-                        /* Same shape and the same gated hover as the kind selector on step
-                           one, for the reason that one records: an ungated `hover:` latches
-                           on a phone and a two-way selector then reads as both chosen. */
-                        className={cx(
-                          "flex items-center gap-2 rounded-md px-3.5 py-2 text-sm transition-colors",
-                          active
-                            ? "bg-surface-3 text-fg shadow-[inset_0_0_0_1px_var(--color-line-bright)]"
-                            : "text-muted hoverable:hover:text-fg",
-                        )}
-                      >
-                        <span
-                          className="h-2 w-2 rounded-full"
-                          style={{ background: active ? choice.color : "var(--color-line-bright)" }}
-                          aria-hidden
-                        />
-                        <span className="flex flex-col items-start leading-tight">
-                          <span className="font-medium">{choice.label}</span>
-                          <span className="text-[11px] text-dim">{choice.hint}</span>
-                        </span>
-                      </button>
-                    );
-                  })}
+              {target !== undefined ? (
+                /* Inherited, not re-asked: `publish.ts` ignores a submitted visibility on
+                   an append and keeps the bundle's own, so offering the choice again
+                   would show a control that cannot do anything. */
+                <div className="flex flex-col gap-2">
+                  <span className="label">Visibility</span>
+                  <p className="max-w-xl text-sm leading-relaxed text-muted">
+                    Inherited from{" "}
+                    <span className="font-mono text-cyan">
+                      {target.owner}/{target.slug}
+                    </span>
+                    : this release is{" "}
+                    <span className="text-fg">{visibility === "public" ? "public" : "private"}</span>.
+                    Change it from the blueprint&rsquo;s own page, not here.
+                  </p>
                 </div>
-                <p className="max-w-xl text-[11px] leading-relaxed text-dim">
-                  Private is the starting choice. You can publish a private release and
-                  keep working; what a reader of the archive sees is what you make public.
-                </p>
-              </fieldset>
+              ) : (
+                <fieldset className="flex flex-col gap-2">
+                  <legend className="label mb-2">Visibility</legend>
+                  <div className="flex flex-wrap gap-2">
+                    {(
+                      [
+                        {
+                          value: "private" as const,
+                          label: "Private",
+                          hint: "Only you can read it",
+                          color: "var(--color-violet)",
+                        },
+                        {
+                          value: "public" as const,
+                          label: "Public",
+                          hint: "Anyone can read it",
+                          color: "var(--color-cyan)",
+                        },
+                      ] satisfies { value: "public" | "private"; label: string; hint: string; color: string }[]
+                    ).map((choice) => {
+                      const active = visibility === choice.value;
+                      return (
+                        <button
+                          key={choice.value}
+                          type="button"
+                          onClick={() => setVisibility(choice.value)}
+                          aria-pressed={active}
+                          aria-label={`${choice.label}: ${choice.hint}`}
+                          /* Same shape and the same gated hover as the kind selector on
+                             step one, for the reason that one records: an ungated
+                             `hover:` latches on a phone and a two-way selector then reads
+                             as both chosen. */
+                          className={cx(
+                            "flex items-center gap-2 rounded-md px-3.5 py-2 text-sm transition-colors",
+                            active
+                              ? "bg-surface-3 text-fg shadow-[inset_0_0_0_1px_var(--color-line-bright)]"
+                              : "text-muted hoverable:hover:text-fg",
+                          )}
+                        >
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ background: active ? choice.color : "var(--color-line-bright)" }}
+                            aria-hidden
+                          />
+                          <span className="flex flex-col items-start leading-tight">
+                            <span className="font-medium">{choice.label}</span>
+                            <span className="text-[11px] text-dim">{choice.hint}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="max-w-xl text-[11px] leading-relaxed text-dim">
+                    Private is the starting choice. You can publish a private release and
+                    keep working; what a reader of the archive sees is what you make public.
+                  </p>
+                </fieldset>
+              )}
             </div>
 
             <div className="flex flex-col gap-5 border-t border-line pt-5">
@@ -1302,10 +1563,61 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
               />
             </div>
           </div>
-        )}
+          ))}
 
         {step === 3 &&
-          (result === undefined ? (
+          (kind !== "blueprint" ? (
+            singleDoc === undefined ? (
+              <div className="rounded-lg border border-line bg-surface-2/40 p-5">
+                <h3 className="font-display text-xl font-semibold text-fg">
+                  Nothing to validate
+                </h3>
+                <p className="prose-lane mt-4 text-sm leading-relaxed text-muted">
+                  Drop a single <span className="font-mono text-cyan">.yaml</span>{" "}
+                  document on the first step — a {KIND_NOUN[kind]} — and it validates
+                  here.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-5">
+                {/* The same verdict strip shape `ValidationReport` draws for a blueprint,
+                    over the two-state answer a lone document gets instead of three:
+                    there is no "unfinished" here, since one document is not a graph a
+                    reader fills in a card at a time. */}
+                <div className="panel flex flex-wrap items-center gap-x-4 gap-y-2 bg-surface-2/40 px-4 py-3">
+                  {singleValidation.state === "checking" && (
+                    <span className="font-mono text-xs text-dim">Checking…</span>
+                  )}
+                  {singleValidation.state === "failed" && (
+                    <span className="font-mono text-xs text-signal">{singleValidation.detail}</span>
+                  )}
+                  {singleValidation.state === "done" && (
+                    <>
+                      <span
+                        className="font-mono text-sm"
+                        style={{
+                          color: singleValidation.ok
+                            ? "var(--color-emerald)"
+                            : "var(--color-signal)",
+                        }}
+                        aria-hidden
+                      >
+                        {singleValidation.ok ? "✓" : "✕"}
+                      </span>
+                      <span className="font-mono text-xs uppercase tracking-[0.14em] text-fg">
+                        {singleValidation.ok
+                          ? `${KIND_NOUN[kind]} resolves`
+                          : `${KIND_NOUN[kind]} rejected`}
+                      </span>
+                    </>
+                  )}
+                </div>
+                {singleValidation.state === "done" && (
+                  <DiagnosticList diagnostics={singleValidation.diagnostics} title="Validator report" />
+                )}
+              </div>
+            )
+          ) : result === undefined ? (
             <div className="rounded-lg border border-line bg-surface-2/40 p-5">
               <h3 className="font-display text-xl font-semibold text-fg">
                 Nothing to validate
@@ -1492,6 +1804,47 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                   browse the blueprints →
                 </Link>
               </p>
+            </div>
+          ) : kind !== "blueprint" ? (
+            /* Node and Ontology validate, they do not publish: the registry stores a
+               lone card or vocabulary only pinned inside a blueprint bundle that
+               publishes, and that path is not built. Saying so plainly here beats a
+               Publish button wired to nowhere. */
+            <div className="flex flex-col gap-6">
+              <div className="panel flex flex-col gap-4 bg-surface-2/40 p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <KindBadge kind={kind} />
+                </div>
+                <h3 className="font-display text-xl font-semibold leading-snug text-fg">
+                  {details.title || `Untitled ${KIND_NOUN[kind]}`}
+                </h3>
+                {singleValidation.state === "done" && (
+                  <p className="text-sm leading-relaxed text-muted">
+                    {singleValidation.ok
+                      ? `This ${KIND_NOUN[kind]} resolves.`
+                      : `The validator reported ${
+                          summarize(singleValidation.diagnostics).error
+                        } error${summarize(singleValidation.diagnostics).error === 1 ? "" : "s"}.`}
+                  </p>
+                )}
+                {singleValidation.state === "checking" && (
+                  <p className="text-sm leading-relaxed text-muted">Checking…</p>
+                )}
+                {singleValidation.state === "idle" && (
+                  <p className="text-sm leading-relaxed text-muted">
+                    Nothing dropped yet — go back to the first step.
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-lg border border-line bg-surface-2/40 p-4">
+                <p className="text-xs leading-relaxed text-muted">
+                  <span className="text-fg">Not built:</span> publishing a lone{" "}
+                  {KIND_NOUN[kind]} on its own. The registry stores one today only pinned
+                  inside a blueprint bundle that publishes — pick Blueprint on the first
+                  step to publish one.
+                </p>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col gap-6">
@@ -1692,13 +2045,25 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
             step {step} of {STEPS.length}
             {step === 4 &&
               ` · ${
-                !blocked
-                  ? "ready to publish"
-                  : result === undefined
-                    ? "no bundle yet"
-                    : unfinished && progress !== undefined
-                      ? `${progress.waiting} node${progress.waiting === 1 ? "" : "s"} still to card`
-                      : `blocked by ${errorCount} error${errorCount === 1 ? "" : "s"}`
+                kind !== "blueprint"
+                  ? singleDoc === undefined
+                    ? "no document yet"
+                    : singleValidation.state === "checking"
+                      ? "checking…"
+                      : singleValidation.state === "failed"
+                        ? "could not be checked"
+                        : singleValidation.state === "done" && singleValidation.ok
+                          ? "resolves"
+                          : singleValidation.state === "done"
+                            ? "rejected"
+                            : "no document yet"
+                  : !blocked
+                    ? "ready to publish"
+                    : result === undefined
+                      ? "no bundle yet"
+                      : unfinished && progress !== undefined
+                        ? `${progress.waiting} node${progress.waiting === 1 ? "" : "s"} still to card`
+                        : `blocked by ${errorCount} error${errorCount === 1 ? "" : "s"}`
               }`}
           </span>
           {step < 4 ? (

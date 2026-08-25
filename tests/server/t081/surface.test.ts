@@ -211,7 +211,7 @@ describe("the barrel publishes what the two blocks name, and nothing else", () =
    * before anyone has decided it is one, and it is discovered at the point where the contract
    * can no longer be amended. Thirteen tasks are behind T080's barrel.
    */
-  it("the exported functions are exactly the thirteen readers, actorFrom and T081's three", async () => {
+  it("the exported functions are exactly the published readers, actorFrom and T081's three", async () => {
     const mod = await loadRegistry();
     const exported = Object.entries(mod)
       .filter(([, value]) => typeof value === "function")

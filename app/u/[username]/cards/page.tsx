@@ -23,11 +23,11 @@ import { readSession } from "@/components/profile/session";
  * for the rule this follows: a fixture can only ever claim something private, never
  * something public, because a public claim is a claim about the registry.
  *
- * Both readers get a list, which is the same arrangement the blueprints tab makes: the two
- * things an account holds are the same object at two scales, and a tile grid said the
+ * Both readers get a list, which is the same arrangement the blueprints index makes: the
+ * two things an account holds are the same object at two scales, and a tile grid said the
  * opposite by cropping a card into something to browse past. What differs between owner
  * and visitor is which rows exist to show (a visitor's is always `view.cards`, always
- * public) and the toolbar's one live control.
+ * public) and whether the visibility filter joins the find box in the toolbar.
  */
 /* No `dynamicParams` and no `generateStaticParams`, and the deletion is the criterion
    rather than tidying: **a prerendered page cannot render a different view per reader**
@@ -63,10 +63,10 @@ export default async function Page({ params }: PageProps<"/u/[username]/cards">)
             label="Find a card"
             note={
               <>
-                the search is drawn and switched off. This list is{" "}
-                {view.ownedCards.length} document
-                {view.ownedCards.length === 1 ? "" : "s"} and nothing stores the private
-                ones.
+                {view.ownedCards.length} document{view.ownedCards.length === 1 ? "" : "s"}.
+                Public rows are counted off <span className="text-muted">content/cards/</span>
+                ; private ones are seeded, in{" "}
+                <span className="text-muted">lib/data/cards.ts</span>.
               </>
             }
           >
@@ -95,10 +95,8 @@ export default async function Page({ params }: PageProps<"/u/[username]/cards">)
             label="Find a card"
             note={
               <>
-                the search is drawn and switched off. This list is {view.cards.length}{" "}
-                document{view.cards.length === 1 ? "" : "s"} read straight off{" "}
-                <span className="text-muted">content/cards/</span> and nothing indexes{" "}
-                {view.cards.length === 1 ? "it" : "them"} here.
+                {view.cards.length} document{view.cards.length === 1 ? "" : "s"}, read off{" "}
+                <span className="text-muted">content/cards/</span>.
               </>
             }
           />

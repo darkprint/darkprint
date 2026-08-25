@@ -60,3 +60,9 @@ export { BallotRefusedError, BallotStoreError } from "./errors";
 
 export { getAggregate } from "./read";
 export { castBallot } from "./write";
+
+/* T280's wire layer (D-WAVE-02 dropped `app/api/**` from T160's own `Owns`; this wave adds
+   it back). Published from the barrel rather than deep-imported, on `lib/server/profiles`'
+   own precedent for `withProfileErrors`: a route outside this folder may not reach `./http`
+   directly (D-01), so the route consumes this the same way it consumes `castBallot`. */
+export { withBallotErrors } from "./http";

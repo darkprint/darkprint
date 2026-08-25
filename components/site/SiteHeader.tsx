@@ -148,8 +148,9 @@ export const LEARN = SPEC_SEQUENCE.map((page) => ({
  * `/api/auth/logout`, and it renders as a control under the rows rather than beside them.
  */
 export const ACCOUNT_MENU = [
+  /* "Your blueprints" left at T280: the profile index IS the bundle shelf now, so its row
+     and this one had one destination — /u/[username]/blueprints survives only as a 308. */
   { href: "/u/[username]", segment: "", label: "Your profile" },
-  { href: "/u/[username]/blueprints", segment: "blueprints", label: "Your blueprints" },
   { href: "/u/[username]/cards", segment: "cards", label: "Your cards" },
   { href: "/u/[username]/saved", segment: "saved", label: "Saved" },
   { href: "/settings", segment: undefined, label: "Settings" },
@@ -546,18 +547,20 @@ export function SiteHeader() {
                   </button>
                 </form>
 
-                {/* What is still seeded, narrowed to what is still true. The sign-in half of
-                    this panel has come off because it became false; these three have not
-                    moved — there is no telemetry (T180), no ballot (T160) and no verified
-                    run report, so every figure resting on them is still illustrative. */}
+                {/* T280: re-derived clause by clause, not just re-styled. Downloads, stars,
+                    votes and notes all count something real now (T150/T160/T170 wired the
+                    routes this menu used to say did not exist); what is left absent is
+                    narrower and belongs in this sentence rather than the wider one it
+                    replaces. */}
                 <div className="flex flex-col gap-1.5 border-t border-line bg-surface-2/60 px-4 py-3">
-                  <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-amber">
-                    ◐ seeded
+                  <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-emerald">
+                    ✓ counted
                   </span>
                   <p className="text-xs leading-relaxed text-muted">
-                    Your account and handle are real. Downloads, stars, validated and the
-                    three community metrics are not: there is no telemetry, no ballot and no
-                    verified run report behind them yet.
+                    Your account, handle and every figure on your profile are real now:
+                    downloads, stars, notes and ballots all count something. No notification
+                    mail goes out yet, and no run pipeline instruments an actual execution
+                    behind a submitted run report&rsquo;s own numbers.
                   </p>
                 </div>
               </div>

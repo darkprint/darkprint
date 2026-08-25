@@ -228,14 +228,23 @@ describe("withRegistryErrors", () => {
        `String(err.cause)` into `detail` produces a well-formed problem document carrying the
        whole query.
 
-       The allow set is the caller's own operation name and the request path's segments. It does
-       NOT include the problem document's own vocabulary — a `type`, `title` or `detail` word
-       that collides with a schema identifier would red here, and that is the correct direction:
-       it would be a fixture question to answer, not a leak to permit. */
+       The allow set is the caller's own operation name and the request path's segments, plus —
+       AMENDED at T280 — "title" and only "title" of the problem document's member names. The
+       earlier stance ("a collision would be a fixture question to answer, not a leak to
+       permit") held while a collision could only arrive through a probe's own choices;
+       migration 0007 gave `bundle` a `title` column, so every real registry statement now
+       carries the envelope's own member name and no fixture can decline it. Admitting it stays
+       sound for the reason the routes suite states: the sibling describe pins each member to
+       its fixed value, so the only "title" a document may carry is the pinned literal, and a
+       wrapper rendering `String(err.cause)` into `detail` still reds on every other statement
+       token (falsified: a probe rendering the statement into `detail` reds this cell on
+       fifteen tokens). The other four member names stay DENIED — `status` and `detail` are
+       live column names elsewhere in the schema, and pre-forgiving them would blind the scan
+       the day a registry statement reaches those tables. */
     const check = checkTextForStatement(
       text,
       statementOf(raw),
-      ["probeOperation", "api", "cards"],
+      ["probeOperation", "api", "cards", "title"],
       "withRegistryErrors' served document",
     );
     expect(check.vacuous, "the deny set came back empty against an error carrying a statement").toBe(

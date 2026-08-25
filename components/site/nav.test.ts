@@ -337,7 +337,10 @@ describe("the nav is a complete map of the routes", () => {
      This file is byte-frozen by `tests/server/t262/frozen.test.ts`. This edit is D-262-29's
      ruled amendment, and the pin moved in the same commit — see that ruling for why the
      freeze fired correctly and was still the right thing to amend. */
-  const ELSEWHERE = new Set(["upload", "welcome"]);
+  /* `new` joined at T280 for the same reason `upload` is here: it is reached from the
+     "New blueprint" controls on the profile shelf and the hero, not from the global nav —
+     a creation form is a destination a button hands you, not a place a reader browses. */
+  const ELSEWHERE = new Set(["upload", "welcome", "new"]);
 
   /**
    * Decision 1 of the accounts pass, held from both ends, and rewritten twice.

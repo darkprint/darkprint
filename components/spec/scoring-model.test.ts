@@ -212,9 +212,12 @@ describe("the criteria-leak threshold", () => {
 /**
  * The honesty half. `components/site/honesty.test.ts` holds the sentence itself in its
  * ledger; what is asserted here is the shape around it, so the two filters can never be
- * published without the fact that neither has ever run.
+ * published without the fact that DarkPrint verifies nothing about what a report claims
+ * (T280 wired `submitReport`/`reportedCost` behind these two numbers; the pinned sentence
+ * survives because "describes a design rather than a behaviour it can confirm for itself"
+ * is still true of an unverified self-report — see the panel's own comment).
  */
-describe("the telemetry design, and that none of it runs", () => {
+describe("the telemetry design, and what DarkPrint still cannot verify", () => {
   it("gives both filters", () => {
     expect(OPEN).toContain(`minRuns ${DARKPRINT_CONFIG.telemetry.minRuns}`);
     expect(OPEN).toContain(
@@ -226,7 +229,7 @@ describe("the telemetry design, and that none of it runs", () => {
     expect(OPEN.toLowerCase()).toContain(
       "nothing on this site measures a run, so these two filters describe a design rather than a behaviour",
     );
-    expect(OPEN).toContain("not built");
+    expect(OPEN).toContain("never verified");
   });
 });
 

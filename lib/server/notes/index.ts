@@ -80,3 +80,8 @@ export { MAX_NOTE_BODY } from "./body";
 
 export { listNotes } from "./read";
 export { deleteNote, editNote, postNote, voteNote } from "./write";
+
+/* T280's transport boundary. Published here for `accounts/http.ts`'s and `profiles/http.ts`'s
+   reason: `app/api/**` is outside this folder, and D-01 forbids a deep import of `./http` from
+   there, so the wrapper has to cross the barrel like every other name a route consumes. */
+export { withNotesErrors } from "./http";
