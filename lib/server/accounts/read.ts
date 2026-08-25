@@ -133,11 +133,17 @@ export async function getPublicAuthor(db: Db, handle: string): Promise<PublicAut
 export async function resolveOwner(
   db: Db,
   handle: string,
-): Promise<{ accountId: string; defaultVisibility: "public" | "private" } | undefined> {
+): Promise<{ accountId: string; defaultVisibility: "public" | "private"; githubId: string } | undefined> {
   if (typeof handle !== "string") return undefined;
   if (validateNamespace(handle).length > 0) return undefined;
   return await withStore("resolveOwner", async () => {
     const row = await accountRowByHandle(db, handle);
-    return row === undefined ? undefined : { accountId: row.id, defaultVisibility: row.defaultVisibility };
+    /* `githubId` is carried so a caller that must not answer for a grave can apply
+       `lib/server/lifecycle`'s published `isTombstone` — the tombstone keeps its handle
+       (B-05), so resolveOwner alone cannot tell a live account from a deleted one. It stays
+       server-side; no caller serializes it. */
+    return row === undefined
+      ? undefined
+      : { accountId: row.id, defaultVisibility: row.defaultVisibility, githubId: row.githubId };
   });
 }

@@ -62,6 +62,7 @@ import { addCard, getCard } from "@/lib/server/cards";
 import { validateBundle } from "@/lib/server/engine";
 import { exportRelease } from "@/lib/server/export";
 import { getOntologyVersion, openView } from "@/lib/server/ontology";
+import { isTombstone } from "@/lib/server/lifecycle";
 import { can, type Actor } from "@/lib/server/policy";
 import { reembedRelease } from "@/lib/server/search";
 import { enqueueRepinEvents } from "@/lib/server/notifications";
@@ -160,6 +161,15 @@ export async function publish(
   if (!can(actor, "publish", { kind: "bundle", ownerId: owner.accountId, visibility })) {
     throw notOwner();
   }
+
+  /* A tombstoned account keeps its handle (B-05 puts it in every published card's bytes), so
+     `resolveOwner` answers for a grave — and a grave must not publish anything new, or the
+     delete/tombstone boundary T120 built is defeated by a still-valid session cookie. Same
+     refusal as an unknown handle, transfer.ts:113's reasoning mirrored: a distinct one would
+     tell a caller which accounts are deleted (B-03). This is the OWNER's grave; the lineage
+     upstream resolved below is NOT checked, because a deleted author's PUBLISHED work survives
+     (B-05) and forking from it is legitimate. */
+  if (isTombstone(owner)) throw notOwner();
 
   /* T010's published reader, not a predicate written beside it: a second reading of this
      column is the defect T133 exists to end, and this is the first production caller of the
