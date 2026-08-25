@@ -103,7 +103,13 @@ export async function deliverPending(
    * back the vacuum horizon without holding any write lock.
    */
   return await db.transaction(async (tx) => {
-    const held = rowsOf(await tx.execute(sql`select pg_try_advisory_xact_lock(${DELIVERY_LOCK_KEY}) as held`));
+    /* Sealed like every other statement in this module (D-13): a driver or connection fault
+       taking the lock is a store fault, and left unwrapped it would reach the caller as a raw
+       pg error naming the internals the wrapper exists to hide. `pendingRows`/`stampDelivered`
+       below already seal; this is the one statement that did not. */
+    const held = rowsOf(
+      await withStore("deliverPending", async () => await tx.execute(sql`select pg_try_advisory_xact_lock(${DELIVERY_LOCK_KEY}) as held`)),
+    );
     if (held[0]?.["held"] !== true) return 0;
 
     const pending = await withStore("deliverPending", async () => await pendingRows(tx, limit));
