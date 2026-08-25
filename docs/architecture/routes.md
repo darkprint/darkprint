@@ -9,20 +9,23 @@ looks wrong, raise it, don't edit it here.
 
 | Source | Count |
 |---|---:|
-| `page.tsx` files under `app/` | 24 |
-| Route patterns in `.next/prerender-manifest.json` | 27 |
-| Route entries printed by `npm run build` (`docs/audit/baseline.txt:48-110`) | 26 |
-| Prerendered pages | 165 |
+| `page.tsx` files under `app/` | 25 |
+| Prerendered routes in `.next/prerender-manifest.json` | 14 |
+| `dynamicRoutes` patterns in the manifest | 0 |
 
-The three counts reconcile exactly. The 27 manifest patterns are the 24 `page.tsx` routes
-plus three the framework owns and no file in `app/` declares: `/_not-found`,
-`/_global-error`, `/icon.svg`. The printed table omits `/_global-error`, which is why it
-shows 26 where the manifest shows 27. Per-pattern page counts sum to 165.
+Re-derived at the T261 merge (`97acee5`), and the SHAPE changed, not just the numbers:
+every registry-reading page is now server-rendered per request, so it appears in neither
+manifest map — the build's own route table prints only `○ (Static)` and `ƒ (Dynamic)`,
+and the `● (SSG)` legend line is gone because nothing uses `generateStaticParams` any
+more. The 14 prerendered routes are the static pages (spec, learn, upload shell, and
+framework-owned entries like `/_not-found`). The old reconciliation (24/27/26/165) died
+with the instance-level prerendering it counted.
 
 ## Access
 
-There is no authentication anywhere in the repository. Every route is public and
-statically prerendered. Four routes render an **owner view** selected by comparing the
+There is no authentication anywhere in the repository. Every route is public; since the
+T260/T261 cutovers the registry-reading routes render per request and only the static
+content pages are prerendered. Four routes render an **owner view** selected by comparing the
 requested handle against a fixture (`components/profile/load.ts:78`,
 `ACCOUNT.author.username` at `lib/data/account.ts:77`); the owner view is a *page*, not a
 session state, and both variants ship in the build. Those are marked `public · owner-view
@@ -130,13 +133,14 @@ seam is for, so it is recorded rather than guessed.
 |---|---|---|---|---|---|
 | `/` | `app/page.tsx:120` | public | Landing. Five beats; `SectionBlueprint` reads `bundleSource` and `SectionNodeIsCard` reads `cardSource`/`getNodeCard`, so the figures are drawn off the archive | LIVE | header/footer wordmark (`components/site/SiteHeader.tsx:241`, `components/site/SiteFooter.tsx:101`) |
 | `/blueprints` | `app/blueprints/page.tsx:57` | public | Blueprint index; per-request from `server/registry` since T260 (`force-dynamic`), `GalleryBrowser` still filters client-side from the query string | LIVE | header Browse (`SiteHeader.tsx:51`), footer Browse (`SiteFooter.tsx:65`), mobile "Find one" (`SiteHeader.tsx:428`), `/mcp:391`, `/upload` success screen (`components/upload/UploadFlow.tsx:1061`), every `TagPill` deep link |
-| `/blueprints/[slug]` | `app/blueprints/[slug]/page.tsx:120` | public | One published blueprint: files, graph, cards, scorecard, evidence, history, download, DOT, notes. 9 pages | LIVE + MOCK (metrics `efficacy`/`reliability`/`transparency`/`cost`, `downloads`, `votes`, `comments` from `lib/data/community.ts`; forks/watchers from `lib/data/bundles.ts:172`, `lib/data/profiles.ts:179`) | `ContentRow` rows on `/blueprints`, `/u/[username]/blueprints` (`OwnedBundles`, published rows only), `Pinned`, `SavedList`, `/u/[username]/[slug]:300`, `components/bundle/Aside.tsx:190` |
+| `/blueprints/[owner]` | `app/blueprints/[owner]/page.tsx` | public | **The legacy-slug redirector** (T261, D-261-02): one segment slot shared with the canonical route because the router refuses two param names in one slot (D-261-17). Exactly one readable owner for the slug → `permanentRedirect` **308** to `/blueprints/{owner}/{slug}` with search params re-appended; zero or several → 404 (never a guessed owner) | — |
+| `/blueprints/[owner]/[slug]` | `app/blueprints/[owner]/[slug]/page.tsx` | public | **The canonical blueprint detail** under B-09's two-part key, per-request off the registry: files from `releaseFiles` (digest-addressed download commands), graph, cards, scorecard, evidence, history, notes. A readable bundle with no scorecard 404s, same as the shelf omits it (D-261-14, seeded-store-only state) | `ContentRow` rows on `/blueprints`, `Pinned`, `SavedList`, `components/bundle/Aside.tsx` |
 | `/build` | `app/build/page.tsx:117` | public | Worked sandbox over the five-node starter; three controls, 80 combinations verified through the engine at build time (`:78`) | LIVE (engine runs in the browser, `lib/starter/variants.ts:264`) | Learn menu and Learn rail via `SANDBOX` (`components/spec/sequence.ts:368`), footer Learn column, `/u/[username]/blueprints:94` ("New blueprint") |
 | `/mcp` | `app/mcp/page.tsx:149` | public | Design proposal for the MCP server: client config, four proposed operations, four open questions | PLANNED (every row prints `not built`, `:307`) | header Design menu (`SiteHeader.tsx:66`), footer Design column, `/skill:39` |
 | `/nodes` | `app/nodes/page.tsx:15` | public | Node-card library index, grouped by node type; per-request from `server/registry` since T260 (`force-dynamic`), `NodeBrowser` still filters client-side from the query string | LIVE | header Browse (`SiteHeader.tsx:52`), footer Browse, `/mcp:398` |
-| `/nodes/[...id]` | `app/nodes/[...id]/page.tsx:727` | public | One node card at its newest version: spec, interfaces, prohibitions, every field, version history, source. Catch-all so a namespaced id resolves (`:47`). 53 pages | LIVE + MOCK (`downloadsFor`/`starsFor`/`commentsFor`, `lib/data/node-community.ts`) | `NodeCardSummary` tiles on `/nodes`, `/u/[username]/cards` (`OwnedCards`, public and private rows), `Pinned`, `SavedList`, `nodeHref` from graph nodes and `components/bundle/Aside.tsx:203` |
+| `/nodes/[...id]` | `app/nodes/[...id]/page.tsx:727` | public | One node card at its newest version: spec, interfaces, prohibitions, every field, version history, source. Catch-all so a namespaced id resolves. Per-request off the registry since T261 (`versionsOf`, batched `usersOfMany` history, `latestCards`, `serveCard`); author links resolve through `getPublicAuthor`, so an accountless handle renders as TEXT with no `/u/` href (D-260-25 end state, the round's F1) | LIVE + MOCK (`downloadsFor`/`starsFor`/`commentsFor`, `lib/data/node-community.ts`) | `NodeCardSummary` tiles on `/nodes`, `/u/[username]/cards` (`OwnedCards`, public and private rows), `Pinned`, `SavedList`, `nodeHref` from graph nodes and `components/bundle/Aside.tsx:203` |
 | `/ontology` | `app/ontology/page.tsx:77` | public | The vocabulary, browsable: five kinds, the core/local split; per-request from `server/ontology` since T260 (`force-dynamic`), usage counted from the registry | LIVE | header Browse (`SiteHeader.tsx:56`), footer Browse, `/spec/ontology`, `/u/[username]/terms:46` |
-| `/ontology/[...term]` | `app/ontology/[...term]/page.tsx:137` | public | One term: kind, definition, broader/narrower, weight, which cards name it. Catch-all so `lupo/pii-handling` resolves (`:21`). 50 pages | LIVE | `termHref` from `/ontology`, node-card chips, `/u/[username]/terms:62` |
+| `/ontology/[...term]` | `app/ontology/[...term]/page.tsx:137` | public | One term: kind, definition, broader/narrower, weight, which cards name it. Catch-all so `lupo/pii-handling` resolves. Per-request off the registry since T261; local terms arrive as extensions via `searchTerms(origin: "local")`, so a LOCAL weight's provenance renders from the served vocabulary (the cell that earned D-261-13's retirement) | LIVE | `termHref` from `/ontology`, node-card chips, `/u/[username]/terms:62` |
 | `/reading-the-radar` | `app/reading-the-radar/page.tsx` | public | How a blueprint is graded: the scorecard, the three metric sources, the shipped weights | LIVE (reads `allBlueprints`) | Learn menu stop 05 (`sequence.ts:400`), footer Learn column, `components/blueprint/EvidenceLayers.tsx:93` |
 | `/settings` | `app/settings/page.tsx:142` | public · owner-view by fixture | Six account sections. Every control is `readOnly` or `disabled` except the three Public-profile fields, whose only effect is the preview beside them | MOCK (`lib/data/account.ts`) + LIVE (the three authored-under counts, `:156-161`) | account menu (`SiteHeader.tsx:136`), mobile "You" group |
 | `/skill` | `app/skill/page.tsx:107` | public | The authoring skill: one install command that runs, then three things around it that do not | LIVE (command) + PLANNED (`UNBUILT`, `:22`) | header Design menu (`SiteHeader.tsx:67`), footer Design column, `/upload:140`, `/mcp:405`, `/install` 308 |
@@ -145,7 +149,7 @@ seam is for, so it is recorded rather than guessed.
 | `/spec/ontology` | `app/spec/ontology/page.tsx` | public | Layer 03: the vocabulary format, the local overlay, the validator checks | LIVE (reads `getOntologyView`, `bundleVocabulary`) | Learn menu stop 03, footer Learn column, `/what-a-blueprint-is` doors, `/ontology:132` |
 | `/towards-a-dark-factory` | `app/towards-a-dark-factory/page.tsx` | public | The 1-to-5 organisational ladder and the argument about which work belongs to an agent | MOCK (hardcoded essay content, no archive read) | Learn menu stop 06 (`sequence.ts:415`), footer Learn column |
 | `/u/[username]` | `app/u/[username]/page.tsx:56` | public · owner-view by fixture | Profile overview: pinned and local vocabulary terms only, as of 2026-08-13 — the Blueprints and Node cards sections that used to draw a slice of each list here were removed, on the argument that `ProfileHeader`'s summary line and the tab strip's own counts already state those facts once. 6 pages | LIVE (blueprints, cards, terms counted off `content/`; pinned and terms are what actually renders) + MOCK (`profileFor`, `downloads`, `stars`, `validated` — read by `ProfileHeader` via `ProfileShell`, not this page directly) | account menu (`SiteHeader.tsx:132`), `AuthorChip` on every card and blueprint, `/settings:173` |
-| `/u/[username]/[slug]` | `app/u/[username]/[slug]/page.tsx:66` | public · owner-view by fixture | One owned bundle, handled like a repository: identity, lineage, files, history, releases, visibility. 5 pages | MOCK (`OWNED_BUNDLES`) with a LIVE branch for the two rows also published in `content/` (`components/bundle/load.ts:210`) | `OwnedBundles` rows on `/u/[username]/blueprints`, `components/bundle/Aside.tsx:244` |
+| `/u/[username]/[slug]` | `app/u/[username]/[slug]/page.tsx` | public | **An unconditional 308 redirector** to `/blueprints/{username}/{slug}` (T261): the owned-bundle repository view retired with the URL migration, and its `bundleView` cluster was deleted under D-261-16 | — |
 | `/u/[username]/blueprints` | `app/u/[username]/blueprints/page.tsx:65` | public · owner-view by fixture | Owner: the management list, public and private together, with a live `Visibility` filter. Visitor: the published shelf, no filter. 6 pages | MOCK (owner private rows) + LIVE (visitor rows and owner public rows, `:78`) | profile tab strip (`components/profile/tabs.ts:41`, mounted via `ProfileShell` on every profile page), account menu (`SiteHeader.tsx:133`), the overview's empty-state action when something is published but nothing is pinned (`app/u/[username]/page.tsx`) |
 | `/u/[username]/cards` | `app/u/[username]/cards/page.tsx:48` | public · owner-view by fixture | Owner: every card authored under this handle, public and (as of 2026-08-13) private together, with a live `Visibility` filter. Visitor: published cards only, no filter. 6 pages | LIVE (public rows) + MOCK (owner private rows, `lib/data/cards.ts`) | profile tab strip, account menu (`SiteHeader.tsx:134`) |
 | `/u/[username]/saved` | `app/u/[username]/saved/page.tsx:32` | public · owner-view by fixture | Owner: the bookmark list. Visitor: the rule that a save is private and nothing else. 6 pages | MOCK (`SAVES`, `lib/data/bundles.ts:554`) | profile tab strip (owner only, `tabs.ts:43`), account menu (`SiteHeader.tsx:135`) |
