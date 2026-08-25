@@ -73,7 +73,10 @@ export async function POST(request: Request): Promise<Response> {
 
     const slug = readString(body, "slug");
     if (isRefusal(slug)) return badRequest(request, slug.detail);
-    const title = readString(body, "title");
+    /* Optional since the owner's 2026-08-25 instruction: /new asks for one name, the way
+       GitHub asks for a repository name — the slug IS the identity, and every display
+       already falls back to it (`title ?? slug`). A caller may still send a title. */
+    const title = readOptionalString(body, "title");
     if (isRefusal(title)) return badRequest(request, title.detail);
     const summary = readOptionalString(body, "summary");
     if (isRefusal(summary)) return badRequest(request, summary.detail);
@@ -123,7 +126,7 @@ export async function POST(request: Request): Promise<Response> {
         ownerId: session.accountId,
         slug: slug.value,
         visibility: visibility.value ?? account.defaultVisibility,
-        title: title.value,
+        ...(title.value === undefined ? {} : { title: title.value }),
         ...(summary.value === undefined ? {} : { summary: summary.value }),
         ...(description.value === undefined ? {} : { description: description.value }),
         ...(category.value === undefined ? {} : { category: category.value }),

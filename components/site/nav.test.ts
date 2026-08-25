@@ -220,23 +220,20 @@ describe("a route is called the same thing everywhere", () => {
    */
   const uploadLabels = () => NAV.filter((item) => item.href === "/upload").map((item) => item.label);
 
-  it("gives every `/upload` control in the header the same label", () => {
-    const labels = uploadLabels();
-    // Two today. A floor rather than a count — it is here to fail when the scan stops
-    // matching, not to pin the header's shape.
-    expect(labels.length, "the header names /upload nowhere").toBeGreaterThan(0);
-    expect([...new Set(labels)], "the header calls /upload two things").toHaveLength(1);
+  /* AMENDED at the Publish-button removal (owner, 2026-08-25): the two cells above this
+     comment's history compared the wide-row button against the phone-panel row, and both
+     controls are gone. What survives is each half of what they held, restated against the
+     new truth: the header carries NO /upload row at all (the same claim the panel cell's
+     not.toContain makes from the source side), and the page still answers to its own name
+     without a header label to inherit. */
+  it("names `/upload` in no header row", () => {
+    expect(
+      uploadLabels(),
+      "a /upload row came back into NAV without the panel/source cells moving with it",
+    ).toEqual([]);
   });
 
-  /**
-   * And the page answers to it. `/towards-a-dark-factory` is held to its nav label the
-   * same way two blocks down, for the same reason: a reader who clicks a label wants to
-   * see what they clicked at the top of what loads, with nothing to re-resolve on
-   * arrival. Both halves — the `h1` and the browser tab.
-   */
-  it("titles the upload page with the label that sends a reader to it", () => {
-    const [label] = [...new Set(uploadLabels())];
-    expect(label, "the header names /upload nowhere").toBeDefined();
+  it("titles the upload page under its own name", () => {
     const source = read("app/upload/page.tsx");
     expect(source).toContain('title="Validate and publish"');
     expect(source).toContain('title: "Validate and publish",');
@@ -388,9 +385,11 @@ describe("the nav is a complete map of the routes", () => {
    *   exemption to describe a route that is not actually missing.
    *
    * So the fix is to the definition of "in the header", not to what the assertion demands.
-   * Two routes are exempt: `/upload`, which has its own button and its own checks above,
-   * and `/welcome`, which is a redirect target rather than a destination — see `ELSEWHERE`
-   * for why a header row pointing at it would be a link that goes nowhere.
+   * Three routes are exempt: `/upload` and `/new`, reached from the surfaces that own a
+   * release (the profile shelf, a draft's landing, /skill's accounts row — the Publish
+   * button left the chrome on the owner's instruction, 2026-08-25), and `/welcome`, which
+   * is a redirect target rather than a destination — see `ELSEWHERE` for why a header row
+   * pointing at it would be a link that goes nowhere.
    */
   const HEADER_ROUTES = new Set<string>([
     ...HEADER_LABELS.keys(),
@@ -535,17 +534,19 @@ describe("the collapsed menu stays usable", () => {
        heading. What still has to hold is that every item reaches the panel somehow, so the
        check is against the rendered hrefs rather than against the group list.
 
-       Two hrefs reach a reader by another route entirely, and both are asserted below
-       rather than waved through:
+       One href reaches a reader by another route entirely and is asserted below rather
+       than waved through:
 
-       - `/upload` is the Publish button in the wide row and an explicit row at the foot of
-         the panel's Build group. It is not a `NAV`-driven row in either place, so the scan
-         below cannot see it and the check on the source can.
+       - `/upload` WAS the Publish button in the wide row and an explicit row at the foot
+         of the panel's Build group, until the owner took publishing out of the chrome
+         (2026-08-25). The set below is empty now and stays as the mechanism; the source
+         check flipped direction in the same amendment — the header must NOT link /upload,
+         so the button cannot come back without this file moving with it.
        - `/towards-a-dark-factory` is stop 06 of the Learn sequence, so the dropdown and the
          phone panel both carry it through `LEARN`. It needs no exemption; the entry is kept
          here because the route has been in and out of that list twice and the next reader
          should find the answer rather than the history. */
-    const ELSEWHERE_THAN_THE_PANEL = new Set(["/upload"]);
+    const ELSEWHERE_THAN_THE_PANEL = new Set<string>([]);
     const learnHrefs = new Set([
       ...LEARN.map((item) => item.href as string),
       ...ACCOUNT_MENU.map((item) => item.href as string),
@@ -565,8 +566,10 @@ describe("the collapsed menu stays usable", () => {
     );
     expect(stray, "an item the collapsed panel never renders").toEqual([]);
 
-    // The one exemption, held to the way in it claims.
-    expect(SOURCE, "the phone panel dropped its Publish row").toContain('href="/upload"');
+    // The removal, held both ways: the chrome carries no publish link (owner, 2026-08-25).
+    expect(SOURCE, "a Publish link came back into the header without review").not.toContain(
+      'href="/upload"',
+    );
     // And the essay reaches a reader through the sequence and the footer both.
     expect(LEARN.map((item) => item.href)).toContain("/towards-a-dark-factory");
     expect(

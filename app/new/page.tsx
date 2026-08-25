@@ -33,7 +33,7 @@ import { readSession } from "@/components/profile/session";
 export const metadata: Metadata = {
   title: "Create a bundle",
   description:
-    "Reserve a slug under your account and choose who can see it. The graph and its cards come next, on the upload step.",
+    "Name a blueprint under your account and choose who can see it. The topology and its cards come next, on the upload step.",
 };
 
 function SignedOut() {
@@ -75,7 +75,7 @@ export default async function NewBundlePage() {
         as="h1"
         className="mt-3"
         title="Create a bundle"
-        lead="Reserve a slug under your handle and choose who can see it. The graph and its cards come next, on the upload step."
+        lead="Name a blueprint under your handle and choose who can see it. A blueprint is the folder here, the way a repository is on GitHub: one topology and the cards that describe its nodes. Both come next, on the upload step."
       />
     </header>
   );

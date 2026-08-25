@@ -47,7 +47,11 @@ interface Frozen {
 const FROZEN: readonly Frozen[] = [
   {
     path: "components/site/nav.test.ts",
-    sha256: "d691ff4ccbfd2a8b9659c172262e036e151b122c3eb75118fe195ad6e54c9477",
+    /* Third amendment (owner-instructed, 2026-08-25): the Publish button left the chrome,
+       so the /upload parity cells inverted — NAV must hold no /upload row and the source
+       must carry no /upload href. Falsified before this pin moved: a probe link in the
+       header reds the flipped cell by name. */
+    sha256: "784ad4efb0394cf1936782fc3bf5da50a85c2f18847ec8719955a66b7437cdb4",
     why: "AC5 names it must-pass-unchanged. D-262-06 turns that into a constraint on the cutover: it imports `ACCOUNT_MENU` as a module-scope array and reads `.href` off every row, and a static import of a static array is what a per-request session cannot be. AMENDED ONCE, by ruling (D-262-29, owner-stated 2026-08-25): `/welcome` was added as a route no header may link, its `ELSEWHERE` exemption edited this file, and this pin was moved in the SAME commit. The freeze fired correctly — an author editing a guard so their own change passes is exactly what it watches for — and the amendment is recorded rather than quietly re-baselined. The exemption was falsified before the pin moved: a throwaway top-level route still reds the assertion, so the guard was narrowed by one named route and not blunted. AMENDED AGAIN at T280 (owner-instructed wiring wave, 2026-08-25): `/new` joined `ELSEWHERE` (a creation form reached from the profile shelf's own button, same reasoning as `/upload`), and the same falsification ran before this pin moved — a throwaway `app/zzz-probe` route still reds by name.",
   },
   {

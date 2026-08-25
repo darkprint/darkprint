@@ -79,7 +79,11 @@ export const NAV = [
      where it says what it is. The route keeps its name from `SANDBOX.nav` on both surfaces
      that do draw it (the Learn menu and the footer), so it still cannot end up with two
      names on one screen. It stays in `NAV` as `docs` for the label table below. */
-  { href: "/upload", label: "Publish", group: "action" },
+  /* `/upload` stood here as `group: "action"` (the Publish button) until the owner took
+     publishing out of the chrome (2026-08-25): a release is cut from the surfaces that
+     own one — the profile shelf's New bundle flow, a draft's own landing, and /skill's
+     accounts row — not from a global button. The route stays exempt in `nav.test.ts`'s
+     ELSEWHERE for that reason. */
   { href: SANDBOX.href, label: SANDBOX.nav, group: "docs" },
   { href: "/what-a-blueprint-is", label: "What a blueprint is", group: "docs" },
   { href: "/spec/topology", label: "Blueprint file (DOT)", group: "docs" },
@@ -90,8 +94,9 @@ export const NAV = [
   { href: "/spec/ontology", label: "Ontology file (YAML)", group: "docs" },
   { href: "/reading-the-radar", label: "How a blueprint is graded", group: "docs" },
   /* `/towards-a-dark-factory` stood here as `group: "guides"` and was deleted 2026-08-11.
-     `guides` is not one of the groups this file renders (`browse`, `build`, `action`,
-     `docs`) nor one of `MOBILE_GROUPS`, so the row drew nothing on any surface: it was a
+     `guides` is not one of the groups this file renders (`browse`, `build`, `docs`;
+     `action` left with the Publish button) nor one of `MOBILE_GROUPS`, so the row drew
+     nothing on any surface: it was a
      table entry describing a control that does not exist. The route reaches the header
      through `LEARN`, as stop 06 of the sequence, and Learn is its only home.
 
@@ -107,7 +112,9 @@ const BROWSE = NAV.filter((item) => item.group === "browse");
 /**
  * The Design menu: the ways to make a blueprint, each with the line that tells them apart.
  *
- * Publishing is deliberately not among them. It is the button beside this menu, and a
+ * Publishing is deliberately not among them. It was the button beside this menu until the
+ * owner took it out of the chrome entirely (2026-08-25) — a release is cut from the pages
+ * that own one — and a
  * paragraph at the foot of the panel used to explain that at length — three lines about the
  * validator, the tab it runs in and the backend that does not exist. The author asked it out
  * on 2026-08-11 and it is not moved elsewhere, because it was not carrying anything this
@@ -442,16 +449,9 @@ export function SiteHeader() {
 
           <span aria-hidden className="mx-1 h-5 w-px bg-line xl:mx-2" />
 
-          <ButtonLink href="/upload" variant="primary" size="sm">
-            Publish
-          </ButtonLink>
-
-          {/* The account, last, where a reader already looks for identity.
-
-              `ml-3` and not the row's `gap-1`: a 32px avatar sitting a hair off a filled
-              primary button reads as part of the button, and the two are the least related
-              controls in the row — one is the site's single ask, the other is who you are.
-              The 12px is the `tight` tier of the vertical scale, spent horizontally. */}
+          {/* The account, last, where a reader already looks for identity. The Publish
+              button that stood between the divider and the avatar left with the NAV row
+              above — publishing belongs to the pages that own a release now. */}
           {account === undefined ? (
             /* The outstanding answer. A dimmed disc the same size as the avatar, so the row
                does not reflow when the account arrives, and `aria-hidden` because there is
@@ -476,10 +476,16 @@ export function SiteHeader() {
               className="group relative ml-3"
             >
               <summary
-                className="flex cursor-pointer list-none items-center gap-1.5 rounded-md p-1 [&::-webkit-details-marker]:hidden"
+                className="flex cursor-pointer list-none items-center gap-2 rounded-md p-1 [&::-webkit-details-marker]:hidden"
                 aria-label="Account menu"
               >
                 <Avatar author={authorFor(account.author)} size="md" />
+                {/* The name beside the icon, on the owner's instruction (2026-08-25).
+                    The handle when one exists (it is the identity URLs use), the display
+                    name for the T050 AC1 account that has not chosen one yet. */}
+                <span className="max-w-[14ch] truncate text-sm text-muted">
+                  {account.author.handle ?? authorFor(account.author).displayName}
+                </span>
                 <span className="text-dim">
                   <Caret />
                 </span>
@@ -548,22 +554,11 @@ export function SiteHeader() {
                   </button>
                 </form>
 
-                {/* T280: re-derived clause by clause, not just re-styled. Downloads, stars,
-                    votes and notes all count something real now (T150/T160/T170 wired the
-                    routes this menu used to say did not exist); what is left absent is
-                    narrower and belongs in this sentence rather than the wider one it
-                    replaces. */}
-                <div className="flex flex-col gap-1.5 border-t border-line bg-surface-2/60 px-4 py-3">
-                  <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-emerald">
-                    ✓ counted
-                  </span>
-                  <p className="text-xs leading-relaxed text-muted">
-                    Your account, handle and every figure on your profile are real now:
-                    downloads, stars, notes and ballots all count something. No notification
-                    mail goes out yet, and no run pipeline instruments an actual execution
-                    behind a submitted run report&rsquo;s own numbers.
-                  </p>
-                </div>
+                {/* The `✓ counted` strip stood here from T280 until the owner took it off
+                    (2026-08-25). Its claims were true and stay true elsewhere: the two
+                    residual absences (no mail, no instrumented runs) are stated on
+                    /settings and /reading-the-radar, the surfaces that own them — a menu
+                    is chrome, not a ledger. */}
               </div>
             </details>
           )}
@@ -607,20 +602,9 @@ export function SiteHeader() {
                     {item.label}
                   </Link>
                 ))}
-                {/* Publish is the button in the wide row and the last row of this group on a
-                    phone: there is no button beside the sheet to put it in. */}
-                {group.id === "build" && (
-                  <Link
-                    href="/upload"
-                    onClick={() => setMobileAt(null)}
-                    className={cx(
-                      "block rounded-md px-3 py-2.5 text-sm",
-                      isActive("/upload") ? "text-cyan" : "text-cyan/90",
-                    )}
-                  >
-                    Publish
-                  </Link>
-                )}
+                {/* The Publish row that closed this group left with the wide row's button
+                    (owner, 2026-08-25) — publishing is reached from the pages that own a
+                    release, not from the chrome. */}
               </nav>
             ))}
           </div>

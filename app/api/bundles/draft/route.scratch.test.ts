@@ -129,9 +129,18 @@ describe.skipIf(!hasDb)("POST /api/bundles/draft", () => {
     expect(response.status).toBe(403);
   });
 
-  it("a missing title is a 400", async () => {
+  /* Inverted at the owner's 2026-08-25 instruction: /new asks for one name the way GitHub
+     asks for a repository name, so a title is OPTIONAL and the slug is the identity every
+     display falls back to. The cell keeps the boundary it always held — what the route
+     does when no title arrives — pinned to the new contract instead of the old refusal. */
+  it("a missing title creates the bundle, title null", async () => {
     const owner = await seedAccount("no-title-owner");
     const response = await post({ slug: "no-title" }, cookieFor(owner.id, "no-title-owner"));
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(200);
+    const { bundle } = (await response.json()) as { bundle: { slug: string; title?: string } };
+    expect(bundle.slug).toBe("no-title");
+    /* Absent, not null: the archive's record mapper omits a null title
+       (lib/server/archive/bundle.ts:34), so the echoed member never appears. */
+    expect(Object.hasOwn(bundle, "title")).toBe(false);
   });
 });

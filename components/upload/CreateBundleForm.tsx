@@ -1,7 +1,7 @@
 "use client";
 
 /* ============================================================
-   The `/new` form: title, slug, summary, description, category, tags, visibility.
+   The `/new` form: one blueprint name, then summary, description, tags, visibility.
    Submits `POST /api/bundles/draft` and, on success, hands the reader straight to the
    bundle it just reserved.
 
@@ -11,13 +11,16 @@
    and "the two things the registry needs that a manifest does not carry". Required
    agents is read off resolved cards, and there is no graph here to read it from.
 
-   ── The slug field, and why it exists here and not on `/upload` ──
-   `UploadFlow.tsx` derives a slug from the title or a dropped manifest and never asks for
-   one directly, because the graph usually already names it. Here there is no graph yet,
-   so the slug is the one identity decision this form makes — derived from the title
-   the moment it changes, editable the moment the reader touches it directly, checked
+   ── One name, the way GitHub asks for a repository name (owner, 2026-08-25) ──
+   The form asked for a title AND a slug until the owner collapsed them: the name IS the
+   identity, sanitised through `slugify` as the reader types (the URL preview below the
+   field shows exactly what will be created, which is GitHub's own device), and no
+   separate title is stored — every display already answers `title ?? slug`. In the
+   product's vocabulary a blueprint is the repository here: the folder holding one
+   topology (the .dot) and the cards that describe its nodes. Availability is checked
    against `GET /api/names/slugs/{owner}/{slug}` the same debounced way
-   `components/welcome/WelcomeForm.tsx` checks a handle.
+   `components/welcome/WelcomeForm.tsx` checks a handle. Category left in the same
+   instruction.
    ============================================================ */
 
 import { useEffect, useRef, useState } from "react";
@@ -48,11 +51,11 @@ type SlugCheck =
   | { state: "taken"; reason: string; suggestion?: string };
 
 function slugRefusal(reason: Availability["reason"]): string {
-  if (reason === "reserved") return "That slug is reserved.";
+  if (reason === "reserved") return "That name is reserved.";
   if (reason === "illegal") {
     return "Letters, digits and single hyphens, starting and ending with a letter or digit.";
   }
-  return "You already have a blueprint at this slug.";
+  return "You already have a blueprint under this name.";
 }
 
 async function readProblem(response: Response): Promise<string> {
@@ -69,18 +72,13 @@ export function CreateBundleForm({
 }) {
   const router = useRouter();
 
-  const [title, setTitle] = useState("");
-  /** What the reader has typed directly into the slug field. Read only once `slugTouched`
-      is true — until then the slug is DERIVED from the title during render (below), never
-      synced to it through an effect: two pieces of state that have to agree drift the
-      first time a render is skipped, where a derived value cannot. */
-  const [slugDraft, setSlugDraft] = useState("");
-  /** Once true, the title no longer overwrites the slug — the reader has taken it over. */
-  const [slugTouched, setSlugTouched] = useState(false);
-  const slug = slugTouched ? slugDraft : slugify(title);
+  /** The one identity field. The slug is DERIVED during render, never synced through an
+      effect: two pieces of state that have to agree drift the first time a render is
+      skipped, where a derived value cannot. */
+  const [name, setName] = useState("");
+  const slug = slugify(name);
   const [summary, setSummary] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [visibility, setVisibility] = useState<"public" | "private">(defaultVisibility);
   const [submitting, setSubmitting] = useState(false);
@@ -145,8 +143,7 @@ export function CreateBundleForm({
         ? answer.check
         : { state: "checking" };
 
-  const blocked =
-    trimmedSlug === "" || title.trim() === "" || submitting || check.state === "taken";
+  const blocked = trimmedSlug === "" || submitting || check.state === "taken";
 
   async function submit() {
     if (blocked) return;
@@ -160,10 +157,8 @@ export function CreateBundleForm({
         headers: { "content-type": "application/json", accept: "application/json" },
         body: JSON.stringify({
           slug: trimmedSlug,
-          title: title.trim(),
           ...(summary.trim() === "" ? {} : { summary: summary.trim() }),
           ...(description.trim() === "" ? {} : { description: description.trim() }),
-          ...(category.trim() === "" ? {} : { category: category.trim() }),
           ...(tags.length === 0 ? {} : { tags }),
           visibility,
         }),
@@ -202,30 +197,14 @@ export function CreateBundleForm({
         void submit();
       }}
     >
-      <div className="flex flex-col gap-2">
-        <label className="label" htmlFor="new-title">
-          Title
-        </label>
-        <input
-          id="new-title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Consensus line, multi-agent conflict resolution"
-          className={inputCls}
-        />
-      </div>
-
       <div className="flex flex-col gap-2 sm:max-w-md">
-        <label className="label" htmlFor="new-slug">
-          Slug
+        <label className="label" htmlFor="new-name">
+          Blueprint name
         </label>
         <input
-          id="new-slug"
-          value={slug}
-          onChange={(e) => {
-            setSlugTouched(true);
-            setSlugDraft(e.target.value);
-          }}
+          id="new-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           placeholder="consensus-line"
           className={cx(inputCls, "font-mono")}
           aria-describedby="new-slug-note"
@@ -251,10 +230,9 @@ export function CreateBundleForm({
                       {" "}
                       <button
                         type="button"
-                        onClick={() => {
-                          setSlugTouched(true);
-                          setSlugDraft(check.suggestion!);
-                        }}
+                        /* A suggestion is already slug-shaped, so it round-trips through
+                           `slugify` unchanged as the name. */
+                        onClick={() => setName(check.suggestion!)}
                         className="underline decoration-amber/40 underline-offset-4 transition-colors hover:decoration-amber"
                       >
                         Use {check.suggestion}
@@ -293,19 +271,6 @@ export function CreateBundleForm({
           rows={5}
           placeholder="What the blueprint does, its acceptance criteria, and where the closed loop makes its judgement calls."
           className={cx(inputCls, "resize-y")}
-        />
-      </div>
-
-      <div className="flex flex-col gap-2 sm:max-w-xs">
-        <label className="label" htmlFor="new-category">
-          Category
-        </label>
-        <input
-          id="new-category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          placeholder="Coordination"
-          className={inputCls}
         />
       </div>
 
