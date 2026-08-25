@@ -53,7 +53,7 @@ export function HeroAction() {
   if (session.state === "ready") {
     return (
       <p className="text-lg leading-relaxed text-fg">
-        Welcome, <span className="font-medium text-cyan">{session.handle}</span>.
+        Welcome back, <span className="font-medium text-cyan">{session.handle}</span>.
       </p>
     );
   }
