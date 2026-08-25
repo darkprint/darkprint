@@ -89,9 +89,16 @@ describe("the tutorial covers what a reader is in for", () => {
     // `TOPOLOGY_DOT`, which renamed to `topology.dot` in the same pass, in the shared
     // module this suite does not own (`lib/content/bundle-export.ts`) — retargeted, not
     // loosened, so this case still fails if the row ever drifts from that constant again.
-    for (const path of ["topology.dot", "cards/<node>.yaml", "readme.md", "agents.md"]) {
+    for (const path of ["topology.dot", "cards/<node>.yaml", "readme.md"]) {
       expect(text, path).toContain(path.toLowerCase());
     }
+  });
+
+  // Owner instruction, 2026-08-25: the skill stopped writing `AGENTS.md` in the same pass
+  // that took the file out of every published bundle. The row above would have gone on
+  // passing if this page had simply forgotten to update — a negative is what catches that.
+  it("no longer lists agents.md among what it writes", () => {
+    expect(text).not.toContain("agents.md");
   });
 
   /* Two cases stood here and the author removed the copy they held, 2026-08-07.

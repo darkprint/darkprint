@@ -44,20 +44,21 @@ const UNBUILT: readonly { label: string; body: React.ReactNode; live?: boolean }
         >
           Welcome
         </Link>
-        , reserve a slug and choose who can see it at{" "}
+        , name a blueprint and choose who can see it at{" "}
         <Link
           href="/new"
           className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
         >
-          New bundle
+          New blueprint
         </Link>
-        , and it stays a private draft until you publish a release on{" "}
+        , and it stays an empty draft until you publish its first release from{" "}
         <Link
           href="/upload"
           className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
         >
-          Upload blueprint
+          Validate and publish
         </Link>
+        , where the topology and its cards land
       </>
     ),
   },
@@ -143,7 +144,7 @@ export const metadata: Metadata = {
      rather than you writing one. */
   title: "Assisted Design",
   description:
-    "Start from your goal: one command puts a blueprint-writing skill in your own agent, and it interviews you into a folder of topology.dot, one card per node, README.md and AGENTS.md. Read it back on this site with nothing sent anywhere. Not built yet: releasing straight from your agent.",
+    "Start from your goal: one command puts a blueprint-writing skill in your own agent, and it interviews you into a folder of topology.dot, one card per node and README.md. Read it back on this site with nothing sent anywhere. Not built yet: releasing straight from your agent.",
 };
 
 export default function SkillPage() {

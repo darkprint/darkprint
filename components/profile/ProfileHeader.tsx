@@ -34,7 +34,7 @@ import { SupportButton, WatchButton } from "./SocialControls";
      this handle, before their first click in this session.
 
    The owner's two controls are the exception on THIS page, and only because both
-   destinations are real: `Edit profile` opens `/settings` and `New bundle` opens the
+   destinations are real: `Edit profile` opens `/settings` and `New blueprint` opens the
    create flow at `/new`, which hands back a real bundle. Neither claims to write to an
    account beyond what it says.
 
@@ -133,13 +133,11 @@ export function ProfileHeader({
           </p>
 
           {/* Community signals, folded in from the panel that used to sit below the fold
-              on the overview tab alone. `✓ counted` now: every figure on this line is a
-              real sum or a real count (`load.ts`'s header has the ledger), so there is no
-              amber marker left to carry and no disclaimer sentence to append. */}
+              on the overview tab alone. Every figure here is a real sum or a real count
+              (`load.ts`'s header has the ledger), so there is no amber marker to carry and
+              no disclaimer to append — and since 2026-08-25 no green tick either, on the
+              owner's instruction: a counted number does not need a badge saying so. */}
           <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-dim">
-            <span className="text-emerald" aria-hidden>
-              ✓
-            </span>
             <span className="text-fg">{compact(downloads)}</span> downloads
             <span className="text-faint">·</span>
             <span className="text-fg">{compact(stars)}</span> stars
@@ -155,7 +153,7 @@ export function ProfileHeader({
                 <ButtonLink href="/settings" variant="outline">
                   Edit profile
                 </ButtonLink>
-                <ButtonLink href="/new">New bundle</ButtonLink>
+                <ButtonLink href="/new">New blueprint</ButtonLink>
               </>
             ) : (
               <>

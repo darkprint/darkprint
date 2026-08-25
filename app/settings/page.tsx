@@ -283,11 +283,11 @@ export default async function Page() {
           notifications={preferences}
           counts={
             <div className="flex flex-col gap-3 rounded-md border border-line bg-surface-2 p-4">
+              {/* The `✓ counted` marker beside this heading came off on the owner's
+                  instruction (2026-08-25): once every figure here is a real count, a
+                  badge saying so is noise on a number nobody doubts. */}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="label">Authored under this handle</span>
-                <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-emerald">
-                  ✓ counted
-                </span>
               </div>
               <div className="flex flex-wrap gap-x-8 gap-y-2 font-mono text-[13px] text-muted">
                 <span>

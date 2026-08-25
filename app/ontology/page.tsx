@@ -243,19 +243,11 @@ export default async function Page() {
         <ButtonLink href="/spec/ontology" variant="outline" size="sm">
           What a term is, and how the overlay works
         </ButtonLink>
-        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-emerald">
-          ✓ counted
-        </span>
-        {/* The marker moves with the figure it governs (D-78, AC4). It read "read off
-            content/ at build time, usage included" while every number on this page came out
-            of the archive the site was built from; they come out of the registry now, on the
-            request that draws them, so a card published a minute ago is in the usage column
-            a minute ago. Same claim, still true, about a different source — which is why the
-            sentence is rewritten here rather than deleted: the figures did not stop being
-            counted, they stopped being counted at build time. */}
-        <span className="font-mono text-[11px] text-dim">
-          read off the registry per request, usage included
-        </span>
+        {/* The `✓ counted` marker and its source line came off on the owner's instruction
+            (2026-08-25). The claim they carried is unchanged and still true — every figure
+            on this page is read off the registry on the request that draws it, usage
+            included — it simply no longer needs announcing beside numbers nobody doubts.
+            If a figure here ever stops being counted, the marker comes back with it. */}
       </div>
 
       {/* The catalog is the page's resting state and the filter bar sits over it, so the

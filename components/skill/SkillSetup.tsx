@@ -5,7 +5,6 @@ import { PanelHeading } from "@/components/ui/SectionHeading";
 import { cx } from "@/lib/format";
 import { SKILL_INSTALL_COMMAND } from "@/lib/skill";
 import {
-  BUNDLE_AGENTS,
   BUNDLE_CARDS_DIR,
   BUNDLE_README,
   TOPOLOGY_DOT,
@@ -478,8 +477,8 @@ export function SkillSetup({ className }: { className?: string }) {
               ------------------------------------------------------------
               This is the one place on the site where the logo is also a diagram. The mark
               is a folder holding a graph, and the rows beside it are the files that folder
-              actually contains: the graph, one card per node, and the two documents. It is
-              the same drawing as the header and the hero, at the 64 rung, with no glow and
+              actually contains: the graph, one card per node, and the README. It is the
+              same drawing as the header and the hero, at the 64 rung, with no glow and
               nothing added — a figure rather than a badge, which is the only way a brand
               mark earns a place inside a tutorial step.
 
@@ -495,10 +494,7 @@ export function SkillSetup({ className }: { className?: string }) {
               lines={[
                 [TOPOLOGY_DOT, "the graph: who is wired to whom"],
                 [`${BUNDLE_CARDS_DIR}/<node>.yaml`, "one card per node the graph pins"],
-                [
-                  `${BUNDLE_README} · ${BUNDLE_AGENTS}`,
-                  "one for you, one for the next agent",
-                ],
+                [BUNDLE_README, "what it is, and how to check it"],
               ]}
             />
 
@@ -537,7 +533,7 @@ export function SkillSetup({ className }: { className?: string }) {
               >
                 the gallery
               </Link>
-              : the same four files. Nothing is uploaded and nothing is sent anywhere.
+              : the same three files. Nothing is uploaded and nothing is sent anywhere.
             </p>
 
             {/* A paragraph stood here about `/upload` resolving against `CORE_ONTOLOGY`, so

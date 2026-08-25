@@ -15,7 +15,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as YAML from "yaml";
-import { CORE_ONTOLOGY, cardRef, lintAttractor, parseDot, type CardRef, type NodeCard } from "@/lib/core";
+import { CORE_ONTOLOGY, cardRef, emitAttractorDot, lintAttractor, parseDot, type CardRef, type NodeCard } from "@/lib/core";
 import { contentVocabulary, readContent } from "@/lib/content/read";
 import { BUNDLE_VOCABULARY, FACTORY_DOT, cardFilePath } from "@/lib/content/bundle-export";
 import { schema, type Db, type DbClient } from "@/lib/db";
@@ -205,15 +205,63 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
 
   /* --------------------- AC4 --------------------- */
 
-  it("AC4: every served factory.dot parses and lints as Attractor input", async () => {
-    for (const slug of seeded.keys()) {
-      const served = await serveFile(db, ANONYMOUS, ref(slug), FACTORY_DOT);
-      expect(served, slug).toBeDefined();
-      const text = new TextDecoder().decode(served!.bytes);
-      const parsed = parseDot(text, FACTORY_DOT);
-      expect(parsed.graph, slug).toBeDefined();
-      expect(lintAttractor(parsed.graph!, text, FACTORY_DOT), slug).toEqual([]);
+  /**
+   * AC4 used to be checked on the served bytes: `serveFile(..., FACTORY_DOT)` returned a
+   * compiled graph and this asserted it parsed and linted clean. Owner instruction,
+   * 2026-08-25: `exportBundle` no longer writes `factory.dot` into any release's folder, so
+   * there is nothing left to serve at that path — the two cases below hold what replaced it.
+   * The first re-derives the same claim `checkFactoryDot` (`build.ts`) makes at export time,
+   * compiling each release's own graph with `emitAttractorDot` exactly as that gate does, so
+   * a regression in the real archive's content still surfaces here rather than only inside
+   * the gate's own refusal path (which the mutation test below exercises separately). The
+   * second is the negative AC1's file-list equality only implies: the path itself 404s.
+   */
+  it("AC4: every release's graph parses and lints as Attractor input, compiled the way the export gate compiles it", async () => {
+    for (const entry of readContent()) {
+      const factory = emitAttractorDot(entry.blueprint);
+      const parsed = parseDot(factory, "factory.dot");
+      expect(parsed.graph, entry.slug).toBeDefined();
+      expect(lintAttractor(parsed.graph!, factory, "factory.dot"), entry.slug).toEqual([]);
     }
+  });
+
+  /**
+   * The `seeded` releases share content, hence a digest, with whatever this bucket has
+   * frozen before today — and `serve-file.ts`'s own header records the resulting tension
+   * as a RULED, ACCEPTED gap: "a release frozen under one lint rule is served unchecked if
+   * the rule later changes … AC6 and re-linting at serve time are in genuine conflict …
+   * and AC6 wins by ruling." A digest already frozen with `factory.dot` in it from before
+   * this change keeps serving that stale object forever by design, which is exactly the
+   * migration this task owes the orchestrator (see the report) rather than performs here.
+   *
+   * So this asserts the negative on a release nobody could have frozen before today: the
+   * real starter content plus one trailing comment line, which changes nothing about the
+   * graph and everything about the digest AC6 keys the freeze by.
+   */
+  it("AC4: factory.dot is not a servable path of a release nothing has frozen before", async () => {
+    const entry = readContent().find((candidate) => candidate.slug === "starter-software-factory")!;
+    const bundle = await createBundle(db, {
+      ownerId,
+      slug: `t090-ac4-negative-${Date.now()}`,
+      visibility: "public",
+    });
+    await addRelease(db, {
+      bundleId: bundle.id,
+      version: "1.0.0",
+      dot: `${entry.bundle.dot}\n// scratch AC4 negative, never frozen before this run\n`,
+      manifest: entry.bundle.manifest,
+      cardRefs: entry.blueprint.nodes.map((node) => node.ref),
+      cardDigests: entry.blueprint.nodes.map((node) => node.digest),
+      analysis: {
+        autonomy: entry.analysis.autonomy,
+        security: entry.analysis.security,
+        phaseCoverage: entry.analysis.phaseCoverage,
+      },
+    });
+
+    await expect(
+      serveFile(db, ANONYMOUS, { ownerHandle: "exporter", slug: bundle.slug }, FACTORY_DOT),
+    ).rejects.toThrow("serveFile: no such file in this release.");
   });
 
   /**
@@ -646,7 +694,7 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
     const ids = seeded.get("schema-forge-etl")!;
     const before = await countFor("blueprint", ids.bundleId);
     await serveFile(db, ANONYMOUS, ref("schema-forge-etl"), "README.md");
-    await serveFile(db, ANONYMOUS, ref("schema-forge-etl"), "AGENTS.md");
+    await serveFile(db, ANONYMOUS, ref("schema-forge-etl"), "topology.dot");
     expect(await countFor("blueprint", ids.bundleId)).toBe(before + 2);
 
     /* A refused path is not a download. */
@@ -670,11 +718,12 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
   /* --------------------- content types --------------------- */
 
   it("every served file states a type, and the bytes are the UTF-8 length", async () => {
+    // Owner instruction, 2026-08-25: `AGENTS.md` and `factory.dot` are no longer part of a
+    // released bundle, so neither is a servable path any more (see the `AC4` describe block
+    // above for `factory.dot`'s own negative).
     const expected = new Map([
       ["README.md", "text/markdown; charset=utf-8"],
-      ["AGENTS.md", "text/markdown; charset=utf-8"],
       ["topology.dot", "text/vnd.graphviz; charset=utf-8"],
-      [FACTORY_DOT, "text/vnd.graphviz; charset=utf-8"],
       [BUNDLE_VOCABULARY, "application/yaml; charset=utf-8"],
     ]);
     for (const [path, type] of expected) {

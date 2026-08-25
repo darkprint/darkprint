@@ -12,10 +12,12 @@ import {
   type OntologyTerm,
 } from "@/lib/core";
 import { parseOntologyTerms } from "@/lib/content/ontology-file";
-// The two names by their definitions rather than as literals here: this file explains
-// what a reader's own download contains, and a second spelling of either would drift.
-// Both are plain string constants, and `bundle-export` is isomorphic like the rest of
-// what `/upload` runs in the tab.
+// The two names by their definitions rather than as literals here: this file recognises
+// them if a reader drops one, and a second spelling of either would drift. Both are plain
+// string constants, and `bundle-export` is isomorphic like the rest of what `/upload` runs
+// in the tab. `BUNDLE_AGENTS` no longer names a file a fresh download contains (owner
+// instruction, 2026-08-25) — kept here because an older download, or a folder a reader
+// wrote by hand, may still carry one.
 import { BUNDLE_AGENTS, BUNDLE_README } from "@/lib/content/bundle-export";
 import { cx } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
@@ -219,10 +221,12 @@ export function classifyBundle(files: readonly UploadFile[]): BundleParts {
         roles.push({
           file,
           role: "ignored",
-          // A downloaded folder carries two: `topology.dot` is the topology the registry
-          // stores and scores, `factory.dot` is that same graph prepared for a runner,
-          // with `__start` and `__exit` synthesised into it. Dropping the whole folder is
-          // the ordinary case, so the demoted one says which of the two it is.
+          // A downloaded folder used to carry two: `topology.dot` is the topology the
+          // registry stores and scores, `factory.dot` was that same graph prepared for a
+          // runner, with `__start` and `__exit` synthesised into it. `factory.dot` no
+          // longer ships in a published bundle (owner instruction, 2026-08-25), but a
+          // reader may still have one — an older download, or their own harness's
+          // compiled output — so dropping one here stays a recognised case.
           note:
             (dot === undefined ? undefined : derivedNote(file, dot)) ??
             "a bundle carries one topology, and the first .dot wins",
@@ -281,12 +285,15 @@ export function classifyBundle(files: readonly UploadFile[]): BundleParts {
 /**
  * Why a file the validator does not read is in the folder anyway.
  *
- * The ordinary case here is a reader dropping a whole downloaded bundle, which ships two
- * documents addressed to people rather than to the engine: `README.md` for whoever is
- * deciding whether to run it, and `AGENTS.md` for the agent being asked to adapt it.
- * Neither is a defect and neither is missing anything, so the chip says what the file is
- * instead of what it is not. "Not a .dot, .yaml, .yml or .json document" was true of both
- * and told a reader nothing about why their own download contains it.
+ * The ordinary case here is a reader dropping a whole downloaded bundle, which ships one
+ * document addressed to a person rather than to the engine: `README.md`, for whoever is
+ * deciding whether to run it. `AGENTS.md` shipped alongside it too until the owner
+ * instructed it out of every published bundle (2026-08-25); this still recognises one if a
+ * reader drops an older download or a folder they wrote by hand, the same reasoning that
+ * keeps `factory.dot` recognised in `derivedNote` below. Neither is a defect and neither is
+ * missing anything, so the chip says what the file is instead of what it is not. "Not a
+ * .dot, .yaml, .yml or .json document" was true of both and told a reader nothing about
+ * why their own download contains it.
  */
 function prosePartNote(file: UploadFile): string {
   const base = baseName(file.name).toLowerCase();

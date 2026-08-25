@@ -28,7 +28,6 @@ export function DownloadPanel({
   headingLevel = "h2",
   topologyHref,
   readmeHref,
-  agentsHref,
   vocabulary,
   cards,
   clone,
@@ -42,20 +41,23 @@ export function DownloadPanel({
    * three sibling `h2`s, which said the page had three equal sections when it has one.
    */
   headingLevel?: "h2" | "h3";
-  /* `factoryHref` was here and is gone with the block that drew it. The file is still
-     exported into every bundle and `/build` still hands it over; this panel simply does not
-     teach a build product. Callers passing it now fail to typecheck, which is the point:
-     the prop leaving is how the removal reaches them. */
+  /* `factoryHref` was here and is gone with the block that drew it (2026-08-08). At the
+     time the file was still exported into every bundle and `/build` still handed it over;
+     this panel simply did not teach a build product. `exportBundle` stopped writing the
+     file at all later (owner instruction, 2026-08-25), so there is now nothing left for a
+     prop of that name to point at. */
   /** `/bundles/<slug>/blueprint.dot` — the topology, card pins intact. */
   topologyHref: string;
   readmeHref: string;
   /**
-   * `AGENTS.md`, the half of the folder addressed to whatever adapts the pattern.
+   * `AGENTS.md` used to be the half of the folder addressed to whatever adapts the
+   * pattern. `exportBundle` no longer writes it into a bundle (owner instruction,
+   * 2026-08-25), and this panel no longer renders a link for it.
    *
-   * Optional only so a caller that has not been updated keeps compiling; every bundle
-   * carries the file (`lib/content/bundle-export.ts` writes it unconditionally), so a
-   * panel rendering without it is offering a reader eight of nine files and saying
-   * nothing about the ninth.
+   * The prop stays, unused, because `components/blueprint/download-name.test.ts` is
+   * FROZEN and its object literal still passes one — removing the prop from this type
+   * would fail that suite to compile rather than to assert anything, which is a worse
+   * failure than an unused optional field.
    */
   agentsHref?: string;
   /**
@@ -108,14 +110,14 @@ export function DownloadPanel({
           execution happening on your machine — and the author asked the whole block out on
           2026-08-08.
 
-          It is a BUILD PRODUCT, and the same instruction took it off
+          It was a BUILD PRODUCT, and the same instruction took it off
           `/what-a-blueprint-is`'s list of what a bundle is for the same reason: a compiled
           export written by the exporter is not one of the things somebody authors. A panel
           whose largest element was the one file in the folder nobody writes led with the
           output of the process instead of with the process's subject.
 
-          `blueprint.dot` is first now, which is also the order the bundle's own README and
-          `AGENTS.md` describe the folder in.
+          `topology.dot` is first now, which is also the order the bundle's own README
+          describes the folder in.
 
           WHAT WENT WITH IT, and what did not. The sentence "Execution happens on your
           machine … It runs nothing and holds none of your provider keys" was in that block
@@ -124,16 +126,12 @@ export function DownloadPanel({
           not about one file in it, and it reads better as the panel's closing statement
           than as a footnote to a command that is gone.
 
-          `factoryHref` stays on the props: the file is still exported, still in every
-          bundle, and `/build`'s own step still hands it over. This panel simply stops
-          teaching it. */}
+          `factoryHref` left the props here on 2026-08-08. The file itself left every bundle
+          later (owner instruction, 2026-08-25): `exportBundle` no longer compiles one at
+          all, so this panel is not choosing to omit it, there is nothing left to omit. */}
       {/* Taking the folder rather than the files one at a time.
-          It sits here, after the runnable artefact and its command, and not above them:
-          `factory.dot` is first and largest because it is the thing that runs, and a
-          462-character curl line above it would demote the one file a reader needs. The
-          reading order is now what the panel always meant — here is the file that runs,
-          here is how to run it, here is how to take the whole folder in one go, and here
-          is each remaining file on its own.
+          It sits here, above the per-file list, because it fetches the whole folder in one
+          go and that is the fastest path to what a reader actually wants.
 
           `variant="plain"`, because this panel already lives behind a
           `<More summary="Download">` on the blueprint page and a floating dropdown inside
@@ -202,30 +200,10 @@ export function DownloadPanel({
             What this bundle is, which digest it came from, and how to run it.
           </p>
         </li>
-        {/* The ninth file. It shipped in every bundle from the commit that generated it
-            and was linked from nowhere: this panel offered four kinds, the step-7
-            inventory list was the only place on the site a reader learned it existed, and
-            the comment beside that list claimed this panel already downloaded everything.
-            A folder with a file nobody is told about is the failure the README's own
-            "what is in the folder" table exists to prevent. */}
-        {agentsHref !== undefined && agentsHref !== "" && (
-          <li className="py-2.5">
-            <a
-              href={agentsHref}
-              download="AGENTS.md"
-              className="group flex items-baseline justify-between gap-2"
-            >
-              <span className="font-mono text-sm text-fg transition-colors group-hover:text-cyan">
-                AGENTS.md
-              </span>
-              <span className="shrink-0 font-mono text-[11px] text-dim">↓</span>
-            </a>
-            <p className="text-xs leading-snug text-dim">
-              The same folder addressed to an agent adapting it: what must never be
-              connected, what each node takes, and how the graph is wired.
-            </p>
-          </li>
-        )}
+        {/* `AGENTS.md` used to have a row here. `exportBundle` no longer writes one into a
+            bundle (owner instruction, 2026-08-25), so there is nothing left to link — a row
+            pointing at a file the folder does not carry would be the same disagreement this
+            panel exists to prevent, aimed the other way. */}
       </ul>
 
       {/* The cards, folded away: the panel above already lists the same names, and this

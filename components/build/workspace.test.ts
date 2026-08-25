@@ -22,10 +22,13 @@
    a promise the page makes on screen:
 
      1. it resolves through the real engine with no error;
-     2. `exportBundle` produces the four kinds of file, and the
-        emitted `factory.dot` survives `parseDot` + `lintAttractor`,
-        which is what Attractor itself runs before it will execute
-        a pipeline;
+     2. `exportBundle` produces the three kinds of file a published
+        bundle carries (owner instruction, 2026-08-25: `factory.dot`
+        is not one of them any more), and `emitAttractorDot` — what
+        a reader's own harness would call on the topology and cards
+        this download hands over — survives `parseDot` +
+        `lintAttractor`, which is what Attractor itself runs before
+        it will execute a pipeline;
      3. doc 2 §5.2's isolation holds, on the topology and in the
         prose;
      4. doc 2 §1.1 holds in the copy: no evaluative language about
@@ -43,6 +46,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   CORE_ONTOLOGY,
+  emitAttractorDot,
   hasErrors,
   lintAttractor,
   loadBundle,
@@ -52,7 +56,6 @@ import {
 } from "@/lib/core";
 import {
   BUNDLE_README,
-  FACTORY_DOT,
   TOPOLOGY_DOT,
   exportBundle,
 } from "@/lib/content/bundle-export";
@@ -110,27 +113,29 @@ describe("every combination the workspace can produce", () => {
       expect(state.graph).toBeDefined();
       expect(state.paneModel).toBeDefined();
 
-      // The four kinds of file the download promises.
+      // The three kinds of file the download promises (owner instruction, 2026-08-25:
+      // `factory.dot` is no longer one of them, here or in any published bundle).
       const paths = state.files.map((file) => file.path);
-      expect(paths).toContain(FACTORY_DOT);
       expect(paths).toContain(TOPOLOGY_DOT);
       expect(paths).toContain(BUNDLE_README);
       expect(paths.filter((path) => path.startsWith("cards/")).length).toBe(
         state.blueprint?.nodes.length,
       );
 
-      // The claim the page cannot check for the reader: it runs from a command line.
-      // Attractor parses and lints before it executes, so a file that fails either check
-      // would fail on their machine, and it fails here instead.
-      const factory = state.files.find((file) => file.path === FACTORY_DOT);
-      expect(factory).toBeDefined();
-      const parsed = parseDot(factory?.text ?? "", FACTORY_DOT);
+      // The claim the page cannot check for the reader: this graph runs from a command
+      // line once a harness compiles it. `emitAttractorDot` is what such a harness would
+      // call, so it is exercised directly here (the download itself no longer carries a
+      // compiled copy) and Attractor's own parse-then-lint check runs against the result —
+      // a graph that fails either check would fail on the reader's machine too.
+      expect(state.blueprint).toBeDefined();
+      const factory = state.blueprint === undefined ? "" : emitAttractorDot(state.blueprint);
+      const parsed = parseDot(factory, "factory.dot");
       expect(parsed.graph).toBeDefined();
       expect(hasErrors(parsed.diagnostics)).toBe(false);
-      expect(lintAttractor(parsed.graph!, factory?.text ?? "", FACTORY_DOT)).toEqual([]);
+      expect(lintAttractor(parsed.graph!, factory, "factory.dot")).toEqual([]);
 
-      // The cap the reader chose is the cap the artefact carries.
-      expect(factory?.text).toContain(`max_retries=${choices.maxIterations}`);
+      // The cap the reader chose is the cap the compiled graph would carry.
+      expect(factory).toContain(`max_retries=${choices.maxIterations}`);
     },
   );
 
@@ -600,7 +605,6 @@ describe("autonomy is a description, not a verdict", () => {
       expect(hasErrors(without.diagnostics), output).toBe(false);
       for (const state of [withHuman, without]) {
         const paths = state.files.map((file) => file.path);
-        expect(paths, output).toContain(FACTORY_DOT);
         expect(paths, output).toContain(TOPOLOGY_DOT);
         expect(paths, output).toContain(BUNDLE_README);
       }

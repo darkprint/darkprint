@@ -1,10 +1,8 @@
 import type { BundleFile } from "@/lib/data/bundles";
 import {
-  BUNDLE_AGENTS,
   BUNDLE_CARDS_DIR,
   BUNDLE_README,
   BUNDLE_VOCABULARY,
-  FACTORY_DOT,
   TOPOLOGY_DOT,
 } from "@/lib/content/bundle-export";
 import { SITE_ORIGIN } from "@/lib/content/bundle-export";
@@ -36,12 +34,7 @@ import { blueprintFileHref, cardFileHref } from "@/lib/href";
 /** What each generated file is, in one line. Keyed by the exporter's own constants. */
 const PUBLISHED_FILE_NOTE: Record<string, { kind: BundleFile["kind"]; note: string }> = {
   [TOPOLOGY_DOT]: { kind: "dot", note: "the topology, as the author wrote it" },
-  [FACTORY_DOT]: { kind: "dot", note: "the same graph, emitted for Attractor" },
   [BUNDLE_README]: { kind: "doc", note: "identity, digest and the download command" },
-  [BUNDLE_AGENTS]: {
-    kind: "doc",
-    note: "how to fit this pattern into your own repository",
-  },
   [BUNDLE_VOCABULARY]: { kind: "yaml", note: "the local terms this bundle's cards use" },
 };
 

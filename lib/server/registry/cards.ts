@@ -131,6 +131,10 @@ export async function cardsOwnedBy(
             // The published join, read for this exact version. `[]` when the index does not
             // hold the row at all, which is what an unpinned card's users are.
             usedIn: snapshot.byRef.get(ref)?.usedIn ?? EMPTY_KEYS,
+            // Read straight from the row rather than the snapshot: this is the one reader
+            // that returns an owner's own private cards (D-132-04 C-C), so a caller needs to
+            // tell them apart from the public rows in the same array.
+            visibility: row.visibility,
           });
         })
         .sort(cmpCards),

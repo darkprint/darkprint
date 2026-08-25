@@ -280,13 +280,14 @@ describe("T100 AC3 — the stored digest is the engine's over the submitted byte
        change LOUD rather than silently rebasing every other cell in this file.
 
        What it is worth beyond `digestOf` agreeing with itself: the same string is stamped into
-       the SHIPPED artefact by the build — `public/bundles/starter-software-factory/factory.dot`
-       and `README.md` both carry `sha256:945448e0…e39af`, written by
-       `scripts/generate-bundles.ts` through `exportBundle`. That is a different call path from
-       this suite's, reached without any test running, so the literal is corroborated by
-       something this author did not write. It is not a fully independent axis — both paths
-       bottom out in `lib/core`'s resolver — and the cells above are still the ones that
-       establish anything about the digest's BEHAVIOUR. */
+       the SHIPPED artefact by the build — `public/bundles/starter-software-factory/README.md`
+       carries `sha256:945448e0…e39af`, written by `scripts/generate-bundles.ts` through
+       `exportBundle`. That is a different call path from this suite's, reached without any test
+       running, so the literal is corroborated by something this author did not write. It is not
+       a fully independent axis — both paths bottom out in `lib/core`'s resolver — and the cells
+       above are still the ones that establish anything about the digest's BEHAVIOUR.
+       (`factory.dot` also carried the digest until the owner instructed it out of every
+       published bundle, 2026-08-25; `README.md` alone corroborates it now.) */
     expect(
       digestOf(env.base),
       "AC3: the archive corpus's digest moved. This literal is a change-detector — if the " +

@@ -281,6 +281,11 @@ export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapsh
           digest: row.digest,
           card: row.body as NodeCard,
           usedIn: frozen(users.sort(cmpBlueprintKeys).map((key) => Object.freeze({ ...key }))),
+          // Always "public" through this constructor in practice: `cardRows` above is
+          // already filtered by `readable()`, and the one caller that can see a private
+          // row here is its own owner, for whom the distinction is moot. Carried anyway
+          // so `CardSummary.visibility` is not a field only `cardsOwnedBy` bothers to fill.
+          visibility: row.visibility,
         });
       })
       .sort(cmpCards),

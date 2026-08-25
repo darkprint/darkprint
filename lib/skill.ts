@@ -27,14 +27,16 @@
    blueprint-writing skill", both of which a reader can tell from a card's `skill:` field
    at a glance, and `/skill` spends one sentence saying so outright.
 
-   ── What it emits, and the one thing it deliberately does not ──
-   The registry shape: `topology.dot`, one YAML card per node, `README.md` and
-   `AGENTS.md`. NOT `factory.dot`. That file is compiled out of the other two by
+   ── What it emits, and the two things it deliberately does not ──
+   The registry shape: `topology.dot`, one YAML card per node, and `README.md`. NOT
+   `factory.dot`: that file used to be compiled out of the other two by
    `lib/content/bundle-export.ts` on the way out of DarkPrint, and a skill that emitted its
    own copy of the Attractor emit rules would be free to drift from the exporter the day
-   either changed. `/build`'s download exit leads on `factory.dot`, so the two folder
-   shapes are visibly different on one page and both surfaces that name the skill have to
-   say why.
+   either changed. `factory.dot` no longer exists anywhere in a published bundle either
+   (owner instruction, 2026-08-25), so the two folder shapes agree on this file's absence
+   now, not only on why the skill never wrote it. NOT `AGENTS.md` either, by the same
+   instruction and for the same day: the skill wrote one until this pass, and a published
+   bundle carried one until this pass, and both stopped in the same commit.
 
    ── What no test here can hold ──
    Everything else the site claims about an artefact is checked against the artefact:

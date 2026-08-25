@@ -729,8 +729,8 @@ describe("preferring the frozen artefact does not move the visibility check", ()
         `BEFORE the visibility check. D-90-01 makes \`undefined\` a property of the answer and ` +
         `not of the branch: a caller must not be able to tell whether a release they may not see ` +
         `happens to have been frozen, and must certainly not receive its bytes.\n` +
-        `  The digest is not a secret. It is printed in every README, quoted in \`factory.dot\`, ` +
-        `and held by every fork and every former collaborator.`,
+        `  The digest is not a secret. It is printed in every README, and held by every fork and ` +
+        `every former collaborator.`,
     ).toBeUndefined();
   }, 240_000);
 
@@ -884,8 +884,11 @@ describe("a PUBLIC bundle's PRIVATE pinned cards do not become readable once the
     ).toBeGreaterThan(0);
 
     /* THE CRITERION. Every path of the folder, not just the card's own: the README quotes the
-       scores the private cards resolve to, and `factory.dot` names them. */
-    for (const path of ["README.md", "factory.dot", ...cardPaths.slice(0, 3)]) {
+       scores the private cards resolve to, and `topology.dot` pins them by ref. ("factory.dot"
+       until the owner instructed it out of every published bundle, 2026-08-25 — it is no longer
+       one of the folder's paths, so it stopped belonging in a list about "every path of the
+       folder".) */
+    for (const path of ["README.md", "topology.dot", ...cardPaths.slice(0, 3)]) {
       const outcome = await outcomeOf(() => callServeFile(refFor(release), path));
       if (outcome.kind === "value") {
         const served = asServedFile(outcome.value, `\`serveFile\` for \`${path}\``);

@@ -22,7 +22,6 @@ import { blueprint, card, draftBundle, graphsOf, scoresOf } from "@/lib/server/r
 import { reportedCost } from "@/lib/server/runs";
 import { releaseFiles, serveCardSource } from "@/lib/server/export";
 import {
-  BUNDLE_AGENTS,
   BUNDLE_README,
   BUNDLE_VOCABULARY,
   TOPOLOGY_DOT,
@@ -1035,7 +1034,6 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
             <DownloadPanel
               topologyHref={topologyHref}
               readmeHref={blueprintFileHref(owner, slug, at, BUNDLE_README)}
-              agentsHref={blueprintFileHref(owner, slug, at, BUNDLE_AGENTS)}
               {...(vocabulary === undefined
                 ? {}
                 : {

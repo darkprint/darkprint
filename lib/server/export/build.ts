@@ -20,15 +20,29 @@
    read.
 
    ── AC4 is checked here rather than at publish ──
-   Attractor parses and lints before it executes, so an emitted
-   `factory.dot` that fails either check would fail on the user's
-   machine. `scripts/generate-bundles.ts` runs the same two checks
-   at build time; a release stored before a lint rule changed would
-   have passed that one and would be served unchecked forever, so
-   the check is at the serving edge, on the bytes about to leave.
+   Attractor parses and lints before it executes, so a graph that
+   fails either check would fail on the user's machine the moment
+   their own harness compiled it. `scripts/generate-bundles.ts` runs
+   the same two checks at build time; a release stored before a
+   lint rule changed would have passed that one and would be served
+   unchecked forever, so the check is at the serving edge, on the
+   graph about to be exported.
+
+   Owner instruction, 2026-08-25: `exportBundle` no longer writes a
+   compiled `factory.dot` into the folder it hands over — a
+   published bundle carries only what an author wrote, and turning
+   it into a runnable pipeline is the reader's own harness's job.
+   AC4 still means something without that file: it is a claim about
+   the GRAPH, not about a download, so the check below compiles the
+   same graph the same way (`emitAttractorDot`, exactly what a
+   reader's own harness would call on the topology and cards this
+   release exports) and refuses to serve a release whose graph would
+   not survive Attractor's own gate — without writing the compiled
+   bytes into the folder or serving them under any path.
    ============================================================ */
 
 import {
+  emitAttractorDot,
   hasErrors,
   lintAttractor,
   loadBundle,
@@ -38,9 +52,9 @@ import {
   type Bundle,
   type CardRef,
   type Diagnostic,
+  type ResolvedBlueprint,
 } from "@/lib/core";
 import {
-  FACTORY_DOT,
   cardFilePath,
   exportBundle,
   type ExportedCard,
@@ -115,7 +129,7 @@ export async function buildExport(
     ...(vocabulary === undefined ? {} : { vocabulary }),
   });
 
-  checkFactoryDot(files);
+  checkFactoryDot(loaded.blueprint);
   return files;
 }
 
@@ -251,17 +265,20 @@ function dedupe(diagnostics: readonly Diagnostic[]): Diagnostic[] {
 }
 
 /**
- * AC4, on the bytes about to be served rather than on the ones that were stored.
+ * AC4, on the graph about to be exported rather than on a file the folder no longer carries.
  *
  * The two checks Attractor itself runs before it will execute a pipeline, in the order it
- * runs them: a graph that does not parse cannot be linted. The diagnostics stay here —
- * they quote node ids and source spans, and the refusal is a fixed sentence.
+ * runs them: a graph that does not parse cannot be linted. Compiled here with
+ * `emitAttractorDot` — the same call `exportBundle` used to make when it still wrote
+ * `factory.dot` into the folder — rather than read back out of `files`, because that path
+ * no longer exists among them. The diagnostics stay here — they quote node ids and source
+ * spans, and the refusal is a fixed sentence naming `factory.dot` by the name Attractor
+ * gives this shape of file, not by a path this release serves.
  */
-function checkFactoryDot(files: readonly ExportedFile[]): void {
-  const factory = files.find((file) => file.path === FACTORY_DOT);
-  if (factory === undefined) throw factoryDotRejected();
+function checkFactoryDot(blueprint: ResolvedBlueprint): void {
+  const factory = emitAttractorDot(blueprint);
 
-  const parsed = parseDot(factory.text, FACTORY_DOT);
+  const parsed = parseDot(factory, "factory.dot");
   if (parsed.graph === undefined || hasErrors(parsed.diagnostics)) throw factoryDotRejected();
-  if (lintAttractor(parsed.graph, factory.text, FACTORY_DOT).length > 0) throw factoryDotRejected();
+  if (lintAttractor(parsed.graph, factory, "factory.dot").length > 0) throw factoryDotRejected();
 }

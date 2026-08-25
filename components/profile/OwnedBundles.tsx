@@ -10,6 +10,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { MetaPill } from "@/components/ui/MetaPill";
 import { CARD_SHELL } from "@/components/ui/ContentCard";
 import { ContentRow, ROW_GRID, RowThumbFrame } from "@/components/ui/ContentRow";
+import { DeleteBundleControl } from "@/components/profile/DeleteBundleControl";
 import { blueprintHref } from "@/lib/href";
 import { shelfEmptyMessage } from "./parts";
 import type { ShelfSort } from "./SortControl";
@@ -138,9 +139,13 @@ function SummaryRow({
         </div>
       </div>
 
-      {/* ---------- zone 3: the owner's controls ---------- */}
+      {/* ---------- zone 3: the owner's controls ----------
+          The trash sits top-right (owner-instructed, 2026-08-25) and only on THIS row
+          shape: a ContentRow-shaped row is a public released blueprint, which the server
+          refuses to delete (published stays), so it gets no dead control to click. */}
       {owner && (
         <div className="flex flex-col items-start gap-2 sm:items-end">
+          <DeleteBundleControl ownerHandle={ownerHandle} slug={summary.slug} />
           <ButtonLink
             href={`/upload?owner=${encodeURIComponent(ownerHandle)}&slug=${encodeURIComponent(summary.slug)}`}
             size="sm"

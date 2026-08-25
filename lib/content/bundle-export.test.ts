@@ -3,6 +3,7 @@ import { parse as parseYaml } from "yaml";
 
 import {
   CORE_ONTOLOGY,
+  emitAttractorDot,
   hasErrors,
   lintAttractor,
   loadBundle,
@@ -21,7 +22,6 @@ import {
   bundleDownloadCommand,
   bundleFilePaths,
   bundleHref,
-  bundleAgents,
   bundleReadme,
   cardDownloadCommand,
   cardFilePath,
@@ -93,13 +93,21 @@ describe("exportBundle over content/", () => {
       const refs = [...new Set(entry.blueprint.nodes.map((n) => n.ref))].sort();
       const expected = [
         BUNDLE_README,
-        BUNDLE_AGENTS,
         TOPOLOGY_DOT,
-        FACTORY_DOT,
         ...refs.map(cardFilePath),
         ...(localTermsUsed(input).length > 0 ? [BUNDLE_VOCABULARY] : []),
       ].sort();
       expect([slug, files.map((f) => f.path)]).toEqual([slug, expected]);
+    }
+  });
+
+  // Owner instruction, 2026-08-25: a published folder used to also carry a compiled
+  // `factory.dot` and a generated `AGENTS.md`. Both are gone, and this is the negative
+  // that would catch either coming back silently.
+  it("never writes factory.dot or AGENTS.md", () => {
+    for (const { slug, files } of EXPORTS) {
+      const paths = files.map((f) => f.path);
+      expect([slug, paths]).toEqual([slug, paths.filter((p) => p !== FACTORY_DOT && p !== BUNDLE_AGENTS)]);
     }
   });
 
@@ -223,32 +231,34 @@ describe("a downloaded folder, resolved against nothing but itself", () => {
   });
 });
 
-/* --------------------- the runnable half --------------------- */
+/* --------------------- the emitter, exercised against the real archive --------------------- */
 
 /**
- * Doc 2 §11 item 10's actual requirement: the artefact has to run from a command line.
- * The nearest thing to proof available without an LLM behind it is the check Attractor
- * itself performs before a run — parse, then lint at error severity — applied to the exact
- * bytes the download contains rather than to a fixture.
+ * `emitAttractorDot` itself is untouched (see the file banner): it stays a general
+ * DOT-emission capability in `lib/core`, with its own suite in `emit.test.ts`. What moved
+ * is that `exportBundle` no longer calls it, so a compiled `factory.dot` is no longer part
+ * of what a reader downloads — the coverage below is retargeted at the emitter directly,
+ * called the same way `exportBundle` used to call it, so a regression in the real archive's
+ * content (as opposed to `emit.test.ts`'s synthetic fixtures) still surfaces here.
  */
-describe("factory.dot, as Attractor will read it", () => {
+describe("emitAttractorDot, against the real archive's blueprints", () => {
   it("parses and lints clean for every blueprint", () => {
-    for (const { slug, files } of EXPORTS) {
-      const factory = fileMap(files).get(FACTORY_DOT) ?? "";
-      const parsed = parseDot(factory, FACTORY_DOT);
+    for (const { slug, entry } of EXPORTS) {
+      const factory = emitAttractorDot(entry.blueprint);
+      const parsed = parseDot(factory, "factory.dot");
       expect([slug, hasErrors(parsed.diagnostics)]).toEqual([slug, false]);
       expect(parsed.graph).toBeDefined();
       if (parsed.graph === undefined) continue;
-      expect([slug, lintAttractor(parsed.graph, factory, FACTORY_DOT)]).toEqual([slug, []]);
+      expect([slug, lintAttractor(parsed.graph, factory, "factory.dot")]).toEqual([slug, []]);
     }
   });
 
-  // Doc 1 §0.1.2: the card's `spec` is the payload that instructs the agent, so a factory
-  // whose nodes carry no prompt is a drawing rather than a pipeline. Every node in the
+  // Doc 1 §0.1.2: the card's `spec` is the payload that instructs the agent, so an emitted
+  // graph whose nodes carry no prompt is a drawing rather than a pipeline. Every node in the
   // archive resolves to a card, so every one of them has to arrive with its spec inlined.
   it("carries one prompt per node, inlined from that node's card", () => {
-    for (const { slug, entry, files } of EXPORTS) {
-      const factory = fileMap(files).get(FACTORY_DOT) ?? "";
+    for (const { slug, entry } of EXPORTS) {
+      const factory = emitAttractorDot(entry.blueprint);
       const prompts = factory.match(/\bprompt=/g) ?? [];
       expect([slug, prompts.length]).toEqual([slug, entry.blueprint.nodes.length]);
       for (const node of entry.blueprint.nodes) {
@@ -262,10 +272,10 @@ describe("factory.dot, as Attractor will read it", () => {
 
   // The pin is the compatibility claim of doc 1 §0.1.1 in one attribute: Attractor ignores
   // an attribute it does not reserve, so `card="id@version"` survives the round trip and
-  // the file a user runs still says which card version it was built from.
+  // the emitted file still says which card version it was built from.
   it("keeps the card pin on every node", () => {
-    for (const { slug, entry, files } of EXPORTS) {
-      const factory = fileMap(files).get(FACTORY_DOT) ?? "";
+    for (const { slug, entry } of EXPORTS) {
+      const factory = emitAttractorDot(entry.blueprint);
       for (const node of entry.blueprint.nodes) {
         expect([slug, node.ref, factory.includes(`card="${node.ref}"`)]).toEqual([
           slug,
@@ -276,16 +286,15 @@ describe("factory.dot, as Attractor will read it", () => {
     }
   });
 
-  // The claim the `model` field exists to make good on: a card that names a model produces
-  // a factory that runs on it. Engine spec §2.6 reserves `llm_model` for exactly this, so
-  // the attribute survives into the folder a reader downloads. Asserted here as well as in
-  // `emit.test.ts` because this is the archive, where the models are real ids rather than
-  // fixtures, and a card whose model never reached the DOT would be a broken promise on
-  // every node page that shows it.
+  // The claim the `model` field exists to make good on: a card that names a model emits a
+  // graph that runs on it. Engine spec §2.6 reserves `llm_model` for exactly this. Asserted
+  // here as well as in `emit.test.ts` because this is the archive, where the models are
+  // real ids rather than fixtures, and a card whose model never reached the DOT would be a
+  // broken promise on every node page that shows it.
   it("carries the model onto every node whose card names one, and onto no other", () => {
     let named = 0;
-    for (const { slug, entry, files } of EXPORTS) {
-      const factory = fileMap(files).get(FACTORY_DOT) ?? "";
+    for (const { slug, entry } of EXPORTS) {
+      const factory = emitAttractorDot(entry.blueprint);
       const lines = factory.split("\n");
       for (const node of entry.blueprint.nodes) {
         // The node statement, which is the only line the node's id starts.
@@ -349,7 +358,7 @@ describe("determinism", () => {
 });
 
 describe("a bundle that cannot be exported", () => {
-  it("refuses to write a folder whose factory.dot references a card it does not contain", () => {
+  it("refuses to write a folder whose topology.dot references a card it does not contain", () => {
     const { input } = EXPORTS[0];
     const missing = input.blueprint.nodes[0].ref;
     const short = { ...input, cards: input.cards.filter((c) => c.ref !== missing) };
@@ -369,8 +378,8 @@ describe("paths", () => {
   });
 
   it("percent-encodes every segment of a href and keeps the separators", () => {
-    expect(bundleHref("starter-software-factory", FACTORY_DOT)).toBe(
-      "/bundles/starter-software-factory/factory.dot",
+    expect(bundleHref("starter-software-factory", TOPOLOGY_DOT)).toBe(
+      "/bundles/starter-software-factory/topology.dot",
     );
     expect(bundleHref("starter-software-factory", cardFilePath("spec-planner@1.0.0"))).toBe(
       "/bundles/starter-software-factory/cards/spec-planner%401.0.0.yaml",
@@ -482,13 +491,18 @@ describe("the README", () => {
     }
   });
 
-  // Doc 1 §0.1.3 and the item-10 contract: where execution happens, the command, and the
-  // fact that DarkPrint runs nothing and collects nothing.
-  it("says where execution happens, how to start it, and what is collected", () => {
+  // Doc 1 §0.1.3 and the item-10 contract: where execution happens, that the folder hands
+  // over the topology and its cards rather than a compiled command, and what is collected.
+  it("says where execution happens, what the folder hands over, and what is collected", () => {
     for (const { slug, text } of readmes) {
       expect([slug, text.includes("This runs on your machine.")]).toEqual([slug, true]);
-      expect([slug, text.includes(`attractor run ${FACTORY_DOT}`)]).toEqual([slug, true]);
-      expect([slug, text.includes(`attractor validate ${FACTORY_DOT}`)]).toEqual([slug, true]);
+      expect([slug, text.includes("carries the topology and its pinned cards")]).toEqual([
+        slug,
+        true,
+      ]);
+      // The false claim this replaced: a compiled `factory.dot` no longer ships, so the
+      // README may not tell a reader to run one.
+      expect([slug, text.includes("attractor run")]).toEqual([slug, false]);
       expect([slug, text.includes("executes nothing and holds none of your provider keys")]).toEqual(
         [slug, true],
       );
@@ -497,14 +511,16 @@ describe("the README", () => {
   });
 
   // The listing has to name every file in the folder: a reader who is told to recompute
-  // the digest and the scores needs to know which files are the inputs.
-  it("lists every file the folder actually contains", () => {
+  // the digest and the scores needs to know which files are the inputs. Owner instruction,
+  // 2026-08-25: `factory.dot` is no longer one of them.
+  it("lists every file the folder actually contains, and no more", () => {
     for (const { slug, files, text } of EXPORTS.map((e) => ({
       ...e,
       text: fileMap(e.files).get(BUNDLE_README) ?? "",
     }))) {
       const listing = text.split("## What is in the folder")[1]?.split("```")[1] ?? "";
-      expect([slug, listing.includes(FACTORY_DOT)]).toEqual([slug, true]);
+      expect([slug, listing.includes(FACTORY_DOT)]).toEqual([slug, false]);
+      expect([slug, listing.includes(BUNDLE_AGENTS)]).toEqual([slug, false]);
       expect([slug, listing.includes(TOPOLOGY_DOT)]).toEqual([slug, true]);
       const carries = fileMap(files).has(BUNDLE_VOCABULARY);
       expect([slug, listing.includes(BUNDLE_VOCABULARY)]).toEqual([slug, carries]);
@@ -757,110 +773,3 @@ describe("the README", () => {
   });
 });
 
-/* --------------------- AGENTS.md --------------------- */
-
-/**
- * The agent-facing file, over the real archive.
- *
- * `README.md` addresses a person deciding whether to run the folder; this addresses the
- * agent being asked to fit the pattern into a codebase. The cases below are the ones
- * where a generator can be wrong in a way nobody notices: a prohibition printed as
- * checkable when nothing checks it, a claim about the codebase this file has never seen,
- * or a node whose declared input no edge feeds going unmentioned so an agent draws the
- * edge the pattern exists to leave out.
- */
-describe("bundleAgents", () => {
-  it("ships one with every bundle, and lists it in the README's own folder table", () => {
-    for (const { slug, files } of EXPORTS) {
-      const map = fileMap(files);
-      expect(map.has(BUNDLE_AGENTS), slug).toBe(true);
-      expect(map.get(BUNDLE_README), slug).toContain(BUNDLE_AGENTS);
-    }
-  });
-
-  it("is deterministic, like every other exported file", () => {
-    for (const { input, files } of EXPORTS) {
-      expect(fileMap(files).get(BUNDLE_AGENTS)).toBe(bundleAgents(input));
-    }
-  });
-
-  it("keeps enforced prohibitions apart from free text", () => {
-    const starter = EXPORTS.find((e) => e.slug === "starter-software-factory");
-    const text = fileMap(starter!.files).get(BUNDLE_AGENTS) ?? "";
-
-    // `acceptance-criteria` is a data-type, so the resolver holds the graph to it.
-    expect(text).toContain("`builder` must never receive `acceptance-criteria`.");
-    expect(flat(text)).toContain("These are enforced.");
-
-    // "read the checks the work will be run against" names no term. Nothing checks it,
-    // and a file that implied otherwise would be telling an agent it has a guardrail it
-    // does not have.
-    expect(flat(text)).toContain("Stated by the author and checked by nothing.");
-    expect(text).toContain("read the checks the work will be run against");
-  });
-
-  it("never prints a free-text prohibition under the enforced heading", () => {
-    for (const { slug, input, files } of EXPORTS) {
-      const text = fileMap(files).get(BUNDLE_AGENTS) ?? "";
-      const enforcedBlock = text.slice(
-        text.indexOf("These are enforced."),
-        text.indexOf("Stated by the author"),
-      );
-      if (enforcedBlock === "") continue;
-      const view = input.blueprint.ontology;
-      for (const node of input.blueprint.nodes) {
-        for (const entry of node.card.cannot) {
-          const term = view.resolve(entry)?.term;
-          if (term?.kind === "data-type") continue;
-          expect(enforcedBlock, `${slug}: ${entry}`).not.toContain(entry);
-        }
-      }
-    }
-  });
-
-  /** `wrap()` lays the prose out at 94 columns, so a sentence assertion has to run over
-      the flattened text. Matching the file as written would pass or fail on where a line
-      happened to break. */
-  const flat = (text: string) => text.replace(/\s+/g, " ");
-
-  it("names the nodes whose declared inputs no edge feeds", () => {
-    // The starter's `builder` is the case: its brief arrives with the run, and the edge
-    // that is not there is the whole pattern. An agent told only "Takes: brief" is one
-    // step from drawing it.
-    const starter = EXPORTS.find((e) => e.slug === "starter-software-factory");
-    const text = fileMap(starter!.files).get(BUNDLE_AGENTS) ?? "";
-    expect(flat(text)).toContain("`builder`");
-    expect(flat(text)).toContain("no edge in this graph feeds");
-    expect(flat(text)).toContain("That is not a gap to fill.");
-  });
-
-  it("says it has not seen the codebase, on every bundle", () => {
-    // The one claim this file must never make. It knows the pattern and nothing else.
-    for (const { slug, files } of EXPORTS) {
-      const text = fileMap(files).get(BUNDLE_AGENTS) ?? "";
-      expect(flat(text), slug).toContain("it has not seen the codebase you are about to change");
-      expect(text, slug).toContain("## What this file does not tell you");
-    }
-  });
-
-  it("leaves no empty heading for the notes an uploader has not written", () => {
-    // A heading with nothing under it reads as a section somebody forgot to fill in,
-    // which is a promise the folder does not keep. The file states what it does not know
-    // in prose instead.
-    for (const { slug, files } of EXPORTS) {
-      const text = fileMap(files).get(BUNDLE_AGENTS) ?? "";
-      // Top-level sections only. `## The nodes` is a container whose body is its `###`
-      // subsections, so a rule that demanded prose directly under every heading would be
-      // asserting a layout rather than the thing that matters.
-      const headings = [...text.matchAll(/^## .+$/gm)].map((m) => ({
-        title: m[0],
-        at: m.index ?? 0,
-      }));
-      for (const [i, heading] of headings.entries()) {
-        const end = headings[i + 1]?.at ?? text.length;
-        const body = text.slice(heading.at, end).split("\n").slice(1).join("\n").trim();
-        expect(body, `${slug}: ${heading.title} is empty`).not.toBe("");
-      }
-    }
-  });
-});

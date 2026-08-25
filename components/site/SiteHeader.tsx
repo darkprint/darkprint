@@ -81,7 +81,7 @@ export const NAV = [
      names on one screen. It stays in `NAV` as `docs` for the label table below. */
   /* `/upload` stood here as `group: "action"` (the Publish button) until the owner took
      publishing out of the chrome (2026-08-25): a release is cut from the surfaces that
-     own one — the profile shelf's New bundle flow, a draft's own landing, and /skill's
+     own one — the profile shelf's New blueprint flow, a draft's own landing, and /skill's
      accounts row — not from a global button. The route stays exempt in `nav.test.ts`'s
      ELSEWHERE for that reason. */
   { href: SANDBOX.href, label: SANDBOX.nav, group: "docs" },

@@ -55,8 +55,9 @@ export interface NodeSummary {
    * Absent everywhere the tile has always meant "public" — `/nodes`, every archive-derived
    * card on a profile — because every one of those is a document in `content/cards/` and a
    * card there is public by definition. Only `/u/[username]/cards`'s owner list ever passes
-   * `"private"`, for a card seeded in `lib/data/cards.ts` rather than published: see the
-   * violet border and pill this tile draws for that one case.
+   * `"private"`, off `CardSummary.visibility` (`cardsOwnedBy`, T132) — a real
+   * `card_version.visibility` column now, not a seeded fixture: see the violet border and
+   * pill this tile draws for that one case.
    */
   visibility?: "public" | "private";
 }

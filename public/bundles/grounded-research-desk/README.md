@@ -19,41 +19,21 @@ different digest.
 This runs on your machine. DarkPrint hands out the files and analyses them statically. It
 executes nothing and holds none of your provider keys.
 
-```
-attractor run factory.dot
-```
+This folder carries the topology and its pinned cards, nothing compiled. `topology.dot` names
+every node, every edge and the card version pinned on it. Each card under `cards/` carries the
+`spec` that becomes that node's prompt. Turning the two into a running pipeline is your own
+harness's job; DarkPrint does not compile or execute one.
 
-Check it first, without spending tokens:
-
-```
-attractor validate factory.dot
-attractor run factory.dot --simulate
-```
-
-`factory.dot` is self-contained. Every node carries its card's `spec` as the `prompt` its
-agent receives, so the runner needs no other file from this folder. Flags vary between
-Attractor runners; `attractor run --help` is authoritative on yours.
-
-3 of the 8 nodes name the model they run on, and carry it as `llm_model`. That is Attractor's
-own attribute for it, so the run uses those models as they stand and your provider has to
-serve them. A node attribute outranks a graph-level `model_stylesheet`, so edit the line to
-run a node on something else, and delete the attribute to hand the choice back to your own
-configuration.
+3 of the 8 nodes name the model they run on, in their card's own `model` field. Read it off
+`cards/<ref>.yaml`; whether your harness honours it is yours to decide.
 
 ## What is in the folder
 
 ```
-factory.dot    the pipeline Attractor runs, each card's spec inlined as a prompt
 topology.dot   the DarkPrint topology: node ids, edges, the card version pinned on each node
 cards/         the pinned cards, byte for byte as the registry stores them
 README.md      this file
-AGENTS.md      the same folder addressed to an agent adapting it, generated from the cards
 ```
-
-Two DOT files, because they answer different questions. `topology.dot` is what the registry
-stores and scores. `factory.dot` is that same graph prepared for a runner: a synthesised
-`__start` and `__exit` node, and the prompts inlined. Delete those two nodes and their edges
-and you are back to the topology.
 
 8 of the nodes in this bundle name a skill document. There is no `skills/` directory above and
 there is not meant to be: DarkPrint stores the pointer and reads nothing at the other end of
@@ -71,10 +51,10 @@ factcheck   skills/claim-verifier.md
 report      skills/report-delivery.md
 ```
 
-Nothing here needs them to run. Every node in `factory.dot` carries its card's `spec` inline
-as the prompt its agent receives, so a runner given this folder and nothing else has the whole
-instruction for every node. A skill document adds a capability to one agent; what the
-blueprint decides is who is wired to whom.
+Nothing here needs them to run. Every card carries its own `spec` inline, which is the whole
+instruction for that node whatever harness compiles this topology into a running pipeline. A
+skill document adds a capability to one agent; what the blueprint decides is who is wired to
+whom.
 
 ## The nodes
 

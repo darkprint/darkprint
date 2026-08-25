@@ -111,7 +111,14 @@ export type TransferRefusedKind =
   | "slug-taken";
 
 /** Which deletion refusal. Two, because an anonymous actor is simply not this account's owner. */
-export type DeletionRefusedKind = "no-such-account" | "not-owner";
+/* `no-such-bundle` and `bundle-published` joined at the owner's per-bundle delete
+   (2026-08-25): the first is `transferBundle`'s own B-03 collapse applied to a delete, the
+   second is D-120's published-stays sentence enforced at the single-bundle grain. */
+export type DeletionRefusedKind =
+  | "no-such-account"
+  | "not-owner"
+  | "no-such-bundle"
+  | "bundle-published";
 
 /**
  * `transferBundle` or `planTransfer` declined the move, and nothing moved.

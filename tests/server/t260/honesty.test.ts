@@ -133,20 +133,40 @@ describe("AC4 / D-260-08: a provenance marker moves with the figure it qualifies
    * become MORE honest. D-260-08's second half rules that case: if the surrounding sentence
    * is still true of something else, the sentence stays and only the marker goes.
    */
-  it("`/ontology` keeps saying that its usage figure is counted", () => {
+  /* AMENDED (owner-instructed, 2026-08-25): the `✓ counted` marker came off SITEWIDE once
+     every figure it qualified was a real count — the owner's words, "once wired, I do not
+     need to see that". So the cell can no longer require the disclosure to survive.
+
+     What it was really for survives, re-pointed. Its duty was to stop the sibling cell
+     above being satisfied by DELETING the block rather than by making the claim true, and
+     that duty is now carried by a mechanism rather than a sentence: `/ontology` is held in
+     `tests/server/t261/ac3-prerender-verdicts.test.ts`'s STAY_DYNAMIC and by t260's own
+     per-request cells, which assert the page reads the registry on the request that draws
+     it. A page cannot quietly go back to a build-time read and say nothing — the read
+     itself is asserted. What this cell now pins is the removal's own honesty: the marker
+     is gone AND nothing stale arrived in its place. */
+  it("`/ontology` renders no provenance disclosure, and nothing stale replaced it", () => {
     const [source] = sources([ROUTES.ontology], 1);
     const rendered = renderedText(parse(source.path, source.raw));
 
-    const counted = rendered.filter((text) => /\bcounted\b/i.test(text));
     expect(
-      counted,
-      `${ROUTES.ontology} no longer renders a "counted" disclosure. At \`3daa325\` it is ` +
-        `\`:139\`, the \`✓ counted\` badge over the usage figure.\n\n` +
-        `D-260-08: the marker comes off, the sentence stays when it is still true — and this ` +
-        `one becomes MORE true after the cutover, not less. Deleting the whole block is the ` +
-        `easy way to satisfy the cell above and it is the wrong repair: a page that stops ` +
-        `saying where its numbers come from has not become more honest by saying less.`,
-    ).not.toEqual([]);
+      rendered.length,
+      `${ROUTES.ontology} renders nothing, so the absences below are free`,
+    ).toBeGreaterThan(0);
+
+    expect(
+      rendered.filter((text) => /✓\s*counted/i.test(text)),
+      `${ROUTES.ontology} renders a "✓ counted" marker again. The owner took it off ` +
+        `sitewide on 2026-08-25; a marker coming back means either the instruction was ` +
+        `reversed (say so here) or a figure stopped being counted (then it needs its own ` +
+        `disclosure, and the sibling cell above governs what that sentence may claim).`,
+    ).toEqual([]);
+
+    expect(
+      claimsBuildTimeArchive(rendered),
+      `${ROUTES.ontology} acquired a build-time provenance claim after its disclosure was ` +
+        `removed — the worst of both, a page describing a source it does not read.`,
+    ).toEqual([]);
   });
 
   /*

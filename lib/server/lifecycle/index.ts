@@ -47,6 +47,7 @@ export { DeletionRefusedError, LifecycleStoreError, TransferRefusedError } from 
 
 export { planTransfer, transferBundle } from "./transfer";
 export { deleteAccount, planDeletion } from "./deletion";
+export { deleteBundle } from "./bundle-deletion";
 
 export { withLifecycleErrors } from "./http";
 

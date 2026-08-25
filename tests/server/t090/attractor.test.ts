@@ -29,10 +29,10 @@
        graph produced?                            false
 
    So a single card carrying a large integer cap resolves clean,
-   scores, and produces a complete-looking nine-file folder whose
-   `factory.dot` will not parse. That is exactly the failure AC4
-   exists to prevent, it is reachable through the published surface,
-   and `exportRelease: the emitted factory.dot is not valid
+   scores, and would produce a complete-looking folder whose
+   compiled `factory.dot` will not parse. That is exactly the failure
+   AC4 exists to prevent, it is reachable through the published
+   surface, and `exportRelease: the emitted factory.dot is not valid
    Attractor input.` is a live refusal path rather than a dead one.
 
    ── but the reversal is only half, and the halves were measured
@@ -66,11 +66,30 @@
    is fixed. What is asserted is that a release whose `factory.dot`
    does not parse is REFUSED — which stays true whichever way the
    emitter is repaired.
+
+   ── `factory.dot` stopped being served (owner instruction, 2026-08-25) ──
+   `exportBundle` no longer writes a compiled `factory.dot` into a bundle's file list, so
+   `serveFile(..., FACTORY_DOT)` now 404s (`ADMISSIBLE.noSuchFile`) for every release,
+   including the nine well-formed ones this file used to read the served bytes of. AC4
+   itself did not move: `checkFactoryDot` (`build.ts`) still compiles the graph with
+   `emitAttractorDot` and still refuses with `ADMISSIBLE.badFactoryDot` on the same
+   condition — it now compiles fresh from the blueprint rather than reading the compiled
+   bytes back out of the export, because there is nothing left to read them out of. The
+   four discriminating tests below (a huge iteration cap, an unparseable stored DOT, a
+   degraded resolve, and `serveFile` on a broken release) plant a release the gate must
+   REFUSE and are unaffected by the removal — the gate is exercised exactly as before, and
+   the assertion is still "throws `ADMISSIBLE.badFactoryDot`" or "throws some refusal",
+   never a value. What changed is the POSITIVE half: this file used to also read the
+   served bytes of each of the nine shipped bundles and run `parseDot` + `lintAttractor`
+   on them directly. There is no longer a file to read, so that half is now observed the
+   only way the published surface still allows — asserting that `exportRelease` does NOT
+   refuse any of the nine with `ADMISSIBLE.badFactoryDot`, which is true if and only if
+   each one's compiled graph still lexes, parses and lints clean.
    ============================================================ */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { lintAttractor, parseDot } from "@/lib/core";
+import { emitAttractorDot, parseDot } from "@/lib/core";
 import type { Actor } from "@/lib/server/policy";
 
 import { ADMISSIBLE, expectThrewExactly, loadExport, outcomeOf, requiredFn } from "./contract";
@@ -116,72 +135,65 @@ afterAll(async () => {
   if (scratch !== undefined) await scratch.drop();
 }, 120_000);
 
-async function factoryDotOf(release: SeededRelease): Promise<string> {
-  const mod = await loadExport();
-  const files = (await requiredFn(mod, "exportRelease")(
-    scratch.db,
-    ANONYMOUS,
-    release.bundleId,
-    release.digest,
-  )) as readonly { path: string; text: string }[];
-  const found = files.find((file) => file.path === FACTORY_DOT);
-  if (found === undefined) {
-    throw new Error(
-      `The export of \`${release.slug}\` carries no \`${FACTORY_DOT}\`. It is one of the four ` +
-        `files every bundle has (\`lib/content/bundle-export.ts\`), so its absence is AC1's ` +
-        `failure arriving here.`,
-    );
-  }
-  return found.text;
-}
-
-describe("AC4 — every served factory.dot passes parseDot and lintAttractor", () => {
+describe("AC4 — the export gate admits every shipped bundle's graph", () => {
   /*
    * WEAK BUT CONTINGENTLY SO, and measured rather than argued: removing the parse check reds
    * exactly one test in this file and it is not one of these. The nine shipped bundles carry no
-   * card whose iteration cap renders in exponential form, so their `factory.dot` parses and lints
-   * whether or not this layer checks.
+   * card whose iteration cap renders in exponential form, so their compiled graph parses and
+   * lints whether or not this layer checks.
    *
    * Kept, and the label is no longer the one an earlier version of this file carried. These are
    * not weak because the emitter cannot produce invalid output — it can (see the header) — they
    * are weak because these nine inputs do not happen to. That is a property of the archive, not
    * of the engine, and it stops being true the day a bundle ships such a card.
+   *
+   * `factory.dot` is no longer served (see the file header), so this reads the outcome of
+   * `exportRelease` rather than the bytes of a served file: a release the gate refuses throws
+   * `ADMISSIBLE.badFactoryDot`, and one it admits does not. That is the whole of what the
+   * published surface still lets a caller observe about AC4's positive half.
    */
   for (const slug of archive().map((entry) => entry.slug)) {
-    it(`serves a factory.dot for ${slug} that lexes, parses and lints`, async () => {
-      const text = await factoryDotOf(seeded.get(slug) as SeededRelease);
-      const parsed = parseDot(text, FACTORY_DOT);
-      expect(
-        parsed.diagnostics.filter((d) => d.code === "dot/parse-error"),
-        `The served \`${FACTORY_DOT}\` for \`${slug}\` does not parse.`,
-      ).toEqual([]);
-      expect(parsed.graph, `\`${FACTORY_DOT}\` for \`${slug}\` produced no graph`).toBeDefined();
-      expect(
-        lintAttractor(parsed.graph as never, text, FACTORY_DOT),
-        `The served \`${FACTORY_DOT}\` for \`${slug}\` carries Attractor lint warnings. The ` +
-          `contract says an emitted \`${FACTORY_DOT}\` "must lex, parse and lint as Attractor ` +
-          `input before it is served".`,
-      ).toEqual([]);
+    it(`admits ${slug}: exportRelease does not refuse it as bad Attractor input`, async () => {
+      const release = seeded.get(slug) as SeededRelease;
+      const mod = await loadExport();
+      const outcome = await outcomeOf(() =>
+        requiredFn(mod, "exportRelease")(scratch.db, ANONYMOUS, release.bundleId, release.digest),
+      );
+      if (outcome.kind === "throw" && outcome.message === ADMISSIBLE.badFactoryDot) {
+        throw new Error(
+          `\`exportRelease(${slug})\` was refused as bad Attractor input, though this bundle's ` +
+            `own graph is meant to compile clean. AC4's gate compiles ${slug}'s graph with ` +
+            `\`emitAttractorDot\` exactly as it always has, only no longer off a served file.`,
+        );
+      }
+      expect(outcome.kind, slug).toBe("value");
     }, 60_000);
   }
 
-  it("serves a factory.dot whose node ids are all Attractor identifiers", async () => {
-    /*
-     * Same class as the tests above and stated separately because it is the rule most likely to
-     * be broken by a layer that rewrote the emitted DOT: DarkPrint's own parser accepts hyphens
-     * and quoted ids, Attractor's grammar does not, and `toAttractorIdentifier` is the only thing
-     * standing between the two.
-     */
-    const text = await factoryDotOf(seeded.get("adversarial-consensus-line") as SeededRelease);
-    const parsed = parseDot(text, FACTORY_DOT);
+  /*
+   * Same class as the tests above and stated separately because it is the rule most likely to
+   * be broken by a layer that rewrote the emitted DOT: DarkPrint's own parser accepts hyphens
+   * and quoted ids, Attractor's grammar does not, and `toAttractorIdentifier` is the only thing
+   * standing between the two.
+   *
+   * Checked directly against `emitAttractorDot` rather than through `lib/server/export`, because
+   * node-id formation is `lib/core`'s own fact about the emitter (already trusted above via the
+   * static `parseDot`/`lintAttractor` imports) and not a claim about this task's gate — the gate
+   * test above already proves this same bundle's compiled graph lints clean, which subsumes
+   * this, and this pins the specific rule with its own message on top of that.
+   */
+  it("compiles adversarial-consensus-line with node ids that are all Attractor identifiers", () => {
+    const entry = bundleBySlug("adversarial-consensus-line");
+    const factory = emitAttractorDot(entry.blueprint);
+    const parsed = parseDot(factory, FACTORY_DOT);
     for (const node of (parsed.graph as never as { nodes: { id: string }[] }).nodes) {
       expect(
         /^[A-Za-z_][A-Za-z0-9_]*$/.test(node.id),
-        `Node id \`${node.id}\` in the served \`${FACTORY_DOT}\` is not an Attractor Identifier ` +
+        `Node id \`${node.id}\` in the compiled \`${FACTORY_DOT}\` is not an Attractor Identifier ` +
           `(\`[A-Za-z_][A-Za-z0-9_]*\`).`,
       ).toBe(true);
     }
-  }, 60_000);
+  });
 
   it("refuses a release whose factory.dot does not parse, though the release itself resolves clean", async () => {
     /*
@@ -190,7 +202,7 @@ describe("AC4 — every served factory.dot passes parseDot and lintAttractor", (
      * renders in exponential form; `readIterationCap` admits it because `Number.isInteger(1e23)`
      * is true, and `emit.ts` writes `max_retries=` **unquoted**. The DOT parses, the bundle
      * resolves with **no** error diagnostics, both scores compute, and the folder that comes out
-     * has nine files and a `factory.dot` that will not lex.
+     * looks complete while its compiled `factory.dot` will not lex.
      *
      * That is the whole of AC4 in one input: nothing before this layer refuses it. T010 stores it,
      * `resolveBundle` is happy with it, `hasErrors` is false, and the degraded-resolve check added
@@ -350,10 +362,14 @@ describe("AC4 — every served factory.dot passes parseDot and lintAttractor", (
      * through a component. AC6 was satisfied by testing `inferOntologyBump` directly while the
      * store's refusal path was unobserved."
      *
-     * So the same broken release is asked for `factory.dot` by name. Whether that arrives as the
-     * resolve refusal or as `undefined` is not the point and is not asserted; what is asserted is
-     * that no bytes come back, because a `factory.dot` served off a release the engine cannot
-     * read is the exact thing AC4 exists to prevent.
+     * So the same broken release is asked for `factory.dot` by name — through `serveFile`, the
+     * OTHER entry point AC4's gate sits behind, not only `exportRelease`. Whether that arrives
+     * as the resolve refusal or as `undefined` is not the point and is not asserted; what is
+     * asserted is that no bytes come back. `factory.dot` is no longer servable off ANY release
+     * (owner instruction, 2026-08-25), well-formed or not, so this no longer discriminates AC4
+     * from AC7 the way it once did — it is kept because `serveFile` refusing a release
+     * `buildExport` cannot even resolve is still a real property, exercised through the entry
+     * point `exportRelease`'s sibling tests above never touch.
      */
     const own = await scratchDatabase("attractor_broken_serve");
     try {

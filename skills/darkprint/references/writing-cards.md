@@ -115,19 +115,13 @@ filled:
 Do not claim the bundle has been validated. It has not — the engine is not on this machine.
 Say what you checked and against what.
 
-## `AGENTS.md`
-
-For the next agent that opens the directory. Short, and about the rules of this bundle rather
-than about DarkPrint in general:
-
-- the card version is the key to the content: never edit a published card in place, bump it and
-  update the pin;
-- the edges that are deliberately absent, and the `cannot` entries that enforce them;
-- which `cannot` entries are enforced by the engine and which are prose;
-- where the iteration cap lives and what it is for;
-- the one instruction that matters: **do not add an edge from the criteria producer into any
-  node whose work is judged**, not even to hand over something else. The check reads the graph
-  at node level and the port on that edge does not save it.
+*A section titled `AGENTS.md` stood here: the next agent's rules for the bundle — never edit a
+published card in place, which edges are deliberately absent and the `cannot` entries that
+enforce them, where the iteration cap lives, and the rule that nothing may edge from the
+criteria producer into a node whose work is judged. The owner instructed the file out of every
+blueprint folder, published or skill-written (2026-08-25), so this skill no longer writes one.
+Fold the same points into `README.md`'s edge section and the `cannot` split above instead,
+addressed to whoever reads the folder next, agent or person.*
 
 ---
 

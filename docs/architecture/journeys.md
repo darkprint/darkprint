@@ -207,14 +207,15 @@ sequenceDiagram
 ```mermaid
 flowchart TD
   detail["/blueprints/:slug"]
-  download["Download the bundle:\nDOT, cards, README.md, AGENTS.md, factory.dot"]
+  download["Download the bundle:\ntopology.dot, cards, README.md"]
   onDisk["Folder lands on the user's machine"]
   ownHarness{"Point the user's own harness at the folder\n(Claude Code, Attractor, etc.)"}
-  runs["Harness executes factory.dot\non the user's machine"]
+  compiles["Harness compiles topology.dot + cards\ninto a runnable pipeline"]
+  runs["Harness executes it\non the user's machine"]
   stays["Results and any run report\nstay on the user's machine"]
   reportGap["No path back to DarkPrint\n(run reporting is unbuilt)"]
 
-  detail --> download --> onDisk --> ownHarness --> runs --> stays --> reportGap
+  detail --> download --> onDisk --> ownHarness --> compiles --> runs --> stays --> reportGap
 ```
 
 ```mermaid
@@ -228,9 +229,9 @@ sequenceDiagram
   WebUI->>API: blueprint + source [SEAM-03, SEAM-04]
   API-->>WebUI: view model
   User->>WebUI: download the bundle
-  WebUI-->>Machine: DOT + cards [SEAM-19], factory.dot [SEAM-24], README.md/AGENTS.md [SEAM-25]
+  WebUI-->>Machine: topology.dot + cards + README.md [SEAM-19]
   Note over Machine: DarkPrint distributes files. It never runs them (D-03).
-  Machine->>Machine: user's own harness executes factory.dot — entirely outside this app
+  Machine->>Machine: user's own harness compiles topology.dot + cards into a\nrunnable pipeline and executes it — entirely outside this app
   Machine--)API: (future, unbuilt) submit a run report [SEAM-84]
   Note over WebUI,API: the word is "reported", never "measured" — the platform\nnever observes a run even once SEAM-84 exists [SEAM-86]
 ```
@@ -341,7 +342,7 @@ flowchart TD
   threeWays{"Three ways in, GitHub's own empty-repo panel"}
   skillPath["Point the blueprint-writing skill\nat your own goal"]
   handPath["Copy the starter folder layout\nand write topology.dot + cards by hand"]
-  localBuild["A folder on the user's own machine:\ntopology.dot, cards/, README.md, AGENTS.md"]
+  localBuild["A folder on the user's own machine:\ntopology.dot, cards/, README.md"]
   uploadPinned["/upload?owner=&slug=\npinned to the exact draft (B6's prefill contract)"]
   wizard["Steps 1-3: drop the folder or Load an example,\nvalidate in the tab — Details prefilled from the draft"]
   publishStep["Step 4: Publish"]
@@ -382,7 +383,7 @@ sequenceDiagram
   Note over WebUI,API: blueprint() answers undefined, no release yet\ndraftBundle() answers the row just created — DraftLanding renders (B-03: absent and unreadable answer alike, so the same branch also covers a private draft nobody else may see)
   User->>WebUI: "Publish your first release" (or install the skill, or copy the layout)
   opt the build itself happens off-platform
-    Machine->>Machine: skill interview, or hand-authoring, produces\ntopology.dot + cards/ + README.md + AGENTS.md
+    Machine->>Machine: skill interview, or hand-authoring, produces\ntopology.dot + cards/ + README.md
   end
   User->>WebUI: GET /upload?owner={owner}&slug={slug} [SEAM-68]
   WebUI->>API: draftBundle(actor, owner, slug) — ownership checked server-side (session.handle === owner)

@@ -186,10 +186,11 @@ async function getByDigest(
 /**
  * The first file of this release whose UTF-8 byte length differs from its JS string length.
  *
- * Derived rather than named: 41 of the 101 files the nine bundles ship differ, because the
- * generated `README.md` and `AGENTS.md` carry `—`, `§`, `→` and `·` — but which file differs is a
- * property of the archive, and hardcoding one would make this test silently non-discriminating
- * the day that file's prose changed.
+ * Derived rather than named: some of the files the nine bundles ship differ, because the
+ * generated `README.md` carries `—`, `§`, `→` and `·` — but which file differs is a property of
+ * the archive, and hardcoding one would make this test silently non-discriminating the day that
+ * file's prose changed. (Until the owner instructed it out of every published bundle,
+ * 2026-08-25, `AGENTS.md` was generated prose too and carried the same characters.)
  */
 async function aFileWhoseByteLengthDiffers(): Promise<string> {
   const mod = await loadExport();
@@ -274,10 +275,10 @@ describe("the three routes D-90-04 published", () => {
 
   it("sends the file's BYTE length as content-length, not its string length", async () => {
     /*
-     * Asserted nowhere in either suite until now, and the input is real: 41 of the 101 files the
+     * Asserted nowhere in either suite until now, and the input is real: some of the files the
      * nine shipped bundles contain have a UTF-8 byte length that differs from their JS string
-     * length, because `README.md` and `AGENTS.md` carry `—`, `§`, `→` and `·`. `ServedFile`
-     * publishes `bytes`, and the clause is that what a caller receives is those bytes, entire.
+     * length, because `README.md` carries `—`, `§`, `→` and `·`. `ServedFile` publishes `bytes`,
+     * and the clause is that what a caller receives is those bytes, entire.
      *
      * A wrong `content-length` is not cosmetic. It is the header a client uses to decide the
      * response is complete: too small and a `curl` writes a truncated file and exits 0, too large

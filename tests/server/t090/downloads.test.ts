@@ -151,7 +151,10 @@ describe("the download event, measured through whatever medium recordDownload wr
     const mod = await loadExport();
     const serveFile = requiredFn(mod, "serveFile");
 
-    for (const [n, path] of ["README.md", "topology.dot", "AGENTS.md"].entries()) {
+    // "AGENTS.md" until the owner instructed the file out of every published bundle
+    // (2026-08-25); the third path is a pinned card now, which every release carries
+    // exactly as reliably and remains servable.
+    for (const [n, path] of ["README.md", "topology.dot", `cards/${cardRef}.yaml`].entries()) {
       const before = await downloadsFor(scratch, counter, release.bundleId);
       await serveFile(
         scratch.db,
@@ -239,7 +242,10 @@ describe("the download event, measured through whatever medium recordDownload wr
           scratch.db,
           ANONYMOUS,
           { ownerHandle: owner.handle, slug: SUBJECT, digest: release.digest },
-          "AGENTS.md",
+          // "AGENTS.md" until the owner instructed the file out of every published bundle
+          // (2026-08-25); "README.md" is just as ordinary a release file for this check,
+          // which is about the refId carried, not about which path was asked for.
+          "README.md",
         ),
       ),
     );

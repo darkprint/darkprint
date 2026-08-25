@@ -14,9 +14,13 @@ import { actorFrom, getPublicAuthor, resolveOwner } from "@/lib/server/accounts"
 import { getBundle } from "@/lib/server/archive";
 import { type CounterTarget, getSignalsMany } from "@/lib/server/counters";
 import { getProfile } from "@/lib/server/profiles";
-import { type OwnedBundleSummary, ownedBundles } from "@/lib/server/registry";
+import {
+  type CardSummary,
+  cardsOwnedBy,
+  type OwnedBundleSummary,
+  ownedBundles,
+} from "@/lib/server/registry";
 import { listSaves } from "@/lib/server/saves";
-import { privateCardsOwnedBy, type PrivateCard } from "@/lib/data/cards";
 import { starsFor } from "@/lib/data/node-community";
 /* `starsFor` is the one `lib/data` import T280 leaves standing, and it feeds exactly one
    figure: the seeded `support` pill on a node-card tile (Pinned's mini-cards, `NodeTile`
@@ -41,9 +45,12 @@ import type { ProfileTabId } from "./tabs";
 //   `@/lib/server/profiles` rather than a per-handle endpoint.
 // SEAM-55 LIVE (T280): the pinned selection, off `getProfile`'s own `pinned` — see below.
 // SEAM-56/57 LIVE (T280): watchers, support and the community signals line — see below.
+// SEAM-59 LIVE (T132): the visitor's card shelf, off `cardsOwnedBy` — see below.
 // SEAM-61 LIVE: the Saved tab, off `@/lib/server/saves`.
-// SEAM-63/64 LIVE (T280): the owner's shelf, off `ownedBundles` — see below.
-// TODO(SEAM-113) (cited at line 189): GET /api/authors/{handle}/cards?include=private&visibility
+// SEAM-63/64 LIVE (T280): the owner's bundle shelf, off `ownedBundles` — see below.
+// SEAM-113 LIVE (T132): the owner's card shelf, public and private together, off
+//   `cardsOwnedBy` — see below. No dedicated `GET /api/authors/{handle}/cards` route was
+//   built or is owed, the same in-process shape SEAM-63/64 settled for bundles.
 
 /* ============================================================
    Everything the five profile routes read, assembled once.
@@ -60,7 +67,9 @@ import type { ProfileTabId } from "./tabs";
 
    ── T280: the shelf, the pins and the community line all cut over to the registry ──
    Four figures left the seeded fixture in this pass, and each one left because a table now
-   holds it rather than because this file got tidier:
+   holds it rather than because this file got tidier. A fifth, `ownedCards`, followed in the
+   same wave once the count beside it (`counts.cards`, T132) started reading the registry
+   and the tile list underneath it did not — see the bullet below the four:
 
    - `owned` used to be `bundlesOwnedBy(username)`, a fixture that invented five private
      rows per handle and called every public one by hand-copying its slug. It is
@@ -87,6 +96,13 @@ import type { ProfileTabId } from "./tabs";
      handles, and that is the honest answer: nothing has starred or downloaded anything
      through the counters this pass wires, so a fold that still printed a seeded three-digit
      number would be the fiction this whole task exists to retire.
+   - `ownedCards` used to be `cards.map(nodeSummaryFor)` (the archive's author-credited
+     list, below) plus `privateCardsOwnedBy(username)`, a fixture seeded for one handle. It
+     is `cardsOwnedBy(db, actor, username)` now (T132) — the same reader `counts.cards`
+     already read — mapped through `nodeSummaryForOwned` below. Neither old source ever
+     touched the registry, so an account whose card exists only there — published through a
+     real bundle, no matching `content/cards/` file — counted 1 in the tab strip over an
+     empty shelf underneath it. One reader now backs both figures, so they cannot disagree.
 
    `blueprints`, `cards` and `terms` — the AUTHOR-credited lists, read off `content/` by
    who wrote the byline — are unchanged, and deliberately so: they answer "what did this
@@ -124,13 +140,17 @@ export interface ProfileView {
   /** The account's own bundles, live off the registry: released and zero-release alike. */
   owned: OwnedRow[];
   /**
-   * The owner's card shelf: `cards` above, plus this handle's rows from
-   * `lib/data/cards.ts`, both already resolved to `NodeSummary` so `OwnedCards` never
-   * needs to know two sources are behind the one list. For a visitor this is `cards`
-   * mapped the same way and nothing else — `privateCardsOwnedBy` answers empty for every
-   * handle but the one seeded, so the field would carry the same rows either way, but
-   * computing it only for the owner keeps the rule "a visitor never receives a private
-   * row" true of the DATA rather than true only of what the page chooses to render.
+   * The account's own card shelf, live off `cardsOwnedBy(db, actor, username)` — the same
+   * reader `getProfile` counts `counts.cards` with (T132, D-132-02 reading (a)), so this
+   * list and that count are two views of one query rather than two answers that can drift
+   * apart. Already actor-scoped, the same way `owned` above is: everything for the owner,
+   * public rows only for anyone else (D-132-04 C-C) — no owner/visitor branch to write
+   * here, and none in either `/u/[username]/cards` branch that reads this field.
+   *
+   * Distinct from `cards` above by the same axis `owned`/`blueprints` already split on:
+   * `cards` answers "what did this handle AUTHOR" (the archive's `author:` byline);
+   * `ownedCards` answers "what does this account HOLD" (`card_version.owner_id`,
+   * authoritative and independent of what the body's own `author` field says).
    */
   ownedCards: NodeSummary[];
   saves: readonly SavedRow[];
@@ -206,28 +226,47 @@ export function nodeSummaryFor(tile: NodeTile, author: Author | undefined): Node
 }
 
 /**
- * A `PrivateCard` fixture (`lib/data/cards.ts`) at the same `NodeSummary` shape, so
- * `OwnedCards` draws it with the one tile every card on the site now uses. `usedIn` is
- * `0` unconditionally — nothing published can pin a ref the archive does not carry — and
- * `author` is resolved the same way a public card's is, so the identity row at the top of
- * the tile looks like every other one.
+ * A live `CardSummary` (`cardsOwnedBy`, `@/lib/server/registry`) at the same `NodeSummary`
+ * shape `nodeSummaryFor` builds for an archive tile — `app/nodes/page.tsx`'s own inline
+ * mapper resolves the identical three ontology lookups off the identical `NodeCard` body,
+ * so this follows that shape rather than inventing a fourth.
+ *
+ * **Not a call to `nodeSummaryFor`.** That function takes a `NodeTile`, and building one
+ * here would mean inventing a `CardVersionRecord.usedIn: string[]` (blueprint SLUGS) the
+ * function never reads, only to satisfy a field `CardSummary.usedIn: BlueprintKey[]`
+ * (owner + slug, B-09's two-part key) cannot supply — a fake value manufactured to please a
+ * type is worse than the second short function this is.
+ *
+ * `visibility` is `row.visibility` rather than a constant: unlike every other card this
+ * file draws, a row here can be the OWNER's own private card (`cardsOwnedBy` is the one
+ * reader that admits it, D-132-04 C-C), so the tile has to be able to say which it is.
  */
-function privateNodeSummaryFor(card: PrivateCard, author: Author | undefined): NodeSummary {
+function nodeSummaryForOwned(row: CardSummary, author: Author | undefined): NodeSummary {
+  const ontology = getOntologyView();
+  const { card } = row;
   return {
-    id: card.id,
-    version: card.version,
-    ref: `${card.id}@${card.version}`,
+    id: row.id,
+    version: row.version,
+    ref: row.ref,
     name: card.name,
     action: card.action,
     type: card.type,
-    typeLabel: card.typeLabel,
-    phases: card.phases,
-    tools: card.tools,
+    typeLabel: ontology.resolve(card.type, "node-type")?.term.label ?? card.type,
+    phases: card.phases.map((id) => ({
+      id,
+      label: ontology.resolve(id, "phase")?.term.label ?? id,
+    })),
+    tools: [...card.tools],
     requiresHuman: card.requiresHuman,
-    riskMarkers: card.riskMarkers,
-    usedIn: 0,
+    riskMarkers: card.riskMarkers.map(
+      (marker) => ontology.resolve(marker, "risk-marker")?.term.label ?? marker,
+    ),
+    // The published join, over every version this exact ref pins — the same figure
+    // `cardsOwnedBy` computes for `counts.cards`'s sibling reads, turned into a count
+    // rather than left as the list a tile has no room to print.
+    usedIn: row.usedIn.length,
     author,
-    visibility: "private",
+    visibility: row.visibility,
   };
 }
 
@@ -399,12 +438,16 @@ export async function profileView(
     return blueprint === undefined ? { summary } : { summary, blueprint };
   });
 
-  /* One account read for the whole shelf: every row on it is authored by the handle this
-     page is about, so a per-tile lookup would be the same query N times. */
-  const ownedCards: NodeSummary[] = [
-    ...cards.map((tile) => nodeSummaryFor(tile, author)),
-    ...privateCardsOwnedBy(username).map((card) => privateNodeSummaryFor(card, author)),
-  ];
+  /* T132/SEAM-113: the account's own card shelf, live. `cardsOwnedBy` is already
+     actor-scoped — everything for the owner, public rows only for anyone else — so there
+     is no owner/visitor branch to write here either, matching `owned` above. This used to
+     be `cards.map(nodeSummaryFor)` (the archive's author-credited list) plus
+     `privateCardsOwnedBy(username)` (a seeded fixture): neither reads the registry, so an
+     account whose card exists only there — published through a real bundle, no matching
+     `content/cards/` file — counted 1 over an empty shelf. One reader now answers both the
+     list and `counts.cards` below, so the two cannot disagree. */
+  const ownedCardRows = await cardsOwnedBy(db, actor, username);
+  const ownedCards: NodeSummary[] = ownedCardRows.map((row) => nodeSummaryForOwned(row, author));
 
   /* T280/SEAM-55: the stored, actor-filtered selection off `getProfile`, resolved against
      the content archive the same way the seeded selection always was — `[]` for a pin the
@@ -435,7 +478,13 @@ export async function profileView(
      is told, in words, that the number they are reading is the public half. */
   const counts: Partial<Record<ProfileTabId, number>> = {
     blueprints: owner ? owned.length : (record?.counts.blueprints ?? blueprints.length),
-    cards: owner ? ownedCards.length : cards.length,
+    /* `ownedCardRows.length` rather than `record?.counts.cards` — `ownedCards` above is
+       built from this exact array, so the count and the tile list are the SAME read
+       rather than two reads of the same table that could race apart. `record.counts.cards`
+       is `cardsOwnedBy(db, actor, handle).length` too (T132, D-132-02 reading (a)), so the
+       two numbers already agreed in practice; this just removes the second query the
+       agreement depended on. */
+    cards: ownedCardRows.length,
     terms: record?.counts.terms ?? terms.length,
   };
   if (owner) counts.saved = saves.length;

@@ -324,28 +324,31 @@ function Part({
 /**
  * What is in a blueprint, one row per kind of file.
  *
- * Three rows, not four. `factory.dot` was never one of them: the folder does hold it, and
- * it stood here as a fifth row until the author asked it out on 2026-08-08. It is a BUILD
- * PRODUCT — the topology with every card resolved into it, written by the exporter, never
- * by a person — and this list answers what a blueprint IS. Putting a compiled artefact in
- * a list of things somebody authors is like listing the binary beside the source: true of
- * the directory and false about the object.
+ * Three rows, not four. `factory.dot` was never one of them: it stood here as a fifth row
+ * until the author asked it out on 2026-08-08, back when the folder still held it. It was a
+ * BUILD PRODUCT — the topology with every card resolved into it, written by the exporter,
+ * never by a person — and this list answers what a blueprint IS. Putting a compiled
+ * artefact in a list of things somebody authors is like listing the binary beside the
+ * source: true of the directory and false about the object.
  *
- * `AGENTS.md` came out on the terminology pass, 2026-08-25. The author once defined a
- * blueprint as "the blueprint.dot, the cards, the README.md and the AGENTS.md" — kept here
- * verbatim as the record of what was said, not as today's row list. `AGENTS.md` still ships
- * in every archive folder under `public/bundles`, and `Folder.tsx`'s third paper still names
- * it beside `README.md`; it simply no longer earns its own row on this table. Checked
- * against the archive rather than assumed: nothing else in a bundle is a fourth kind of file
- * a person authors, so three is the true count and not one held steady by inventing a row.
+ * `AGENTS.md` came off this table on an earlier pass the same day (2026-08-25), while it
+ * still shipped in every folder and `Folder.tsx`'s third paper still named it beside
+ * `README.md`. Later that day the owner instructed both `factory.dot` and `AGENTS.md`
+ * removed from the bundle entirely: `lib/content/bundle-export.ts` no longer writes either
+ * one, and `Folder.tsx` now draws one paper per file with nothing left to double up. The
+ * author once defined a blueprint as "the blueprint.dot, the cards, the README.md and the
+ * AGENTS.md" — kept here verbatim as the record of what was said, not as today's row list.
+ * Checked against the archive rather than assumed: nothing else in a bundle is a fourth
+ * kind of file a person authors, so three is the true count and not one held steady by
+ * inventing a row.
  *
  * Typed, and that is the exception this file otherwise refuses. Every count and every field
  * on this page comes off the archive because a written count goes stale; these are the NAMES
  * of files in a fixed layout, which is a schema rather than content, and the alternative —
  * globbing a public directory at build time to print three nouns — would make the list depend
  * on whichever bundle happened to be listed first. `components/home/lifecycle/Folder.tsx`
- * draws the same folder and is the one surface here that still shows `AGENTS.md`, on its own
- * paper beside `README.md` rather than as a fourth row of text.
+ * draws the same folder, one paper per row above, with nothing left over to double up on a
+ * shared paper.
  */
 const BUNDLE_FILES: readonly { name: string; role: string }[] = [
   {
@@ -517,16 +520,16 @@ export default function WhatABlueprintIsPage() {
 
           The `Folder` is the landing's, unchanged: it is beat 4's Download panel, it opens
           on hover, on focus and on click, and its three papers name every file this list
-          does, plus `AGENTS.md` on the paper it shares with `README.md`. Reusing it rather
-          than drawing a second folder is the point — a reader who met it on the landing
-          meets the same object here, one page deeper.
+          does, one paper each. Reusing it rather than drawing a second folder is the point
+          — a reader who met it on the landing meets the same object here, one page deeper.
 
           Every row is a file that is really in `public/bundles/starter-software-factory/`,
           checked against the folder rather than remembered: `topology.dot`, `cards/*.yaml`,
-          `README.md`. The folder also holds `AGENTS.md`, off this list since the
-          terminology pass (2026-08-25) — see `BUNDLE_FILES` for why three rather than four
-          — and `factory.dot`, never on it: see the same docblock for why a build product is
-          not part of what a blueprint is. */}
+          `README.md`. That folder holds nothing else: `factory.dot` was never a row here
+          (see `BUNDLE_FILES` for why a build product is not part of what a blueprint is),
+          and `AGENTS.md` shipped alongside it until the owner instructed both out of the
+          bundle entirely (2026-08-25) — `Folder.tsx`'s three papers stopped naming it the
+          same day. */}
       <section id="bundle" className="scroll-mt-24 border-t border-line bg-void py-14 sm:py-16">
         <div className="container-page">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-center lg:gap-14">

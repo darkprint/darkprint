@@ -67,11 +67,10 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
     <ProfileShell view={view} active="blueprints">
       {pinned.length > 0 && (
         <section className="mt-10 flex flex-col gap-5">
+          {/* The `✓ counted` marker left this row on the owner's instruction
+              (2026-08-25): the figures are real, and a badge announcing it is noise. */}
           <div className="flex items-center justify-between gap-3">
             <SectionTitle label="Pinned" dot="var(--color-cyan)" count={pinned.length} />
-            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-emerald">
-              ✓ counted
-            </span>
           </div>
           <Pinned items={pinned} />
         </section>
@@ -88,7 +87,7 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
             }
           >
             {owner
-              ? "Nothing pinned and nothing published or drafted yet. New bundle starts one."
+              ? "Nothing pinned and nothing published or drafted yet. New blueprint starts one."
               : `${author.displayName} has not published a blueprint to the registry so far. Private bundles are never listed here.`}
           </EmptyState>
         </div>
@@ -99,7 +98,7 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
             <SortControl label="Sort blueprints" />
             {owner && (
               <ButtonLink href="/new" variant="outline">
-                New bundle
+                New blueprint
               </ButtonLink>
             )}
           </ShelfToolbar>

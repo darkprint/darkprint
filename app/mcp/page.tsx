@@ -5,7 +5,6 @@ import Link from "next/link";
 import { InstallTabs } from "@/components/mcp/InstallTabs";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import {
-  BUNDLE_AGENTS,
   BUNDLE_README,
   BUNDLE_CARDS_DIR,
   TOPOLOGY_DOT,
@@ -118,10 +117,10 @@ const OPERATIONS = [
   {
     name: "fetch a release",
     takes: "a slug and an exact digest",
-    /* The four names come from `bundle-export.ts`, which is what actually writes them into
+    /* The three names come from `bundle-export.ts`, which is what actually writes them into
        every folder under `public/bundles/`. A proposal that named files the exporter does
        not produce would be describing a different registry. */
-    returns: `the bundle: ${TOPOLOGY_DOT}, ${BUNDLE_CARDS_DIR}/*.yaml, ${BUNDLE_README}, ${BUNDLE_AGENTS}`,
+    returns: `the bundle: ${TOPOLOGY_DOT}, ${BUNDLE_CARDS_DIR}/*.yaml, ${BUNDLE_README}`,
   },
 ] as const;
 

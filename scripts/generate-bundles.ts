@@ -41,11 +41,15 @@
       clock or a random source. Two builds of the same archive
       produce byte-identical files.
    2. The build fails if a bundle does not resolve. `readContent()`
-      throws on any error-severity diagnostic, and every emitted
-      `factory.dot` is then fed back through `parseDot` and
-      `lintAttractor` — the two checks Attractor runs before it will
-      execute a pipeline. A file that would be rejected at the
-      command line never ships.
+      throws on any error-severity diagnostic, and every blueprint's
+      graph is then compiled with `emitAttractorDot` and fed back
+      through `parseDot` and `lintAttractor` — the two checks
+      Attractor runs before it will execute a pipeline. A graph that
+      would be rejected at the command line never ships, even though
+      (owner instruction, 2026-08-25) the compiled DOT itself is no
+      longer one of the files a bundle folder carries — the check is
+      about the graph a reader's own harness would compile, not
+      about a file this script writes.
    ============================================================ */
 
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -148,9 +152,9 @@ registerHooks({
 
 /* --------------------- the engine, once the hook is in place --------------------- */
 
-const { hasErrors, lintAttractor, parseDot } = await import("@/lib/core");
+const { emitAttractorDot, hasErrors, lintAttractor, parseDot } = await import("@/lib/core");
 const { contentVocabulary, readContent } = await import("@/lib/content/read");
-const { CARD_LIBRARY_DIR, FACTORY_DOT, bundleDir, exportBundle } = await import(
+const { CARD_LIBRARY_DIR, bundleDir, exportBundle } = await import(
   "@/lib/content/bundle-export"
 );
 
@@ -236,26 +240,25 @@ function main(): void {
     }
 
     // The second half of the contract, and the only claim in this whole feature that a
-    // reader cannot verify from the site alone: the artefact runs from a command line.
-    // Attractor parses and lints before it executes, so an emitted file that fails either
-    // check would fail on the user's machine, and it fails here instead.
-    const factory = files.find((f) => f.path === FACTORY_DOT);
-    if (factory === undefined) {
-      problems.push(`${entry.slug}: no ${FACTORY_DOT} was emitted.`);
-      continue;
-    }
-    const parsed = parseDot(factory.text, FACTORY_DOT);
+    // reader cannot verify from the site alone: the artefact runs from a command line once
+    // compiled. Attractor parses and lints before it executes, so a graph that fails either
+    // check would fail on the user's machine, and it fails here instead — compiled with
+    // `emitAttractorDot` exactly as a reader's own harness would, not read back out of
+    // `files`, because a compiled `factory.dot` is no longer one of them (owner
+    // instruction, 2026-08-25).
+    const factory = emitAttractorDot(entry.blueprint);
+    const parsed = parseDot(factory, "factory.dot");
     if (parsed.graph === undefined || hasErrors(parsed.diagnostics)) {
       problems.push(
-        `${entry.slug}: the emitted ${FACTORY_DOT} does not parse.`,
+        `${entry.slug}: the compiled factory.dot does not parse.`,
         ...parsed.diagnostics.map((d) => `    ${d.severity}  ${d.code}  ${d.message}`),
       );
       continue;
     }
-    const lint = lintAttractor(parsed.graph, factory.text, FACTORY_DOT);
+    const lint = lintAttractor(parsed.graph, factory, "factory.dot");
     if (lint.length > 0) {
       problems.push(
-        `${entry.slug}: Attractor would reject the emitted ${FACTORY_DOT}.`,
+        `${entry.slug}: Attractor would reject the compiled factory.dot.`,
         ...lint.map((d) => `    ${d.severity}  ${d.code}  ${d.message}`),
       );
       continue;

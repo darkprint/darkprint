@@ -4,30 +4,31 @@ import { ProfileShell } from "@/components/profile/ProfileShell";
 import { OwnedCards } from "@/components/profile/OwnedCards";
 import { VisibilityFilter } from "@/components/profile/VisibilityFilter";
 import { EmptyState, ShelfToolbar } from "@/components/profile/parts";
-import { nodeSummaryFor, profileMetadata, profileView } from "@/components/profile/load";
+import { profileMetadata, profileView } from "@/components/profile/load";
 import { readSession } from "@/components/profile/session";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-59) (cited at line 48): GET /api/authors/{handle}/cards
-// TODO(SEAM-113) (cited at line 55): GET /api/authors/{handle}/cards?include=private&visibility
+// SEAM-59 LIVE (T132): the visitor branch below, off `cardsOwnedBy` — see `load.ts`.
+// SEAM-113 LIVE (T132): the owner branch below, public and private together, off
+//   `cardsOwnedBy` — see `load.ts`.
 
 /**
- * `/u/[username]/cards` — every node card this handle has authored, public and (for the
+ * `/u/[username]/cards` — every node card this handle's account HOLDS, public and (for the
  * owner) private together.
  *
- * A public row is counted off `content/cards/` by the `author:` field each card carries in
- * its own bytes, which is the reason `/settings` says a rename keeps the old handle
- * reserved: this list is the join, and it is made of published documents rather than of a
- * table somebody can edit. A private row is seeded in `lib/data/cards.ts`, the same
- * arrangement `lib/data/bundles.ts` gives a private blueprint — see that file's docblock
- * for the rule this follows: a fixture can only ever claim something private, never
- * something public, because a public claim is a claim about the registry.
+ * `view.ownedCards` (`components/profile/load.ts`) is `cardsOwnedBy(db, actor, username)`
+ * mapped to a tile, already actor-scoped: everything for the owner, public rows only for
+ * anyone else (`lib/server/registry/cards.ts`, D-132-04 C-C) — the same reader
+ * `view.counts.cards` is built from, so the number the tab strip prints and the shelf
+ * under it cannot disagree (T132: they used to, for an account whose card exists only in
+ * the registry, with no matching `content/cards/` file for the archive-era reader to find).
  *
- * Both readers get a list, which is the same arrangement the blueprints index makes: the
- * two things an account holds are the same object at two scales, and a tile grid said the
- * opposite by cropping a card into something to browse past. What differs between owner
- * and visitor is which rows exist to show (a visitor's is always `view.cards`, always
- * public) and whether the visibility filter joins the find box in the toolbar.
+ * Both branches below read this one field, which is the same arrangement the blueprints
+ * index makes: the two things an account holds are the same object at two scales, and a
+ * tile grid said the opposite by cropping a card into something to browse past. What
+ * differs between owner and visitor is only the chrome — the owner's shelf carries a
+ * visibility filter, a visitor's does not, because every row a visitor can see is already
+ * public.
  */
 /* No `dynamicParams` and no `generateStaticParams`, and the deletion is the criterion
    rather than tidying: **a prerendered page cannot render a different view per reader**
@@ -56,26 +57,19 @@ export default async function Page({ params }: PageProps<"/u/[username]/cards">)
         /* The owner's list can hold a private card, so it gets the same live Visibility
            filter the blueprints tab has — no New card beside it, because nothing on this
            site writes one, and drawing a control whose destination does not exist would
-           be the failure `New bundle` on this page's sibling was written to avoid. */
+           be the failure `New blueprint` on this page's sibling was written to avoid. */
         <div className="mt-10 flex flex-col gap-5">
           <ShelfToolbar
             placeholder="Find a card…"
             label="Find a card"
-            note={
-              <>
-                {view.ownedCards.length} document{view.ownedCards.length === 1 ? "" : "s"}.
-                Public rows are counted off <span className="text-muted">content/cards/</span>
-                ; private ones are seeded, in{" "}
-                <span className="text-muted">lib/data/cards.ts</span>.
-              </>
-            }
+            note={`${view.ownedCards.length} card${view.ownedCards.length === 1 ? "" : "s"}, read live off the registry — public and private together.`}
           >
             <VisibilityFilter label="Filter cards by visibility" />
           </ShelfToolbar>
 
           <OwnedCards cards={view.ownedCards} owner />
         </div>
-      ) : view.cards.length === 0 ? (
+      ) : view.ownedCards.length === 0 ? (
         <div className="mt-10">
           <EmptyState
             title="No node cards"
@@ -93,15 +87,10 @@ export default async function Page({ params }: PageProps<"/u/[username]/cards">)
           <ShelfToolbar
             placeholder="Find a card…"
             label="Find a card"
-            note={
-              <>
-                {view.cards.length} document{view.cards.length === 1 ? "" : "s"}, read off{" "}
-                <span className="text-muted">content/cards/</span>.
-              </>
-            }
+            note={`${view.ownedCards.length} card${view.ownedCards.length === 1 ? "" : "s"}, read live off the registry.`}
           />
 
-          <OwnedCards cards={view.cards.map((tile) => nodeSummaryFor(tile, view.author))} owner={false} />
+          <OwnedCards cards={view.ownedCards} owner={false} />
         </div>
       )}
     </ProfileShell>

@@ -52,6 +52,15 @@ export interface CardSummary {
   card: NodeCard;
   /** Blueprints pinning this exact version that `actor` may read, distinct and sorted. */
   usedIn: readonly BlueprintKey[];
+  /**
+   * `card_version.visibility`, straight off the row. Every other reader built on
+   * `loadSnapshot` answers only rows `readable()` already let through, so this is
+   * always `"public"` there in practice — added so `cardsOwnedBy` (the one reader
+   * that deliberately admits an owner's own private rows, D-132-04 C-C) can tell a
+   * caller which of the rows it returned are which, the same way
+   * `OwnedBundleSummary.visibility` already does for a bundle.
+   */
+  visibility: "public" | "private";
 }
 
 /**

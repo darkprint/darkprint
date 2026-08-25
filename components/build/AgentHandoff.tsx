@@ -43,16 +43,19 @@ import { SourcePanel } from "@/components/ui/SourcePanel";
    in the design spec's own words actually requires. `agentBrief()` and everything below the
    heading are unchanged; only the four characters "Or " came out.
 
-   ── The mirror of a bundle's `AGENTS.md` ──
-   `lib/content/bundle-export.ts` writes one of those into every
-   download: *here is a pattern, adapt it into your code*. This is
-   the same document run backwards: *here is how to describe a
+   ── The mirror of a bundle's `AGENTS.md` (until 2026-08-25) ──
+   `lib/content/bundle-export.ts` used to write one of those into every
+   download: *here is a pattern, adapt it into your code*. This brief was
+   designed as the same document run backwards: *here is how to describe a
    pattern you want, so it can be written*. Same vocabulary, same
    section order, and prohibitions first in both, for the same
    reason — a connection nobody drew looks exactly like a
    connection nobody thought of, so it is the part an agent is
    likeliest to get wrong and the part that has to be asked for
-   explicitly.
+   explicitly. The owner instructed `AGENTS.md` out of every published
+   bundle on that date; the design reasoning behind this brief does not
+   depend on the file it was once the mirror of, and neither the brief
+   nor `agentBrief()` changed because of the removal.
 
    ── The phases are read, not typed ──
    `CORE_PHASE_IDS` is doc 3 §2's closed list. A brief that spelled
@@ -101,12 +104,17 @@ import { SourcePanel } from "@/components/ui/SourcePanel";
    every pixel of it landed in space that was already there.
 
    ── Two sentences here are doing honesty work, not description ──
-   1. The skill emits the registry shape and deliberately no `factory.dot`, while
-      `DownloadStep`, in the other half of the same grid row, leads on `factory.dot` and on
-      `attractor run factory.dot`. A reader who installs it, gets a folder with no
-      `factory.dot` and compares that to the download on this same page concludes the thing
-      is broken. The reconciling sentence is on this surface, and not only on `/skill`,
-      because this is the one surface where both folder shapes are visible at once.
+   1. `DownloadStep` used to lead on `factory.dot` and on `attractor run factory.dot` while
+      the skill deliberately emitted no `factory.dot`, and a reconciling sentence lived here
+      for exactly that reason — a reader who installed the skill, got a folder with no
+      `factory.dot`, and compared that to the download on this same page would otherwise
+      conclude the thing was broken. `factory.dot` came off the download on 2026-08-08 and
+      the reconciling sentence came out with it (`BuildWorkspace.test.ts` holds the
+      inversion: the sentence must not come back while there is nothing to reconcile). Now,
+      2026-08-25, `AGENTS.md` has gone the same way on both sides at once — the skill never
+      needed a reconciling sentence for that one, because it stopped writing it in the same
+      commit a bundle stopped carrying it, so the two folder shapes never disagreed about it
+      in a way a reader could observe.
    2. The `/upload` paragraph's subject widened from the brief to both ways. It qualifies
       whatever an agent wrote, and after this pass two things on this screen produce that.
       It stays last, immediately before the badge line, so it is read against both.
@@ -227,14 +235,15 @@ export function AgentHandoff({ className }: { className?: string }) {
             compiles from those two on the way out" — and it went with `factory.dot` itself
             on 2026-08-08. It existed to stop a comparison reading as a fault: this exit
             wrote four files and the download beside it LED on a fifth. The download does
-            not lead on it any more, so both halves of the row now name the same four and
-            there is nothing left to explain away. */}
+            not lead on it any more, so both halves of the row named the same four files —
+            and then, 2026-08-25, the owner instructed `AGENTS.md` out of both halves at
+            once, so the row now names the same three and there is still nothing left to
+            explain away. */}
         <p className="text-[13px] leading-relaxed text-muted">
           The skills CLI reads it out of DarkPrint&rsquo;s own repository, over git. Tell it
           what you want built and it writes what the registry stores:{" "}
           <code className="font-mono text-fg">topology.dot</code>, one YAML card per node,
-          a <code className="font-mono text-fg">README.md</code> and an{" "}
-          <code className="font-mono text-fg">AGENTS.md</code>.{" "}
+          and a <code className="font-mono text-fg">README.md</code>.{" "}
           <Link href={SKILL_ROUTE} className={linkCls}>
             What it writes, and what to say to it
           </Link>

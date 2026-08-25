@@ -19,14 +19,19 @@
    705B topology.dot, eight cards, 6441B factory.dot). So a
    difference below is the module's, not the oracle's.
 
-   ── what that measurement says about the advertised contract ──
-   `/mcp` promises `topology.dot, cards/*.yaml, README.md, AGENTS.md`
-   under a comment claiming those are what the exporter writes into
-   every folder. The exporter writes `factory.dot` too — in 9 of 9
-   folders — and `ontology/extensions.yaml` in one. AC4 binds the
-   EXPORTER, so these cells do; the page's omission is charge 4 in
-   the T220 log and is the orchestrator's to fix, since the page is
-   Forbidden to both halves.
+   ── what that measurement said about the advertised contract, and why the charge closed ──
+   `/mcp` used to promise `topology.dot, cards/*.yaml, README.md, AGENTS.md` under a comment
+   claiming those are what the exporter writes into every folder, while the exporter also wrote
+   `factory.dot` — in 9 of 9 folders — and `ontology/extensions.yaml` in one. AC4 binds the
+   EXPORTER, so the page's omission of `factory.dot` was charge 4 in the T220 log.
+
+   Owner instruction, 2026-08-25, closed it from the other direction: `exportBundle` stopped
+   writing `factory.dot` and `AGENTS.md` into any bundle, and `/mcp`'s own list was updated in
+   the same pass to name exactly `topology.dot`, `cards/*.yaml`, `README.md` (plus
+   `ontology/extensions.yaml` where a bundle uses a local term). The two now agree, so the test
+   that held the discrepancy open (`"includes factory.dot, which /mcp's four-name list omits"`)
+   was retired rather than weakened — its premise, that the exporter writes a file the page does
+   not mention, is no longer true of either side.
 
    ── why the second release carries another bundle's bytes ──
    AC2's claim is that the OLD digest keeps answering the OLD bytes.
@@ -44,8 +49,6 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterAll, describe, expect, it } from "vitest";
-
-import { BUNDLE_AGENTS, BUNDLE_README, FACTORY_DOT, TOPOLOGY_DOT } from "@/lib/content/bundle-export";
 
 import { verb } from "./contract";
 import { anonymous, dropScratchDatabases, seededWorld } from "./fixtures";
@@ -95,33 +98,17 @@ describe("T220 AC4 — the returned names are the exporter's", () => {
     expect(paths(files)).toEqual(paths(expected));
   });
 
-  it("includes `factory.dot`, which /mcp's four-name list omits", async () => {
-    const w = await world();
-    const expected = committedFolder(w.twice);
-    /* Asserted about the ORACLE first, so a red below is about the module rather than about
-       an archive that stopped shipping the file. Measured: 9 of 9 folders carry it. */
-    expect(paths(expected)).toContain(FACTORY_DOT);
-
-    const fetchRelease = await verb("mcpFetchRelease");
-    const files = (await fetchRelease(
-      w.scratch.db,
-      anonymous,
-      w.registry.handle,
-      w.twice,
-      w.first.digest,
-    )) as Files;
-
-    expect(
-      paths(files),
-      "AC4 binds the EXPORTER, and the exporter writes `factory.dot` into every bundle. " +
-        "`/mcp` names four files and omits it; charge 4 in the T220 log. A module that " +
-        "shipped the page's four would be describing a different registry, which is the " +
-        "page's own words for the mistake.",
-    ).toContain(FACTORY_DOT);
-    for (const name of [TOPOLOGY_DOT, BUNDLE_README, BUNDLE_AGENTS]) {
-      expect(paths(files)).toContain(name);
-    }
-  });
+  /**
+   * RETIRED, deliberately, with the cause named (mirroring the pattern
+   * `tests/server/t260/frozen-tests.test.ts` uses for the same kind of closure).
+   *
+   * "includes `factory.dot`, which /mcp's four-name list omits" held charge 4 in the T220
+   * log: the exporter wrote a file the page's own description did not mention. Owner
+   * instruction, 2026-08-25, closed the charge from the other side — `exportBundle` stopped
+   * writing `factory.dot` (and `AGENTS.md`) into any bundle at all, so there is no longer a
+   * file for the page to omit. Restoring this test without restoring the file it named would
+   * be pinning a premise that is no longer true of the exporter it binds.
+   */
 
   it("returns `ExportedFile` and not the serving verbs' `ServedFile`", async () => {
     const w = await world();
@@ -197,9 +184,9 @@ describe("T220 AC2 — a digest reference never moves", () => {
     )) as Files;
 
     /* The second release carries `other`'s bytes under `twice`'s slug, so the CARD names and
-       the vocabulary file are `other`'s. `README.md`, `AGENTS.md` and the two `.dot` files
-       are regenerated and are not compared here: they legitimately quote the slug and the
-       manifest, which the fixture changed. The card set is the discriminating part. */
+       the vocabulary file are `other`'s. `README.md` and `topology.dot` are regenerated and
+       are not compared here: they legitimately quote the slug and the manifest, which the
+       fixture changed. The card set is the discriminating part. */
     const cards = paths(files).filter((p) => p.startsWith("cards/"));
     const expectedCards = paths(secondExpected).filter((p) => p.startsWith("cards/"));
     expect(cards).toEqual(expectedCards);

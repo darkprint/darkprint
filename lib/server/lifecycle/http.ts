@@ -82,11 +82,17 @@ const TRANSFER_TITLES: Readonly<Record<TransferRefusedKind, string>> = {
 const DELETION_STATUSES: Readonly<Record<DeletionRefusedKind, number>> = {
   "no-such-account": 404,
   "not-owner": 403,
+  /* Absent and unreadable share the 404 (B-03); `bundle-published` is 409 — the resource's
+     own state forbids the act, and the state is one the caller can read. */
+  "no-such-bundle": 404,
+  "bundle-published": 409,
 };
 
 const DELETION_TITLES: Readonly<Record<DeletionRefusedKind, string>> = {
   "no-such-account": "Not found",
   "not-owner": "Forbidden",
+  "no-such-bundle": "Not found",
+  "bundle-published": "Published releases stay",
 };
 
 /**

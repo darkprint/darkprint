@@ -31,7 +31,7 @@ import { readSession } from "@/components/profile/session";
    ============================================================ */
 
 export const metadata: Metadata = {
-  title: "Create a bundle",
+  title: "Create a blueprint",
   description:
     "Name a blueprint under your account and choose who can see it. The topology and its cards come next, on the upload step.",
 };
@@ -40,7 +40,7 @@ function SignedOut() {
   return (
     <div className="mt-10 flex flex-col gap-5 rounded-xl border border-line bg-surface-2/50 px-6 py-7 sm:max-w-md">
       <p className="text-sm leading-relaxed text-muted">
-        A bundle is created under your account, so DarkPrint needs to know who you are
+        A blueprint is created under your account, so DarkPrint needs to know who you are
         first.
       </p>
       <SignInButtons />
@@ -74,8 +74,7 @@ export default async function NewBundlePage() {
       <SectionHeading
         as="h1"
         className="mt-3"
-        title="Create a bundle"
-        lead="Name a blueprint under your handle and choose who can see it. A blueprint is the folder here, the way a repository is on GitHub: one topology and the cards that describe its nodes. Both come next, on the upload step."
+        title="Create a blueprint"
       />
     </header>
   );

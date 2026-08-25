@@ -62,9 +62,9 @@ beforeAll(async () => {
   first = await seedRelease(scratch, owner, entry);
 
   /* A newer release of the same bundle, differing only in a DOT comment. That one byte moves the
-     bundle digest, and the digest is printed in `README.md` and in `factory.dot`'s header — so
-     three of the release's files differ between the two, which is what AC6 needs in order to be
-     able to tell the old bytes from the new. */
+     bundle digest, which is printed in `README.md`, and it is also a byte difference in
+     `topology.dot` itself — so two of the release's files differ between the two, which is what
+     AC6 needs in order to be able to tell the old bytes from the new. */
   second = await seedRelease(scratch, owner, entry, {
     bundleId: first.bundleId,
     version: "2.0.0",
@@ -195,7 +195,13 @@ describe("ServedFile is the shape the contract publishes", () => {
      * one assertion that ties the two halves of the surface together.
      */
     const texts = await exportedTexts(first);
-    for (const path of ["README.md", "topology.dot", "factory.dot", "AGENTS.md"]) {
+    // "factory.dot" and "AGENTS.md" until the owner instructed both out of every published
+    // bundle (2026-08-25); the pinned card is just as real a file kind for this check, which
+    // is about `serveFile` and `exportRelease` agreeing on bytes, not about which paths exist.
+    const card = [...texts.keys()].find((p) => p.endsWith(".yaml"));
+    expect(card, "the subject release pins no card, so there is nothing to widen this check with")
+      .toBeDefined();
+    for (const path of ["README.md", "topology.dot", card as string]) {
       const served = asServedFile(
         await callServeFile({ ownerHandle: owner.handle, slug: SUBJECT, digest: first.digest }, path),
         `\`serveFile\` for \`${path}\``,
