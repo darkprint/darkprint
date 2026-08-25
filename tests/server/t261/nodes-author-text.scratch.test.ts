@@ -37,6 +37,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import NodePage from "@/app/nodes/[...id]/page";
 import { latestCards } from "@/lib/server/registry";
+import { schema } from "@/lib/db";
 import { planImport, runImport } from "@/lib/server/seed";
 import { createObjectStorage } from "@/lib/db/storage";
 import type { Actor } from "@/lib/server/policy";
@@ -47,6 +48,8 @@ let testDb: TestDb | undefined;
 let previousUrl: string | undefined;
 /** A card whose stored author handle holds no account — the firing branch. */
 let subject: { id: string; version: string; author: string } | undefined;
+/** Set once the must-not-change arm has created an account for `subject`'s own author. */
+let accountCreated = false;
 
 const anonymous: Actor = { kind: "anonymous" };
 /** D-250-11's six, verbatim. */
@@ -74,6 +77,7 @@ beforeAll(async () => {
       break;
     }
   }
+
 }, 300_000);
 
 afterAll(async () => {
@@ -137,5 +141,70 @@ describe("D-261-09(2): the absent-account arm renders text, not a link", () => {
         `falling to its text arm — if a chip is rendering instead, the cutover is resolving ` +
         `an account for a handle that has none.`,
     ).toEqual([]);
+  });
+});
+
+describe("and the must-not-change arm: the SAME card links once its author has an account", () => {
+  /*
+   * The control the implementer's store cannot render, closed as a FLIP with one variable.
+   *
+   * Every other cell here is a NEGATIVE — "no `/u/<handle>` href" — and a negative alone is
+   * satisfied by a reader that answers `undefined` to everybody. A regression making
+   * `getPublicAuthor` refuse every handle would leave the site linking NOBODY and pass this
+   * whole file.
+   *
+   * So this renders THE SAME CARD, on the same page, before and after inserting an account
+   * row for its own author. Nothing else moves — not the card, not the route, not the
+   * actor. `getPublicAuthor` looks the handle up in `account`, so the row IS the variable.
+   *
+   * A first attempt seeded a NEW card under a new account instead, and it could never have
+   * worked: `versionsOf` reads `loadSnapshot`, whose card index is built from cards PINNED
+   * BY RELEASES, so a standalone `addCard` is invisible to the route by construction and
+   * the page 404s. Measured, not reasoned — and recorded because "the card is public" is
+   * the wrong model of what makes a card reachable here.
+   */
+  it("is text with no account row, and a link with one", async () => {
+    expect(subject).toBeDefined();
+    const linkFor = (html: string) =>
+      [...html.matchAll(/href="([^"]*)"/g)]
+        .map(([, href]) => href)
+        .filter((href) => href === `/u/${subject!.author}`);
+
+    // BEFORE: the state the fix delivers, re-measured here so the flip has a real baseline
+    // rather than trusting the cell above ran first.
+    const before = await render(subject!.id);
+    expect(
+      linkFor(before),
+      `/nodes/${subject!.id} links its accountless author before the flip; the baseline for ` +
+        `this control is already wrong`,
+    ).toEqual([]);
+
+    // THE ONE VARIABLE.
+    await testDb!.client.db
+      .insert(schema.account)
+      .values({
+        githubId: `t261-${subject!.author}`,
+        githubLogin: `t261-${subject!.author}`,
+        handle: subject!.author,
+      });
+    accountCreated = true;
+
+    const after = await render(subject!.id);
+    expect(
+      linkFor(after).length,
+      `the same card still renders NO profile link after \`${subject!.author}\` was given an ` +
+        `account. \`getPublicAuthor\` is answering \`undefined\` for a handle an account ` +
+        `really holds, so the text arm fires for everyone and the site links nobody — which ` +
+        `passes every negative cell in this file and is a different defect, not the fix.`,
+    ).toBeGreaterThan(0);
+
+    expect(after, "the handle stopped being printed once it became a link").toContain(
+      subject!.author,
+    );
+  });
+
+  it("recorded that the flip really inserted its variable", () => {
+    // Guards the cell above against passing because the insert silently did nothing.
+    expect(accountCreated, "the account row was never inserted, so nothing flipped").toBe(true);
   });
 });
