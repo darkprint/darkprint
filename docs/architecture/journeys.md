@@ -237,46 +237,67 @@ sequenceDiagram
 
 ---
 
-## 5.6 · Registering to unlock MCP access
+## 5.6 · Signing in and finishing an account
 
-There is no registration flow to diagram truthfully as a success path: no accounts exist
-anywhere in the repository (`lib/data/account.ts` is a single seeded fixture, not a
-signable-up table), and the MCP server itself is a design proposal with zero operations
-built (`app/mcp/page.tsx:163`, "Design proposal"). The journey below is the honest one — a
-reader looking for "register" finds nothing, and the MCP command on the page fails if run,
-because the package does not exist.
+Signing in is real and completes end to end: `GET /api/auth/github/login` starts B-02's
+OAuth dance, the callback exchanges the code, upserts the account and mints the session
+cookie. What the callback CANNOT do is choose a handle — T050 AC1 makes a session with
+`handle: null` "signed in and INCOMPLETE", because a handle is allocated once and reserved
+permanently (T070) and the registry may not pick one on a reader's behalf.
+
+That unfinished state used to have nowhere to go: the callback redirected to `/` and a
+reader arrived signed in with no visible difference from being signed out, having to find
+`/settings` unaided to discover the one field gating publishing. `/welcome` closes it — the
+callback sends a null-handle account there, and the route bounces a finished account back
+to `/`, so it is safe to link at any time.
+
+**Still not reachable from here:** the MCP server and the CLI are `private: true` and
+unpublished, so `npx -y darkprint mcp` fails for a reader even though both run locally
+against a dev server (`DARKPRINT_URL`). Registration does not unlock them; publishing to
+npm would.
 
 ```mermaid
 flowchart TD
-  entry["Open /mcp from the Design menu"]
-  proposal["Read the four proposed operations\nand six client config snippets"]
-  lookForAuth{"Look for “Register” or “Sign up”"}
-  none["No such control exists anywhere:\naccount menu has no sign-up row"]
-  authNote["MCP itself proposes “none” auth:\nread access to the registry, nothing else"]
-  copy["Copy the client config snippet anyway"]
-  runCmd["Run npx -y darkprint mcp\non the user's machine"]
-  fails["Fails: the darkprint package\ndoes not exist on npm"]
+  entry["Sign in with GitHub\n(header, /settings, or /welcome)"]
+  oauth["GET /api/auth/github/login\n302 to github.com, CSRF state cookie"]
+  callback["GET /api/auth/github/callback\nexchange code, upsertFromGitHub, mint session"]
+  hasHandle{"account.handle === null?"}
+  welcome["/welcome — choose your handle\ndisplay name offered, not required"]
+  check["GET /api/names/handles/{handle}\navailable | taken + suggestion | illegal"]
+  claim["PATCH /api/account/handle\nallocates the handle AND re-mints the cookie (D-50-06)"]
+  profile["PATCH /api/account/profile\ndisplay name, only when one was typed"]
+  home["/ — signed in and complete"]
+  publish["/upload can now publish:\nownerHandle comes from session.handle"]
 
-  entry --> proposal --> lookForAuth
-  lookForAuth -->|search the site| none --> authNote
-  proposal --> copy --> runCmd --> fails
+  entry --> oauth --> callback --> hasHandle
+  hasHandle -->|"yes, first sign-in"| welcome --> check --> claim --> profile --> home
+  hasHandle -->|"no, returning"| home
+  home --> publish
 ```
 
 ```mermaid
 sequenceDiagram
   actor User
   participant WebUI as Web UI
-  participant API as API (future)
-  participant Machine as User machine
+  participant API as API
+  participant GitHub
+  participant DB as Postgres
 
-  User->>WebUI: GET /mcp
-  Note over WebUI,API: static design proposal — no server exists [SEAM-87..93]
-  WebUI-->>User: four proposed operations, all marked "not built"
-  User->>WebUI: look for a "Register" / "Sign up" control
-  WebUI-->>User: none exists — no accounts anywhere in the repository
-  Note over WebUI: MCP's own auth proposal: "nothing to authorize today" [SEAM-92]
-  User->>WebUI: copy the npx command shown on the page
-  WebUI-->>Machine: command text only
-  Machine->>Machine: npx -y darkprint mcp
-  Machine--xMachine: fails — package does not exist [SEAM-87]
+  User->>API: GET /api/auth/github/login
+  API-->>User: 302 to GitHub, state cookie [B-02]
+  User->>GitHub: authorize (scopes: read:user user:email)
+  GitHub-->>API: GET /api/auth/github/callback?code&state
+  API->>GitHub: exchange code for an identity
+  API->>DB: upsertFromGitHub(githubId, githubLogin)
+  DB-->>API: account, handle null on first sign-in
+  API-->>User: 302 /welcome + session cookie (handle: null)
+  User->>WebUI: GET /welcome
+  WebUI-->>User: the handle field, display name offered
+  User->>API: GET /api/names/handles/{candidate}
+  API-->>User: available, or taken with a free suggestion [T070]
+  User->>API: PATCH /api/account/handle
+  API->>DB: allocate + reserve the handle permanently
+  API-->>User: 200 AccountRecord + RE-MINTED cookie (handle set) [D-50-06]
+  User->>API: PATCH /api/account/profile (only if a name was typed)
+  User->>WebUI: land on / , signed in and complete
 ```

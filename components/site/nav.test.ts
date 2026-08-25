@@ -325,7 +325,19 @@ describe("the nav is a complete map of the routes", () => {
    * definition of "in the header", not to what the assertion demands, which is the whole
    * argument the entry made while it stood.
    */
-  const ELSEWHERE = new Set(["upload"]);
+  /* `welcome` is exempt for a different reason than `upload`, and the difference is the
+     point: `/upload` IS a destination and is merely reached by a button rather than a `NAV`
+     row, so the exemption says "look elsewhere in this file". `/welcome` is not a
+     destination at all. It is where `app/api/auth/github/callback/route.ts` sends an account
+     whose sign-up is unfinished (T050 AC1's `handle: null`), and it bounces any finished
+     account straight back to `/` — so a header row pointing at it would be a link that,
+     for every reader who could click it, goes nowhere. A route nobody may navigate to is
+     the one shape this assertion cannot demand.
+
+     This file is byte-frozen by `tests/server/t262/frozen.test.ts`. This edit is D-262-29's
+     ruled amendment, and the pin moved in the same commit — see that ruling for why the
+     freeze fired correctly and was still the right thing to amend. */
+  const ELSEWHERE = new Set(["upload", "welcome"]);
 
   /**
    * Decision 1 of the accounts pass, held from both ends, and rewritten twice.
@@ -373,8 +385,9 @@ describe("the nav is a complete map of the routes", () => {
    *   exemption to describe a route that is not actually missing.
    *
    * So the fix is to the definition of "in the header", not to what the assertion demands.
-   * No route is exempt now except `/upload`, which has its own button and its own checks
-   * above.
+   * Two routes are exempt: `/upload`, which has its own button and its own checks above,
+   * and `/welcome`, which is a redirect target rather than a destination — see `ELSEWHERE`
+   * for why a header row pointing at it would be a link that goes nowhere.
    */
   const HEADER_ROUTES = new Set<string>([
     ...HEADER_LABELS.keys(),

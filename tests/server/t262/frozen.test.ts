@@ -47,8 +47,8 @@ interface Frozen {
 const FROZEN: readonly Frozen[] = [
   {
     path: "components/site/nav.test.ts",
-    sha256: "1c234402643b65ca1cc5b0bd18e975db51dada777f0320e2cb5b2f5204ac926f",
-    why: "AC5 names it must-pass-unchanged. D-262-06 turns that into a constraint on the cutover: it imports `ACCOUNT_MENU` as a module-scope array and reads `.href` off every row, and a static import of a static array is what a per-request session cannot be.",
+    sha256: "02ebdd7c61ed272c7a3a846da20b0c0c8172e43cd3750974e68b5fcd95bbd6a3",
+    why: "AC5 names it must-pass-unchanged. D-262-06 turns that into a constraint on the cutover: it imports `ACCOUNT_MENU` as a module-scope array and reads `.href` off every row, and a static import of a static array is what a per-request session cannot be. AMENDED ONCE, by ruling (D-262-29, owner-stated 2026-08-25): `/welcome` was added as a route no header may link, its `ELSEWHERE` exemption edited this file, and this pin was moved in the SAME commit. The freeze fired correctly — an author editing a guard so their own change passes is exactly what it watches for — and the amendment is recorded rather than quietly re-baselined. The exemption was falsified before the pin moved: a throwaway top-level route still reds the assertion, so the guard was narrowed by one named route and not blunted.",
   },
   {
     path: "components/profile/tabs.test.ts",

@@ -96,7 +96,14 @@ async function callback(request: Request): Promise<Response> {
     githubLogin: identity.login,
   });
 
-  const headers = new Headers({ location: new URL("/", request.url).toString() });
+  /* An account with no handle yet is signed in and INCOMPLETE (T050 AC1), and this file's
+     header recorded the consequence as a known gap: landing on `/` left that reader with no
+     visible difference from being signed out and no route asking for the one field that
+     gates publishing. `/welcome` is that route, and it is safe to point at unconditionally
+     for this case — it bounces a session that already has a handle back to `/` itself. A
+     returning signer-in therefore lands on `/` exactly as before. */
+  const destination = account.handle === null ? "/welcome" : "/";
+  const headers = new Headers({ location: new URL(destination, request.url).toString() });
   headers.append(
     "set-cookie",
     sessionCookieHeader({ accountId: account.accountId, handle: account.handle }),
