@@ -149,10 +149,11 @@ export const LEARN = SPEC_SEQUENCE.map((page) => ({
  */
 export const ACCOUNT_MENU = [
   /* "Your blueprints" left at T280: the profile index IS the bundle shelf now, so its row
-     and this one had one destination — /u/[username]/blueprints survives only as a 308. */
+     and this one had one destination — /u/[username]/blueprints survives only as a 308.
+     "Your cards" and "Saved" left on the owner's instruction (2026-08-25): the profile's
+     own tab strip is where those lists live, and the menu keeps the two destinations that
+     are not tabs of the page the first row already opens. */
   { href: "/u/[username]", segment: "", label: "Your profile" },
-  { href: "/u/[username]/cards", segment: "cards", label: "Your cards" },
-  { href: "/u/[username]/saved", segment: "saved", label: "Saved" },
   { href: "/settings", segment: undefined, label: "Settings" },
 ] as const;
 
