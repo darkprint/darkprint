@@ -49,7 +49,6 @@ function SignedOut() {
         as="h1"
         eyebrow="Account"
         title="Sign in"
-        lead="Either provider signs you in to the same registry. If you have signed in before with the other one and the address is the same, they resolve to one account rather than two."
       />
       <div className="flex flex-col items-start gap-4 rounded-lg border border-line bg-surface-2/50 px-6 py-6">
         <SignInButtons />
