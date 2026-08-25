@@ -91,7 +91,7 @@ function diagnosticFixture(): Diagnostic[] {
       },
     }),
     warning("attractor/hash-comment", "Attractor does not read a hash comment.", {
-      location: { file: "blueprint.dot", line: 4 },
+      location: { file: "topology.dot", line: 4 },
     }),
     /* No `hint`, no `location`: the shape `make()` produces when the caller passes no
        options, and the one a serialiser is most likely to pad out. */

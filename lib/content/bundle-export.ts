@@ -17,7 +17,7 @@
      factory.dot    what Attractor runs. `emitAttractorDot`, so every
                     node carries its card's `spec` as the `prompt`
                     the agent receives (doc 1 §0.1.2).
-     blueprint.dot  the DarkPrint topology, verbatim. The card pin on
+     topology.dot   the DarkPrint topology, verbatim. The card pin on
                     every node is intact, which is what makes the
                     bundle digest recomputable off these bytes (§4).
      cards/*.yaml   the pinned cards, verbatim from the archive. Same
@@ -61,7 +61,7 @@ import { ONTOLOGY_EXTENSIONS_FILE } from "./ontology-file";
 export const FACTORY_DOT = "factory.dot";
 
 /** The DarkPrint topology, as the registry stores it. */
-export const TOPOLOGY_DOT = "blueprint.dot";
+export const TOPOLOGY_DOT = "topology.dot";
 
 export const BUNDLE_README = "README.md";
 
@@ -438,7 +438,7 @@ function pinnedCards(input: BundleExportInput): ExportedCard[] {
  * pattern into a codebase that already exists.
  *
  * ── Generated, and only the generated half ──
- * Everything here is read off `blueprint.dot` and the cards. Nothing is typed, for the
+ * Everything here is read off `topology.dot` and the cards. Nothing is typed, for the
  * reason `ScoringModel.tsx` states about numbers: a second description of the graph is a
  * second description that drifts from the first, and this one would drift silently
  * because no reader opens both.
@@ -484,7 +484,7 @@ export function bundleAgents(input: BundleExportInput): string {
   );
   push(
     ...wrap(
-      "Everything below is read off `blueprint.dot` and the cards in this folder. It describes " +
+      "Everything below is read off `topology.dot` and the cards in this folder. It describes " +
         "the pattern and nothing else: it has not seen the codebase you are about to change, and " +
         "it carries no instructions from whoever published it.",
     ),
@@ -665,7 +665,7 @@ export function bundleReadme(input: BundleExportInput): string {
   }
   push("```", "");
   push(
-    "The digest is taken over `blueprint.dot` and the digest of every card version pinned in it.",
+    "The digest is taken over `topology.dot` and the digest of every card version pinned in it.",
     "Recompute it to confirm these files are the ones DarkPrint read. One changed byte gives a",
     "different digest.",
     "",
@@ -742,7 +742,7 @@ export function bundleReadme(input: BundleExportInput): string {
   for (const [name, note] of folder) push(`${name.padEnd(column)}${note}`);
   push("```", "");
   push(
-    "Two DOT files, because they answer different questions. `blueprint.dot` is what the registry",
+    "Two DOT files, because they answer different questions. `topology.dot` is what the registry",
     "stores and scores. `factory.dot` is that same graph prepared for a runner: a synthesised",
     "`__start` and `__exit` node, and the prompts inlined. Delete those two nodes and their edges",
     "and you are back to the topology.",

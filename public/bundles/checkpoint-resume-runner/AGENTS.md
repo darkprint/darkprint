@@ -4,7 +4,7 @@ You are being handed a DarkPrint blueprint: a pattern for a staged pipeline that
 state after every stage, so a failure at stage 3 resumes from the last good checkpoint instead
 of restarting the whole job.
 
-Everything below is read off `blueprint.dot` and the cards in this folder. It describes the
+Everything below is read off `topology.dot` and the cards in this folder. It describes the
 pattern and nothing else: it has not seen the codebase you are about to change, and it carries
 no instructions from whoever published it.
 

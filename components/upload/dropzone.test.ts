@@ -62,7 +62,7 @@ describe("the wizard, given a downloaded bundle", () => {
     const { files } = downloadOf("frontline-triage");
     const parts = classifyBundle(files);
 
-    expect(parts.dot?.name).toBe("blueprint.dot");
+    expect(parts.dot?.name).toBe("topology.dot");
     expect(parts.cards).toHaveLength(7);
     expect(parts.vocabulary?.name).toBe("ontology/extensions.yaml");
     expect(parts.vocabularyProblem).toBeUndefined();
@@ -78,7 +78,7 @@ describe("the wizard, given a downloaded bundle", () => {
     ]);
     const noteFor = (name: string) =>
       ignored.find((entry) => entry.file.name === name)?.note ?? "";
-    expect(noteFor("factory.dot")).toContain("blueprint.dot");
+    expect(noteFor("factory.dot")).toContain("topology.dot");
     expect(noteFor("README.md")).toContain("written for a person");
     expect(noteFor("AGENTS.md")).toContain("agent adapting it");
     // The old catch-all said what these files are not, which told a reader nothing about
@@ -133,5 +133,42 @@ describe("the wizard, given a downloaded bundle", () => {
     expect(
       parts.roles.find((entry) => entry.file.name === "other/extensions.yaml")?.role,
     ).toBe("ignored");
+  });
+});
+
+describe("the wizard, given blueprint.dot — the topology's name before the format rename", () => {
+  const file = (name: string): UploadFile => ({ name, text: "digraph g {}\n" });
+
+  it("reads a folder carrying only blueprint.dot, same as it validated before the rename", () => {
+    const parts = classifyBundle([file("blueprint.dot")]);
+    expect(parts.dot?.name).toBe("blueprint.dot");
+    // Nothing was ignored, so there is nothing to warn about — the compatibility
+    // diagnostic exists for the two-file case below, not for this one.
+    expect(parts.diagnostics).toEqual([]);
+  });
+
+  it("prefers topology.dot when a drop carries both, and warns that blueprint.dot was ignored", () => {
+    const parts = classifyBundle([file("blueprint.dot"), file("topology.dot")]);
+    expect(parts.dot?.name).toBe("topology.dot");
+
+    const ignored = parts.roles.filter((entry) => entry.role === "ignored");
+    expect(ignored.map((entry) => entry.file.name)).toEqual(["blueprint.dot"]);
+    expect(ignored[0].note).toContain("topology.dot");
+
+    expect(parts.diagnostics).toHaveLength(1);
+    expect(parts.diagnostics[0]).toMatchObject({
+      code: "bundle/legacy-topology-file",
+      severity: "warning",
+      location: { file: "blueprint.dot" },
+    });
+  });
+
+  it("prefers topology.dot regardless of which file was dropped first", () => {
+    // Same pair as above, reversed — `topology.dot` winning must not be an accident of
+    // `blueprint.dot` losing a "first .dot wins" race it happened to run second in.
+    const parts = classifyBundle([file("topology.dot"), file("blueprint.dot")]);
+    expect(parts.dot?.name).toBe("topology.dot");
+    expect(parts.diagnostics).toHaveLength(1);
+    expect(parts.diagnostics[0].code).toBe("bundle/legacy-topology-file");
   });
 });

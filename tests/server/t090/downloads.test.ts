@@ -151,7 +151,7 @@ describe("the download event, measured through whatever medium recordDownload wr
     const mod = await loadExport();
     const serveFile = requiredFn(mod, "serveFile");
 
-    for (const [n, path] of ["README.md", "blueprint.dot", "AGENTS.md"].entries()) {
+    for (const [n, path] of ["README.md", "topology.dot", "AGENTS.md"].entries()) {
       const before = await downloadsFor(scratch, counter, release.bundleId);
       await serveFile(
         scratch.db,
@@ -353,7 +353,7 @@ describe("the download event, measured through whatever medium recordDownload wr
           scratch.db,
           ANONYMOUS,
           { ownerHandle: owner.handle, slug: SUBJECT, digest: release.digest },
-          "blueprint.dot",
+          "topology.dot",
         ),
       );
       expect(

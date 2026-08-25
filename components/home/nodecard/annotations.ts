@@ -102,7 +102,7 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
       // The runnable file is named on `/blueprints/[slug]`'s download panel, not here: the
       // author asked for `factory.dot` off the landing, and this walk renders there. The
       // claim is unchanged — the model line really does land in the compiled export and
-      // NOT in `blueprint.dot`, which carries no `model` at all — only the name is gone.
+      // NOT in `topology.dot`, which carries no `model` at all — only the name is gone.
       "The model this agent is instantiated with. The compiled export writes it as " +
       "`llm_model`, which Attractor reads, and a model stylesheet can override it at run time. " +
       "A card with no such line inherits whatever the run supplies.",

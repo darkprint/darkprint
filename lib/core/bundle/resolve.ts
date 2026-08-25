@@ -52,7 +52,7 @@ import type {
 } from "./types";
 
 /** The bundle-relative name the DOT source is reported under. */
-const DOT_FILE = "blueprint.dot";
+const DOT_FILE = "topology.dot";
 
 /** The top of the data-type lattice: it accepts anything and anything accepts it. */
 const ANY_TYPE = "any";

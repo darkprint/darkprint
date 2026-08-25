@@ -104,7 +104,7 @@ and give them back byte-identically.
   (`:355-385`), memoizes at module scope (`:141`, `:218`) and self-guards against ever
   running in a browser (`:53-57`). SEAM-107 anchors it at `read.ts:44`.
 - `code` — the archive on disk is the store's current implementation: 9
-  `content/blueprints/<slug>/{blueprint.yaml,blueprint.dot}` pairs, 57
+  `content/blueprints/<slug>/{blueprint.yaml,topology.dot}` pairs, 57
   `content/cards/<id>@<version>.yaml` files, one `content/ontology/extensions.yaml`.
 - `code` — identity is `ResolvedBlueprint.digest`, `bundleDigest` over the DOT source and
   the sorted card digests (`lib/core/hash/digest.ts:61`); the UI prints
@@ -362,7 +362,7 @@ each card on its own address — at stable URLs that a `curl` line and an agent 
 
 **Behaviour**
 
-- Serves, per published bundle: `blueprint.dot` (as authored), `factory.dot` (compiled for
+- Serves, per published bundle: `topology.dot` (as authored), `factory.dot` (compiled for
   Attractor), `cards/<ref>.yaml` per pinned card, `README.md`, `AGENTS.md`, and
   `ontology/extensions.yaml` when and only when the bundle's cards declare a local term.
 - Compiles the generated files server-side at publish; the compile is pure and sorted so two
@@ -1378,7 +1378,7 @@ candidate for the curated core.
   (`:65-70`, `OPERATIONS` at `:85-110`): `search` (task in the agent's own words →
   blueprints and cards, each with kind, author and digest), `read a card` (card id → the
   YAML as published), `inspect provenance` (slug → who published it, what it was forked
-  from, every release digest), `fetch a release` (slug + digest → `blueprint.dot`,
+  from, every release digest), `fetch a release` (slug + digest → `topology.dot`,
   `cards/*.yaml`, `README.md`, `AGENTS.md`, names read from `bundle-export.ts` so the
   proposal cannot describe a different registry).
 - `code` — six real client configs exist for a package that does not exist

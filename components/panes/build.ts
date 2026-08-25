@@ -357,7 +357,7 @@ function push(map: Map<number, string[]>, line: number, value: string): void {
  * is the text in the file.
  */
 export function buildPaneModel(input: PaneModelInput): PaneModel {
-  const dotFile = input.dotFile ?? "blueprint.dot";
+  const dotFile = input.dotFile ?? "topology.dot";
   const parsed = parseDot(input.dot, dotFile);
   const graph = parsed.graph;
 

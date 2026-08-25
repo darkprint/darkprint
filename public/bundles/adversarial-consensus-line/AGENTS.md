@@ -4,7 +4,7 @@ You are being handed a DarkPrint blueprint: a pattern for two agents solve the s
 opposite temperatures, then a consensus node negotiates a single answer, re-opening the debate
 when they clash.
 
-Everything below is read off `blueprint.dot` and the cards in this folder. It describes the
+Everything below is read off `topology.dot` and the cards in this folder. It describes the
 pattern and nothing else: it has not seen the codebase you are about to change, and it carries
 no instructions from whoever published it.
 

@@ -249,12 +249,12 @@ describe("the three routes D-90-04 published", () => {
      * wrapped the file in `ok(...)` and then set a `text/markdown` header would pass a
      * header-only check while writing `{"data":…}` to the reader's disk.
      */
-    const response = await getByDigest(release.digest, "blueprint.dot");
+    const response = await getByDigest(release.digest, "topology.dot");
     expect(response.status).toBe(200);
     const text = await response.text();
     expect(
       text.startsWith("{"),
-      `\`blueprint.dot\` came back as what looks like JSON: ${JSON.stringify(text.slice(0, 80))}. ` +
+      `\`topology.dot\` came back as what looks like JSON: ${JSON.stringify(text.slice(0, 80))}. ` +
         `A reader curls this to disk under a \`.dot\` name.`,
     ).toBe(false);
     expect(text).toContain("digraph");

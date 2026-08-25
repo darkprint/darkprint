@@ -1,5 +1,5 @@
 /* ============================================================
-   `blueprint.dot`, tokenised and cut into blocks.
+   `topology.dot`, tokenised and cut into blocks.
 
    The pure half of `./DotBreakdown.tsx`: no React, no DOM, so the
    node suite can hold every claim in here to the nine files the

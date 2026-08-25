@@ -150,7 +150,7 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
     );
     const [release] = await testDb!.client.db.select().from(schema.release);
     const byDigest = await digestRoute.GET(new Request("http://x/api/files/d"), {
-      params: Promise.resolve({ owner: "routes", slug, digest: release.digest, path: ["blueprint.dot"] }),
+      params: Promise.resolve({ owner: "routes", slug, digest: release.digest, path: ["topology.dot"] }),
     });
     expect(byDigest.status).toBe(200);
     expect(byDigest.headers.get("content-type")).toBe("text/vnd.graphviz; charset=utf-8");

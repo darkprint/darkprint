@@ -1,13 +1,13 @@
 # The DOT, and what a card becomes when it is compiled
 
-Two things live here: how to write `blueprint.dot` so it loads clean, and what happens to a
+Two things live here: how to write `topology.dot` so it loads clean, and what happens to a
 card when DarkPrint compiles the bundle into a runnable pipeline. The second half is
 background — **this skill does not emit `factory.dot`** — but an author is entitled to know
 what their `spec` turns into.
 
 ---
 
-## Part 1 — writing `blueprint.dot`
+## Part 1 — writing `topology.dot`
 
 ### The shape
 
@@ -89,7 +89,7 @@ Only **one** `.dot` file goes in the bundle. `/upload` classifies files by name:
 
 `/upload` reads roles off filenames, so:
 
-- exactly one `blueprint.dot`;
+- exactly one `topology.dot`;
 - cards under `cards/`, named `<card-id>@<version>.yaml`;
 - **never name a card `blueprint.yaml` or `extensions.yaml`.** Those two names are claimed by
   the manifest and the local vocabulary. A card named either is classified as something else,

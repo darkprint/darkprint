@@ -35,7 +35,7 @@ a card, not the card. `lib/content/read.ts:389-412` reads exactly two pointer fo
 
 | Pointer form | Example | Source |
 |---|---|---|
-| `card="id@version"` | `planner [card="spec-planner@1.0.0"]` | `content/blueprints/starter-software-factory/blueprint.dot:7` |
+| `card="id@version"` | `planner [card="spec-planner@1.0.0"]` | `content/blueprints/starter-software-factory/topology.dot:7` |
 | `version="…"` on a node whose DOT id doubles as the card id | `spec-planner [version="1.0.0"]` | `lib/content/read.ts:399-402` |
 
 An unversioned pointer (`solver-a`, `solver-a@latest`) is rejected by

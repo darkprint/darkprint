@@ -3,7 +3,7 @@
 
    The site had a wordmark and no mark. This is one, and it is not a new idea — it is the
    site's own sentence drawn once: `components/home/lifecycle/Folder.tsx` already draws a
-   folder in `--color-blueprint-line` that opens to show `blueprint.dot`, `cards/*.yaml`
+   folder in `--color-blueprint-line` that opens to show `topology.dot`, `cards/*.yaml`
    and the two documents, and "a blueprint is a folder of text" is what the whole registry
    is arguing. A folder with a graph inside it states both halves at 24px.
 

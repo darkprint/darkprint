@@ -839,12 +839,16 @@ export function UploadFlow({
     // whoever built the view, so the caller that built it reports them, exactly as the
     // build-time loader does with the archive's own.
     const vocabulary = parts.vocabulary === undefined ? [] : ontology.validate();
-    if (vocabulary.length === 0) return loaded;
+    // `parts.diagnostics`: problems the classifier itself raised — today, only a legacy
+    // `blueprint.dot` demoted in favour of `topology.dot` — merged the same way, since
+    // `result.diagnostics` is the one list every surface of this wizard reads.
+    const extra = [...vocabulary, ...parts.diagnostics];
+    if (extra.length === 0) return loaded;
     return {
       ...loaded,
-      diagnostics: sortDiagnostics([...loaded.diagnostics, ...vocabulary]),
+      diagnostics: sortDiagnostics([...loaded.diagnostics, ...extra]),
     };
-  }, [bundle, ontology, parts.vocabulary]);
+  }, [bundle, ontology, parts.vocabulary, parts.diagnostics]);
 
   const errorCount = result === undefined ? 0 : summarize(result.diagnostics).error;
   const blocked = result === undefined || hasErrors(result.diagnostics);

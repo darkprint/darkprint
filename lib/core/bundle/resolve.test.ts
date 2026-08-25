@@ -476,7 +476,7 @@ describe("the Attractor linter, merged in", () => {
     const bad = withCode(diagnostics, "attractor/bad-node-id");
     expect(bad).toHaveLength(1);
     expect(bad[0].severity).toBe("warning");
-    expect(bad[0].location).toMatchObject({ file: "blueprint.dot", nodeId: "kebab-case" });
+    expect(bad[0].location).toMatchObject({ file: "topology.dot", nodeId: "kebab-case" });
     // The two layers stay apart: DarkPrint read the file, Attractor would not run it.
     expect(withCode(diagnostics, "dot/parse-error")).toEqual([]);
     expect(blueprint).toBeDefined();
@@ -530,7 +530,7 @@ describe("the card pointer", () => {
     const { diagnostics } = resolve(src);
     const d = one(diagnostics, "bundle/unpinned-card");
     expect(d.severity).toBe("error");
-    expect(d.location).toMatchObject({ file: "blueprint.dot", nodeId: "planner" });
+    expect(d.location).toMatchObject({ file: "topology.dot", nodeId: "planner" });
   });
 
   it("reports an unpinned node that names a card the bundle carries, and lists the versions", () => {
@@ -1046,7 +1046,7 @@ describe("declared prohibitions", () => {
     expect(d.message).toContain("`acceptance-criteria`");
     expect(d.message).toContain("`planner -> builder`");
     expect(d.location).toMatchObject({
-      file: "blueprint.dot",
+      file: "topology.dot",
       nodeId: "builder",
       cardRef: "guarded-builder@1.0.0",
       edge: { source: "planner", target: "builder" },

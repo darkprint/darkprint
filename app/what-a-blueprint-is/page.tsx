@@ -322,46 +322,46 @@ function Part({
    different job: a band has a figure and needs the width, a step had neither. */
 
 /**
- * What is in a bundle, one row per kind of file.
+ * What is in a blueprint, one row per kind of file.
  *
- * Four rows, and `factory.dot` is deliberately not one of them.
+ * Three rows, not four. `factory.dot` was never one of them: the folder does hold it, and
+ * it stood here as a fifth row until the author asked it out on 2026-08-08. It is a BUILD
+ * PRODUCT — the topology with every card resolved into it, written by the exporter, never
+ * by a person — and this list answers what a blueprint IS. Putting a compiled artefact in
+ * a list of things somebody authors is like listing the binary beside the source: true of
+ * the directory and false about the object.
  *
- * The folder does hold it, and it stood here as a fifth row until the author asked it out
- * on 2026-08-08. It is a BUILD PRODUCT — the graph with every card resolved into it, written
- * by the exporter, never by a person — and this list answers what a bundle IS. Putting a
- * compiled artefact in a list of things somebody authors is like listing the binary beside
- * the source: true of the directory and false about the object.
- *
- * The four that remain are what a person writes and reads, which is also how the author
- * defines a bundle: "the blueprint.dot, the cards, the README.md and the AGENTS.md".
+ * `AGENTS.md` came out on the terminology pass, 2026-08-25. The author once defined a
+ * blueprint as "the blueprint.dot, the cards, the README.md and the AGENTS.md" — kept here
+ * verbatim as the record of what was said, not as today's row list. `AGENTS.md` still ships
+ * in every archive folder under `public/bundles`, and `Folder.tsx`'s third paper still names
+ * it beside `README.md`; it simply no longer earns its own row on this table. Checked
+ * against the archive rather than assumed: nothing else in a bundle is a fourth kind of file
+ * a person authors, so three is the true count and not one held steady by inventing a row.
  *
  * Typed, and that is the exception this file otherwise refuses. Every count and every field
  * on this page comes off the archive because a written count goes stale; these are the NAMES
  * of files in a fixed layout, which is a schema rather than content, and the alternative —
- * globbing a public directory at build time to print five nouns — would make the list depend
+ * globbing a public directory at build time to print three nouns — would make the list depend
  * on whichever bundle happened to be listed first. `components/home/lifecycle/Folder.tsx`
- * names the same files for the same reason, and `beats.test.ts` holds it to them.
+ * draws the same folder and is the one surface here that still shows `AGENTS.md`, on its own
+ * paper beside `README.md` rather than as a fourth row of text.
  */
 const BUNDLE_FILES: readonly { name: string; role: string }[] = [
   {
-    name: "blueprint.dot",
+    name: "topology.dot",
     role:
       "The graph, as a person wrote it: which node hands what to which, and which edges were deliberately left out. This is the file the rest of the folder is pinned to.",
   },
   {
     name: "cards/*.yaml",
     role:
-      "One versioned card per node, pinned by the graph at an exact version. What runs there, which model it uses, what it may reach and what must never reach it.",
+      "One versioned card per node, pinned by the topology at an exact version. What runs there, which model it uses, what it may reach and what must never reach it.",
   },
   {
     name: "README.md",
     role:
       "What this blueprint is, for a person: the shape in a sentence, the digest to check the files against, and how to run it with your own harness.",
-  },
-  {
-    name: "AGENTS.md",
-    role:
-      "The same folder addressed to an agent, listing what must never be connected and why. It describes the pattern and nothing else: it has not seen your codebase, and it carries no instructions from whoever published it.",
   },
 ];
 
@@ -516,14 +516,17 @@ export default function WhatABlueprintIsPage() {
           what is in the folder before it says what the files mean.
 
           The `Folder` is the landing's, unchanged: it is beat 4's Download panel, it opens
-          on hover, on focus and on click, and its three papers name the same files this
-          list does. Reusing it rather than drawing a second folder is the point — a reader
-          who met it on the landing meets the same object here, one page deeper.
+          on hover, on focus and on click, and its three papers name every file this list
+          does, plus `AGENTS.md` on the paper it shares with `README.md`. Reusing it rather
+          than drawing a second folder is the point — a reader who met it on the landing
+          meets the same object here, one page deeper.
 
           Every row is a file that is really in `public/bundles/starter-software-factory/`,
-          checked against the folder rather than remembered: `blueprint.dot`, `cards/*.yaml`,
-          `README.md`, `AGENTS.md`. The folder also holds `factory.dot` and this list does
-          not — see `BUNDLE_FILES` for why a build product is not part of what a bundle is. */}
+          checked against the folder rather than remembered: `topology.dot`, `cards/*.yaml`,
+          `README.md`. The folder also holds `AGENTS.md`, off this list since the
+          terminology pass (2026-08-25) — see `BUNDLE_FILES` for why three rather than four
+          — and `factory.dot`, never on it: see the same docblock for why a build product is
+          not part of what a blueprint is. */}
       <section id="bundle" className="scroll-mt-24 border-t border-line bg-void py-14 sm:py-16">
         <div className="container-page">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-center lg:gap-14">
@@ -539,13 +542,13 @@ export default function WhatABlueprintIsPage() {
                 it and the list, and the drawing read as an orphan rather than as the list's
                 subject. */}
             <div className="flex justify-center">
-              <Folder label="Bundle" caption="hover to open" />
+              <Folder label="Blueprint" caption="hover to open" />
             </div>
 
             <div className="flex min-w-0 flex-col gap-4">
-              <PanelHeading>A bundle is the folder</PanelHeading>
+              <PanelHeading>A blueprint is the folder</PanelHeading>
               <p className={PROSE}>
-                One blueprint, one folder, four kinds of file. Everything on these pages is
+                One topology, one folder, three kinds of file. Everything on these pages is
                 read out of it during the build, so a reader copying from here is copying a
                 file that loads.
               </p>
@@ -613,13 +616,20 @@ export default function WhatABlueprintIsPage() {
           <div className="grid gap-y-14 lg:grid-cols-12 lg:gap-y-20">
             <Part
               layer={topology}
-              /* "The blueprint", not "The graph", on the author's instruction 2026-08-08,
-                 and the section title above it changed in the same breath. The band is
-                 about `blueprint.dot` — the file the bundle band two sections up names in
-                 its first row — and calling it "the graph" made a reader hold two words for
-                 one file. `layer.title` is still "The topology, in DOT", which is the
-                 reference page's own name and belongs to it. */
-              title="The blueprint"
+              /* "The topology", as of the terminology pass (2026-08-25): the .dot file is
+                 "the topology" now and "blueprint" is retired to naming the folder, so a
+                 band about the file cannot keep either of its two earlier titles.
+
+                 It was "The blueprint", not "The graph", on the author's instruction
+                 2026-08-08, and the section title above it changed in the same breath —
+                 that argument still holds one level down: calling this band "the graph"
+                 made a reader hold two words for one file, and "the blueprint" would now
+                 make the same mistake against the folder. `layer.title` is unchanged and
+                 still reads "The blueprint file (DOT)", the reference page's own name —
+                 left alone here because renaming a route's title ripples into its pager
+                 arrows and its card on `WhereNext` below, which this pass did not touch;
+                 flagged for the owner rather than changed on inference. */
+              title="The topology"
               side="left"
               figure={
                 starter === undefined ? null : (
@@ -673,9 +683,9 @@ export default function WhatABlueprintIsPage() {
                 </FigureFrame>
               }
             >
-              A controlled list of terms the graph and the cards are both written against,
-              so that two authors naming the same thing write the same word and a checker
-              can tell when they have not.
+              A controlled list of terms the topology and the cards are both written
+              against, so that two authors naming the same thing write the same word and a
+              checker can tell when they have not.
             </Part>
           </div>
         </div>

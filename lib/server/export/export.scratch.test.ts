@@ -366,7 +366,7 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
   it("AC6: fetching by digest returns that release's bytes after a newer one exists", async () => {
     const entry = readContent().find((candidate) => candidate.slug === "guarded-merge-bot")!;
     const ids = seeded.get(entry.slug)!;
-    const before = await serveFile(db, ANONYMOUS, { ...ref(entry.slug), digest: ids.digest }, "blueprint.dot");
+    const before = await serveFile(db, ANONYMOUS, { ...ref(entry.slug), digest: ids.digest }, "topology.dot");
     expect(before).toBeDefined();
     const originalDot = new TextDecoder().decode(before!.bytes);
 
@@ -389,17 +389,17 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
     });
     expect(newer.digest).not.toBe(ids.digest);
 
-    const byOldDigest = await serveFile(db, ANONYMOUS, { ...ref(entry.slug), digest: ids.digest }, "blueprint.dot");
+    const byOldDigest = await serveFile(db, ANONYMOUS, { ...ref(entry.slug), digest: ids.digest }, "topology.dot");
     expect(new TextDecoder().decode(byOldDigest!.bytes)).toBe(originalDot);
 
-    const byNewDigest = await serveFile(db, ANONYMOUS, { ...ref(entry.slug), digest: newer.digest }, "blueprint.dot");
+    const byNewDigest = await serveFile(db, ANONYMOUS, { ...ref(entry.slug), digest: newer.digest }, "topology.dot");
     expect(new TextDecoder().decode(byNewDigest!.bytes)).toBe(`${entry.bundle.dot}\n// changed\n`);
 
     /* And the version reference moved while the digest reference did not, which is the
        distinction the criterion is about rather than a second way of asking the same thing. */
-    const byNoRef = await serveFile(db, ANONYMOUS, ref(entry.slug), "blueprint.dot");
+    const byNoRef = await serveFile(db, ANONYMOUS, ref(entry.slug), "topology.dot");
     expect(new TextDecoder().decode(byNoRef!.bytes)).toBe(`${entry.bundle.dot}\n// changed\n`);
-    const byOldVersion = await serveFile(db, ANONYMOUS, { ...ref(entry.slug), version: "1.0.0" }, "blueprint.dot");
+    const byOldVersion = await serveFile(db, ANONYMOUS, { ...ref(entry.slug), version: "1.0.0" }, "topology.dot");
     expect(new TextDecoder().decode(byOldVersion!.bytes)).toBe(originalDot);
   });
 
@@ -433,7 +433,7 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
       cardDigests: entry.blueprint.nodes.map((node) => node.digest),
     });
 
-    const current = await serveFile(db, ANONYMOUS, ref(entry.slug), "blueprint.dot");
+    const current = await serveFile(db, ANONYMOUS, ref(entry.slug), "topology.dot");
     expect(new TextDecoder().decode(current!.bytes)).toBe(`${entry.bundle.dot}\n// high\n`);
     /* Stated the other way round too, so the assertion cannot pass by both being equal. */
     expect(new TextDecoder().decode(current!.bytes)).not.toContain("// backport");
@@ -463,12 +463,12 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
       cardDigests: entry.blueprint.nodes.map((node) => node.digest),
     });
 
-    const mine = await serveFile(db, ANONYMOUS, ref(entry.slug), "blueprint.dot");
+    const mine = await serveFile(db, ANONYMOUS, ref(entry.slug), "topology.dot");
     const theirs = await serveFile(
       db,
       ANONYMOUS,
       { ownerHandle: "otherexporter", slug: entry.slug },
-      "blueprint.dot",
+      "topology.dot",
     );
     expect(new TextDecoder().decode(mine!.bytes)).toBe(entry.bundle.dot);
     expect(new TextDecoder().decode(theirs!.bytes)).toBe(`${entry.bundle.dot}\n// the other owner's copy\n`);
@@ -480,7 +480,7 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
       db,
       ANONYMOUS,
       { ...ref("guarded-merge-bot"), version: "2.0.0", digest: ids.digest },
-      "blueprint.dot",
+      "topology.dot",
     );
     const entry = readContent().find((candidate) => candidate.slug === "guarded-merge-bot")!;
     expect(new TextDecoder().decode(served!.bytes)).toBe(entry.bundle.dot);
@@ -673,7 +673,7 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
     const expected = new Map([
       ["README.md", "text/markdown; charset=utf-8"],
       ["AGENTS.md", "text/markdown; charset=utf-8"],
-      ["blueprint.dot", "text/vnd.graphviz; charset=utf-8"],
+      ["topology.dot", "text/vnd.graphviz; charset=utf-8"],
       [FACTORY_DOT, "text/vnd.graphviz; charset=utf-8"],
       [BUNDLE_VOCABULARY, "application/yaml; charset=utf-8"],
     ]);

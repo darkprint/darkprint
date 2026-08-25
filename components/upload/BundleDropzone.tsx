@@ -5,8 +5,10 @@ import {
   CORE_ONTOLOGY,
   formatForFilename,
   parseDocument,
+  warning,
   type Bundle,
   type BundleManifest,
+  type Diagnostic,
   type OntologyTerm,
 } from "@/lib/core";
 import { parseOntologyTerms } from "@/lib/content/ontology-file";
@@ -72,6 +74,15 @@ export interface BundleParts {
   cards: UploadFile[];
   /** Every selected file, in selection order, with its role. Drives the chip list. */
   roles: RoledFile[];
+  /**
+   * Problems the classifier itself raised, before `assembleBundle` ever builds a `Bundle`
+   * for the engine to resolve. Empty on every ordinary drop.
+   *
+   * Exactly one case exists today: `blueprint.dot` (the topology's pre-rename name)
+   * demoted in favour of `topology.dot` — see `legacyTopologyDiagnostics` below. Merged
+   * into `result.diagnostics` by `UploadFlow`, the same way a vocabulary defect is.
+   */
+  diagnostics: readonly Diagnostic[];
 }
 
 /** The step-2 form, as the manifest sees it. */
@@ -107,6 +118,16 @@ const VOCABULARY_NAME = /^extensions\.(ya?ml|json)$/i;
 /** A paste that opens like a graph is the topology; anything else is a card document. */
 const DOT_OPENING = /^\s*(strict\s+)?(di)?graph\b/i;
 
+/** What the exporter writes the topology to today, and what the registry calls it. */
+const TOPOLOGY_NAME = "topology.dot";
+/**
+ * COMPATIBILITY: the topology's name before the format rename. A folder the pre-rename
+ * skill wrote carries only this — `roleFromName` matches any `.dot`, so that folder keeps
+ * validating with no code path devoted to it. The one case this name is checked for
+ * explicitly is a folder carrying BOTH: see `pickTopology` and `legacyTopologyDiagnostics`.
+ */
+const LEGACY_TOPOLOGY_NAME = "blueprint.dot";
+
 /** Files are read into memory and hashed in this tab, so the cap is a courtesy to the tab. */
 const MAX_KB = 512;
 
@@ -128,6 +149,53 @@ function roleFromName(name: string): FileRole {
 }
 
 /**
+ * Which of several `.dot`/`.gv` candidates is the topology.
+ *
+ * `topology.dot` always wins when it is among them, regardless of arrival order —
+ * otherwise whether a folder's own file-system iteration happens to read the current name
+ * or the legacy one first would decide which is trusted, and that is not a question a
+ * reader dropping a folder should be answering by accident. With no `topology.dot` present
+ * the old rule stands: the first candidate wins (the ordinary case there is `factory.dot`
+ * arriving alongside a single real topology, whatever it is named).
+ */
+function pickTopology(candidates: readonly UploadFile[]): UploadFile | undefined {
+  if (candidates.length === 0) return undefined;
+  const canonical = candidates.find((file) => baseName(file.name).toLowerCase() === TOPOLOGY_NAME);
+  return canonical ?? candidates[0];
+}
+
+/**
+ * COMPATIBILITY: the one diagnostic this format rename needs.
+ *
+ * A folder carrying only `blueprint.dot` needs nothing here — it is picked up as the
+ * topology like any other lone `.dot`, silently, exactly as it validated before the
+ * rename. This exists for the folder that carries BOTH: `pickTopology` has already made
+ * `topology.dot` win, and the chip-list note on the demoted file is easy to miss (it is
+ * UI-only and does not reach `result.diagnostics`, the one surface every state of this
+ * wizard reads). A warning says so explicitly, naming the file that was not read.
+ */
+function legacyTopologyDiagnostics(
+  candidates: readonly UploadFile[],
+  kept: UploadFile | undefined,
+): Diagnostic[] {
+  if (kept === undefined || baseName(kept.name).toLowerCase() !== TOPOLOGY_NAME) return [];
+  const legacy = candidates.find(
+    (file) => file !== kept && baseName(file.name).toLowerCase() === LEGACY_TOPOLOGY_NAME,
+  );
+  if (legacy === undefined) return [];
+  return [
+    warning(
+      "bundle/legacy-topology-file",
+      `This folder carries both \`${legacy.name}\` and \`${kept.name}\`. \`${legacy.name}\` is the topology's name from before the format rename, and it was ignored.`,
+      {
+        hint: `Delete \`${legacy.name}\`; \`${TOPOLOGY_NAME}\` is the current name for the topology file.`,
+        location: { file: legacy.name },
+      },
+    ),
+  ];
+}
+
+/**
  * Split a selection into topology, manifest and cards.
  *
  * A bundle has exactly one of the first two (§8), so a second `.dot` or a second
@@ -137,25 +205,27 @@ function roleFromName(name: string): FileRole {
 export function classifyBundle(files: readonly UploadFile[]): BundleParts {
   const roles: RoledFile[] = [];
   const cards: UploadFile[] = [];
-  let dot: UploadFile | undefined;
+  const topologyCandidates = files.filter((file) => roleFromName(file.name) === "topology");
+  const dot = pickTopology(topologyCandidates);
   let manifest: UploadFile | undefined;
   let vocabulary: UploadFile | undefined;
 
   for (const file of files) {
     const role = roleFromName(file.name);
     if (role === "topology") {
-      if (dot === undefined) {
-        dot = file;
+      if (file === dot) {
         roles.push({ file, role });
       } else {
         roles.push({
           file,
           role: "ignored",
-          // A downloaded folder carries two: `blueprint.dot` is the topology the registry
+          // A downloaded folder carries two: `topology.dot` is the topology the registry
           // stores and scores, `factory.dot` is that same graph prepared for a runner,
           // with `__start` and `__exit` synthesised into it. Dropping the whole folder is
           // the ordinary case, so the demoted one says which of the two it is.
-          note: derivedNote(file, dot) ?? "a bundle carries one topology, and the first .dot wins",
+          note:
+            (dot === undefined ? undefined : derivedNote(file, dot)) ??
+            "a bundle carries one topology, and the first .dot wins",
         });
       }
       continue;
@@ -186,7 +256,12 @@ export function classifyBundle(files: readonly UploadFile[]): BundleParts {
     roles.push({ file, role, note: prosePartNote(file) });
   }
 
-  const parts: BundleParts = { cards, roles, terms: [] };
+  const parts: BundleParts = {
+    cards,
+    roles,
+    terms: [],
+    diagnostics: legacyTopologyDiagnostics(topologyCandidates, dot),
+  };
   if (dot !== undefined) parts.dot = dot;
   if (manifest !== undefined) {
     parts.manifest = manifest;
@@ -225,16 +300,26 @@ function prosePartNote(file: UploadFile): string {
 }
 
 /**
- * The note for a second `.dot` that is the runnable copy of the first.
+ * The note for a second `.dot` that is a known counterpart of the kept one: either the
+ * Attractor-runnable copy, or the pre-rename name for the same file.
  *
- * `undefined` when the two files are not that pair, so an author who dropped two unrelated
- * graphs still gets the general answer rather than a guess about which is which.
+ * `undefined` when the two files are not one of those pairs, so an author who dropped two
+ * unrelated graphs still gets the general answer rather than a guess about which is which.
  */
 function derivedNote(ignored: UploadFile, kept: UploadFile): string | undefined {
   const a = baseName(ignored.name).toLowerCase();
   const b = baseName(kept.name).toLowerCase();
-  if (a !== "factory.dot" || b !== "blueprint.dot") return undefined;
-  return "factory.dot is the same graph prepared for a runner, with __start and __exit in it. The registry reads blueprint.dot, which is the one being validated here.";
+  if (b !== TOPOLOGY_NAME) return undefined;
+  if (a === "factory.dot") {
+    return "factory.dot is the same graph prepared for a runner, with __start and __exit in it. The registry reads topology.dot, which is the one being validated here.";
+  }
+  if (a === LEGACY_TOPOLOGY_NAME) {
+    // COMPATIBILITY: paired with the warning `legacyTopologyDiagnostics` raises for the
+    // same file — this is the note a reader sees on the chip itself, before ever opening
+    // the diagnostics list.
+    return "blueprint.dot is the topology's name from before the format rename. topology.dot is the current name and was read instead.";
+  }
+  return undefined;
 }
 
 /**
@@ -594,7 +679,7 @@ export function BundleDropzone({
             {/* Both folders a reader can arrive with, named at the target itself rather
                 than only in the page header three paragraphs up: this is where somebody
                 stands with a directory open in the other window, deciding whether to drag
-                it. The skill's output is the registry shape — the same `blueprint.dot`
+                it. The skill's output is the registry shape — the same `topology.dot`
                 and `cards/` the download carries — so "as it stands" is true of both, and
                 a half-written one is expected here (`components/upload/progress.ts`). */}
             <p className="text-xs text-dim">

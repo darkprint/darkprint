@@ -232,7 +232,7 @@ export function AgentHandoff({ className }: { className?: string }) {
         <p className="text-[13px] leading-relaxed text-muted">
           The skills CLI reads it out of DarkPrint&rsquo;s own repository, over git. Tell it
           what you want built and it writes what the registry stores:{" "}
-          <code className="font-mono text-fg">blueprint.dot</code>, one YAML card per node,
+          <code className="font-mono text-fg">topology.dot</code>, one YAML card per node,
           a <code className="font-mono text-fg">README.md</code> and an{" "}
           <code className="font-mono text-fg">AGENTS.md</code>.{" "}
           <Link href={SKILL_ROUTE} className={linkCls}>

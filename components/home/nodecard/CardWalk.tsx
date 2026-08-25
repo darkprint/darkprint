@@ -257,7 +257,7 @@ const WALK_BODY: Record<string, string> = {
     "to stand alone: whatever reads it never sees the rest of the graph.",
   // "the compiled export", not `factory.dot`: the author asked for that name off the
   // landing, and this walk renders there. Still true — the model line lands in the
-  // compiled file and not in `blueprint.dot`, which carries no `model` line at all.
+  // compiled file and not in `topology.dot`, which carries no `model` line at all.
   model:
     "Which model the agent is instantiated with. The compiled export carries it, and " +
     "a card that names none inherits whatever the run supplies.",

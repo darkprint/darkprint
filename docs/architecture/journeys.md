@@ -340,8 +340,8 @@ flowchart TD
   draftLanding["/blueprints/:owner/:slug\nblueprint() undefined, draftBundle() answers: DraftLanding renders"]
   threeWays{"Three ways in, GitHub's own empty-repo panel"}
   skillPath["Point the blueprint-writing skill\nat your own goal"]
-  handPath["Copy the starter folder layout\nand write blueprint.dot + cards by hand"]
-  localBuild["A folder on the user's own machine:\nblueprint.dot, cards/, README.md, AGENTS.md"]
+  handPath["Copy the starter folder layout\nand write topology.dot + cards by hand"]
+  localBuild["A folder on the user's own machine:\ntopology.dot, cards/, README.md, AGENTS.md"]
   uploadPinned["/upload?owner=&slug=\npinned to the exact draft (B6's prefill contract)"]
   wizard["Steps 1-3: drop the folder or Load an example,\nvalidate in the tab — Details prefilled from the draft"]
   publishStep["Step 4: Publish"]
@@ -382,7 +382,7 @@ sequenceDiagram
   Note over WebUI,API: blueprint() answers undefined, no release yet\ndraftBundle() answers the row just created — DraftLanding renders (B-03: absent and unreadable answer alike, so the same branch also covers a private draft nobody else may see)
   User->>WebUI: "Publish your first release" (or install the skill, or copy the layout)
   opt the build itself happens off-platform
-    Machine->>Machine: skill interview, or hand-authoring, produces\nblueprint.dot + cards/ + README.md + AGENTS.md
+    Machine->>Machine: skill interview, or hand-authoring, produces\ntopology.dot + cards/ + README.md + AGENTS.md
   end
   User->>WebUI: GET /upload?owner={owner}&slug={slug} [SEAM-68]
   WebUI->>API: draftBundle(actor, owner, slug) — ownership checked server-side (session.handle === owner)

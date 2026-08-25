@@ -154,7 +154,7 @@ describe("AC1 — byte-identical diagnostics to the server, over the nine", () =
        instead of `cards/<name>.yaml` changes nothing any of them can see.
 
        The anti-tautology cell above does not close it either: an empty `cardFiles` produces
-       only `blueprint.dot` and `null` locations.
+       only `topology.dot` and `null` locations.
 
        A deliberately BROKEN CARD is what reaches the key. Its `card/parse-error` diagnostics
        carry `location.file` = `cards/<ref>.yaml` — the key itself — so the comparison finally

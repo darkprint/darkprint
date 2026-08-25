@@ -70,12 +70,18 @@ describe("the archive this test is held over", () => {
 });
 
 describe("the header's quick download button names the file it saves", () => {
+  /* AMENDED at the topology rename (owner-instructed, 2026-08-25; blob re-pinned in
+     tests/server/t261/frozen-tests.test.ts in the same commit, cause named there). The
+     file the registry stores is `topology.dot` now, so the pinned label moves WITH the
+     `download=` attribute — moving one without the other is precisely the label/filename
+     disagreement this suite was written to refuse, and for one working-tree moment the
+     tree held that exact defect (label old, attribute new) because this file was frozen. */
   it.each(BLUEPRINTS.map((bp) => [bp.slug, bp] as const))(
-    "%s: the label, the download attribute and the href all name blueprint.dot",
+    "%s: the label, the download attribute and the href all name topology.dot",
     (slug, bp) => {
       const html = render(bp);
-      const at = html.indexOf("Download blueprint.dot");
-      expect(at, `${slug} has no "Download blueprint.dot" button`).toBeGreaterThan(-1);
+      const at = html.indexOf("Download topology.dot");
+      expect(at, `${slug} has no "Download topology.dot" button`).toBeGreaterThan(-1);
 
       /* The anchor that carries the label, taken by finding its opening tag rather than by
          stepping back a fixed number of bytes. It WAS a 250-character window, and that

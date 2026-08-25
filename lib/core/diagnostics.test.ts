@@ -44,6 +44,7 @@ const EMITTED_BY: Record<DiagnosticCode, string | null> = {
   "card/version-bump-too-small": "card/validate",
   "bundle/version-bump-too-small": "server/versioning",
   "ontology/version-bump-too-small": "server/versioning",
+  "bundle/legacy-topology-file": "components/upload/BundleDropzone",
   "card/unknown-phase": "card/validate",
   "card/namespaced-phase": "card/validate",
   "card/duplicate-phase": "card/validate",

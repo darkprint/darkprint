@@ -39,7 +39,7 @@ import { ARCHIVE } from "./fixtures";
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 
 /** `bundle-export.ts`'s own constant name for the topology file, consumed not retyped. */
-const TOPOLOGY = "blueprint.dot";
+const TOPOLOGY = "topology.dot";
 
 /* ==================== AC4: what the server exports ==================== */
 

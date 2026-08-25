@@ -21,10 +21,10 @@ import { bundleProgress } from "./progress";
 /**
  * The bundle-relative name every diagnostic on the topology is located against —
  * `lib/core/bundle/resolve.ts`'s own `DOT_FILE`. The source panel below wears it as its
- * title so a reader reading `blueprint.dot:2:3` in the validator report can see, without
+ * title so a reader reading `topology.dot:2:3` in the validator report can see, without
  * translating anything, which panel holds line 2.
  */
-const DOT_FILE = "blueprint.dot";
+const DOT_FILE = "topology.dot";
 
 function clamp(value: number, low: number, high: number): number {
   return value < low ? low : value > high ? high : value;
@@ -72,7 +72,7 @@ const LABEL = "label";
  * branch only, which put the DOT one click away exactly when nothing was wrong with it
  * and out of reach the moment a diagnostic cited a line of it. It is rendered for any
  * bundle that carries a topology now, open by default when the bundle was rejected, and
- * the cited lines are named above it so `blueprint.dot:2:3` and the gutter agree.
+ * the cited lines are named above it so `topology.dot:2:3` and the gutter agree.
  */
 export function ValidationReport({
   result,
@@ -359,7 +359,7 @@ export function ValidationReport({
 
       {/* ---------- the topology, whatever the verdict ----------
           This sat inside the branch above, so a reader told the problem was at
-          `blueprint.dot:2:3` was shown the file only in the case where nothing was wrong
+          `topology.dot:2:3` was shown the file only in the case where nothing was wrong
           with it. It is here now for any bundle that carries a topology at all, and it
           opens itself on a rejection: the fix starts by looking at the line. */}
       {source !== undefined && (

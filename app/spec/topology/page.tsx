@@ -52,7 +52,7 @@ import { DotBreakdown } from "@/components/panes/DotBreakdown";
    else, so it is now mounted nowhere. The component and its guards
    stay: `components/home/roles-labels.test.ts` and
    `components/home/roles.test.ts` both render it directly and
-   reparse `content/blueprints/starter-software-factory/blueprint.dot`,
+   reparse `content/blueprints/starter-software-factory/topology.dot`,
    and `architecture/website.md` names the first of those the
    highest-value guard on the site. A guard is not deleted because a
    mount moved; deleting it is how the drawing would come back
@@ -228,8 +228,8 @@ export default function SpecTopologyPage() {
               the redesign fixes. */}
           <DotBreakdown
             source={dot}
-            title={`${STARTER}/blueprint.dot`}
-            downloadName="blueprint.dot"
+            title={`${STARTER}/topology.dot`}
+            downloadName="topology.dot"
           />
         </div>
       </section>

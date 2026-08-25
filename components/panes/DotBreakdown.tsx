@@ -1,7 +1,7 @@
 "use client";
 
 /* ============================================================
-   `blueprint.dot`, at full width, broken into blocks you can pick.
+   `topology.dot`, at full width, broken into blocks you can pick.
 
    ── What the author asked for ──
    "The panel in each blueprint representing the blueprint.dot is ok
@@ -29,7 +29,7 @@
    against that 690px line, and every line of every blueprint in the
    archive on screen at once. That is why there is still no reel and
    no window clip — `CardWalk` slides a 52-line card through a 24-row
-   viewport because the card cannot fit; the longest `blueprint.dot`
+   viewport because the card cannot fit; the longest `topology.dot`
    in the archive is 27 lines, which is 558px of listing. Nothing
    here sets a height or a transform at any width.
 
@@ -284,7 +284,7 @@ export function DotBreakdown({
 }: {
   /** The DOT document, verbatim, read off the archive by the server half. */
   source: string;
-  /** `<slug>/blueprint.dot`, the name the file is stored and downloaded under. */
+  /** `<slug>/topology.dot`, the name the file is stored and downloaded under. */
   title: string;
   /**
    * Offer the file as a download, under this name.

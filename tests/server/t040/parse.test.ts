@@ -54,7 +54,7 @@ describe("AC3: validateBundle over a DOT that does not parse", () => {
          with no file is a position in nothing when the submission carries eight card files
          beside the DOT. */
       expect(d.location?.file, "the position needs a document to be a position in").toBe(
-        "blueprint.dot",
+        "topology.dot",
       );
     });
   }

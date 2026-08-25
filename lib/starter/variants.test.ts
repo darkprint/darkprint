@@ -483,7 +483,7 @@ describe("choice 2: who decides the work is finished", () => {
    *
    * `starterDot` writes the teaching material into the file, and the file is read twice:
    * `buildPaneModel` puts it in the DOT pane of `/build` verbatim, and `exportBundle`
-   * writes the same bytes as `blueprint.dot` in the downloaded folder. The approval branch
+   * writes the same bytes as `topology.dot` in the downloaded folder. The approval branch
    * said "the autonomy level changes with it, from 4 to 3", which the `ordinal` regex
    * cannot see — it wants a digit touching the word "level", and that sentence put five
    * words between them. So the phrase is banned by name, together with the transition it

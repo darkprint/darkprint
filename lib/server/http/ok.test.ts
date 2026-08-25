@@ -14,7 +14,7 @@ describe("ok", () => {
     const diagnostics: Diagnostic[] = [
       error("dot/parse-error", "Unexpected token.", {
         hint: "Check for an unclosed brace.",
-        location: { file: "blueprint.dot", line: 3, column: 12 },
+        location: { file: "topology.dot", line: 3, column: 12 },
       }),
       warning("card/duplicate-phase", "Phase declared twice.", {
         location: { cardRef: "solver@1.0.0", path: "phases[1]" },
@@ -25,7 +25,7 @@ describe("ok", () => {
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body.diagnostics).toEqual(diagnostics);
-    expect(body.diagnostics[0].location).toEqual({ file: "blueprint.dot", line: 3, column: 12 });
+    expect(body.diagnostics[0].location).toEqual({ file: "topology.dot", line: 3, column: 12 });
     expect(body.diagnostics[1].location).toEqual({ cardRef: "solver@1.0.0", path: "phases[1]" });
   });
 });

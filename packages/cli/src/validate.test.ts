@@ -25,7 +25,7 @@ const SLUGS = readdirSync("content/blueprints").sort();
 
 /** The refs a DOT pins, in declaration order — `lib/content/read.ts`'s `pinnedRefs`. */
 function pinnedRefs(dot: string): CardRef[] {
-  const parsed = parseDot(dot, "blueprint.dot");
+  const parsed = parseDot(dot, "topology.dot");
   if (parsed.graph === undefined) return [];
   const refs: CardRef[] = [];
   const seen = new Set<CardRef>();
@@ -61,7 +61,7 @@ const ARCHIVE_EXTENSIONS = validateVocabularySource(
 
 /** One bundle as the SERVER receives it. */
 function serverSubmission(slug: string) {
-  const dot = readFileSync(`content/blueprints/${slug}/blueprint.dot`, "utf8");
+  const dot = readFileSync(`content/blueprints/${slug}/topology.dot`, "utf8");
   const manifest = parseYaml(
     readFileSync(`content/blueprints/${slug}/blueprint.yaml`, "utf8"),
   ) as BundleManifest;

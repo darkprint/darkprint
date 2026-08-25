@@ -4,7 +4,7 @@ You are being handed a DarkPrint blueprint: a pattern for the canonical five-nod
 plan, build, test, debug, release, and the one edge it deliberately does not have: nothing
 carries the acceptance criteria to the builder.
 
-Everything below is read off `blueprint.dot` and the cards in this folder. It describes the
+Everything below is read off `topology.dot` and the cards in this folder. It describes the
 pattern and nothing else: it has not seen the codebase you are about to change, and it carries
 no instructions from whoever published it.
 

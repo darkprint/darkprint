@@ -68,7 +68,7 @@ function exampleBundle(): ExampleBundle {
   if (record !== undefined) {
     files.push({ name: "blueprint.yaml", text: stringifyYaml(record.manifest) });
   }
-  files.push({ name: "blueprint.dot", text: source.dot });
+  files.push({ name: "topology.dot", text: source.dot });
   for (const card of source.cards) {
     // `bundleSource` reports the repo-relative path; the bundle-relative name is what
     // diagnostics quote back, so the wizard shows the same locations the loader does.
@@ -258,7 +258,7 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
             DarkPrint skill
           </Link>{" "}
           drops straight in. It runs in your own editor and writes the two things this page
-          reads, a <span className="font-mono text-cyan">blueprint.dot</span> and the{" "}
+          reads, a <span className="font-mono text-cyan">topology.dot</span> and the{" "}
           <span className="font-mono text-cyan">cards/</span> it pins, so there is nothing
           to export and nothing to convert. Bring it before it is finished: a graph whose
           cards are half written resolves as far as it goes, and the report says how far.

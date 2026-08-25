@@ -11,7 +11,7 @@ cards pinned   7
 local terms    lupo/pii-handling
 ```
 
-The digest is taken over `blueprint.dot` and the digest of every card version pinned in it.
+The digest is taken over `topology.dot` and the digest of every card version pinned in it.
 Recompute it to confirm these files are the ones DarkPrint read. One changed byte gives a
 different digest.
 
@@ -45,14 +45,14 @@ configuration.
 
 ```
 factory.dot                the pipeline Attractor runs, each card's spec inlined as a prompt
-blueprint.dot              the DarkPrint topology: node ids, edges, the card version pinned on each node
+topology.dot               the DarkPrint topology: node ids, edges, the card version pinned on each node
 cards/                     the pinned cards, byte for byte as the registry stores them
 ontology/extensions.yaml   the local terms these cards declare, and the weights that price them
 README.md                  this file
 AGENTS.md                  the same folder addressed to an agent adapting it, generated from the cards
 ```
 
-Two DOT files, because they answer different questions. `blueprint.dot` is what the registry
+Two DOT files, because they answer different questions. `topology.dot` is what the registry
 stores and scores. `factory.dot` is that same graph prepared for a runner: a synthesised
 `__start` and `__exit` node, and the prompts inlined. Delete those two nodes and their edges
 and you are back to the topology.

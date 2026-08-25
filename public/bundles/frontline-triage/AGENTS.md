@@ -4,7 +4,7 @@ You are being handed a DarkPrint blueprint: a pattern for classifies inbound tic
 auto-resolves the simple ones with a kb lookup, qas its own reply, and escalates only when
 confidence drops.
 
-Everything below is read off `blueprint.dot` and the cards in this folder. It describes the
+Everything below is read off `topology.dot` and the cards in this folder. It describes the
 pattern and nothing else: it has not seen the codebase you are about to change, and it carries
 no instructions from whoever published it.
 

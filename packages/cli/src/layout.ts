@@ -1,7 +1,7 @@
 /* ============================================================
    darkprint CLI — reading a bundle directory off disk
    D-270-01 C6: `<dir>` is the layout `/upload` already accepts —
-   `blueprint.dot` required, `cards/*.yaml`, an OPTIONAL manifest —
+   `topology.dot` required, `cards/*.yaml`, an OPTIONAL manifest —
    so `validate` accepts exactly what the wizard accepts and what
    the authoring skill writes.
 
@@ -43,7 +43,7 @@ const MANIFEST_NAME = /^blueprint\.(ya?ml|json)$/i;
 /** The wizard's flat vocabulary spelling, its line 106. See `readVocabulary`. */
 const FLAT_VOCABULARY_NAME = /^extensions\.(ya?ml|json)$/i;
 
-const DOT_FILE = "blueprint.dot";
+const DOT_FILE = "topology.dot";
 const CARDS_DIR = "cards";
 
 /** What a bundle directory holds, in the shape `validateBundle` takes. */
@@ -72,7 +72,7 @@ export interface BundleDirectory {
 /**
  * Read one bundle directory.
  *
- * Throws `CliError` when `blueprint.dot` is absent: a directory without a topology is not
+ * Throws `CliError` when `topology.dot` is absent: a directory without a topology is not
  * an incomplete bundle, it is not one at all — `BundleDropzone`'s own wording for the same
  * condition, and the reason the DOT is the only required member.
  */

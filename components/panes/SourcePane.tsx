@@ -92,7 +92,7 @@ export function SourcePane({
   activeLine?: number;
   ghosts: readonly PaneGhost[];
   selectedAbsence?: string;
-  /** Accessible name of the listbox, e.g. "Lines of blueprint.dot". */
+  /** Accessible name of the listbox, e.g. "Lines of topology.dot". */
   listLabel: string;
   /** Shown instead of the document when there is none. */
   emptyNote?: string;

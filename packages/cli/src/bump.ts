@@ -99,11 +99,11 @@ async function fetchSnapshot(
   let vocabulary: string | undefined;
 
   for (const path of paths) {
-    if (path !== "blueprint.dot" && !path.startsWith("cards/") && path !== ONTOLOGY_EXTENSIONS_FILE) {
+    if (path !== "topology.dot" && !path.startsWith("cards/") && path !== ONTOLOGY_EXTENSIONS_FILE) {
       continue;
     }
     const text = await fetchFile(registry, owner, slug, digest, path);
-    if (path === "blueprint.dot") dot = text;
+    if (path === "topology.dot") dot = text;
     else if (path === ONTOLOGY_EXTENSIONS_FILE) vocabulary = text;
     else cardFiles[path] = text;
   }

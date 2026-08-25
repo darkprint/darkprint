@@ -16,11 +16,11 @@
    Verified before it was bound: `exportRelease` on the first release
    of `adversarial-consensus-line` answered TWELVE files, byte-for-byte
    equal to the twelve on disk (4303B AGENTS.md, 4735B README.md,
-   705B blueprint.dot, eight cards, 6441B factory.dot). So a
+   705B topology.dot, eight cards, 6441B factory.dot). So a
    difference below is the module's, not the oracle's.
 
    ── what that measurement says about the advertised contract ──
-   `/mcp` promises `blueprint.dot, cards/*.yaml, README.md, AGENTS.md`
+   `/mcp` promises `topology.dot, cards/*.yaml, README.md, AGENTS.md`
    under a comment claiming those are what the exporter writes into
    every folder. The exporter writes `factory.dot` too — in 9 of 9
    folders — and `ontology/extensions.yaml` in one. AC4 binds the

@@ -15,7 +15,7 @@ text and it is handed back as a folder of text.
 ```
 content/blueprints/starter-software-factory/
   blueprint.yaml     the manifest: identity, prose, tags, author, ontology version
-  blueprint.dot      the topology: which nodes exist, what flows between them
+  topology.dot       the topology: which nodes exist, what flows between them
 ```
 
 Cards are **not** copied in. They live once in `content/cards/` and the DOT pins them by
@@ -38,7 +38,7 @@ createdAt: "2026-07-28"
 updatedAt: "2026-07-28"
 ```
 
-### `blueprint.dot`
+### `topology.dot`
 
 A strict DOT subset. Nodes carry `card="id@version"`; edges carry `label` naming what they
 carry.
@@ -77,18 +77,18 @@ subset, not full Graphviz: no subgraph mutation, no HTML labels.
 `public/bundles/<slug>/`, regenerated from source at every build:
 
 ```
-blueprint.dot          the topology as authored, with card pins
+topology.dot           the topology as authored, with card pins
 factory.dot            the same graph, RUNNABLE BY ATTRACTOR
 cards/*.yaml           every card the graph pins, at the pinned version
 ontology/extensions.yaml   only when the bundle uses local terms
 README.md              digest, command, scores, and what each file is
 ```
 
-### `blueprint.dot` vs `factory.dot`
+### `topology.dot` vs `factory.dot`
 
 They are the same graph for two different readers.
 
-| | `blueprint.dot` | `factory.dot` |
+| | `topology.dot` | `factory.dot` |
 |---|---|---|
 | for | a person, and DarkPrint | Attractor |
 | nodes | `card="id@version"` | `label`, `shape`, `prompt`, `llm_model`, `max_retries`, and `card` |
@@ -140,8 +140,8 @@ bundle README so a reader can verify that what they downloaded is what was score
 
 | change | what goes stale |
 |---|---|
-| **edit a `blueprint.dot`** | that bundle's digest, its README, its scores, and any figure drawn from it — `components/home/roles.ts` reparses the starter's DOT and `roles.test.ts` fails on drift |
-| **bump a card a blueprint pins** | the pin in `blueprint.dot`; the version-chain check fails the build until both agree |
+| **edit a `topology.dot`** | that bundle's digest, its README, its scores, and any figure drawn from it — `components/home/roles.ts` reparses the starter's DOT and `roles.test.ts` fails on drift |
+| **bump a card a blueprint pins** | the pin in `topology.dot`; the version-chain check fails the build until both agree |
 | **add a reserved Attractor attribute** | `attractor/reserved.ts`, `emit.ts`, `lint.ts`, and the interop claim on `/spec/topology` |
 | **change the export layout** | `bundle-export.ts`, the README generator, `/blueprints` download copy, and the `/upload` validator, which must still accept the folder DarkPrint generates |
 | **change canonical JSON or the hash** | every digest in every README and every archive key |

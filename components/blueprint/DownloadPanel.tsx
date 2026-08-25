@@ -1,4 +1,5 @@
 import { cx } from "@/lib/format";
+import { TOPOLOGY_DOT } from "@/lib/content/bundle-export";
 import { CloneMenu } from "@/components/blueprint/CloneMenu";
 
 /** One downloadable card document. */
@@ -153,11 +154,11 @@ export function DownloadPanel({
         <li className="py-2.5">
           <a
             href={topologyHref}
-            download="blueprint.dot"
+            download={TOPOLOGY_DOT}
             className="group flex items-baseline justify-between gap-2"
           >
             <span className="font-mono text-sm text-fg transition-colors group-hover:text-cyan">
-              Download blueprint.dot
+              Download {TOPOLOGY_DOT}
             </span>
             <span className="shrink-0 font-mono text-[11px] text-dim">↓</span>
           </a>

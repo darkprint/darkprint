@@ -385,8 +385,8 @@ digraph second { z -> w; }`;
   });
 
   it("carry the file when one is given, and no file key when it is not", () => {
-    const withFile = lint("digraph g {\n  # x\n  a -> b;\n}", "blueprint.dot");
-    expect(withFile[0].location).toEqual({ file: "blueprint.dot", line: 2, column: 3 });
+    const withFile = lint("digraph g {\n  # x\n  a -> b;\n}", "topology.dot");
+    expect(withFile[0].location).toEqual({ file: "topology.dot", line: 2, column: 3 });
     const without = lint("digraph g {\n  # x\n  a -> b;\n}");
     expect(without[0].location).toEqual({ line: 2, column: 3 });
   });

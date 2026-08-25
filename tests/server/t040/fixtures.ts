@@ -130,7 +130,7 @@ function readOracle(slug: string): ArchiveOracle {
  */
 export function archiveCase(slug: string): ArchiveCase {
   const dir = join(BUNDLES_DIR, slug);
-  const dot = readFileSync(join(dir, "blueprint.dot"), "utf8");
+  const dot = readFileSync(join(dir, "topology.dot"), "utf8");
   const manifest = parseYaml(
     readFileSync(join(BLUEPRINTS_DIR, slug, "blueprint.yaml"), "utf8"),
   ) as BundleManifest;

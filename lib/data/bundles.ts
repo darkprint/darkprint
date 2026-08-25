@@ -208,7 +208,7 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
         },
         files: [
           {
-            path: "blueprint.dot",
+            path: "topology.dot",
             kind: "dot",
             change: "gate node replaced with a second verifier",
             state: "changed",
@@ -331,7 +331,7 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
         },
         files: [
           {
-            path: "blueprint.dot",
+            path: "topology.dot",
             kind: "dot",
             change: "risk markers added to two nodes",
             state: "changed",
@@ -454,7 +454,7 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
         },
         files: [
           {
-            path: "blueprint.dot",
+            path: "topology.dot",
             kind: "dot",
             change: "two nodes drawn with no card pinned",
             state: "changed",

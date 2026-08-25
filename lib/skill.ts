@@ -28,7 +28,7 @@
    at a glance, and `/skill` spends one sentence saying so outright.
 
    ── What it emits, and the one thing it deliberately does not ──
-   The registry shape: `blueprint.dot`, one YAML card per node, `README.md` and
+   The registry shape: `topology.dot`, one YAML card per node, `README.md` and
    `AGENTS.md`. NOT `factory.dot`. That file is compiled out of the other two by
    `lib/content/bundle-export.ts` on the way out of DarkPrint, and a skill that emitted its
    own copy of the Attractor emit rules would be free to drift from the exporter the day

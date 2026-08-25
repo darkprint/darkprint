@@ -3,7 +3,7 @@
 
    The section's header comment has always claimed that "every
    node, every edge and every label below is read off
-   `content/blueprints/starter-software-factory/blueprint.dot` and
+   `content/blueprints/starter-software-factory/topology.dot` and
    the five cards it names". It was not: the labels, the wires and
    the iteration cap were transcribed literals in the JSX with
    nothing holding them to the archive, so the claim was a promise
@@ -108,7 +108,7 @@ export const ROLE_LOOP_CAP = {
 } as const;
 
 /** The blueprint every fact above is taken from. */
-export const ROLE_BLUEPRINT = "content/blueprints/starter-software-factory/blueprint.dot";
+export const ROLE_BLUEPRINT = "content/blueprints/starter-software-factory/topology.dot";
 
 /** The box for a DOT node id. Throws rather than rendering a hole. */
 export function roleBox(id: string): RoleBox {

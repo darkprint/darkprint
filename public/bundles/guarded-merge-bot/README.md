@@ -10,7 +10,7 @@ nodes          6
 cards pinned   6
 ```
 
-The digest is taken over `blueprint.dot` and the digest of every card version pinned in it.
+The digest is taken over `topology.dot` and the digest of every card version pinned in it.
 Recompute it to confirm these files are the ones DarkPrint read. One changed byte gives a
 different digest.
 
@@ -43,14 +43,14 @@ configuration.
 ## What is in the folder
 
 ```
-factory.dot     the pipeline Attractor runs, each card's spec inlined as a prompt
-blueprint.dot   the DarkPrint topology: node ids, edges, the card version pinned on each node
-cards/          the pinned cards, byte for byte as the registry stores them
-README.md       this file
-AGENTS.md       the same folder addressed to an agent adapting it, generated from the cards
+factory.dot    the pipeline Attractor runs, each card's spec inlined as a prompt
+topology.dot   the DarkPrint topology: node ids, edges, the card version pinned on each node
+cards/         the pinned cards, byte for byte as the registry stores them
+README.md      this file
+AGENTS.md      the same folder addressed to an agent adapting it, generated from the cards
 ```
 
-Two DOT files, because they answer different questions. `blueprint.dot` is what the registry
+Two DOT files, because they answer different questions. `topology.dot` is what the registry
 stores and scores. `factory.dot` is that same graph prepared for a runner: a synthesised
 `__start` and `__exit` node, and the prompts inlined. Delete those two nodes and their edges
 and you are back to the topology.

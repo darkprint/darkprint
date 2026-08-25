@@ -10,7 +10,7 @@ import { ARCHIVE_OWNER, blueprintHref } from "@/lib/href";
 
    The drawing and everything about how it is placed are unchanged and now live in
    `./blueprint/BlueprintWalk.tsx`, which is the client half. This file is the server half
-   and it exists for one reason: to read `blueprint.dot` off the archive at build time.
+   and it exists for one reason: to read `topology.dot` off the archive at build time.
 
    ── Why the split ──
    The author asked the drawing to be replaced by its own source as a reader scrolls
@@ -34,7 +34,7 @@ import { ARCHIVE_OWNER, blueprintHref } from "@/lib/href";
 const STARTER = "starter-software-factory";
 
 /** What the file is called in the folder that downloads, and in the panel's own rail. */
-const FILE = `${STARTER}/blueprint.dot`;
+const FILE = `${STARTER}/topology.dot`;
 
 /**
  * The DOT with its comment lines taken out.

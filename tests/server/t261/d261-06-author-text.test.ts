@@ -79,7 +79,7 @@ function fileTree(): string {
   return renderToStaticMarkup(
     createElement(FileTree, {
       files: [
-        { path: "blueprint.dot", kind: "dot", change: "the graph", state: "source", at: "2026-08-01" },
+        { path: "topology.dot", kind: "dot", change: "the graph", state: "source", at: "2026-08-01" },
         { path: "README.md", kind: "doc", change: "what it is", state: "generated", at: "2026-08-01" },
       ],
       lastChange: { message: "published", digest: "sha256:abc", at: "2026-08-01" },

@@ -1024,7 +1024,7 @@ export function CardStackFigure({
 /**
  * One list, two things written against it.
  *
- * The prose says the graph and the cards are "both written against" the vocabulary, and
+ * The prose says the topology and the cards are "both written against" the vocabulary, and
  * that relation is the whole point of the part, so the drawing is the relation rather than
  * a sample of terms: two sources, a brace, and the kinds with how many terms each holds.
  * The counts come off the ontology at build time, which `architecture/ontology.md` requires
@@ -1045,7 +1045,7 @@ export function VocabularyFigure({
           read as broken. */}
       <div className="flex shrink-0 flex-col gap-6 font-mono text-[11px] text-fg">
         <span className="flex h-8 items-center rounded border border-line bg-surface px-2">
-          the graph
+          the topology
         </span>
         <span className="flex h-8 items-center rounded border border-line bg-surface px-2">
           the cards

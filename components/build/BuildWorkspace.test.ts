@@ -190,7 +190,10 @@ describe("BuildWorkspace — SSR markup", () => {
    */
   it("describes one folder shape, with nothing to reconcile", () => {
     const text = plainText(html);
-    expect(text).toMatch(/it writes what the registry stores: blueprint\.dot/i);
+    // "blueprint.dot" until the terminology pass (2026-08-25): `AgentHandoff` names the
+    // topology file by its new name and this case follows the copy rather than the old
+    // filename.
+    expect(text).toMatch(/it writes what the registry stores: topology\.dot/i);
     expect(text).not.toMatch(/\bNot\s+factory\.dot\b/i);
     expect(text).not.toMatch(/exporter compiles from those two on the way out/i);
   });

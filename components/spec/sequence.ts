@@ -225,7 +225,7 @@ export const SPEC_OVERVIEW: SpecPage = {
   title: "What a blueprint is",
   question: "What a blueprint is for, and the three files one is written in.",
   sections: [
-    { id: "bundle", label: "The bundle" },
+    { id: "bundle", label: "The blueprint contents" },
     { id: "parts", label: "The three parts" },
     { id: "run", label: "What surrounds a run" },
   ],
@@ -265,7 +265,7 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
       { id: "dot-checks-heading", label: "Validator checks" },
     ],
     format: "DOT",
-    file: "blueprint.dot",
+    file: "topology.dot",
     source: "lib/core/dot/ · lib/core/attractor/",
     color: "var(--color-blueprint-line)",
     anchor: "topology",

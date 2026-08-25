@@ -1,6 +1,6 @@
 ---
 name: darkprint
-description: Interview an author from the task they want done to a complete DarkPrint blueprint — blueprint.dot, cards/*.yaml, README.md, AGENTS.md — one question at a time, deriving the topology from declared ports and forcing an explicit decision on which node may see the acceptance criteria. Use when someone wants to design an agent pipeline as a typed graph, turn a workflow or a set of prompts into a DarkPrint bundle, write or repair node cards, decide what a node must never receive, or check a blueprint against the ontology before uploading it. This skill writes files and nothing else. It runs no graph, starts no server, publishes nothing and sends nothing anywhere; the bundle is scored by dropping the folder on darkprint.io/upload, which analyses it statically in the browser tab.
+description: Interview an author from the task they want done to a complete DarkPrint blueprint — topology.dot, cards/*.yaml, README.md, AGENTS.md — one question at a time, deriving the topology from declared ports and forcing an explicit decision on which node may see the acceptance criteria. Use when someone wants to design an agent pipeline as a typed graph, turn a workflow or a set of prompts into a DarkPrint bundle, write or repair node cards, decide what a node must never receive, or check a blueprint against the ontology before uploading it. This skill writes files and nothing else. It runs no graph, starts no server, publishes nothing and sends nothing anywhere; the bundle is scored by dropping the folder on darkprint.io/upload, which analyses it statically in the browser tab.
 ---
 
 # DarkPrint — author a blueprint
@@ -19,7 +19,7 @@ that bundle, by interviewing them. Not by filling in a form for them, and not by
 
 | | |
 |---|---|
-| Writes | `blueprint.dot`, `cards/*.yaml`, `README.md`, `AGENTS.md` in a directory the author names |
+| Writes | `topology.dot`, `cards/*.yaml`, `README.md`, `AGENTS.md` in a directory the author names |
 | Does not write | `factory.dot`. DarkPrint's own exporter compiles that from the bundle; duplicating the emit rules here would let the two drift |
 | Does not do | run the graph, run any node, call a model, start a server, publish, or send the bundle anywhere |
 | Cannot do | score the bundle. The engine is not on this machine. The author scores it by dropping the folder on `/upload` |
@@ -341,7 +341,7 @@ Ask where it goes, then write exactly this:
 
 ```
 <blueprint-slug>/
-  blueprint.dot          one digraph, every node pinned card="id@version"
+  topology.dot           one digraph, every node pinned card="id@version"
   cards/
     <card-id>@<version>.yaml    one per node
   README.md              for a person opening the folder
@@ -352,7 +352,7 @@ Nothing else. No `factory.dot`, no second `.dot`, and no card named `blueprint.y
 `extensions.yaml` — `/upload` reads roles off filenames and those two names are claimed by the
 manifest and the local vocabulary, so a card called either silently disappears from the bundle.
 
-`templates/blueprint.dot` and `templates/card.yaml` are annotated skeletons. Read them once,
+`templates/topology.dot` and `templates/card.yaml` are annotated skeletons. Read them once,
 then write from the answers rather than filling in blanks.
 
 ---

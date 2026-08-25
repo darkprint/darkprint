@@ -170,7 +170,7 @@ function Drawing({ graph, className }: { graph: LandingGraph; className: string 
 /**
  * The drawing, and the file it is a picture of.
  *
- * `SectionBlueprint` is the server half: it reads `blueprint.dot` off the archive and hands
+ * `SectionBlueprint` is the server half: it reads `topology.dot` off the archive and hands
  * it down. This half is a client component because the drawing animates, and because the
  * swap below it is driven by scroll.
  *

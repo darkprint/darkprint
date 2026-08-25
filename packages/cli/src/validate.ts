@@ -26,7 +26,7 @@ import { readBundleDirectory } from "./layout";
  * caller wanting to know whether the manifest was stubbed calls `readBundleDirectory`,
  * which is on the barrel for exactly that.
  *
- * Local and offline (AC6). Throws `CliError` for a directory with no `blueprint.dot`; a
+ * Local and offline (AC6). Throws `CliError` for a directory with no `topology.dot`; a
  * bundle that resolves WITH errors is an answer rather than a throw, which is the same
  * split `/api/validate/bundle` makes at 200 and for the same reason — a broken bundle is
  * a result the caller asked for.

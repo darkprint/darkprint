@@ -16,7 +16,7 @@
 
    ── the WIZARD'S LAYOUT, which is a ruled shape ──
    D-270-01 C6 makes `<dir>` the layout `/upload` accepts:
-   `blueprint.dot` required, `cards/*.yaml`, and an OPTIONAL
+   `topology.dot` required, `cards/*.yaml`, and an OPTIONAL
    manifest. D-270-02 rules the stub the CLI supplies when the
    manifest is absent, after this suite measured that the "named
    constant" C6 cited does not exist — `assembleBundle`'s defaults
@@ -188,7 +188,7 @@ export function writeBundleFolder(bundle: Bundle, options: FolderOptions = {}): 
   const root = options.dirName === undefined ? base : join(base, options.dirName);
   mkdirSync(root, { recursive: true });
 
-  writeFileSync(join(root, "blueprint.dot"), bundle.dot, "utf8");
+  writeFileSync(join(root, "topology.dot"), bundle.dot, "utf8");
 
   for (const [file, text] of Object.entries(bundle.cardFiles)) {
     const target = join(root, file);

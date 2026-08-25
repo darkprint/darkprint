@@ -143,7 +143,7 @@ export const metadata: Metadata = {
      rather than you writing one. */
   title: "Assisted Design",
   description:
-    "Start from your goal: one command puts a blueprint-writing skill in your own agent, and it interviews you into a folder of blueprint.dot, one card per node, README.md and AGENTS.md. Read it back on this site with nothing sent anywhere. Not built yet: releasing straight from your agent.",
+    "Start from your goal: one command puts a blueprint-writing skill in your own agent, and it interviews you into a folder of topology.dot, one card per node, README.md and AGENTS.md. Read it back on this site with nothing sent anywhere. Not built yet: releasing straight from your agent.",
 };
 
 export default function SkillPage() {

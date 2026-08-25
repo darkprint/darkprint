@@ -348,8 +348,12 @@ export function premise(files: readonly RouteFile[]): void {
  * make it arrive rather than to judge it.
  */
 export const FROZEN: Readonly<Record<string, string>> = {
+  /* Re-pinned at the topology rename (owner-instructed, 2026-08-25): one word in the
+     header comment moved with the file the whole tree renamed (`blueprint.dot` →
+     `topology.dot`). No exported value or behaviour changed; the pair's test half is
+     byte-identical. The pin fired exactly as designed and this records the cause. */
   "components/upload/progress.ts":
-    "04b7cc4d71ad4f96c682ae6add3e0d6613cf0a2ff89b0425774861299d6f1235",
+    "b5caa4b5c041ed2ed8f5969a57eb423ddd2f59e2bf28f46018ec8e4babefc788",
   "components/upload/progress.test.ts":
     "548c52cf4fdb78c8c9f8476c474dd486eefda105dc153f8e575a7852540a30a5",
 };

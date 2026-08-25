@@ -195,7 +195,7 @@ describe("ServedFile is the shape the contract publishes", () => {
      * one assertion that ties the two halves of the surface together.
      */
     const texts = await exportedTexts(first);
-    for (const path of ["README.md", "blueprint.dot", "factory.dot", "AGENTS.md"]) {
+    for (const path of ["README.md", "topology.dot", "factory.dot", "AGENTS.md"]) {
       const served = asServedFile(
         await callServeFile({ ownerHandle: owner.handle, slug: SUBJECT, digest: first.digest }, path),
         `\`serveFile\` for \`${path}\``,
@@ -234,7 +234,7 @@ describe("ServedFile is the shape the contract publishes", () => {
       .toBeDefined();
 
     const types = new Map<string, string>();
-    for (const path of ["README.md", "blueprint.dot", card as string]) {
+    for (const path of ["README.md", "topology.dot", card as string]) {
       types.set(path, asServedFile(await callServeFile(ref, path), `\`serveFile\` for ${path}`).contentType);
     }
     expect(
@@ -731,14 +731,14 @@ describe("AC7 — a path outside the release is refused, not traversed", () => {
     const mine = asServedFile(
       await callServeFile(
         { ownerHandle: owner.handle, slug: SUBJECT, digest: first.digest },
-        "blueprint.dot",
+        "topology.dot",
       ),
       "`serveFile` under the first owner's handle",
     );
     const theirs = asServedFile(
       await callServeFile(
         { ownerHandle: rival.handle, slug: SUBJECT, digest: rivals.digest },
-        "blueprint.dot",
+        "topology.dot",
       ),
       "`serveFile` under the second owner's handle",
     );

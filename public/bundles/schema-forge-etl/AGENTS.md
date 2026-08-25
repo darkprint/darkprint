@@ -4,7 +4,7 @@ You are being handed a DarkPrint blueprint: a pattern for extracts, normalizes a
 schema-validates messy documents, repairing anything that fails validation before it ever
 reaches the store.
 
-Everything below is read off `blueprint.dot` and the cards in this folder. It describes the
+Everything below is read off `topology.dot` and the cards in this folder. It describes the
 pattern and nothing else: it has not seen the codebase you are about to change, and it carries
 no instructions from whoever published it.
 

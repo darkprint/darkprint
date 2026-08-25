@@ -85,7 +85,11 @@ describe("the tutorial covers what a reader is in for", () => {
   });
 
   it("names the files it leaves behind, in the shape the registry stores", () => {
-    for (const path of ["blueprint.dot", "cards/<node>.yaml", "readme.md", "agents.md"]) {
+    // "blueprint.dot" until the terminology pass (2026-08-25): the row reads live off
+    // `TOPOLOGY_DOT`, which renamed to `topology.dot` in the same pass, in the shared
+    // module this suite does not own (`lib/content/bundle-export.ts`) — retargeted, not
+    // loosened, so this case still fails if the row ever drifts from that constant again.
+    for (const path of ["topology.dot", "cards/<node>.yaml", "readme.md", "agents.md"]) {
       expect(text, path).toContain(path.toLowerCase());
     }
   });

@@ -99,10 +99,14 @@ const FROZEN: readonly Frozen[] = [
   },
   {
     path: "components/blueprint/download-name.test.ts",
-    blob: "86234a5351772a263b1db94d00387880e6213ce1" /* RE-PINNED DELIBERATELY: D-261-11's ruled rewrite off page-invocation onto the
-      component-with-props idiom, 89+/37-. The largest diff of the eight and the most
-      clearly granted — a page whose body opens a database cannot be invoked directly,
-      whatever its segment export says. */,
+    blob: "556c9c10127627b702ebff809cc3c93fbcf9e29a" /* RE-PINNED DELIBERATELY twice.
+      First at D-261-11's ruled rewrite off page-invocation onto the component-with-props
+      idiom, 89+/37-. Then at the topology rename (owner-instructed, 2026-08-25): the
+      registry's stored file became `topology.dot`, and the suite's pinned label moved
+      WITH the download attribute — holding the label at the old word while the attribute
+      tracked the renamed constant was the exact label/filename disagreement the suite
+      refuses. The label now derives from `TOPOLOGY_DOT` itself, so the two cannot part
+      again without this suite seeing it. */,
     why:
       "`import Page from \"@/app/blueprints/[slug]/page\"` is a RESOLUTION-TIME binding: when " +
       "the route moves this breaks `typecheck` and `build`, not merely this suite. It is the " +
