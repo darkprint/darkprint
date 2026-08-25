@@ -10,6 +10,7 @@ import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { ScoreRadar } from "@/components/ui/ScoreRadar";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Sheet } from "@/components/viz";
+import { ARCHIVE_OWNER, blueprintHref } from "@/lib/href";
 
 /* ============================================================
    /reading-the-radar — the scorecard, taken apart, and the
@@ -341,7 +342,7 @@ export default function HowABlueprintIsGradedPage() {
                 {/* The one link the retired `/reading-the-radar` plate carried that
                     DRW-104 did not: the way to the blueprint this chart belongs to. It is
                     grafted onto this caption rather than lost with that figure. */}
-                <Link href={`/blueprints/${sample.slug}`} className={LINK}>
+                <Link href={blueprintHref(ARCHIVE_OWNER, sample.slug)} className={LINK}>
                   Open the blueprint <span aria-hidden>&rarr;</span>
                 </Link>
               </p>

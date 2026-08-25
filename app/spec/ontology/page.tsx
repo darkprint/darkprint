@@ -11,6 +11,7 @@ import { RouteBoxLink } from "@/components/ui/RouteBoxLink";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SourcePanel } from "@/components/ui/SourcePanel";
+import { ARCHIVE_OWNER, blueprintHref } from "@/lib/href";
 
 /* ============================================================
    /spec/ontology — layer 3, and the answer to the author's
@@ -558,7 +559,7 @@ export default function SpecOntologyPage() {
                   evidence and is the one thing in it that is not a general rule. */}
               <p className="text-[15px] leading-relaxed text-muted">
                 The{" "}
-                <SpecLink href={`/blueprints/${LOCAL_VOCAB_SLUG}`}>
+                <SpecLink href={blueprintHref(ARCHIVE_OWNER, LOCAL_VOCAB_SLUG)}>
                   {LOCAL_VOCAB_SLUG}
                 </SpecLink>{" "}
                 bundle ships this file in its own folder, so its cards resolve wherever the

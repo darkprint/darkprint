@@ -2,16 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { JsonValue, NodeCard } from "@/lib/core";
 import { shortDigest } from "@/lib/core";
-import {
-  allNodeCards,
-  cardSource,
-  getOntologyView,
-  getRegistry,
-  nodeCardVersions,
-} from "@/lib/content";
-import { cardDownloadCommand } from "@/lib/content/bundle-export";
+import { ontologyView } from "@/lib/core";
+import type { OntologyView } from "@/lib/core";
+import { getSharedDbClient } from "@/lib/db";
+import type { Actor } from "@/lib/server/policy";
+import { getLatestOntologyVersion, openView } from "@/lib/server/ontology";
+import { latestCards, usersOf, usersOfMany, versionsOf } from "@/lib/server/registry";
+import { searchTerms } from "@/lib/server/search";
+import { serveCard } from "@/lib/server/export";
+import { getPublicAuthor } from "@/lib/server/accounts";
+import { authorFor } from "@/components/profile/author";
+import { cardFileDownloadCommand } from "@/components/bundle/load";
 import { commentsFor, downloadsFor, starsFor } from "@/lib/data/node-community";
-import { getAuthor } from "@/lib/data/users";
 import { compact, cx } from "@/lib/format";
 import { CARD_BLOCKS } from "@/components/panes/model";
 import { termHref } from "@/lib/href";
@@ -59,16 +61,32 @@ import { FIELD_NOTE } from "@/components/panes/field-notes";
  * ontology's was live — it moves in the same change because it is the same bug, and
  * finding it later would mean finding it through a contributor's broken link.
  */
-export const dynamicParams = false;
+export const dynamic = "force-dynamic";
 
-/** One page per distinct card id; the newest version is what the bare id means. */
-export function generateStaticParams() {
-  return allNodeCards().map((record) => ({ id: record.id.split("/") }));
+/** A reader with no session. `Object.freeze` so a caller cannot make it somebody. */
+const ANONYMOUS: Actor = Object.freeze({ kind: "anonymous" });
+
+/**
+ * The core vocabulary with every public local term layered on.
+ *
+ * `openView` stores core terms only and takes an overlay per bundle — *"never a global
+ * row"*, its own words — while this route needs the registry-wide vocabulary a namespaced
+ * id like `lupo/pii-handling` lives in. `searchTerms` is the module that knows which terms
+ * are local, so the composition is its answer fed back in as the extensions. Three published
+ * readers in the order T260's merged `/ontology` already composes them; the decisions in it
+ * are theirs and only the call sequence repeats here.
+ */
+async function vocabularyView(db: ReturnType<typeof getSharedDbClient>["db"]): Promise<OntologyView> {
+  const published = await getLatestOntologyVersion(db);
+  if (published === undefined) return ontologyView({ version: "", title: "", terms: [] });
+  const local = await searchTerms(db, ANONYMOUS, { origin: "local" });
+  return openView(db, published.version, local.hits.map((hit) => hit.item));
 }
 
 export async function generateMetadata({ params }: PageProps<"/nodes/[...id]">) {
   const { id } = await params;
-  const record = nodeCardVersions(id.join("/"))[0];
+  const { db } = getSharedDbClient();
+  const record = (await versionsOf(db, ANONYMOUS, id.join("/")))[0];
   if (!record) return { title: "Node card not found" };
   return { title: record.card.name, description: record.card.action };
 }
@@ -738,17 +756,33 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   // The catch-all captures a namespaced id as its parts; the archive is keyed on the id.
   const id = segments.join("/");
 
+  const { db } = getSharedDbClient();
+
   // `versionsOf` is newest-first, so the head is what the bare id resolves to.
-  const versions = nodeCardVersions(id);
+  const versions = await versionsOf(db, ANONYMOUS, id);
   const record = versions[0];
   if (!record) notFound();
 
   const card = record.card;
-  const ontology = getOntologyView();
-  const registry = getRegistry();
+  const ontology = await vocabularyView(db);
 
-  const titleOf = (slug: string): string =>
-    registry.blueprint(slug)?.manifest.title ?? slug;
+  /* Every card id the registry publishes, once, so the dependency rows below can ask
+     whether a page exists behind each one without a reader call apiece. `latestCards` is
+     one row per id, which is exactly the question "does `/nodes/<id>` resolve". */
+  const publishedIds = new Set((await latestCards(db, ANONYMOUS)).map((entry) => entry.id));
+
+  /* The blueprints pinning every version on this page, in ONE batch (D-260-31). `usersOf`
+     answers per card id; `usersOfMany` answers for the whole history at once, which is what
+     turned /nodes' per-row cost from a build-time fact into a per-request one. A summary
+     carries the manifest, so the title the row prints comes back with the key rather than
+     needing a second read per blueprint. */
+  const pinning = await usersOfMany(db, ANONYMOUS, [...new Set(versions.map((v) => v.id))]);
+  const titles = new Map<string, string>();
+  for (const summaries of pinning.values()) {
+    for (const summary of summaries) {
+      titles.set(`${summary.ownerHandle}/${summary.slug}`, summary.manifest.title ?? summary.slug);
+    }
+  }
 
   const type = ontology.resolve(card.type, "node-type");
   const typeLabel = type?.term.label ?? card.type;
@@ -788,7 +822,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
     id: dependency,
     // A dependency may name a card id or the DOT node that supplies it; only the
     // first kind has a page of its own.
-    known: registry.versionsOf(dependency).length > 0,
+    known: publishedIds.has(dependency),
   }));
 
   const tools = card.tools.map((tool) => {
@@ -842,12 +876,48 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
     ref: entry.ref,
     digest: entry.digest,
     card: entry.card,
-    usedIn: entry.usedIn.map((slug) => ({ slug, title: titleOf(slug) })),
+    /* `{ownerHandle, slug, title}` since B-09 — a slug alone stopped naming a blueprint,
+       and `VersionHistory` links each row. The title is off the batched summaries rather
+       than a read per row; a key the batch does not hold falls back to the slug, which is
+       the honest rendering for a blueprint this actor cannot see. */
+    usedIn: entry.usedIn.map((key) => ({
+      ownerHandle: key.ownerHandle,
+      slug: key.slug,
+      title:
+        titles.get(`${key.ownerHandle}/${key.slug}`) ?? key.slug,
+    })),
   }));
 
-  const usedIn = registry.usersOf(record.id);
-  const author = card.author === undefined ? undefined : getAuthor(card.author);
-  const source = cardSource(record.ref);
+  const usedIn = await usersOf(db, ANONYMOUS, record.id);
+  /* THE ACCOUNT'S EXISTENCE COMES FROM THE REGISTRY, NOT FROM A FIXTURE (D-260-25's owed
+     end state (d), and D-261-09(2) corrected).
+     ------------------------------------------------------------
+     This read was `getAuthor(card.author)` — `lib/data/users.ts`, which answers for all six
+     archive handles — so `author` was defined for every card the six wrote and the text arm
+     below could never fire. `AuthorChip` links whatever it is given, so every one of those
+     pages shipped an `/u/<handle>` pointing at a profile that does not exist: accounts after
+     `runImport` are exactly `[darkprint]`, because the import creates no account for
+     `hachi`, `k0bra`, `lupo`, `mara-veil`, `orin` or `sol-antczak` (D-250-11) and
+     re-attribution moves OWNERSHIP, never AUTHORSHIP (D-250-18).
+
+     I had recorded this branch as the one the cutover would make fire (D-261-09(2)); that
+     was wrong in the direction that costs nothing to believe, because the fixture kept it
+     unreachable for exactly the population it was meant to serve. The branch was right and
+     its INPUT was the defect.
+
+     `getPublicAuthor` answers `undefined` for a handle no account holds, which is the fact
+     this page needs and the only one that stays true when somebody deletes their account —
+     D-260-25 refused the fixture fallback by name for that reason: a real author who leaves
+     would silently revert to a fixture, which is the wrong direction on this site. */
+  const account =
+    card.author === undefined ? undefined : await getPublicAuthor(db, card.author);
+  const author = account === undefined ? undefined : authorFor(account);
+  /* The document, verbatim, from the published per-card reader. `cardSource` walked
+     `content/`, so a card published since the last deploy showed an empty source panel —
+     the same reason the blueprint page's panes moved (D-261-12). Bytes on the wire is
+     `ServedFile`'s shape; the panel wants a string. */
+  const served = await serveCard(db, ANONYMOUS, record.ref);
+  const source = served === undefined ? undefined : new TextDecoder().decode(served.bytes);
   const params_ = Object.entries(card.params);
 
   /* How many of the card's fields carry something, counted rather than written. A card
@@ -1007,7 +1077,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   anchored to. */}
               <CloneMenu
                 kind="node"
-                command={cardDownloadCommand(record.ref)}
+                command={cardFileDownloadCommand(record.ref)}
                 cliCommand={`darkprint clone card ${record.ref}`}
               />
             </div>

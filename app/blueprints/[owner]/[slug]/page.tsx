@@ -1,22 +1,25 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  allBlueprints,
-  bundleVocabulary,
-  cardSource,
-  getBlueprintBySlug,
-  getRegistry,
-} from "@/lib/content";
+
+import type { NodeCard } from "@/lib/core";
+import { parseCardRef, shortDigest } from "@/lib/core";
+import { getSharedDbClient } from "@/lib/db";
+import type { Actor } from "@/lib/server/policy";
+import { actorFrom, getPublicAuthor, resolveOwner } from "@/lib/server/accounts";
+import { getBundle, listReleases, parseStoredVocabulary } from "@/lib/server/archive";
+import { blueprint, card, graphsOf, scoresOf } from "@/lib/server/registry";
+import { releaseFiles, serveCard } from "@/lib/server/export";
 import {
   BUNDLE_AGENTS,
   BUNDLE_README,
-    TOPOLOGY_DOT,
-  bundleDownloadCommand,
-  bundleFilePaths,
-  bundleHref,
+  BUNDLE_VOCABULARY,
+  TOPOLOGY_DOT,
   cardFilePath,
 } from "@/lib/content/bundle-export";
-import { parseCardRef, shortDigest } from "@/lib/core";
+import { blueprintViewOver } from "@/lib/content/view";
+import { communityFor } from "@/lib/data/community";
+import type { Blueprint } from "@/lib/types";
+import { blueprintFileHref } from "@/lib/href";
 import {
   CRITERIA_OUT_OF_BAND_CODE,
   CRITERIA_RELAYED_CODE,
@@ -24,6 +27,8 @@ import {
   CRITERIA_UNANCHORED_CODE,
 } from "@/lib/criteria-state";
 import { prettyDate } from "@/lib/format";
+import { authorFor } from "@/components/profile/author";
+import { readSession } from "@/components/profile/session";
 import { KindBadge } from "@/components/ui/Badge";
 import { AutonomyMeter } from "@/components/ui/AutonomyMeter";
 import { TagPill } from "@/components/ui/TagPill";
@@ -41,7 +46,7 @@ import { BundleHeader } from "@/components/bundle/BundleHeader";
 import { FileTree } from "@/components/bundle/FileTree";
 import { History } from "@/components/bundle/History";
 import { Forks, Releases } from "@/components/bundle/Aside";
-import { publishedBundleSections } from "@/components/bundle/load";
+import { filesFromPaths, releaseDownloadCommand } from "@/components/bundle/load";
 import { OWNED_BUNDLES } from "@/lib/data/bundles";
 import { profileFor } from "@/lib/data/profiles";
 import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
@@ -51,27 +56,57 @@ import { ToolScopes } from "@/components/blueprint/Requirements";
 import { EvidenceLayers } from "@/components/blueprint/EvidenceLayers";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-03) (cited at line 122): GET /api/blueprints/{slug}
-// TODO(SEAM-05) (cited at line 601): folded into SEAM-03
-// TODO(SEAM-19) (cited at line 658): GET /bundles/{slug}/{path} (static) or GET /api/blueprints/{slug}/files/{path}
-// TODO(SEAM-75) (cited at line 289): POST /api/blueprints/{slug}/star, DELETE …
-// TODO(SEAM-79) (cited at line 717): POST /api/blueprints/{slug}/comments
-// TODO(SEAM-110) (cited at line 172): joins SEAM-71 and SEAM-57 into SEAM-03
+// SEAM-03 LIVE: the blueprint is read from the registry (T080) per request.
+// SEAM-19 LIVE: the folder is served by `/api/files/blueprints/{owner}/{slug}/d/{digest}/…`.
+// TODO(SEAM-75): POST /api/blueprints/{owner}/{slug}/star, DELETE …
+// TODO(SEAM-79): POST /api/blueprints/{owner}/{slug}/comments
 
-/** Every slug is known at build time; an unknown one is a 404, not an on-demand render. */
-export const dynamicParams = false;
+/* ============================================================
+   /blueprints/[owner]/[slug] — the canonical public page for a bundle.
 
-export function generateStaticParams() {
-  return allBlueprints().map((b) => ({ slug: b.slug }));
+   B-09 made a slug unique per OWNER rather than per registry, so this is the one address a
+   blueprint has (D-261-01). `/blueprints/<slug>` and `/u/<owner>/<slug>` both 308 onto it:
+   the first because the old public URL never carried an owner, the second because it was
+   the same resource under a second name.
+   ============================================================ */
+
+/**
+ * Per request, and the deletion above it is the criterion.
+ *
+ * `dynamicParams = false` and a `generateStaticParams` over `allBlueprints()` stood here.
+ * Both are exactly what a registry that grows between deploys cannot serve: a blueprint
+ * published after the last deploy was a 404 at its own URL until somebody rebuilt (AC3).
+ *
+ * ── Why this spelling and not `connection()` ──
+ * `connection()` is Next 16's request-time marker and the prettier one, and it THROWS when
+ * a page function is invoked directly in a node-environment cell (D-260-09). A segment
+ * export is inert under that invocation instead, which is what the merged browse routes
+ * already use. Recorded with it, because this task measured the limit: **the export
+ * protects the SPELLING, not the BODY** (D-261-11) — what actually breaks a cell that calls
+ * this function is `getSharedDbClient()` below, and no marker can help with that. The two
+ * tests that used to invoke a page this way were rewritten to render components instead.
+ *
+ * The Next 16 caveat the browse routes carry applies here too: `dynamic`, `dynamicParams`,
+ * `revalidate` and `fetchCache` are removed once `cacheComponents` is on, and this line is
+ * what a task turning that switch on has to replace.
+ */
+export const dynamic = "force-dynamic";
+
+/** A reader with no session. `Object.freeze` so a caller cannot make it somebody. */
+const ANONYMOUS: Actor = Object.freeze({ kind: "anonymous" });
+
+/** Who is asking, for a page whose answer differs for the owner of a private bundle. */
+async function actorNow(): Promise<Actor> {
+  const session = await readSession();
+  return session === undefined ? ANONYMOUS : actorFrom(session);
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps<"/blueprints/[slug]">) {
-  const { slug } = await params;
-  const bp = getBlueprintBySlug(slug);
-  if (!bp) return { title: "Blueprint not found" };
-  return { title: bp.title, description: bp.summary };
+export async function generateMetadata({ params }: PageProps<"/blueprints/[owner]/[slug]">) {
+  const { owner, slug } = await params;
+  const { db } = getSharedDbClient();
+  const summary = await blueprint(db, await actorNow(), owner, slug);
+  if (summary === undefined) return { title: "Blueprint not found" };
+  return { title: summary.manifest.title, description: summary.manifest.summary };
 }
 
 /**
@@ -125,77 +160,167 @@ function PanelLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default async function Page({ params }: PageProps<"/blueprints/[slug]">) {
-  const { slug } = await params;
-  const bp = getBlueprintBySlug(slug);
-  if (!bp) notFound();
+export default async function Page({ params }: PageProps<"/blueprints/[owner]/[slug]">) {
+  const { owner, slug } = await params;
+  const actor = await actorNow();
+  const { db } = getSharedDbClient();
+
+  /* THE VISIBILITY GATE, AND IT IS T060's RATHER THAN THIS PAGE'S.
+     ------------------------------------------------------------
+     `blueprint()` narrows to what this actor may read, so a private bundle answers
+     `undefined` for everyone but its owner and this route 404s (AC6, B-03). The page makes
+     no visibility decision of its own: a second copy of that rule here is the defect this
+     project charges hardest, and it is also how an existence oracle gets rebuilt one layer
+     up after the API closed it. */
+  const summary = await blueprint(db, actor, owner, slug);
+  if (summary === undefined) notFound();
+
+  const key = { ownerHandle: owner, slug };
+  const [drawings, scorecard] = await Promise.all([
+    graphsOf(db, actor, [key]),
+    scoresOf(db, actor, owner, slug),
+  ]);
+  const drawing = drawings.get(`${owner}/${slug}`);
+
+  /* A BLUEPRINT WITH NO SCORECARD OR NO DRAWING IS A 404 HERE, AND THE SHELF AGREES.
+     ------------------------------------------------------------
+     `/blueprints` skips exactly these rows (D-260-29) rather than drawing a placeholder,
+     because `autonomy.autonomyClass` is the field doc 2 §1.1 guards most tightly and a page
+     inventing a classification nobody computed is worse than a page that is not there. The
+     detail route has no third option: it renders the scorecard as its subject. A bundle
+     that does not resolve has the same answer for the same reason — the schematic is the
+     row, and `graphsOf` answers absent for a release carrying error diagnostics. */
+  if (drawing === undefined || scorecard === undefined) notFound();
+
+  /* The OWNER, which is not the AUTHOR. Re-attribution moves ownership and not authorship
+     (D-250-18), so the handle in the URL and the handle in the manifest are two different
+     facts that happen to agree across the archive's nine. `getBundle` is called AFTER the
+     gate above and only for the label: it takes no actor, so using it to decide what to
+     render would be re-implementing the rule `blueprint()` just applied. */
+  const account = await resolveOwner(db, owner);
+  const record = account === undefined ? undefined : await getBundle(db, account.accountId, slug);
+  const publicOwner = await getPublicAuthor(db, owner);
+  const ownerAuthor = authorFor(publicOwner ?? {
+    handle: owner,
+    displayName: null,
+    avatarHue: null,
+    validator: false,
+  });
+
+  /* Releases, newest last, and the vocabulary the CURRENT release declares. One read
+     answers three questions the archive answered with three: the version history, the
+     release list, and whether this bundle ships a local `ontology/extensions.yaml`. */
+  const releases = record === undefined ? [] : await listReleases(db, record.id);
+  const current = releases.find((r) => r.digest === summary.digest);
+  const folder = await releaseFiles(db, actor, { ownerHandle: owner, slug });
+
+  const community = communityFor(slug);
+  const bp: Blueprint = {
+    ...blueprintViewOver({
+      manifest: summary.manifest,
+      digest: summary.digest,
+      cardRefs: summary.cardRefs,
+      graph: drawing.graph,
+      requiredAgents: drawing.requiredAgents,
+      requiredTools: drawing.requiredTools,
+      analysis: {
+        autonomy: scorecard.autonomy,
+        security: scorecard.security,
+        phaseCoverage: scorecard.phaseCoverage,
+        ontologyVersion: scorecard.ontologyVersion,
+        diagnostics: [...drawing.diagnostics],
+      },
+      community,
+      diagnostics: drawing.diagnostics,
+    }),
+    /* The one field the projection cannot set: it builds from a manifest, and a manifest
+       carries an author rather than an owner. */
+    ownerHandle: owner,
+  };
 
   const paragraphs = bp.description.split("\n\n").filter((p) => p.trim().length);
 
-  // The download is a directory of real files under `public/bundles/<slug>/`, written by
-  // `scripts/generate-bundles.ts` before the build. The page only names them, and it
-  // names them through the same helpers the generator writes them with, so a link here
-  // and a file there cannot drift apart.
-  /* `factoryHref` was here. `DownloadPanel` stopped drawing `factory.dot` on 2026-08-08
-     and no other element on this page names it, so the binding went with the prop. The
-     file is still generated into every bundle by `scripts/generate-bundles.ts`. */
-  // Spec §3.1: the header's quick download used to point at `factoryHref` under a
-  // "Download factory.dot" label and got renamed to "Download blueprint.dot" without
-  // moving what it saves — a label and a saved filename that disagree is a defect this
-  // project has fixed before. Computed once, here, so the header button and
-  // `DownloadPanel`'s own topology row can never point at two different hrefs for the
-  // same file.
-  const topologyHref = bundleHref(bp.slug, TOPOLOGY_DOT);
-  const downloadCards: DownloadCard[] = [...new Set(bp.cardRefs)]
+  /* Every download URL on this page is the release's DIGEST address (D-261-04). The static
+     mirror under `public/bundles/<slug>/` is written from `content/` before a build, so it
+     holds nothing at all for a blueprint published since the last deploy — AC3 and AC4
+     cannot both be true of it. The mirror stays; this page stops linking it. */
+  const at = { digest: summary.digest };
+  const paths = folder?.files ?? [];
+  const topologyHref = blueprintFileHref(owner, slug, at, TOPOLOGY_DOT);
+  const downloadCards: DownloadCard[] = [...new Set(summary.cardRefs)]
     .sort()
-    .map((ref) => ({ ref, href: bundleHref(bp.slug, cardFilePath(ref)) }));
-  // Doc 3 §7: present only for a bundle whose cards declare a local term, which is the
-  // same condition the generator writes the file under.
-  const vocabulary = bundleVocabulary(bp.slug);
-
-  // The whole folder in one command. Built from `bundleFilePaths`, which is derived beside
-  // `exportBundle` from the same constants and held to its output by
-  // `lib/content/bundle-export.test.ts`, so the URL list a reader pastes into a terminal is
-  // the file list the generator actually wrote — not a second, hand-kept copy of it. The
-  // same `vocabulary` value decides both the extra row in `DownloadPanel` and the extra URL
-  // in the command, so a folder can never be fetched short of the file that prices it.
-  const cloneCommand = bundleDownloadCommand(
-    bp.slug,
-    bundleFilePaths({ cardRefs: bp.cardRefs, vocabulary: vocabulary !== undefined }),
-  );
+    .map((ref) => ({ ref, href: blueprintFileHref(owner, slug, at, cardFilePath(ref)) }));
+  /* `StoredVocabulary.terms` is `readonly unknown[] | null` deliberately — D-133-02 F1
+     records what happened when readers took `unknown` off the barrel and each re-derived
+     the shape. `parseStoredVocabulary` is the one published reading and it refuses a row
+     that reached a bad shape without passing `addRelease`, so a malformed overlay costs
+     this panel and never the page. */
+  const overlay =
+    current?.vocabulary === undefined
+      ? undefined
+      : parseStoredVocabulary(current.vocabulary, "blueprint page");
+  const vocabulary =
+    overlay === undefined || overlay.terms.length === 0
+      ? undefined
+      : { file: BUNDLE_VOCABULARY, termIds: overlay.terms.map((term) => term.id) };
   const clone = {
-    command: cloneCommand,
-    cliCommand: `darkprint clone ${bp.slug}`,
+    command: releaseDownloadCommand(owner, slug, at, paths),
+    cliCommand: `darkprint clone ${owner}/${slug}`,
   };
 
-
-  /* The band's two figures, and one of them is a promise being kept.
-     ------------------------------------------------------------
-     `publicForks` is computed over PUBLIC rows only. A private fork is never announced on
-     the upstream's page and its author is not told it exists, which is exactly what
-     `/settings` §04 tells a reader when it recommends Private for a new bundle. Every fork
-     in `lib/data/bundles.ts` is private today — `guarded-merge-bot` has one — so this list
-     is empty on all nine blueprints, and it has to stay empty rather than being quietly
-     widened to "all forks" the day somebody wants the panel to have rows in it. */
+  /* The band's two figures, both still seeded and both keeping their markers (D-78's
+     stays-direction, D-261-08(4)): forks come from `lib/data/bundles.ts` and the watcher
+     count from `lib/data/profiles.ts`, and neither has a column or a route. `publicForks`
+     stays computed over PUBLIC rows only — a private fork is never announced on its
+     upstream, which is what `/settings` §04 promises a reader. */
   const publicForks = OWNED_BUNDLES.filter(
-    (b) => b.forkedFrom?.slug === bp.slug && b.visibility === "public",
-  ).map((b) => ({
-    owner: b.owner,
-    slug: b.slug,
-    note: b.draft?.summary ?? "",
-  }));
-  const watchers = profileFor(bp.author.username).watchers;
+    (b) => b.forkedFrom?.slug === slug && b.visibility === "public",
+  ).map((b) => ({ owner: b.owner, slug: b.slug, note: b.draft?.summary ?? "" }));
+  const watchers = profileFor(owner).watchers;
 
-  // The file listing, the history and the releases, from the same function the owner's view
-  // of a bundle reads, so the two pages cannot describe one folder differently.
-  const sections = publishedBundleSections(bp, bp.author.username);
+  const updatedAt = (current?.createdAt ?? record?.updatedAt ?? new Date()).toISOString();
+  const shortened = `${summary.digest.slice(0, 13)}…`;
+  const sections = {
+    files: filesFromPaths(paths, updatedAt),
+    hrefFor: (file: { kind: string; path: string }) =>
+      file.kind === "dir" ? undefined : blueprintFileHref(owner, slug, at, file.path),
+    readmeHref: blueprintFileHref(owner, slug, at, BUNDLE_README),
+    fileFootnote: `${paths.length} entries · ${new Set(summary.cardRefs).size} pinned cards inside cards/`,
+    lastChange: {
+      author: summary.manifest.author ?? owner,
+      message: bp.summary,
+      digest: shortened,
+      at: updatedAt,
+    },
+    /* REAL HISTORY, newest first, and the sentence that said there was none comes off with
+       it (F18, D-261-07(7)). The archive held one folder per bundle, so the shipped copy
+       said "this is the whole history there is: no earlier snapshot of it was ever
+       published" — true of `content/` and false the moment releases are append-only rows. */
+    history: releases
+      .slice()
+      .reverse()
+      .map((release) => ({
+        version: release.version,
+        digest: `${release.digest.slice(0, 13)}…`,
+        ...(release.digest === summary.digest ? { tag: "latest" as const } : {}),
+        message: release.manifest.summary,
+        author: release.manifest.author ?? owner,
+        at: release.createdAt.toISOString(),
+      })),
+    releases: releases
+      .slice()
+      .reverse()
+      .map((release) => ({
+        version: release.version,
+        at: release.createdAt.toISOString(),
+        files: paths.length,
+        size: "on disk",
+        latest: release.digest === summary.digest,
+      })),
+  };
 
-  // The index row, for the two facts the view model does not carry: the vocabulary
-  // version the manifest was written against, and how many distinct cards are pinned.
-  const record = getRegistry().blueprint(bp.slug);
-
-  // `graph.nodes` and `cardRefs` are both `ResolvedBlueprint.nodes` mapped one to one,
-  // in the same order, so the index is the join between a drawn node and its card.
+  // `graph.nodes` and `cardRefs` are both the resolved bundle's nodes mapped one to one, in
+  // the same order, so the index is the join between a drawn node and its card.
   const bundleNodes: BundleNode[] = bp.graph.nodes.map((node, i) => {
     const ref = bp.cardRefs[i] ?? "";
     const parsed = parseCardRef(ref);
@@ -207,18 +332,39 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
     };
   });
 
-  // Doc 2 §5.1's four panes, assembled here because the parse that supplies their line
-  // numbers is build-time work: the client gets the finished, serializable model and
-  // none of the engine. Same join as `bundleNodes` above, plus the resolved card and the
-  // document behind it, which are what panes 2 and 4 read.
-  const registry = getRegistry();
+  /* Doc 2 §5.1's four panes, and the card documents behind panes 2 and 4 come from the
+     registry now (D-261-12). `cardSource` walked `content/`, so a blueprint published since
+     the last deploy would have shown a source pane with nothing in it — and AC3's whole
+     point is that such a blueprint gets the SAME page as the nine, source included, which
+     is why the reduction was refused rather than disclosed and kept.
+
+     `serveCard` is the published per-card reader and it takes the same actor as everything
+     above, so a card private to somebody else is absent here exactly as it is absent from
+     `summary.cardRefs`. **Cost, disclosed: TWO reads per DISTINCT ref** — the resolved card and its document — deduplicated,
+     because a graph may instantiate one card at two nodes and the document does not differ.
+     Bytes rather than text on the wire is `ServedFile`'s shape, decoded once here; the panes
+     want a string. */
+  const distinctRefs = [...new Set(bp.cardRefs.filter((ref) => ref !== ""))];
+  const resolved = new Map<string, NodeCard>();
+  const documents = new Map<string, string>();
+  await Promise.all(
+    distinctRefs.map(async (ref) => {
+      const [summaryFor, served] = await Promise.all([
+        card(db, actor, ref),
+        serveCard(db, actor, ref),
+      ]);
+      if (summaryFor !== undefined) resolved.set(ref, summaryFor.card);
+      if (served !== undefined) documents.set(ref, new TextDecoder().decode(served.bytes));
+    }),
+  );
+
   const paneNodes: PaneNodeInput[] = bp.graph.nodes.map((node, i) => {
     const ref = bp.cardRefs[i] ?? "";
     const entry: PaneNodeInput = { nodeId: node.id, label: node.label };
     if (ref !== "") entry.ref = ref;
-    const card = registry.card(ref)?.card;
-    if (card !== undefined) entry.card = card;
-    const yaml = cardSource(ref);
+    const parsed = resolved.get(ref);
+    if (parsed !== undefined) entry.card = parsed;
+    const yaml = documents.get(ref);
     if (yaml !== undefined) entry.yaml = yaml;
     return entry;
   });
@@ -233,17 +379,8 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
     ),
   });
 
-  // An error-severity diagnostic never reaches this page — the loader refuses to
-  // publish a bundle carrying one — so what is left is the engine's own footnotes.
-  //
-  // PROJECT.md §3.1: those footnotes used to print twice at full length, once inside the
-  // explainability panel's criteria block and once again in the sidebar's validation
-  // notes, message and hint both. Measured on the archive it is every note there is:
-  // eight bundles carry `criteria-leak-unanchored`, two of those also carry
-  // `criteria-out-of-band`, and the starter carries `criteria-relayed-through-judge`.
-  // The panel is the better home because it says what the state means, so the sidebar
-  // counts them and links up. Anything the panel does not render still lists there,
-  // which is why this is a split rather than a filter.
+  // An error-severity diagnostic never reaches this page — `graphsOf` answers absent for a
+  // release carrying one — so what is left is the engine's own footnotes.
   const notes = bp.analysis.diagnostics.filter((d) => d.severity !== "error");
   const explainedCodes = new Set<string>([
     CRITERIA_UNANCHORED_CODE,
@@ -253,6 +390,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
   ]);
   const explainedNotes = notes.filter((d) => explainedCodes.has(d.code));
   const otherNotes = notes.filter((d) => !explainedCodes.has(d.code));
+
 
   return (
     /* The rail wraps everything, band included.
@@ -284,10 +422,16 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
         put the explainability panel — the thing that makes a score checkable — behind a
         click. */}
     <BundleHeader
-      owner={bp.author}
+      owner={ownerAuthor}
       slug={bp.slug}
-      visibility="public"
-      validator={bp.author.validator}
+      /* AC6 reaching the browser: the column, not a literal. `visibility="public"` was hard
+         coded here because the archive held only published bundles and had nowhere to read
+         it from; `bundle.visibility` is a real column now, and `Aside.tsx`'s "nothing stores
+         a visibility" marker comes off in this same commit (D-261-01). An absent record can
+         only mean a bundle the gate above already let through, so `public` is the honest
+         default rather than a guess. */
+      visibility={record?.visibility ?? "public"}
+      validator={ownerAuthor.validator}
       title={bp.title}
       summary={bp.summary}
       watchers={watchers}
@@ -377,10 +521,12 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
 
       {/* ---------- Files ----------
           The folder, before the drawing. A bundle is a folder before it is a page, and a
-          reader who has just read what this is asks what they would get. Same component
-          the owner's view mounts, over the same array `bundleDownloadCommand` builds its
-          URLs from, so the listing here, the command in `Get the folder` and the files on
-          disk are three renderings of one list. */}
+          reader who has just read what this is asks what they would get. Over the same
+          array `releaseDownloadCommand` builds its URLs from — `releaseFiles`' answer for
+          this release — so the listing here, the command in `Get the folder` and the files
+          the server will actually hand over are three renderings of one list. The owner's
+          view is no longer a second page to keep in step: it is this one, under a different
+          actor (D-261-08(1)). */}
       <div className="mt-10">
         <FileTree
           files={sections.files}
@@ -556,7 +702,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
           <div className="order-1 min-w-0 lg:order-none">
             <BundlePanel
               digest={bp.digest}
-              ontologyVersion={record?.manifest.ontologyVersion ?? "unknown"}
+              ontologyVersion={summary.manifest.ontologyVersion ?? "unknown"}
               // Doc 3 §8: the version a score was computed under, which the engine
               // takes from the view the bundle was resolved against and not from
               // the manifest. Both metrics carry the same value; a test in
@@ -564,7 +710,7 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
               // can never disagree.
               scoredOntologyVersion={bp.analysis.autonomy.ontologyVersion}
               nodes={bundleNodes}
-              pinnedCards={record?.cardRefs.length ?? new Set(bp.cardRefs).size}
+              pinnedCards={new Set(summary.cardRefs).size}
               diagnostics={otherNotes}
               explainedNotes={explainedNotes}
             />
@@ -665,13 +811,13 @@ export default async function Page({ params }: PageProps<"/blueprints/[slug]">) 
             </p>
             <DownloadPanel
               topologyHref={topologyHref}
-              readmeHref={bundleHref(bp.slug, BUNDLE_README)}
-              agentsHref={bundleHref(bp.slug, BUNDLE_AGENTS)}
+              readmeHref={blueprintFileHref(owner, slug, at, BUNDLE_README)}
+              agentsHref={blueprintFileHref(owner, slug, at, BUNDLE_AGENTS)}
               {...(vocabulary === undefined
                 ? {}
                 : {
                     vocabulary: {
-                      href: bundleHref(bp.slug, vocabulary.file),
+                      href: blueprintFileHref(owner, slug, at, vocabulary.file),
                       termIds: vocabulary.termIds,
                     },
                   })}

@@ -45,7 +45,7 @@ import { Explainability } from "./Explainability";
 
 const BLUEPRINTS = allBlueprints();
 
-/** The four codes `app/blueprints/[slug]/page.tsx` routes into the panel. */
+/** The four codes `app/blueprints/[owner]/[slug]/page.tsx` routes into the panel. */
 const EXPLAINED = new Set<string>([
   CRITERIA_UNANCHORED_CODE,
   CRITERIA_OUT_OF_BAND_CODE,

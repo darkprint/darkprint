@@ -394,15 +394,22 @@ const COPY_TREES = [
  * Routes whose page copy predates the rule, kept out for the reason `COPY_TREES` records.
  *
  * `app/nodes`, `app/ontology` and `app/upload` are the page halves of the component trees
- * already named above. `app/blueprints/[slug]` and `app/u` carry the same kind of legacy
+ * already named above. `app/blueprints/[owner]` and `app/u` carry the same kind of legacy
  * punctuation. All five are a copy edit rather than a guard, and adding them here before
  * that edit would only fail on text nobody in this pass wrote.
+ *
+ * **The blueprint entry says `[owner]` because the page moved there, and the exemption
+ * followed it (B-09, D-261-01/05).** It was granted to that page's legacy copy, and a URL
+ * migration must not silently revoke a grandfather nobody decided to revoke. What is left
+ * behind at `app/blueprints/[slug]/` is the redirector, which is new code that renders no
+ * copy at all, so it is guarded rather than exempt: the exemption tracks the prose, not
+ * the path it used to sit at.
  */
 const APP_EXEMPT = [
   "app/nodes/",
   "app/ontology/",
   "app/upload/",
-  "app/blueprints/[slug]/",
+  "app/blueprints/[owner]/",
   "app/u/",
 ];
 

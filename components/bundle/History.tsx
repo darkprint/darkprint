@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import type { HistoryEntry } from "@/lib/data/bundles";
 import { cx, prettyDate } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
@@ -80,12 +78,12 @@ function Entry({
           {entry.message}
         </p>
         <p className="font-mono text-[11px] text-dim">
-          <Link
-            href={`/u/${entry.author}`}
-            className="transition-colors hoverable:hover:text-cyan"
-          >
-            {entry.author}
-          </Link>{" "}
+          {/* Text, for the reason `FileTree` states in full: an entry's author is a handle
+              off the release manifest, those handles hold no accounts (D-250-11), and a
+              link to a profile that 404s was the defect D-260-25 ruled and D-261-06
+              assigns here. One surface on this row rather than `FileTree`'s two — there is
+              no avatar beside it to link a second time. */}
+          <span>{entry.author}</span>{" "}
           · {prettyDate(entry.at)}
         </p>
       </div>

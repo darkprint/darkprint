@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { ARCHIVE_OWNER, blueprintHref } from "@/lib/href";
 
 /* ============================================================
    The landing's ending: five things the registry does, each one a way in.
@@ -96,7 +97,7 @@ const ACTIONS = [
   },
   {
     index: "03",
-    href: "/blueprints/starter-software-factory#use-this-blueprint",
+    href: `${blueprintHref(ARCHIVE_OWNER, "starter-software-factory")}#use-this-blueprint`,
     label: "Take the starter",
     title: "Use",
     text: "Plain files you can read: download a release, adapt it, run it in your own harness.",

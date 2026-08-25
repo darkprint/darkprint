@@ -15,7 +15,7 @@ describe("community support on detail pages", () => {
   /**
    * The claim is unchanged and the mechanism moved.
    *
-   * It used to be one regex over `app/blueprints/[slug]/page.tsx`, matching an `<h1>` and a
+   * It used to be one regex over `app/blueprints/[owner]/[slug]/page.tsx`, matching an `<h1>` and a
    * `<FavoriteStar count={bp.votes}>` in the same file. The accounts pass moved both into
    * `components/bundle/BundleHeader.tsx`, the band `/u/<owner>/<slug>` also mounts, so that
    * regex stopped matching while the page carried on drawing exactly what it asserted.
@@ -27,7 +27,7 @@ describe("community support on detail pages", () => {
    * band stops printing one of them.
    */
   it("puts the seeded blueprint support count beside the title", () => {
-    const source = readFileSync(`${ROOT}/app/blueprints/[slug]/page.tsx`, "utf8");
+    const source = readFileSync(`${ROOT}/app/blueprints/[owner]/[slug]/page.tsx`, "utf8");
     const mount = /<BundleHeader\b([\s\S]*?)\/?>/.exec(source);
     expect(mount, "the blueprint page no longer mounts <BundleHeader>").not.toBeNull();
     expect(mount?.[1]).toContain("title={bp.title}");

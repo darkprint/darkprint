@@ -161,7 +161,11 @@ describe("the blueprint-first landing", () => {
     expect(plainText(html)).toContain(
       "A blueprint pins the handoffs, loops, checkpoints, and deliberate absences that make a workflow reusable.",
     );
-    expect(html).toContain('href="/blueprints/starter-software-factory"');
+    /* D-261-05, under AC5's own carve: B-09 moved this URL, so the literal moves with the
+       emitter rather than the emitter riding its own 308. Spelled out rather than imported
+       from `lib/href.ts` — an expected value taken from the module under test asserts only
+       that the module agrees with itself. */
+    expect(html).toContain('href="/blueprints/darkprint/starter-software-factory"');
   });
 
   it("shows a card as a contract with inputs, outputs, and prohibitions", () => {
@@ -210,7 +214,7 @@ describe("the blueprint-first landing", () => {
       "/what-a-blueprint-is",
       "/blueprints",
       "/skill",
-      "/blueprints/starter-software-factory#use-this-blueprint",
+      "/blueprints/darkprint/starter-software-factory#use-this-blueprint",
       "/upload",
     ]) {
       expect(html, `the ${href} panel lost its link`).toContain(`href="${href}"`);
