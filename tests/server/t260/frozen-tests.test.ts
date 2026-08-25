@@ -41,6 +41,8 @@
    ============================================================ */
 
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -74,13 +76,6 @@ const FROZEN: readonly Frozen[] = [
       "AC3 names it. It pins its sentences VERBATIM, so changing one is changing this file in the same commit with the new sentence pinned — which is the mechanism D-78's one-direction rule relies on. Note that none of its pinned surfaces is a T260 route (D-260-09), so this pin holds the file, not this task's honesty; `ac4-markers.test.ts` is the instrument for that.",
   },
   {
-    path: "components/ontology/weight-provenance.test.ts",
-    blob: "5e857b65af478499f550c5a3b5c3727dae8e50ae",
-    owner: "INSIDE T260's `Owns`",
-    why:
-      "D-260-10 added it to the named list. It sits inside `components/ontology/**`, so before that ruling the only existing guard over D-260-01's frozen pricing surface was deletable by the task D-260-01 constrains. A guard a task owns is not a guard on that task.",
-  },
-  {
     path: "components/ontology/canonical-route.test.ts",
     blob: "46dd27055fbd604b809cd3fe15fc110a584458e4",
     owner: "INSIDE T260's `Owns`",
@@ -88,6 +83,48 @@ const FROZEN: readonly Frozen[] = [
       "D-260-10 added it. `next.config.ts`'s own comment cites it by name as the file that \"records the reversal and holds both routes in place\" for `/ontology` versus `/spec/ontology` — so deleting it silently unpins a redirect pair that `nav.test.ts` checks from the other end.",
   },
 ];
+
+/**
+ * Retired, deliberately, with the cause named — the counterpart of a deliberate re-pin.
+ *
+ * `components/ontology/weight-provenance.test.ts` was pinned here at blob `5e857b6` until
+ * the T261 cutover. It rendered `/ontology/[...term]` while that page read `content/`
+ * synchronously; once the page read the registry the file did not BREAK, it acquired an
+ * undeclared infrastructure dependency — measured 9/9 green with `DATABASE_URL` set and
+ * **8/9 red without one**. A test that passes only where a database happens to be reachable
+ * is worse than one that fails, because it is green on the machine of whoever checks.
+ *
+ * D-261-13 ruled it retires AT THE T261 MERGE, in the same commit its coverage lands green
+ * elsewhere, and D-261-11(3) put the pen for this pin in the blind author's hand. The
+ * coverage relocated whole to `tests/server/t261/term-provenance.scratch.test.ts`, which
+ * seeds through `runImport` — the production path — and measures `lupo/pii-handling`, the
+ * one marker the archive prices in its own vocabulary, arriving at `0.50`. Its middle-rung
+ * cell reds by name if a core-only registry ever loses that term, which is the condition
+ * the retirement was approved against.
+ *
+ * This is not a pin becoming absent. It is a pin becoming a different assertion: the file
+ * is GONE ON PURPOSE, and a reappearance is a claim somebody has to make out loud.
+ */
+const RETIRED: ReadonlyArray<{ path: string; why: string }> = [
+  {
+    path: "components/ontology/weight-provenance.test.ts",
+    why:
+      "retired under D-261-13; coverage relocated to tests/server/t261/term-provenance.scratch.test.ts",
+  },
+];
+
+describe("D-261-13: what was retired stays retired", () => {
+  it.each(RETIRED)("$path is gone, deliberately", ({ path, why }) => {
+    expect(
+      existsSync(join(process.cwd(), path)),
+      `${path} is back.\n\n${why}.\n\n` +
+        `If this is a deliberate restoration, it needs a ruling and a pin of its own — the ` +
+        `file was removed because it had become green-only-where-a-database-is, not because ` +
+        `its claim was wrong. Restoring the file without restoring that property is how the ` +
+        `undeclared dependency comes back.`,
+    ).toBe(false);
+  });
+});
 
 describe("AC3 / D-260-10: the named tests are byte-identical", () => {
   it.each(FROZEN)("$path", ({ path, blob, why, owner }) => {

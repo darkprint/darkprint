@@ -103,6 +103,56 @@ export const ROUTES = {
   profileBundle: "app/u/[username]/[slug]/page.tsx",
 } as const;
 
+/* ============================================================
+   D-261-18 — WHICH ROUTES A NODE-ENVIRONMENT CELL CAN DRIVE, AND
+   WHY TWO OF THEM CANNOT BE DRIVEN AT ALL
+
+   AC1's behavioural cells lived here and are RETIRED as undrivable.
+   The boundary they found is kept, because it is the useful part
+   and a deletion that takes the knowledge with it is how the next
+   author rediscovers this at their own cost.
+
+   A page function invoked directly — the idiom this suite and
+   `honesty.test.ts` both use — runs outside a request scope. Two
+   separate mechanisms can stop it, and only one of them is the
+   segment config:
+
+     `connection()`          throws outside a request scope, which is
+                             why D-260-09 ruled the spelling
+                             `export const dynamic = "force-dynamic"`
+                             instead. That one is a CHOICE and it was
+                             made correctly.
+
+     `cookies()`             throws the same way and NO choice avoids
+                             it: a page that reads the session cannot
+                             be invoked directly at all. Measured
+                             per route, `readSession`/`cookies()`
+                             occurrences:
+
+       app/blueprints/[owner]/page.tsx           3   UNDRIVABLE
+       app/blueprints/[owner]/[slug]/page.tsx    2   UNDRIVABLE
+       app/nodes/[...id]/page.tsx                0   drivable
+       app/ontology/[...term]/page.tsx           0   drivable
+
+   The asymmetry is structural rather than accidental: an API route
+   takes a `Request` and a test can hand it a cookie header
+   (`app/api/files/serve.test.ts:153` does), while a page reaches
+   for `next/headers`. Nothing merged drives a cookie-reading page,
+   because there is no way to.
+
+   **The measurement that was true and insufficient**: this suite
+   earlier proved `force-dynamic` does not block direct invocation,
+   on `app/nodes/page.tsx` — a page that reads no session. The
+   control lacked the property whose blocking was in question, so
+   the proof generalised further than the evidence did.
+
+   AC1's standing evidence is therefore the implementer's real-HTTP
+   measurement over `next start` (308s with query strings intact),
+   cited in D-261-18. `ac1-redirector.test.ts` keeps the MECHANISM
+   pins beside it — those need no request scope and still hold what
+   `permanentRedirect` does and does not do for a caller.
+   ============================================================ */
+
 /** D-261-03: the ruled per-request spelling, and the one it is ruled AGAINST. */
 export const FORCE_DYNAMIC = 'export const dynamic = "force-dynamic"';
 export const REFUSED_MARKER = "connection()";
