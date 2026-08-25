@@ -105,7 +105,17 @@ function corpus(scratch: Scratch): Promise<Planted> {
     }
     /* Read off Postgres's own clock, between the halves: `since` is asserted against an
        instant this run produced on the same clock `occurred_at`'s DEFAULT writes with, not
-       against an offset from `Date.now()` on the test host's. */
+       against an offset from `Date.now()` on the test host's.
+
+       The sleep exists because `pg` parses that clock into a JS Date, which truncates
+       microseconds to milliseconds: a boundary read in the SAME millisecond as the last
+       early write re-admits that write after truncation (`>= .605000` includes `.605432`).
+       Measured exactly once in 9083 under full-suite load, and the admitted row was the
+       last-written early row — the mechanism's fingerprint. Two milliseconds on Postgres's
+       own clock puts the read beyond the millisecond any early row occupies, so the
+       truncation has nothing left to hand back; the late half is written after this line
+       and stays on the inclusive side. */
+    await scratch.client.query("select pg_sleep(0.002)");
     const between = await dbNow(scratch);
     for (const e of late) {
       await write(scratch.client.db, {
