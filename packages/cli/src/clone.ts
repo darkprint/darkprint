@@ -9,7 +9,7 @@
    ============================================================ */
 
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, resolve, sep } from "node:path";
 
 import { latestVersion } from "../../../lib/core";
 import { CliError } from "./errors";
@@ -66,8 +66,17 @@ export async function clone(
   const files = await fetchFileList(registry, owner, slug, digest);
   const root = resolve(options?.out ?? slug);
   for (const path of files) {
+    /* The file NAMES come from the registry's response (`fetchFileList`), not from the
+       caller — so a compromised, MITM'd or self-hosted server could answer `../../…` and
+       walk `writeFileSync` out of the target directory onto an arbitrary file on the
+       machine running the clone (CWE-22). A name is trusted for its BYTES, which the digest
+       covers, never for where it writes: the destination stays under `root` or the clone
+       refuses. `resolve` also collapses an absolute `path`, so `/etc/…` fails the same test. */
+    const destination = resolve(root, path);
+    if (destination !== root && !destination.startsWith(root + sep)) {
+      throw new CliError(`clone: \`${path}\` escapes the target directory.`);
+    }
     const text = await fetchFile(registry, owner, slug, digest, path);
-    const destination = join(root, path);
     mkdirSync(dirname(destination), { recursive: true });
     /* Written verbatim. The digest is taken over these bytes, so any normalisation here —
        a trailing newline, a line ending — would break the one claim the folder's README
