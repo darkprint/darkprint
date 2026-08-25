@@ -229,8 +229,8 @@ After the owner's answers of 2026-08-12 (Q1–Q13, recorded at the foot of
 | Verifiable in code | count |
 |---|---|
 | `IMPLEMENTED` | 64 |
-| `CONTRADICTED` | 8 |
-| `NOT-IMPLEMENTED` | 10 |
+| `CONTRADICTED` | 10 |
+| `NOT-IMPLEMENTED` | 8 |
 | `UNVERIFIABLE` | 7 |
 
 D-85 to D-89 are numbered out of order because they were added after the ledger was first
