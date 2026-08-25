@@ -25,7 +25,7 @@
    is the defect this run has charged more than any other.
    ============================================================ */
 
-import { asc, eq, lte, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, lte, sql } from "drizzle-orm";
 import type { Db } from "@/lib/db";
 import { schema } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
@@ -297,6 +297,16 @@ async function similarCandidates(
      because the wrong reading is silently a different query rather than an error. */
   const distance = sql<number>`(${schema.releaseEmbedding.embedding} <=> ${JSON.stringify(queryVector)}::vector)`;
 
+  /* Restrict the ranked set to the digests of the VISIBLE candidates BEFORE the `LIMIT`, not
+     only in the `byIdentity` intersection below. The intersection alone keeps a private
+     release's identity out of the answer, but the top-`SEMANTIC_K` is taken over the whole
+     `release_embedding` table first — so `SEMANTIC_K` releases the caller may not see, sitting
+     within `SIMILAR_MIN` of the query, fill the budget and silently push a PUBLIC semantic
+     match off the list. AC4 is about not leaking a private row; this is about a private row not
+     suppressing a public one. Matching on digest here is a superset of the identity match below
+     (two bundles can share a digest, D-200-03), which is why that stricter check still runs. */
+  const candidateDigests = candidates.map((bp) => bp.digest);
+
   const rows = await db
     .select({
       handle: schema.account.handle,
@@ -308,7 +318,7 @@ async function similarCandidates(
     .innerJoin(schema.release, eq(schema.release.id, schema.releaseEmbedding.releaseId))
     .innerJoin(schema.bundle, eq(schema.bundle.id, schema.release.bundleId))
     .innerJoin(schema.account, eq(schema.account.id, schema.bundle.ownerId))
-    .where(lte(distance, 1 - SIMILAR_MIN))
+    .where(and(lte(distance, 1 - SIMILAR_MIN), inArray(schema.release.digest, candidateDigests)))
     .orderBy(asc(distance))
     .limit(SEMANTIC_K);
 
