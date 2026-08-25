@@ -101,15 +101,28 @@ export const SIGN_IN_PROVIDERS: readonly SignInProvider[] = [
  * `size` widens the pair for the landing hero, where they stand alone above the fold,
  * without giving the hero its own copy of the markup.
  */
-export function SignInButtons({ size = "md" }: { size?: "md" | "lg" }) {
+export function SignInButtons({
+  size = "md",
+  align = "start",
+  /** Full-width buttons, stacked. What a centred auth card wants: two equal doors. */
+  block = false,
+}: {
+  size?: "md" | "lg";
+  align?: "start" | "center";
+  block?: boolean;
+}) {
   const padding = size === "lg" ? "px-5 py-3 text-[15px]" : "px-4 py-2.5 text-sm";
+  const row = block
+    ? "flex w-full flex-col gap-3"
+    : `flex flex-wrap items-center gap-3 ${align === "center" ? "justify-center" : ""}`;
+  const shape = block ? "w-full justify-center" : "";
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className={row}>
       {SIGN_IN_PROVIDERS.map((provider) => (
         <a
           key={provider.href}
           href={provider.href}
-          className={`inline-flex items-center gap-2.5 rounded-md font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan ${padding} ${provider.className}`}
+          className={`inline-flex items-center gap-2.5 rounded-md font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan ${padding} ${shape} ${provider.className}`}
         >
           <provider.Mark />
           {provider.label}

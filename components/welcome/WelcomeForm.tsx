@@ -206,7 +206,7 @@ export function WelcomeForm({ suggestedHandle }: { suggestedHandle: string }) {
 
   return (
     <form
-      className="mt-10 flex flex-col gap-7"
+      className="flex flex-col gap-6"
       onSubmit={(event) => {
         event.preventDefault();
         void submit();
@@ -266,15 +266,18 @@ export function WelcomeForm({ suggestedHandle }: { suggestedHandle: string }) {
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-col gap-3">
+        {/* Full width in the centred column, and the hint moves UNDER it rather than beside:
+            at 26rem a button and a sentence on one row leaves the sentence in a two-word
+            gutter. */}
         <button
           type="submit"
           disabled={blocked}
-          className="rounded-md bg-cyan px-5 py-2.5 text-sm font-medium text-ink transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+          className="w-full rounded-md bg-cyan px-5 py-2.5 text-sm font-medium text-ink transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
         >
           {saving ? "Saving…" : "Finish signing up"}
         </button>
-        <span className="text-[13px] text-dim">
+        <span className="text-center text-[13px] leading-relaxed text-dim">
           The handle is the one thing publishing needs; everything else can wait.
         </span>
       </div>

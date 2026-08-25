@@ -42,22 +42,39 @@ export const metadata: Metadata = {
     "Choose the handle the registry will reserve for you, and the name shown beside what you publish.",
 };
 
+/**
+ * The centred column both states stand in.
+ *
+ * This route is the one place on the site that is a DOOR rather than a document: it holds
+ * two buttons or two fields and nothing a reader scans. So it is the one place a bounded,
+ * centred column is right — the site's own rule that text runs the full width is about
+ * prose, and there is none here. Everything else on DarkPrint keeps that rule.
+ *
+ * `min-h` rather than a fixed height: the column centres in the viewport on a laptop and
+ * simply flows on a phone, where vertical centring would push the heading under the fold.
+ */
+function AuthShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="container-page flex min-h-[72vh] flex-col items-center justify-center py-16">
+      <div className="flex w-full max-w-[26rem] flex-col gap-8">{children}</div>
+    </div>
+  );
+}
+
 function SignedOut() {
   return (
-    <div className="container-page flex flex-col gap-8 py-16">
-      <SectionHeading
-        as="h1"
-        eyebrow="Account"
-        title="Sign in"
-      />
-      <div className="flex flex-col items-start gap-4 rounded-lg border border-line bg-surface-2/50 px-6 py-6">
-        <SignInButtons />
-        <p className="font-mono text-[11px] leading-relaxed text-dim">
-          DarkPrint reads your GitHub handle and nothing else. Everything you publish here
-          stays here.
+    <AuthShell>
+      <SectionHeading as="h1" align="center" eyebrow="Account" title="Sign in" />
+      <div className="flex flex-col gap-5 rounded-xl border border-line bg-surface-2/50 px-6 py-7">
+        {/* Stacked and full width: two equal doors, which is what a reader is choosing
+            between. Side by side in a 26rem column the second one wraps anyway. */}
+        <SignInButtons block />
+        <p className="text-center font-mono text-[11px] leading-relaxed text-dim">
+          DarkPrint reads your handle and nothing else. Everything you publish here stays
+          here.
         </p>
       </div>
-    </div>
+    </AuthShell>
   );
 }
 
@@ -72,19 +89,22 @@ export default async function WelcomePage() {
   if (session.handle !== null) redirect("/");
 
   return (
-    <div className="container-page flex flex-col gap-2 py-16">
+    <AuthShell>
       <SectionHeading
         as="h1"
+        align="center"
         eyebrow="One step left"
         title="Choose your handle"
-        lead="You are signed in. The registry needs a handle before you can publish under it: it is your address here, and it goes inside every card you publish, so it is reserved to you for good."
+        lead="It is your address on the registry, and it goes inside every card you publish, so it is reserved to you for good."
       />
       {/* Empty rather than seeded from the GitHub login: nothing published exposes that
           field, and inventing a reader to pre-fill one input would put a second source on
           an identity the account row already owns. The availability line below the field
           does the work instead — it names the rule when a name is refused and offers a free
           variant to take in one click. */}
-      <WelcomeForm suggestedHandle="" />
-    </div>
+      <div className="rounded-xl border border-line bg-surface-2/50 px-6 py-7">
+        <WelcomeForm suggestedHandle="" />
+      </div>
+    </AuthShell>
   );
 }
