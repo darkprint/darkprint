@@ -10,9 +10,10 @@ import { getLatestOntologyVersion, openView } from "@/lib/server/ontology";
 import { latestCards, usersOf, usersOfMany, versionsOf } from "@/lib/server/registry";
 import { searchTerms } from "@/lib/server/search";
 import { serveCard } from "@/lib/server/export";
+import { getPublicAuthor } from "@/lib/server/accounts";
+import { authorFor } from "@/components/profile/author";
 import { cardFileDownloadCommand } from "@/components/bundle/load";
 import { commentsFor, downloadsFor, starsFor } from "@/lib/data/node-community";
-import { getAuthor } from "@/lib/data/users";
 import { compact, cx } from "@/lib/format";
 import { CARD_BLOCKS } from "@/components/panes/model";
 import { termHref } from "@/lib/href";
@@ -888,7 +889,29 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   }));
 
   const usedIn = await usersOf(db, ANONYMOUS, record.id);
-  const author = card.author === undefined ? undefined : getAuthor(card.author);
+  /* THE ACCOUNT'S EXISTENCE COMES FROM THE REGISTRY, NOT FROM A FIXTURE (D-260-25's owed
+     end state (d), and D-261-09(2) corrected).
+     ------------------------------------------------------------
+     This read was `getAuthor(card.author)` — `lib/data/users.ts`, which answers for all six
+     archive handles — so `author` was defined for every card the six wrote and the text arm
+     below could never fire. `AuthorChip` links whatever it is given, so every one of those
+     pages shipped an `/u/<handle>` pointing at a profile that does not exist: accounts after
+     `runImport` are exactly `[darkprint]`, because the import creates no account for
+     `hachi`, `k0bra`, `lupo`, `mara-veil`, `orin` or `sol-antczak` (D-250-11) and
+     re-attribution moves OWNERSHIP, never AUTHORSHIP (D-250-18).
+
+     I had recorded this branch as the one the cutover would make fire (D-261-09(2)); that
+     was wrong in the direction that costs nothing to believe, because the fixture kept it
+     unreachable for exactly the population it was meant to serve. The branch was right and
+     its INPUT was the defect.
+
+     `getPublicAuthor` answers `undefined` for a handle no account holds, which is the fact
+     this page needs and the only one that stays true when somebody deletes their account —
+     D-260-25 refused the fixture fallback by name for that reason: a real author who leaves
+     would silently revert to a fixture, which is the wrong direction on this site. */
+  const account =
+    card.author === undefined ? undefined : await getPublicAuthor(db, card.author);
+  const author = account === undefined ? undefined : authorFor(account);
   /* The document, verbatim, from the published per-card reader. `cardSource` walked
      `content/`, so a card published since the last deploy showed an empty source panel —
      the same reason the blueprint page's panes moved (D-261-12). Bytes on the wire is
