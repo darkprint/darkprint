@@ -258,7 +258,7 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
     run: "specification",
     nav: "Topology",
     eyebrow: "Layer 01 of 03",
-    title: "The blueprint file (DOT)",
+    title: "The topology file (DOT)",
     question: "Which nodes exist, and what flows between them.",
     sections: [
       { id: "dot-file-heading", label: "The DOT file" },

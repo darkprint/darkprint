@@ -86,7 +86,7 @@ export const NAV = [
      ELSEWHERE for that reason. */
   { href: SANDBOX.href, label: SANDBOX.nav, group: "docs" },
   { href: "/what-a-blueprint-is", label: "What a blueprint is", group: "docs" },
-  { href: "/spec/topology", label: "Blueprint file (DOT)", group: "docs" },
+  { href: "/spec/topology", label: "Topology file (DOT)", group: "docs" },
   { href: "/spec/card", label: "Node card (YAML)", group: "docs" },
   /* "Ontology file (YAML)" and not "Ontology": the browser one group up took that word on
      the author's instruction, and this row moves to the shape its two siblings above it

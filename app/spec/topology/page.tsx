@@ -78,7 +78,7 @@ import { DotBreakdown } from "@/components/panes/DotBreakdown";
    ============================================================ */
 
 export const metadata: Metadata = {
-  title: "The blueprint file (DOT)",
+  title: "The topology file (DOT)",
   description:
     "Layer 1 of a DarkPrint blueprint: one directed graph per bundle, written in a subset of DOT that Attractor runs as it stands, with one added attribute pinning each node to the card that describes it.",
 };
