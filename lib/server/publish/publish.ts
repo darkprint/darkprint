@@ -46,6 +46,7 @@ import {
   type OntologyView,
 } from "@/lib/core";
 import { bundleProgress } from "@/components/upload/progress";
+import { sql } from "drizzle-orm";
 import { createObjectStorage, type Db, type ObjectStorage } from "@/lib/db";
 import { resolveOwner } from "@/lib/server/accounts";
 import {
@@ -68,6 +69,12 @@ import { persistArtefacts } from "./artefacts";
 import { cardConflict, conflict, inError, notOwner, unfinished, versionNotHigher } from "./errors";
 
 type Visibility = "public" | "private";
+
+/* The `classid` half of the two-argument `pg_advisory_xact_lock` used to serialize
+   concurrent publishes of one card id (see the lock loop in `publish`). Arbitrary but fixed,
+   and the two-int form is a different lock space from the single-bigint `DELIVERY_LOCK_KEY` /
+   `MIGRATION_LOCK_KEY`, so the value only has to be stable, not globally unique. */
+export const CARD_CHAIN_LOCK_NAMESPACE = 200_003;
 
 export interface PublishInput {
   ownerHandle: string;
@@ -268,6 +275,21 @@ export async function publish(
         visibility,
         ...(lineage === undefined ? {} : { lineage }),
       }));
+
+    /* Serialize concurrent publishes that land NEW versions of the SAME card id. Card ids are
+       a GLOBAL namespace and many bundles legitimately pin one card (this is what the repin
+       fan-out exists for), so two publishes committing different new versions at once each run
+       `addCard`'s neighbour bump-check (cards/add-card.ts) against a snapshot that does not yet
+       hold the other's row — validating a chain whose adjacent pair, once both commit, was
+       never checked against itself. D-20-03 verified that check against PRE-EXISTING rows, not
+       concurrent writers. A transaction-scoped advisory lock per card id, taken BEFORE the
+       read and in SORTED order so two overlapping publishes acquire the shared locks in one
+       order and cannot deadlock, makes the second publish wait for the first to commit and then
+       read its row. Released at commit/rollback. The two-int form keeps card locks in their own
+       lock space, away from the delivery/migration keys. */
+    for (const cardId of [...new Set(blueprint.nodes.map((node) => node.card.id))].sort()) {
+      await tx.execute(sql`select pg_advisory_xact_lock(${CARD_CHAIN_LOCK_NAMESPACE}, hashtext(${cardId}))`);
+    }
 
     /* Deduplicated: `cardRefs` is one entry per node, so a card pinned twice appears twice
        and must be stored once. The ORDER is the blueprint's, which is the DOT's. */
