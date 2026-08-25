@@ -290,7 +290,7 @@ was the profile's overview: pinned items and local terms only, with the reader's
 blueprints a click away on `/u/[username]/blueprints`. Blueprints took the segmentless slot
 instead — the account menu's own link now opens straight onto the shelf a signed-in reader
 came for, Pinned sitting above it rather than in front of it. §5.7 picks up from `myShelf`'s
-own `New blueprint` button.
+own `New bundle` button.
 
 ```mermaid
 sequenceDiagram
@@ -348,7 +348,7 @@ flowchart TD
   detail["/blueprints/:owner/:slug\nblueprint() now resolves — the draft branch is gone"]
   visibilitySwitch["VisibilitySwitch\n(owner, any time — draft or released)"]
 
-  myShelf -->|"New blueprint"| newPage --> form --> createPost --> draftLanding
+  myShelf -->|"New bundle"| newPage --> form --> createPost --> draftLanding
   draftLanding --> threeWays
   threeWays -->|"Publish your first release"| uploadPinned
   threeWays -->|"install the skill"| skillPath --> localBuild
@@ -367,7 +367,7 @@ sequenceDiagram
   participant DB as Postgres
   participant Machine as User machine
 
-  User->>WebUI: "New blueprint" (profile shelf, or /skill's accounts row)
+  User->>WebUI: "New bundle" (profile shelf, or /skill's accounts row)
   WebUI-->>User: GET /new
   loop each keystroke in the slug field, debounced 350ms
     WebUI->>API: GET /api/names/slugs/{owner}/{slug}

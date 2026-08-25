@@ -88,7 +88,7 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
             }
           >
             {owner
-              ? "Nothing pinned and nothing published or drafted yet. New blueprint starts one."
+              ? "Nothing pinned and nothing published or drafted yet. New bundle starts one."
               : `${author.displayName} has not published a blueprint to the registry so far. Private bundles are never listed here.`}
           </EmptyState>
         </div>
@@ -99,7 +99,7 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
             <SortControl label="Sort blueprints" />
             {owner && (
               <ButtonLink href="/new" variant="outline">
-                New blueprint
+                New bundle
               </ButtonLink>
             )}
           </ShelfToolbar>

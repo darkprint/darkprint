@@ -49,7 +49,7 @@ const UNBUILT: readonly { label: string; body: React.ReactNode; live?: boolean }
           href="/new"
           className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
         >
-          New blueprint
+          New bundle
         </Link>
         , and it stays a private draft until you publish a release on{" "}
         <Link

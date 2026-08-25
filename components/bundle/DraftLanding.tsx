@@ -35,15 +35,10 @@ export interface DraftLandingBundle {
   createdAt: string;
 }
 
-const STARTER_LAYOUT = (slug: string) =>
-  [
-    `${slug}/`,
-    "├── blueprint.dot        # the topology: agents, tools, and how they hand off",
-    "├── AGENTS.md             # per-node prompts your runner reads",
-    "├── README.md             # what this blueprint does and how to run it",
-    "└── cards/",
-    "    └── <node-id>.yaml    # one card per node named in blueprint.dot",
-  ].join("\n");
+/* D-270-07's ruled spelling. The CLI is not on npm (T270 todo), and the line below says
+   so where it renders — the same preview-not-control stance CloneMenu holds on the
+   published branch. */
+const cloneCommand = (owner: string, slug: string) => `darkprint clone ${owner}/${slug}`;
 
 export function DraftLanding({
   draft,
@@ -95,8 +90,8 @@ export function DraftLanding({
           <>
             {/* ---------- Quick setup, the GitHub empty-repo panel ----------
                 Three ways in, same as a fresh repository offers: push a release from the
-                wizard, point the skill at this exact draft, or take a starter folder and
-                wire it up by hand. None of them is a fallback for another. Owner-only: the
+                wizard, point the skill at this exact draft, or clone the bundle by name
+                (a preview until the CLI ships). None of them is a fallback for another. Owner-only: the
                 upload wizard's own prefill only pins a bundle the session owns (B6's
                 contract), so offering this call to action to a visitor would point them at
                 a form that refuses them the moment they submit it. */}
@@ -135,23 +130,22 @@ export function DraftLanding({
 
               <div className="border-t border-line pt-5">
                 <p className="text-sm leading-relaxed text-muted">
-                  Or start from a folder on your own disk, in the shape a release takes here:
+                  Or clone it onto your own disk, the way you would a repository:
                 </p>
-                <div className="mt-2 flex items-start gap-2 rounded-md border border-line bg-void px-3 py-2.5">
-                  <pre className="flex-1 overflow-x-auto font-mono text-[12px] leading-relaxed text-fg">
-                    {STARTER_LAYOUT(draft.slug)}
-                  </pre>
+                <div className="mt-2 flex items-center gap-2 rounded-md border border-line bg-void px-3 py-2">
+                  <code className="flex-1 overflow-x-auto font-mono text-[12px] text-fg">
+                    {cloneCommand(draft.ownerHandle, draft.slug)}
+                  </code>
                   <CopyButton
-                    text={STARTER_LAYOUT(draft.slug)}
-                    ariaLabel="Copy the starter folder layout"
-                    className="mt-0.5"
+                    text={cloneCommand(draft.ownerHandle, draft.slug)}
+                    ariaLabel="Copy the clone command"
                   />
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-dim">
-                  A layout to copy, not a download: there is no chosen example behind this
-                  draft for a zip to come from. <code className="text-fg">AGENTS.md</code>{" "}
-                  and the vocabulary file are the two a release adds beyond what you write by
-                  hand.
+                  Not built yet: the darkprint CLI is not on npm, so the line above is a
+                  preview rather than a command. It will fetch this bundle by name once it
+                  ships; with no release yet there is nothing for it to bring down but the
+                  name and the folder to fill.
                 </p>
               </div>
             </section>

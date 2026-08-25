@@ -34,7 +34,7 @@ import { SupportButton, WatchButton } from "./SocialControls";
      this handle, before their first click in this session.
 
    The owner's two controls are the exception on THIS page, and only because both
-   destinations are real: `Edit profile` opens `/settings` and `New blueprint` opens the
+   destinations are real: `Edit profile` opens `/settings` and `New bundle` opens the
    create flow at `/new`, which hands back a real bundle. Neither claims to write to an
    account beyond what it says.
 
@@ -155,7 +155,7 @@ export function ProfileHeader({
                 <ButtonLink href="/settings" variant="outline">
                   Edit profile
                 </ButtonLink>
-                <ButtonLink href="/new">New blueprint</ButtonLink>
+                <ButtonLink href="/new">New bundle</ButtonLink>
               </>
             ) : (
               <>

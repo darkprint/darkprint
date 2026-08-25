@@ -56,7 +56,7 @@ export default async function Page({ params }: PageProps<"/u/[username]/cards">)
         /* The owner's list can hold a private card, so it gets the same live Visibility
            filter the blueprints tab has — no New card beside it, because nothing on this
            site writes one, and drawing a control whose destination does not exist would
-           be the failure `New blueprint` on this page's sibling was written to avoid. */
+           be the failure `New bundle` on this page's sibling was written to avoid. */
         <div className="mt-10 flex flex-col gap-5">
           <ShelfToolbar
             placeholder="Find a card…"
