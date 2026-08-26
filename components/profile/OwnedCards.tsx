@@ -96,8 +96,8 @@ export function OwnedCards({
           <p>
             A card belongs to an account and is public or private, the same split a
             blueprint has. Both halves are real rows in the registry now (T132): a private
-            card is not a fixture standing in for one, it is simply invisible to anyone who
-            is not its owner.
+            card is not a fixture standing in for one. It is invisible to anyone who is
+            not its owner.
           </p>
           {owner ? (
             <p>

@@ -49,8 +49,8 @@ export default async function Page({ params }: PageProps<"/u/[username]/terms">)
             action={{ href: "/ontology", label: "Read the core vocabulary" }}
           >
             The curated core belongs to nobody. A term appears here only when this handle
-            has minted one in its own namespace, which the resolver requires to hang off a
-            core term.
+            has minted one in its own namespace. The resolver requires that minted term to
+            hang off a core term.
           </EmptyState>
         </div>
       ) : (

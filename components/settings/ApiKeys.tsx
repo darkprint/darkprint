@@ -146,16 +146,16 @@ export function ApiKeys() {
     <div className="flex flex-col gap-4">
       <p className="text-[13px] leading-relaxed text-muted">
         A key raises the rate ceiling for an agent reading the registry over the MCP
-        endpoints; it carries no identity, so it signs nothing in and authorizes no write.
-        Anything that changes your account or your bundles still needs your session. It is
-        shown to you once, at the moment you mint it: DarkPrint never stores it and cannot
-        show it to you again, so a key you lose is a key you revoke and mint again.
+        endpoints. It carries no identity, so it signs nothing in and authorizes no write.
+        Anything that changes your account or your bundles still needs your session. The
+        key is shown to you once, at the moment you mint it. DarkPrint never stores it and
+        cannot show it to you again. If you lose it, revoke it and mint a new one.
       </p>
 
       {minted !== undefined && (
         <div className="flex flex-col gap-2 rounded-md border border-cyan/40 bg-cyan/[0.06] p-4">
           <span className="text-sm text-fg">
-            &ldquo;{minted.label}&rdquo; is ready. Copy it now; this is the only time it is
+            &ldquo;{minted.label}&rdquo; is ready. Copy it now. This is the only time it is
             shown.
           </span>
           <code className="overflow-x-auto rounded-md border border-line bg-void px-3 py-2 font-mono text-[13px] text-fg">

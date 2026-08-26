@@ -161,7 +161,7 @@ import { getNodeCard } from "@/lib/content";
 export const metadata: Metadata = {
   title: "The node card, in YAML",
   description:
-    "Layer 2 of a DarkPrint blueprint: one YAML card per node, saying what it is, what instructs it, what arrives, what leaves and what must never arrive. With the field-by-field list of what the engine checks.",
+    "Layer 2 of a DarkPrint blueprint: one YAML card per node, saying what it is, what instructs it, what arrives, what leaves and what must never arrive, with the field-by-field list of what the engine checks.",
 };
 
 const HERE = "/spec/card";
@@ -284,11 +284,11 @@ const SUBFIELDS: readonly { key: string; role: React.ReactNode }[] = [
     key: "params.*",
     role: (
       <>
-        Free in shape, and required to survive a JSON round-trip because the card is hashed
-        as JSON into its digest. A value that cannot be serialised cannot be hashed, and a
-        card that cannot be hashed cannot be pinned by a blueprint, so{" "}
-        <Id>card/bad-type</Id> is raised where the value is written rather than at the
-        point two digests disagree.
+        Free in shape, but it must survive a JSON round trip, because the card is hashed
+        as JSON into its digest. A value that cannot be serialised cannot be hashed. A
+        card that cannot be hashed cannot be pinned by a blueprint. So{" "}
+        <Id>card/bad-type</Id> is raised where the value is written, not at the
+        point where two digests disagree.
       </>
     ),
   },
@@ -296,11 +296,11 @@ const SUBFIELDS: readonly { key: string; role: React.ReactNode }[] = [
     key: "cannot[]",
     role: (
       <>
-        Two kinds of entry in one list. An entry naming a <Id>data-type</Id> term is a
-        prohibition the resolver enforces: an incoming edge able to carry that type, or a
+        Two kinds of entry appear in one list. An entry naming a <Id>data-type</Id> term is
+        a prohibition the resolver enforces: an incoming edge able to carry that type, or a
         narrower kind of it, fails the bundle. An entry naming no term is read as free text
-        and checked by nothing, which is what the second line under <Id>cannot</Id> on the
-        card above is. Both are legitimate, and a reader has to be able to tell which is
+        and checked by nothing. That is what the second line under <Id>cannot</Id> on the
+        card above is. Both are legitimate. A reader has to be able to tell which is
         which without running anything.
       </>
     ),
@@ -409,9 +409,9 @@ export default function SpecCardPage() {
                 else owns goes stale silently, and there is nothing here worth spending a
                 render on `CARD_ROWS.length` for. */}
             <p className="prose-lane text-sm text-muted">
-              One row per wire key, and the third column is the point: a diagnostic code is
-              greppable, it is what the build and{" "}
-              <SpecLink href="/upload">the upload check</SpecLink> print, and it is the
+              One row per wire key. The third column is the point. A diagnostic code is
+              greppable. The build and{" "}
+              <SpecLink href="/upload">the upload check</SpecLink> print it. It is the
               difference between a promise and a rule you can go and trip on purpose.
             </p>
             <CheckLegend />
@@ -424,7 +424,7 @@ export default function SpecCardPage() {
           <div className="flex flex-col gap-5">
             <h3 className="label-lead">Inside the fields that hold structure</h3>
             <p className="prose-lane text-sm text-muted">
-              Several rows above stand over more than one thing. What each nested key
+              Several rows above apply to more than one thing. What each nested key
               decides, and what it costs to leave it out or to get it wrong.
             </p>
             {/* Two columns at `md`, because these are short definitions and one column of
@@ -457,8 +457,8 @@ export default function SpecCardPage() {
                   inside it — a caption narrower than the thing it captions reads as a
                   different column rather than as a label. */}
               <p className="text-[15px] leading-relaxed text-muted">
-                The sentence below comes back from the resolver during the build rather
-                than from this page, run over the starter bundle with{" "}
+                The sentence below comes from the resolver during the build, not
+                from this page. It runs over the starter bundle with{" "}
                 <Id>{ADDED_DOT_LINE}</Id> inserted.
               </p>
               <div className="rounded-lg border border-line bg-surface-2 p-4">
@@ -492,8 +492,8 @@ export default function SpecCardPage() {
               {/* `.prose-lane`: uncapped, this sat at 182 characters a line. */}
               <p className="prose-lane text-sm text-dim">
                 <SpecLink href="/spec/topology">The topology layer</SpecLink> draws the
-                same prohibition as an edge the starter graph does not have, beside the
-                card that declares it.
+                same prohibition as an edge that the starter graph does not have. The
+                drawing sits beside the card that declares it.
               </p>
             </div>
           )}

@@ -73,7 +73,7 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
     title: "What this node is",
     body:
       "The first four lines fix the node's identity. `code-builder` is the id a graph pins by " +
-      "version, `agent` is the node type, so this box runs a model rather than a script, and " +
+      "version. `agent` is the node type: this box runs a model, not a script. " +
       "`implementation` places it in the lifecycle the ontology defines.",
   },
   {
@@ -82,7 +82,7 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
     title: "What it does, in a line",
     body:
       "The operation, in one sentence a person can read at a glance. Nothing in the engine " +
-      "checks it: `action` is prose for whoever opens the card, and it travels into the " +
+      "checks it. `action` is prose for whoever opens the card. It travels into the " +
       "download unchanged. The instruction the agent is actually handed is the block under it.",
   },
   {
@@ -104,17 +104,17 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
       // claim is unchanged — the model line really does land in the compiled export and
       // NOT in `topology.dot`, which carries no `model` at all — only the name is gone.
       "The model this agent is instantiated with. The compiled export writes it as " +
-      "`llm_model`, which Attractor reads, and a model stylesheet can override it at run time. " +
-      "A card with no such line inherits whatever the run supplies.",
+      "`llm_model`. Attractor reads that field. A model stylesheet can override it at run " +
+      "time. A card with no such line inherits whatever the run supplies.",
   },
   {
     id: "reach",
     keys: ["tools", "mcp"],
     title: "What it can reach",
     body:
-      "`tools` is empty and `mcp` names one server, so this node touches the filesystem and " +
-      "nothing else. The reach of a whole factory can be read off its cards before anything is " +
-      "run, which is why it is written down here at all.",
+      "`tools` is empty. `mcp` names one server. This node touches the filesystem and " +
+      "nothing else. The reach of a whole factory can be read off its cards before anything " +
+      "runs.",
   },
   {
     id: "skill",
@@ -122,7 +122,7 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
     title: "The behaviour document",
     body:
       "`skills/code-builder.md` is where this agent's behaviour is written. The field is a " +
-      "pointer and the engine reads nothing at the other end, so no skill document travels in " +
+      "pointer. The engine reads nothing at the other end. No skill document travels in " +
       "the download. Each bundle's README lists the paths you supply yourself.",
   },
   {
@@ -130,27 +130,27 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
     keys: ["inputs"],
     title: "What arrives",
     body:
-      "One input, and it carries a type. `brief` is a `plan`, an ontology term rather than free " +
-      "text, so the resolver can check an incoming edge against it. In the starter factory " +
-      "nothing points at this node, and the brief arrives with the run.",
+      "One input. It carries a type. `brief` is a `plan`, an ontology term, not free " +
+      "text. The resolver checks an incoming edge against it. In the starter factory " +
+      "nothing points at this node. The brief arrives with the run.",
   },
   {
     id: "outputs",
     keys: ["outputs"],
     title: "What it hands on",
     body:
-      "One output, typed the same way. `build` is `code`, and it is what the edge to the " +
-      "acceptance tester carries. A downstream node declares its own input against that type, " +
-      "and a mismatch is reported as `bundle/port-mismatch`.",
+      "One output, typed the same way. `build` is `code`. It is what the edge to the " +
+      "acceptance tester carries. A downstream node declares its own input against that " +
+      "type. A mismatch is reported as `bundle/port-mismatch`.",
   },
   {
     id: "cannot",
     keys: ["cannot"],
     title: "What must never arrive",
     body:
-      "The prohibition, and the engine holds the graph to it. `acceptance-criteria` names an " +
-      "ontology data type, so an edge carrying it into this node fails the bundle with " +
-      "`bundle/prohibition-violated`. The second entry names no term and is read as free text.",
+      "The prohibition. The engine holds the graph to it. `acceptance-criteria` names an " +
+      "ontology data type. An edge carrying it into this node fails the bundle with " +
+      "`bundle/prohibition-violated`. The second entry names no term. It is read as free text.",
   },
 ];
 

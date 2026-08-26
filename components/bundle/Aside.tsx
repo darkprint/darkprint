@@ -34,8 +34,8 @@ export function PageHolds() {
     <section className="panel p-5">
       <span className="label">What this page does not hold</span>
       <p className="mt-3 text-[13px] leading-relaxed text-muted">
-        What the registry stores is this bundle and who owns it. What it still does not:
-        a run, a key, or any telemetry about either. Execution stays on your machine.
+        The registry stores this bundle and who owns it. It does not store a run, a
+        key, or any telemetry about either. Execution stays on your machine.
       </p>
     </section>
   );
@@ -110,7 +110,7 @@ export function VisibilitySwitch({
            is seeded any more, so the marker comes off rather than being reworded a third time. */
         <p className="mt-2 text-[11px] text-dim">
           {blocked
-            ? "This bundle does not resolve, so publishing is refused for a reason of its own; the switch above still writes."
+            ? "This bundle does not resolve. Publishing is refused for a reason of its own. The switch above still writes."
             : "Changes here save immediately."}
         </p>
       ) : (
@@ -128,7 +128,7 @@ export function VisibilitySwitch({
         <p className="mt-2 font-mono text-[11px] text-amber">
           {blocked
             ? "◐ seeded · this bundle does not resolve, so it could not publish even with a registry behind it"
-            : "◐ seeded · the visibility above is stored and read; the switch is drawn and switched off because no route accepts the change"}
+            : "◐ seeded · the visibility above is stored and read. The switch is drawn and switched off because no route accepts the change."}
         </p>
       )}
     </section>

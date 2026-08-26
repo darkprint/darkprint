@@ -34,7 +34,7 @@ import type { Author, Blueprint, BlueprintAnalysisView } from "@/lib/types";
 export const metadata: Metadata = {
   title: "Blueprints",
   description:
-    "Browse the DarkPrint registry of AI blueprints. Filter by tag, category and autonomy class, read each pipeline as a graph, and take the folder away.",
+    "Browse the DarkPrint registry of AI blueprints. Filter by tag, category and autonomy class. Read each pipeline as a graph. Take the folder away.",
 };
 
 /** Who is asking, and it is nobody (D-260-13). Frozen so nothing may widen it in place. */
@@ -235,7 +235,7 @@ export default async function BlueprintsPage() {
         title="Blueprints"
         lead={
           <>
-            Every one is a folder of text: read the graph here, take it away, run it
+            Every one is a folder of text. Read the graph here. Take it away. Run it
             with your own tools.{" "}
             <Link
               href="/what-a-blueprint-is"

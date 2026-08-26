@@ -119,7 +119,7 @@ describe("the weights table", () => {
     // Shown, and shown as weightless. Half of that claim is the point of the other half:
     // a marker the engine cannot price is still the author's declaration about the node.
     expect(OPEN).toContain("listed on the card and on the node page");
-    expect(OPEN).toContain("never quietly charged for");
+    expect(OPEN).toContain("never charged quietly");
   });
 
   /**
@@ -227,7 +227,7 @@ describe("the telemetry design, and what DarkPrint still cannot verify", () => {
 
   it("says in the open that nothing measures a run", () => {
     expect(OPEN.toLowerCase()).toContain(
-      "nothing on this site measures a run, so these two filters describe a design rather than a behaviour",
+      "nothing on this site measures a run. these two filters describe a design",
     );
     expect(OPEN).toContain("never verified");
   });

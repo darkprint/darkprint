@@ -176,6 +176,6 @@ describe("the figure asks four questions and splits them three and one", () => {
   });
 
   it("refuses the tally the old drawing invited", () => {
-    expect(TEXT).toContain("three out of four is not a score");
+    expect(TEXT).toContain("Three out of four is not a score");
   });
 });

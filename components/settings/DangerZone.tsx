@@ -133,9 +133,9 @@ function DeleteAccount({ handle }: { handle: string | null }) {
         <div className="flex min-w-[280px] flex-1 flex-col gap-1">
           <span className="text-sm text-fg">Delete account</span>
           <span className="text-[13px] leading-relaxed text-muted">
-            Your handle is reserved, your private bundles and cards are destroyed, and
-            everything you published stays, because a pinned card cannot be withdrawn.
-            Review the exact figures before you confirm anything.
+            Your handle stays reserved. Your private bundles and cards are destroyed.
+            Everything you published stays. A pinned card cannot be withdrawn. Review the
+            exact figures before you confirm anything.
           </span>
         </div>
         {!expanded && (

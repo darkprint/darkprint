@@ -312,9 +312,9 @@ export function AccountForm({
             ))}
           </ul>
           <p className="text-[13px] leading-relaxed text-muted">
-            Your email and the four preferences above are stored on your account, and{" "}
-            <span className="text-fg">Save changes</span> writes both. What is not built yet
-            is the mailer itself: no mail goes out for any of them, whatever you choose here.
+            Your email and the four preferences above are stored on your account.{" "}
+            <span className="text-fg">Save changes</span> writes both. The mailer itself is
+            not built yet: no mail goes out for any of them, whatever you choose here.
           </p>
         </div>
       </SettingsSection>
@@ -357,10 +357,10 @@ export function AccountForm({
               where the page says so: the setting is about bundles, and lineage is one
               field recorded on one of them. */}
           <p className="text-xs leading-relaxed text-dim">
-            Visibility is a property of every bundle, and a published one is a blueprint
-            like any other: statically checked, scored from its own graph, and pinned to
-            the card versions it actually carries. Whether it started as a copy is a fact
-            recorded on it, not a different kind of thing.
+            Visibility is a property of every bundle. A published bundle is a blueprint
+            like any other. It is statically checked, scored from its own graph, and
+            pinned to the card versions it actually carries. Whether it started as a copy
+            is recorded on it as a fact, not treated as a different kind of thing.
           </p>
         </fieldset>
       </SettingsSection>
@@ -450,8 +450,8 @@ function SettingsFooter({
           Discard
         </Button>
         <span className="font-mono text-[11px] text-dim sm:ml-auto">
-          As designed, a change here applies to your account and never to anything you
-          have published.
+          A change here applies to your account. It never applies to anything you have
+          published.
         </span>
       </div>
       {error !== undefined && (

@@ -234,9 +234,16 @@ describe("the five ledger rows over T261 surfaces are still in honesty.test.ts",
    * Sentences, not line numbers: a re-pin that legitimately rewords one of these should red
    * here and be re-stated deliberately, which is the same discipline the blob pin asks for.
    */
+  /* Two rows RE-STATED at the plain-English copy pass (owner-instructed, 2026-08-26),
+     which is the deliberate restatement the comment above asks for rather than a
+     loosening: both sentences had a comma splice broken into two sentences, so the
+     ledger's `says` fragment follows the copy. The CLAIM is identical in both — the same
+     contrast between evidence and criteria, the same double denial about a leak. The
+     three clone-menu rows are unchanged because that panel's refusal was deliberately
+     kept front-loaded (see `components/blueprint/CloneMenu.tsx`). */
   const ROWS = [
-    "seeing the evidence of a failure you caused is feedback, seeing the criteria is gaming",
-    "not evidence of a leak, and it is not evidence of isolation either",
+    "seeing the evidence of a failure you caused is feedback. seeing the criteria is gaming",
+    "not evidence of a leak. it is not evidence of isolation either",
     "not built yet: a darkprint cli that clones a blueprint by name",
     "a snapshot, not a clone",
     "not built yet: a darkprint cli that clones a card by name",

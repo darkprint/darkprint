@@ -210,12 +210,19 @@ const SURVIVORS: readonly { file: string; claim: Claim; ruling: string }[] = [
          `reason="Nothing sends yet: no column stores this and no mail goes out."` — the claim
          intact and stated better than the sentence pinned. Widened to the CLAIM's forms, which
          is what D-263-13 cost its author 29 of 31 cells for. */
+      /* "No mail goes out" (capital N) added at the plain-English copy pass
+         (owner-instructed, 2026-08-26): the rewrite split a long sentence, which moved
+         this clause to a sentence start and capitalised it. Same claim, same surface,
+         still on screen — the match is case-sensitive, which is exactly the R8 lesson
+         above repeating, so the CLAIM's forms are widened rather than the copy bent back
+         to suit the assertion. */
       anyOf: [
         "nothing sends",
         "Nothing sends",
         "nothing is sent",
         "send no mail",
         "no mail goes out",
+        "No mail goes out",
         "nothing stores",
       ],
     },

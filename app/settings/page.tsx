@@ -76,7 +76,7 @@ import { SignInButtons } from "@/components/auth/SignInButtons";
 export const metadata: Metadata = {
   title: "Settings",
   description:
-    "What the registry knows about you, and what it will never keep. Your profile, handle, email, default visibility, notification preferences and API keys are stored; casting a ballot happens on a blueprint's own page, and no mail goes out yet.",
+    "What the registry knows about you, and what it will never keep. Your profile, handle, email, default visibility, notification preferences and API keys are stored. Casting a ballot happens on a blueprint's own page. No mail goes out yet.",
 };
 
 /**
@@ -266,15 +266,15 @@ export default async function Page() {
           </div>
           <p className="text-[13px] leading-relaxed text-muted">
             Your profile, handle, email, default visibility and notification preferences are
-            stored on your account, and <span className="text-fg">Save changes</span> writes
-            all five. Two sections write outside that button: an{" "}
-            <span className="text-fg">API key</span> mints and revokes immediately, and the{" "}
+            stored on your account. <span className="text-fg">Save changes</span> writes all
+            five. Two sections write outside that button. An{" "}
+            <span className="text-fg">API key</span> mints and revokes immediately. The{" "}
             <span className="text-fg">danger zone</span>&rsquo;s two actions are live and
-            irreversible; each previews what it would do before it asks you to confirm.
-            What is still not built is the mailer itself: no mail goes out yet for any
-            notification, whatever you switch on, and{" "}
-            <span className="text-fg">validator status</span> below is a read-only summary:
-            casting a ballot happens on a blueprint&rsquo;s own page, not this one.
+            irreversible. Each previews what it would do before it asks you to confirm.
+            The mailer itself is not built yet. No mail goes out yet for any
+            notification, whatever you switch on.{" "}
+            <span className="text-fg">Validator status</span> below is a read-only summary.
+            Casting a ballot happens on a blueprint&rsquo;s own page, not this one.
           </p>
         </div>
 

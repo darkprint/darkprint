@@ -188,10 +188,10 @@ export function AgentHandoff({ className }: { className?: string }) {
           which stopped being true the day the skill shipped. It now says what both ways
           have in common, so neither is introduced as the other's alternative. */}
       <p className="mt-2 text-[15px] leading-relaxed text-muted">
-        The worked example only ever builds software, which is the one starter it
-        demonstrates. Any other goal gets written by an agent, and there are two ways to
-        hand one the same decisions in the same order, both of them starting with what each
-        node must never receive.
+        The worked example only builds software. That&rsquo;s the one starter it
+        demonstrates. For any other goal, an agent writes it. There are two ways to give
+        the agent the same decisions in the same order. Both start with what each node must
+        never receive.
       </p>
 
       {/* ---------- way 1: the skill ---------- */}

@@ -446,7 +446,7 @@ export function TermRow({
                 —
               </span>
               <span className="sr-only">
-                No weight: a category a rule is written about, not a marker a card declares.
+                No weight. It is a category a rule is written about, not a marker a card declares.
               </span>
             </>
           ) : (

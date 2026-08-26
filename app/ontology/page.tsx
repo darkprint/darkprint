@@ -236,7 +236,7 @@ export default async function Page() {
         as="h1"
         eyebrow="Ontology"
         title="The words a blueprint is written in"
-        lead="One curated set of identifiers, plus whatever a bundle declares in its own namespace. A card may only name a term that resolves here, which is what makes an edge checkable at all."
+        lead="One curated set of identifiers, plus whatever a bundle declares in its own namespace. A card may only name a term that resolves here. That is what makes an edge checkable."
       />
 
       <div className="flex flex-wrap items-center gap-3">

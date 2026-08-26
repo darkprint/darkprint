@@ -372,12 +372,12 @@ const FIELD_ROWS: readonly FieldRow[] = [
             <Detail key={phase.id}>
               <span className="text-fg">{phase.label}.</span>{" "}
               {phase.description ??
-                "Outside the five phases the vocabulary closes on, so the card names it and nothing here interprets it."}
+                "This falls outside the five phases the vocabulary closes on. The card names it. Nothing here interprets it."}
             </Detail>
           ))}
           <p className="text-xs leading-relaxed text-dim">
-            A blueprint covers the union of its nodes&apos; phases. That is scope, not
-            completeness.
+            A blueprint covers the union of its nodes&apos; phases. That states scope.
+            It does not state completeness.
           </p>
         </div>
       ),
@@ -508,7 +508,7 @@ const FIELD_ROWS: readonly FieldRow[] = [
       v.dependencies.length === 0 ? undefined : (
         <Detail>
           {v.dependencies.filter((d) => !d.known).length > 0
-            ? "An entry the registry does not publish names a DOT node rather than a card, so it has no page here."
+            ? "An entry the registry does not publish names a DOT node rather than a card. It has no page here."
             : "Every one of them is published here."}
         </Detail>
       ),
@@ -1363,7 +1363,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 <p className="text-[15px] leading-relaxed text-muted">
                   <span className="text-fg">None declared.</span> The ordinary case: a
                   node is usually isolated by the edges its graph does not draw. Writing
-                  the rule down here is what makes it checkable.
+                  the rule down here makes it checkable.
                 </p>
               </div>
             ) : (
@@ -1464,8 +1464,8 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                     this pass, so it follows the rule the guard cannot see it break. */}
                 <p className="text-xs leading-relaxed text-dim">
                   Only a data type can be enforced, because only a data type travels on an
-                  edge. An entry naming anything else is free text: the resolver does not
-                  hold the graph to it, which is not the same as nothing acting on it. It
+                  edge. An entry naming anything else is free text. The resolver does not
+                  hold the graph to it. That does not mean nothing acts on it. It
                   is addressed to whoever runs the node, and the agent reads the
                   specification at the top of this page.
                 </p>
@@ -1794,9 +1794,9 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   <span className="break-all text-muted">{record.digest}</span>
                 </p>
                 <p className="text-xs leading-relaxed text-dim">
-                  Hashed over the card&apos;s content, author and provenance left out:
-                  the same node from two people lands on the same digest, any edit lands
-                  on a different one.
+                  The digest is hashed over the card&apos;s content. Author and
+                  provenance are left out. The same node from two people lands on the
+                  same digest. Any edit lands on a different one.
                 </p>
               </>
             ) : (

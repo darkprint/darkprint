@@ -53,6 +53,9 @@ import { createObjectStorage } from "@/lib/db/storage";
 import { createTestDb, type TestDb } from "../../support/db";
 
 /** The sentence that is only true when the configuration is where the number is. */
+/* Compared case-INSENSITIVELY since the plain-English copy pass (owner-instructed,
+   2026-08-26): splitting a long sentence moves a fragment to a sentence start and
+   capitalises it, which changes no claim. The fragments themselves are unchanged. */
 const FROM_CONFIG = "The number lives in the engine's configuration and not in this vocabulary";
 /** Its opposite, for the markers the configuration is silent about. */
 const FROM_VOCABULARY = "the number is the";
@@ -150,14 +153,14 @@ describe("each term page says where its own weight comes from", () => {
       }
 
       if (CONFIGURED.has(term.id)) {
-        if (!text.includes(FROM_CONFIG)) wrong.push(`${term.id}: priced in config and does not say so`);
+        if (!text.toLowerCase().includes(FROM_CONFIG.toLowerCase())) wrong.push(`${term.id}: priced in config and does not say so`);
         continue;
       }
 
       if (text.includes(FROM_CONFIG)) {
         wrong.push(`${term.id}: takes its weight from the vocabulary and the page claims otherwise`);
       }
-      if (!text.includes(FROM_VOCABULARY)) {
+      if (!text.toLowerCase().includes(FROM_VOCABULARY.toLowerCase())) {
         wrong.push(`${term.id}: does not say where its number comes from`);
       }
       // And the amount on the page is the term's own, not the fallback.

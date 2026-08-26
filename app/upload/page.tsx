@@ -46,7 +46,7 @@ export const metadata: Metadata = {
      pass. `components/site/nav.test.ts` holds the chrome to this name. */
   title: "Validate and publish",
   description:
-    "Validate and publish a blueprint bundle. DarkPrint resolves it in your browser, names its autonomy class, and reports static risk exposure before a release is created.",
+    "Validate and publish a blueprint bundle. DarkPrint resolves it in your browser. It names the autonomy class and reports static risk exposure before a release is created.",
 };
 
 /**
@@ -227,7 +227,7 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
           as="h1"
           className="mt-3"
           title="Validate and publish"
-          lead="Choose a blueprint bundle and resolve it in your own tab. You get explainable diagnostics, an autonomy class, and a bounded static risk-exposure reading before the separate publish step."
+          lead="Choose a blueprint bundle and resolve it in your own tab. You get explainable diagnostics and an autonomy class. You also get a bounded static risk-exposure reading before the separate publish step."
         />
         {/* ── Where the folder in front of the reader came from ──
             The population arriving here changed. Until now the only person with a bundle
@@ -257,11 +257,11 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
           <Link href={SKILL_ROUTE} className={PROSE_LINK}>
             DarkPrint skill
           </Link>{" "}
-          drops straight in. It runs in your own editor and writes the two things this page
-          reads, a <span className="font-mono text-cyan">topology.dot</span> and the{" "}
-          <span className="font-mono text-cyan">cards/</span> it pins, so there is nothing
-          to export and nothing to convert. Bring it before it is finished: a graph whose
-          cards are half written resolves as far as it goes, and the report says how far.
+          drops straight in. It runs in your own editor. It writes the two things this page
+          reads: a <span className="font-mono text-cyan">topology.dot</span> and the{" "}
+          <span className="font-mono text-cyan">cards/</span> it pins. There is nothing to
+          export and nothing to convert. Bring it before it is finished. A graph whose cards
+          are half written resolves as far as it goes. The report says how far.
         </p>
         {/* ── Two of the three sentences that stood here are gone, and ONE stayed (D-263-02) ──
             The paragraph used to refuse three things at once: an account to upload into,
@@ -290,7 +290,7 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
         <p className="mt-5 flex max-w-2xl flex-wrap items-center gap-2 text-[13px] leading-relaxed text-dim">
           <ComingSoonBadge />
           Not built yet: a live push from the editor the skill runs in. It writes the folder
-          to your disk, and you bring it here.
+          to your disk. You bring it here.
         </p>
         {/* The vocabulary asymmetry, moved here from `/what-it-isnt` when that page was
             removed. It is a statement about this page, and it was the only unconditional
@@ -317,12 +317,12 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
             Not folded, and not shortened: two HIGH findings in this project were disclaimers
             going missing while somebody was cutting for pace. */}
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-dim">
-          What you drop is resolved here against the curated core vocabulary plus any{" "}
+          What you drop is resolved here against the curated core vocabulary, plus any{" "}
           <span className="font-mono text-cyan">ontology/extensions.yaml</span> in the
           folder. The registry resolves it again when you publish, against the ontology
-          version the manifest names, so a bundle pinning an older version can be judged on
-          different terms there than here. The reading on this page is the fast one; the
-          registry&rsquo;s is the one that decides.
+          version the manifest names. A bundle pinning an older version can be judged on
+          different terms there than here. The reading on this page is the fast one. The
+          registry&rsquo;s reading decides.
         </p>
       </header>
 
@@ -331,9 +331,9 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
           one place a limit belongs: a graph with a person in it is read, not penalised,
           and the scorecard that comes back has four axes nothing can fill. */}
       <p className="mt-5 text-sm leading-relaxed text-dim">
-        A graph with a person standing in it resolves like one without, and names the node
-        where they act. Two of the six axes are read off the graph; efficacy, reliability
-        and transparency need votes, and cost and time need a run.
+        A graph with a person standing in it resolves like one without. It names the node
+        where they act. Two of the six axes are read off the graph. Efficacy, reliability
+        and transparency need votes. Cost and time need a run.
       </p>
 
       <div className="mt-10">

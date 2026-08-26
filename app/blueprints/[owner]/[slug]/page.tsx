@@ -1008,8 +1008,8 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
               <PanelLabel>Exact release</PanelLabel>
               <h2 className="mt-2 font-display text-2xl font-semibold text-fg">Use this blueprint</h2>
               <p className="mt-2 text-sm leading-relaxed text-muted">
-                Take the complete bundle, adapt it locally, and validate the result before
-                you run or publish it. DarkPrint distributes these files; your own harness
+                Take the complete bundle. Adapt it locally. Validate the result before
+                you run or publish it. DarkPrint distributes these files. Your own harness
                 decides how to execute them.
               </p>
             </div>

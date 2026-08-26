@@ -535,7 +535,7 @@ export function SiteHeader() {
                     menu would otherwise be a single Settings row with no explanation. */}
                 {account.author.handle === null && (
                   <p className="border-t border-line px-4 py-3 text-xs leading-relaxed text-muted">
-                    Your profile lives at a handle, and this account does not have one yet.
+                    Your profile is at a handle. This account does not have one yet.
                     Choose one in <span className="text-fg">Settings</span> and these rows
                     appear.
                   </p>

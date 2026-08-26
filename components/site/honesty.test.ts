@@ -295,14 +295,14 @@ const CLAIMS: Claim[] = [
   {
     surface: "/blueprints/starter-software-factory · where the trace stopped",
     why: "why a channel the analyzer cannot follow is worth naming at all. The engine writes it into the hint on every row of that list, and every hint is behind a closed disclosure",
-    says: "seeing the evidence of a failure you caused is feedback, seeing the criteria is gaming",
+    says: "seeing the evidence of a failure you caused is feedback. seeing the criteria is gaming",
     where: "open",
     html: STARTER,
   },
   {
     surface: "/blueprints/starter-software-factory · where the trace stopped",
     why: "the limit stated in both directions. \"Nothing is charged\" says what the score did; this says what the silence means",
-    says: "not evidence of a leak, and it is not evidence of isolation either",
+    says: "not evidence of a leak. it is not evidence of isolation either",
     where: "open",
     html: STARTER,
   },
@@ -311,7 +311,7 @@ const CLAIMS: Claim[] = [
   {
     surface: "/spec/card · the `cannot[]` entry in the subfield list",
     why: "half of the page's thesis. It used to close panel B of \"The split\", which asserted the free-text entry is legitimate; the IA pass of 2026-08-07 removed that band and rehomed this sentence onto the `cannot[]` entry, which is the field it was always about. Without it the symmetry has one side, and an entry nothing checks reads as an entry that failed",
-    says: "both are legitimate, and a reader has to be able to tell which is which without running anything",
+    says: "both are legitimate. a reader has to be able to tell which is which without running anything",
     where: "open",
     html: SPEC_CARD,
   },
@@ -327,7 +327,7 @@ const CLAIMS: Claim[] = [
   {
     surface: "/reading-the-radar · cost and time, if they are ever reported",
     why: "the whole telemetry block is a design nothing implements. `minRuns 5` and `outlierZScore 3` are printed as engine configuration, which is what every other number in that section is, and those two are filters on a pipeline that has never had an input. PROJECT.md §3.5 is the point at which this stops being free, so the sentence has to be beside the numbers rather than behind a disclosure",
-    says: "nothing on this site measures a run, so these two filters describe a design rather than a behaviour",
+    says: "nothing on this site measures a run. these two filters describe a design",
     where: "open",
     html: SCORING,
   },
@@ -606,7 +606,7 @@ describe("claims the site may not stop making", () => {
     expect(unanchored.length, "no bundle is unanchored any more").toBeGreaterThan(0);
     for (const bp of unanchored) {
       expect(openText(canvas(bp.slug)).toLowerCase(), bp.slug).toContain(
-        "the absence of a finding here is silence, not a clean verdict",
+        "the absence of a finding here is silence. it is not a clean verdict",
       );
     }
   });

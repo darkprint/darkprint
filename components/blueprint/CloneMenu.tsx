@@ -194,9 +194,10 @@ function CloneBody({
         These are static files over HTTP.{" "}
         <span className="text-fg">
           The command copies {kind === "node" ? "the file" : "the folder"} as it stands
-          right now — a snapshot, not a clone.
+          right now. That is a snapshot, not a clone.
         </span>{" "}
-        There is no repository behind it, no history, and nothing to pull later. When{" "}
+        There is no repository behind it and no history. There is nothing to pull
+        later. When{" "}
         {kind === "node" ? "a new version is published" : "a card in this blueprint is repinned"},
         come back for the command again rather than re-running an old copy of it.
       </p>
@@ -218,11 +219,16 @@ function CloneBody({
           {cliCommand}
         </code>
         <p className="text-xs leading-relaxed text-muted">
+          {/* The refusal stays FRONT-LOADED. The plain-English pass moved "is not built
+              yet" to the end of the clause, which is grammatical and worse: a reader
+              skimming an amber panel must meet the refusal before the capability it
+              describes, and the subject sat five nouns away from its verb. The sentence
+              splitting that pass added is kept. */}
           Not built yet: a darkprint CLI that clones a {subject} by name
           {kind === "node"
             ? ", and fetches the version you ask for"
             : ", resolves every card it pins and tells you when one of them moves"}
-          . There is nothing to install today, so the line above is a preview and not a
+          . There is nothing to install today. The line above is a preview. It is not a
           command.
         </p>
       </div>

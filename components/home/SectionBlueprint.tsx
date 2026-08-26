@@ -109,7 +109,7 @@ export function SectionBlueprint() {
                  from." until 2026-08-08, when the author asked it out of the deck and into the
                  scroll: the hint appears as a reader starts moving rather than sitting under
                  the heading before there is anything to hint at. `SourceSwap` draws it. */
-              lead="Which agents run, what each one hands to the next, and it is already yours to run."
+              lead="Which agents run and what each hands to the next. It is already yours to run."
               align="center"
               className="mx-auto"
             />

@@ -258,7 +258,7 @@ const QUESTIONS: readonly { label: string; text: string }[] = [
     label: "the nodes",
     text: "who does each part, and whether that is an agent, a tool or a person",
   },
-  { label: "the boundaries", text: "what has to reach each node, and what must never" },
+  { label: "the boundaries", text: "what has to reach each node, and what must never reach it" },
   {
     label: "the loop",
     text: "where it closes, and how many turns it may take before it stops",
@@ -337,8 +337,8 @@ export function SkillSetup({ className }: { className?: string }) {
                 the site's limits are carried by words. */}
             <p className="text-[15px] leading-relaxed text-muted">
               What it does after that is not tested here. The DarkPrint skill is a document
-              your agent reads and your agent runs, so everything below describes what it
-              asks for and what it leaves behind rather than anything this site checks.
+              your agent reads and runs. Everything below describes what it asks for and
+              what it leaves behind. This site does not check anything beyond that.
             </p>
           </div>
         </div>

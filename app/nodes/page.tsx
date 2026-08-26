@@ -21,7 +21,7 @@ import type { Author } from "@/lib/types";
 export const metadata: Metadata = {
   title: "Nodes",
   description:
-    "The DarkPrint node-card library, every reusable node in the registry, with its ontology type, the lifecycle phases it stands in, declared interface, tools and risk markers. Filter by type, by phase, by human involvement or by risk.",
+    "The DarkPrint node-card library lists every reusable node in the registry. Each entry shows its ontology type, the lifecycle phases it stands in, declared interface, tools and risk markers. Filter by type, phase, human involvement or risk.",
 };
 
 /**

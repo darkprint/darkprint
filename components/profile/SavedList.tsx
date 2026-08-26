@@ -101,13 +101,13 @@ export function SavedList({ saves }: { saves: readonly SavedRow[] }) {
       ))}
 
       <p className="px-5 py-4 text-xs leading-relaxed text-dim">
-        A save is a bookmark and it is yours: it follows your account between machines and
+        A save is a bookmark tied to your account. It follows you between machines, and
         nobody else can see it. It is not the star count beside a blueprint, which is
-        seeded community support, and no scorecard reads either of them. One gap is left:
-        the bookmark control on a <span className="text-fg">blueprint</span> still writes
-        to this browser&rsquo;s <span className="font-mono text-muted">localStorage</span>{" "}
-        rather than to your account, so a blueprint you saved will not appear here yet.
-        Cards do.
+        seeded community support. No scorecard reads either the save or the star count.
+        One gap remains: the bookmark control on a{" "}
+        <span className="text-fg">blueprint</span> still writes to this browser&rsquo;s{" "}
+        <span className="font-mono text-muted">localStorage</span> instead of to your
+        account. A blueprint you saved will not appear here yet. Cards do.
       </p>
     </div>
   );

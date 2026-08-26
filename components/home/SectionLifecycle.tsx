@@ -76,7 +76,7 @@ const ACTIONS = [
     href: "/what-a-blueprint-is",
     label: "What a blueprint is",
     title: "Learn",
-    text: "What a blueprint is: a graph, a card per node, and one vocabulary they are all written in.",
+    text: "A blueprint is a graph, a card per node, and one vocabulary they are all written in.",
     image: "/home/lifecycle/learn.webp",
   },
   {
@@ -100,7 +100,7 @@ const ACTIONS = [
     href: `${blueprintHref(ARCHIVE_OWNER, "starter-software-factory")}#use-this-blueprint`,
     label: "Take the starter",
     title: "Use",
-    text: "Plain files you can read: download a release, adapt it, run it in your own harness.",
+    text: "Plain files you can read. Download a release, adapt it and run it in your own harness.",
     image: "/home/lifecycle/use.webp",
   },
   {

@@ -364,7 +364,7 @@ const BUNDLE_FILES: readonly { name: string; role: string }[] = [
   {
     name: "README.md",
     role:
-      "What this blueprint is, for a person: the shape in a sentence, the digest to check the files against, and how to run it with your own harness.",
+      "This blueprint, explained for a person: the shape in a sentence, the digest to check the files against, and how to run it with your own harness.",
   },
 ];
 
@@ -653,9 +653,9 @@ export default function WhatABlueprintIsPage() {
               }
             >
               A directed graph in a subset of DOT, saying which node hands what to which.
-              What it leaves out matters as much: an edge nobody drew is a connection
-              somebody decided against, and the dashed one above is a rule the resolver
-              enforces rather than a convention the author remembered.
+              An edge nobody drew is a connection somebody decided against. The dashed
+              one above is a rule the resolver enforces, not a convention the author
+              remembered.
             </Part>
 
             <Part

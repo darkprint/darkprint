@@ -71,7 +71,13 @@ const FROZEN: readonly Frozen[] = [
   },
   {
     path: "components/site/honesty.test.ts",
-    blob: "d64124a24e3c9951a93e805b9c2e4dc450aa7d3e" /* re-pinned DELIBERATELY twice. At
+    blob: "049678136f654c6b2464c1745c0592870d1009bb" /* re-pinned DELIBERATELY a third
+      time at the plain-English copy pass (owner-instructed, 2026-08-26): the sentences
+      this ledger pins were rewritten out of "claudish" into plain English by the
+      claudish-to-english plugin, so the rows' `says` fragments moved WITH the copy they
+      guard, in the same commit. No row was deleted and no claim changed — a rewrite that
+      weakened, strengthened or dropped a claim was rejected rather than pinned. Earlier
+      re-pins, both still true of this file: at
       T260's merge: T263's 528806a (D-263-12) moved the file through the backend merge —
       the T260 implementer never touched it. At T280 (owner-instructed wiring wave,
       2026-08-25, D-261-07(5)'s granted path): five ledger rows moved with the copy they

@@ -114,8 +114,8 @@ export function ForkAction({
         >
           <p className="text-xs leading-relaxed text-muted">
             {kind === "node"
-              ? "Forking a card means copying this file into one of your own and editing it there: a line changed, or a person put where a step in the graph hands off. Either copy is a complete card."
-              : "Forking a blueprint means copying this folder into one of your own and editing it there: a card changed, or a person put where the release goes out. Either copy is a complete blueprint."}{" "}
+              ? "Forking a card means copying this file into one of your own and editing it there. You change a line, or you place a person where a step in the graph hands off. Either copy is a complete card."
+              : "Forking a blueprint means copying this folder into one of your own and editing it there. You change a card, or you place a person where the release goes out. Either copy is a complete blueprint."}{" "}
             {kind === "node" ? (
               <span className="text-fg">
                 This site holds no copy of it: there is a fork route for a whole blueprint
@@ -123,7 +123,7 @@ export function ForkAction({
               </span>
             ) : (
               <span className="text-fg">
-                The Fork button above does exactly this for real, into your own account; use
+                The Fork button above does this for real, into your own account; use
                 it there. This panel is for taking the folder by hand instead, with no
                 account behind the copy.
               </span>
@@ -144,8 +144,8 @@ export function ForkAction({
           ) : (
             <div className="flex flex-col gap-1.5 rounded-md border border-line bg-void/40 p-3">
               <p className="text-xs leading-relaxed text-muted">
-                A fork made through the header button follows the GitHub model for real:
-                yours, private unless your account&rsquo;s own default is public, and listed
+                A fork made through the header button follows the GitHub model: yours,
+                private unless your account&rsquo;s own default is public, and listed
                 on your profile.
               </p>
             </div>

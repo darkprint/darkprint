@@ -142,10 +142,10 @@ export function DraftLanding({
                   />
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-dim">
-                  Not built yet: the darkprint CLI is not on npm, so the line above is a
-                  preview rather than a command. It will fetch this bundle by name once it
-                  ships; with no release yet there is nothing for it to bring down but the
-                  name and the folder to fill.
+                  Not built yet. The darkprint CLI is not on npm, so the line above is a
+                  preview, not a command. Once it ships, it will fetch this bundle by
+                  name. There is no release yet, so it can only bring down the name and
+                  the folder to fill.
                 </p>
               </div>
             </section>

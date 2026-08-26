@@ -247,8 +247,8 @@ const FACE_TOP = 31;
  */
 const WALK_BODY: Record<string, string> = {
   identity:
-    "The first four lines fix identity. `code-builder` is the id a graph pins by version, " +
-    "`agent` means a model runs this box, and `implementation` places it in the lifecycle.",
+    "The first four lines fix identity. `code-builder` is the id a graph pins by version. " +
+    "`agent` means a model runs this box. `implementation` places it in the lifecycle.",
   action:
     "One line for what the node does. Nothing in the engine reads it, and it travels into " +
     "the download unchanged, for whoever opens the card next.",

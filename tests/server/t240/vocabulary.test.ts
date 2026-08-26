@@ -68,7 +68,16 @@ const ASIDE = fileURLToPath(new URL("../../../components/bundle/Aside.tsx", impo
  */
 function forbiddenNouns(): string[] {
   const source = readFileSync(ASIDE, "utf8");
-  const sentence = /What it still does not:\s*([^<.]+)\./.exec(source);
+  /* Anchor REPOINTED at the plain-English copy pass (owner-instructed, 2026-08-26).
+     The sentence was "What the registry stores is this bundle and who owns it. What it
+     still does not: …" and became "The registry stores this bundle and who owns it. It
+     does not store a run, a key, or any telemetry about either." Same claim, same nouns,
+     plainer sentence. The DERIVATION is what this suite protects, so the anchor follows
+     the copy rather than the list being transcribed here — which is the failure the throw
+     below names. Both spellings are accepted so this cell does not red on a revert. */
+  const sentence =
+    /What it still does not:\s*([^<.]+)\./.exec(source) ??
+    /\bIt does not store\s*([^<.]+)\./.exec(source);
   if (sentence === null) {
     throw new Error(
       `components/bundle/Aside.tsx no longer carries the "What it still does not:" sentence ` +

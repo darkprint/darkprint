@@ -38,7 +38,7 @@ export function VersionRow({
       <Button
         variant="outline"
         disabled
-        title="Choosing between versions, in place, is designed and not built."
+        title="Choosing between versions in place is designed, not built."
       >
         <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
           version
@@ -67,7 +67,7 @@ export function VersionRow({
           variant="outline"
           disabled
           className="ml-auto"
-          title="Comparing two bundles by digest is designed and not built."
+          title="Comparing two bundles by digest is designed, not built."
         >
           Compare with upstream
         </Button>

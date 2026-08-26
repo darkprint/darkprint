@@ -226,9 +226,9 @@ export function VersionHistory({
             ✓
           </span>
           <span>
-            First published version, there is nothing to compare it against yet.
-            A version is never edited in place, so the next change arrives as a new
-            one and the diff between them shows up here, worked out from the two
+            First published version. There is nothing to compare it against yet.
+            A version is never edited in place. The next change arrives as a new
+            version. The diff between them shows up here, worked out from the two
             documents.
           </span>
         </p>

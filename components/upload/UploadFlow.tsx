@@ -271,7 +271,7 @@ type StoredLine =
  */
 function storedSentence(stored: StoredLine | undefined): string {
   if (stored === undefined) {
-    return "This bundle has not been submitted to the registry, so this file is a reading and not a record of a release.";
+    return "This bundle has not been submitted to the registry. This file is a reading, not a record of a release.";
   }
   if (!stored.published) {
     return "The registry refused this submission, so no release was created and nothing here describes a stored bundle.";
@@ -373,8 +373,8 @@ function reportMarkdown(args: {
     out.push("");
     out.push(
       progress.state === "unfinished"
-        ? `Not computed yet. ${progress.waiting} of the graph's ${progress.total} nodes have no card in the folder, and a reading taken over nodes the engine could not open would have nothing behind it. Write the rest and run this again.`
-        : "Not computed. DarkPrint will not put a number on a graph whose references it could not check, so the diagnostics below are the whole of what this run produced.",
+        ? `Not computed yet. ${progress.waiting} of the graph's ${progress.total} nodes have no card in the folder. A reading over nodes the engine could not open would have nothing behind it. Write the rest and run this again.`
+        : "Not computed. DarkPrint will not put a number on a graph whose references it could not check. The diagnostics below are the whole of what this run produced.",
     );
     out.push("");
   } else {
@@ -399,7 +399,7 @@ function reportMarkdown(args: {
     out.push("## Phase coverage");
     out.push("");
     out.push(
-      "Which of the five lifecycle phases this graph acts in. A description of scope, not a score.",
+      "Which of the five lifecycle phases this graph acts in. This describes scope. It is not a score.",
     );
     out.push("");
     out.push(
@@ -429,7 +429,7 @@ function reportMarkdown(args: {
   out.push("## What is not in here");
   out.push("");
   out.push(
-    "Two of the six axes are read off the graph and both are above. Efficacy, reliability and transparency come from weighted community and validator votes; cost and time are reported by whoever runs the graph, and the platform never sees the execution.",
+    "Two of the six axes are read off the graph, and both are above. Efficacy, reliability and transparency come from weighted community and validator votes. Cost and time are reported by whoever runs the graph. The platform never sees the execution.",
   );
   out.push("");
   /* ── D-263-01, and this sentence is the second of the two the ruling rewrote ──
@@ -444,7 +444,7 @@ function reportMarkdown(args: {
      and can be a different verdict in either direction. The client-side pass stays on
      purpose — it is the fast one — and the server's is the one that decides. */
   out.push(
-    "This reading was taken in your browser, against the curated core vocabulary plus whatever `ontology/extensions.yaml` came with the folder. The registry takes its own reading when you publish, against the ontology version this bundle's manifest names, so a bundle declaring an older version can be judged on different terms there than here. The registry's reading is the one that decides.",
+    "This reading was taken in your browser, against the curated core vocabulary plus whatever `ontology/extensions.yaml` came with the folder. The registry takes its own reading when you publish, against the ontology version this bundle's manifest names. A bundle declaring an older version can be judged on different terms there than here. The registry's reading decides.",
   );
   out.push("");
 
@@ -484,8 +484,8 @@ function refusalSentence(
         {progress === undefined
           ? "the registry resolved this bundle against its own vocabulary and some node has no card yet."
           : `${progress.placed} of ${progress.total} nodes have their card.`}{" "}
-        There is nothing to fix. Write the rest and publish again — the Preview step names
-        the ones still waiting, and the report below travels with you meanwhile.
+        There is nothing to fix. Write the rest and publish again. The Preview step names
+        the ones still waiting. The report below travels with you meanwhile.
       </>
     );
   }
@@ -1264,17 +1264,17 @@ export function UploadFlow({
               <p className="max-w-xl text-xs leading-relaxed text-dim">
                 {kind === "blueprint" ? (
                   <>
-                    The validator joins a DOT to the cards it pins, so a whole bundle is
-                    what it knows how to read.
+                    The validator joins a DOT to the cards it pins, so it reads a whole
+                    bundle.
                   </>
                 ) : (
                   <>
                     A {KIND_NOUN[kind]} on its own checks against the curated core
                     vocabulary alone, the same reading a bundle&rsquo;s own cards get
                     before any local overlay is layered on. Publishing one by itself is
-                    not built — the registry stores a {KIND_NOUN[kind]} today only pinned
-                    inside a blueprint bundle that publishes, and the last step here says
-                    so.
+                    not built. The registry stores a {KIND_NOUN[kind]} today only when
+                    pinned inside a blueprint bundle that publishes. The last step here
+                    says so.
                   </>
                 )}
               </p>
@@ -1302,7 +1302,7 @@ export function UploadFlow({
                can use, and it is offered rather than asked for. */
             <div className="grid max-w-3xl gap-5">
               <p className="max-w-xl text-sm leading-relaxed text-muted">
-                A {KIND_NOUN[kind]} is checked on its own — no release, no visibility, no
+                A {KIND_NOUN[kind]} is checked on its own. No release, no visibility, no
                 derived agents or tools. Give it a title for the report, if you want one.
               </p>
               <div className="flex flex-col gap-2 sm:max-w-md">
@@ -1338,10 +1338,10 @@ export function UploadFlow({
             <p className="max-w-xl text-sm leading-relaxed text-muted">
               These fields become the bundle&rsquo;s manifest. A{" "}
               <span className="font-mono text-cyan">blueprint.yaml</span> in the
-              selection fills them in for you;{" "}
+              selection fills them in for you.{" "}
               {parts.manifest === undefined
-                ? "there is none here, so a minimal one is synthesised from what you type."
-                : `they were read from ${parts.manifest.name}.`}
+                ? "There is none here, so a minimal one is synthesised from what you type."
+                : `They were read from ${parts.manifest.name}.`}
             </p>
 
             <div className="flex flex-col gap-2">
@@ -1357,7 +1357,7 @@ export function UploadFlow({
               />
               <p className="font-mono text-[11px] text-dim">
                 slug <span className="text-muted">{slug}</span>
-                {target !== undefined && " (fixed — publishing into this bundle)"}
+                {target !== undefined && " (fixed: publishing into this bundle)"}
               </p>
             </div>
 
@@ -1531,7 +1531,7 @@ export function UploadFlow({
                   </div>
                   <p className="max-w-xl text-[11px] leading-relaxed text-dim">
                     Private is the starting choice. You can publish a private release and
-                    keep working; what a reader of the archive sees is what you make public.
+                    keep working. A reader of the archive sees only what you make public.
                   </p>
                 </fieldset>
               )}
@@ -1539,9 +1539,9 @@ export function UploadFlow({
 
             <div className="flex flex-col gap-5 border-t border-line pt-5">
               <p className="max-w-xl text-sm leading-relaxed text-muted">
-                <span className="text-fg">Read off your cards.</span> What the graph
-                needs is a property of the nodes it instantiates, not something to
-                declare by hand, so the registry computes it instead of asking.
+                <span className="text-fg">Read off your cards.</span> The graph needs a
+                property of the nodes it instantiates. You do not declare it by hand. The
+                registry computes it.
               </p>
 
               <DerivedChips
@@ -1578,8 +1578,7 @@ export function UploadFlow({
                 </h3>
                 <p className="prose-lane mt-4 text-sm leading-relaxed text-muted">
                   Drop a single <span className="font-mono text-cyan">.yaml</span>{" "}
-                  document on the first step — a {KIND_NOUN[kind]} — and it validates
-                  here.
+                  document, a {KIND_NOUN[kind]}, on the first step. It validates here.
                 </p>
               </div>
             ) : (
@@ -1628,8 +1627,8 @@ export function UploadFlow({
               </h3>
               <p className="prose-lane mt-4 text-sm leading-relaxed text-muted">
                 A bundle without a <span className="font-mono text-cyan">.dot</span> is
-                not an incomplete bundle, it is not one at all. Go back to the first
-                step and add the topology.
+                not incomplete. It is not a bundle. Go back to the first step and add the
+                topology.
               </p>
             </div>
           ) : (
@@ -1836,7 +1835,7 @@ export function UploadFlow({
                 )}
                 {singleValidation.state === "idle" && (
                   <p className="text-sm leading-relaxed text-muted">
-                    Nothing dropped yet — go back to the first step.
+                    Nothing dropped yet. Go back to the first step.
                   </p>
                 )}
               </div>
@@ -1844,8 +1843,8 @@ export function UploadFlow({
               <div className="rounded-lg border border-line bg-surface-2/40 p-4">
                 <p className="text-xs leading-relaxed text-muted">
                   <span className="text-fg">Not built:</span> publishing a lone{" "}
-                  {KIND_NOUN[kind]} on its own. The registry stores one today only pinned
-                  inside a blueprint bundle that publishes — pick Blueprint on the first
+                  {KIND_NOUN[kind]} on its own. Today the registry only stores one pinned
+                  inside a blueprint bundle that publishes. Pick Blueprint on the first
                   step to publish one.
                 </p>
               </div>
@@ -1917,13 +1916,13 @@ export function UploadFlow({
                   <span style={{ color: METRIC_SOURCE_META.community.color }}>
                     Efficacy, Reliability and Transparency
                   </span>{" "}
-                  come from weighted community &amp; validator votes;{" "}
+                  come from weighted community &amp; validator votes.{" "}
                   <span style={{ color: METRIC_SOURCE_META.reported.color }}>
                     Cost / time
                   </span>{" "}
-                  is reported by whoever runs it, the platform never sees the
-                  execution, and arrives with its run count, its spread and the
-                  model it was obtained on.
+                  is reported by whoever runs it. The platform never sees the execution.
+                  It arrives with its run count, its spread and the model it was obtained
+                  on.
                 </p>
               </div>
 
@@ -1966,7 +1965,7 @@ export function UploadFlow({
                       <>
                         <span className="font-mono text-warn">still being written</span>:{" "}
                         {progress.placed} of {progress.total} nodes have their card. There
-                        is nothing to fix — write the rest and drop the folder again. The
+                        is nothing to fix. Write the rest and drop the folder again. The
                         Preview step names the ones still waiting.
                       </>
                     ) : (
@@ -1997,7 +1996,7 @@ export function UploadFlow({
                       >
                         Sign in with GitHub
                       </a>{" "}
-                      and come back — the bundle and everything you have typed stay where
+                      and come back. The bundle and everything you have typed stay where
                       they are.
                     </>
                   ) : session.state === "no-handle" ? (

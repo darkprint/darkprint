@@ -62,7 +62,7 @@ export default async function Page({ params }: PageProps<"/u/[username]/cards">)
           <ShelfToolbar
             placeholder="Find a card…"
             label="Find a card"
-            note={`${view.ownedCards.length} card${view.ownedCards.length === 1 ? "" : "s"}, read live off the registry — public and private together.`}
+            note={`${view.ownedCards.length} card${view.ownedCards.length === 1 ? "" : "s"}, read live off the registry, public and private together.`}
           >
             <VisibilityFilter label="Filter cards by visibility" />
           </ShelfToolbar>

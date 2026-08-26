@@ -142,7 +142,7 @@ export function VocabularyPane({
                      markers until a choice adds one, and a pane that drew a blank there
                      would read as something failing to load. */
                   <span className="font-mono text-[11px] text-dim">
-                    none, so this blueprint spends no {label} at all
+                    none, so this blueprint spends no {label}
                   </span>
                 ) : (
                   ids.map((id) => {

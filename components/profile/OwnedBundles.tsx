@@ -241,16 +241,17 @@ export function OwnedBundles({
         <div className="flex flex-col gap-2 text-[13px] leading-relaxed text-muted">
           <p>
             A blueprint belongs to an account and is public or private. A bundle with no
-            release yet is a draft, drawn the same as any other row rather than hidden:
-            the empty-repository state, rendered rather than suppressed.
+            release yet is a draft. It appears as a row like any other bundle, not hidden.
+            This is the empty-repository state, rendered instead of suppressed.
           </p>
           {owner ? (
             <p>
-              Every row here is your own bundle, read live off the registry. A row whose
-              slug also has a page in <span className="font-mono text-fg">content/</span>{" "}
-              draws the same row <span className="font-mono text-fg">/blueprints</span>{" "}
-              does, graph included; every other row draws what the bundle itself carries:
-              title, summary, and a release if it has one.
+              Every row here is your own bundle, read live off the registry. If a
+              row&rsquo;s slug also has a page in{" "}
+              <span className="font-mono text-fg">content/</span>, it draws the same row
+              that <span className="font-mono text-fg">/blueprints</span> draws, including
+              the graph. Every other row draws what the bundle itself carries: title,
+              summary, and a release if it has one.
             </p>
           ) : (
             <p>

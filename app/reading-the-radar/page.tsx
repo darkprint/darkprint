@@ -111,7 +111,7 @@ import { ARCHIVE_OWNER, blueprintHref } from "@/lib/href";
 export const metadata: Metadata = {
   title: "How a blueprint is graded",
   description:
-    "A blueprint's scorecard, taken apart: five spokes, why autonomy is not one of them, and what the colour of each vertex says about where its number came from. Then the three badges behind the six axes and every weight the engine charges. Two are read off the graph; the other four wait on a ballot or a run report, and an axis with none yet says so honestly rather than pretending one exists.",
+    "A blueprint's scorecard, broken down: five spokes, why autonomy is not one of them, and what each vertex's colour says about where its number came from. Then the three badges behind the six axes, and every weight the engine charges. Two axes are read off the graph. The other four wait on a ballot or a run report. An axis with none yet says so, instead of showing a number it does not have.",
 };
 
 /* T280: this page reads the live registry for the sample's ballot and run figures, the
@@ -393,8 +393,8 @@ export default async function HowABlueprintIsGradedPage() {
   const communityAxes = metrics.filter((metric) => metric.source === "community");
   const costRow = metrics.find((metric) => metric.key === "cost");
   const noSpokeSentence = costHasSpoke
-    ? "Autonomy has no spoke: it is a class, not a length."
-    : "Autonomy has no spoke, and once real reports exist to read neither does cost (D-180-01): both are a class or a stated figure, never a length.";
+    ? "Autonomy has no spoke. It is a class, not a length."
+    : "Autonomy has no spoke. Once real reports exist to read, cost has no spoke either (D-180-01). Both are a class or a stated figure, never a length.";
 
   return (
     <>
@@ -448,7 +448,7 @@ export default async function HowABlueprintIsGradedPage() {
               <p className={BODY}>
                 {sample.title}, drawn by the same component every blueprint page
                 mounts. Each axis is named in the colour of the badge its row carries
-                on the scorecard, and the three sections below take those badges in
+                on the scorecard. The three sections below take those badges in
                 turn. {noSpokeSentence} So the chart shows {spokes.length} of the{" "}
                 {metrics.length}.{" "}
                 {/* The one link the retired `/reading-the-radar` plate carried that
@@ -469,9 +469,9 @@ export default async function HowABlueprintIsGradedPage() {
               {live === undefined ? (
                 <SampleNote badge="fixture reading">
                   {sample.title}&rsquo;s live ballot and run figures could not be read for
-                  this render, so the {nonAuto.length} rows above showing{" "}
+                  this render. The {nonAuto.length} rows above showing{" "}
                   {nonAuto.map((m) => m.label).join(", ")} are this bundle&rsquo;s fixture
-                  numbers rather than a live sample.
+                  numbers, not a live sample.
                 </SampleNote>
               ) : (
                 <SampleNote badge="live sample">
@@ -505,16 +505,16 @@ export default async function HowABlueprintIsGradedPage() {
           <ol className="flex flex-col gap-10">
             <Callout n="01" title={`${spokes.length} spokes, one per scored axis`}>
               {spokes.map((m) => m.label).join(", ")}, each vertex at that axis&rsquo;s
-              value on a 0 to 100 scale. A larger polygon is not a better blueprint, it is
-              one that scores higher on these.
+              value on a 0 to 100 scale. A larger polygon does not mean a better blueprint.
+              It means a higher score on these axes.
             </Callout>
 
             {autonomyRow !== undefined && (
               <Callout n="02" title="Autonomy has no spoke, on purpose">
                 {metrics.length} readings, {spokes.length} spokes. Autonomy is a{" "}
-                <span className="text-fg">name</span>, not a magnitude: this one is{" "}
+                <span className="text-fg">name</span>, not a magnitude. This one is{" "}
                 <span className="font-mono text-fg">{sample.autonomy.label}</span>. A spoke
-                would invite a reader to grow it, and where a person acts is a decision, not
+                would invite a reader to grow it. Where a person acts is a decision, not
                 a shortfall. It is printed under the chart in words, not drawn on it.
               </Callout>
             )}
@@ -575,11 +575,11 @@ export default async function HowABlueprintIsGradedPage() {
               already. Its one sentence stays, as the lead into the bands, which is the
               job it was doing. */}
           <p className={BODY}>
-            Not all six are the same kind of fact, so the drawing does not pretend they
-            are. Two are the engine&rsquo;s own arithmetic. Three read a live ballot and
-            one a live run report, and the three sections below take those badges in
-            turn, each one honest about the sample it has today rather than about whether
-            the pipeline behind it exists.
+            The six axes are not the same kind of fact. The diagram keeps that
+            difference visible. Two are the engine&rsquo;s own arithmetic. Three read a
+            live ballot and one reads a live run report. The three sections below take
+            those badges in turn. Each section reports the sample it has today. It does
+            not report whether the pipeline behind it exists.
           </p>
         </div>
       </section>
@@ -605,7 +605,7 @@ export default async function HowABlueprintIsGradedPage() {
           Both are computed from the graph and the cards its blueprint pins, and both
           name the nodes behind the number. The DOT and the cards are published as
           source on every blueprint page, so the arithmetic can be checked against
-          them. What each check is worth is the rest of this page.
+          them. The rest of this page explains what each check is worth.
         </p>
       </SourceBand>
 
@@ -618,10 +618,11 @@ export default async function HowABlueprintIsGradedPage() {
         ground="bg-void"
       >
         <p className={BODY}>
-          These three are judgement calls, and no graph states them. Whether a
-          blueprint&apos;s output was any good, whether it holds up across repeated
-          runs, and whether its internal decisions are documented well enough to audit
-          are readings a weighted vote of the people who ran it produces.
+          These three are judgement calls. No graph states them. One asks whether a
+          blueprint&apos;s output was any good. Another asks whether it holds up across
+          repeated runs. A third asks whether its internal decisions are documented
+          well enough to audit. A weighted vote of the people who ran the blueprint
+          produces these readings.
         </p>
         {live === undefined ? (
           <SampleNote badge="fixture reading">
@@ -634,7 +635,8 @@ export default async function HowABlueprintIsGradedPage() {
               .map((m) => `${m.label} ${m.sampleSize ?? 0}`)
               .join(" · ")}{" "}
             ballots cast for {sample.title}. Casting one moves the count on the next
-            render: this page has no fixed placeholder left to move away from.
+            render. This page carries no fixed placeholder number for the count to
+            move away from.
           </SampleNote>
         )}
       </SourceBand>
@@ -651,12 +653,13 @@ export default async function HowABlueprintIsGradedPage() {
           Cost and time need somebody to run the blueprint, and that happens on their
           machine. The platform never watches the run, so it can only ever be told the
           result. That is why the badge reads <span className="text-fg">reported</span>{" "}
-          and never <span className="text-fg">measured</span>. Everything a reported
-          figure travels with (how many runs it aggregates, how far apart they were,
-          and which model produced them) is wired now: a caller posts it to the runs
-          endpoint keyed to a release digest, and it folds into that digest&apos;s
-          aggregate before this page reads it back. The darkprint CLI verb for this is
-          not built yet; the endpoint answers today.
+          and never <span className="text-fg">measured</span>. A reported figure
+          travels with three details. It records how many runs it aggregates. It
+          records how far apart the runs were. It records which model produced them.
+          All three are wired now. A caller posts the figure to the runs endpoint,
+          keyed to a release digest. The endpoint folds that post into the
+          digest&apos;s aggregate before this page reads it back. The darkprint CLI
+          verb for this is not built yet. The endpoint answers today.
         </p>
         {live === undefined ? (
           <SampleNote badge="fixture reading">

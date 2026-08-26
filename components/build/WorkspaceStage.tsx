@@ -366,7 +366,7 @@ export function WorkspaceStage({
             value: 50,
             source: "community" as const,
             detail:
-              "Community-rated on a published blueprint. Nobody has rated this one: it exists only in this tab.",
+              "Community-rated on a published blueprint. Nobody has rated this one. It exists only in this tab.",
           })),
         ];
 

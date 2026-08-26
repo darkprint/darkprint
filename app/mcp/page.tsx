@@ -152,22 +152,22 @@ const OPERATIONS = [
 const OPEN = [
   {
     label: "ranking",
-    body: "Nothing has been decided about what comes back first. A relevance score with no published derivation is the kind of number this site refuses everywhere else, so either the ordering is explainable from the archive or results come back with their evidence and no order at all.",
+    body: "Nothing has been decided about what comes back first. Everywhere else on this site, a relevance score with no published derivation gets refused. So either the ordering is explainable from the archive, or results come back with their evidence and no order at all.",
   },
   {
     label: "excerpt shape",
-    body: "How much of a card an agent gets before it fetches the whole thing. Too little and the agent fetches everything; too much and the excerpt becomes an unversioned copy of a document that is addressed by digest.",
+    body: "How much of a card an agent gets before it fetches the whole thing. If it gets too little, the agent fetches everything. If it gets too much, the excerpt becomes an unversioned copy of a document that is addressed by digest.",
   },
   {
     /* T280 built accounts, and this row is answered rather than removed: a question a
        shipped interface closes is worth saying so, the same way `/skill`'s UNBUILT rows
        point at where something now lives instead of deleting the row it used to occupy. */
     label: "authorization (resolved)",
-    body: "Every MCP route reads as an anonymous caller, whatever session it is asked with. A private bundle is unreachable through MCP for the same reason it is unreachable over a bare curl request: nothing here checks who is asking. Accounts exist elsewhere on the site now; this surface deliberately still does not use them.",
+    body: "Every MCP route reads as an anonymous caller, whatever session it is asked with. A private bundle is unreachable through MCP for the same reason it is unreachable over a bare curl request: nothing here checks who is asking. Accounts exist elsewhere on the site now. This surface deliberately still does not use them.",
   },
   {
     label: "cards or releases (resolved)",
-    body: "The shipped contract answers this: read a card returns one document by id and version, and fetch a release lists a whole release's files by digest, so an agent asks for whichever promise it needs. A card pinned by version and a release pinned by digest stay two different guarantees, on purpose.",
+    body: "The shipped contract answers this. Read a card returns one document by id and version. Fetch a release lists a whole release's files by digest. An agent asks for whichever promise it needs. A card pinned by version and a release pinned by digest stay two different guarantees, on purpose.",
   },
 ] as const;
 
@@ -195,7 +195,7 @@ export default function McpPage() {
            satisfied now: T280 put a server behind every one of the four operations below.
            What is still true, and still worth a reader's first ten seconds, is that the one
            command the page prints does not run yet — see §1 for why. */
-        lead="MCP lets an agent read the registry without leaving its own session: the published blueprints and cards for the task in front of it, each with its digest and provenance. Four operations are live over HTTP; running the command below still fails, because the darkprint package on npm does not exist yet."
+        lead="MCP lets an agent read the registry without leaving its own session: the published blueprints and cards for the task in front of it, each with its digest and provenance. Four operations are live over HTTP. Running the command below still fails, because the darkprint package on npm does not exist yet."
       />
 
       {/* ---------- 1. Connect a client ---------- */}
@@ -223,8 +223,8 @@ export default function McpPage() {
         </h2>
         <p className="text-[15px] leading-relaxed text-muted">
           The shape of the configuration, so the contract can be read against a real host.
-          The server behind it is real: what still fails is the darkprint package itself,
-          which is not published to npm yet.
+          The server behind it is real. The darkprint package itself still fails. It is not
+          published to npm yet.
         </p>
         <InstallTabs />
         <p className="text-sm leading-relaxed text-dim">
@@ -345,7 +345,7 @@ export default function McpPage() {
 
         <p className="text-[15px] leading-relaxed text-muted">
           The digest is the load-bearing part. Fetch by slug and you get whatever the
-          registry holds today; fetch by digest and you get the bytes you tested against.
+          registry holds today. Fetch by digest and you get the bytes you tested against.
         </p>
       </section>
 
@@ -362,8 +362,8 @@ export default function McpPage() {
           3. Still to decide
         </h2>
         <p className="text-[15px] leading-relaxed text-muted">
-          Two of these are still genuinely undecided; the other two the shipped contract has
-          already answered, and stay on the page marked as such rather than being deleted
+          Two of these are still undecided. The shipped contract has already answered the
+          other two. They stay on the page, marked as such, rather than being deleted
           quietly.
         </p>
         {/* Rows in the contract table's register, and the bodies kept whole. See `OPEN`:
@@ -416,7 +416,7 @@ export default function McpPage() {
       >
         <span className="label">What exists today instead</span>
         <p className="text-[15px] leading-relaxed text-muted">
-          Everything this contract returns is also here, reachable by hand: the bundles
+          Everything this contract returns is also reachable by hand. The bundles are
           in{" "}
           <Link
             href="/blueprints"
@@ -424,14 +424,14 @@ export default function McpPage() {
           >
             the gallery
           </Link>
-          , every card with its digest in{" "}
+          . Every card is in{" "}
           <Link
             href="/nodes"
             className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
           >
             the cards index
           </Link>
-          , and the half of setup you can install today at{" "}
+          , with its digest. The half of setup you can install today is at{" "}
           <Link
             href="/skill"
             className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"

@@ -72,7 +72,7 @@ const UNBUILT: readonly { label: string; body: React.ReactNode; live?: boolean }
        `workspace.test.ts`'s route check and `APP_EXEMPT` does not cover it. */
     body: (
       <>
-        the interview searching cards other people already wrote instead of asking you to
+        the interview searching cards other people already wrote, instead of asking you to
         describe a node from nothing:{" "}
         <Link
           href={MCP_ROUTE}
@@ -144,7 +144,7 @@ export const metadata: Metadata = {
      rather than you writing one. */
   title: "Assisted Design",
   description:
-    "Start from your goal: one command puts a blueprint-writing skill in your own agent, and it interviews you into a folder of topology.dot, one card per node and README.md. Read it back on this site with nothing sent anywhere. Not built yet: releasing straight from your agent.",
+    "One command puts a blueprint-writing skill in your own agent. It interviews you and builds a folder of topology.dot, one card per node and README.md. Read it back on this site with nothing sent anywhere. Not built yet: releasing straight from your agent.",
 };
 
 export default function SkillPage() {
@@ -223,9 +223,9 @@ export default function SkillPage() {
           <ComingSoonBadge />
         </div>
         <p className="text-[15px] leading-relaxed text-muted">
-          The DarkPrint skill installs today, and the registry behind it now runs: an
+          The DarkPrint skill installs today. The registry behind it now runs: an
           account of your own, a blueprint kept private while it is under construction,
-          and publishing one to the registry are live, each linked in the rows below. Not
+          and publishing one to the registry. Each is live, linked in the rows below. Not
           built yet: pushing a change to it straight from Claude Code as you work.
         </p>
 

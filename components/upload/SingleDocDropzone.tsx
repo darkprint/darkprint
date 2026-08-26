@@ -128,7 +128,7 @@ export function SingleDocDropzone({
           </span>
           <div className="flex flex-col gap-1">
             <p className="text-sm text-fg">
-              Drop a single <span className="font-mono text-cyan">.yaml</span> document — one{" "}
+              Drop a single <span className="font-mono text-cyan">.yaml</span> document, one{" "}
               {kindLabel}
             </p>
             <p className="text-xs text-dim">or click to browse, or paste the source below.</p>

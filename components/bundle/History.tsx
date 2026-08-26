@@ -144,9 +144,9 @@ export function History({ entries }: { entries: readonly HistoryEntry[] }) {
 
       <p className="border-t border-line bg-surface-2/50 px-5 py-4 text-xs leading-relaxed text-dim">
         There is no repository behind a bundle. Each row is a published snapshot addressed
-        by its own digest, so history here is a list of identities rather than a chain of
-        patches, and nothing in it can be pulled. Comparing two of them, and copying one
-        into an account, are both designed and neither is built.
+        by its own digest. History here is a list of identities, not a chain of
+        patches. Nothing in it can be pulled. Comparing two of them, and copying one
+        into an account, are both designed and not built.
       </p>
     </section>
   );

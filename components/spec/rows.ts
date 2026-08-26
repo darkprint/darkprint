@@ -24,12 +24,12 @@ import type { CheckRow } from "./CheckTable";
 export const TOPOLOGY_ROWS: readonly CheckRow[] = [
   {
     name: "digraph name { … }",
-    what: "The whole file. One directed graph per bundle, and a bundle that is not directed stops there, since every rule below reads which way an edge points.",
+    what: "The whole file. One directed graph per bundle. A bundle that is not directed stops there. Every rule below reads which way an edge points.",
     check: { codes: ["dot/parse-error", "dot/not-directed"], level: "error" },
   },
   {
     name: 'builder [card="id@version"]',
-    what: "Which card the node instantiates. The one attribute DarkPrint adds to DOT, and the version is pinned so two readings of the same file describe the same node.",
+    what: "Which card the node instantiates. The one attribute DarkPrint adds to DOT. The version is pinned, so two readings of the same file describe the same node.",
     check: {
       codes: ["bundle/missing-card", "bundle/unpinned-card"],
       level: "error",
@@ -55,7 +55,7 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
   },
   {
     name: "the graph as a whole",
-    what: "Where a run enters, where it ends, and whether every node can be reached from an entry point.",
+    what: "Where a run enters. Where it ends. Whether every node can be reached from an entry point.",
     check: {
       codes: ["bundle/no-entry", "bundle/no-exit", "bundle/unreachable-node"],
       level: "warning",
@@ -107,7 +107,7 @@ export const CARD_ROWS: readonly CheckRow[] = [
   },
   {
     name: "type",
-    what: "One node-type term. A type under human-in-the-loop is what the autonomy reading asks about, so it has to resolve.",
+    what: "One node-type term. The autonomy reading asks about a type under human-in-the-loop. That type has to resolve.",
     check: {
       codes: ["card/unknown-term", "card/wrong-term-kind"],
       level: "error",
@@ -115,7 +115,7 @@ export const CARD_ROWS: readonly CheckRow[] = [
   },
   {
     name: "phase",
-    what: "Which of the five lifecycle phases the node stands in, any number of them, and never a namespaced one.",
+    what: "Which of the five lifecycle phases the node stands in. It can be any number of them. Never a namespaced one.",
     check: {
       codes: ["card/unknown-phase", "card/namespaced-phase"],
       level: "error",
@@ -134,7 +134,7 @@ export const CARD_ROWS: readonly CheckRow[] = [
     // said it — a grep for "checkable" over the built pages returned three hits, about
     // the wiring being a file, about a score staying checkable, and about the card. Nine
     // words, restored.
-    what: "The ports, each with a data-type term. This is what makes an edge checkable at all, and port names are unique within a side.",
+    what: "The ports, each with a data-type term. This is what makes an edge checkable at all. Port names are unique within a side.",
     check: {
       codes: ["card/unknown-term", "card/duplicate-port"],
       level: "error",
@@ -142,22 +142,22 @@ export const CARD_ROWS: readonly CheckRow[] = [
   },
   {
     name: "dependencies",
-    what: "Which cards this one receives from. Held both ways: a declared dependency needs an edge, and an edge wants a declaration.",
+    what: "Which cards this one receives from. This is checked both ways: a declared dependency must have a matching edge, and an edge must have a matching declaration.",
     check: { codes: ["bundle/missing-dependency"], level: "error" },
   },
   {
     name: "cannot",
-    what: "What the node must never receive, enforced whenever the entry names a data type.",
+    what: "What the node must never receive. Enforced whenever the entry names a data type.",
     check: { codes: ["bundle/prohibition-violated"], level: "error" },
   },
   {
     name: "requires_human",
-    what: "Whether a person acts here. A human-in-the-loop type beside a flag saying otherwise describes two different nodes, and the analysis believes the flag.",
+    what: "Whether a person acts here. A human-in-the-loop type combined with a flag that says otherwise describes two different nodes. The analysis believes the flag.",
     check: { codes: ["card/human-type-inconsistent"], level: "error" },
   },
   {
     name: "params",
-    what: "Nested configuration, free in shape and required to survive a JSON round-trip: it is hashed as JSON into the digest.",
+    what: "Nested configuration, free in shape. It must survive a JSON round-trip, because it is hashed as JSON into the digest.",
     check: { codes: ["card/bad-type"], level: "error" },
   },
   {
@@ -168,21 +168,21 @@ export const CARD_ROWS: readonly CheckRow[] = [
        there. Saying "the last published one" without saying where the last published one
        comes from was how a row on this page described an error nothing could raise. */
     name: "a second version of a card in one bundle",
-    what: "How far the version moved against the older one the bundle carries. Adding to cannot narrows the contract and is major; changing model is minor.",
+    what: "How far the version moved compared to the older version the bundle carries. Adding to cannot narrows the contract, so it counts as major. Changing model counts as minor.",
     check: { codes: ["card/version-bump-too-small"], level: "error" },
   },
   {
     name: "spec",
-    what: "The instruction handed to the agent when the graph runs. Only its length is checked: under forty characters it is a placeholder.",
+    what: "The instruction handed to the agent when the graph runs. Only its length is checked: under forty characters, it counts as a placeholder.",
     check: { codes: ["card/spec-too-thin"], level: "warning" },
   },
   {
     name: "model",
-    what: "Written the way the provider writes the identifier, and overridable by a stylesheet on the graph.",
+    what: "Written the way the provider writes the identifier. It can be overridden by a stylesheet on the graph.",
   },
   {
     name: "mcp",
-    what: "The MCP servers this node needs, under the names the machine running the graph registers them with. The vocabulary names no such thing.",
+    what: "The MCP servers this node needs, under the names that the machine running the graph registers them with. The vocabulary names no such thing.",
   },
   {
     name: "skill",
@@ -205,12 +205,12 @@ export const CARD_ROWS: readonly CheckRow[] = [
 export const ONTOLOGY_ROWS: readonly CheckRow[] = [
   {
     name: "broader on a local term",
-    what: "Which core term subsumes yours. A namespaced term that reaches no curated term is ignored by every analysis, which is the worst outcome available.",
+    what: "Which core term subsumes yours. A namespaced term that reaches no curated term is ignored by every analysis. That is the worst outcome available.",
     check: { codes: ["ontology/local-term-unrooted"], level: "error" },
   },
   {
     name: "a local phase",
-    what: "Refused. The five phases are the one dimension a local namespace may not extend, because a sixth phase is a different definition of the thing being described.",
+    what: "Refused. The five phases are the one dimension a local namespace may not extend. A sixth phase is a different definition of what these phases describe.",
     check: { codes: ["ontology/phase-not-extensible"], level: "error" },
   },
   {
@@ -223,7 +223,7 @@ export const ONTOLOGY_ROWS: readonly CheckRow[] = [
   },
   {
     name: "defaultWeight on a local marker",
-    what: "What a locally coined risk marker costs. Leave it out and the marker counts zero; give it a negative one and it would hand points back, so that counts zero too.",
+    what: "What a locally coined risk marker costs. Leave it out and the marker counts zero. Give it a negative one and it would hand points back. That also counts as zero.",
     check: {
       codes: [
         "ontology/local-marker-unweighted",
@@ -234,12 +234,12 @@ export const ONTOLOGY_ROWS: readonly CheckRow[] = [
   },
   {
     name: "a local id over a core one",
-    what: "An overlay term that reuses a curated id. It works, and it changes what that id means for everybody reading the bundle.",
+    what: "An overlay term that reuses a curated id. It works. It changes what that id means for everybody reading the bundle.",
     check: { codes: ["bundle/ontology-mismatch"], level: "warning" },
   },
   {
     name: "ontology_version",
-    what: "Which vocabulary the card and the bundle were written against, held against the one they are being read against.",
+    what: "Which vocabulary the card and the bundle were written against. That is compared with the vocabulary they are being read against.",
     check: { codes: ["bundle/ontology-mismatch"], level: "warning" },
   },
   {

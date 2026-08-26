@@ -211,7 +211,7 @@ export function BlueprintWalk({
           <Drawing graph={LANDING_WIDE} className="hidden sm:block" />
         </Sheet>
       }
-      hint="Keep scrolling and the drawing becomes the file it is drawn from."
+      hint="Scroll down. The drawing becomes the file it was drawn from."
       source={(progress) => (
         /* The panel `/spec/topology` uses, driven rather than clicked. `walkTo` walks the
            five blocks off the swap's own clock, so the listing lights one block and shows

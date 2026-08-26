@@ -141,7 +141,7 @@ const LEVELS: Level[] = [
   {
     n: 1,
     name: "Autocomplete",
-    body: "The model finishes the line you are typing. Everything else on the run is yours: you plan it, you build it, you test it, you debug it and you release it.",
+    body: "The model finishes the line you are typing. Everything else on the run is yours: you plan it, build it, test it, debug it and release it.",
   },
   {
     n: 2,
@@ -157,7 +157,7 @@ const LEVELS: Level[] = [
   {
     n: 4,
     name: "Dark factory",
-    body: "A specification goes in, tested and merged code comes out, and the pipeline you already have deploys it. The harness is the same one; what was removed is the checkpoint, not the constraints.",
+    body: "A specification goes in. Tested and merged code comes out. The pipeline you already have deploys it. The harness stays the same. The checkpoint was removed. The constraints were not.",
   },
 ];
 
@@ -174,7 +174,7 @@ const SOURCES: Source[] = [
     title: "The Dark Factory Pattern: Moving From AI-Assisted to Fully Autonomous Coding",
     where: "HackerNoon",
     href: "https://hackernoon.com/the-dark-factory-pattern-moving-from-ai-assisted-to-fully-autonomous-coding",
-    note: "One team's account of the climb, and the source this framing is borrowed from. The four rungs above are numbered as it numbers them; it carries a half step at 3.5 that this ladder does not, and the sentences are ours.",
+    note: "One team's account of the climb, and the source this framing is borrowed from. The four rungs above are numbered as it numbers them. It carries a half step at 3.5 that this ladder does not. The sentences are ours.",
   },
   {
     title: "strongdm/attractor",
@@ -556,13 +556,13 @@ interface LevelDrawing {
 const DRAWINGS: Record<Level["n"], LevelDrawing> = {
   1: {
     label:
-      "The five-phase run (plan, build, test, debug, release) with a person standing at every one of the five. No harness, and no return run: when a test fails, the person carries the work back.",
+      "The five-phase run (plan, build, test, debug, release) with a person standing at every one of the five. No harness. No return run. When a test fails, the person carries the work back.",
     note: "a person at all five",
     body: <Run people={[0, 1, 2, 3, 4]} />,
   },
   2: {
     label:
-      "The same five-phase run, with a person at plan, test and release and an agent doing the building and the debugging. Still no return run: the person is the one who reads a failure and decides to go round again.",
+      "The same five-phase run, with a person at plan, test and release and an agent doing the building and the debugging. Still no return run. The person reads a failure and decides to go round again.",
     note: "a person at three of five",
     body: <Run people={[0, 2, 4]} />,
   },
@@ -574,7 +574,7 @@ const DRAWINGS: Record<Level["n"], LevelDrawing> = {
   },
   4: {
     label:
-      "The same five-phase run, its return run and the same harness, with an agent at every station, the direct run to release and no person anywhere inside it.",
+      "The same five-phase run, its return run and the same harness. An agent works at every station. The run goes direct to release. No person is anywhere inside it.",
     note: "the same harness, nobody in it",
     body: <Run people={[]} harness="harness" loop />,
   },
@@ -696,7 +696,7 @@ export function SectionLevels() {
                the middle clause described the list a reader is looking at, which the four
                rows under it do better than a sentence can. What is left is the instruction
                and the reason for it. */
-            lead="Find yourself on the ladder before the rest of this makes sense. Where you land decides which problem you actually have."
+            lead="Find yourself on the ladder first. Where you land decides which problem you have."
           />
         </div>
 
@@ -749,10 +749,10 @@ export function SectionLevels() {
               paragraph. The line above it keeps its cap — it is one display-size sentence
               and a 48rem measure is what stops it running as a banner. */}
           <p className="mt-4 text-base leading-relaxed text-muted">
-            The technology to run at level 4 already exists. What is missing are the
-            patterns for structuring the work: what each agent is handed, and what each
-            one is kept away from. Better models will not supply that. It is a design
-            problem, and designs are what this site collects.
+            The technology to run at level 4 already exists. The patterns for structuring
+            the work are missing: what each agent is handed, and what each one is kept
+            away from. Better models will not supply that. It is a design problem. This
+            site collects designs.
           </p>
         </div>
 

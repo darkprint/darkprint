@@ -140,13 +140,13 @@ export function EvidenceLayers({
             <>
               <p className="mt-4 text-sm leading-relaxed text-muted">
                 {sufficiency(live.sampleSize, live.minSample, "ballot")} Efficacy, reliability,
-                and transparency above go live the moment anybody votes, and the radar marks an
+                and transparency above go live the moment anybody votes. The radar marks an
                 axis still at zero amber rather than closing the polygon on a figure nothing
                 backs.
               </p>
               <p className="mt-4 text-xs leading-relaxed text-dim">
                 Validator weight is read at count time. A minimum sample beyond that, plus
-                freshness, disputes, and abuse limits, remain product decisions; discussion
+                freshness, disputes, and abuse limits, remain product decisions. Discussion
                 below is visible and does not by itself change a score.
               </p>
             </>
@@ -167,7 +167,7 @@ export function EvidenceLayers({
           {live === undefined ? (
             <>
               <p className="mt-4 text-sm leading-relaxed text-muted">
-                DarkPrint does not run this blueprint and has no normalized run report for this
+                DarkPrint does not run this blueprint. It has no normalized run report for this
                 release. Cost and time remain unavailable rather than inferred from the graph.
               </p>
               <p className="mt-4 text-xs leading-relaxed text-dim">
@@ -179,7 +179,7 @@ export function EvidenceLayers({
             <>
               <p className="mt-4 text-sm leading-relaxed text-muted">
                 {sufficiency(live.runs, live.minSample, "run")} DarkPrint still does not watch a
-                run happen (D-180-01): cost and time above render as reported numbers in the
+                run happen (D-180-01). Cost and time above render as reported numbers in the
                 runner&rsquo;s own units, never as a bar, whatever the count on file.
               </p>
               <p className="mt-4 text-xs leading-relaxed text-dim">
