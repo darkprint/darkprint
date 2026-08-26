@@ -238,7 +238,9 @@ function body(text: string): React.ReactNode[] {
  * gets words. The visible head keeps its glyphs; this is the same title, respelled.
  */
 function spoken(title: string): string {
-  return title.replace(/\s*⇄\s*/g, " and ").replace(/\s*→\s*/g, " to ");
+  // \u21c4 and \u2192 escaped so the pattern survives being read as non-UTF-8; the
+  // literal glyphs would stop matching without erroring.
+  return title.replace(/\s*\u21c4\s*/g, " and ").replace(/\s*\u2192\s*/g, " to ");
 }
 
 /**

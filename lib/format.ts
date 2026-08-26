@@ -150,7 +150,9 @@ export const AUTONOMY_BLURB: Record<AutonomyClass, string> = {
  * the engine's wording that left an ordinal standing fails there rather than in a build.
  */
 export function autonomyStatement(rationale: string): string {
-  return rationale.replace(/→\s*level\s*[1-4]\s*\(([^)]*)\)/g, "→ $1");
+  // \u2192 escaped in the pattern for the same reason as DotBreakdown: a literal glyph
+  // here fails to match silently. The replacement is a string, which the bundler escapes.
+  return rationale.replace(/\u2192\s*level\s*[1-4]\s*\(([^)]*)\)/g, "→ $1");
 }
 
 /**

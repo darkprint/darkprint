@@ -414,7 +414,10 @@ export function detailsFromManifest(doc: Record<string, unknown>): Partial<Bundl
 export function slugify(value: string): string {
   return value
     .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
+    // Escaped rather than literal: the class is combining marks, which render as
+    // nothing in an editor and are silently mangled by any tool that reads this file
+    // as anything but UTF-8. Mis-decoded, the range inverts and the regex throws.
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");

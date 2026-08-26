@@ -30,6 +30,16 @@ const eslintConfig = defineConfig([
     // built. Linting somebody else's bundled prototype reports React 17 idioms nobody here
     // is going to fix. Matched by prefix so the next hand-off needs no edit here.
     "design_handoff_*/**",
+    // The claude.ai/design import (`.design-sync/`, see its NOTES.md). Three generated
+    // trees, none of them anybody's source: `ds-bundle/` is the converter's output,
+    // `.ds-sync/` is the staged converter itself plus its own node_modules, and
+    // `.design-sync/.cache/` holds the emitted .d.ts and the compiled stylesheet. Linting
+    // them reported 396 errors against generated declarations and vendored scripts, none
+    // of which anybody here can act on. The hand-written half of `.design-sync/` — the
+    // shims, the previews, the overrides fork — is deliberately still linted.
+    "ds-bundle/**",
+    ".ds-sync/**",
+    ".design-sync/.cache/**",
   ]),
 ]);
 

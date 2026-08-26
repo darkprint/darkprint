@@ -1,0 +1,18 @@
+{
+  "_comment": "Sync-only tsconfig. package-build.mjs reads compilerOptions.paths from THIS file (it does not follow `extends`), so the aliases are inlined rather than inherited.",
+  "_ordering": "The resolver walks `paths` in key order and accepts the first hit, testing the bare stem before any /index candidate. A bare stem that is a directory therefore wins, so every directory-style specifier must be pinned to its index file ABOVE the `@/*` wildcard. Only value imports are listed: the `@/lib/server/*` directories are imported as types only, are erased before resolution, and are deliberately left unmapped so a future value import fails loudly instead of pulling Postgres into a browser bundle.",
+  "_shims": "next/link, next/image and next/navigation point at browser stand-ins: the real modules read the App Router context, which no rendered design has.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "@/components/viz": ["./components/viz/index.ts"],
+      "@/lib/content": ["./.design-sync/.cache/content-shim.ts"],
+      "@/lib/core": ["./lib/core/index.ts"],
+      "next/link": ["./.design-sync/shims/next-link.tsx"],
+      "next/image": ["./.design-sync/shims/next-image.tsx"],
+      "next/navigation": ["./.design-sync/shims/next-navigation.ts"],
+      "@/*": ["./*"]
+    }
+  }
+}
