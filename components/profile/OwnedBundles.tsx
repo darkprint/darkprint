@@ -234,33 +234,25 @@ export function OwnedBundles({
         )}
       </div>
 
-      <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface-2/50 px-5 py-4 sm:flex-row sm:gap-5">
-        <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
-          The model
-        </span>
-        <div className="flex flex-col gap-2 text-[13px] leading-relaxed text-muted">
-          <p>
-            A blueprint belongs to an account and is public or private. A bundle with no
-            release yet is a draft. It appears as a row like any other bundle, not hidden.
-            This is the empty-repository state, rendered instead of suppressed.
-          </p>
-          {owner ? (
-            <p>
-              Every row here is your own bundle, read live off the registry. If a
-              row&rsquo;s slug also has a page in{" "}
-              <span className="font-mono text-fg">content/</span>, it draws the same row
-              that <span className="font-mono text-fg">/blueprints</span> draws, including
-              the graph. Every other row draws what the bundle itself carries: title,
-              summary, and a release if it has one.
-            </p>
-          ) : (
+      {/* The owner's half of this panel came off on the owner's instruction (2026-08-26):
+          two paragraphs explaining the draft state and where the rows are read from, to a
+          reader who is looking at their own shelf and can see both. The VISITOR's sentence
+          stays and the panel renders only for them, because it carries a disclosure rather
+          than an explanation: a visitor cannot tell from an incomplete list that private
+          bundles are missing from it, and from the counts, unless the page says so. */}
+      {!owner && (
+        <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface-2/50 px-5 py-4 sm:flex-row sm:gap-5">
+          <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
+            The model
+          </span>
+          <div className="flex flex-col gap-2 text-[13px] leading-relaxed text-muted">
             <p>
               Every row is a bundle this account has made public, released or not. Private
               bundles are never listed here and no count on this page includes one.
             </p>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }
