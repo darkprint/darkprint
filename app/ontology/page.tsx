@@ -224,12 +224,6 @@ export default async function Page() {
       meta={`${VOCABULARY_SECTIONS.length} sections`}
       items={VOCABULARY_SECTIONS}
       ariaLabel="On this page"
-      footer={
-        <p className="text-[11px] leading-relaxed text-dim">
-          These are the catalog&rsquo;s sections. Searching or filtering replaces the catalog
-          with the matching terms, and there is nothing to jump to until you clear it.
-        </p>
-      }
     >
     <div className="container-page flex flex-col gap-10 py-10 lg:py-12">
       <SectionHeading

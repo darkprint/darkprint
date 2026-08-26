@@ -564,9 +564,6 @@ export function SiteHeader() {
           )}
         </nav>
 
-        <ButtonLink href="/blueprints" variant="primary" size="sm" className="lg:hidden">
-          Find one
-        </ButtonLink>
         <button
           type="button"
           className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors hoverable:hover:text-fg lg:hidden"
@@ -576,6 +573,37 @@ export function SiteHeader() {
         >
           <span className="text-xl" aria-hidden>{mobileOpen ? "✕" : "☰"}</span>
         </button>
+        {/* Narrow viewports carry the menu and then the account, and nothing else
+            (owner-instructed, 2026-08-26). The primary "Find one" button stood here and
+            was the wrong thing to spend a phone's header on: Browse is a row inside the
+            menu already, so the button duplicated a destination while the reader's own
+            identity — the one thing the menu cannot show at a glance — had no place at
+            all. Signed out, the avatar's slot carries the way in instead; the panel's
+            "You" group still holds the same link for a reader who opens it. */}
+        {account === undefined ? (
+          /* Same 36px the avatar occupies, so the row does not reflow when the answer
+             arrives. `aria-hidden` because there is nothing here to act on yet. */
+          <span
+            aria-hidden
+            className="inline-flex h-9 w-9 shrink-0 animate-pulse rounded-full bg-surface-2 lg:hidden"
+          />
+        ) : account === null ? (
+          <ButtonLink href="/welcome" variant="outline" size="sm" className="lg:hidden">
+            Sign in
+          </ButtonLink>
+        ) : (
+          <Link
+            href={profileHref(account.author.handle) ?? "/settings"}
+            aria-label={
+              account.author.handle === null
+                ? "Your account"
+                : `Your profile, @${account.author.handle}`
+            }
+            className="inline-flex shrink-0 items-center rounded-full lg:hidden"
+          >
+            <Avatar author={authorFor(account.author)} size="md" />
+          </Link>
+        )}
       </div>
 
       {mobileOpen && (

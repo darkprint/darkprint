@@ -247,36 +247,12 @@ export default async function Page() {
           lead="What the registry knows about you, and what it will never keep."
         />
 
-        {/* The honesty strip, re-derived clause by clause for T280.
-            ------------------------------------------------------------
-            Notifications and the danger zone were the strip's last two "does not save"
-            clauses, and T280 wires both — so this paragraph is rewritten rather than edited
-            in place, the same D-78 move the strip has been through twice before: state what
-            is actually true of the page today, not what is left of an older true sentence.
-
-            What survives is the one clause with nothing behind it either way: no mailer
-            exists (`NotificationDelivery` is a published interface, never implemented), so a
-            preference genuinely saves and no mail goes out because of it regardless. */}
-        <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface-2/50 px-5 py-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="label">What saves</span>
-            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-emerald">
-              ✓ stored
-            </span>
-          </div>
-          <p className="text-[13px] leading-relaxed text-muted">
-            Your profile, handle, email, default visibility and notification preferences are
-            stored on your account. <span className="text-fg">Save changes</span> writes all
-            five. Two sections write outside that button. An{" "}
-            <span className="text-fg">API key</span> mints and revokes immediately. The{" "}
-            <span className="text-fg">danger zone</span>&rsquo;s two actions are live and
-            irreversible. Each previews what it would do before it asks you to confirm.
-            The mailer itself is not built yet. No mail goes out yet for any
-            notification, whatever you switch on.{" "}
-            <span className="text-fg">Validator status</span> below is a read-only summary.
-            Casting a ballot happens on a blueprint&rsquo;s own page, not this one.
-          </p>
-        </div>
+        {/* The "What saves" strip stood here and came off on the owner's instruction
+            (2026-08-26). It summarised, at the top of the page, what each section below
+            already says for itself. The one clause with nothing behind it either way —
+            no mailer exists, so a preference saves and no mail goes out regardless — is
+            NOT lost with it: §03 carries it in its own copy and in its `◐ no mail sends`
+            note, which is where a reader meets the switches it qualifies. */}
 
         <AccountForm
           account={account}
