@@ -11,9 +11,23 @@
    The server is the authority on WHICH bundles may go: a public bundle with a release
    answers 409 with the published-stays sentence, and this control renders that answer
    rather than pre-deciding it — the rule lives in one place.
+
+   ── A NATIVE `<dialog>`, opened with `showModal()` (owner-instructed, 2026-08-26) ──
+   The confirmation was an inline panel that grew inside the row, which put a destructive
+   question in the corner of a shelf the reader was scanning. It is a modal now, and the
+   platform element is used rather than a div with a high z-index because `showModal()`
+   brings what this particular dialog needs and hand-rolling gets wrong: focus moves into
+   the dialog and is TRAPPED there, everything behind it goes inert so the shelf cannot be
+   clicked past the question, Escape closes it, and the top layer means no ancestor's
+   `overflow` or stacking context can clip it — the row this mounts in is inside two.
+
+   Escape closes and the backdrop does NOT. A stray click beside a delete dialog should
+   not dismiss it silently; `cancel` is the deliberate way out and the Cancel button says
+   so. Opening resets the typed name, so a reopened dialog is never armed by what somebody
+   typed a minute ago — see `open` below for why that reset cannot live on `close`.
    ============================================================ */
 
-import { useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 
@@ -25,12 +39,32 @@ export function DeleteBundleControl({
   slug: string;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
+  const titleId = useId();
+  const descriptionId = useId();
 
   const armed = typed === slug && !busy;
+
+  const close = useCallback(() => {
+    dialogRef.current?.close();
+  }, []);
+
+  /* Reset on OPEN, not on close, and the difference is not stylistic. The invariant that
+     matters is that a dialog a reader has just opened is never already armed — and a
+     `close` listener cannot promise that: measured in Chrome on this page, `close()` takes
+     the dialog from open to closed WITHOUT firing `close`, so a reopened dialog came back
+     still holding the name and with the confirm button live. Clearing here is true however
+     the last one went away: Escape, Cancel, a finished delete, or a path that fires no
+     event at all. */
+  const open = useCallback(() => {
+    setTyped("");
+    setError(undefined);
+    setBusy(false);
+    dialogRef.current?.showModal();
+  }, []);
 
   async function destroy() {
     if (!armed) return;
@@ -48,8 +82,11 @@ export function DeleteBundleControl({
       return;
     }
     if (response.ok) {
-      /* The row this control sits in is about to not exist; a refresh re-reads the shelf
-         from the registry rather than hand-editing client state about a dead id. */
+      /* Close BEFORE the refresh: the row this dialog is mounted in is about to stop
+         existing, and a modal unmounted while still open leaves the document inert with
+         nothing on top of it. The refresh re-reads the shelf from the registry rather
+         than hand-editing client state about a dead id. */
+      close();
       router.refresh();
       return;
     }
@@ -60,11 +97,11 @@ export function DeleteBundleControl({
     setBusy(false);
   }
 
-  if (!open) {
-    return (
+  return (
+    <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={open}
         aria-label={`Delete ${slug}`}
         title={`Delete ${slug}`}
         className="rounded-md p-1.5 text-dim transition-colors hoverable:hover:bg-signal/10 hoverable:hover:text-signal"
@@ -75,50 +112,63 @@ export function DeleteBundleControl({
           <path d="M2.5 4h11M6.5 4V2.5h3V4M4 4l.7 9.5h6.6L12 4M6.5 6.5v4.5M9.5 6.5v4.5" />
         </svg>
       </button>
-    );
-  }
 
-  return (
-    <div className="flex w-full max-w-xs flex-col gap-2 rounded-md border border-signal/40 bg-signal/[0.04] p-3 text-left">
-      <p className="text-xs leading-relaxed text-muted">
-        This deletes{" "}
-        <span className="font-mono text-fg">
-          {ownerHandle}/{slug}
-        </span>{" "}
-        and everything only it carried: its releases, notes, stars, saves and ballots. There
-        is no undo. Type <span className="font-mono text-fg">{slug}</span> to confirm.
-      </p>
-      <input
-        type="text"
-        value={typed}
-        onChange={(event) => setTyped(event.target.value)}
-        placeholder={slug}
-        autoFocus
-        className="h-9 rounded-md border border-line bg-void px-2.5 font-mono text-sm text-fg transition-colors focus:border-signal focus:outline-none"
-        aria-label={`Type ${slug} to confirm deletion`}
-      />
-      {error !== undefined && (
-        <p role="alert" className="text-xs leading-relaxed text-signal">
-          {error}
-        </p>
-      )}
-      <div className="flex items-center gap-2">
-        <Button size="sm" variant="outline" disabled={!armed} onClick={() => void destroy()}>
-          {busy ? "Deleting…" : "Delete this blueprint"}
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={busy}
-          onClick={() => {
-            setOpen(false);
-            setTyped("");
-            setError(undefined);
-          }}
-        >
-          Cancel
-        </Button>
-      </div>
-    </div>
+      {/* `onCancel` is left to its default, which closes on Escape. The backdrop is styled
+          rather than wired: clicking beside a delete dialog dismisses nothing. */}
+      <dialog
+        ref={dialogRef}
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        className="panel m-auto w-[min(28rem,calc(100vw-2rem))] border-signal/40! p-0 text-left backdrop:bg-void/70 backdrop:backdrop-blur-[2px]"
+      >
+        <form method="dialog" className="flex flex-col gap-3 p-5">
+          <h2 id={titleId} className="font-display text-lg font-semibold text-fg">
+            Delete this blueprint
+          </h2>
+          <p id={descriptionId} className="text-[13px] leading-relaxed text-muted">
+            This deletes{" "}
+            <span className="font-mono text-fg">
+              {ownerHandle}/{slug}
+            </span>{" "}
+            and everything only it carried: its releases, notes, stars, saves and ballots.
+            There is no undo. Type <span className="font-mono text-fg">{slug}</span> to
+            confirm.
+          </p>
+          <input
+            type="text"
+            value={typed}
+            onChange={(event) => setTyped(event.target.value)}
+            placeholder={slug}
+            autoFocus
+            autoComplete="off"
+            spellCheck={false}
+            className="h-9 rounded-md border border-line bg-void px-2.5 font-mono text-sm text-fg transition-colors focus:border-signal focus:outline-none"
+            aria-label={`Type ${slug} to confirm deletion`}
+          />
+          {error !== undefined && (
+            <p role="alert" className="text-[13px] leading-relaxed text-signal">
+              {error}
+            </p>
+          )}
+          <div className="mt-1 flex items-center justify-end gap-2">
+            {/* Cancel is `type="submit"` inside `method="dialog"`, which is the platform's
+                own close and needs no handler. Delete is `type="button"` so it cannot
+                close the dialog by submitting before the request has answered. */}
+            <Button type="submit" size="sm" variant="ghost" disabled={busy}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={!armed}
+              onClick={() => void destroy()}
+            >
+              {busy ? "Deleting…" : "Delete this blueprint"}
+            </Button>
+          </div>
+        </form>
+      </dialog>
+    </>
   );
 }
