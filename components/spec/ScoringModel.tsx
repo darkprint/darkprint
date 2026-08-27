@@ -374,18 +374,18 @@ export function ScoringModel({
               shipped without, and the row above is now the only place on the site that
               states where a namespaced marker's amount comes from. */}
           <p className="prose-lane text-sm leading-relaxed text-muted">
-            The engine reads the configuration first, then the marker&apos;s own declared
-            weight where the bundle&apos;s vocabulary carries one, then nothing. An
-            unrecognised marker weighs {weight(unknown)}, listed on the card and on the
-            node page and never quietly charged for.
+            The engine checks the configuration first, then the marker&apos;s own declared
+            weight if the bundle&apos;s vocabulary defines one, then nothing. An
+            unrecognised marker weighs {weight(unknown)}. It is listed on the card and on
+            the node page. It is never charged quietly.
           </p>
           {/* The reader's likely inference, stated against: a ceiling of four looks like
               four points of headroom, and the priced markers add to more than twice it. */}
           <p className="prose-lane text-sm leading-relaxed text-muted">
             The markers priced above add to {weight(total)} against a ceiling of {CEILING},
             so a graph can carry more than the reading has room for. The subtraction runs
-            to the end and the result is held between {FLOOR} and {CEILING}: past the
-            floor the arithmetic continues and the number stops.
+            to the end. The result is held between {FLOOR} and {CEILING}. Past the floor,
+            the arithmetic keeps going, but the displayed number stops.
           </p>
         </div>
 
@@ -395,8 +395,8 @@ export function ScoringModel({
             <PanelHeading>Autonomy cuts</PanelHeading>
             <table className="w-full border-collapse text-sm">
               <caption className="sr-only">
-                The fraction of unattended nodes, and the class name each range of it is
-                called.
+                The fraction of unattended nodes, and the class name for each range of that
+                fraction.
               </caption>
               <thead>
                 <tr className="border-b border-line">
@@ -422,9 +422,10 @@ export function ScoringModel({
               </tbody>
             </table>
             <p className="prose-lane text-sm leading-relaxed text-muted">
-              The fraction is the nodes that run with nobody waiting on them over every
-              node in the graph, and the name is what every surface prints. A dark factory
-              is counted from those nodes and never read off a cut.
+              The fraction is the nodes that run with nobody waiting on them, divided by
+              every node in the graph. The name is whatever every surface prints for that
+              range. A dark factory is counted from those nodes. It is never read off a
+              cut.
             </p>
           </div>
 
@@ -455,16 +456,16 @@ export function ScoringModel({
           </div>
         </div>
 
-        {/* ---------- the two filters, and the fact that neither has ever run ---------- */}
+        {/* ---------- the two filters, live against whatever a CLI reports ---------- */}
         <div className="panel flex flex-col gap-4 p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <PanelHeading>Cost and time, if they are ever reported</PanelHeading>
+            <PanelHeading>Cost and time, once they are reported</PanelHeading>
           </div>
           <dl className="flex flex-col gap-2 font-mono text-[12px]">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <dt className="text-fg">minRuns {minRuns}</dt>
               <dd className="text-dim">
-                under {minRuns} runs an aggregate carries its sample size rather than
+                under {minRuns} runs, an aggregate carries its sample size rather than
                 standing as a figure to compare
               </dd>
             </div>
@@ -476,28 +477,34 @@ export function ScoringModel({
               </dd>
             </div>
           </dl>
-          {/* The `○ not built` chip stood in the heading row, with `minRuns` and
-              `outlierZScore` between it and the sentence that explains what it means. It
-              introduces that sentence now, which is the shape the page around it already
-              uses in `app/reading-the-radar/page.tsx`'s `NotBuilt`: badge, then the claim,
-              in one line.
+          {/* T280: `POST /api/blueprints/{owner}/{slug}/runs` runs these two numbers over
+              whatever a CLI submits, so "if they are ever reported" above became "once" —
+              this panel's earlier premise, that neither filter had a pipeline to sit on,
+              is what changed.
 
-              Guardrails §2 is the reason to move it toward the sentence rather than away.
-              The paragraph carries this route's one honesty-ledger entry, held `open`
-              over `ScoringModel` — "nothing on this site measures a run, so these two
-              filters describe a design rather than a behaviour" — and its wording is
-              untouched here. What changes is that the qualifier and the qualified thing
-              are now one block instead of two separated by a definition list. */}
+              The badge did not become "live": `components/site/honesty.test.ts` and
+              `scoring-model.test.ts` both pin the paragraph's opening clause — "nothing on
+              this site measures a run. these two filters describe a design" — VERBATIM,
+              and it is still true in the sense it was written for.
+              `submitReport` accepts a caller's claim on well-formedness alone (AC1) and
+              verifies nothing about it; the filters run for real now, but what they run
+              over is unverified self-report, never something DarkPrint watched happen.
+              Read `submitReport`'s own doc comment before touching this paragraph again —
+              the sentence is pinned in two files this one does not own. */}
           <p className="flex flex-wrap items-start gap-2 text-sm leading-relaxed text-muted">
             <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
               <span aria-hidden>○</span>
-              not built
+              never verified
             </span>
             <span className="prose-lane">
-              Nothing on this site measures a run, so these two filters describe a design
-              rather than a behaviour. There is no runner and no endpoint to report to, and
-              the cost and time figures in the registry are seeded rows that say so on every
-              card carrying one.
+              Nothing on this site measures a run. These two filters describe a design.
+              They are not a behaviour the site can confirm for itself. They run for
+              real. A caller submits a report to the runs endpoint, keyed to a release
+              digest. The report passes through these two numbers before the figure
+              reaches a card. The CLI verb for submitting one is not built yet. Cost and
+              time never land on the 0–100 axis, either way (D-180-01): a real median is
+              a stated number in the reporter&rsquo;s own units, and a release with
+              nothing reported yet says so explicitly.
             </span>
           </p>
         </div>
@@ -511,12 +518,12 @@ export function ScoringModel({
             several places that read them.
           </p>
           <p className="prose-lane text-sm leading-relaxed text-muted">
-            Moving any of them is a PATCH of the ontology version, because every score
-            already published changes with it, which is why a score records the vocabulary
+            Moving any of them is a PATCH of the ontology version. Every score already
+            published changes with it. That is why a score records the vocabulary
             version it was computed under (doc 3 §8). Four of the nine blueprints in this
-            archive land on the floor today, which is either weights that are heavy or a
-            scale that is short, and telling those apart needs a corpus this site has no
-            way to collect.
+            archive land on the floor today. That is either weights that are heavy or a
+            scale that is short. Telling those apart needs a corpus this site has no way
+            to collect.
           </p>
           {/* The two reasons cut out of the panels above to keep them short. Both are the
               answer to a "why that number" a reader may not have, and §3.1's licence

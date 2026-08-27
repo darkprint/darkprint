@@ -227,7 +227,7 @@ function trivialArchive(root: string): void {
   const dir = join(root, "content", "blueprints", "solo");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "blueprint.yaml"), manifest("solo"));
-  writeFileSync(join(dir, "blueprint.dot"), 'digraph solo {\n  n [card="only@1.0.0"];\n}\n');
+  writeFileSync(join(dir, "topology.dot"), 'digraph solo {\n  n [card="only@1.0.0"];\n}\n');
 }
 
 const roots: string[] = [];
@@ -248,14 +248,14 @@ describe("readContent on broken content", () => {
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), manifest("ghosts"));
       writeFileSync(
-        join(dir, "blueprint.dot"),
+        join(dir, "topology.dot"),
         'digraph ghosts {\n  a [card="ghost-card@1.0.0"];\n  b [card="also-gone@2.0.0"];\n  a -> b;\n}\n',
       );
     });
 
     expect(read).toThrow(/DarkPrint content is broken/);
     expect(read).toThrow(/bundle\/missing-card/);
-    expect(read).toThrow(/content\/blueprints\/ghosts\/blueprint\.dot:2/);
+    expect(read).toThrow(/content\/blueprints\/ghosts\/topology\.dot:2/);
     expect(read).toThrow(/ghost-card@1\.0\.0/);
     expect(read).toThrow(/also-gone@2\.0\.0/);
     expect(read).toThrow(/hint:/);
@@ -280,7 +280,7 @@ describe("readContent on broken content", () => {
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), manifest("mismatch"));
       writeFileSync(
-        join(dir, "blueprint.dot"),
+        join(dir, "topology.dot"),
         'digraph mismatch {\n  p [card="producer@1.0.0"];\n  c [card="consumer@1.0.0"];\n  p -> c;\n}\n',
       );
     });
@@ -320,7 +320,7 @@ describe("readContent on broken content", () => {
       const dir = join(root, "content", "blueprints", "legacy");
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), manifest("legacy"));
-      writeFileSync(join(dir, "blueprint.dot"), 'digraph legacy {\n  n [card="legacy@1.0.0"];\n}\n');
+      writeFileSync(join(dir, "topology.dot"), 'digraph legacy {\n  n [card="legacy@1.0.0"];\n}\n');
     });
 
     expect(read).toThrow(/card\/unknown-phase/);
@@ -337,7 +337,7 @@ describe("readContent on broken content", () => {
       const dir = join(root, "content", "blueprints", "headless");
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), "slug: headless\nsummary: No title.\ntags: []\n");
-      writeFileSync(join(dir, "blueprint.dot"), "digraph headless {\n}\n");
+      writeFileSync(join(dir, "topology.dot"), "digraph headless {\n}\n");
     });
 
     expect(read).toThrow(/blueprint\.yaml is missing a `title`/);
@@ -348,7 +348,7 @@ describe("readContent on broken content", () => {
       const dir = join(root, "content", "blueprints", "on-disk");
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), manifest("in-the-file"));
-      writeFileSync(join(dir, "blueprint.dot"), "digraph x {\n}\n");
+      writeFileSync(join(dir, "topology.dot"), "digraph x {\n}\n");
     });
 
     expect(read).toThrow(/declares slug `in-the-file`, but it sits in a directory called `on-disk`/);
@@ -361,7 +361,7 @@ describe("readContent on broken content", () => {
         mkdirSync(dir, { recursive: true });
         writeFileSync(join(dir, "blueprint.yaml"), manifest(slug));
         writeFileSync(
-          join(dir, "blueprint.dot"),
+          join(dir, "topology.dot"),
           `digraph ${slug} {\n  n [card="nowhere@1.0.0"];\n}\n`,
         );
       }
@@ -391,7 +391,7 @@ describe("readContent on broken content", () => {
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), manifest("sound"));
       writeFileSync(
-        join(dir, "blueprint.dot"),
+        join(dir, "topology.dot"),
         'digraph sound {\n  p [card="producer@1.0.0"];\n  c [card="consumer@1.0.0"];\n  p -> c;\n}\n',
       );
     });
@@ -428,7 +428,7 @@ describe("readContent on broken content", () => {
       const dir = join(root, "content", "blueprints", "solo");
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), manifest("solo"));
-      writeFileSync(join(dir, "blueprint.dot"), 'digraph solo {\n  n [card="only@1.0.0"];\n}\n');
+      writeFileSync(join(dir, "topology.dot"), 'digraph solo {\n  n [card="only@1.0.0"];\n}\n');
     });
 
     expect(read).toThrow(/DarkPrint content is broken/);
@@ -451,7 +451,7 @@ describe("readContent on broken content", () => {
       const dir = join(root, "content", "blueprints", "solo");
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "blueprint.yaml"), manifest("solo"));
-      writeFileSync(join(dir, "blueprint.dot"), 'digraph solo {\n  n [card="only@1.0.0"];\n}\n');
+      writeFileSync(join(dir, "topology.dot"), 'digraph solo {\n  n [card="only@1.0.0"];\n}\n');
     });
 
     expect(read()).toHaveLength(1);

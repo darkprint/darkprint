@@ -208,17 +208,10 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
         },
         files: [
           {
-            path: "blueprint.dot",
+            path: "topology.dot",
             kind: "dot",
             change: "gate node replaced with a second verifier",
             state: "changed",
-            at: "2026-08-08",
-          },
-          {
-            path: "factory.dot",
-            kind: "dot",
-            change: "regenerated from the topology",
-            state: "generated",
             at: "2026-08-08",
           },
           {
@@ -232,13 +225,6 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
             path: "README.md",
             kind: "doc",
             change: "identity, digest and the download command",
-            state: "generated",
-            at: "2026-08-08",
-          },
-          {
-            path: "AGENTS.md",
-            kind: "doc",
-            change: "how to fit this pattern into your own repository",
             state: "generated",
             at: "2026-08-08",
           },
@@ -331,17 +317,10 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
         },
         files: [
           {
-            path: "blueprint.dot",
+            path: "topology.dot",
             kind: "dot",
             change: "risk markers added to two nodes",
             state: "changed",
-            at: "2026-07-28",
-          },
-          {
-            path: "factory.dot",
-            kind: "dot",
-            change: "regenerated from the topology",
-            state: "generated",
             at: "2026-07-28",
           },
           {
@@ -362,13 +341,6 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
             path: "README.md",
             kind: "doc",
             change: "identity, digest and the download command",
-            state: "generated",
-            at: "2026-07-28",
-          },
-          {
-            path: "AGENTS.md",
-            kind: "doc",
-            change: "how to fit this pattern into your own repository",
             state: "generated",
             at: "2026-07-28",
           },
@@ -454,7 +426,7 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
         },
         files: [
           {
-            path: "blueprint.dot",
+            path: "topology.dot",
             kind: "dot",
             change: "two nodes drawn with no card pinned",
             state: "changed",

@@ -10,42 +10,50 @@
    PURE — no filesystem, no clock.
    ============================================================ */
 
-import type { AutonomyClass, Author, Blueprint, Metric } from "@/lib/types";
+import type { Author, Blueprint, Metric } from "@/lib/types";
 import type { BlueprintAnalysis, Diagnostic, ResolvedBlueprint } from "@/lib/core";
 import { DARKPRINT_CONFIG } from "@/lib/core";
-import { autonomyStatement } from "@/lib/format";
+import { AUTONOMY_BLURB, autonomyStatement } from "@/lib/format";
 import { getAuthor } from "@/lib/data/users";
 import type { CommunitySignals } from "@/lib/data/community";
 import { graphForBlueprint, requiredAgents, requiredTools } from "@/lib/graph-seed";
+/* Type-only, so this stays the pure translation layer the module banner promises: none of
+   these three barrels is ever called from here, only named for the shape their functions
+   return. `isolatedModules` erases a type-only import at compile time, so no route file's
+   `@/lib/server/**` boundary check has anything to see and no `node:*` dependency any of
+   the three barrels carries reaches a page that renders this module for a fixture. */
+import type { Aggregate, MetricAggregate } from "@/lib/server/ballot";
+import type { ReportedCostUnits } from "@/lib/server/runs";
+import type { SignalState } from "@/lib/server/counters";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // TODO(SEAM-74) (cited at line 167): POST /api/blueprints/{slug}/votes
 
-/* --------------------- autonomy prose --------------------- */
+/* --------------------- the bridge --------------------- */
 
 /**
- * What each class says about the design, in the register the gallery already uses. The
- * engine owns the class and its label; this is the sentence that goes under them.
+ * What a page has fetched off the live backend for one blueprint's scorecard, T280's wire
+ * layer over the three modules `metricsFor` used to have no signal from at all.
  *
- * Each one states a decision an author made. None of them states a shortfall, names a
- * next class up, or reads as a step towards anything, because doc 2 §1.1 rules that out
- * and because it is false: the four are co-ordinate readings of a graph's shape. The old
- * table was keyed on the 1-to-4 band and its top row ("no human in the loop") also said
- * something the band cannot promise, since the top band is a fraction above 0.90 and a
- * graph of eleven nodes reaches it with a person still standing in it. That claim now
- * belongs to `isDarkFactory` alone, which counts the human nodes rather than the share.
+ * Every member is optional and independent of the others: a page hands in whatever it
+ * fetched, `metricsFor` reads only `aggregate` and `cost`, and `signals` travels with the
+ * bag for a caller building the rest of `Blueprint` (stars, downloads) from the same
+ * round trip rather than because this module reads it.
+ *
+ * **The presence of `live` itself, not of any one member, is what turns a metric live.**
+ * `cost` is legitimately `undefined` inside a live bag — D-180-01 and D-180-07's own text:
+ * "cost?: ReportedCostUnits; undefined when no reports" — so a caller cannot signal "no
+ * live wiring, use the fixture" by leaving `cost` off; it signals that by leaving the
+ * whole bag off. See `costMetric` below for the branch this produces.
  */
-const AUTONOMY_BLURB: Record<AutonomyClass, string> = {
-  assisted: "A person acts at most of the nodes, and the agents work under that hand.",
-  supervised:
-    "Agents do the work, and a person approves the moves this graph treats as critical.",
-  conditional:
-    "The graph runs inside the guardrails its author drew and calls a person for the cases it names.",
-  "closed-loop":
-    "The line runs from the specification to the delivery without stopping for an approval.",
-};
-
-/* --------------------- the bridge --------------------- */
+export interface LiveSignals {
+  /** `lib/server/ballot`'s `getAggregate` — efficacy/reliability/transparency. */
+  aggregate?: Aggregate;
+  /** `lib/server/runs`'s `reportedCost` — `undefined` when the digest has no reports. */
+  cost?: ReportedCostUnits;
+  /** `lib/server/counters`'s `getSignals`/`getSignalsMany` — starCount/downloadCount. */
+  signals?: SignalState;
+}
 
 export interface BlueprintViewInput {
   blueprint: ResolvedBlueprint;
@@ -58,6 +66,8 @@ export interface BlueprintViewInput {
    * belongs next to the score it helped produce. Defaults to the analyzers' own.
    */
   diagnostics?: readonly Diagnostic[];
+  /** T280: threaded straight to `blueprintViewOver`. Absent for every archive caller. */
+  live?: LiveSignals;
 }
 
 /**
@@ -70,7 +80,48 @@ export interface BlueprintViewInput {
  */
 export function toBlueprintView(input: BlueprintViewInput): Blueprint {
   const { blueprint, analysis, community } = input;
-  const { manifest } = blueprint;
+  /* Delegation, not computation: every derived value below is produced by the same three
+     functions with the same options the sibling's registry callers use, so there is ONE
+     implementation of doc 2 SS8's formulas and the two paths cannot drift (D-261-10; the
+     `termUsageOver`/`termUsageIndex` pattern, ratified at D-260-07, applied here). */
+  return blueprintViewOver({
+    manifest: blueprint.manifest,
+    digest: blueprint.digest,
+    cardRefs: blueprint.nodes.map((n) => n.ref),
+    graph: graphForBlueprint(blueprint, { cardsInRegistry: true }),
+    requiredAgents: requiredAgents(blueprint),
+    requiredTools: requiredTools(blueprint),
+    analysis,
+    community,
+    diagnostics: input.diagnostics,
+    live: input.live,
+  });
+}
+
+/**
+ * The projection's assembled-values entry point (D-261-10): what `toBlueprintView` reads
+ * off a `ResolvedBlueprint`, taken as the five already-computed values instead — because
+ * the registry holds the OUTPUTS (`BlueprintSummary` + `BlueprintSchematic` + `Scores`)
+ * and no published reader returns the resolver's input type. The six metric formulas,
+ * the band-ordinal strip and the seeded-community sentences live HERE alone; a registry
+ * page and the archive path render one implementation.
+ */
+export interface AssembledViewInput {
+  manifest: import("@/lib/core").BundleManifest;
+  digest: string;
+  cardRefs: readonly string[];
+  graph: Blueprint["graph"];
+  requiredAgents: readonly string[];
+  requiredTools: readonly string[];
+  analysis: BlueprintAnalysis;
+  community: CommunitySignals;
+  diagnostics?: readonly Diagnostic[];
+  /** T280: forwarded to `metricsFor` untouched. Absent for every archive caller. */
+  live?: LiveSignals;
+}
+
+export function blueprintViewOver(input: AssembledViewInput): Blueprint {
+  const { manifest, analysis, community } = input;
 
   const { autonomyClass, isDarkFactory, level, label } = analysis.autonomy;
 
@@ -94,13 +145,16 @@ export function toBlueprintView(input: BlueprintViewInput): Blueprint {
       level,
       blurb: AUTONOMY_BLURB[autonomyClass],
     },
-    metrics: metricsFor(analysis, community),
-    /* The one caller looking at the archive, so the one caller that can promise a page
-       exists behind every card ref. That promise is what lets the schematic link a node
-       to its card (spec part 3); see `GraphSeedOptions`. */
-    graph: graphForBlueprint(blueprint, { cardsInRegistry: true }),
-    requiredAgents: requiredAgents(blueprint),
-    requiredTools: requiredTools(blueprint),
+    metrics: metricsFor(analysis, community, input.live),
+    /* For the archive caller these three arrive from `graphForBlueprint(blueprint,
+       { cardsInRegistry: true })` and its two siblings via the delegate above — the one
+       caller that can promise a page behind every card ref (spec part 3, `GraphSeedOptions`).
+       Registry callers hand in `BlueprintSchematic`'s members, computed by the identical
+       calls (`registry/graphs.ts`). Copied, not aliased, so a frozen input cannot make one
+       caller's `Blueprint` mutable and the other's not. */
+    graph: input.graph,
+    requiredAgents: [...input.requiredAgents],
+    requiredTools: [...input.requiredTools],
     createdAt: manifest.createdAt ?? "",
     updatedAt: manifest.updatedAt ?? manifest.createdAt ?? "",
     downloads: community.downloads,
@@ -134,8 +188,8 @@ export function toBlueprintView(input: BlueprintViewInput): Blueprint {
       phaseCoverage: analysis.phaseCoverage,
       diagnostics: [...(input.diagnostics ?? analysis.diagnostics)],
     },
-    digest: blueprint.digest,
-    cardRefs: blueprint.nodes.map((n) => n.ref),
+    digest: input.digest,
+    cardRefs: [...input.cardRefs],
   };
 }
 
@@ -145,12 +199,22 @@ export function toBlueprintView(input: BlueprintViewInput): Blueprint {
  * The scorecard. Order is fixed — the radar and the bar list both read it positionally.
  *
  * Two of the six are the engine's own arithmetic and carry the engine's own sentence.
- * The other four are rows out of the index, and their `detail` has to say so: no code
- * in this repository records a vote or a run, so a line reading "rated across repeated
- * executions" under a number nobody measured is the registry lying about its own data.
- * Each one states the intent and then states that it is seeded.
+ * The other four are rows built from `community` (the fixture) or, once `live` is handed
+ * in, from the real backend it stands in for — `communityMetric` and `costMetric` below
+ * are what decide which, per row, and each one states honestly what stands behind its
+ * number: the fixture wording says "seeded, no ballot exists", the live wording says how
+ * many ballots or reports actually landed.
+ *
+ * `live` absent is the whole of the "existing no-live callers get today's exact output"
+ * contract (T280): every branch below that reads `live` is behind `=== undefined` guards,
+ * so the archive path — the only caller with no `live` to hand in — takes none of them.
  */
-function metricsFor(analysis: BlueprintAnalysis, community: CommunitySignals): Metric[] {
+function metricsFor(
+  analysis: BlueprintAnalysis,
+  community: CommunitySignals,
+  live?: LiveSignals,
+): Metric[] {
+  const agg = live?.aggregate;
   return [
     {
       key: "autonomy",
@@ -167,39 +231,31 @@ function metricsFor(analysis: BlueprintAnalysis, community: CommunitySignals): M
       // and keeps the arithmetic, so the row still shows its working.
       detail: autonomyStatement(analysis.autonomy.rationale),
     },
-    {
-      key: "efficacy",
-      label: "Efficacy",
-      value: community.efficacy,
-      source: "community",
-      detail: "Would be community-rated task success on real runs. Seeded, no ballot exists.",
-    },
-    {
-      key: "reliability",
-      label: "Reliability",
-      value: community.reliability,
-      source: "community",
-      detail:
-        "Would be rated across repeated executions without error. Seeded, no ballot exists.",
-    },
-    {
-      key: "transparency",
-      label: "Transparency",
-      value: community.transparency,
-      source: "community",
-      detail:
-        "Would be a vote on how well the internal decisions are documented. Seeded, no ballot exists.",
-    },
-    {
-      key: "cost",
-      label: "Cost / time",
-      // The reported median when there is one, and the seeded stand-in when there is
-      // not — which, in this build, is always. Precedence rather than a second field:
-      // a real aggregate must never sit behind a placeholder.
-      value: community.reported?.median ?? community.cost,
-      source: "reported",
-      detail: reportedDetail(community),
-    },
+    communityMetric(
+      "efficacy",
+      "Efficacy",
+      community.efficacy,
+      "Would be community-rated task success on real runs. Seeded, no ballot exists.",
+      "Community-rated task success on real runs.",
+      agg?.efficacy,
+    ),
+    communityMetric(
+      "reliability",
+      "Reliability",
+      community.reliability,
+      "Would be rated across repeated executions without error. Seeded, no ballot exists.",
+      "Rated across repeated executions without error.",
+      agg?.reliability,
+    ),
+    communityMetric(
+      "transparency",
+      "Transparency",
+      community.transparency,
+      "Would be a vote on how well the internal decisions are documented. Seeded, no ballot exists.",
+      "A vote on how well the internal decisions are documented.",
+      agg?.transparency,
+    ),
+    costMetric(community, live),
     {
       key: "security",
       label: "Static risk exposure",
@@ -218,18 +274,118 @@ function clamp(value: number, low: number, high: number): number {
 }
 
 /**
- * The sentence under the cost/time bar. Doc 1 §8 corrects its own earlier drafts here:
- * because the blueprint runs on the reporter's machine (§0.1.3), cost and time are
- * *reported*, never measured by the platform, and an average with nothing attached to it
- * is not comparable between two blueprints. So the line always states the three things
- * §8 requires alongside the number — how many runs it aggregates, how far apart they
- * were, and which model produced them — and when there are none it says that instead of
- * quietly printing a mean.
+ * One of the three ballot axes, fixture or live.
+ *
+ * `agg === undefined` is "no live wiring for this axis" and reproduces the fixture row
+ * byte-for-byte — `seededValue`/`seededSentence` are exactly what `metricsFor` used to
+ * write inline. `agg` present is `lib/server/ballot`'s own answer, rounded for display the
+ * way `autonomy` and `security` already are (`MetricAggregate.value` itself stays
+ * unrounded, on purpose — see its own doc comment — this is the presentation layer's
+ * decision, not a second source of truth).
+ *
+ * Exported alongside `costMetric` so a caller holding an existing fixture `Metric` and a
+ * fresh `Aggregate`/`ReportedCostUnits` — `/reading-the-radar`'s sample chart, the one
+ * place outside this module that needs a live row without re-deriving a whole
+ * `BlueprintAnalysis` — can build the same four rows `metricsFor` builds, rather than a
+ * second, drifting implementation of what a live row looks like.
+ */
+export function communityMetric(
+  key: "efficacy" | "reliability" | "transparency",
+  label: string,
+  seededValue: number,
+  seededSentence: string,
+  subject: string,
+  agg: MetricAggregate | undefined,
+): Metric {
+  if (agg === undefined) {
+    return { key, label, value: seededValue, source: "community", detail: seededSentence };
+  }
+  return {
+    key,
+    label,
+    value: Math.round(agg.value),
+    source: "community",
+    detail: ballotDetail(subject, agg),
+    live: true,
+    sampleSize: agg.sampleSize,
+  };
+}
+
+/**
+ * The sentence under a live ballot axis: what it measures, then how many accounts stood
+ * behind the number — the same three-way split `reportedDetail` uses for cost, over
+ * `lib/server/ballot`'s `MetricAggregate` rather than a run report. `telemetry.minRuns` is
+ * the threshold `lib/server/ballot/aggregate.ts`'s own `MIN_SAMPLE` mirrors, consumed here
+ * exactly as that module consumes it rather than restated as a second constant.
+ */
+function ballotDetail(subject: string, agg: MetricAggregate): string {
+  if (agg.sampleSize === 0) return `${subject} No ballots cast yet.`;
+  const { minRuns } = DARKPRINT_CONFIG.telemetry;
+  const sample =
+    agg.sampleSize < minRuns
+      ? `${agg.sampleSize} ballot${agg.sampleSize === 1 ? "" : "s"} — below the ${minRuns} this build treats as comparable`
+      : `${agg.sampleSize} ballot${agg.sampleSize === 1 ? "" : "s"}`;
+  return `${subject} Rated by ${sample}.`;
+}
+
+/**
+ * The cost/time row, fixture or live.
+ *
+ * **`live` itself, not `live.cost`, is the branch.** D-180-01/D-180-07: once a page is
+ * wired for live reports, a real `reportedCost` median must never land on the 0–100 axis a
+ * bar or a radar spoke reads from — `value` is `undefined` in both live states below, with
+ * or without an actual report, and `reportedDetail`'s `community.reported ?? community.cost`
+ * precedence (the defect D-180-07 names) survives only in the `live === undefined` branch,
+ * where the fixture's own `community.reported` is always absent in this archive and the
+ * line is inert. `MetricBars`/`ScoreRadar` read `value === undefined` as "render as text,
+ * not a length" — see their own comments for the D-180-01 mechanics.
+ *
+ * `community` takes only the two fields the fixture branch reads, `Pick`ed off
+ * `CommunitySignals` rather than the whole shape: the live branch never touches it, and a
+ * caller building a live row from scratch — `/reading-the-radar`'s sample chart — has no
+ * reason to construct a full fixture-shaped row it will not use.
+ */
+export function costMetric(
+  community: Pick<CommunitySignals, "reported" | "cost">,
+  live: LiveSignals | undefined,
+): Metric {
+  if (live === undefined) {
+    return {
+      key: "cost",
+      label: "Cost / time",
+      value: community.reported?.median ?? community.cost,
+      source: "reported",
+      detail: reportedDetail(community),
+    };
+  }
+  const cost = live.cost;
+  return {
+    key: "cost",
+    label: "Cost / time",
+    value: undefined,
+    source: "reported",
+    detail: costDetailLive(cost),
+    live: true,
+    sampleSize: cost?.runs ?? 0,
+    ...(cost === undefined
+      ? {}
+      : { reported: { runs: cost.runs, median: cost.median, p10: cost.spread.p10, p90: cost.spread.p90 } }),
+  };
+}
+
+/**
+ * The sentence under the cost/time row, fixture path. Doc 1 §8 corrects its own earlier
+ * drafts here: because the blueprint runs on the reporter's machine (§0.1.3), cost and
+ * time are *reported*, never measured by the platform, and an average with nothing
+ * attached to it is not comparable between two blueprints. So the line always states the
+ * three things §8 requires alongside the number — how many runs it aggregates, how far
+ * apart they were, and which model produced them — and when there are none it says that
+ * instead of quietly printing a mean.
  *
  * Below `telemetry.minRuns` the aggregate is named as a small sample rather than offered
  * as a figure to compare, which is the same threshold the engine's config carries.
  */
-function reportedDetail(community: CommunitySignals): string {
+function reportedDetail(community: Pick<CommunitySignals, "reported">): string {
   const r = community.reported;
   if (r === undefined) {
     return (
@@ -247,6 +403,36 @@ function reportedDetail(community: CommunitySignals): string {
     `Reported, not measured: median ${r.median} across ${sample}, ` +
     `p10–p90 ${r.spread.p10}–${r.spread.p90}, on ${r.model}. ` +
     `Outliers beyond ${DARKPRINT_CONFIG.telemetry.outlierZScore}σ are dropped before aggregating.`
+  );
+}
+
+/**
+ * The sentence under the cost/time row, live path — with or without a report on file.
+ * Mirrors `reportedDetail`'s shape over `lib/server/runs`' own `ReportedCostUnits` rather
+ * than the fixture's `ReportedCost`, and adds `excluded` (AC4 makes it a published field)
+ * since this is the one surface honest enough to have it to print.
+ */
+function costDetailLive(cost: ReportedCostUnits | undefined): string {
+  if (cost === undefined) {
+    return (
+      "Reported by whoever runs the blueprint, never measured here, execution happens " +
+      "on their machine. No run has been reported for this release yet: no median, no " +
+      "spread, no model."
+    );
+  }
+  const { minRuns, outlierZScore } = DARKPRINT_CONFIG.telemetry;
+  const sample =
+    cost.runs < minRuns
+      ? `${cost.runs} run${cost.runs === 1 ? "" : "s"} — below the ${minRuns} this build treats as comparable`
+      : `${cost.runs} runs`;
+  const excluded =
+    cost.excluded > 0
+      ? ` ${cost.excluded} report${cost.excluded === 1 ? "" : "s"} excluded as outliers beyond ${outlierZScore}σ.`
+      : ` Outliers beyond ${outlierZScore}σ are dropped before aggregating.`;
+  return (
+    `Reported, not measured: median ${cost.median} across ${sample} on ${cost.model}, ` +
+    `p10–p90 ${cost.spread.p10}–${cost.spread.p90}.` +
+    excluded
   );
 }
 

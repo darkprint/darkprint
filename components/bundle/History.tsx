@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import type { HistoryEntry } from "@/lib/data/bundles";
 import { cx, prettyDate } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
@@ -80,12 +78,12 @@ function Entry({
           {entry.message}
         </p>
         <p className="font-mono text-[11px] text-dim">
-          <Link
-            href={`/u/${entry.author}`}
-            className="transition-colors hoverable:hover:text-cyan"
-          >
-            {entry.author}
-          </Link>{" "}
+          {/* Text, for the reason `FileTree` states in full: an entry's author is a handle
+              off the release manifest, those handles hold no accounts (D-250-11), and a
+              link to a profile that 404s was the defect D-260-25 ruled and D-261-06
+              assigns here. One surface on this row rather than `FileTree`'s two — there is
+              no avatar beside it to link a second time. */}
+          <span>{entry.author}</span>{" "}
           · {prettyDate(entry.at)}
         </p>
       </div>
@@ -108,7 +106,7 @@ function Entry({
           size="sm"
           variant="outline"
           disabled
-          title="Nothing copies a snapshot into an account: there are no accounts."
+          title="Copying a snapshot into an account is designed and not built."
         >
           Take
         </Button>
@@ -146,9 +144,9 @@ export function History({ entries }: { entries: readonly HistoryEntry[] }) {
 
       <p className="border-t border-line bg-surface-2/50 px-5 py-4 text-xs leading-relaxed text-dim">
         There is no repository behind a bundle. Each row is a published snapshot addressed
-        by its own digest, so history here is a list of identities rather than a chain of
-        patches, and nothing in it can be pulled. Comparing two of them, and copying one
-        into an account, are both designed and neither is built.
+        by its own digest. History here is a list of identities, not a chain of
+        patches. Nothing in it can be pulled. Comparing two of them, and copying one
+        into an account, are both designed and not built.
       </p>
     </section>
   );

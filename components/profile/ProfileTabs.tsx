@@ -11,8 +11,9 @@ import { PROFILE_TABS, profileTabHref, type ProfileTabId } from "./tabs";
  * in rather than computed here, because four of the five come off the archive and this
  * component has no business reaching for it.
  *
- * A count of `undefined` prints no pill. That is the overview, which counts nothing, and
- * it is not the same as a count of zero, which is a fact worth printing.
+ * A count of `undefined` prints no pill, which is not the same as a count of zero, a fact
+ * worth printing. Every tab carries one in practice as of T280 — `Saved` is the one whose
+ * caller supplies it only for the owner, since a visitor may not see the count either.
  */
 export function ProfileTabs({
   username,

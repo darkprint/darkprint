@@ -182,16 +182,27 @@ describe("BuildWorkspace — SSR markup", () => {
    * exporter compiles from those two on the way out".
    *
    * The author took `factory.dot` off the download on 2026-08-08, so both halves of the row
-   * name the same four files and there is nothing left to explain away. The case is
+   * named the same four files and there was nothing left to explain away. The case is
    * INVERTED rather than deleted: the sentence must not come back while the download does
    * not lead on the file, because an apology for a difference that no longer exists reads
    * as a fault where there is none. What both halves must still agree on is the list, and
    * that is what the first assertion holds.
+   *
+   * The owner instructed `AGENTS.md` out of both halves too (2026-08-25): the skill stopped
+   * writing one, and a published bundle stopped carrying one, in the same commit. So the
+   * list both halves agree on shrank from four files to three, and the case widened to
+   * hold that too rather than reading a still-passing "topology.dot" match as proof nothing
+   * else drifted.
    */
   it("describes one folder shape, with nothing to reconcile", () => {
     const text = plainText(html);
-    expect(text).toMatch(/it writes what the registry stores: blueprint\.dot/i);
+    // "blueprint.dot" until the terminology pass (2026-08-25): `AgentHandoff` names the
+    // topology file by its new name and this case follows the copy rather than the old
+    // filename.
+    expect(text).toMatch(/it writes what the registry stores: topology\.dot/i);
     expect(text).not.toMatch(/\bNot\s+factory\.dot\b/i);
     expect(text).not.toMatch(/exporter compiles from those two on the way out/i);
+    // Owner instruction, 2026-08-25: neither exit produces or mentions AGENTS.md any more.
+    expect(text).not.toMatch(/AGENTS\.md/i);
   });
 });

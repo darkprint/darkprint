@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { DownloadPanel, type DownloadCard } from "@/components/blueprint/DownloadPanel";
 import {
-  BUNDLE_AGENTS,
   BUNDLE_README,
   TOPOLOGY_DOT,
   type ExportedFile,
@@ -19,10 +18,13 @@ import { cx } from "@/lib/format";
    ------------------------------------------------------------
    The same `exportBundle` every blueprint in the gallery is
    published through, so what comes down here has the same shape as
-   what comes down there: a runnable `factory.dot` with each card's
-   `spec` inlined as the prompt its agent receives, the topology
-   with the pins intact, the cards themselves, and a README that
-   quotes the two computed scores.
+   what comes down there: the topology with the pins intact, the
+   cards themselves — each one's `spec` is the prompt its agent
+   receives once a reader's own harness compiles the graph — and a
+   README that quotes the two computed scores. Owner instruction,
+   2026-08-25: `exportBundle` no longer compiles a runnable
+   `factory.dot` into this folder or any published one; a reader's
+   own harness does that compilation now.
 
    The files are built in the tab. There is no server to zip a
    folder on request (doc 1 §0.1.3, doc 2 §11 item 10), and the
@@ -41,10 +43,11 @@ import { cx } from "@/lib/format";
    the worked example as files here, or take a brief that gets the reader's own agent to
    write a blueprint for a different goal there. Neither is the fallback for the other, so
    this component carries nothing that assumes a step position — no counter, no Back/Next —
-   and says two things that used to go unsaid anywhere on the page: that
-   `lib/content/bundle-export.ts` already writes an `AGENTS.md` into this exact folder, and
-   that the hour a reader is about to spend belongs to wiring the folder into their own
-   agent runner, not to reading this page.
+   and says the thing that used to go unsaid anywhere on the page: that the hour a reader
+   is about to spend belongs to wiring the folder into their own agent runner, not to
+   reading this page. (It used to also say `lib/content/bundle-export.ts` wrote an
+   `AGENTS.md` into this exact folder; the owner instructed that file out of every
+   published bundle, 2026-08-25, and this folder is one of them.)
 
    ── Fix round 1: co-equal in fact, not just in the docblock's own claim ──
    Task 6's review measured the gap this paragraph asserted away: only `AgentHandoff` carried
@@ -121,13 +124,15 @@ export function DownloadStep({
 
       {/* A paragraph stood here — "This is your blueprint, in the same folder shape as
           everything else in the gallery … It ships with its own AGENTS.md" — and the author
-          asked it out on 2026-08-08 along with the two headings around it.
+          asked it out on 2026-08-08 along with the two headings around it. The folder no
+          longer ships an `AGENTS.md` at all (owner instruction, 2026-08-25), so the sentence
+          would be false to restore even in a shorter form.
 
           What it was doing, `DownloadPanel` directly below does better and file by file: it
-          lists `AGENTS.md` with a line saying what is in it, and the three choices the
-          `{summary}` clause recited are the three controls a reader has just used. A
-          paragraph describing a panel that is one element away was the duplication this
-          file's own notes have been trimming since it was written.
+          lists every file the folder actually carries, with a line saying what each one is,
+          and the three choices the `{summary}` clause recited are the three controls a
+          reader has just used. A paragraph describing a panel that is one element away was
+          the duplication this file's own notes have been trimming since it was written.
 
           `summary`, `BUNDLE_AGENTS` and the `bytes` roll-up it used go with it where they
           have no other reader. */}
@@ -135,7 +140,6 @@ export function DownloadStep({
         headingLevel="h3"
         topologyHref={hrefs.get(TOPOLOGY_DOT) ?? ""}
         readmeHref={hrefs.get(BUNDLE_README) ?? ""}
-        agentsHref={hrefs.get(BUNDLE_AGENTS) ?? ""}
         cards={cards}
       />
 
@@ -235,9 +239,12 @@ export function DownloadStep({
       {/* `AgentHandoff` does not render inside this component. It sits one level up, in
           `BuildWorkspace.tsx`, in the other half of the grid this box is one cell of.
           ------------------------------------------------------------
-          It is the author's own generalisation of the path (2026-08-04) and the mirror of
-          the `AGENTS.md` named above. It used to be read as a second, optional offer
-          standing between the artefact and the only control that left the step (measured
+          It is the author's own generalisation of the path (2026-08-04) and was originally
+          the mirror of the `AGENTS.md` this folder used to carry; a bundle no longer ships
+          one (owner instruction, 2026-08-25), so `AgentHandoff` is now the only agent-facing
+          offer on this exit rather than a second telling of one. It used to also be read as
+          a second, optional offer standing between the artefact and the only control that
+          left the step (measured
           at 1440px, before it moved: the first download link at y=690, "Validate it" at
           y=2274, 570px of that offer in between). That measurement explained why it moved
           out of this component; it is not what it is now. Task 5 promoted it to a co-equal

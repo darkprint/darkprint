@@ -20,20 +20,20 @@ import { AUTHOR_LIST } from "@/lib/data/users";
 import { PROFILE_TABS, RESERVED_PROFILE_SEGMENTS, profileTabHref } from "./tabs";
 
 describe("the profile tabs", () => {
-  it("reserves a segment for every tab but the overview", () => {
+  it("reserves a segment for every tab but blueprints", () => {
     // A walk that found nothing would pass every collision case below.
     expect(RESERVED_PROFILE_SEGMENTS.length).toBe(PROFILE_TABS.length - 1);
     expect(RESERVED_PROFILE_SEGMENTS).toContain("saved");
   });
 
-  it("puts the overview at the profile root", () => {
-    const overview = PROFILE_TABS.find((tab) => tab.id === "overview");
-    expect(overview).toBeDefined();
-    expect(profileTabHref("mara-veil", overview!)).toBe("/u/mara-veil");
+  it("puts blueprints at the profile root", () => {
+    const blueprints = PROFILE_TABS.find((tab) => tab.id === "blueprints");
+    expect(blueprints).toBeDefined();
+    expect(profileTabHref("mara-veil", blueprints!)).toBe("/u/mara-veil");
   });
 
   it("gives every other tab a route under the handle", () => {
-    for (const tab of PROFILE_TABS.filter((t) => t.id !== "overview")) {
+    for (const tab of PROFILE_TABS.filter((t) => t.id !== "blueprints")) {
       expect(profileTabHref("mara-veil", tab)).toBe(`/u/mara-veil/${tab.segment}`);
     }
   });

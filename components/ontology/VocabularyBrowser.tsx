@@ -237,8 +237,8 @@ export function VocabularyBrowser({
         children
       ) : results.length === 0 ? (
         <p className="max-w-4xl rounded-lg border border-dashed border-line bg-surface/40 px-5 py-16 text-center text-sm text-muted">
-          No term matches. The vocabulary is curated and small on purpose: doc 3 §6 adds a
-          term rather than letting one be coined at the point of use.
+          No term matches. The vocabulary is curated and small on purpose. Doc 3 §6 adds a
+          term. A term is not coined at the point of use.
         </p>
       ) : (
         <ul className="max-w-4xl overflow-hidden rounded-lg border border-line bg-surface">
@@ -323,7 +323,7 @@ export function VocabularyBrowser({
                   <span>
                     <span className="text-muted">weight</span>{" "}
                     {term.weight === undefined ? (
-                      <span title="A category a rule is written about, not a marker a card declares.">
+                      <span title="A category a rule is written about. A card does not declare it as a marker.">
                         unpriced
                       </span>
                     ) : (

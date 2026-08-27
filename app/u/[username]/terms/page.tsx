@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { AUTHOR_LIST, getAuthor } from "@/lib/data";
 import { termHref } from "@/lib/href";
 import { ProfileShell } from "@/components/profile/ProfileShell";
 import { EmptyState } from "@/components/profile/parts";
-import { profileView } from "@/components/profile/load";
+import { profileMetadata, profileView } from "@/components/profile/load";
+import { readSession } from "@/components/profile/session";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // TODO(SEAM-60) (cited at line 42): GET /api/authors/{handle}/terms
@@ -19,25 +19,25 @@ import { profileView } from "@/components/profile/load";
    — the curated core belongs to nobody, and adding to it is rare on purpose.
    ============================================================ */
 
-export const dynamicParams = false;
-
-export function generateStaticParams() {
-  return AUTHOR_LIST.map((a) => ({ username: a.username }));
-}
+/* No `dynamicParams` and no `generateStaticParams`, and the deletion is the criterion
+   rather than tidying: **a prerendered page cannot render a different view per reader**
+   (AC1, D-262-11). Both stood on `AUTHOR_LIST`, a fixed fixture list, which could not
+   have served a registry that grows between deploys either. `readSession` reaches
+   `next/headers`, so these routes are request-time by construction now. */
 
 export async function generateMetadata({ params }: PageProps<"/u/[username]/terms">) {
   const { username } = await params;
-  const author = getAuthor(username);
-  if (!author) return { title: "Builder not found" };
+  const author = await profileMetadata(username);
+  if (author === undefined) return { title: "Builder not found" };
   return {
     title: `${author.displayName} · vocabulary terms`,
-    description: `Local vocabulary terms namespaced under ${author.username}.`,
+    description: `Local vocabulary terms namespaced under ${username}.`,
   };
 }
 
 export default async function Page({ params }: PageProps<"/u/[username]/terms">) {
   const { username } = await params;
-  const view = profileView(username);
+  const view = await profileView(username, await readSession());
   if (view === undefined) notFound();
 
   return (
@@ -49,8 +49,8 @@ export default async function Page({ params }: PageProps<"/u/[username]/terms">)
             action={{ href: "/ontology", label: "Read the core vocabulary" }}
           >
             The curated core belongs to nobody. A term appears here only when this handle
-            has minted one in its own namespace, which the resolver requires to hang off a
-            core term.
+            has minted one in its own namespace. The resolver requires that minted term to
+            hang off a core term.
           </EmptyState>
         </div>
       ) : (

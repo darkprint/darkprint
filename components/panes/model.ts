@@ -233,7 +233,7 @@ export interface PaneModel {
   title: string;
   /** The DOT source, verbatim. */
   dot: string;
-  /** Filename for the pane header, e.g. "blueprint.dot". */
+  /** Filename for the pane header, e.g. "topology.dot". */
   dotFile: string;
   nodes: PaneNode[];
   absences: PaneAbsence[];

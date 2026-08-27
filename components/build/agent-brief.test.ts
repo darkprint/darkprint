@@ -12,9 +12,12 @@ import { agentBrief } from "./AgentHandoff";
  * out the step the whole pattern turns on, sends somebody's agent to write a bundle that
  * will not resolve.
  *
- * It is the mirror of `bundleAgents` in `lib/content/bundle-export.ts` — that one says
- * "here is a pattern, adapt it", this one says "here is how to describe a pattern you
- * want". Both put the prohibitions first, and the case below is what keeps them agreeing.
+ * It was designed as the mirror of `bundleAgents`, the generator that used to write
+ * `AGENTS.md` into `lib/content/bundle-export.ts`'s output — that one said "here is a
+ * pattern, adapt it", this one says "here is how to describe a pattern you want". Both put
+ * the prohibitions first. `bundleAgents` and the file it wrote are gone (owner instruction,
+ * 2026-08-25); `agentBrief()` is untouched by that removal and the case below still holds
+ * it to the vocabulary on its own.
  */
 describe("agentBrief", () => {
   const brief = agentBrief();

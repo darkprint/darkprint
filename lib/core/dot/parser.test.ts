@@ -156,7 +156,7 @@ describe("parseDot — the DOT sources the site ships", () => {
     ["memory", DOT_MEMORY, 4, 3],
     ["escalation", DOT_ESCALATION, 4, 3],
   ])("parses %s cleanly into %i nodes and %i edges", (name, src, nodes, edges) => {
-    const { graph, diagnostics } = parseDot(src, "blueprint.dot");
+    const { graph, diagnostics } = parseDot(src, "topology.dot");
     expect(diagnostics).toEqual([]);
     expect(graph).toBeDefined();
     expect(graph?.name).toBe(name);
@@ -412,7 +412,7 @@ describe("parseDot — subgraphs", () => {
 
   it("refuses a file whose subgraphs nest past the depth limit instead of overflowing", () => {
     const deep = `digraph G {${"subgraph {".repeat(1000)}a -> b;${"}".repeat(1000)}}`;
-    const { graph, diagnostics } = parseDot(deep, "blueprint.dot");
+    const { graph, diagnostics } = parseDot(deep, "topology.dot");
 
     expect(graph).toBeUndefined();
     expect(diagnostics).toHaveLength(1);
@@ -420,7 +420,7 @@ describe("parseDot — subgraphs", () => {
       code: "dot/parse-error",
       severity: "error",
       message: "Subgraphs are nested more than 100 deep.",
-      location: { file: "blueprint.dot" },
+      location: { file: "topology.dot" },
     });
   });
 
@@ -447,12 +447,12 @@ describe("parseDot — diagnostics that are not failures", () => {
     const quiet = parseDot("digraph g { a [shape=box]; a [shape=box]; a [color=red] }");
     expect(quiet.diagnostics).toEqual([]);
 
-    const noisy = parseDot("digraph g { a [shape=box]; a [shape=circle] }", "blueprint.dot");
+    const noisy = parseDot("digraph g { a [shape=box]; a [shape=circle] }", "topology.dot");
     expect(noisy.diagnostics).toEqual([
       expect.objectContaining({
         code: "dot/duplicate-node",
         severity: "info",
-        location: { file: "blueprint.dot", nodeId: "a", line: 1, column: 28 },
+        location: { file: "topology.dot", nodeId: "a", line: 1, column: 28 },
       }),
     ]);
     expect(noisy.graph?.nodes[0].attrs).toEqual({ shape: "circle" });
@@ -468,7 +468,7 @@ describe("parseDot — diagnostics that are not failures", () => {
   solver [card="solver@1.0.0"];
   subgraph { rank=same; gate; solver }
 }`,
-      "blueprint.dot",
+      "topology.dot",
     );
 
     expect(diagnostics).toEqual([]);
@@ -531,12 +531,12 @@ describe("parseDot — diagnostics that are not failures", () => {
 
 describe("parseDot — undirected input", () => {
   it("rejects an undirected graph but still returns what it read", () => {
-    const { graph, diagnostics } = parseDot("graph g { a -- b; b -- c }", "blueprint.dot");
+    const { graph, diagnostics } = parseDot("graph g { a -- b; b -- c }", "topology.dot");
     expect(diagnostics).toEqual([
       expect.objectContaining({
         code: "dot/not-directed",
         severity: "error",
-        location: { file: "blueprint.dot", line: 1, column: 1 },
+        location: { file: "topology.dot", line: 1, column: 1 },
       }),
     ]);
     expect(graph?.directed).toBe(false);
@@ -594,13 +594,13 @@ describe("parseDot — parse errors", () => {
 
   it("reports one precise error for one bad statement, without cascading", () => {
     const src = "digraph g {\n  a -> b;\n  c -> ;\n  d -> e;\n}";
-    const { graph, diagnostics } = parseDot(src, "blueprint.dot");
+    const { graph, diagnostics } = parseDot(src, "topology.dot");
     expect(graph).toBeUndefined();
     expect(diagnostics).toEqual([
       expect.objectContaining({
         code: "dot/parse-error",
         message: "Expected a node name, found `;`.",
-        location: { file: "blueprint.dot", line: 3, column: 8 },
+        location: { file: "topology.dot", line: 3, column: 8 },
       }),
     ]);
   });

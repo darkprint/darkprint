@@ -8,7 +8,8 @@ import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { announceMenuOpened, useCloseWhenAnotherMenuOpens } from "@/components/ui/menu-group";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-70) (cited at line 45): POST /api/bundles/{owner}/{slug}/fork
+// SEAM-70 LIVE (T280): POST /api/bundles/{owner}/{slug}/fork — wired at the header's own
+// Fork button (`components/bundle/ForkButton.tsx`), which this panel now points to.
 
 /** Which page this action renders on, so its copy names the right thing. */
 type ForkKind = "blueprint" | "node";
@@ -22,12 +23,14 @@ type ForkKind = "blueprint" | "node";
  * an account, is visible only to its owner until they publish it, and the profile at
  * `/u/[username]` is where it would be listed.
  *
- * None of that is built. There is no account system and none is being built this pass
- * (Fase 4, PROJECT.md §3.5), so this panel says both halves and marks which is which: what
- * forking does today, in the present tense, and what it is meant to become, behind
- * `ComingSoonBadge`. A button that fired a second download under a "fork" label would
- * either lie about what just happened or duplicate `DownloadPanel` under a worse name, so
- * the link still points at `#download`, which already lists every file a fork needs.
+ * **T280: that model is built and live for a blueprint**, through the header's own Fork
+ * button (`components/bundle/ForkButton.tsx`) over `POST /api/bundles/[owner]/[slug]/fork`
+ * — this panel's job narrows to explaining what it does and pointing there, rather than
+ * describing a future. A card's own fork route is still unbuilt, so `kind === "node"` keeps
+ * the `ComingSoonBadge` framing this component always had. The link still points at
+ * `#download`, which already lists every file a hand-taken folder needs — a button that
+ * fired a second download under a "fork" label would either lie about what just happened or
+ * duplicate `DownloadPanel` under a worse name.
  *
  * `ForkScene` used to hang at the top of this panel and the author asked it out. Its job
  * was to show that a fork is a copied folder, which the sentence below says in fewer
@@ -111,23 +114,42 @@ export function ForkAction({
         >
           <p className="text-xs leading-relaxed text-muted">
             {kind === "node"
-              ? "Forking a card means copying this file into one of your own and editing it there: a line changed, or a person put where a step in the graph hands off. Either copy is a complete card."
-              : "Forking a blueprint means copying this folder into one of your own and editing it there: a card changed, or a person put where the release goes out. Either copy is a complete blueprint."}{" "}
-            <span className="text-fg">
-              This site holds no copy of it, and no account stands behind a fork.
-            </span>
+              ? "Forking a card means copying this file into one of your own and editing it there. You change a line, or you place a person where a step in the graph hands off. Either copy is a complete card."
+              : "Forking a blueprint means copying this folder into one of your own and editing it there. You change a card, or you place a person where the release goes out. Either copy is a complete blueprint."}{" "}
+            {kind === "node" ? (
+              <span className="text-fg">
+                This site holds no copy of it: there is a fork route for a whole blueprint
+                and none yet for a single card.
+              </span>
+            ) : (
+              <span className="text-fg">
+                The Fork button above does this for real, into your own account; use
+                it there. This panel is for taking the folder by hand instead, with no
+                account behind the copy.
+              </span>
+            )}
           </p>
 
-          {/* The intended model, kept apart from the paragraph above so the present tense
-              and the future one are never read as one claim. */}
-          <div className="flex flex-col gap-1.5 rounded-md border border-amber/30 bg-amber/5 p-3">
-            <ComingSoonBadge className="self-start" />
-            <p className="text-xs leading-relaxed text-muted">
-              Forks are meant to work the way they do on GitHub: yours, kept private until
-              you publish, and listed on your profile. Accounts are not built, so today a
-              fork is a folder on your machine and nothing here knows about it.
-            </p>
-          </div>
+          {/* T280: live for a blueprint, still the intended model for a card — kept apart
+              from the paragraph above so the two registers are never read as one claim. */}
+          {kind === "node" ? (
+            <div className="flex flex-col gap-1.5 rounded-md border border-amber/30 bg-amber/5 p-3">
+              <ComingSoonBadge className="self-start" />
+              <p className="text-xs leading-relaxed text-muted">
+                Forks are meant to work the way they do on GitHub: yours, kept private until
+                you publish, and listed on your profile. That is live for a blueprint&rsquo;s
+                own Fork button now; a card does not have one yet.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5 rounded-md border border-line bg-void/40 p-3">
+              <p className="text-xs leading-relaxed text-muted">
+                A fork made through the header button follows the GitHub model: yours,
+                private unless your account&rsquo;s own default is public, and listed
+                on your profile.
+              </p>
+            </div>
+          )}
 
           <Link
             href="#download"

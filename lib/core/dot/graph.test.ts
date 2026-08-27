@@ -147,16 +147,38 @@ describe("buildGraph — reachability", () => {
   // A traversal costs the size of its answer, not the size of the graph: the analysers
   // ask per node, so an O(V) lookup would make every one of them a quadratic sweep.
   it("answers a small lookup in time independent of how large the graph is", () => {
-    const nodes = Array.from({ length: 100000 }, (_, i) => `n${i}`);
-    const graph = buildGraph(nodes, [{ source: "n0", target: "n1" }]);
+    // Measured as a RATIO between two graph sizes, never as a wall clock. The property
+    // this guards is in the test's own name — that lookup cost does not grow with the
+    // graph — and a fixed millisecond budget is only a proxy for it. The proxy failed:
+    // at 600ms it went red at 652ms and 659ms on a host running six worktree agents at a
+    // load average of 20, which is a fact about the machine and not about the code. Both
+    // measurements below take that load equally, so the ratio survives it while an O(V)
+    // scan per lookup — the regression actually being guarded against — would show up as
+    // a 20x separation at these sizes and cannot hide inside the bound.
+    const timeLookups = (size: number): number => {
+      const nodes = Array.from({ length: size }, (_, i) => `n${i}`);
+      const graph = buildGraph(nodes, [{ source: "n0", target: "n1" }]);
+      const started = Date.now();
+      for (let i = 2; i < 4002; i += 1) {
+        expect(graph.ancestors(`n${i}`).size).toBe(0);
+      }
+      return Date.now() - started;
+    };
 
-    const started = Date.now();
-    for (let i = 2; i < 4002; i += 1) {
-      expect(graph.ancestors(`n${i}`).size).toBe(0);
+    // Best-of-five, interleaved. The ratio alone was still a proxy: two measurements taken
+    // in sequence do not meet the same contention, so it narrowed the flake window without
+    // closing it and went red at `expected 150 to be less than 148` on a loaded host. Load
+    // only ever ADDS time, so the minimum of several samples is the one estimator it cannot
+    // inflate, and interleaving stops a slow patch landing entirely on one side.
+    let small = Infinity;
+    let large = Infinity;
+    for (let round = 0; round < 5; round += 1) {
+      small = Math.min(small, timeLookups(5000));
+      large = Math.min(large, timeLookups(100000));
     }
-    // Scanning all 100 000 indices per call took well over a second here; the walk
-    // itself is a handful of microseconds, so the budget is deliberately loose.
-    expect(Date.now() - started).toBeLessThan(600);
+
+    // The floor keeps a sub-millisecond `small` from making the bound meaninglessly tight.
+    expect(large).toBeLessThan(Math.max(small * 4, 50));
   });
 
   it("stays iterative on a deep chain", () => {

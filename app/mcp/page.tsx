@@ -3,10 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { InstallTabs } from "@/components/mcp/InstallTabs";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import {
-  BUNDLE_AGENTS,
   BUNDLE_README,
   BUNDLE_CARDS_DIR,
   TOPOLOGY_DOT,
@@ -20,16 +18,18 @@ import {
 // TODO(SEAM-92) (cited at line 139): n/a
 
 /* ============================================================
-   /mcp — a design proposal, re-registered as one.
+   /mcp — was a design proposal; T280 shipped it. See the header's last section before
+   reading the rest of this one as current — the paragraphs below record why the page was
+   rebuilt in 2026-08-11 against a registry that, at the time, had no server at all.
 
-   `lib/mcp.ts` says it plainly: there is no MCP server behind the registry and no
-   `darkprint` package on npm. The page was nevertheless shaped like a setup page. It
+   `lib/mcp.ts` said it plainly, back then: there was no MCP server behind the registry and
+   no `darkprint` package on npm. The page was nevertheless shaped like a setup page. It
    opened "1. Configure your client", which is the register `/skill` uses for a command
    that genuinely runs; it carried `McpJourney`, a connect button that set local state and
    a search button that revealed three real blueprints as though they had been retrieved;
    and its `<head>` description promised a reader could "connect an agent client to
    DarkPrint, test the connection, search by task, inspect provenance, and fetch an exact
-   blueprint release." Every one of those verbs describes something that does not exist.
+   blueprint release." Every one of those verbs described something that did not exist yet.
 
    The fix is not a louder badge. It is to say what the page IS, which is a proposal, and
    then be a good one: what a client would connect to, what the server would expose, and
@@ -68,17 +68,32 @@ import {
    signature has been designed, and a plausible one would be the same lie `McpJourney` was
    telling in a different font. The operations are the ones the page's own description has
    always claimed; the returned fields are the ones the journey component used to show.
+
+   ── T280: the four operations go live, and the page stops calling itself a proposal ──
+   `lib/server/mcp` ships all four verbs over HTTP at `/api/mcp/**` (D-220-10), and
+   `packages/mcp` wraps them in a real stdio MCP server that any of the six client configs
+   in §1 can point at once it is built from a checkout. What survives unchanged from every
+   paragraph above: `darkprint` is not on npm (`npm view darkprint` answers 404, and
+   `packages/mcp/package.json` is `private: true`), so `npx -y darkprint mcp` fails today
+   exactly as it did before this wave, and the two open questions in §3 — ranking, and how
+   much of a card an excerpt should carry — are still open, because nothing in T280 answered
+   either one. `components/site/honesty.test.ts` pinned the old "there is no MCP server"
+   sentence to this page; that file is frozen for this pass, so the pin goes stale here
+   rather than being edited quietly, and the sentence that should replace it is reported
+   alongside this diff for whoever re-pins it next.
    ============================================================ */
 
 export const metadata: Metadata = {
   /* The one description on the site where the shared-link preview is all that stands
-     between a reader and a command that looks runnable. It used to read "Connect an agent
-     client to DarkPrint, test the connection, search by task, inspect provenance, and fetch
-     an exact blueprint release", five capabilities in the present tense and no server behind
-     any of them. `honesty.test.ts` holds the replacement. */
-  title: "MCP, as a design proposal",
+     between a reader and a command that looks runnable. It read "Connect an agent client to
+     DarkPrint, test the connection, search by task, inspect provenance, and fetch an exact
+     blueprint release" until 2026-08-11, then "there is no MCP server behind the registry
+     yet" until T280 made that clause false too: `/api/mcp/**` answers all four operations
+     now. `components/site/honesty.test.ts` still pins the older sentence — it is frozen for
+     this pass — and phase C re-pins it against the sentence below. */
+  title: "MCP, live over HTTP",
   description:
-    "A design proposal, not a setup guide: there is no MCP server behind the registry yet. What a client would connect to, the four operations the server would expose, and what is still to decide.",
+    "Four registry operations are live over HTTP at /api/mcp: search, read a card, inspect provenance, fetch a release. Running npx -y darkprint mcp still fails today: the darkprint package is not published to npm.",
 };
 
 /** One row of the proposed contract. Words, not signatures: see the header. */
@@ -102,10 +117,10 @@ const OPERATIONS = [
   {
     name: "fetch a release",
     takes: "a slug and an exact digest",
-    /* The four names come from `bundle-export.ts`, which is what actually writes them into
+    /* The three names come from `bundle-export.ts`, which is what actually writes them into
        every folder under `public/bundles/`. A proposal that named files the exporter does
        not produce would be describing a different registry. */
-    returns: `the bundle: ${TOPOLOGY_DOT}, ${BUNDLE_CARDS_DIR}/*.yaml, ${BUNDLE_README}, ${BUNDLE_AGENTS}`,
+    returns: `the bundle: ${TOPOLOGY_DOT}, ${BUNDLE_CARDS_DIR}/*.yaml, ${BUNDLE_README}`,
   },
 ] as const;
 
@@ -137,19 +152,22 @@ const OPERATIONS = [
 const OPEN = [
   {
     label: "ranking",
-    body: "Nothing has been decided about what comes back first. A relevance score with no published derivation is the kind of number this site refuses everywhere else, so either the ordering is explainable from the archive or results come back with their evidence and no order at all.",
+    body: "Nothing has been decided about what comes back first. Everywhere else on this site, a relevance score with no published derivation gets refused. So either the ordering is explainable from the archive, or results come back with their evidence and no order at all.",
   },
   {
     label: "excerpt shape",
-    body: "How much of a card an agent gets before it fetches the whole thing. Too little and the agent fetches everything; too much and the excerpt becomes an unversioned copy of a document that is addressed by digest.",
+    body: "How much of a card an agent gets before it fetches the whole thing. If it gets too little, the agent fetches everything. If it gets too much, the excerpt becomes an unversioned copy of a document that is addressed by digest.",
   },
   {
-    label: "authorization",
-    body: "There is nothing to authorize. There are no accounts, so everything in the registry is public today, and every artifact an agent could reach is one anybody can already download over HTTP. A private bundle would need all three of an account, storage and a backend.",
+    /* T280 built accounts, and this row is answered rather than removed: a question a
+       shipped interface closes is worth saying so, the same way `/skill`'s UNBUILT rows
+       point at where something now lives instead of deleting the row it used to occupy. */
+    label: "authorization (resolved)",
+    body: "Every MCP route reads as an anonymous caller, whatever session it is asked with. A private bundle is unreachable through MCP for the same reason it is unreachable over a bare curl request: nothing here checks who is asking. Accounts exist elsewhere on the site now. This surface deliberately still does not use them.",
   },
   {
-    label: "cards or releases",
-    body: "Whether an agent asks for a card, a whole release, or both, and what it means to pin one without the other. A card is addressed by id and version; a release is addressed by the digest of every byte in it, and those are different promises.",
+    label: "cards or releases (resolved)",
+    body: "The shipped contract answers this. Read a card returns one document by id and version. Fetch a release lists a whole release's files by digest. An agent asks for whichever promise it needs. A card pinned by version and a release pinned by digest stay two different guarantees, on purpose.",
   },
 ] as const;
 
@@ -158,30 +176,26 @@ export default function McpPage() {
     <div className="container-page py-16 sm:py-20">
       <SectionHeading
         as="h1"
-        /* The badge moves up to the eyebrow row, which is the mock's. It was beside the
-           `h1` on the argument that it is the first correction the page owes a reader —
-           that argument is why it moves: on the eyebrow row it is read BEFORE the title
-           rather than after it, and "Design proposal · coming soon" is one statement about
-           what this route is. `honesty.test.ts` is indifferent either way and says so: a
-           badge is a glyph, a glyph is not a sentence, and the three registers it holds
-           this page to are all words. */
-        eyebrow={
-          <>
-            Design proposal <ComingSoonBadge />
-          </>
-        }
+        /* "Design proposal · coming soon" made sense while the page had no interface behind
+           it to name. T280 gave it one, so the eyebrow now names what the route IS rather
+           than what it is waiting to become. `ComingSoonBadge` comes off the eyebrow with
+           it — amber is spent on things that do not exist, and the four operations below
+           do — and the one gap that marker was honestly about, the unpublished package,
+           gets its own sentence in §1 rather than a glyph up here standing in for it.
+           `honesty.test.ts` was indifferent to the badge either way and says so in its own
+           header: a badge is a glyph, a glyph is not a sentence, and the three registers it
+           holds this page to are all words. */
+        eyebrow="Live contract"
         title="Connect via MCP"
-        /* The first sentence is the mock's and it is the improvement: it says what MCP
-           would DO, in one line, where the old lead spent its opening on an agent that
-           "should be able to" do something.
+        /* The first sentence keeps the mock's shape — what MCP DOES, in one line — now true
+           in the present tense instead of the conditional the page opened on before T280.
 
-           The second sentence is NOT the mock's, and the difference is six words. The mock
-           writes "Nothing behind this page is built"; this says "There is no server behind
-           this page", because `components/site/honesty.test.ts` pins that clause verbatim
-           to this surface and the pin is the stronger sentence. "Nothing behind this page
-           is built" is vaguer about what "behind this page" means; the server is the
-           specific thing §1's snippet implies exists, so the server is the thing named. */
-        lead="MCP would let an agent read the registry without leaving its own session: the published blueprints and cards for the task in front of it, each with its digest and provenance. There is no server behind this page, so what follows is the contract being proposed rather than one you can call."
+           The second sentence is the one `components/site/honesty.test.ts` pins to "there
+           is no server behind this page", verbatim, and that pin is stale rather than
+           satisfied now: T280 put a server behind every one of the four operations below.
+           What is still true, and still worth a reader's first ten seconds, is that the one
+           command the page prints does not run yet — see §1 for why. */
+        lead="MCP lets an agent read the registry without leaving its own session: the published blueprints and cards for the task in front of it, each with its digest and provenance. Four operations are live over HTTP. Running the command below still fails, because the darkprint package on npm does not exist yet."
       />
 
       {/* ---------- 1. Connect a client ---------- */}
@@ -189,15 +203,16 @@ export default function McpPage() {
           paragraphs.
 
           The left column argued for the section's POSITION — "a reader looking for the
-          contract looks for the snippet first, and a proposal that hides its interface
-          behind two sections of prose is asking to be skimmed" — which is an argument for
-          the docblock and not for the reader; it is in the header above. What is left is
-          the one thing a reader needs beside the snippet, which is that the package it
-          names does not exist. Per-client detail was the other half and `InstallTabs`
-          carries its own note per tab.
+          contract looks for the snippet first, and a page that hides its interface behind
+          two sections of prose is asking to be skimmed" — which is an argument for the
+          docblock and not for the reader; it is in the header above. What is left is the
+          one thing a reader needs beside the snippet: the server these configs point at is
+          real now (T280), and the package that would make any of them run is still not on
+          npm. Per-client detail was the other half and `InstallTabs` carries its own note
+          per tab.
 
-          The sections are numbered now and ruled apart, which is what makes three sections
-          read as one proposal rather than three pages. */}
+          The sections are numbered and ruled apart, which is what makes three sections
+          read as one contract rather than three pages. */}
       <section
         id="connect"
         aria-labelledby="connect-title"
@@ -207,8 +222,9 @@ export default function McpPage() {
           1. Connect a client
         </h2>
         <p className="text-[15px] leading-relaxed text-muted">
-          The shape of the configuration, so the proposal can be read against a real host.
-          The package does not exist: running this adds a server that is not there.
+          The shape of the configuration, so the contract can be read against a real host.
+          The server behind it is real. The darkprint package itself still fails. It is not
+          published to npm yet.
         </p>
         <InstallTabs />
         <p className="text-sm leading-relaxed text-dim">
@@ -216,7 +232,7 @@ export default function McpPage() {
         </p>
       </section>
 
-      {/* ---------- 2. What the server would expose ---------- */}
+      {/* ---------- 2. What it exposes ---------- */}
       <section
         id="contract"
         aria-labelledby="contract-title"
@@ -226,7 +242,7 @@ export default function McpPage() {
           id="contract-title"
           className="font-display text-2xl font-semibold text-fg"
         >
-          2. What it would expose
+          2. What it exposes
         </h2>
         {/* "and no judgement of it" is the load-bearing half and stays adjacent to the
             facts it is contrasted with; the colon then expands what the facts are. The
@@ -305,14 +321,21 @@ export default function McpPage() {
                   <td className="px-5 py-4 align-top text-sm leading-relaxed text-muted">
                     {op.returns}
                   </td>
-                  {/* Every row says the same thing, and it is repeated per row rather than
-                      stated once above the table: a four-row table with one caption is read
+                  {/* Every row said "not built", repeated per row rather than stated once
+                      above the table, so a four-row table with one caption would not read
                       as three built operations and a caption about something else.
-                      `honesty.test.ts` holds this column. Lower case at the mock's tracking
-                      — the pin compares lowercased, so the case is a design choice and the
-                      claim is unaffected. */}
-                  <td className="whitespace-nowrap px-5 py-4 align-top font-mono text-[11px] tracking-[0.06em] text-amber">
-                    not built
+                      `components/site/honesty.test.ts` pinned that word to this column; it
+                      is frozen for this pass and still holds it, so this row's own claim
+                      goes stale here rather than being edited quietly — T280 answers all
+                      four operations over HTTP, and the new word is reported alongside this
+                      diff for whoever re-pins the ledger. Emerald rather than blueprint-ink:
+                      `app/globals.css` reserves emerald for "a figure read off the engine",
+                      and a live HTTP route is exactly that, the same register
+                      `components/skill/SkillSetup.tsx` spends on its one genuinely running
+                      command. Lower case at the mock's tracking, matching the register the
+                      column used before. */}
+                  <td className="whitespace-nowrap px-5 py-4 align-top font-mono text-[11px] tracking-[0.06em] text-emerald">
+                    live
                   </td>
                 </tr>
               ))}
@@ -322,7 +345,7 @@ export default function McpPage() {
 
         <p className="text-[15px] leading-relaxed text-muted">
           The digest is the load-bearing part. Fetch by slug and you get whatever the
-          registry holds today; fetch by digest and you get the bytes you tested against.
+          registry holds today. Fetch by digest and you get the bytes you tested against.
         </p>
       </section>
 
@@ -339,8 +362,9 @@ export default function McpPage() {
           3. Still to decide
         </h2>
         <p className="text-[15px] leading-relaxed text-muted">
-          Four open questions, all product policy rather than implementation. They are why
-          the contract above returns no ranking.
+          Two of these are still undecided. The shipped contract has already answered the
+          other two. They stay on the page, marked as such, rather than being deleted
+          quietly.
         </p>
         {/* Rows in the contract table's register, and the bodies kept whole. See `OPEN`:
             the chrome was the problem, the words were not, and the mock's one-clause
@@ -392,22 +416,22 @@ export default function McpPage() {
       >
         <span className="label">What exists today instead</span>
         <p className="text-[15px] leading-relaxed text-muted">
-          Everything this contract would return is already here, addressed by hand: the
-          bundles in{" "}
+          Everything this contract returns is also reachable by hand. The bundles are
+          in{" "}
           <Link
             href="/blueprints"
             className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
           >
             the gallery
           </Link>
-          , every card with its digest in{" "}
+          . Every card is in{" "}
           <Link
             href="/nodes"
             className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
           >
             the cards index
           </Link>
-          , and the half of setup you can install today at{" "}
+          , with its digest. The half of setup you can install today is at{" "}
           <Link
             href="/skill"
             className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"

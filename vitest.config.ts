@@ -29,10 +29,42 @@ export default defineConfig({
   },
   test: {
     include: [
+      /* packages/** carries T220's distributable stdio server (D-220-08). Without this glob a
+         test colocated there is silently uncollected — the failure this file's own header records
+         against app/**, arriving at a new root. */
+      "packages/**/*.test.{ts,tsx}",
       "lib/**/*.test.ts",
       "components/**/*.test.{ts,tsx}",
       "scripts/**/*.test.ts",
+      /* `app/**` was absent until T090 reported it, and its absence is this file's own recorded
+         failure mode: an uncollected suite runs zero tests and reads as green. Four tasks own route
+         files under `app/` and any colocated test beside one was never going to be collected.
+         Added before a task relies on it rather than after. */
+      "app/**/*.test.{ts,tsx}",
+      /* The backend's test tree, and the one glob that is not beside the code it tests.
+         `docs/ORCHESTRATION.md` has the tests for a backend task written blind, in a
+         separate worktree branched before the implementation exists, so they cannot sit
+         next to a file that is not there yet. `tests/server/**` belongs to the test branch
+         alone, which is also what keeps the two branches conflict-free at merge time.
+         Collected here rather than in either branch's own config: a worktree that cannot
+         run its own suite reports zero tests and calls it green. */
+      "tests/**/*.test.ts",
     ],
     environment: "node",
+    /* The default 5s is a liveness guard, and under this repository's own parallel
+       agent runs it started firing as a correctness failure instead. `stage-labels`
+       is 64 real graph-layout assertions taking ~10s together on an idle machine;
+       with nine worktree sessions competing for ten cores, one of them crossed 5s and
+       reported a timeout for a test that was never wrong. 20s keeps the guard — a
+       genuine hang still fails — while leaving four times the headroom that contention
+       actually needs. Raised here rather than per-file so no task inherits a red gate
+       it did not cause. */
+    testTimeout: 20000,
+    /* Raised with `testTimeout` and for the same reason, which the original raise missed: a
+       `beforeAll` that creates a scratch database can cross the 10s default under load, and a
+       hook failure runs no test — so vitest prints `Tests 75 passed (75)` alongside two failed
+       files and exit 1. A run read off the test total then looks green while the gate is red.
+       Found by T090's blind author. */
+    hookTimeout: 30000,
   },
 });

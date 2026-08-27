@@ -247,8 +247,8 @@ const FACE_TOP = 31;
  */
 const WALK_BODY: Record<string, string> = {
   identity:
-    "The first four lines fix identity. `code-builder` is the id a graph pins by version, " +
-    "`agent` means a model runs this box, and `implementation` places it in the lifecycle.",
+    "The first four lines fix identity. `code-builder` is the id a graph pins by version. " +
+    "`agent` means a model runs this box. `implementation` places it in the lifecycle.",
   action:
     "One line for what the node does. Nothing in the engine reads it, and it travels into " +
     "the download unchanged, for whoever opens the card next.",
@@ -257,7 +257,7 @@ const WALK_BODY: Record<string, string> = {
     "to stand alone: whatever reads it never sees the rest of the graph.",
   // "the compiled export", not `factory.dot`: the author asked for that name off the
   // landing, and this walk renders there. Still true — the model line lands in the
-  // compiled file and not in `blueprint.dot`, which carries no `model` line at all.
+  // compiled file and not in `topology.dot`, which carries no `model` line at all.
   model:
     "Which model the agent is instantiated with. The compiled export carries it, and " +
     "a card that names none inherits whatever the run supplies.",

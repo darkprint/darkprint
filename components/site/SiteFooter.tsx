@@ -20,12 +20,12 @@ import { RUNS, SPEC_SEQUENCE, type SpecRun } from "@/components/spec/sequence";
    Which stop belongs to which run is read off `SPEC_SEQUENCE`, so a page that changes run
    changes column on the next build and cannot be left behind in the wrong one. The labels
    stay the footer's own: a footer row is met cold, with no crumb and no rail above it, so
-   `Blueprint file (DOT)` earns its parenthesis where the rail can afford `Topology`.
+   `Topology file (DOT)` earns its parenthesis where the rail can afford it.
    ============================================================ */
 
 /** The footer's wording for a Learn stop, where it says more than the nav's short form. */
 const LEARN_LABELS: Record<string, string> = {
-  "/spec/topology": "Blueprint file (DOT)",
+  "/spec/topology": "Topology file (DOT)",
   "/spec/card": "Node card (YAML)",
   /* The third spec stop joins its two siblings here. It spent one commit carrying the
      format in `sequence.ts` instead, and the author asked "(YAML)" off the Learn dropdown

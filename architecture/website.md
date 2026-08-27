@@ -16,7 +16,7 @@ TypeScript strict.
 | route | pages | what it is |
 |---|---|---|
 | `/blueprints` | 1 | the shelf. Download / compose / upload moved to the landing (lifecycle-scoring pass); this index is the grid and nothing under it |
-| `/blueprints/[slug]` | 9 | one blueprint: schematic, Score card (radar, right column on wide, right under the schematic on narrow — the aside is `display: contents` below `lg` so Score and Bundle become items of the body grid, `lg:row-span-2` + `order-1` do the placing, no duplicated markup), explainability, the `blueprint.dot` scroll walk at full width, `ForkAction` + download buttons, download panel |
+| `/blueprints/[slug]` | 9 | one blueprint: schematic, Score card (radar, right column on wide, right under the schematic on narrow — the aside is `display: contents` below `lg` so Score and Bundle become items of the body grid, `lg:row-span-2` + `order-1` do the placing, no duplicated markup), explainability, the `topology.dot` scroll walk at full width, `ForkAction` + download buttons, download panel |
 | `/nodes` | 1 | the card library |
 | `/nodes/[...id]` | 53 | one card in full: interfaces, params, `mcp`, `skill`, `cannot`, risk markers, version history, raw YAML |
 | `/ontology` | 1 | the vocabulary |

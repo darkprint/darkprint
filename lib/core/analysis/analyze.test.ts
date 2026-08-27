@@ -1046,7 +1046,7 @@ describe("loadBundle — inputs it must survive", () => {
     expect(broken.analysis).toBeUndefined();
     const parseErrors = broken.diagnostics.filter((d) => d.code === "dot/parse-error");
     expect(parseErrors.length).toBeGreaterThan(0);
-    expect(parseErrors[0].location?.file).toBe("blueprint.dot");
+    expect(parseErrors[0].location?.file).toBe("topology.dot");
     expect(parseErrors[0].location?.line).toBeGreaterThan(0);
   });
 

@@ -6,7 +6,7 @@
    that job moved with the data: `./graph.ts` builds every node,
    every edge and the absence out of `./roles.ts`, and
    `./roles.test.ts` parses
-   `content/blueprints/starter-software-factory/blueprint.dot` and
+   `content/blueprints/starter-software-factory/topology.dot` and
    the five cards it names. Re-parsing the DOT here would assert the
    same thing twice.
 

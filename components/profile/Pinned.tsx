@@ -178,7 +178,7 @@ export function Pinned({ items }: { items: readonly PinnedItem[] }) {
           being left to a glyph. */}
       <p className="font-mono text-[11px] text-dim">
         Read off the archive at build time. The star figure beside each one is seeded
-        community support: there is no ballot, and no scorecard reads it.
+        community support. There is no ballot, and no scorecard reads it.
       </p>
     </div>
   );

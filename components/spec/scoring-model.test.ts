@@ -119,7 +119,7 @@ describe("the weights table", () => {
     // Shown, and shown as weightless. Half of that claim is the point of the other half:
     // a marker the engine cannot price is still the author's declaration about the node.
     expect(OPEN).toContain("listed on the card and on the node page");
-    expect(OPEN).toContain("never quietly charged for");
+    expect(OPEN).toContain("never charged quietly");
   });
 
   /**
@@ -212,9 +212,12 @@ describe("the criteria-leak threshold", () => {
 /**
  * The honesty half. `components/site/honesty.test.ts` holds the sentence itself in its
  * ledger; what is asserted here is the shape around it, so the two filters can never be
- * published without the fact that neither has ever run.
+ * published without the fact that DarkPrint verifies nothing about what a report claims
+ * (T280 wired `submitReport`/`reportedCost` behind these two numbers; the pinned sentence
+ * survives because "describes a design rather than a behaviour it can confirm for itself"
+ * is still true of an unverified self-report — see the panel's own comment).
  */
-describe("the telemetry design, and that none of it runs", () => {
+describe("the telemetry design, and what DarkPrint still cannot verify", () => {
   it("gives both filters", () => {
     expect(OPEN).toContain(`minRuns ${DARKPRINT_CONFIG.telemetry.minRuns}`);
     expect(OPEN).toContain(
@@ -224,9 +227,9 @@ describe("the telemetry design, and that none of it runs", () => {
 
   it("says in the open that nothing measures a run", () => {
     expect(OPEN.toLowerCase()).toContain(
-      "nothing on this site measures a run, so these two filters describe a design rather than a behaviour",
+      "nothing on this site measures a run. these two filters describe a design",
     );
-    expect(OPEN).toContain("not built");
+    expect(OPEN).toContain("never verified");
   });
 });
 

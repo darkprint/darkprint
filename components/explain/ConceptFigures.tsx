@@ -163,7 +163,7 @@ export function WhatACardReaches({
       <ReachRow
         field="tools"
         value={tools}
-        note="The card names the capability, not a vendor, so a graph says what it touches rather than what you bought."
+        note="The card names the capability, not a vendor. A graph says what it touches, not what you bought."
       >
         Capabilities it may reach for: a shell, a search index, a browser.
       </ReachRow>
@@ -174,7 +174,7 @@ export function WhatACardReaches({
            into the row it is about rather than given a block of its own. In a graph the
            question is never what an agent may do; it is what THIS node may do, and the
            four reach fields are declared per card, which is per-node identity. */
-        note="Two nodes naming the same server share the same door, and two that do not are two different reaches. Every field on this list is declared per card, so a graph says what each node may touch rather than what the system may."
+        note="Two nodes naming the same server share the same door, and two that do not are two different reaches. Every field on this list is declared per card. A graph says what each node may touch, not what the system may."
       >
         A server exposing one. MCP is the wire, so this row is the reach a run has.
       </ReachRow>
@@ -198,10 +198,10 @@ export function WhatACardReaches({
         field="cannot"
         value={cannot}
         barred
-        note="An entry naming a data type is enforced; an entry naming anything else is a sentence addressed to a reader and checked by nothing."
+        note="An entry that names a data type is enforced. An entry that names anything else is a note for a reader; nothing checks it."
       >
-        What must never arrive. Naming a data type makes it a rule the resolver holds
-        every incoming edge to, whichever node draws one.
+        What must never arrive. Naming a data type turns it into a rule. The resolver
+        enforces that rule against every incoming edge, no matter which node draws it.
       </ReachRow>
       <ReachRow
         field="risk_markers"
@@ -218,8 +218,8 @@ export function WhatACardReaches({
           </>
         }
       >
-        The blast radius, priced. What this step could break if it goes wrong, declared by
-        the card rather than guessed at by a reader.
+        The blast radius, priced. The card states what this step could break if it goes
+        wrong. A reader does not need to guess.
       </ReachRow>
     </ReachList>
   );
@@ -321,7 +321,7 @@ const GUARDRAIL_BANDS: readonly GuardrailBand[] = [
     bundle: (
       <>
         <Field>cannot</Field>, naming a data type. The resolver refuses every incoming
-        edge that can carry it, at error severity, whichever node draws the edge.
+        edge that can carry it, at error severity, no matter which node draws the edge.
       </>
     ),
     harness:
@@ -332,7 +332,7 @@ const GUARDRAIL_BANDS: readonly GuardrailBand[] = [
     bundle: (
       <>
         <Field>tools</Field>, <Field>mcp</Field> and <Field>skill</Field>, written per
-        card, so reach is stated node by node rather than for the system.
+        card. Each node states its own reach. There is no system-wide reach statement.
       </>
     ),
     harness:

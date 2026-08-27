@@ -56,7 +56,7 @@
    ============================================================ */
 
 import Link from "next/link";
-import type { OntologyTerm, Registry, TermKind } from "@/lib/core";
+import type { NodeCard, OntologyTerm, Registry, TermKind } from "@/lib/core";
 import { DARKPRINT_CONFIG } from "@/lib/core";
 import { Badge } from "@/components/ui/Badge";
 import { cx } from "@/lib/format";
@@ -188,9 +188,41 @@ interface UsageDraft {
  * no term.
  */
 export function termUsageIndex(registry: Registry): ReadonlyMap<string, TermUsage> {
+  return termUsageOver(registry.cards());
+}
+
+/**
+ * One published card version, reduced to the three fields a usage index reads.
+ *
+ * Structural rather than either concrete record, because there are now two archives and
+ * both answer this question: `lib/core`'s `CardVersionRecord` from the build-time index,
+ * and `lib/server/registry`'s `CardSummary` from the database. They agree on `id` and
+ * `card` and differ on the third — the build-time index carries blueprint SLUGS, the
+ * registry carries `{ownerHandle, slug}` pairs, because B-09 made a slug ambiguous across
+ * owners.
+ *
+ * So `usedIn` is whatever spelling of a blueprint's IDENTITY the caller can supply, and it
+ * reaches `TermUsage.blueprints` unchanged. The set is deduplicated on it, which is the
+ * only property this index needs of it, and a caller passing an ambiguous spelling gets an
+ * under-count rather than a wrong one — a reason to pass `owner/slug` where it exists.
+ */
+export interface UsageSource {
+  id: string;
+  card: NodeCard;
+  usedIn: readonly string[];
+}
+
+/**
+ * `termUsageIndex`'s computation, over any card corpus.
+ *
+ * Added rather than folded into the function above, and the function above DELEGATES to it,
+ * because two Forbidden routes call `termUsageIndex(registry)` and D-260-01 freezes that
+ * signature: a second implementation for the database path would be the same rule written
+ * down twice, and the two would agree exactly until the day one of them was fixed.
+ */
+export function termUsageOver(cards: readonly UsageSource[]): ReadonlyMap<string, TermUsage> {
   const drafts = new Map<string, UsageDraft>();
 
-  const cards = registry.cards();
   for (const record of cards) {
     const { card } = record;
     const ids = [
@@ -414,7 +446,7 @@ export function TermRow({
                 —
               </span>
               <span className="sr-only">
-                No weight: a category a rule is written about, not a marker a card declares.
+                No weight. It is a category a rule is written about, not a marker a card declares.
               </span>
             </>
           ) : (

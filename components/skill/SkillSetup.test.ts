@@ -85,9 +85,20 @@ describe("the tutorial covers what a reader is in for", () => {
   });
 
   it("names the files it leaves behind, in the shape the registry stores", () => {
-    for (const path of ["blueprint.dot", "cards/<node>.yaml", "readme.md", "agents.md"]) {
+    // "blueprint.dot" until the terminology pass (2026-08-25): the row reads live off
+    // `TOPOLOGY_DOT`, which renamed to `topology.dot` in the same pass, in the shared
+    // module this suite does not own (`lib/content/bundle-export.ts`) — retargeted, not
+    // loosened, so this case still fails if the row ever drifts from that constant again.
+    for (const path of ["topology.dot", "cards/<node>.yaml", "readme.md"]) {
       expect(text, path).toContain(path.toLowerCase());
     }
+  });
+
+  // Owner instruction, 2026-08-25: the skill stopped writing `AGENTS.md` in the same pass
+  // that took the file out of every published bundle. The row above would have gone on
+  // passing if this page had simply forgotten to update — a negative is what catches that.
+  it("no longer lists agents.md among what it writes", () => {
+    expect(text).not.toContain("agents.md");
   });
 
   /* Two cases stood here and the author removed the copy they held, 2026-08-07.
@@ -184,8 +195,11 @@ describe("the route keeps what ships apart from what does not", () => {
     expect(plainText(PAGE).match(/Coming soon/g) ?? []).toHaveLength(1);
   });
 
-  /** The four unbuilt capabilities, in the open, in one sentence rather than four claims. */
-  it("refuses the account, the private draft, publishing and the live push", () => {
+  /** The four capabilities, in the open, in one sentence rather than four claims. Since
+      T280 three are named as LIVE and one is still refused (the live push, T270 todo) —
+      the phrases are pinned either way, because a density pass dropping any of the four
+      is the same failure in both eras. */
+  it("names the account, the private draft and publishing as live, and refuses the live push", () => {
     for (const phrase of [
       "an account of your own",
       "kept private while it is under construction",

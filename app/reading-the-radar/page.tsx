@@ -2,14 +2,23 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { allBlueprints } from "@/lib/content";
-import type { MetricSource } from "@/lib/types";
+import { communityMetric, costMetric, type LiveSignals } from "@/lib/content/view";
+import type { Metric, MetricSource } from "@/lib/types";
 import { METRIC_SOURCE_META, cx } from "@/lib/format";
+import { getSharedDbClient } from "@/lib/db";
+import type { Actor } from "@/lib/server/policy";
+import { resolveOwner } from "@/lib/server/accounts";
+import { getBundle } from "@/lib/server/archive";
+import { blueprint as registryBlueprint } from "@/lib/server/registry";
+import { getAggregate } from "@/lib/server/ballot";
+import { reportedCost } from "@/lib/server/runs";
 import { ScoringModel } from "@/components/spec/ScoringModel";
 import { SourceBadge } from "@/components/ui/Badge";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { ScoreRadar } from "@/components/ui/ScoreRadar";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Sheet } from "@/components/viz";
+import { ARCHIVE_OWNER, blueprintHref } from "@/lib/href";
 
 /* ============================================================
    /reading-the-radar — the scorecard, taken apart, and the
@@ -68,11 +77,26 @@ import { Sheet } from "@/components/viz";
    would be a picture of a scorecard that no blueprint has, on the
    one page whose subject is how to read the real thing.
 
-   The figure's own honesty problem is that four of the six axes are
-   seeded, so a polygon drawn from them looks like a measurement of
-   something. The `○ not built` line in the figcaption is what stops
-   it claiming that, and it names the four rather than gesturing at
-   them.
+   ── T280: the sample's ballot and run axes are read live, not seeded ──
+   Ballots and run reports are backend now (`lib/server/ballot`,
+   `lib/server/runs`), so a page whose whole subject is "what does
+   this number mean" is the wrong place to keep printing four rows
+   that quietly stayed frozen at their fixture values. `SAMPLE_SLUG`
+   is resolved against the live registry under `ARCHIVE_OWNER`
+   (`lib/href.ts`'s seeded account) and its aggregate and reported
+   cost are read with `communityMetric`/`costMetric` — the same two
+   functions `lib/content/view.ts`'s `metricsFor` builds its own four
+   rows from, so this page and a blueprint's own scorecard cannot
+   describe one figure two different ways. A lookup failure (the
+   archive account or bundle missing from the live database) falls
+   back to `sample.metrics` untouched: the fixture reading is a
+   correct answer to "what would this look like", never a wrong one.
+
+   `dynamic = "force-dynamic"` for the reason `app/blueprints/
+   [owner]/[slug]/page.tsx` gives at length: a page that reads
+   `getSharedDbClient()` cannot promise its own numbers are current
+   under a build-time snapshot, and this route's whole subject is
+   what a live ballot or run report changes on a card.
 
    ── Three sections, one per badge ──
    The three badges a reader actually meets are AUTO, VOTED and
@@ -82,17 +106,23 @@ import { Sheet } from "@/components/viz";
    matches a shape and a colour against the scorecard in front of
    them, and the axis names under each badge are read off the
    sample's own metrics.
-
-   Static: no `generateStaticParams`, no `dynamicParams`, server
-   component, no props (Next 16, `docs/01-app/03-api-reference/
-   03-file-conventions/page.md`).
    ============================================================ */
 
 export const metadata: Metadata = {
   title: "How a blueprint is graded",
   description:
-    "A blueprint's scorecard, taken apart: five spokes, why autonomy is not one of them, and what the colour of each vertex says about where its number came from. Then the three badges behind the six axes and every weight the engine charges. Nothing votes and nothing runs, so four of the six are seeded rows that say so.",
+    "A blueprint's scorecard, broken down: five spokes, why autonomy is not one of them, and what each vertex's colour says about where its number came from. Then the three badges behind the six axes, and every weight the engine charges. Two axes are read off the graph. The other four wait on a ballot or a run report. An axis with none yet says so, instead of showing a number it does not have.",
 };
+
+/* T280: this page reads the live registry for the sample's ballot and run figures, the
+   same reason `app/blueprints/[owner]/[slug]/page.tsx` gives at length for its own
+   `force-dynamic` — a page whose subject is what those numbers mean cannot promise a
+   build-time snapshot of them is current. */
+export const dynamic = "force-dynamic";
+
+/** A reader with no session. This page names nothing private, so every request reads as
+    this — there is no per-visitor branch to earn a real session lookup. */
+const ANONYMOUS: Actor = Object.freeze({ kind: "anonymous" });
 
 const HERE = "/reading-the-radar";
 
@@ -101,6 +131,77 @@ const SAMPLE_SLUG = "starter-software-factory";
 
 /** The badges, in the order the three bands below take them. */
 const SOURCE_ORDER: readonly MetricSource[] = ["auto", "community", "reported"];
+
+/**
+ * The sample's live ballot and run signals, or `undefined` when the live registry has
+ * nothing under `ARCHIVE_OWNER/SAMPLE_SLUG` — a lookup failure this page treats as "fall
+ * back to the fixture reading" rather than a 404: the fixture is a correct answer to
+ * "what would this look like", never a wrong one, so there is nothing here worth crashing
+ * the page over. `getAggregate`/`reportedCost` themselves never throw for an absent or
+ * unreadable bundle (B-03: `getAggregate` answers an empty aggregate, `reportedCost`
+ * answers `undefined`), so the only failure this `try` actually guards is the database
+ * being unreachable at all.
+ */
+async function sampleLiveSignals(): Promise<LiveSignals | undefined> {
+  try {
+    const db = getSharedDbClient().db;
+    const summary = await registryBlueprint(db, ANONYMOUS, ARCHIVE_OWNER, SAMPLE_SLUG);
+    if (summary === undefined) return undefined;
+    const account = await resolveOwner(db, ARCHIVE_OWNER);
+    const record = account === undefined ? undefined : await getBundle(db, account.accountId, SAMPLE_SLUG);
+    if (record === undefined) return undefined;
+    const [aggregate, cost] = await Promise.all([
+      getAggregate(db, ANONYMOUS, record.id),
+      reportedCost(db, ANONYMOUS, summary.digest),
+    ]);
+    return { aggregate, cost };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * `sample.metrics` (the fixture) with the four backend-fed rows swapped for their live
+ * reading, when there is one — `communityMetric`/`costMetric` are the exact two functions
+ * `lib/content/view.ts`'s `metricsFor` builds a blueprint's own scorecard from, so this
+ * page and the detail page can never describe the sample's efficacy, reliability,
+ * transparency or cost two different ways. Autonomy and security are untouched: neither
+ * is a backend signal, and both are already the fixture's own live-computed reading.
+ */
+function liveMetricsFor(sample: { metrics: Metric[] }, live: LiveSignals | undefined): Metric[] {
+  if (live === undefined) return sample.metrics;
+  const [autonomy, efficacySeed, reliabilitySeed, transparencySeed, , security] = sample.metrics;
+  if (autonomy === undefined || security === undefined) return sample.metrics;
+  return [
+    autonomy,
+    communityMetric(
+      "efficacy",
+      "Efficacy",
+      efficacySeed?.value ?? 0,
+      efficacySeed?.detail ?? "",
+      "Community-rated task success on real runs.",
+      live.aggregate?.efficacy,
+    ),
+    communityMetric(
+      "reliability",
+      "Reliability",
+      reliabilitySeed?.value ?? 0,
+      reliabilitySeed?.detail ?? "",
+      "Rated across repeated executions without error.",
+      live.aggregate?.reliability,
+    ),
+    communityMetric(
+      "transparency",
+      "Transparency",
+      transparencySeed?.value ?? 0,
+      transparencySeed?.detail ?? "",
+      "A vote on how well the internal decisions are documented.",
+      live.aggregate?.transparency,
+    ),
+    costMetric({ cost: 0 }, live),
+    security,
+  ];
+}
 
 const LINK =
   "text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright";
@@ -130,16 +231,21 @@ const LINK =
    and the phone keeps exactly the size and the wrapping it had. Measured at 390, 430,
    640, 768, 1024 and 1440: no width overflows its container.
 
-   One class, so the five paragraphs, the two `NotBuilt` bodies, the three callouts and
-   the plate's caption cannot drift apart. */
+   One class, so the five paragraphs, the three `SampleNote` bodies, the three callouts
+   and the plate's caption cannot drift apart. */
 const BODY = "text-[15px] leading-[1.7] text-muted sm:text-lg sm:leading-[1.6]";
 
 /**
- * The `○ not built` line, beside the claim it qualifies.
+ * The sample-honesty line, beside the claim it qualifies.
  *
- * A pill and never `ComingSoonBadge`: amber is spent on two jobs on this site and one of
- * them, `.route-box`, appears on this very page in the tail box. Shape carries the
- * difference — globals.css writes that rule down — and this is the shape the deleted
+ * `NotBuilt` until T280: ballots and run reports are backend now, so a fixed "○ not
+ * built" pill would be flatly wrong for a route whose entire subject is what those two
+ * axes mean. What survives is the SHAPE — a small pill naming a state, then the sentence
+ * — with the label read off the caller's own count instead of hardcoded, so the same
+ * component serves "no ballot on file" and "12 ballots on file" without becoming two
+ * components. A pill and never `ComingSoonBadge`: amber is spent on two jobs on this site
+ * and one of them, `.route-box`, appears on this very page in the tail box. Shape carries
+ * the difference — globals.css writes that rule down — and this is the shape the deleted
  * `/spec/scoring` used before the disclosure was split in two.
  *
  * Full span, like everything else above "The arithmetic" (see `BODY`). The pill stays
@@ -148,12 +254,12 @@ const BODY = "text-[15px] leading-[1.7] text-muted sm:text-lg sm:leading-[1.6]";
  * pill, exactly as it did when it was a `.prose-lane` block, and above it it grows to
  * whatever the container leaves. `min-w-0` stops a long unbroken token widening the row.
  */
-function NotBuilt({ children }: { children: React.ReactNode }) {
+function SampleNote({ badge, children }: { badge: string; children: React.ReactNode }) {
   return (
     <p className="flex flex-wrap items-start gap-2 text-[15px] leading-[1.7] text-dim sm:text-lg sm:leading-[1.6]">
       <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
         <span aria-hidden>○</span>
-        not built
+        {badge}
       </span>
       <span className="min-w-0 flex-1 basis-[20rem]">{children}</span>
     </p>
@@ -259,29 +365,36 @@ function Callout({
   );
 }
 
-export default function HowABlueprintIsGradedPage() {
+export default async function HowABlueprintIsGradedPage() {
   const all = allBlueprints();
   const sample = all.find((bp) => bp.slug === SAMPLE_SLUG) ?? all[0];
   if (sample === undefined) return null;
 
-  /* The five that get a spoke, and the one that does not. Both read off the card rather
-     than listed here: a metric added to `MetricKey` would otherwise be described on every
-     blueprint page and missing from the page explaining the drawing. */
-  const spokes = sample.metrics.filter((m) => m.key !== "autonomy");
-  const autonomyRow = sample.metrics.find((m) => m.key === "autonomy");
+  const live = await sampleLiveSignals();
+  const metrics = liveMetricsFor(sample, live);
 
-  /* Every grouping on this page is read off the sample's own scorecard. The three bands,
-     the plate's legend and the sentence naming the seeded four all follow the data, so a
-     metric that changes source moves through the page rather than leaving one of its four
-     statements stale. */
+  /* The four (fixture) or three-to-four (live, D-180-01) that get a spoke, and the one
+     — autonomy — that never does. Both read off `metrics` rather than listed here: a
+     metric added to `MetricKey` would otherwise be described on every blueprint page and
+     missing from the page explaining the drawing. */
+  const spokes = metrics.filter((m) => m.key !== "autonomy" && m.value !== undefined);
+  const autonomyRow = metrics.find((m) => m.key === "autonomy");
+  const costHasSpoke = metrics.some((m) => m.key === "cost" && m.value !== undefined);
+
+  /* Every grouping on this page is read off `metrics` rather than `sample.metrics`
+     directly, so the three bands, the plate's legend and the sample-honesty line below
+     all follow whichever reading — fixture or live — the page actually drew. */
   const axesOf = (source: MetricSource): string =>
-    sample.metrics
+    metrics
       .filter((metric) => metric.source === source)
       .map((metric) => metric.label)
       .join(" · ");
-  const seeded = sample.metrics
-    .filter((metric) => metric.source !== "auto")
-    .map((metric) => metric.label);
+  const nonAuto = metrics.filter((metric) => metric.source !== "auto");
+  const communityAxes = metrics.filter((metric) => metric.source === "community");
+  const costRow = metrics.find((metric) => metric.key === "cost");
+  const noSpokeSentence = costHasSpoke
+    ? "Autonomy has no spoke. It is a class, not a length."
+    : "Autonomy has no spoke. Once real reports exist to read, cost has no spoke either (D-180-01). Both are a class or a stated figure, never a length.";
 
   return (
     <>
@@ -292,7 +405,7 @@ export default function HowABlueprintIsGradedPage() {
             as="h1"
             eyebrow="The six radar axes"
             title="How a blueprint is graded"
-            lead="Every blueprint page draws one of these. It has five spokes, a sixth reading that deliberately has none, and a colour on each vertex saying where that number came from. This page reads the picture first and then the arithmetic behind it."
+            lead="Every blueprint page draws one of these. Autonomy never gets a spoke, and neither does cost once a page reads real reports for it (D-180-01). A colour on each vertex says where the rest of a number came from. This page reads the picture first and then the arithmetic behind it."
           />
         </div>
       </header>
@@ -315,14 +428,14 @@ export default function HowABlueprintIsGradedPage() {
               register="blueprint"
               label="DRW-104 · six axes, three sources"
               title={sample.title}
-              note={`${sample.metrics.length} axes · ${spokes.length} spokes`}
+              note={`${metrics.length} axes · ${spokes.length} spokes`}
             >
               <div className="flex justify-center">
                 <div className="w-full sm:hidden">
-                  <ScoreRadar metrics={sample.metrics} size={300} render={285} plate />
+                  <ScoreRadar metrics={metrics} size={300} render={285} plate />
                 </div>
                 <div className="hidden w-full max-w-[480px] sm:block">
-                  <ScoreRadar metrics={sample.metrics} size={300} render={480} plate />
+                  <ScoreRadar metrics={metrics} size={300} render={480} plate />
                 </div>
               </div>
             </Sheet>
@@ -335,13 +448,13 @@ export default function HowABlueprintIsGradedPage() {
               <p className={BODY}>
                 {sample.title}, drawn by the same component every blueprint page
                 mounts. Each axis is named in the colour of the badge its row carries
-                on the scorecard, and the three sections below take those badges in
-                turn. Autonomy has no spoke: it is a class, not a length, so the chart
-                shows {spokes.length} of the {sample.metrics.length}.{" "}
+                on the scorecard. The three sections below take those badges in
+                turn. {noSpokeSentence} So the chart shows {spokes.length} of the{" "}
+                {metrics.length}.{" "}
                 {/* The one link the retired `/reading-the-radar` plate carried that
                     DRW-104 did not: the way to the blueprint this chart belongs to. It is
                     grafted onto this caption rather than lost with that figure. */}
-                <Link href={`/blueprints/${sample.slug}`} className={LINK}>
+                <Link href={blueprintHref(ARCHIVE_OWNER, sample.slug)} className={LINK}>
                   Open the blueprint <span aria-hidden>&rarr;</span>
                 </Link>
               </p>
@@ -353,12 +466,28 @@ export default function HowABlueprintIsGradedPage() {
                   </li>
                 ))}
               </ul>
-              <NotBuilt>
-                {seeded.length} of the {sample.metrics.length} axes above are seeded
-                rows with no ballot and no runner behind them: {seeded.join(", ")}. The
-                polygon is the shape of the numbers on file, not a measurement of
-                anything.
-              </NotBuilt>
+              {live === undefined ? (
+                <SampleNote badge="fixture reading">
+                  {sample.title}&rsquo;s live ballot and run figures could not be read for
+                  this render. The {nonAuto.length} rows above showing{" "}
+                  {nonAuto.map((m) => m.label).join(", ")} are this bundle&rsquo;s fixture
+                  numbers, not a live sample.
+                </SampleNote>
+              ) : (
+                <SampleNote badge="live sample">
+                  {nonAuto
+                    .map(
+                      (m) =>
+                        `${m.label} ${m.sampleSize ?? 0} ${m.key === "cost" ? "run" : "ballot"}${
+                          (m.sampleSize ?? 0) === 1 ? "" : "s"
+                        }`,
+                    )
+                    .join(" · ")}{" "}
+                  and all of it read live off {sample.title} rather than fixed at build
+                  time. A ballot or a run report changes one of these the next time this
+                  page renders.
+                </SampleNote>
+              )}
             </figcaption>
           </figure>
         </div>
@@ -376,16 +505,16 @@ export default function HowABlueprintIsGradedPage() {
           <ol className="flex flex-col gap-10">
             <Callout n="01" title={`${spokes.length} spokes, one per scored axis`}>
               {spokes.map((m) => m.label).join(", ")}, each vertex at that axis&rsquo;s
-              value on a 0 to 100 scale. A larger polygon is not a better blueprint, it is
-              one that scores higher on these five.
+              value on a 0 to 100 scale. A larger polygon does not mean a better blueprint.
+              It means a higher score on these axes.
             </Callout>
 
             {autonomyRow !== undefined && (
               <Callout n="02" title="Autonomy has no spoke, on purpose">
-                Six readings, five spokes. Autonomy is a{" "}
-                <span className="text-fg">name</span>, not a magnitude: this one is{" "}
+                {metrics.length} readings, {spokes.length} spokes. Autonomy is a{" "}
+                <span className="text-fg">name</span>, not a magnitude. This one is{" "}
                 <span className="font-mono text-fg">{sample.autonomy.label}</span>. A spoke
-                would invite a reader to grow it, and where a person acts is a decision, not
+                would invite a reader to grow it. Where a person acts is a decision, not
                 a shortfall. It is printed under the chart in words, not drawn on it.
               </Callout>
             )}
@@ -415,7 +544,7 @@ export default function HowABlueprintIsGradedPage() {
                    one-to-three line entries need. `dt` came up from 13px with it: a name
                    set two steps under its own definition is a hierarchy upside down. */
                 <dl className="flex flex-col">
-                  {sample.metrics.map((m) => (
+                  {metrics.map((m) => (
                     <div
                       key={m.key}
                       className="grid gap-x-4 gap-y-1 border-t border-line/70 py-3 first:border-t-0 first:pt-0 sm:grid-cols-[15rem_minmax(0,1fr)]"
@@ -446,9 +575,11 @@ export default function HowABlueprintIsGradedPage() {
               already. Its one sentence stays, as the lead into the bands, which is the
               job it was doing. */}
           <p className={BODY}>
-            Not all six are the same kind of fact, so the drawing does not pretend they
-            are. Two are the engine&rsquo;s own arithmetic. Three are waiting on a ballot
-            and one on a runner, and the three sections below take those badges in turn.
+            The six axes are not the same kind of fact. The diagram keeps that
+            difference visible. Two are the engine&rsquo;s own arithmetic. Three read a
+            live ballot and one reads a live run report. The three sections below take
+            those badges in turn. Each section reports the sample it has today. It does
+            not report whether the pipeline behind it exists.
           </p>
         </div>
       </section>
@@ -474,7 +605,7 @@ export default function HowABlueprintIsGradedPage() {
           Both are computed from the graph and the cards its blueprint pins, and both
           name the nodes behind the number. The DOT and the cards are published as
           source on every blueprint page, so the arithmetic can be checked against
-          them. What each check is worth is the rest of this page.
+          them. The rest of this page explains what each check is worth.
         </p>
       </SourceBand>
 
@@ -482,27 +613,39 @@ export default function HowABlueprintIsGradedPage() {
       <SourceBand
         source="community"
         axes={axesOf("community")}
-        title="Waiting on a ballot"
+        title="Read from a live ballot"
         id="voted-heading"
         ground="bg-void"
       >
         <p className={BODY}>
-          These three are judgement calls, and no graph states them. Whether a
-          blueprint&apos;s output was any good, whether it holds up across repeated
-          runs, and whether its internal decisions are documented well enough to audit
-          are readings that a weighted vote of the people who ran it would produce.
+          These three are judgement calls. No graph states them. One asks whether a
+          blueprint&apos;s output was any good. Another asks whether it holds up across
+          repeated runs. A third asks whether its internal decisions are documented
+          well enough to audit. A weighted vote of the people who ran the blueprint
+          produces these readings.
         </p>
-        <NotBuilt>
-          There is no ballot. Those three numbers are seeded rows, and every card that
-          shows one says so.
-        </NotBuilt>
+        {live === undefined ? (
+          <SampleNote badge="fixture reading">
+            {sample.title}&rsquo;s live ballot could not be read for this render, so
+            these three numbers are this bundle&rsquo;s fixture reading instead.
+          </SampleNote>
+        ) : (
+          <SampleNote badge="live sample">
+            {communityAxes
+              .map((m) => `${m.label} ${m.sampleSize ?? 0}`)
+              .join(" · ")}{" "}
+            ballots cast for {sample.title}. Casting one moves the count on the next
+            render. This page carries no fixed placeholder number for the count to
+            move away from.
+          </SampleNote>
+        )}
       </SourceBand>
 
       {/* ---------- REPORTED ---------- */}
       <SourceBand
         source="reported"
         axes={axesOf("reported")}
-        title="Waiting on a runner"
+        title="Read from a live run report"
         id="reported-heading"
         ground="bg-surface/40"
       >
@@ -510,14 +653,27 @@ export default function HowABlueprintIsGradedPage() {
           Cost and time need somebody to run the blueprint, and that happens on their
           machine. The platform never watches the run, so it can only ever be told the
           result. That is why the badge reads <span className="text-fg">reported</span>{" "}
-          and never <span className="text-fg">measured</span>. Everything a reported
-          figure would have to travel with, how many runs it aggregates and how far
-          apart they were, is designed and none of it is wired.
+          and never <span className="text-fg">measured</span>. A reported figure
+          travels with three details. It records how many runs it aggregates. It
+          records how far apart the runs were. It records which model produced them.
+          All three are wired now. A caller posts the figure to the runs endpoint,
+          keyed to a release digest. The endpoint folds that post into the
+          digest&apos;s aggregate before this page reads it back. The darkprint CLI
+          verb for this is not built yet. The endpoint answers today.
         </p>
-        <NotBuilt>
-          There is no runner and no endpoint. The cost and time figures are seeded rows,
-          and every card that shows one says so.
-        </NotBuilt>
+        {live === undefined ? (
+          <SampleNote badge="fixture reading">
+            {sample.title}&rsquo;s live run report could not be read for this render, so
+            the cost and time figure is this bundle&rsquo;s fixture reading instead.
+          </SampleNote>
+        ) : (
+          <SampleNote badge="live sample">
+            {costRow?.sampleSize ?? 0} run{(costRow?.sampleSize ?? 0) === 1 ? "" : "s"}{" "}
+            reported for {sample.title}. Cost and time never land on the 0–100 axis
+            above either way (D-180-01): a real median renders as a stated number in
+            the reporter&rsquo;s own units, and nothing on file yet says so plainly.
+          </SampleNote>
+        )}
       </SourceBand>
 
       {/* ---------- the quantitative detail: what each check is worth ----------

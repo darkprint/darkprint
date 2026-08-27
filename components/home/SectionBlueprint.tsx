@@ -3,13 +3,14 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 
 import { BeatCaption } from "./BeatCaption";
 import { BlueprintWalk } from "./blueprint/BlueprintWalk";
+import { ARCHIVE_OWNER, blueprintHref } from "@/lib/href";
 
 /* ============================================================
    Beat 2: a graph, and then the file the graph is a picture of.
 
    The drawing and everything about how it is placed are unchanged and now live in
    `./blueprint/BlueprintWalk.tsx`, which is the client half. This file is the server half
-   and it exists for one reason: to read `blueprint.dot` off the archive at build time.
+   and it exists for one reason: to read `topology.dot` off the archive at build time.
 
    ── Why the split ──
    The author asked the drawing to be replaced by its own source as a reader scrolls
@@ -33,7 +34,7 @@ import { BlueprintWalk } from "./blueprint/BlueprintWalk";
 const STARTER = "starter-software-factory";
 
 /** What the file is called in the folder that downloads, and in the panel's own rail. */
-const FILE = `${STARTER}/blueprint.dot`;
+const FILE = `${STARTER}/topology.dot`;
 
 /**
  * The DOT with its comment lines taken out.
@@ -108,14 +109,14 @@ export function SectionBlueprint() {
                  from." until 2026-08-08, when the author asked it out of the deck and into the
                  scroll: the hint appears as a reader starts moving rather than sitting under
                  the heading before there is anything to hint at. `SourceSwap` draws it. */
-              lead="Which agents run, what each one hands to the next, and it is already yours to run."
+              lead="Which agents run and what each hands to the next. It is already yours to run."
               align="center"
               className="mx-auto"
             />
           }
         />
 
-        <BeatCaption href={`/blueprints/${STARTER}`} cta="Inspect a blueprint">
+        <BeatCaption href={blueprintHref(ARCHIVE_OWNER, STARTER)} cta="Inspect a blueprint">
           A blueprint pins the handoffs, loops, checkpoints, and deliberate absences that
           make a workflow reusable. The files stay plain enough to inspect before your
           harness runs them.

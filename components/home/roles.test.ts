@@ -4,7 +4,7 @@
 
    The section's header comment said "every node, every edge and
    every label below is read off
-   `content/blueprints/starter-software-factory/blueprint.dot`"
+   `content/blueprints/starter-software-factory/topology.dot`"
    while every one of them was a literal in the JSX with no test in
    sight. The values were right, and nothing would have said so
    after the next edit to the DOT. `components/hero/graph.test.ts`

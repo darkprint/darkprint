@@ -11,6 +11,7 @@ import { RouteBoxLink } from "@/components/ui/RouteBoxLink";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SourcePanel } from "@/components/ui/SourcePanel";
+import { ARCHIVE_OWNER, blueprintHref } from "@/lib/href";
 
 /* ============================================================
    /spec/ontology — layer 3, and the answer to the author's
@@ -66,7 +67,7 @@ import { SourcePanel } from "@/components/ui/SourcePanel";
 export const metadata: Metadata = {
   title: "The ontology file (YAML)",
   description:
-    "Layer 3 of a DarkPrint blueprint: one versioned ontology of phases, node types, data types, tool capabilities and risk markers, which is where every identifier in the graph and the cards is finally resolved.",
+    "Layer 3 of a DarkPrint blueprint is one versioned ontology of phases, node types, data types, tool capabilities and risk markers. Every identifier in the graph and the cards is finally resolved there.",
 };
 
 const HERE = "/spec/ontology";
@@ -225,7 +226,7 @@ export default function SpecOntologyPage() {
                its first sentence and left a reader who had just come off the card page
                without the connection to what they had been reading. Naming which layer
                contributes which kind is the same information a beat earlier. */
-            lead="One versioned list of the words a blueprint may use, and how they relate. The graph names phases and node types; the cards name data types, tools and risk markers. This is where all of them are finally defined."
+            lead="One versioned list of the words a blueprint may use, and how they relate. The graph names phases and node types. The cards name data types, tools and risk markers. This is where all of them are defined."
           />
         </div>
       </header>
@@ -274,9 +275,9 @@ export default function SpecOntologyPage() {
               as a default a mock happened to carry. */}
           <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
             <p>
-              Every structural field on the two layers above is a reference into this list,
+              Every structural field on the two layers above references this list,
               versioned as a whole at <Id>{`v${version}`}</Id>. One list of {core.length}{" "}
-              curated terms is what stops two authors from naming the same thing twice.
+              curated terms stops two authors from naming the same thing twice.
             </p>
           </div>
 
@@ -362,7 +363,7 @@ export default function SpecOntologyPage() {
                   walked by `workspace.test.ts`'s route check and `APP_EXEMPT` covers
                   `app/nodes`, `app/ontology`, `app/upload`, `app/blueprints/[slug]` and
                   `app/u` — not this one. */}
-              The phases are closed: nobody may add one, and they stay in lifecycle order,{" "}
+              The phases are closed. Nobody may add one. They stay in lifecycle order,{" "}
               {phases.map((phase, i) => (
                 <span key={phase.id}>
                   {i > 0 && " "}
@@ -502,18 +503,18 @@ export default function SpecOntologyPage() {
               <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
                 {overlayTerm === undefined ? (
                   <p>
-                    The {core.length} terms above are the curated core and nobody but this
-                    project can change them. Adding to that set would move a number two
-                    strangers hold each other to. So additions go in a namespace instead:
-                    this archive carries {local.length === 1 ? "one term" : `${local.length} terms`}{" "}
-                    of its own, outside that count, and the file below is the whole of them.
+                    The {core.length} terms above are the curated core. Nobody but this
+                    project can change them. Adding to that set would change a number two
+                    strangers hold each other to. So additions go in a namespace instead.
+                    This archive carries {local.length === 1 ? "one term" : `${local.length} terms`}{" "}
+                    of its own, outside that count. The file below is the whole of them.
                   </p>
                 ) : (
                   <p>
-                    The {core.length} terms above are the curated core and nobody but this
-                    project can change them. Adding to that set would move a number two
-                    strangers hold each other to. So additions go in a namespace instead:
-                    this archive needed to mark a node that handles personal data, and
+                    The {core.length} terms above are the curated core. Only this
+                    project can change them. Adding to that set would change a number two
+                    strangers rely on. So additions go into a namespace instead: this
+                    archive needed to mark a node that handles personal data, and
                     defined <Id>{overlayTerm.id}</Id> for itself, rooted at{" "}
                     <Id>{overlayTerm.broader ?? "a core term"}</Id>
                     {overlayTerm.defaultWeight === undefined
@@ -558,7 +559,7 @@ export default function SpecOntologyPage() {
                   evidence and is the one thing in it that is not a general rule. */}
               <p className="text-[15px] leading-relaxed text-muted">
                 The{" "}
-                <SpecLink href={`/blueprints/${LOCAL_VOCAB_SLUG}`}>
+                <SpecLink href={blueprintHref(ARCHIVE_OWNER, LOCAL_VOCAB_SLUG)}>
                   {LOCAL_VOCAB_SLUG}
                 </SpecLink>{" "}
                 bundle ships this file in its own folder, so its cards resolve wherever the

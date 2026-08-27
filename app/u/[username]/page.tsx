@@ -1,122 +1,111 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { AUTHOR_LIST, getAuthor } from "@/lib/data";
+import { ButtonLink } from "@/components/ui/Button";
 import { ProfileShell } from "@/components/profile/ProfileShell";
+import { OwnedBundles } from "@/components/profile/OwnedBundles";
 import { Pinned } from "@/components/profile/Pinned";
-import { EmptyState, SectionTitle } from "@/components/profile/parts";
-import { profileView } from "@/components/profile/load";
+import { VisibilityFilter } from "@/components/profile/VisibilityFilter";
+import { SortControl } from "@/components/profile/SortControl";
+import { EmptyState, SectionTitle, ShelfToolbar } from "@/components/profile/parts";
+import { profileMetadata, profileView } from "@/components/profile/load";
+import { readSession } from "@/components/profile/session";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-53) (cited at line 40): GET /api/authors/{handle}
+// SEAM-53 LIVE: the identity, off `@/lib/server/accounts`.
+// SEAM-55 LIVE: the pinned selection, off `getProfile` (T131/T280).
+// SEAM-63/64 LIVE: the shelf, off `ownedBundles` (T280) — see `components/profile/load.ts`.
 
 /* ============================================================
-   /u/[username] — the overview tab.
+   /u/[username] — blueprints, the profile's own index (T280).
 
-   One route, two views. `lib/data/account.ts` seeds one handle as the signed-in account,
-   so that handle's page renders the owner chrome and every other renders the visitor's.
-   Both are prerendered: with no server there is no other way to have an owner view at all,
-   and `ProfileShell` says so in the open above the header rather than letting a reader
-   conclude they are logged in.
+   This route used to be the overview: pinned items above a link to the terms tab, on the
+   argument that the counted totals already lived in `ProfileHeader` so restating a slice
+   of either archive-authored list here was a second place for the same fact to drift from
+   the first. That argument did not survive accounts becoming real. A profile with drafts
+   and releases is a thing readers open a profile TO SEE — the GitHub analogy the whole
+   0007_drafts migration is built on — and a second click to reach it is a click a static
+   fixture never had to justify. `components/profile/tabs.ts`'s own docblock carries the
+   fuller argument; this file is where it lands.
 
-   What the overview holds is what this builder chose to put here: pinned items and local
-   vocabulary terms. It is not a shrunken Blueprints tab or Cards tab any more — those two
-   sections drew a `ContentRow` list and a `NodeCardSummary` grid here until the author
-   asked for them removed, on the grounds that a builder's full archive count already lives
-   in `ProfileHeader`'s summary line and the tab strip's own count pills, so this page
-   restating a slice of either list was a second place for the same fact to drift from the
-   first. The owner's *management* list, with the private bundles, the private cards and
-   the visibility controls, is the Blueprints and Cards tabs. Keeping the two apart is what
-   stops the overview from being two different pages depending on who is reading.
+   So Blueprints takes the segmentless slot now (`tabs.ts`), and this page is what used to
+   be two: Pinned, unchanged in shape, above the shelf `/u/[username]/blueprints` used to
+   own alone. The old overview's terms teaser did not move down with it — Ontology terms is
+   still its own tab, and a link to it from here would be the second address for one fact
+   the original overview was written to avoid, just aimed at a different tab.
 
-   ── The empty state, after the removal ──
-   It used to gate on `published === 0` (no archive blueprint or card), because those were
-   the two things this page could be empty OF. With both sections gone, `published` is no
-   longer a fact about this page — a handle can have five published blueprints and an
-   overview with nothing on it, if they pinned none and named no local term, and saying
-   "Nothing published yet" to that reader would be false. So the empty state now asks the
-   question this page can actually answer — is there a pin or a term to show — and only
-   falls back to talking about the registry when `published` really is zero too.
+   ── Why one shelf serves both readers now ──
+   `owned` (`profileView`) is `ownedBundles(db, actor, username)`, already actor-scoped:
+   everything for the owner, public rows only for anyone else (`lib/server/registry/
+   owned.ts`). The old route built a second, hand-assembled row list for a visitor out of
+   `allBlueprints()` because the only live-shaped reader available then was owner-only
+   (`bundlesOwnedBy`, a fixture). There is one reader now and it already answers both
+   questions, so there is one shelf.
    ============================================================ */
 
-/** The author table is a fixed list; an unknown handle is a 404, not an on-demand render. */
-export const dynamicParams = false;
-
-export function generateStaticParams() {
-  return AUTHOR_LIST.map((a) => ({ username: a.username }));
-}
+/* No `dynamicParams`, no `generateStaticParams`, and no `export const dynamic` either — a
+   prerendered page cannot render a different view per reader (AC1, D-262-11), and
+   `readSession` reaches `next/headers`, which is what makes this route request-time
+   without a segment-config token to declare it (`tests/server/t262/per-request.test.ts`
+   holds all five profile routes to exactly this shape). */
 
 export async function generateMetadata({ params }: PageProps<"/u/[username]">) {
   const { username } = await params;
-  const author = getAuthor(username);
-  if (!author) return { title: "Builder not found" };
-  return { title: author.displayName, description: author.bio };
+  const author = await profileMetadata(username);
+  if (author === undefined) return { title: "Builder not found" };
+  return { title: author.displayName, ...(author.bio === undefined ? {} : { description: author.bio }) };
 }
 
 export default async function Page({ params }: PageProps<"/u/[username]">) {
   const { username } = await params;
-  const view = profileView(username);
+  const view = await profileView(username, await readSession());
   if (view === undefined) notFound();
 
-  const { author, blueprints, cards, pinned, terms } = view;
-  const published = blueprints.length + cards.length;
-  const hasOverviewContent = pinned.length > 0 || terms.length > 0;
+  const { author, owned, owner, pinned } = view;
+  const hasContent = pinned.length > 0 || owned.length > 0;
 
   return (
-    <ProfileShell view={view} active="overview">
-      {/* Pinned. The selection is seeded and everything drawn on the two cards is counted
-          off the archive, which is why the marker is `✓ counted`: a pin is a preference,
-          and the card is a fact. */}
+    <ProfileShell view={view} active="blueprints">
       {pinned.length > 0 && (
         <section className="mt-10 flex flex-col gap-5">
+          {/* The `✓ counted` marker left this row on the owner's instruction
+              (2026-08-25): the figures are real, and a badge announcing it is noise. */}
           <div className="flex items-center justify-between gap-3">
             <SectionTitle label="Pinned" dot="var(--color-cyan)" count={pinned.length} />
-            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-emerald">
-              ✓ counted
-            </span>
           </div>
           <Pinned items={pinned} />
         </section>
       )}
 
-      {/* "Published here" (the counted totals) and "Preview signals" (downloads, stars,
-          validated) used to sit here as a two-panel section. Both now live in
-          `ProfileHeader` — the counted totals were already restated there as the
-          blueprint/card summary line, and Preview signals moved up into the same panel
-          on the author's instruction, so nothing on this page states either fact twice. */}
-
-      <div className="mt-14 flex flex-col gap-14">
-        {!hasOverviewContent ? (
+      {!hasContent ? (
+        <div className="mt-10">
           <EmptyState
-            title={published === 0 ? "Nothing published yet" : "Nothing pinned"}
+            title={owner ? "Nothing here yet" : "No published blueprints"}
             action={
-              published === 0
-                ? { href: "/blueprints", label: "Browse the registry" }
-                : { href: `/u/${author.username}/blueprints`, label: "See what's published" }
+              owner
+                ? { href: "/new", label: "Start a blueprint" }
+                : { href: "/blueprints", label: "Browse the registry" }
             }
           >
-            {published === 0
-              ? `${author.displayName} has not shared a blueprint or a node card with the registry so far.`
-              : `${author.displayName} has not pinned anything to the overview, and named no local vocabulary term. What is published lives on the Blueprints and Cards tabs.`}
+            {owner
+              ? "Nothing pinned and nothing published or drafted yet. New blueprint starts one."
+              : `${author.displayName} has not published a blueprint to the registry so far. Private bundles are never listed here.`}
           </EmptyState>
-        ) : (
-          terms.length > 0 && (
-            <section className="flex flex-col gap-5">
-              <SectionTitle
-                label="Ontology terms"
-                dot="var(--color-violet)"
-                count={terms.length}
-              />
-              <Link
-                href={`/u/${author.username}/terms`}
-                className="self-start font-mono text-[13px] text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:text-cyan-bright"
-              >
-                See the {terms.length === 1 ? "term" : "terms"} this handle added →
-              </Link>
-            </section>
-          )
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="mt-10 flex flex-col gap-5">
+          <ShelfToolbar placeholder="Find a blueprint…" label="Find a blueprint">
+            {owner && <VisibilityFilter label="Filter blueprints by visibility" />}
+            <SortControl label="Sort blueprints" />
+            {owner && (
+              <ButtonLink href="/new" variant="outline">
+                New blueprint
+              </ButtonLink>
+            )}
+          </ShelfToolbar>
+
+          <OwnedBundles rows={owned} owner={owner} ownerHandle={author.username} />
+        </div>
+      )}
     </ProfileShell>
   );
 }

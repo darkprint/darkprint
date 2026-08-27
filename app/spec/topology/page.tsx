@@ -52,7 +52,7 @@ import { DotBreakdown } from "@/components/panes/DotBreakdown";
    else, so it is now mounted nowhere. The component and its guards
    stay: `components/home/roles-labels.test.ts` and
    `components/home/roles.test.ts` both render it directly and
-   reparse `content/blueprints/starter-software-factory/blueprint.dot`,
+   reparse `content/blueprints/starter-software-factory/topology.dot`,
    and `architecture/website.md` names the first of those the
    highest-value guard on the site. A guard is not deleted because a
    mount moved; deleting it is how the drawing would come back
@@ -78,9 +78,9 @@ import { DotBreakdown } from "@/components/panes/DotBreakdown";
    ============================================================ */
 
 export const metadata: Metadata = {
-  title: "The blueprint file (DOT)",
+  title: "The topology file (DOT)",
   description:
-    "Layer 1 of a DarkPrint blueprint: one directed graph per bundle, written in a subset of DOT that Attractor runs as it stands, with one added attribute pinning each node to the card that describes it.",
+    "Layer 1 of a DarkPrint blueprint: one directed graph per bundle, written in a subset of DOT. Attractor runs it as it stands. One added attribute pins each node to the card that describes it.",
 };
 
 const HERE = "/spec/topology";
@@ -117,7 +117,7 @@ export default function SpecTopologyPage() {
             as="h1"
             eyebrow={page.eyebrow}
             title={page.title}
-            lead="The wiring, in one file. DarkPrint reads a subset of DOT and adds one attribute to it, and that attribute is what joins a node in the graph to the card describing it."
+            lead="The wiring, in one file. DarkPrint reads a subset of DOT and adds one attribute. That attribute joins a node in the graph to the card that describes it."
           />
         </div>
       </header>
@@ -193,21 +193,20 @@ export default function SpecTopologyPage() {
               untouched. */}
           <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
             <p>
-              DOT attribute values are flat strings, which is the reason the
-              format splits in two: the graph carries the wiring, and every
+              DOT attribute values are flat strings. That is why the
+              format splits into two: the graph carries the wiring, and every
               piece of detail lives in a card beside it. DarkPrint reads a
               strict subset that{" "}
               <SpecLink href="https://github.com/strongdm/attractor" external>
                 Attractor
               </SpecLink>{" "}
-              runs as it stands, and Attractor silently ignores every attribute
-              name outside its own reserved list, which is what lets{" "}
-              <Id>card</Id> and <Id>digest</Id> ride along in a file a runner
+              runs as it stands. Attractor silently ignores every attribute
+              name outside its own reserved list. That is what lets{" "}
+              <Id>card</Id> and <Id>digest</Id> travel inside a file a runner
               still executes.
             </p>
             <p>
-              One name is worth knowing about because it looks free and is
-              not. A node <Id>type</Id> attribute means{" "}
+              One name looks free, but it is not. A node <Id>type</Id> attribute means{" "}
               {/* A leading space at the head of a multi-line JSX text node is
                 dropped by the compiler, and this paragraph shipped once reading
                 "handler overrideto Attractor". Written as a string expression so
@@ -215,7 +214,7 @@ export default function SpecTopologyPage() {
                 the file cannot lose it again. */}
               <em>handler override</em>
               {
-                " to Attractor. A card's ontology type stays inside the YAML for that reason, and a DOT that puts a term in "
+                " to Attractor. A card's ontology type stays inside the YAML for that reason. A DOT that puts a term in "
               }
               <Id>type=</Id> is reported as{" "}
               <Id>attractor/reserved-attribute</Id>.
@@ -228,8 +227,8 @@ export default function SpecTopologyPage() {
               the redesign fixes. */}
           <DotBreakdown
             source={dot}
-            title={`${STARTER}/blueprint.dot`}
-            downloadName="blueprint.dot"
+            title={`${STARTER}/topology.dot`}
+            downloadName="topology.dot"
           />
         </div>
       </section>

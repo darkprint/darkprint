@@ -7,9 +7,13 @@ import { Button } from "@/components/ui/Button";
 import { CloneMenu } from "@/components/blueprint/CloneMenu";
 import { FavoriteStar } from "@/components/ui/FavoriteStar";
 import { MetaPill } from "@/components/ui/MetaPill";
+import { WatchButton } from "@/components/bundle/WatchButton";
+import { ForkButton } from "@/components/bundle/ForkButton";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-20): folded into SEAM-19
+// SEAM-20 LIVE (T280): the star pill (`star`), the Watch button (`watch`, folded into
+// SEAM-57) and the Fork button (`fork`, SEAM-70) each take an additive prop below. Absent,
+// all three render exactly as they always did — the callers this file has today.
 
 /* ============================================================
    The band a bundle opens with: who owns it, what it is called, where it came from.
@@ -19,16 +23,19 @@ import { MetaPill } from "@/components/ui/MetaPill";
    subject, and the separator is `text-faint` — the one token on this site that may never
    be live text, which is exactly right for a slash nobody reads.
 
-   ── The four actions, and which of them do anything ──
+   ── The four actions, and which of them do anything (T280: three of four, now) ──
    `Get the folder` is the real one, and only for a published bundle: the files are under
    `public/bundles/<slug>/` and the command in `CloneMenu` fetches them. A private bundle
    has no folder anywhere, so the control is switched off rather than opening a menu whose
    command would 404 every line.
 
    `Save` is the existing `FavoriteStar`, which writes to `localStorage` and says so on the
-   profile that lists saves. `Watch` and `Fork` have nowhere to write at all and are drawn
-   switched off with their seeded counts beside them, because the design shows the shape
-   and the shape is worth showing as long as nothing pretends to work.
+   profile that lists saves — unchanged by this pass, a different concept from the star
+   pill beside it. The star pill, `Watch` and `Fork` each take an additive prop now
+   (`star`, `watch`, `fork`) that swaps their drawn-and-disabled rendering for a live
+   control over `lib/server/counters`, `/api/authors/[handle]/watch` and
+   `/api/bundles/[owner]/[slug]/fork`. A caller supplying none of the three gets exactly
+   what this header always drew.
    ============================================================ */
 
 export function BundleHeader({
@@ -49,6 +56,9 @@ export function BundleHeader({
   below,
   note,
   children,
+  star,
+  watch,
+  fork,
 }: {
   owner: Author;
   slug: string;
@@ -85,6 +95,12 @@ export function BundleHeader({
   note?: string;
   /** Under the summary: the kind badge, the autonomy reading, the tags. */
   children?: React.ReactNode;
+  /** T280: the star pill, live. Wins over `support` — see `FavoriteStar`'s own doc. */
+  star?: { api: string; count: number; starred: boolean; signedIn: boolean };
+  /** T280: the Watch button, live. Wins over the drawn-and-disabled default. */
+  watch?: { api: string; watchers: number; signedIn: boolean };
+  /** T280: the Fork button, live. Wins over the drawn-and-disabled default. */
+  fork?: { api: string; sourceVersion: string; signedIn: boolean; viewerHandle?: string };
 }) {
   return (
     <header className="border-b border-line bg-surface">
@@ -160,25 +176,41 @@ export function BundleHeader({
 
         <div className="flex shrink-0 flex-col items-start gap-2 lg:items-end">
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              disabled
-              title="Nothing stores a watch yet: there are no accounts behind this page."
-            >
-              Watch <span className="font-mono text-[11px] text-dim">{watchers}</span>
-            </Button>
-            {support === undefined ? (
+            {watch === undefined ? (
+              <Button
+                variant="outline"
+                disabled
+                title="Nothing stores a watch yet: there are no accounts behind this page."
+              >
+                Watch <span className="font-mono text-[11px] text-dim">{watchers}</span>
+              </Button>
+            ) : (
+              <WatchButton api={watch.api} watchers={watch.watchers} signedIn={watch.signedIn} />
+            )}
+            {star !== undefined ? (
+              <FavoriteStar id={saveId} star={star} />
+            ) : support === undefined ? (
               <FavoriteStar id={saveId} />
             ) : (
               <FavoriteStar id={saveId} count={support} seeded />
             )}
-            <Button
-              variant="outline"
-              disabled
-              title="Nothing copies a bundle into an account yet. Take the folder instead."
-            >
-              Fork <span className="font-mono text-[11px] text-dim">{forks}</span>
-            </Button>
+            {fork === undefined ? (
+              <Button
+                variant="outline"
+                disabled
+                title="Nothing copies a bundle into an account yet. Take the folder instead."
+              >
+                Fork <span className="font-mono text-[11px] text-dim">{forks}</span>
+              </Button>
+            ) : (
+              <ForkButton
+                api={fork.api}
+                sourceVersion={fork.sourceVersion}
+                signedIn={fork.signedIn}
+                viewerHandle={fork.viewerHandle}
+                forks={forks}
+              />
+            )}
             {clone === undefined ? (
               <Button
                 disabled

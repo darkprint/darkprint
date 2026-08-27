@@ -273,7 +273,7 @@ export function BuildWorkspace() {
                   label: "rounds of failure evidence the debugger sees",
                 },
               ]}
-              footnote="Three consequences, one slider. The first two are the ceiling on what a run spends, and the third is how much of the acceptance surface the debugger can accumulate on the way. All three rise together."
+              footnote="Three consequences, one slider. The first two set the ceiling on what a run spends. The third sets how much of the acceptance surface the debugger can accumulate on the way. All three rise together."
             />
           </div>
         </div>

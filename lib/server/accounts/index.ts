@@ -1,0 +1,55 @@
+/* ============================================================
+   DarkPrint backend — lib/server/accounts public surface
+   `lib/db/index.ts`'s rule: deep paths are internal and may be
+   rearranged, so nothing outside this folder should reach for one.
+   Re-exports are written out by name rather than `export *` so
+   this file doubles as the inventory of what the module promises.
+
+   The four error classes are exported although T050's Published
+   signatures block lists only the seven functions and two types: a
+   caller that cannot name a class cannot branch on it, and the
+   routes have to map three of them to three different statuses.
+
+   **`HandleTakenError` and `InvalidNameError` are deliberately NOT
+   re-exported here.** Both come from `@/lib/server/naming`, both
+   reach a caller of `changeHandle`, and D-50-08 requires their
+   messages to pass through unaltered so that each keeps one
+   author. Re-exporting them would publish another module's
+   rejection under this module's name and invite exactly the
+   re-rendering that ruling forbids; the routes import them from
+   the barrel that owns them.
+
+   `tests/error-hygiene.test.ts` builds its domain by construction
+   over every `lib/server/<module>/index.ts`, so these classes are
+   measured against D-13's hygiene clause from the day this file
+   exists, and a barrel that will not import is an error there
+   rather than a module it quietly stopped covering.
+   ============================================================ */
+
+export type { AccountRecord, PublicAuthor } from "./types";
+
+export {
+  AccountStoreError,
+  HandleRequiredError,
+  InvalidProfileError,
+  NotAccountOwnerError,
+} from "./errors";
+
+export { upsertFromGitHub } from "./github";
+/* The multi-provider door (0006). `upsertFromGitHub` stays published and unchanged:
+   it is what the GitHub callback has always called, and D-50-17 rules its error form. */
+export type { Provider, ProviderIdentity, ResolvedAccount } from "./identities";
+export { resolveFromProvider } from "./identities";
+/* `resolveOwner` is D-100-01's narrow amendment to this task: T100 names an owner by handle
+   and `createBundle` takes an id, and no export of any barrel bridged the two. Published here
+   rather than joined inline a third time — `lib/server/registry` already spells that join
+   twice, and the copy at the one door that WRITES through it is the one worth retiring. */
+export { getAccount, getPublicAuthor, publicAuthorsByIds, resolveOwner } from "./read";
+export { changeHandle } from "./handle";
+export { setDefaultVisibility, setEmail, updateProfile } from "./write";
+
+/* The transport boundary. Here rather than beside the routes because this task's
+   `Owns` enumerates five exact route FILES rather than `app/api/account/**`, so a
+   shared sixth file under that tree would sit outside it. T080 puts `actorFrom` in
+   its own module for the same reason. */
+export { actorFrom, readJsonObject, withAccountErrors } from "./http";

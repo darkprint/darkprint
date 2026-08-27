@@ -6,7 +6,7 @@
    factory the site ships, and this file is only its placement: the
    ids, the edge list, the labels and the absence all come from
    `./roles.ts`, which `./roles.test.ts` checks against
-   `content/blueprints/starter-software-factory/blueprint.dot` and
+   `content/blueprints/starter-software-factory/topology.dot` and
    the five cards it names. So a beat that claims to draw a real
    blueprint draws one, and editing the DOT reports here rather
    than quietly making the landing a lie.

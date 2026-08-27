@@ -1,0 +1,19 @@
+{
+  "name": "darkprint",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The DarkPrint registry from your terminal and from an agent session: clone, validate, bump, and an MCP stdio server.",
+  "license": "MIT",
+  "bin": {
+    "darkprint": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node ../cli/build.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

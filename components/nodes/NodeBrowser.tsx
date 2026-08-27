@@ -775,9 +775,9 @@ export function NodeBrowser({
           supposed to claim. */}
       {phase === UNPHASED && (
         <p className="border-l border-line-bright pl-4 text-sm leading-relaxed text-muted">
-          These cards name no phase, and that is a complete answer. The five phases
-          describe the shape of a blueprint, not every node inside one, intake,
-          retrieval, routing and hand-off are real work that none of the five names.
+          These cards name no phase. That is a complete answer. The five phases
+          describe the shape of a blueprint, not every node in it. Intake, retrieval,
+          routing and hand-off are real work. None of the five phases name them.
         </p>
       )}
 

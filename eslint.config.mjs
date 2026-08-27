@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The distributable T270 bundles with esbuild (`packages/cli/build.mjs`), gitignored by
+    // `packages/mcp/.gitignore`. It is generated, minifiable, third-party code in part — it
+    // carries a bundled `yaml` — and linting it reports 33 problems nobody here can act on.
+    // Added when the build first produced output: before T270 nothing ever ran that build,
+    // so the directory did not exist and the glob had nothing to match.
+    "packages/*/dist/**",
     // `.claude/skills/**` was ignored here while two third-party skills were vendored in
     // it, on the grounds that somebody else's source ships its own lint config and running
     // ours over it reports warnings nobody here can act on. Both were deleted on
@@ -24,6 +30,16 @@ const eslintConfig = defineConfig([
     // built. Linting somebody else's bundled prototype reports React 17 idioms nobody here
     // is going to fix. Matched by prefix so the next hand-off needs no edit here.
     "design_handoff_*/**",
+    // The claude.ai/design import (`.design-sync/`, see its NOTES.md). Three generated
+    // trees, none of them anybody's source: `ds-bundle/` is the converter's output,
+    // `.ds-sync/` is the staged converter itself plus its own node_modules, and
+    // `.design-sync/.cache/` holds the emitted .d.ts and the compiled stylesheet. Linting
+    // them reported 396 errors against generated declarations and vendored scripts, none
+    // of which anybody here can act on. The hand-written half of `.design-sync/` — the
+    // shims, the previews, the overrides fork — is deliberately still linted.
+    "ds-bundle/**",
+    ".ds-sync/**",
+    ".design-sync/.cache/**",
   ]),
 ]);
 

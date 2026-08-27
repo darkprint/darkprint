@@ -1,5 +1,5 @@
 /* ============================================================
-   `blueprint.dot`, tokenised and cut into blocks.
+   `topology.dot`, tokenised and cut into blocks.
 
    The pure half of `./DotBreakdown.tsx`: no React, no DOM, so the
    node suite can hold every claim in here to the nine files the
@@ -380,8 +380,8 @@ const HEADER_BODY_BARE =
 
 const HEADER_BODY_LAYOUT =
   "One directed graph per bundle, named on the opening line. The statements under it " +
-  "set Graphviz layout defaults — `rankdir`, `shape`, `style` — and DarkPrint reads none " +
-  "of them: the drawing above this listing is its own.";
+  "set Graphviz layout defaults: `rankdir`, `shape`, `style`. DarkPrint reads none of " +
+  "them. The drawing above this listing is its own.";
 
 /* `grounded-research-desk` is the only blueprint in the archive that opens a
    `subgraph cluster_…`, and without a shape of its own it took the opening line's title
@@ -416,7 +416,7 @@ const EDGE_BODY_DASHED =
 
 const EDGE_BODY_LABEL =
   "`label` is what the author says an edge carries. It is drawn on the schematic and " +
-  "compared against nothing — the two port types decide what actually travels.";
+  "compared against nothing. The two port types decide what actually travels.";
 
 /** `planner, builder → tester`, `tester ⇄ debugger`, or a count when the shape has none. */
 function edgeTitle(edges: readonly Edge[]): string {

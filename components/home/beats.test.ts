@@ -16,15 +16,32 @@ const render = (component: React.ComponentType) =>
   renderToStaticMarkup(createElement(component));
 
 describe("the blueprint-first landing", () => {
-  it("opens with the product and the two user loops", () => {
+  it("opens with the product, and the fold's action is the account", () => {
     const html = render(Wordmark);
     const text = plainText(html);
     expect(text).toContain("Reusable blueprints for agent workflows.");
-    expect(text).toContain("Find a blueprint");
-    expect(text).toContain("Create a blueprint");
+
+    /* The fold used to carry "Find a blueprint" / "Create a blueprint". The owner replaced
+       that pair with the sign-in choice (signed out) or the reader's own name (signed in),
+       so those two labels are no longer this component's to make — see `HeroAction`.
+
+       What is asserted instead is that the slot renders SOMETHING a reader can act on
+       rather than collapsing: `HeroAction`'s server-rendered frame is its `loading`
+       placeholder, deliberately claimless, so the markup carries the placeholder and not a
+       sentence about who the reader is. A component that rendered "Sign in" here would be
+       telling a signed-in reader something false for a frame, which is the failure
+       `components/upload/session.ts` documents at length. */
+    expect(html).toContain("animate-pulse");
+    expect(text).not.toContain("Welcome,");
+    expect(text).not.toContain("Sign in with");
+  });
+
+  it("keeps both loops reachable from the landing, in the section that now ends it", () => {
+    /* The pair the fold gave up. `SectionLifecycle` is the ending since `SectionDoors` was
+       deleted, and two of its five panels are these exact routes — so this cell is what
+       makes the hero change a MOVE rather than a removal. */
+    const html = render(SectionLifecycle);
     expect(html).toContain('href="/blueprints"');
-    // The two loops are find and create, and create is the authoring skill at `/skill`
-    // since the `/build` split. The sandbox that kept the old path is a Learn stop.
     expect(html).toContain('href="/skill"');
   });
 
@@ -161,7 +178,11 @@ describe("the blueprint-first landing", () => {
     expect(plainText(html)).toContain(
       "A blueprint pins the handoffs, loops, checkpoints, and deliberate absences that make a workflow reusable.",
     );
-    expect(html).toContain('href="/blueprints/starter-software-factory"');
+    /* D-261-05, under AC5's own carve: B-09 moved this URL, so the literal moves with the
+       emitter rather than the emitter riding its own 308. Spelled out rather than imported
+       from `lib/href.ts` — an expected value taken from the module under test asserts only
+       that the module agrees with itself. */
+    expect(html).toContain('href="/blueprints/darkprint/starter-software-factory"');
   });
 
   it("shows a card as a contract with inputs, outputs, and prohibitions", () => {
@@ -210,7 +231,7 @@ describe("the blueprint-first landing", () => {
       "/what-a-blueprint-is",
       "/blueprints",
       "/skill",
-      "/blueprints/starter-software-factory#use-this-blueprint",
+      "/blueprints/darkprint/starter-software-factory#use-this-blueprint",
       "/upload",
     ]) {
       expect(html, `the ${href} panel lost its link`).toContain(`href="${href}"`);

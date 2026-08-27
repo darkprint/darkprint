@@ -154,7 +154,7 @@ export default function TowardsPage() {
                factory purely by what is ABSENT from it, which reads as fewer rules rather
                than more, and the second half of this very page is a filter against exactly
                that misreading. Unattended is the consequence; the harness is the cause. */
-            lead="A dark factory is one shape a blueprint can take: a graph where planning, implementation, testing, debugging and deployment all run unattended, inside a harness somebody wrote. Unattended is what it costs to build, not what it saves. It is a special case and not a summit: a graph with a person standing in it is a first-class blueprint here, and is shelved beside the rest."
+            lead="A dark factory is one shape a blueprint can take. It is a graph where planning, implementation, testing, debugging and deployment all run unattended, inside a harness somebody wrote. Unattended is a cost of building it, not a saving. It is a special case, not a summit. A graph with a person standing in it is a first-class blueprint here, and it is shelved beside the rest."
           />
           {/* This slot held "Two different things get called autonomy here, and only one of
               them is a number …" and the author asked it out on 2026-08-08.
@@ -169,7 +169,7 @@ export default function TowardsPage() {
               `text-fg` across the whole line rather than on a clause: it is one sentence, it
               is the page's premise, and it is the only body prose in this header. */}
           <p className="mt-6 text-[15px] leading-[1.7] text-fg">
-            A dark factory runs with nobody watching it, so the design rests on one property
+            A dark factory runs with nobody watching it. So the design rests on one property
             of the work: whether something other than your judgement can tell the graph it
             is finished.
           </p>

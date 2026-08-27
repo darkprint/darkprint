@@ -123,7 +123,7 @@ export function RunSystemMap() {
         </div>
 
         <figcaption className="mt-5 border-t border-line pt-4 text-sm leading-relaxed text-muted">
-          The blueprint is loaded by a harness. The harness produces run evidence; an eval
+          A harness loads the blueprint. The harness produces run evidence. An eval
           applies the rubric to that evidence. DarkPrint publishes only the blueprint.
         </figcaption>
       </figure>

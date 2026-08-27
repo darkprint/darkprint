@@ -70,6 +70,21 @@ export type DiagnosticCode =
   // for a reader (see `NodeCard.cannot`), and a code that fired on them would report a
   // legal card as broken.
   | "bundle/prohibition-violated"
+  // §4's bump rule, applied to a blueprint rather than to a card. A blueprint's diff is
+  // its DOT plus the set of card refs it pins, and a release declaring a smaller bump than
+  // that diff implies is refused. Namespaced `bundle/` rather than `blueprint/` because
+  // that is the namespace this union gives a bundle, and `diagnostics.test.ts` enforces it.
+  | "bundle/version-bump-too-small"
+  // COMPATIBILITY (format rename, topology.dot replaces blueprint.dot): raised by the
+  // upload classifier, not by `resolveBundle` — a `Bundle` carries one `dot: string` with
+  // no filename of its own, so a dropped-folder concern like "which of two .dot files did
+  // we read" cannot be reported from in here. Declared in this shared union anyway, since
+  // `Diagnostic[]` is how every stage of this app reports a user-data problem and the
+  // upload flow already merges non-engine diagnostics into the same list (see
+  // `components/upload/UploadFlow.tsx`'s `ontology.validate()` merge). Fires only when a
+  // dropped folder carries BOTH names — `blueprint.dot` alone still resolves silently, as
+  // it always did before the rename.
+  | "bundle/legacy-topology-file"
   // attractor/ — the DOT subset Attractor reads (doc 1 §0.1.1, doc 2 §11 item 0).
   // Every one of these is a `warning`: a bundle that breaks an Attractor rule is
   // still a valid DarkPrint bundle, it just will not run under Attractor, and the
@@ -100,6 +115,9 @@ export type DiagnosticCode =
   // Doc 3 §5 subtracts a marker's weight, so a negative one is a credit, not a cheap
   // marker: a local term could cancel a core one. Reported, and counted as unweighted.
   | "ontology/local-marker-bad-weight"
+  // The same rule for a vocabulary version: removing a term or narrowing a `broader` chain
+  // is major, adding one is minor, and a release declaring less than it did is refused.
+  | "ontology/version-bump-too-small"
   // analysis/
   | "analysis/empty-graph"
   // Doc 3 §6 divides by *nodi totali*, and a node whose card is not in the bundle has no
@@ -132,7 +150,7 @@ export type DiagnosticCode =
 
 /** Where a diagnostic points. Every field is optional — a bundle-wide problem has none. */
 export interface DiagnosticLocation {
-  /** Bundle-relative file, e.g. "blueprint.dot" or "cards/solver@1.2.0.yaml". */
+  /** Bundle-relative file, e.g. "topology.dot" or "cards/solver@1.2.0.yaml". */
   file?: string;
   /** 1-based. */
   line?: number;

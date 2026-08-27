@@ -74,7 +74,7 @@ import {
 } from "animejs";
 
 import { Logo } from "@/components/site/Logo";
-import { ButtonLink } from "@/components/ui/Button";
+import { HeroAction } from "./HeroAction";
 import { FLOW, FLOW_SELECTOR, FlowEdge } from "@/components/viz";
 import { EASE_OUT } from "@/components/viz/easing";
 import { useIsomorphicLayoutEffect, useReveal } from "@/components/viz/useReveal";
@@ -538,21 +538,20 @@ export function Wordmark() {
           clock moves, and the last thing to arrive is still everything a reader can act on,
           together. */}
       <div data-mark="cta" className="mt-8 flex flex-col items-center gap-7">
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <ButtonLink href="/blueprints" variant="primary" size="lg">
-          Find a blueprint
-        </ButtonLink>
-        {/* "Design your own". The route's `h1`, its nav row and beat 5's door all say
-            "design"; this button was the last surface still saying "build", and one act
-            wearing two verbs across a single scroll is the reader's problem, not the
-            copy's. */}
-        {/* `/skill`, not `/build`, since the split on 2026-08-10: creating a blueprint is
-            the authoring skill and the goal brief, and both live there now. `/build` is the
-            worked sandbox, which is a Learn stop rather than the answer to this button. */}
-        <ButtonLink href="/skill" variant="outline" size="lg">
-          Create a blueprint
-        </ButtonLink>
-      </div>
+      {/* Per reader: the two providers when signed out, the reader's own name when signed
+          in. The owner's instruction, replacing the two route buttons that stood here.
+
+          Neither destination is lost: `SectionLifecycle` closes the page with five panels
+          and two of them are these exact routes, `/blueprints` and `/skill`, each with the
+          sentence and picture that say what it is. (The comment above still names
+          `SectionDoors` as the mirror; that section was deleted when the lifecycle panels
+          became the ending, and the routes moved into them.) What changes is what the FOLD
+          leads with, and for a reader with no account that is now the account.
+
+          A CLIENT component, and that is the whole reason it is one: `app/page.tsx` is
+          static and must stay static, so the session is read in the browser exactly as
+          `SiteHeader` reads it. See `HeroAction`'s own header. */}
+      <HeroAction />
 
         {/* The way down, on the author's instruction: "add also a small arrow pointing down
             below the buttons".

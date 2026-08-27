@@ -185,7 +185,7 @@ const GROUPS: readonly Group[] = [
     reads: "01 to 03",
     moves: "The task changes",
     what:
-      "A no names something the work has not got yet: a check nobody wrote, a target nobody decided. Supply it, or make the task small enough to have edges, and ask the question again.",
+      "A no names something missing from the work: a check nobody wrote, or a target nobody decided. Supply it, or shrink the task until it has clear edges. Then ask the question again.",
     rows: [
       {
         id: "verdict",
@@ -213,7 +213,7 @@ const GROUPS: readonly Group[] = [
     moves: "The graph changes",
     accent: true,
     what:
-      "A no names nothing missing. The task stays as it is and the drawing moves instead: a person stands at the step where a mistake stops being cheap, with everything upstream of them running unattended.",
+      "A no does not name anything missing. The task stays as it is. Instead, the drawing changes: a person stands at the step where a mistake stops being cheap, and everything upstream of them runs unattended.",
     rows: [
       {
         id: "blast",
@@ -358,9 +358,8 @@ export function WhichTasksGlance() {
             page, and the failure mode is the same shape — turn four questions into a score
             and people optimise the score. */}
         <p className="border-t border-line pt-3 text-xs leading-relaxed text-dim">
-          All four yes and the task is a candidate. They are not points: three out of four
-          is not a score, and a no is the next thing to do rather than a verdict on the
-          work.
+          All four yes and the task is a candidate. These are not points. Three out of four
+          is not a score. A no is the next thing to do, not a verdict on the work.
         </p>
       </figure>
 
@@ -372,7 +371,7 @@ export function WhichTasksGlance() {
       {/* No `.prose-lane`, on the author's instruction 2026-08-07: this runs the full
           width of the column. */}
       <p className="text-sm leading-relaxed text-muted">
-        A dark factory runs with nobody watching it, so the design rests on one property of
+        A dark factory runs with nobody watching it. So the design rests on one property of
         the work: whether something other than your judgement can tell the graph it is
         finished.
       </p>

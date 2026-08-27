@@ -234,7 +234,7 @@ export function starterDot(choices: StarterChoices): string {
 
   if (human) {
     // Doc 2 §1.1 reaches into this comment. It is read twice — in the DOT pane on
-    // /build and in `blueprint.dot` inside the downloaded folder — so an ordinal here is
+    // /build and in `topology.dot` inside the downloaded folder — so an ordinal here is
     // an autonomy number on a user-facing surface, and "from 4 to 3" frames the person
     // as a subtraction. The class says the same fact and ranks nothing, which is the
     // wording the manifest description and the approver card already carry.

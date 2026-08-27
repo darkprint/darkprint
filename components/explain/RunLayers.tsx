@@ -120,35 +120,38 @@ export const LAYERS = [
     id: "blueprint",
     role: "the specification",
     body:
-      "The graph and the cards it pins: which agents exist, what each is handed, what each " +
-      "is kept away from. Text, versioned, checkable, and the only one of the four you " +
-      "download from here.",
+      "The graph and the cards it pins define which agents exist, what each agent is " +
+      "handed, and what each agent is kept away from. It is text. It is versioned and " +
+      "checkable. It is the only one of the four you download from here.",
   },
   {
     id: "harness",
     role: "the agent's runtime",
     body:
-      "What runs the loop: it dispatches the tools, manages the context, keeps the session " +
-      "state and enforces the safety invariants. An agent is a model with tools, memory and " +
-      "state acting in that loop; the harness is what the loop runs on. You bring your own.",
+      "This runs the loop. It dispatches the tools, manages the context, keeps the " +
+      "session state, and enforces the safety invariants. An agent is a model with " +
+      "tools, memory and state acting in that loop. The harness is what the loop runs " +
+      "on. You bring your own.",
   },
   {
     id: "rubric",
     role: "the scoring schema",
     body:
-      "The criteria a result is graded against, several at once, each with a scale: what " +
-      "turns “good” into something with an answer. Deterministic checks, a judge model, or " +
-      "both. It is written down before the run, which is what makes two runs comparable, " +
-      "and kept away from the harness: a system that can read its own criteria optimises " +
-      "for them rather than for the work they stood in for.",
+      "These are the criteria a result is graded against. Several apply at once, each " +
+      "with a scale, so “good” has a gradable answer: deterministic checks, a judge " +
+      "model, or both. The criteria are written down before the run, so two runs can " +
+      "be compared. They are kept away from the harness: a system that can read its " +
+      "own criteria optimises for the criteria rather than for the work they stood in " +
+      "for.",
   },
   {
     id: "eval",
     role: "the measurement",
     body:
-      "Running the blueprint through the harness and grading what comes back. Not a test of " +
-      "one exact output: an eval asks whether behaviour is acceptable across a distribution " +
-      "of inputs, and reports it in aggregate. It happens offline, before anything ships.",
+      "Running the blueprint through the harness and grading what comes back. An eval " +
+      "is not a test of one exact output. It asks whether behaviour is acceptable " +
+      "across a distribution of inputs, and reports the result in aggregate. It " +
+      "happens offline, before anything ships.",
   },
 ] as const;
 

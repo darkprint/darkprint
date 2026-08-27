@@ -259,7 +259,7 @@ export function SkeletonPane({
         <p className="px-4 py-6 text-sm leading-relaxed text-muted">
           The DOT pins a card for{" "}
           <code className="font-mono text-[12px] text-fg">{focus.node.nodeId}</code> that
-          this bundle does not carry, so there is no document to lay over the slots. The
+          this bundle does not carry. There is no document to lay over the slots. The
           resolver reports it against the line that pins it.
         </p>
       ) : (
@@ -453,12 +453,12 @@ export function SkeletonPane({
             <span className="font-mono text-copper-line" aria-hidden>
               ▪
             </span>{" "}
-            the card writes a value.{" "}
+            the card writes a value,{" "}
             <span className="font-mono" aria-hidden>
               ◌
             </span>{" "}
-            it does not, which is an answer as much as the other. Every row opens onto
-            what its field is for, and a value cut off at two lines finishes there. Pinned
+            or it does not. Either way counts as an answer. Each row shows what its
+            field is for. A value cut off at two lines ends there. Pinned
             by <Pins model={model} ref_={card.ref} />.
           </p>
         </>

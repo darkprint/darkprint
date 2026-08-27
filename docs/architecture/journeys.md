@@ -207,14 +207,15 @@ sequenceDiagram
 ```mermaid
 flowchart TD
   detail["/blueprints/:slug"]
-  download["Download the bundle:\nDOT, cards, README.md, AGENTS.md, factory.dot"]
+  download["Download the bundle:\ntopology.dot, cards, README.md"]
   onDisk["Folder lands on the user's machine"]
   ownHarness{"Point the user's own harness at the folder\n(Claude Code, Attractor, etc.)"}
-  runs["Harness executes factory.dot\non the user's machine"]
+  compiles["Harness compiles topology.dot + cards\ninto a runnable pipeline"]
+  runs["Harness executes it\non the user's machine"]
   stays["Results and any run report\nstay on the user's machine"]
   reportGap["No path back to DarkPrint\n(run reporting is unbuilt)"]
 
-  detail --> download --> onDisk --> ownHarness --> runs --> stays --> reportGap
+  detail --> download --> onDisk --> ownHarness --> compiles --> runs --> stays --> reportGap
 ```
 
 ```mermaid
@@ -228,55 +229,173 @@ sequenceDiagram
   WebUI->>API: blueprint + source [SEAM-03, SEAM-04]
   API-->>WebUI: view model
   User->>WebUI: download the bundle
-  WebUI-->>Machine: DOT + cards [SEAM-19], factory.dot [SEAM-24], README.md/AGENTS.md [SEAM-25]
+  WebUI-->>Machine: topology.dot + cards + README.md [SEAM-19]
   Note over Machine: DarkPrint distributes files. It never runs them (D-03).
-  Machine->>Machine: user's own harness executes factory.dot — entirely outside this app
+  Machine->>Machine: user's own harness compiles topology.dot + cards into a\nrunnable pipeline and executes it — entirely outside this app
   Machine--)API: (future, unbuilt) submit a run report [SEAM-84]
   Note over WebUI,API: the word is "reported", never "measured" — the platform\nnever observes a run even once SEAM-84 exists [SEAM-86]
 ```
 
 ---
 
-## 5.6 · Registering to unlock MCP access
+## 5.6 · Signing in and finishing an account
 
-There is no registration flow to diagram truthfully as a success path: no accounts exist
-anywhere in the repository (`lib/data/account.ts` is a single seeded fixture, not a
-signable-up table), and the MCP server itself is a design proposal with zero operations
-built (`app/mcp/page.tsx:163`, "Design proposal"). The journey below is the honest one — a
-reader looking for "register" finds nothing, and the MCP command on the page fails if run,
-because the package does not exist.
+Signing in is real and completes end to end, **through either of two providers** since
+2026-08-25: `GET /api/auth/github/login` or `GET /api/auth/google/login` starts B-02's
+OAuth dance, the callback exchanges the code, upserts the account and mints the session
+cookie. What the callback CANNOT do is choose a handle — T050 AC1 makes a session with
+`handle: null` "signed in and INCOMPLETE", because a handle is allocated once and reserved
+permanently (T070) and the registry may not pick one on a reader's behalf.
+
+That unfinished state used to have nowhere to go: the callback redirected to `/` and a
+reader arrived signed in with no visible difference from being signed out, having to find
+`/settings` unaided to discover the one field gating publishing. `/welcome` closes it — the
+callback sends a null-handle account there, and the route bounces a finished account back
+to `/`, so it is safe to link at any time.
+
+**Two providers, one account, when the address is proven.** A Google identity whose
+**verified** address already belongs to an account links to it (`resolveFromProvider`,
+`lib/server/accounts/identities.ts`) instead of minting a second one — so a reader who used
+GitHub in January and Google in March lands in the same place. An **unverified** address
+never links: that is the account-takeover path, and the cost of refusing is a duplicate
+account, which is recoverable.
+
+**Still not reachable from here:** the MCP server and the CLI are `private: true` and
+unpublished, so `npx -y darkprint mcp` fails for a reader even though both run locally
+against a dev server (`DARKPRINT_URL`). Registration does not unlock them; publishing to
+npm would.
 
 ```mermaid
 flowchart TD
-  entry["Open /mcp from the Design menu"]
-  proposal["Read the four proposed operations\nand six client config snippets"]
-  lookForAuth{"Look for “Register” or “Sign up”"}
-  none["No such control exists anywhere:\naccount menu has no sign-up row"]
-  authNote["MCP itself proposes “none” auth:\nread access to the registry, nothing else"]
-  copy["Copy the client config snippet anyway"]
-  runCmd["Run npx -y darkprint mcp\non the user's machine"]
-  fails["Fails: the darkprint package\ndoes not exist on npm"]
+  entry["Sign in with GitHub\n(header, /settings, or /welcome)"]
+  oauth["GET /api/auth/github/login\n302 to github.com, CSRF state cookie"]
+  callback["GET /api/auth/github/callback\nexchange code, upsertFromGitHub, mint session"]
+  hasHandle{"account.handle === null?"}
+  welcome["/welcome — choose your handle\ndisplay name offered, not required"]
+  check["GET /api/names/handles/{handle}\navailable | taken + suggestion | illegal"]
+  claim["PATCH /api/account/handle\nallocates the handle AND re-mints the cookie (D-50-06)"]
+  profile["PATCH /api/account/profile\ndisplay name, only when one was typed"]
+  home["/ — signed in and complete"]
+  publish["/upload can now publish:\nownerHandle comes from session.handle"]
+  myShelf["/u/:handle — your own bundle shelf\n(Blueprints is the profile's index now, T280)"]
 
-  entry --> proposal --> lookForAuth
-  lookForAuth -->|search the site| none --> authNote
-  proposal --> copy --> runCmd --> fails
+  entry --> oauth --> callback --> hasHandle
+  hasHandle -->|"yes, first sign-in"| welcome --> check --> claim --> profile --> home
+  hasHandle -->|"no, returning"| home
+  home --> publish
+  home -->|"account menu"| myShelf
+```
+
+**Where a completed account's own content lives (T280).** Before this wave, `/u/[username]`
+was the profile's overview: pinned items and local terms only, with the reader's actual
+blueprints a click away on `/u/[username]/blueprints`. Blueprints took the segmentless slot
+instead — the account menu's own link now opens straight onto the shelf a signed-in reader
+came for, Pinned sitting above it rather than in front of it. §5.7 picks up from `myShelf`'s
+own `New bundle` button.
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant WebUI as Web UI
+  participant API as API
+  participant GitHub
+  participant DB as Postgres
+
+  User->>API: GET /api/auth/github/login
+  API-->>User: 302 to GitHub, state cookie [B-02]
+  User->>GitHub: authorize (scopes: read:user user:email)
+  GitHub-->>API: GET /api/auth/github/callback?code&state
+  API->>GitHub: exchange code for an identity
+  API->>DB: upsertFromGitHub(githubId, githubLogin)
+  DB-->>API: account, handle null on first sign-in
+  API-->>User: 302 /welcome + session cookie (handle: null)
+  User->>WebUI: GET /welcome
+  WebUI-->>User: the handle field, display name offered
+  User->>API: GET /api/names/handles/{candidate}
+  API-->>User: available, or taken with a free suggestion [T070]
+  User->>API: PATCH /api/account/handle
+  API->>DB: allocate + reserve the handle permanently
+  API-->>User: 200 AccountRecord + RE-MINTED cookie (handle set) [D-50-06]
+  User->>API: PATCH /api/account/profile (only if a name was typed)
+  User->>WebUI: land on / , signed in and complete
+```
+
+---
+
+## 5.7 · Creating a blueprint from a blank slate
+
+Added 2026-08-25 (T280, `0007_drafts`). Real end to end, over a complete account
+(§5.6): a blueprint may now exist as a row before it has a release — GitHub's empty-repo
+state — reserved on `/new`, built locally by whichever means the reader chooses, and
+published into the same slug from `/upload`. `publish()` on that last step is an APPEND
+to the bundle `/new` already created, not a second creation — `PublishResult.created` is
+`false` the whole way through this journey, and true only for a bundle `/upload` creates
+from a bare graph with no `/new` visit first (§5.4, unchanged).
+
+```mermaid
+flowchart TD
+  myShelf["/u/:handle\n(the profile's own bundle shelf, T280)"]
+  newPage["/new\nreserve a slug and a title"]
+  form["title, slug (debounced availability check),\nsummary, description, category, tags, visibility"]
+  createPost["POST /api/bundles/draft"]
+  draftLanding["/blueprints/:owner/:slug\nblueprint() undefined, draftBundle() answers: DraftLanding renders"]
+  threeWays{"Three ways in, GitHub's own empty-repo panel"}
+  skillPath["Point the blueprint-writing skill\nat your own goal"]
+  handPath["Copy the starter folder layout\nand write topology.dot + cards by hand"]
+  localBuild["A folder on the user's own machine:\ntopology.dot, cards/, README.md"]
+  uploadPinned["/upload?owner=&slug=\npinned to the exact draft (B6's prefill contract)"]
+  wizard["Steps 1-3: drop the folder or Load an example,\nvalidate in the tab — Details prefilled from the draft"]
+  publishStep["Step 4: Publish"]
+  detail["/blueprints/:owner/:slug\nblueprint() now resolves — the draft branch is gone"]
+  visibilitySwitch["VisibilitySwitch\n(owner, any time — draft or released)"]
+
+  myShelf -->|"New bundle"| newPage --> form --> createPost --> draftLanding
+  draftLanding --> threeWays
+  threeWays -->|"Publish your first release"| uploadPinned
+  threeWays -->|"install the skill"| skillPath --> localBuild
+  threeWays -->|"start from the printed layout"| handPath --> localBuild
+  localBuild -->|"come back with a folder"| uploadPinned
+  uploadPinned --> wizard --> publishStep --> detail
+  draftLanding -->|"owner, any time"| visibilitySwitch
+  detail -->|"owner, any time"| visibilitySwitch
 ```
 
 ```mermaid
 sequenceDiagram
   actor User
   participant WebUI as Web UI
-  participant API as API (future)
+  participant API
+  participant DB as Postgres
   participant Machine as User machine
 
-  User->>WebUI: GET /mcp
-  Note over WebUI,API: static design proposal — no server exists [SEAM-87..93]
-  WebUI-->>User: four proposed operations, all marked "not built"
-  User->>WebUI: look for a "Register" / "Sign up" control
-  WebUI-->>User: none exists — no accounts anywhere in the repository
-  Note over WebUI: MCP's own auth proposal: "nothing to authorize today" [SEAM-92]
-  User->>WebUI: copy the npx command shown on the page
-  WebUI-->>Machine: command text only
-  Machine->>Machine: npx -y darkprint mcp
-  Machine--xMachine: fails — package does not exist [SEAM-87]
+  User->>WebUI: "New bundle" (profile shelf, or /skill's accounts row)
+  WebUI-->>User: GET /new
+  loop each keystroke in the slug field, debounced 350ms
+    WebUI->>API: GET /api/names/slugs/{owner}/{slug}
+    API-->>WebUI: available | taken + suggestion | illegal
+  end
+  User->>WebUI: Create blueprint
+  WebUI->>API: POST /api/bundles/draft [SEAM-114]
+  API->>DB: checkSlug, then createBundle — a bundle row, no release
+  DB-->>API: BundleRecord
+  API-->>WebUI: 200 { bundle: { owner, slug, visibility, title, createdAt } }
+  WebUI-->>User: redirect to /blueprints/{owner}/{slug}
+  Note over WebUI,API: blueprint() answers undefined, no release yet\ndraftBundle() answers the row just created — DraftLanding renders (B-03: absent and unreadable answer alike, so the same branch also covers a private draft nobody else may see)
+  User->>WebUI: "Publish your first release" (or install the skill, or copy the layout)
+  opt the build itself happens off-platform
+    Machine->>Machine: skill interview, or hand-authoring, produces\ntopology.dot + cards/ + README.md
+  end
+  User->>WebUI: GET /upload?owner={owner}&slug={slug} [SEAM-68]
+  WebUI->>API: draftBundle(actor, owner, slug) — ownership checked server-side (session.handle === owner)
+  API-->>WebUI: the draft's own title/summary/description/category/tags
+  WebUI-->>User: wizard steps 1-3, Details prefilled
+  User->>WebUI: drop the folder, review the validation, Publish
+  WebUI->>API: POST /api/bundles [SEAM-69]
+  API->>DB: publish() — APPENDS the first release to the existing bundle\n(created: false — the bundle already existed from /new)
+  DB-->>API: PublishResult
+  API-->>WebUI: 200 PublishResult
+  WebUI-->>User: /blueprints/{owner}/{slug} — the draft branch is gone, the bundle is live
+  User->>WebUI: (any time, draft or released) flip visibility
+  WebUI->>API: PATCH /api/bundles/{owner}/{slug}/visibility [SEAM-67]
+  API-->>WebUI: { bundle: { visibility, ... } }
 ```

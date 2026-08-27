@@ -21,10 +21,10 @@ import { bundleProgress } from "./progress";
 /**
  * The bundle-relative name every diagnostic on the topology is located against —
  * `lib/core/bundle/resolve.ts`'s own `DOT_FILE`. The source panel below wears it as its
- * title so a reader reading `blueprint.dot:2:3` in the validator report can see, without
+ * title so a reader reading `topology.dot:2:3` in the validator report can see, without
  * translating anything, which panel holds line 2.
  */
-const DOT_FILE = "blueprint.dot";
+const DOT_FILE = "topology.dot";
 
 function clamp(value: number, low: number, high: number): number {
   return value < low ? low : value > high ? high : value;
@@ -72,7 +72,7 @@ const LABEL = "label";
  * branch only, which put the DOT one click away exactly when nothing was wrong with it
  * and out of reach the moment a diagnostic cited a line of it. It is rendered for any
  * bundle that carries a topology now, open by default when the bundle was rejected, and
- * the cited lines are named above it so `blueprint.dot:2:3` and the gutter agree.
+ * the cited lines are named above it so `topology.dot:2:3` and the gutter agree.
  */
 export function ValidationReport({
   result,
@@ -266,14 +266,14 @@ export function ValidationReport({
       {!usable && (
         <div className="rounded-lg border border-line bg-surface-2/40 p-5">
           <h3 className="font-display text-xl font-semibold text-fg">
-            {unfinished ? "Not finished, and nothing wrong" : "No schematic and no scores"}
+            {unfinished ? "Not finished. Nothing wrong." : "No schematic and no scores"}
           </h3>
           <p className="prose-lane mt-4 text-sm leading-relaxed text-muted">
             {blueprint === undefined
               ? "The DOT could not be parsed into a directed graph, so there is no topology to draw and nothing to analyse. The source is open below, with the lines the validator named."
               : unfinished
-                ? `Your topology parsed and ${progress.placed} of its ${progress.total} nodes have their card. The rest are named below, one line each, and none of it is a defect: a blueprint is written a card at a time and this is what the middle of that looks like. The schematic and the two computed readings wait for the last card, because a number taken over nodes the engine could not open would have nothing behind it. Drop the folder again whenever you like.`
-                : "The bundle resolved far enough to report on, but it still carries errors. DarkPrint will not put a number on a graph whose references it could not check, fix the errors below and the schematic, the autonomy fraction and the security ledger appear here."}
+                ? `Your topology parsed. ${progress.placed} of its ${progress.total} nodes have their card. The rest are named below, one line each. None of that is a defect. A blueprint is written a card at a time, and this stage is normal. The schematic and the two computed readings wait for the last card, because a number taken over nodes the engine could not open would have no basis. Drop the folder again whenever you like.`
+                : "The bundle resolved far enough to report on, but it still has errors. DarkPrint will not put a number on a graph whose references it could not check. Fix the errors below. Then the schematic, the autonomy fraction and the security ledger appear here."}
           </p>
         </div>
       )}
@@ -359,7 +359,7 @@ export function ValidationReport({
 
       {/* ---------- the topology, whatever the verdict ----------
           This sat inside the branch above, so a reader told the problem was at
-          `blueprint.dot:2:3` was shown the file only in the case where nothing was wrong
+          `topology.dot:2:3` was shown the file only in the case where nothing was wrong
           with it. It is here now for any bundle that carries a topology at all, and it
           opens itself on a rejection: the fix starts by looking at the line. */}
       {source !== undefined && (

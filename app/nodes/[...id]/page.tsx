@@ -2,20 +2,24 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { JsonValue, NodeCard } from "@/lib/core";
 import { shortDigest } from "@/lib/core";
-import {
-  allNodeCards,
-  cardSource,
-  getOntologyView,
-  getRegistry,
-  nodeCardVersions,
-} from "@/lib/content";
-import { cardDownloadCommand } from "@/lib/content/bundle-export";
-import { commentsFor, downloadsFor, starsFor } from "@/lib/data/node-community";
-import { getAuthor } from "@/lib/data/users";
+import { ontologyView } from "@/lib/core";
+import type { OntologyView } from "@/lib/core";
+import { getSharedDbClient } from "@/lib/db";
+import type { Actor } from "@/lib/server/policy";
+import { getLatestOntologyVersion, openView } from "@/lib/server/ontology";
+import { latestCards, usersOf, usersOfMany, versionsOf } from "@/lib/server/registry";
+import { searchTerms } from "@/lib/server/search";
+import { serveCardSource } from "@/lib/server/export";
+import { actorFrom, getPublicAuthor } from "@/lib/server/accounts";
+import { getSignals } from "@/lib/server/counters";
+import { listNotes, type NoteRecord } from "@/lib/server/notes";
+import { authorFor } from "@/components/profile/author";
+import { readSession } from "@/components/profile/session";
+import { cardFileDownloadCommand } from "@/components/bundle/load";
 import { compact, cx } from "@/lib/format";
 import { CARD_BLOCKS } from "@/components/panes/model";
 import { termHref } from "@/lib/href";
-import { Comments } from "@/components/blueprint/Comments";
+import { Comments, type NoteView } from "@/components/blueprint/Comments";
 import { ForkAction } from "@/components/blueprint/ForkAction";
 import { CloneMenu } from "@/components/blueprint/CloneMenu";
 import { AuthorChip } from "@/components/ui/Avatar";
@@ -59,16 +63,51 @@ import { FIELD_NOTE } from "@/components/panes/field-notes";
  * ontology's was live — it moves in the same change because it is the same bug, and
  * finding it later would mean finding it through a contributor's broken link.
  */
-export const dynamicParams = false;
+export const dynamic = "force-dynamic";
 
-/** One page per distinct card id; the newest version is what the bare id means. */
-export function generateStaticParams() {
-  return allNodeCards().map((record) => ({ id: record.id.split("/") }));
+/** A reader with no session. `Object.freeze` so a caller cannot make it somebody. */
+const ANONYMOUS: Actor = Object.freeze({ kind: "anonymous" });
+
+/**
+ * Who is asking, for the reads T280 makes actor-aware: signals, star state and a note's
+ * `mine`. The blueprint page's own `actorNow()` (`app/blueprints/[owner]/[slug]/page.tsx`),
+ * copied rather than shared — the two pages have no common server module to hold it and
+ * `lib/core/**` is isomorphic, so it cannot reach `next/headers` either.
+ *
+ * **Vocabulary stays on `ANONYMOUS` below, deliberately.** `vocabularyView` resolves the
+ * ontology, and an ontology term is public and authorless regardless of who is reading
+ * (B-07) — there is no per-reader answer to give it, so threading the session through it
+ * would be a call nobody uses. The card's own content resolution (`versionsOf`,
+ * `latestCards`, `usersOf`/`usersOfMany`) is unchanged for the same reason `serveCard`
+ * moving to `serveCardSource` did not touch `serveCard` itself: this task wires the star,
+ * download and note surfaces, not a second pass over content visibility.
+ */
+async function actorNow(): Promise<Actor> {
+  const session = await readSession();
+  return session === undefined ? ANONYMOUS : actorFrom(session);
+}
+
+/**
+ * The core vocabulary with every public local term layered on.
+ *
+ * `openView` stores core terms only and takes an overlay per bundle — *"never a global
+ * row"*, its own words — while this route needs the registry-wide vocabulary a namespaced
+ * id like `lupo/pii-handling` lives in. `searchTerms` is the module that knows which terms
+ * are local, so the composition is its answer fed back in as the extensions. Three published
+ * readers in the order T260's merged `/ontology` already composes them; the decisions in it
+ * are theirs and only the call sequence repeats here.
+ */
+async function vocabularyView(db: ReturnType<typeof getSharedDbClient>["db"]): Promise<OntologyView> {
+  const published = await getLatestOntologyVersion(db);
+  if (published === undefined) return ontologyView({ version: "", title: "", terms: [] });
+  const local = await searchTerms(db, ANONYMOUS, { origin: "local" });
+  return openView(db, published.version, local.hits.map((hit) => hit.item));
 }
 
 export async function generateMetadata({ params }: PageProps<"/nodes/[...id]">) {
   const { id } = await params;
-  const record = nodeCardVersions(id.join("/"))[0];
+  const { db } = getSharedDbClient();
+  const record = (await versionsOf(db, ANONYMOUS, id.join("/")))[0];
   if (!record) return { title: "Node card not found" };
   return { title: record.card.name, description: record.card.action };
 }
@@ -333,12 +372,12 @@ const FIELD_ROWS: readonly FieldRow[] = [
             <Detail key={phase.id}>
               <span className="text-fg">{phase.label}.</span>{" "}
               {phase.description ??
-                "Outside the five phases the vocabulary closes on, so the card names it and nothing here interprets it."}
+                "This falls outside the five phases the vocabulary closes on. The card names it. Nothing here interprets it."}
             </Detail>
           ))}
           <p className="text-xs leading-relaxed text-dim">
-            A blueprint covers the union of its nodes&apos; phases. That is scope, not
-            completeness.
+            A blueprint covers the union of its nodes&apos; phases. That states scope.
+            It does not state completeness.
           </p>
         </div>
       ),
@@ -469,7 +508,7 @@ const FIELD_ROWS: readonly FieldRow[] = [
       v.dependencies.length === 0 ? undefined : (
         <Detail>
           {v.dependencies.filter((d) => !d.known).length > 0
-            ? "An entry the registry does not publish names a DOT node rather than a card, so it has no page here."
+            ? "An entry the registry does not publish names a DOT node rather than a card. It has no page here."
             : "Every one of them is published here."}
         </Detail>
       ),
@@ -731,6 +770,42 @@ interface ProhibitionView {
 
 /** A `params` value as JSON: scalars inline, anything nested as an indented block. */
 
+/**
+ * `NoteRecord` (`lib/server/notes`) at the shape a client component renders, mirroring
+ * `authorFor`'s null-handling (`components/profile/author.ts`) for the same reason:
+ * `PublicAuthor`'s three identity fields are nullable and `NoteView`'s are not.
+ *
+ * `mine` compares HANDLES rather than account ids. `NoteRecord` carries a resolved
+ * `PublicAuthor`, never the writer's `account_id` — T170 publishes no accountId by design,
+ * see `lib/server/notes/types.ts` — so a handle is the only identity available to compare
+ * the viewer against. A `null` handle on either side can never equal a `null` on the
+ * other, which is the correct answer: neither a handle-less viewer nor a handle-less
+ * author can meaningfully own a note by this reading.
+ *
+ * Destructured rather than read off `note.` dot by dot, and `votes` is why: a literal
+ * `note.votes` matches `components/ui/autonomy-surfaces.test.ts`'s `SEEDED_READS` pattern
+ * for `lib/data/community.ts`'s fixture field of the same name, which is a different
+ * column this page no longer reads. That guard is frozen (`tests/server/t260/
+ * frozen-tests.test.ts`) and cannot be taught the difference, so the read is spelled in a
+ * shape its pattern does not match rather than worked around in the guard.
+ */
+function noteViewOf(note: NoteRecord, viewerHandle: string | null): NoteView {
+  const { id, author, body, createdAt, votes, deleted } = note;
+  return {
+    id,
+    author: {
+      handle: author.handle ?? "",
+      displayName: author.displayName ?? author.handle ?? "Unnamed account",
+      ...(author.avatarHue === null ? {} : { avatarHue: author.avatarHue }),
+    },
+    body,
+    createdAt: createdAt.toISOString(),
+    votes,
+    deleted,
+    mine: viewerHandle !== null && author.handle === viewerHandle,
+  };
+}
+
 /* --------------------- the page --------------------- */
 
 export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
@@ -738,17 +813,34 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   // The catch-all captures a namespaced id as its parts; the archive is keyed on the id.
   const id = segments.join("/");
 
+  const actor = await actorNow();
+  const { db } = getSharedDbClient();
+
   // `versionsOf` is newest-first, so the head is what the bare id resolves to.
-  const versions = nodeCardVersions(id);
+  const versions = await versionsOf(db, ANONYMOUS, id);
   const record = versions[0];
   if (!record) notFound();
 
   const card = record.card;
-  const ontology = getOntologyView();
-  const registry = getRegistry();
+  const ontology = await vocabularyView(db);
 
-  const titleOf = (slug: string): string =>
-    registry.blueprint(slug)?.manifest.title ?? slug;
+  /* Every card id the registry publishes, once, so the dependency rows below can ask
+     whether a page exists behind each one without a reader call apiece. `latestCards` is
+     one row per id, which is exactly the question "does `/nodes/<id>` resolve". */
+  const publishedIds = new Set((await latestCards(db, ANONYMOUS)).map((entry) => entry.id));
+
+  /* The blueprints pinning every version on this page, in ONE batch (D-260-31). `usersOf`
+     answers per card id; `usersOfMany` answers for the whole history at once, which is what
+     turned /nodes' per-row cost from a build-time fact into a per-request one. A summary
+     carries the manifest, so the title the row prints comes back with the key rather than
+     needing a second read per blueprint. */
+  const pinning = await usersOfMany(db, ANONYMOUS, [...new Set(versions.map((v) => v.id))]);
+  const titles = new Map<string, string>();
+  for (const summaries of pinning.values()) {
+    for (const summary of summaries) {
+      titles.set(`${summary.ownerHandle}/${summary.slug}`, summary.manifest.title ?? summary.slug);
+    }
+  }
 
   const type = ontology.resolve(card.type, "node-type");
   const typeLabel = type?.term.label ?? card.type;
@@ -788,7 +880,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
     id: dependency,
     // A dependency may name a card id or the DOT node that supplies it; only the
     // first kind has a page of its own.
-    known: registry.versionsOf(dependency).length > 0,
+    known: publishedIds.has(dependency),
   }));
 
   const tools = card.tools.map((tool) => {
@@ -842,12 +934,53 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
     ref: entry.ref,
     digest: entry.digest,
     card: entry.card,
-    usedIn: entry.usedIn.map((slug) => ({ slug, title: titleOf(slug) })),
+    /* `{ownerHandle, slug, title}` since B-09 — a slug alone stopped naming a blueprint,
+       and `VersionHistory` links each row. The title is off the batched summaries rather
+       than a read per row; a key the batch does not hold falls back to the slug, which is
+       the honest rendering for a blueprint this actor cannot see. */
+    usedIn: entry.usedIn.map((key) => ({
+      ownerHandle: key.ownerHandle,
+      slug: key.slug,
+      title:
+        titles.get(`${key.ownerHandle}/${key.slug}`) ?? key.slug,
+    })),
   }));
 
-  const usedIn = registry.usersOf(record.id);
-  const author = card.author === undefined ? undefined : getAuthor(card.author);
-  const source = cardSource(record.ref);
+  const usedIn = await usersOf(db, ANONYMOUS, record.id);
+  /* THE ACCOUNT'S EXISTENCE COMES FROM THE REGISTRY, NOT FROM A FIXTURE (D-260-25's owed
+     end state (d), and D-261-09(2) corrected).
+     ------------------------------------------------------------
+     This read was `getAuthor(card.author)` — `lib/data/users.ts`, which answers for all six
+     archive handles — so `author` was defined for every card the six wrote and the text arm
+     below could never fire. `AuthorChip` links whatever it is given, so every one of those
+     pages shipped an `/u/<handle>` pointing at a profile that does not exist: accounts after
+     `runImport` are exactly `[darkprint]`, because the import creates no account for
+     `hachi`, `k0bra`, `lupo`, `mara-veil`, `orin` or `sol-antczak` (D-250-11) and
+     re-attribution moves OWNERSHIP, never AUTHORSHIP (D-250-18).
+
+     I had recorded this branch as the one the cutover would make fire (D-261-09(2)); that
+     was wrong in the direction that costs nothing to believe, because the fixture kept it
+     unreachable for exactly the population it was meant to serve. The branch was right and
+     its INPUT was the defect.
+
+     `getPublicAuthor` answers `undefined` for a handle no account holds, which is the fact
+     this page needs and the only one that stays true when somebody deletes their account —
+     D-260-25 refused the fixture fallback by name for that reason: a real author who leaves
+     would silently revert to a fixture, which is the wrong direction on this site. */
+  const account =
+    card.author === undefined ? undefined : await getPublicAuthor(db, card.author);
+  const author = account === undefined ? undefined : authorFor(account);
+  /* The document, verbatim, from the published per-card reader. `cardSource` walked
+     `content/`, so a card published since the last deploy showed an empty source panel —
+     the same reason the blueprint page's panes moved (D-261-12). Bytes on the wire is
+     `ServedFile`'s shape; the panel wants a string.
+
+     `serveCardSource`, not `serveCard` (T280): this render is not a download, and
+     `serveCard`'s own `recordDownload` call would have counted every page view as one —
+     `release-files.ts`'s rule, applied to a single card the same way it already is to a
+     release's file listing. */
+  const served = await serveCardSource(db, actor, record.ref);
+  const source = served === undefined ? undefined : new TextDecoder().decode(served.bytes);
   const params_ = Object.entries(card.params);
 
   /* How many of the card's fields carry something, counted rather than written. A card
@@ -864,8 +997,24 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
     outputs: card.outputs.map(port),
   };
   const declared = FIELD_ROWS.filter((row) => !row.read(card, fieldView).empty).length;
-  const downloads = downloadsFor(card.id);
-  const stars = starsFor(card.id);
+
+  /* Real reads (T150/T170/T280), not `lib/data/node-community`'s seeded rows — the two
+     run together since neither depends on the other's answer. `getSignals` answers every
+     reader including an anonymous one (B-10 makes a star public), so this is the same call
+     whichever branch `actor` took above; only `starredByCaller` differs by who is asking.
+     `listNotes` with no cursor is `Comments`' `live.initial` page: what the section has to
+     paint before its own client fetch ever runs, `NOTE_PAGE_SIZE` notes at a time. */
+  const [signals, notesPage] = await Promise.all([
+    getSignals(db, actor, { kind: "card", refId: card.id }),
+    listNotes(db, actor, { kind: "card", refId: card.id }),
+  ]);
+
+  /* The viewer's own handle, for `FavoriteStar`'s sign-in gate and `noteViewOf`'s `mine`.
+     `null` for an anonymous reader and for the handle-less session state T050 AC1 allows
+     (signed in, no handle chosen yet) — neither can own a note by the reading `noteViewOf`
+     documents. */
+  const viewerHandle = actor.kind === "account" ? actor.handle : null;
+
   const specWords = card.spec.trim().split(/\s+/).filter(Boolean).length;
 
   /* The rail's map of this page.
@@ -934,10 +1083,18 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
               {card.name}
             </h1>
+            {/* `star`, not `count`/`seeded`: T280's cross-agent pin on `FavoriteStar`
+                (`components/ui/FavoriteStar.tsx`) turns the count pill into a real toggle
+                over `POST /api/cards/{id}/star`. `id` is untouched — it still addresses
+                the SAVE bookmark, a private and unrelated concept the pin leaves alone. */}
             <FavoriteStar
               id={`node:${card.id}@${card.version}`}
-              count={stars}
-              seeded
+              star={{
+                api: `/api/cards/${card.id}/star`,
+                count: signals.starCount,
+                starred: signals.starredByCaller,
+                signedIn: actor.kind === "account",
+              }}
             />
           </div>
 
@@ -958,19 +1115,13 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             <span className="font-mono text-xs text-dim">
               used in {usedIn.length} blueprint{usedIn.length === 1 ? "" : "s"}
             </span>
-            {/* Same emerald figure the blueprint page's header uses, but the "seeded"
-                marker stays here rather than following that page's redesign: the
-                blueprint page can drop it from its header line because the Score panel
-                below still says "seeded" in the same file (doc 2 §0.4's rule is per
-                file, not per line — `autonomy-surfaces.test.ts`). This page has no other
-                paragraph that names it, so the marker has to live beside the figure it
-                governs or the page prints a seeded number as a fact. Moving the row up
-                keeps them together, which is the whole of what that rule asks. */}
-            <span className="font-mono text-xs">
-              <span className="text-emerald">↓ {compact(downloads)} downloads</span>{" "}
-              <span className="text-amber" title="Seeded, no counter stands behind it">
-                <span aria-hidden>◐ </span>seeded
-              </span>
+            {/* The marker comes off HERE, not off the figure's colour or position: T150's
+                `target.download_count` backs this number now (T280 wires the read), so
+                `◐ seeded` would be printing a real counter as though nothing stood behind
+                it — D-78's other direction, the one that removes a marker rather than
+                keeping it. Same emerald figure the blueprint page's header uses. */}
+            <span className="font-mono text-xs text-emerald">
+              ↓ {compact(signals.downloadCount)} downloads
             </span>
             {/* Fork first, download second — the same grouping and the same reasoning
                 the blueprint page's header row uses: `ForkAction` is the disclosure, the
@@ -1007,7 +1158,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   anchored to. */}
               <CloneMenu
                 kind="node"
-                command={cardDownloadCommand(record.ref)}
+                command={cardFileDownloadCommand(record.ref)}
                 cliCommand={`darkprint clone card ${record.ref}`}
               />
             </div>
@@ -1086,12 +1237,16 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 `--color-warn`, matching the marker cards in the aside it links to, and
                 no longer `--color-amber`. Amber is spent on two things and this is
                 neither: `ComingSoonBadge` ("not built yet") and `.route-box` ("this box
-                leaves the page"). The collision was live in this very row — the `◐
-                seeded` honesty marker three chips to the left is amber because nothing
-                stands behind that number, and a risk marker in the same hue said the
-                risk was equally notional. Warn is the darker, less saturated tier the
-                token exists for, still 6.7:1 on this ground. Rendered only when there
-                are markers, so the quiet case stays quiet. */}
+                leaves the page"). The collision was live in this very row when the choice
+                was made — a `◐ seeded` honesty marker sat a few chips to the left, amber
+                because nothing stood behind that number, and a risk marker in the same
+                hue would have said the risk was equally notional. That marker is gone now
+                that downloads are a real counter (T280), but the reasoning that kept risk
+                off amber stands independently: amber is a claim about a NUMBER, and a risk
+                marker is a claim about the vocabulary, never a figure nobody counted. Warn
+                is the darker, less saturated tier the token exists for, still 6.7:1 on
+                this ground. Rendered only when there are markers, so the quiet case stays
+                quiet. */}
             {risks.length > 0 && (
               <a
                 href="#evaluation"
@@ -1208,7 +1363,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 <p className="text-[15px] leading-relaxed text-muted">
                   <span className="text-fg">None declared.</span> The ordinary case: a
                   node is usually isolated by the edges its graph does not draw. Writing
-                  the rule down here is what makes it checkable.
+                  the rule down here makes it checkable.
                 </p>
               </div>
             ) : (
@@ -1309,8 +1464,8 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                     this pass, so it follows the rule the guard cannot see it break. */}
                 <p className="text-xs leading-relaxed text-dim">
                   Only a data type can be enforced, because only a data type travels on an
-                  edge. An entry naming anything else is free text: the resolver does not
-                  hold the graph to it, which is not the same as nothing acting on it. It
+                  edge. An entry naming anything else is free text. The resolver does not
+                  hold the graph to it. That does not mean nothing acts on it. It
                   is addressed to whoever runs the node, and the agent reads the
                   specification at the top of this page.
                 </p>
@@ -1639,9 +1794,9 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   <span className="break-all text-muted">{record.digest}</span>
                 </p>
                 <p className="text-xs leading-relaxed text-dim">
-                  Hashed over the card&apos;s content, author and provenance left out:
-                  the same node from two people lands on the same digest, any edit lands
-                  on a different one.
+                  The digest is hashed over the card&apos;s content. Author and
+                  provenance are left out. The same node from two people lands on the
+                  same digest. Any edit lands on a different one.
                 </p>
               </>
             ) : (
@@ -1890,15 +2045,33 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           asymmetry was real: a blueprint could be discussed and a card could not, though
           a card is the thing somebody lifts on its own.
 
-          `commentsFor` returns `[]` for every card today. That is the honest state and
-          `Comments` renders it as one: its empty state says notes are seeded rows, this
-          card has none, and posting is not built. The section carries its own `◐ seeded`
-          marker either way. */}
+          `live` mode (T280's pin on `Comments`): the first page comes off `listNotes` above
+          rather than `lib/data/node-community`'s always-empty fixture, and posting, editing,
+          deleting and voting all reach `/api/cards/{id}/notes`. The "posting is not built"
+          sentence and the seeded marker retire with it — there is a form and a runner
+          behind it now. `comments={[]}` stays: `comments` is the frozen surface's own
+          existing required prop, and `Comments` renders `live` in its place when it is
+          present rather than reading the empty array. */}
       {/* `subject`, because the empty state's sentence was hard-coded to "blueprint" and
           this is a node card — so all 53 of these pages closed on the wrong noun, in the
           last sentence a reader meets. */}
       <div className="mt-10">
-        <Comments comments={commentsFor(card.id)} subject="node card" />
+        <Comments
+          comments={[]}
+          subject="node card"
+          live={{
+            target: { kind: "card", refId: card.id },
+            apiBase: `/api/cards/${card.id}/notes`,
+            initial: {
+              notes: notesPage.notes.map((note) => noteViewOf(note, viewerHandle)),
+              cursor: notesPage.cursor,
+            },
+            viewer: {
+              signedIn: actor.kind === "account",
+              ...(viewerHandle === null ? {} : { handle: viewerHandle }),
+            },
+          }}
+        />
       </div>
     </div>
     </SideRail>

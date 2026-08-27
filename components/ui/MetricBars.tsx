@@ -133,8 +133,22 @@ export function MetricBars({
     <div className={className}>
       <ul className="flex flex-col divide-y divide-line">
         {metrics.map((m) => {
-          const color = METRIC_SOURCE_META[m.source].color;
+          /* Nothing real stands behind a live figure of exactly zero — nobody has voted,
+             nobody has run it — and amber is the site's one colour for that state
+             (`lib/format.ts`'s `METRIC_SOURCE_META` comment: amber's two jobs are
+             "not built yet" and "this box leaves the page"; a live row reporting zero is
+             the same claim in a third place, not a third job). A live row with a real
+             sample keeps its ordinary source colour: something real backs that number. */
+          const emptyLive = m.live === true && (m.sampleSize ?? 0) === 0;
+          const color = emptyLive ? "var(--color-amber)" : METRIC_SOURCE_META[m.source].color;
           const isBand = m.key === "autonomy";
+          /* D-180-01: once a page is live-wired, cost never lands on this axis, with or
+             without a report on file — `value` is `undefined` either way (`lib/content/
+             view.ts`'s `costMetric`), so the badge and the track both render as text
+             instead of a percentage and a bar. Autonomy and cost cannot both be true of
+             one row (only `cost` ever carries `value: undefined`), so this and `isBand`
+             are mutually exclusive branches below, not layered ones. */
+          const isUnnormalized = m.value === undefined;
           return (
             <li key={m.key} className="py-3">
               <div className="flex items-baseline justify-between gap-3">
@@ -148,6 +162,17 @@ export function MetricBars({
                         {autonomy.label}
                       </span>
                     ) : null
+                  ) : isUnnormalized ? (
+                    <span className="font-mono text-xs tabular-nums" style={{ color }}>
+                      {m.reported !== undefined ? (
+                        <>
+                          {m.reported.median}
+                          <span className="text-dim"> (n={m.reported.runs})</span>
+                        </>
+                      ) : (
+                        "no runs yet"
+                      )}
+                    </span>
                   ) : (
                     <span
                       className="w-9 text-right font-mono text-sm tabular-nums"
@@ -164,6 +189,20 @@ export function MetricBars({
                    where the people are, not how full something is. */
                 <p className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
                   who is in the loop
+                </p>
+              ) : isUnnormalized ? (
+                /* No bar: D-180-01 refuses to draw a caller-submitted, unnormalized
+                   figure as a length. The spread is what a bar would have shown a length
+                   for, so it takes the track's place as text instead of disappearing.
+                   `color` already carries the amber-when-empty rule computed above, so
+                   this reuses it rather than repeating the `emptyLive` branch. */
+                <p
+                  className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.14em]"
+                  style={{ color }}
+                >
+                  {m.reported !== undefined
+                    ? `p10–p90 ${m.reported.p10}–${m.reported.p90}`
+                    : "nothing reported"}
                 </p>
               ) : (
                 <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-line">

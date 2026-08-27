@@ -2,16 +2,21 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { OntologyTerm, OntologyView } from "@/lib/core";
 import { CORE_PHASE_IDS, DARKPRINT_CONFIG, INFERRED_MARKERS } from "@/lib/core";
-import { getOntologyView, getRegistry } from "@/lib/content";
+import { ontologyView } from "@/lib/core";
+import { getSharedDbClient } from "@/lib/db";
+import type { Actor } from "@/lib/server/policy";
+import { getLatestOntologyVersion, openView } from "@/lib/server/ontology";
+import { blueprints, cards, latestCards } from "@/lib/server/registry";
+import { searchTerms } from "@/lib/server/search";
 import { HUMAN_PRESENCE_MARK } from "@/lib/format";
-import { contentHref, nodeHref, termHref } from "@/lib/href";
+import { blueprintRecordHref, nodeHref, termHref } from "@/lib/href";
 import {
   NO_USAGE,
   TERM_KIND_META,
   TermKindBadge,
   formatWeight,
   markerWeight,
-  termUsageIndex,
+  termUsageOver,
   type TermUsage,
 } from "@/components/ontology/TermTable";
 
@@ -40,17 +45,32 @@ import {
  * the prerendered output rather than a request-time render of a page whose data comes
  * off the filesystem.
  */
-export const dynamicParams = false;
+export const dynamic = "force-dynamic";
 
-export function generateStaticParams() {
-  return getOntologyView().ontology.terms.map((term) => ({
-    term: term.id.split("/"),
-  }));
+/** A reader with no session: the vocabulary and its usage column are public. */
+const ANONYMOUS: Actor = Object.freeze({ kind: "anonymous" });
+
+/**
+ * The core vocabulary with every public local term layered on.
+ *
+ * `openView` stores core terms only and takes its overlay per bundle — *"never a global
+ * row"* — while this route must resolve a namespaced id like `lupo/pii-handling`, which
+ * lives in whichever release declares it. `searchTerms` is the module that knows which
+ * terms are local, so its answer is fed back in as the extensions. Three published readers
+ * in the order T260's merged `/ontology` already composes them; the decisions are theirs
+ * and only the call sequence repeats here.
+ */
+async function vocabularyView(db: ReturnType<typeof getSharedDbClient>["db"]) {
+  const published = await getLatestOntologyVersion(db);
+  if (published === undefined) return ontologyView({ version: "", title: "", terms: [] });
+  const local = await searchTerms(db, ANONYMOUS, { origin: "local" });
+  return openView(db, published.version, local.hits.map((hit) => hit.item));
 }
 
 export async function generateMetadata({ params }: PageProps<"/ontology/[...term]">) {
   const { term } = await params;
-  const found = getOntologyView().get(term.join("/"));
+  const { db } = getSharedDbClient();
+  const found = (await vocabularyView(db)).get(term.join("/"));
   if (!found) return { title: "Term not found" };
   return {
     title: `${found.label}: ${TERM_KIND_META[found.kind].label}`,
@@ -139,14 +159,30 @@ function narrowerReach(
 
 export default async function Page({ params }: PageProps<"/ontology/[...term]">) {
   const { term: segments } = await params;
-  const view = getOntologyView();
+  const { db } = getSharedDbClient();
+  const view = await vocabularyView(db);
   // The catch-all captures `["lupo", "pii-handling"]`; the vocabulary is keyed on the
   // id, which is those segments with the separator put back.
   const term = view.get(segments.join("/"));
   if (!term) notFound();
 
-  const registry = getRegistry();
-  const usageIndex = termUsageIndex(registry);
+  /* The usage index over the REGISTRY's cards. `termUsageIndex(registry)` took `lib/core`'s
+     build-time archive, which this route no longer has; `termUsageOver` is the same
+     computation over any corpus and was added for exactly this (D-260-07), with
+     `termUsageIndex` delegating to it so the two cannot drift.
+
+     `usedIn` is spelled `owner/slug`, which the function's own docblock asks for: a
+     blueprint's identity since B-09 is the two-part key, and D-210-08 measured what a
+     slug-only spelling costs — `alice/foo` and `bob/foo` collapse into one, invisible on a
+     single-account seed and wrong the day it is not. */
+  const corpus = await cards(db, ANONYMOUS);
+  const usageIndex = termUsageOver(
+    corpus.map((entry) => ({
+      id: entry.id,
+      card: entry.card,
+      usedIn: entry.usedIn.map((key) => `${key.ownerHandle}/${key.slug}`),
+    })),
+  );
   const usage = usageIndex.get(term.id) ?? NO_USAGE;
   const reach = narrowerReach(view, usageIndex, term);
   const meta = TERM_KIND_META[term.kind];
@@ -163,13 +199,29 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
     (other) => other.deprecated?.replacedBy === term.id,
   );
 
-  const cards = usage.cards
-    .map((id) => registry.versionsOf(id)[0])
+  /* The cards naming this term, newest version each. `latestCards` is one row per id, so
+     the lookup is a map rather than a reader call per card. */
+  const newest = new Map((await latestCards(db, ANONYMOUS)).map((entry) => [entry.id, entry]));
+  const usingCards = usage.cards
+    .map((id) => newest.get(id))
     .filter((record) => record !== undefined);
-  const blueprints = usage.blueprints.map((slug) => ({
-    slug,
-    title: registry.blueprint(slug)?.manifest.title ?? slug,
-  }));
+
+  /* The blueprints pinning them, resolved from the `owner/slug` keys the index now carries.
+     One read for the readable universe rather than a lookup per key; a key nothing in it
+     answers keeps its slug as the label, which is the honest rendering for a blueprint this
+     reader may not see. */
+  const readable = new Map(
+    (await blueprints(db, ANONYMOUS)).map((bp) => [`${bp.ownerHandle}/${bp.slug}`, bp]),
+  );
+  const usingBlueprints = usage.blueprints.map((key) => {
+    const found = readable.get(key);
+    const slug = key.slice(key.indexOf("/") + 1);
+    return {
+      ownerHandle: found?.ownerHandle ?? key.slice(0, key.indexOf("/")),
+      slug,
+      title: found?.manifest.title ?? slug,
+    };
+  });
 
   const replacedBy =
     term.deprecated?.replacedBy === undefined
@@ -255,16 +307,15 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                 </div>
                 <p className="text-sm leading-relaxed text-muted">
                   Deprecated in v{term.deprecated.since}. The term stays in the
-                  vocabulary and stays valid: a card that names it still resolves, still
-                  type-checks and still scores, the resolver simply follows the pointer
+                  vocabulary and stays valid. A card that names it still resolves. It
+                  still type-checks. It still scores. The resolver follows the pointer
                   once and carries on.
                   {term.deprecated.note !== undefined && ` ${term.deprecated.note}`}
                 </p>
                 <p className="text-sm leading-relaxed text-muted">
-                  The usage figures on this page count the id exactly as a card spells
-                  it, not as the resolver rewrites it. That is the whole point of
-                  keeping the count: it answers whether anybody is still writing the old
-                  spelling.
+                  The usage figures on this page count the id as a card spells it, not
+                  as the resolver rewrites it. The count answers whether anybody is
+                  still writing the old spelling.
                 </p>
               </div>
             </section>
@@ -316,28 +367,29 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   </ol>
                   <p className="text-xs leading-relaxed text-dim">
                     Read left to right as the arc of a piece of work. The order is the
-                    lifecycle, not a ranking, and the arrows are the sequence a blueprint
-                    tends to run in rather than one it is obliged to.
+                    lifecycle, not a ranking. The arrows show the sequence a blueprint
+                    tends to run in. They are not a sequence it must follow.
                   </p>
                 </div>
 
                 <p className="text-sm leading-relaxed text-muted">
-                  The five are the one dimension a local namespace cannot extend: a node
-                  type or a risk marker can be coined by anybody, a sixth phase would be a
-                  different definition of what a dark factory is. There is no abstract
-                  root above them either, because a root would make the set look open.
+                  The five are the one dimension a local namespace cannot extend. A node
+                  type or a risk marker can be coined by anybody. A sixth phase would be
+                  a different definition of what a dark factory is. There is no abstract
+                  root above them either. A root would make the set look open.
                 </p>
                 <p className="text-sm leading-relaxed text-muted">
                   A card may name one of them, several, or none. The five describe the
-                  blueprint rather than every node inside it, so an intake or a retrieval
-                  step declares no phase at all and a node that both builds and repairs
-                  declares two. Neither is a card with something missing from it.
+                  blueprint, not every node inside it. An intake or a retrieval step may
+                  declare no phase at all. A node that both builds and repairs may
+                  declare two. Neither counts as an incomplete card.
                 </p>
                 <p className="text-sm leading-relaxed text-muted">
-                  Which phases a blueprint has nodes in is its <em>phase coverage</em>, and
-                  it is shown as a description of scope, <em>this blueprint covers planning,
-                  implementation and testing</em>, not as boxes ticked out of five. A
-                  blueprint that stops before deployment has decided where it stops.
+                  Which phases a blueprint has nodes in is its <em>phase coverage</em>.
+                  Phase coverage is shown as a description of scope, for example:{" "}
+                  <em>this blueprint covers planning, implementation and testing</em>. It
+                  is not shown as boxes ticked out of five. A blueprint that stops
+                  before deployment has decided where it stops.
                 </p>
               </div>
             </section>
@@ -464,14 +516,14 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                 <p className="text-sm leading-relaxed text-muted">
                   {weight === undefined
                     ? children.length > 0
-                      ? `${term.id} is a category, not a marker a card declares: it exists so a rule can be written about ${children.length === 1 ? "the marker" : "the markers"} underneath it and catch ${children.length === 1 ? "it" : "them all"}. It carries no weight and never moves a score; the terms narrower than it carry theirs.`
-                      : `No weight is configured for ${term.id} anywhere, so it counts ${formatWeight(DARKPRINT_CONFIG.security.unknownMarkerWeight)} and does not move a score. A locally namespaced marker has to declare one, or it documents a risk without pricing it, and the author is told so rather than silently charged a number nobody chose.`
-                    : `A blueprint starts at a clean 4, loses the weight of every marker present, and the result is clamped into 1–4. ${term.id} is charged once for the whole blueprint however many nodes carry it, gravity, not frequency, and the explanation still lists every node that established it.`}
+                      ? `${term.id} is a category, not a marker a card declares. A rule written about ${children.length === 1 ? "the marker" : "the markers"} underneath it catches ${children.length === 1 ? "it" : "them all"}. It carries no weight and never moves a score. The terms narrower than it carry the weight themselves.`
+                      : `No weight is configured for ${term.id} anywhere, so it counts ${formatWeight(DARKPRINT_CONFIG.security.unknownMarkerWeight)} and does not move a score. A locally namespaced marker must declare a weight, or it documents a risk without pricing it. The author is told this. It is not silently charged a number nobody chose.`
+                    : `A blueprint starts at a clean 4, loses the weight of every marker present, and the result is clamped into 1–4. ${term.id} is charged once for the whole blueprint no matter how many nodes carry it. The explanation still lists every node that established it.`}
                 </p>
 
                 <p className="text-sm leading-relaxed text-muted">
                   {inferred
-                    ? `${term.id} is one of the three markers the analyzer derives from the graph itself, so it can fire on a blueprint whose cards never mention it, that is the point, since the author who most needs to hear it is the one who did not see it. A card that declares it and a graph that implies it are the same marker and are charged once; the finding records which way round it was established.`
+                    ? `${term.id} is one of the three markers the analyzer derives from the graph itself. It can fire on a blueprint whose cards never mention it. The author who most needs to hear it is the one who did not see it. A card that declares it and a graph that implies it are the same marker, charged once. The finding records which way round it was established.`
                     : `Nothing in the topology can establish ${term.id} on its own, it is a fact about what the node does that only its author can state. The analyzer takes the card at its word and names the node in the explanation.`}
                 </p>
 
@@ -484,8 +536,8 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                     paragraphs above the claim that no such number exists here. */}
                 <p className="text-sm leading-relaxed text-muted">
                   {configured
-                    ? "The number lives in the engine's configuration and not in this vocabulary, so a recalibration touches one file and every blueprint is re-scored consistently. That is also why a score records which vocabulary version produced it: move a weight and two evaluations stop being comparable."
-                    : `The engine's configuration prices the curated markers and is silent about this one, so the number is the ${term.id.includes("/") ? "namespaced" : "local"} term's own declared weight, read from the vocabulary the bundle ships. That is why a score records which vocabulary version produced it: move a weight and two evaluations stop being comparable.`}{" "}
+                    ? "The number lives in the engine's configuration and not in this vocabulary. A recalibration touches one file, so every blueprint is re-scored consistently. A score also records which vocabulary version produced it. Move a weight and two evaluations stop being comparable."
+                    : `The engine's configuration prices the curated markers. It is silent about this one. The number is the ${term.id.includes("/") ? "namespaced" : "local"} term's own declared weight, read from the vocabulary the bundle ships. A score records which vocabulary version produced it. Move a weight and two evaluations stop being comparable.`}{" "}
                   {/* Lifecycle-scoring spec §4 moved the weight table with `ScoringModel`
                       off `/spec` onto `/spec/scoring`; the IA pass merged that page into
                       `/reading-the-radar`. `#weights` is `ScoringModel`'s own id and
@@ -526,11 +578,11 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                       </span>
                       <span>
                         Nothing in the archive spells it {term.id} any more. A card
-                        that did would still load, still type-check and still score,
-                        the resolver follows the pointer to{" "}
-                        {term.deprecated.replacedBy ?? "its successor"} and carries on
-                        so the zero is not a gap, it is what a finished rename looks
-                        like, and the count is the only way to tell.
+                        that did would still load, type-check and score. The resolver
+                        follows the pointer to{" "}
+                        {term.deprecated.replacedBy ?? "its successor"} and carries on.
+                        The zero is not a gap. It is what a finished rename looks like.
+                        The count is the only way to tell.
                       </span>
                     </>
                   ) : reach.cards > 0 ? (
@@ -539,10 +591,10 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                         ↳
                       </span>
                       <span>
-                        No card names {term.id} directly, it sits above the terms that
+                        No card names {term.id} directly. It sits above the terms that
                         do. The {reach.terms} term{reach.terms === 1 ? "" : "s"}{" "}
                         narrower than it are named by {reach.cards} card
-                        {reach.cards === 1 ? "" : "s"} between them, and a rule written
+                        {reach.cards === 1 ? "" : "s"} between them. A rule written
                         about {term.id} catches every one of them.
                       </span>
                     </>
@@ -552,9 +604,9 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                         ○
                       </span>
                       <span>
-                        No card in the registry names {term.id} yet, and none names
-                        anything narrower. A term with no takers is not a broken term,
-                        it is vocabulary waiting for a use.
+                        No card in the registry names {term.id} yet. None names
+                        anything narrower. A term with no takers is not a broken term.
+                        It is vocabulary waiting for a use.
                       </span>
                     </>
                   )}
@@ -564,7 +616,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   <div className="flex flex-col gap-2">
                     <PanelLabel>Node cards</PanelLabel>
                     <ul className="divide-y divide-line">
-                      {cards.map((record) => (
+                      {usingCards.map((record) => (
                         <li key={record.ref}>
                           <Link
                             href={nodeHref(record.id)}
@@ -585,10 +637,10 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   <div className="flex flex-col gap-2">
                     <PanelLabel>Blueprints</PanelLabel>
                     <ul className="divide-y divide-line">
-                      {blueprints.map((bp) => (
+                      {usingBlueprints.map((bp) => (
                         <li key={bp.slug}>
                           <Link
-                            href={contentHref({ kind: "blueprint", slug: bp.slug })}
+                            href={blueprintRecordHref(bp)}
                             className="group flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2.5"
                           >
                             <span className="text-sm text-fg transition-colors group-hover:text-cyan">
@@ -698,10 +750,10 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
               <StatRow label="Distinct authors" value={usage.authors.length} />
             </dl>
             <p className="mt-4 text-xs leading-relaxed text-dim">
-              These are the three figures the first phase of promotion watches for, to
-              spot a local term that has become a real pattern rather than one
-              author&apos;s habit. The counting works; the workflow that would read it
-              does not exist, no threshold has been calibrated, and no term has ever been
+              These are the three figures the first phase of promotion watches for.
+              They spot a local term that has become a real pattern rather than one
+              author&apos;s habit. The counting works. The workflow that would read it
+              does not exist. No threshold has been calibrated. No term has ever been
               promoted. They are shown because knowing what the registry actually leans on
               is worth something on its own.
             </p>

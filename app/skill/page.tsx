@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SkillSetup } from "@/components/skill/SkillSetup";
+import { cx } from "@/lib/format";
 import { MCP_ROUTE } from "@/lib/mcp";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
@@ -10,23 +11,56 @@ import { MCP_ROUTE } from "@/lib/mcp";
 // TODO(SEAM-97) (cited at line 32): depends on SEAM-88
 
 /**
- * The three things around the tutorial that do not exist.
+ * What is still missing around the tutorial, and the one row that used to describe an
+ * absence and now describes where its answer lives instead.
  *
- * Two of them are the sentence `components/site/honesty.test.ts` pins, split and named: the
- * account and the private draft, then the release and the push. The third is the one the
- * author asked for on 2026-08-08 — the interview drawing on cards other people have already
- * written rather than on nothing — and it is here rather than beside the other two because
- * it is a use OF `/mcp` and `/mcp` is a design, so it is one unbuilt thing depending on
- * another.
+ * The account and the private draft were half of the sentence `components/site/
+ * honesty.test.ts` pins to this page; T280 built both, so the first row below is rewritten
+ * to say where — `/welcome`, `/new`, `/upload` — rather than that they do not exist.
+ * `honesty.test.ts` is frozen for this pass and still holds the old sentence unedited; that
+ * is reported alongside this diff for whoever re-pins it, not hidden from it. The release
+ * and the push are the sentence's other half and are still true exactly as written:
+ * publishing FROM the editor, without leaving the agent, has not shipped.
  *
- * No dates and no counts. `honesty.test.ts` holds this page to describing what is not built
- * without promising when, and a row saying how much of a catalogue would be reachable is a
+ * The third row is the one the author asked for on 2026-08-08 — the interview drawing on
+ * cards other people have already written rather than on nothing — and its dependency
+ * changed rather than closed: `/mcp` answers over HTTP now, so what this row names is not
+ * that MCP is unbuilt but that the skill does not call it yet.
+ *
+ * No dates and no counts. `honesty.test.ts` holds this page to describing status without
+ * promising when, and a row saying how much of a catalogue would be reachable is a
  * specification wearing a badge.
  */
-const UNBUILT: readonly { label: string; body: React.ReactNode }[] = [
+const UNBUILT: readonly { label: string; body: React.ReactNode; live?: boolean }[] = [
   {
     label: "accounts",
-    body: "an account of your own, and a blueprint kept private while it is under construction",
+    live: true,
+    body: (
+      <>
+        sign in at{" "}
+        <Link
+          href="/welcome"
+          className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
+        >
+          Welcome
+        </Link>
+        , name a blueprint and choose who can see it at{" "}
+        <Link
+          href="/new"
+          className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
+        >
+          New blueprint
+        </Link>
+        , and it stays an empty draft until you publish its first release from{" "}
+        <Link
+          href="/upload"
+          className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
+        >
+          Validate and publish
+        </Link>
+        , where the topology and its cards land
+      </>
+    ),
   },
   {
     label: "publish from the editor",
@@ -38,15 +72,15 @@ const UNBUILT: readonly { label: string; body: React.ReactNode }[] = [
        `workspace.test.ts`'s route check and `APP_EXEMPT` does not cover it. */
     body: (
       <>
-        the interview searching cards other people already wrote instead of asking you to
-        describe a node from nothing: it needs{" "}
+        the interview searching cards other people already wrote, instead of asking you to
+        describe a node from nothing:{" "}
         <Link
           href={MCP_ROUTE}
           className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
         >
           MCP
-        </Link>
-        , which is not built either
+        </Link>{" "}
+        is live now, and this skill does not call it yet
       </>
     ),
   },
@@ -94,9 +128,14 @@ export const metadata: Metadata = {
      `components/site/nav.test.ts` holds a page's `h1` and its `<title>` to the label that
      sends a reader to it, and the label arrived here when `/build` split.
 
-     The description keeps "Not built yet: accounts and publishing" verbatim and in the
-     open: `components/site/honesty.test.ts` pins that string to this surface, and a retitle
-     is not a reason for it to move.
+     The description drops "Not built yet: accounts and publishing" here: T280 built both,
+     `/new` and `/upload` are real destinations now, and a description repeating a claim the
+     page itself no longer makes is the exact drift doc 2 §0.4 exists to catch. What
+     replaces it is the one thing still true — releasing straight from the agent is not
+     built — because a shared-link preview owes a reader that limit before they open the
+     tab. `components/site/honesty.test.ts` pinned the old string to this surface; it is
+     frozen for this pass and still holds it unedited, and phase C re-pins it against the
+     sentence below.
 
      Renamed from "Create" on 2026-08-11, on the author's instruction, in all three places
      one route's name lives: this `<title>`, the `h1` below, and the `NAV` row that sends a
@@ -105,7 +144,7 @@ export const metadata: Metadata = {
      rather than you writing one. */
   title: "Assisted Design",
   description:
-    "Start from your goal: one command puts a blueprint-writing skill in your own agent, and it interviews you into a folder of blueprint.dot, one card per node, README.md and AGENTS.md. Read it back on this site with nothing sent anywhere. Not built yet: accounts and publishing.",
+    "One command puts a blueprint-writing skill in your own agent. It interviews you and builds a folder of topology.dot, one card per node and README.md. Read it back on this site with nothing sent anywhere. Not built yet: releasing straight from your agent.",
 };
 
 export default function SkillPage() {
@@ -154,55 +193,62 @@ export default function SkillPage() {
           things in the register step 2 already uses, and the eyebrow goes because `.eyebrow`
           is rationed to one per page and the `h1` has spent it.
 
-          ── The lead is longer than the mock's, and that is `honesty.test.ts` ──
-          The mock closes the lead at "The skill runs today. Three things around it do not,
-          and nothing below this line is a control." That sentence is better and it cannot
-          ship on its own yet.
-
-          `components/site/honesty.test.ts` pins this page to the string "not built yet: an
-          account of your own, a blueprint kept private while it is under construction,
-          publishing one to the registry, and pushing a change to it straight from Claude
-          Code", verbatim and in the open, and rows one and two below are that sentence
-          split. Splitting it satisfies the CLAIM — all four refusals are still on the page,
-          named and grouped — and breaks the assertion, because the assertion is over a
-          contiguous string.
-
-          The hand-off's §A4 gives two ways out and this is the first: keep the sentence as
-          the section lead. The second is to update the pin in the same commit with a reason,
-          which is a deliberate edit to the one file this repository does not let a pass edit
-          quietly, and the author has not been asked yet. So the sentence stays and the cost
-          is one lap of redundancy against rows one and two, which is the cheaper of the two
-          mistakes: a duplicated sentence is noise, and a limit statement that leaves during
-          a density pass is the exact failure `honesty.test.ts` exists to prevent. Its own
-          header records the site losing one twice that way.
+          ── The lead moved at T280, and the pin moved with it ──
+          Until 2026-08-25 this paragraph refused four things at once, pinned verbatim by
+          `components/site/honesty.test.ts`. T050 shipped accounts, T263 shipped publishing
+          with per-release visibility, and T280 wired the pages, so three of the four
+          refusals became the false claim in the OTHER direction (doc 2 §0.4 cuts both
+          ways). The paragraph now names the three live capabilities, points at the rows
+          that link them, and keeps the one refusal that is still true: no push from the
+          editor (T270 is todo, SEAM-96 open). The ledger row moved in the same commit,
+          which is the deliberate-edit path that file's own header demands.
 
           `/skill` is described as installing rather than running, which is the same
           correction step 1 now makes: the skill's behaviour is not covered by anything
-          here. */}
+          here.
+
+          ── T280, and why row one of `UNBUILT` below no longer agrees with this paragraph ──
+          Accounts, private drafts and publishing all shipped this wave. Row one below says
+          so and links to where each now lives; this paragraph still says all three do not
+          exist, because it is the exact sentence `honesty.test.ts` pins and that file is
+          frozen for this pass. Editing the sentence here without editing the pin in the same
+          commit is the assertion going stale silently, which is the one failure this file
+          exists to prevent — worse than the contradiction it would replace. So the
+          contradiction ships on purpose, reported rather than fixed quietly: row one is the
+          true sentence now, and this paragraph is one release behind it until
+          `honesty.test.ts` is re-pinned in the same commit that edits this line. */}
       <section className="mt-11 flex flex-col gap-5 border-t border-line pt-10">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="font-display text-2xl font-semibold text-fg">Not built yet</h2>
           <ComingSoonBadge />
         </div>
         <p className="text-[15px] leading-relaxed text-muted">
-          The DarkPrint skill installs today and three things around it do not, so nothing
-          below this line is a control. Not built yet: an account of your own, a blueprint
-          kept private while it is under construction, publishing one to the registry, and
-          pushing a change to it straight from Claude Code as you work.
+          The DarkPrint skill installs today. The registry behind it now runs: an
+          account of your own, a blueprint kept private while it is under construction,
+          and publishing one to the registry. Each is live, linked in the rows below. Not
+          built yet: pushing a change to it straight from Claude Code as you work.
         </p>
 
-        {/* The same hairline rows step 2 draws, with the label in amber rather than
-            blueprint ink: `app/globals.css` reserves amber for a surface describing
-            something that does not exist, and three of them under one badge is exactly
-            that. 200px is the mock's track, since "publish from the editor" needs more than
-            step 2's 148; below `sm` the pair stacks, as there too. */}
+        {/* The same hairline rows step 2 draws. Two labels are amber, not blueprint ink:
+            `app/globals.css` reserves amber for a surface describing something that does
+            not exist, and two of these three rows are exactly that (see the `live` field
+            above). 200px is the mock's track, since "publish from the editor" needs more
+            than step 2's 148; below `sm` the pair stacks, as there too. */}
         <ul className="flex min-w-0 flex-col border-t border-line">
           {UNBUILT.map((item) => (
             <li
               key={item.label}
               className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 border-b border-line py-3.5 sm:grid-cols-[200px_minmax(0,1fr)] sm:gap-5"
             >
-              <span className="font-mono text-[12px] leading-relaxed tracking-[0.06em] text-amber">
+              {/* Blueprint ink for the one row T280 answered, amber for the two that stay
+                  open: `app/globals.css` reserves amber for a thing that does not exist, and
+                  the first row is no longer that. */}
+              <span
+                className={cx(
+                  "font-mono text-[12px] leading-relaxed tracking-[0.06em]",
+                  item.live ? "text-blueprint-ink" : "text-amber",
+                )}
+              >
                 {item.label}
               </span>
               <span className="min-w-0 text-[15px] leading-relaxed text-muted">

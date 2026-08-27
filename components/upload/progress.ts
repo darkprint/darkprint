@@ -8,7 +8,7 @@
 
    The DarkPrint skill changes who arrives. It writes the registry
    shape into a working directory a node at a time, so the normal
-   visitor now has a `blueprint.dot` with eight nodes in it and
+   visitor now has a `topology.dot` with eight nodes in it and
    three cards written. `resolveBundle` reports each of the other
    five as `bundle/missing-card`, which is an ERROR — correctly, the
    reference does not resolve — and every surface downstream then

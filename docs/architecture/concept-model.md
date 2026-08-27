@@ -35,7 +35,7 @@ a card, not the card. `lib/content/read.ts:389-412` reads exactly two pointer fo
 
 | Pointer form | Example | Source |
 |---|---|---|
-| `card="id@version"` | `planner [card="spec-planner@1.0.0"]` | `content/blueprints/starter-software-factory/blueprint.dot:7` |
+| `card="id@version"` | `planner [card="spec-planner@1.0.0"]` | `content/blueprints/starter-software-factory/topology.dot:7` |
 | `version="…"` on a node whose DOT id doubles as the card id | `spec-planner [version="1.0.0"]` | `lib/content/read.ts:399-402` |
 
 An unversioned pointer (`solver-a`, `solver-a@latest`) is rejected by
@@ -794,6 +794,29 @@ transfer in flight), given that `/settings` §06 offers a "Transfer a blueprint"
 (`app/settings/page.tsx:430-437`)?
 
 ---
+
+### 6.x · `release.local_vocabulary` has one published shape, refused at the write
+
+`StoredVocabulary { text: string; terms?: readonly unknown[] | null }`, or `null`. Published from
+`@/lib/server/archive` (T133, D-133-01) and **derived from the two merged readers rather than
+invented** — every clause already had a reader enforcing it and nobody had written it down:
+`storedVocabulary` throws on an array or a non-string `text`; `parseOntologyTerms` throws on a
+non-mapping, treats an absent `terms` as `[]`, and requires an array of mappings.
+
+**`addRelease` refuses anything else at the WRITE**, by calling the readers' own
+`parseOntologyTerms` rather than a predicate beside it (D-133-03) — the only construction in which
+the writer and the readers cannot disagree. The readers keep refusing too: a row can still reach a
+bad shape by direct SQL or from before the amendment, so the writer, the readers and AC3's operator
+query are three mechanisms for three routes in, none redundant.
+
+**The column previously had no type anywhere and its only documentation was wrong.**
+`lib/db/schema.ts` described it as `OntologyTerm[]` — the bare array both readers refuse — and that
+comment was encoded independently **four** times: in the schema itself, by T130's blind author, in
+`tests/server/t010/release.test.ts`, and in T100's published signature block, which was corrected
+before T100 was ever dispatched. Three authors, one wrong comment, and no disagreement between
+them, which is exactly why nothing ever reddened. Measured cost of a release stored in a refused
+shape: **every profile for that handle 500s forever**, surfacing as *Store failed* while the store
+is working.
 
 ## 7 · What the ontology section implies structurally
 

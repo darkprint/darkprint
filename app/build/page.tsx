@@ -22,7 +22,7 @@ export const metadata: Metadata = {
      one place the title is spelled twice, and `spec-routes.test.ts` holds the pair. */
   title: "Customize the starter",
   description:
-    "A sandbox for one five-node software workflow. Change its output, release gate, and retry cap, and watch the graph, the cards, the vocabulary and the static reading move together.",
+    "A sandbox for one five-node software workflow. Change its output, release gate and retry cap. Watch the graph, the cards, the vocabulary and the static reading move together.",
 };
 
 const HERE = "/build";
@@ -163,7 +163,7 @@ export default function BuildPage() {
              faith — `components/build/surfaces.ts` diffs the real bundle before and after
              every choice and only marks a tab whose bytes actually moved, so the workspace
              below is checking the sentence this lead makes, not just repeating it. */
-          lead="This is a sandbox for one five-node software workflow, not a general designer. Change its output, release gate, and retry cap to see the graph, cards, vocabulary, and static reading move together."
+          lead="This is a sandbox for one five-node software workflow. It is not a general designer. Change its output, release gate and retry cap. Watch the graph, cards, vocabulary and static reading move together."
         />
         {/* Two paragraphs stood here and the author asked both out on 2026-08-08.
 

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { inferBump, shortDigest, type BumpLevel, type NodeCard } from "@/lib/core";
 import { cx } from "@/lib/format";
-import { contentHref } from "@/lib/href";
+import { blueprintRecordHref } from "@/lib/href";
 import { Ticked } from "@/components/ui/Ticked";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
@@ -15,7 +15,16 @@ export interface NodeVersion {
   /** "sha256:…" over the card's content. */
   digest: string;
   card: NodeCard;
-  usedIn: { slug: string; title: string }[];
+  /**
+   * The blueprints pinning this exact version.
+   *
+   * `ownerHandle` is optional for the reason `lib/types.ts`'s `Blueprint.ownerHandle` is
+   * (D-261-07): the registry answers it and a fixture cannot, so a row that has it links to
+   * the canonical B-09 URL and a row that does not rides the 308 for one hop. Not
+   * `BlueprintSummary` — this shape also carries the `title` a summary keeps inside its
+   * manifest, which is what the link actually prints.
+   */
+  usedIn: { ownerHandle?: string; slug: string; title: string }[];
 }
 
 /**
@@ -188,10 +197,7 @@ export function VersionHistory({
                       {entry.usedIn.map((blueprint, index) => (
                         <span key={blueprint.slug}>
                           <Link
-                            href={contentHref({
-                              kind: "blueprint",
-                              slug: blueprint.slug,
-                            })}
+                            href={blueprintRecordHref(blueprint)}
                             className="text-muted underline-offset-4 transition-colors hover:text-cyan hover:underline"
                           >
                             {blueprint.title}
@@ -220,9 +226,9 @@ export function VersionHistory({
             ✓
           </span>
           <span>
-            First published version, there is nothing to compare it against yet.
-            A version is never edited in place, so the next change arrives as a new
-            one and the diff between them shows up here, worked out from the two
+            First published version. There is nothing to compare it against yet.
+            A version is never edited in place. The next change arrives as a new
+            version. The diff between them shows up here, worked out from the two
             documents.
           </span>
         </p>

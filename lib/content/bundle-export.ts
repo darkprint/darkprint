@@ -14,10 +14,7 @@
 
    The files, and why each one exists:
 
-     factory.dot    what Attractor runs. `emitAttractorDot`, so every
-                    node carries its card's `spec` as the `prompt`
-                    the agent receives (doc 1 §0.1.2).
-     blueprint.dot  the DarkPrint topology, verbatim. The card pin on
+     topology.dot   the DarkPrint topology, verbatim. The card pin on
                     every node is intact, which is what makes the
                     bundle digest recomputable off these bytes (§4).
      cards/*.yaml   the pinned cards, verbatim from the archive. Same
@@ -33,19 +30,32 @@
                     recomputed from the files that are supposed to
                     have produced them.
      README.md      product copy. Identity, digest, where execution
-                    happens, the command, and what DarkPrint does
-                    not do (doc 1 §0.1.3, doc 2 §2.5).
+                    happens, and what DarkPrint does not do (doc 1
+                    §0.1.3, doc 2 §2.5).
 
    PURE and deterministic: the same bundle always produces the same
    bytes in the same order.
+
+   ── `factory.dot` and `AGENTS.md`, removed (owner instruction, 2026-08-25) ──
+   A published folder used to also carry a compiled `factory.dot` (topology plus a
+   synthesised `__start`/`__exit` and every card's `spec` inlined as `prompt`, emitted by
+   `emitAttractorDot`) and a generated `AGENTS.md` (the same graph narrated for an agent
+   adapting it). Both are gone: the folder now hands over exactly what an author wrote —
+   the topology and the pinned cards — and stops shipping a second, compiled description
+   of the same graph next to the first. `emitAttractorDot` itself is untouched in
+   `lib/core`; it has callers outside this module (`lib/starter/variants.test.ts`,
+   `emit.test.ts`) and stays there as a general DOT-emission capability. `FACTORY_DOT` and
+   `BUNDLE_AGENTS` stay exported below, at their old names and values, only because two
+   FROZEN suites (`components/blueprint/download-name.test.ts`,
+   `components/bundle/files.test.ts`) import them by name to assert a bundle never emits
+   them — deleting the export would fail those suites to compile, which is a different and
+   worse failure than the one this removal is trying to make.
    ============================================================ */
 
 import {
-  emitAttractorDot,
   type BlueprintAnalysis,
   type CardRef,
   type OntologyTerm,
-  type Port,
   type ResolvedBlueprint,
 } from "@/lib/core";
 import { autonomyStatement } from "@/lib/format";
@@ -57,17 +67,28 @@ import { ONTOLOGY_EXTENSIONS_FILE } from "./ontology-file";
 
 /* --------------------- the layout --------------------- */
 
-/** The Attractor-runnable pipeline. */
+/**
+ * The name a compiled, Attractor-runnable pipeline used to have in a published bundle.
+ *
+ * `exportBundle` no longer writes this file (owner instruction, 2026-08-25 — see the file
+ * banner). The constant survives, unused by the writer, because two FROZEN suites import
+ * it by name to assert exactly that: `download-name.test.ts` checks the download button
+ * never saves a file under this name, and `files.test.ts` uses it to build its allow-list
+ * of names a seeded listing may contain.
+ */
 export const FACTORY_DOT = "factory.dot";
 
 /** The DarkPrint topology, as the registry stores it. */
-export const TOPOLOGY_DOT = "blueprint.dot";
+export const TOPOLOGY_DOT = "topology.dot";
 
 export const BUNDLE_README = "README.md";
 
 /**
- * The agent-facing file. `README.md` addresses a person deciding whether to run this;
- * this addresses the agent being asked to fit the pattern into a codebase.
+ * The name an agent-facing file used to have in a published bundle.
+ *
+ * `exportBundle` no longer writes this file (owner instruction, 2026-08-25 — see the file
+ * banner). Kept exported for the same reason as `FACTORY_DOT`: `files.test.ts` (FROZEN)
+ * imports it by name for its allow-list.
  */
 export const BUNDLE_AGENTS = "AGENTS.md";
 
@@ -199,7 +220,7 @@ export interface BundleExportInput {
  * Throws when a node pins a card the input does not carry. The loader cannot produce
  * such a bundle — `resolveBundle` raises `bundle/missing-card` first and the archive
  * reader refuses to publish it — so reaching here with one means the caller assembled
- * the input wrongly, and shipping a folder whose `factory.dot` references a card that
+ * the input wrongly, and shipping a folder whose `topology.dot` references a card that
  * is not in it would be worse than failing the build.
  */
 export function exportBundle(input: BundleExportInput): readonly ExportedFile[] {
@@ -208,12 +229,10 @@ export function exportBundle(input: BundleExportInput): readonly ExportedFile[] 
 
   const files: ExportedFile[] = [
     { path: BUNDLE_README, text: bundleReadme(input) },
-    { path: BUNDLE_AGENTS, text: bundleAgents(input) },
-    // Verbatim, both of them. The digest is taken over this DOT source and these card
-    // digests, so any normalisation here would break the one claim the README makes
-    // that a reader can check on their own machine.
+    // Verbatim. The digest is taken over this DOT source and these card digests, so any
+    // normalisation here would break the one claim the README makes that a reader can
+    // check on their own machine.
     { path: TOPOLOGY_DOT, text: input.blueprint.dot },
-    { path: FACTORY_DOT, text: emitAttractorDot(input.blueprint) },
     ...cards.map((card) => ({ path: cardFilePath(card.ref), text: card.text })),
   ];
 
@@ -235,7 +254,7 @@ export function exportBundle(input: BundleExportInput): readonly ExportedFile[] 
  * thing that must never be true of that list is that it disagrees with what is on disk: a
  * command missing a file writes a folder that does not resolve, and a command naming a
  * file that is not there aborts partway through on `--fail-early` and leaves a half-written
- * folder behind. So the list is derived here, beside the writer, from the same four
+ * folder behind. So the list is derived here, beside the writer, from the same two
  * constants and the same `cardFilePath` — and `bundle-export.test.ts` holds it to
  * `exportBundle(input).map((f) => f.path)` over every bundle in the archive, which is the
  * assertion that makes "derived from the same values" a fact rather than an intention.
@@ -260,9 +279,7 @@ export function bundleFilePaths(input: {
 }): readonly string[] {
   const paths = [
     BUNDLE_README,
-    BUNDLE_AGENTS,
     TOPOLOGY_DOT,
-    FACTORY_DOT,
     ...[...new Set(input.cardRefs)].map(cardFilePath),
   ];
   if (input.vocabulary) paths.push(BUNDLE_VOCABULARY);
@@ -428,200 +445,6 @@ function pinnedCards(input: BundleExportInput): ExportedCard[] {
   return [...out.values()].sort((a, b) => (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0));
 }
 
-/* --------------------- the agent file --------------------- */
-
-/**
- * `AGENTS.md` — the bundle, addressed to the agent adapting it.
- *
- * `README.md` is for a person deciding whether to run this folder. This is for Claude
- * Code, Gemini, Codex or anything else being handed the folder and asked to fit the
- * pattern into a codebase that already exists.
- *
- * ── Generated, and only the generated half ──
- * Everything here is read off `blueprint.dot` and the cards. Nothing is typed, for the
- * reason `ScoringModel.tsx` states about numbers: a second description of the graph is a
- * second description that drifts from the first, and this one would drift silently
- * because no reader opens both.
- *
- * The half a generator cannot write — what problem this pattern solves, what to look for
- * in the codebase, when not to use it — is the uploader's, and there is no field for it
- * yet. So this file does not leave a heading for it. An empty "How to adapt this" section
- * is a promise the folder does not keep, and the file says plainly what it does not know
- * rather than implying somebody forgot to fill it in.
- *
- * ── Why the prohibitions lead ──
- * They are the one thing an agent adapting a pattern is most likely to get wrong, because
- * they are the part with no positive trace in the code: a connection nobody drew looks
- * exactly like a connection nobody thought of. Doc 2 §3's whole argument is that isolation
- * is a property of the topology, and the topology is what an agent is about to rewrite.
- *
- * ── Enforced against free text ──
- * `NodeCard.cannot` mixes two things. An entry naming an ontology `data-type` is a rule
- * `bundle/resolve.ts` checks and will fail the bundle over; an entry naming anything else
- * is a sentence addressed to a reader and checked by nothing. Collapsing them here would
- * tell an agent that "never opens a shell" is verifiable, and it is not. They are printed
- * under separate headings for that reason, and the free-text ones say so in the open.
- */
-export function bundleAgents(input: BundleExportInput): string {
-  const { blueprint } = input;
-  const { manifest } = blueprint;
-  const view = blueprint.ontology;
-
-  const out: string[] = [];
-  const push = (...lines: string[]): void => {
-    out.push(...lines);
-  };
-
-  push(`# ${manifest.title}, for an agent`, "");
-  push(
-    ...wrap(
-      `You are being handed a DarkPrint blueprint: a pattern for ${manifest.summary
-        .trim()
-        .replace(/\.$/, "")
-        .toLowerCase()}.`,
-    ),
-    "",
-  );
-  push(
-    ...wrap(
-      "Everything below is read off `blueprint.dot` and the cards in this folder. It describes " +
-        "the pattern and nothing else: it has not seen the codebase you are about to change, and " +
-        "it carries no instructions from whoever published it.",
-    ),
-    "",
-  );
-
-  /* ---- the prohibitions, first ---- */
-  const enforced: [string, string][] = [];
-  const freeText: [string, string][] = [];
-  for (const node of blueprint.nodes) {
-    for (const entry of node.card.cannot) {
-      const term = view.resolve(entry)?.term;
-      if (term !== undefined && term.kind === "data-type") enforced.push([node.nodeId, entry]);
-      else freeText.push([node.nodeId, entry]);
-    }
-  }
-
-  push("## What must never be connected", "");
-  if (enforced.length === 0 && freeText.length === 0) {
-    push(
-      ...wrap(
-        "No node in this blueprint declares a prohibition. Nothing here is an isolation rule, " +
-          "so the wiring below carries the whole of the design.",
-      ),
-      "",
-    );
-  }
-  if (enforced.length > 0) {
-    push(
-      ...wrap(
-        "These are enforced. Each names a data type the node must never be handed, and the " +
-          "resolver fails the bundle if an incoming edge could carry it. Rewiring this pattern " +
-          "in a way that breaks one of them does not produce a variant of the pattern; it " +
-          "produces a bundle that will not resolve.",
-      ),
-      "",
-    );
-    for (const [nodeId, entry] of enforced) {
-      push(`- \`${nodeId}\` must never receive \`${entry}\`.`);
-    }
-    push("");
-  }
-  if (freeText.length > 0) {
-    push("Stated by the author and checked by nothing. Read them; do not assume a tool will.", "");
-    for (const [nodeId, entry] of freeText) {
-      push(`- \`${nodeId}\`: ${entry}`);
-    }
-    push("");
-  }
-
-  /* ---- the nodes ---- */
-  push("## The nodes", "");
-  for (const node of blueprint.nodes) {
-    const card = node.card;
-    push(`### \`${node.nodeId}\` — ${card.name}`, "");
-    push(card.action.trim(), "");
-    const facts: string[] = [`type \`${card.type}\``];
-    if (card.phases.length > 0) facts.push(`phase ${card.phases.map((p) => `\`${p}\``).join(", ")}`);
-    if ((card.model ?? "").trim() !== "") facts.push(`model \`${card.model}\``);
-    if (card.tools.length > 0) facts.push(`tools ${card.tools.map((t) => `\`${t}\``).join(", ")}`);
-    if (card.requiresHuman) facts.push("**a person acts here**");
-    push(facts.join(" · "), "");
-    const ports = (label: string, list: readonly Port[]): void => {
-      if (list.length === 0) return;
-      push(
-        `${label}: ${list
-          .map((p) => `\`${p.name}\`: \`${p.type}\`${p.required === true ? " (required)" : ""}`)
-          .join(", ")}`,
-        "",
-      );
-    };
-    ports("Takes", card.inputs);
-    ports("Emits", card.outputs);
-  }
-
-  /* ---- the wiring ---- */
-  push("## The wiring", "");
-  if (blueprint.edges.length === 0) {
-    push("No edges. Every node in this graph stands alone.", "");
-  } else {
-    push("```");
-    for (const edge of blueprint.edges) {
-      const carried = edge.fromPort?.type ?? edge.toPort?.type;
-      push(`${edge.source} -> ${edge.target}${carried === undefined ? "" : `   ${carried}`}`);
-    }
-    push("```", "");
-    push(
-      ...wrap(
-        "An edge that is absent is as much a part of this pattern as one that is present. Before " +
-          "adding a connection the graph does not have, check it against the prohibitions above.",
-      ),
-      "",
-    );
-
-    /* The trap this exists to close: a node can declare an input that no edge feeds. On the
-       starter that is `builder`, whose brief arrives when the run is instantiated, and the
-       missing edge is the entire point of the pattern. An agent reading "Takes: brief" with
-       nothing pointing at the node is one step from drawing the edge that breaks it. */
-    const fed = new Set(blueprint.edges.map((edge) => edge.target));
-    const unfed = blueprint.nodes.filter(
-      (node) => node.card.inputs.length > 0 && !fed.has(node.nodeId),
-    );
-    if (unfed.length > 0) {
-      push(
-        ...wrap(
-          `${unfed.length === 1 ? "One node declares an input" : `${unfed.length} nodes declare inputs`} ` +
-            "that no edge in this graph feeds: " +
-            `${unfed.map((node) => `\`${node.nodeId}\``).join(", ")}. ` +
-            "That is not a gap to fill. What they take arrives when the run is instantiated, and " +
-            "on some patterns the absent edge is the design.",
-        ),
-        "",
-      );
-    }
-  }
-
-  /* ---- what this file does not know ---- */
-  push("## What this file does not tell you", "");
-  push(
-    ...wrap(
-      "Where this pattern belongs in the codebase, what to look for before wiring it in, and " +
-        "when not to use it at all. Those depend on the code, and nothing in this folder has " +
-        "seen it. Read the graph, read the cards, then read the code.",
-    ),
-    "",
-  );
-  push(
-    ...wrap(
-      `\`${BUNDLE_README}\` covers running the pattern as it stands, including the command and the ` +
-        "digest that confirms these files are the ones the registry read.",
-    ),
-    "",
-  );
-
-  return `${out.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd()}\n`;
-}
-
 /* --------------------- the README --------------------- */
 
 /**
@@ -665,37 +488,36 @@ export function bundleReadme(input: BundleExportInput): string {
   }
   push("```", "");
   push(
-    "The digest is taken over `blueprint.dot` and the digest of every card version pinned in it.",
+    "The digest is taken over `topology.dot` and the digest of every card version pinned in it.",
     "Recompute it to confirm these files are the ones DarkPrint read. One changed byte gives a",
     "different digest.",
     "",
   );
 
-  /* ---- run it: doc 1 §0.1.3, and the command ---- */
+  /* ---- run it: doc 1 §0.1.3, and what the folder hands over ---- */
   push("## Run it", "");
   push(
     "This runs on your machine. DarkPrint hands out the files and analyses them statically. It",
     "executes nothing and holds none of your provider keys.",
     "",
   );
-  push("```", `attractor run ${FACTORY_DOT}`, "```", "");
-  push("Check it first, without spending tokens:", "");
+  /* Owner instruction, 2026-08-25: the folder no longer carries a compiled, runnable
+     `factory.dot`, so a section leading on `attractor run factory.dot` would be printing a
+     command against a file that is not there. What is true instead: the folder hands over
+     the topology and the pinned cards a reader's own harness turns into a run. */
   push(
-    "```",
-    `attractor validate ${FACTORY_DOT}`,
-    `attractor run ${FACTORY_DOT} --simulate`,
-    "```",
-    "",
-  );
-  push(
-    `\`${FACTORY_DOT}\` is self-contained. Every node carries its card's \`spec\` as the \`prompt\` its`,
-    "agent receives, so the runner needs no other file from this folder. Flags vary between",
-    "Attractor runners; `attractor run --help` is authoritative on yours.",
+    ...wrap(
+      `This folder carries the topology and its pinned cards, nothing compiled. \`${TOPOLOGY_DOT}\` ` +
+        `names every node, every edge and the card version pinned on it. Each card under ` +
+        `\`${BUNDLE_CARDS_DIR}/\` carries the \`spec\` that becomes that node's prompt. Turning the ` +
+        "two into a running pipeline is your own harness's job; DarkPrint does not compile or " +
+        "execute one.",
+    ),
     "",
   );
 
-  /* The command above spends tokens on somebody's account, so which model it spends them
-     on belongs beside it rather than three sections down. Written only when a card names
+  /* Which model a node runs on is visible without a compiled file: it is the card's own
+     `model` field, verbatim in the YAML this folder ships. Written only when a card names
      one: a folder where nothing does would be claiming a default it never set. */
   const modelled = blueprint.nodes.filter((node) => (node.card.model ?? "").trim() !== "");
   if (modelled.length > 0) {
@@ -703,12 +525,10 @@ export function bundleReadme(input: BundleExportInput): string {
       ...wrap(
         [
           modelled.length === 1
-            ? "One node in this blueprint names the model it runs on, and carries it as `llm_model`."
-            : `${modelled.length} of the ${blueprint.nodes.length} nodes name the model they run on, and carry it as \`llm_model\`.`,
-          "That is Attractor's own attribute for it, so the run uses those models as they stand and",
-          "your provider has to serve them. A node attribute outranks a graph-level",
-          "`model_stylesheet`, so edit the line to run a node on something else, and delete the",
-          "attribute to hand the choice back to your own configuration.",
+            ? "One node in this blueprint names the model it runs on, in its card's own `model` field."
+            : `${modelled.length} of the ${blueprint.nodes.length} nodes name the model they run on, in their card's own \`model\` field.`,
+          `Read it off \`${BUNDLE_CARDS_DIR}/<ref>.yaml\`; whether your harness honours it is yours to`,
+          "decide.",
         ].join(" "),
       ),
       "",
@@ -720,7 +540,6 @@ export function bundleReadme(input: BundleExportInput): string {
   // Laid out from the list rather than by hand-counted spaces, so a row whose name is
   // longer than the others moves the column instead of falling out of it.
   const folder: readonly (readonly [string, string])[] = [
-    [FACTORY_DOT, "the pipeline Attractor runs, each card's spec inlined as a prompt"],
     [
       TOPOLOGY_DOT,
       "the DarkPrint topology: node ids, edges, the card version pinned on each node",
@@ -735,19 +554,11 @@ export function bundleReadme(input: BundleExportInput): string {
           ] as const,
         ]),
     [BUNDLE_README, "this file"],
-    [BUNDLE_AGENTS, "the same folder addressed to an agent adapting it, generated from the cards"],
   ];
   const column = Math.max(...folder.map(([name]) => name.length)) + 3;
   push("```");
   for (const [name, note] of folder) push(`${name.padEnd(column)}${note}`);
   push("```", "");
-  push(
-    "Two DOT files, because they answer different questions. `blueprint.dot` is what the registry",
-    "stores and scores. `factory.dot` is that same graph prepared for a runner: a synthesised",
-    "`__start` and `__exit` node, and the prompts inlined. Delete those two nodes and their edges",
-    "and you are back to the topology.",
-    "",
-  );
 
   /* ---- the pointers this folder does not resolve ---- */
   const skills = skillPointers(input);
@@ -773,10 +584,10 @@ export function bundleReadme(input: BundleExportInput): string {
     push(
       ...wrap(
         [
-          "Nothing here needs them to run. Every node in `factory.dot` carries its card's `spec` inline",
-          "as the prompt its agent receives, so a runner given this folder and nothing else has the",
-          "whole instruction for every node. A skill document adds a capability to one agent; what the",
-          "blueprint decides is who is wired to whom.",
+          "Nothing here needs them to run. Every card carries its own `spec` inline, which is the",
+          "whole instruction for that node whatever harness compiles this topology into a running",
+          "pipeline. A skill document adds a capability to one agent; what the blueprint decides is",
+          "who is wired to whom.",
         ].join(" "),
       ),
       "",

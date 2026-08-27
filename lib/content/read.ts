@@ -64,7 +64,7 @@ const CARDS_DIR = join(CONTENT_DIR, "cards");
 
 /** Bundle-relative names. The engine reports diagnostics against these. */
 const MANIFEST_FILE = "blueprint.yaml";
-const DOT_FILE = "blueprint.dot";
+const DOT_FILE = "topology.dot";
 const CARD_PREFIX = "cards/";
 
 /**

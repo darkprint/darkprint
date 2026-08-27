@@ -51,12 +51,23 @@ describe("Wordmark", () => {
        would all fail here, and every one of them would put a gap in the brand name. */
     expect(html).toMatch(/Dark<[^>]+>Print</);
     expect(text).toContain("Reusable blueprints for agent workflows.");
-    expect(text).toContain("Find a blueprint");
-    expect(text).toContain("Create a blueprint");
-    expect(html).toContain('href="/blueprints"');
-    // `/skill`, not `/build`: creating a blueprint is the authoring skill, and the two were
-    // split apart on 2026-08-10. `/build` is the worked sandbox and is a Learn stop.
-    expect(html).toContain('href="/skill"');
+
+    /* The fold's action is `HeroAction` now, not the two route buttons: the owner replaced
+       them with the sign-in choice (signed out) or the reader's own name (signed in), so
+       "Find a blueprint" / "Create a blueprint" and their hrefs are no longer this
+       component's to render. `components/home/beats.test.ts` holds the other half — that
+       both routes are still reachable from the landing, through `SectionLifecycle`, which
+       is what makes the change a move rather than a removal.
+
+       What is pinned here is the STATIC frame, which is the only frame this renderer sees:
+       `HeroAction` reads the session in the browser (the landing must stay prerendered,
+       and `tests/server/t261/ac3-prerender-verdicts.test.ts` asserts `/` does), so the
+       server-rendered output is its claimless loading placeholder. A hero that shipped
+       "Sign in" or a name in this frame would be stating something about a reader nobody
+       has identified yet. */
+    expect(html).toContain("animate-pulse");
+    expect(text).not.toContain("Sign in with");
+    expect(text).not.toContain("Welcome,");
   });
 
   it("keeps the decorative trace hidden in the static frame", () => {

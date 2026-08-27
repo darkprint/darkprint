@@ -260,8 +260,8 @@ export function ScorePanel({
             </div>
           ))}
           <p className="text-[11px] leading-relaxed text-dim">
-            An error is where DarkPrint stops. The readings below are what the analyzer
-            computed on the way there, and no bundle carrying this can be published.
+            An error stops DarkPrint. The readings below are what the analyzer computed on
+            the way there. No bundle carrying this can be published.
           </p>
         </div>
       )}

@@ -2,14 +2,17 @@ import Link from "next/link";
 
 import type { Release, UpstreamMoved } from "@/lib/data/bundles";
 import { cx, prettyDate } from "@/lib/format";
-import { nodeHref } from "@/lib/href";
-import { Button } from "@/components/ui/Button";
+import { blueprintHref, nodeHref } from "@/lib/href";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { MetaPill } from "@/components/ui/MetaPill";
+import { VisibilityControl } from "@/components/bundle/VisibilityControl";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-67) (cited at line 42): PATCH /api/bundles/{owner}/{slug}/visibility
+// SEAM-67 LIVE (T280): PATCH /api/bundles/{owner}/{slug}/visibility — `VisibilitySwitch`'s
+// `live` prop.
 // TODO(SEAM-68) (cited at line 328): POST /api/bundles/{owner}/{slug}/releases
-// TODO(SEAM-71) (cited at line 227): GET /api/bundles/{owner}/{slug}/forks
+// SEAM-71 LIVE (T280): GET /api/bundles/{owner}/{slug}/forks — the page calls `forksOf`
+// in-process and hands `Forks` the real rows.
 // TODO(SEAM-72) (cited at line 178): GET /api/bundles/{owner}/{slug}/drift
 // TODO(SEAM-73) (cited at line 22): n/a
 
@@ -31,8 +34,8 @@ export function PageHolds() {
     <section className="panel p-5">
       <span className="label">What this page does not hold</span>
       <p className="mt-3 text-[13px] leading-relaxed text-muted">
-        What the registry stores is this bundle and who owns it. What it still does not:
-        a run, a key, or any telemetry about either. Execution stays on your machine.
+        The registry stores this bundle and who owns it. It does not store a run, a
+        key, or any telemetry about either. Execution stays on your machine.
       </p>
     </section>
   );
@@ -49,10 +52,13 @@ export function PageHolds() {
 export function VisibilitySwitch({
   visibility,
   blocked = false,
+  live,
 }: {
   visibility: "public" | "private";
   /** The bundle does not resolve, so publishing is refused for a reason of its own. */
   blocked?: boolean;
+  /** T280: owner-only, live. Wins over the drawn-and-disabled default below. */
+  live?: { api: string };
 }) {
   return (
     <section className="panel p-5">
@@ -63,41 +69,68 @@ export function VisibilitySwitch({
         </span>
       </div>
 
-      {/* A radiogroup rather than two buttons: the two are one choice, and a screen reader
-          should hear them as such. Both are `aria-disabled` and neither is bound, which is
-          what the note under them says in words. */}
-      <div
-        role="radiogroup"
-        aria-label="Visibility"
-        aria-disabled
-        className="mt-3 grid grid-cols-2 gap-1 rounded-md border border-line bg-void p-1"
-      >
-        {(["public", "private"] as const).map((option) => (
-          <span
-            key={option}
-            role="radio"
-            aria-checked={visibility === option}
-            className={cx(
-              "cursor-not-allowed rounded-sm px-3 py-1.5 text-center font-mono text-[11px] uppercase tracking-[0.12em]",
-              visibility === option
-                ? "border border-cyan/50 bg-cyan/10 text-cyan"
-                : "text-dim",
-            )}
-          >
-            {option}
-          </span>
-        ))}
-      </div>
+      {live !== undefined ? (
+        <VisibilityControl api={live.api} visibility={visibility} />
+      ) : (
+        /* A radiogroup rather than two buttons: the two are one choice, and a screen reader
+           should hear them as such. Both are `aria-disabled` and neither is bound, which is
+           what the note under them says in words. */
+        <div
+          role="radiogroup"
+          aria-label="Visibility"
+          aria-disabled
+          className="mt-3 grid grid-cols-2 gap-1 rounded-md border border-line bg-void p-1"
+        >
+          {(["public", "private"] as const).map((option) => (
+            <span
+              key={option}
+              role="radio"
+              aria-checked={visibility === option}
+              className={cx(
+                "cursor-not-allowed rounded-sm px-3 py-1.5 text-center font-mono text-[11px] uppercase tracking-[0.12em]",
+                visibility === option
+                  ? "border border-cyan/50 bg-cyan/10 text-cyan"
+                  : "text-dim",
+              )}
+            >
+              {option}
+            </span>
+          ))}
+        </div>
+      )}
 
       <p className="mt-3 text-[13px] leading-relaxed text-muted">
         Publishing runs the validator over your graph and gives the copy a scorecard of its
         own. It does not change the upstream, and the lineage line stays.
       </p>
-      <p className="mt-2 font-mono text-[11px] text-amber">
-        {blocked
-          ? "◐ seeded · this bundle does not resolve, so it could not publish even with a registry behind it"
-          : "◐ seeded · the switch is drawn and switched off: nothing stores a visibility"}
-      </p>
+      {live !== undefined ? (
+        /* T280 fills the gap the amber line below has stated since D-262-15: `bundle.visibility`
+           was already a real, read column, and now `PATCH /api/bundles/[owner]/[slug]/visibility`
+           is the route that writes it — SEAM-67 above is LIVE rather than a TODO. Nothing here
+           is seeded any more, so the marker comes off rather than being reworded a third time. */
+        <p className="mt-2 text-[11px] text-dim">
+          {blocked
+            ? "This bundle does not resolve. Publishing is refused for a reason of its own. The switch above still writes."
+            : "Changes here save immediately."}
+        </p>
+      ) : (
+        /* HALF OF THIS SENTENCE BECAME FALSE AND HALF DID NOT, so it is rewritten rather
+            than deleted — D-262-15's move, where two `DangerRow` reasons were rewritten
+            because there was an account and there was ownership and what was missing was the
+            ROUTE. Measured here the same way: `bundle.visibility` is a real column, the
+            canonical page reads it per request and the pill above states it (AC6, D-261-01),
+            so "nothing stores a visibility" is false and the marker cannot keep saying it.
+            The switch still writes nothing in THIS render — no `live` prop reached it, which
+            is this component's own caller declining the live control, not the route being
+            absent (SEAM-67 is LIVE) — so the switched-off half stays true of this instance
+            and stays said. Deleting the whole line would be D-78's removed-early direction
+            for the half that is still a limit. */
+        <p className="mt-2 font-mono text-[11px] text-amber">
+          {blocked
+            ? "◐ seeded · this bundle does not resolve, so it could not publish even with a registry behind it"
+            : "◐ seeded · the visibility above is stored and read. The switch is drawn and switched off because no route accepts the change."}
+        </p>
+      )}
     </section>
   );
 }
@@ -225,11 +258,12 @@ export function UpstreamMovedPanel({
  * broken. So the count and the list are both computed over public rows, and the private
  * ones are not counted, not hinted at, and not subtracted from anything.
  *
- * It is empty on every blueprint in this build, and that is the honest state rather than a
- * gap: the account fixture holds three forks and every one of them is private, because a
- * seeded public bundle would be a claim about a registry nobody can check. `guarded-merge-
- * bot` is the case worth understanding — it really does have a fork in `lib/data/`, and
- * this panel is right to say nothing about it.
+ * T280: `forksOf` (`lib/server/lineage`) already applies exactly this filter — the module
+ * itself answers only `visibility === "public"` rows for every caller, upstream author
+ * included (Q1) — so the page hands this component the registry's own answer rather than a
+ * fixture standing in for one. Empty is a real and common state (most bundles have no public
+ * fork yet), and it renders the same way a bundle with three does: this panel does not know
+ * or care which.
  */
 export function Forks({
   forks,
@@ -247,8 +281,14 @@ export function Forks({
         <ul className="mt-3 flex flex-col gap-3">
           {forks.map((fork) => (
             <li key={`${fork.owner}/${fork.slug}`} className="flex flex-col gap-1">
+              {/* The CANONICAL bundle URL, not `/u/<owner>/<slug>` (B-09, D-261-08(1)).
+                  That route is becoming a 308 onto this one, and pointing an internal link
+                  at a redirect costs every reader a hop for nothing — the refusal this
+                  repository already records for `/which-tasks` in `next.config.ts`. The
+                  forks themselves stay seeded and out of scope; only where the row POINTS
+                  moves, because a fork is a bundle and a bundle now has one name. */}
               <Link
-                href={`/u/${fork.owner}/${fork.slug}`}
+                href={blueprintHref(fork.owner, fork.slug)}
                 className="font-mono text-[12px] text-cyan transition-colors hoverable:hover:text-cyan-bright"
               >
                 {fork.owner} / {fork.slug}
@@ -277,10 +317,17 @@ export function Forks({
 export function Releases({
   releases,
   fetchable,
+  publishHref,
 }: {
   releases: readonly Release[];
   /** Whether the folder is really on disk. False for anything unpublished. */
   fetchable: boolean;
+  /**
+   * T280: `/upload?owner=X&slug=Y`, owner-only — present only when `!fetchable` is also
+   * true and the caller is the owner. `undefined` keeps the disabled button below, which
+   * is what every caller that has not opted in still gets.
+   */
+  publishHref?: string;
 }) {
   if (releases.length === 0) {
     return (
@@ -331,13 +378,18 @@ export function Releases({
           ? "This one is on disk and the command in Get the folder fetches it."
           : "None of these is fetchable: the bundle is private, and the sizes and file counts below the version are seeded."}
       </p>
-      {!fetchable && (
+      {!fetchable && publishHref !== undefined && (
+        <ButtonLink variant="outline" size="sm" className="mt-3" href={publishHref}>
+          Publish a release
+        </ButtonLink>
+      )}
+      {!fetchable && publishHref === undefined && (
         <Button
           variant="outline"
           size="sm"
           disabled
           className="mt-3"
-          title="Nothing publishes yet: there is no account and no registry write path."
+          title="Publishing is the bundle owner's action, from this page."
         >
           Publish a release
         </Button>

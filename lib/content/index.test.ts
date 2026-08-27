@@ -164,8 +164,11 @@ describe("derived metrics", () => {
     for (const bp of blueprints) {
       expect(bp.metrics.map((m) => m.key)).toEqual(METRIC_ORDER);
       for (const metric of bp.metrics) {
-        expect(Number.isFinite(metric.value)).toBe(true);
-        expect(Number.isInteger(metric.value)).toBe(true);
+        // `Metric.value` widened to `number | undefined` for the live cost row (D-180-01,
+        // lib/content/view.ts); the fixture path this suite reads never takes that branch,
+        // so `?? NaN` only satisfies the type checker and never masks a real absence here.
+        expect(Number.isFinite(metric.value ?? NaN)).toBe(true);
+        expect(Number.isInteger(metric.value ?? NaN)).toBe(true);
         expect(metric.value).toBeGreaterThanOrEqual(0);
         expect(metric.value).toBeLessThanOrEqual(100);
         expect(metric.label.trim()).not.toBe("");

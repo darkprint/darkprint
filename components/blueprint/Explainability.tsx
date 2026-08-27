@@ -890,7 +890,7 @@ function CriteriaIsolation({
           <p className="text-sm leading-relaxed text-fg">
             {inferred
               ? "The check ran and found a route."
-              : "No route was traced. The marker is here because a card declares it, which is the author’s own statement about the node rather than something the analyzer observed."}{" "}
+              : "No route was traced. The marker is here because a card declares it. That is the author’s own statement about the node, not something the analyzer observed."}{" "}
             It is charged once in the ledger above, and the{" "}
             {leaks.length === 1 ? "finding" : `${leaks.length} findings`} below
             {leaks.length === 1 ? " names the node" : " name the nodes"} and what to
@@ -933,7 +933,7 @@ function CriteriaIsolation({
                   is quoted verbatim from `analysis/criteria-leak-unanchored`'s hint,
                   where `lib/core/analysis/security.test.ts` pins it. */}
               <span className="text-fg">
-                The absence of a finding here is silence, not a clean verdict.
+                The absence of a finding here is silence. It is not a clean verdict.
               </span>
             </p>
             {/* A declared marker has no precondition at all, so it can sit on a bundle
@@ -945,7 +945,7 @@ function CriteriaIsolation({
                 <code className="font-mono">criteria-leak</code> on{" "}
                 {leaks.length === 1 ? "its" : "their"} own card, and{" "}
                 {leaks.length === 1 ? "is" : "are"} charged for it in the ledger above.
-                That is the author&rsquo;s statement rather than a route the analyzer
+                That is the author&rsquo;s statement, not a route the analyzer
                 traced, and the analyzer could not trace one either way here.
               </p>
             )}
@@ -958,10 +958,10 @@ function CriteriaIsolation({
                 </p>
               )}
               <p className="text-xs leading-relaxed text-dim">
-                Most of the registry is in this state today: a gap in what the graphs
-                declare rather than a fault in what they do. The criteria are real, and
+                Most of the registry is in this state today. That is a gap in what the
+                graphs declare, not a fault in what they do. The criteria are real, and
                 the port that carries them is not typed. The analyzer records that it
-                does not know rather than charge for a leak it never observed.
+                does not know. It does not charge for a leak it never observed.
               </p>
             </More>
           </div>
@@ -989,8 +989,8 @@ function CriteriaIsolation({
                 engine's own clause from `analysis/criteria-relayed-through-judge`, which
                 after the pass was readable only inside a closed disclosure. */}
             <p className="text-xs leading-relaxed text-dim">
-              The rows below name where it stopped. Nothing there is charged: a channel
-              the topology cannot follow is not evidence of a leak, and it is not evidence
+              The rows below name where it stopped. Nothing there is charged. A channel
+              the topology cannot follow is not evidence of a leak. It is not evidence
               of isolation either.
             </p>
           </div>
@@ -1008,8 +1008,8 @@ function CriteriaIsolation({
                 headline claims no more than the engine said. */}
             <More summary="Two different graphs produce this">
               <p className="text-xs leading-relaxed text-dim">
-                One where the criteria producer and the judged node both exist and no
-                path runs between them, and one where nothing in the graph is being
+                One graph has both the criteria producer and the judged node, but no
+                path runs between them. In the other, nothing in the graph is being
                 judged, so the check had no subject. The lifecycle rows and the schematic
                 above say which of the two this is.
               </p>
@@ -1038,7 +1038,7 @@ function CriteriaIsolation({
             <p className="text-xs leading-relaxed text-dim">
               Doc 1 §3.2: isolation is the absence of the content from the spec, and an
               absent edge is only half of it. The comparison here is a proxy, because the
-              acceptance criteria exist only at run time and what is actually compared is
+              acceptance criteria exist only at run time. The comparison actually uses
               the criteria producer&rsquo;s instructions for writing them.
             </p>
           </More>
@@ -1104,9 +1104,9 @@ function CriteriaIsolation({
               the ledger entry, which is the author's call to make knowingly and not one
               to take inside a layout pass. */}
           <p className="text-xs leading-relaxed text-dim">
-            The walk stops at a validation node on purpose: seeing the evidence of a
-            failure you caused is feedback, seeing the criteria is gaming, and the
-            analyzer names the channel rather than deciding what crosses it.
+            The walk stops at a validation node on purpose. Seeing the evidence of a
+            failure you caused is feedback. Seeing the criteria is gaming. The
+            analyzer names the channel. It does not decide what crosses it.
           </p>
         </div>
       )}
@@ -1122,9 +1122,9 @@ function CriteriaIsolation({
           <p className="text-xs leading-relaxed text-dim">
             These nodes name their acceptance criteria in a parameter instead of
             receiving them along an edge. Isolation is a property of the topology, so the
-            check cannot follow that channel, and on it the result above says nothing
-            either way. Nothing is charged: an unverifiable channel is not evidence of a
-            leak.
+            check cannot follow that channel. On that channel, the result above says
+            nothing either way. Nothing is charged: an unverifiable channel is not
+            evidence of a leak.
           </p>
           <ul className="divide-y divide-line">
             {outOfBand.map((d, i) => (
@@ -1335,7 +1335,7 @@ function SecurityPanel({
                 <>
                   {" "}
                   <span className="text-dim">
-                    One of the derivations did not run, though: the criteria-leak check
+                    One of the derivations did not run. The criteria-leak check
                     above found nothing to anchor on, so its silence is not a result.
                   </span>
                 </>
@@ -1361,8 +1361,8 @@ function SecurityPanel({
                 <span aria-hidden>{PROVENANCE_META.inferred.glyph}</span>{" "}
                 {PROVENANCE_META.inferred.word}
               </span>{" "}
-              the analyzer read it off the graph, which it does for unbounded loops,
-              unvalidated external access and criteria leaks whether or not the card
+              the analyzer read it off the graph. It does this for unbounded loops,
+              unvalidated external access and criteria leaks, whether or not the card
               mentions them.
             </p>
             <ul className="divide-y divide-line">

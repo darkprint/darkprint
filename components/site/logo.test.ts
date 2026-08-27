@@ -23,9 +23,11 @@
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { edge, inkFloorInset } from "./Logo";
+import { Logo, PLATE_OFFSET_X, edge, inkFloorInset } from "./Logo";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
@@ -64,6 +66,85 @@ describe("the edges are computed, not typed", () => {
     expect(path).toBe("M30 41L36 41");
     // Both ends moved inward by the port, so the drawn length is |d| - 2·port.
     expect(36 - 30).toBe(Math.hypot(b.x - a.x, b.y - a.y) - 12);
+  });
+});
+
+describe("the back plate steps out from under the flap", () => {
+  /**
+   * The plate and the flap share a left, a right and a bottom edge, so before the step the
+   * only visible part of the plate was its tab — the mark read as one sheet with a nub. The
+   * step is what makes it two sheets, and it is a TRANSFORM on the merged path rather than
+   * a second outline: rule 1 says plate and tab stay one path, and a second copy of an
+   * outline is a copy free to drift from the one it copies.
+   *
+   * Rendered rather than read off the source, because what matters is what a browser
+   * receives. A constant that exists and is never applied is the silent version of this
+   * defect.
+   */
+  const markup = (size: number) =>
+    renderToStaticMarkup(createElement(Logo, { size: size as 64 | 32 | 24 | 16 }));
+
+  /** The three rungs that draw a plate at all. 16 drops it; that is the case below. */
+  it.each([64, 32, 24])("carries the step at the %ipx rung", (size) => {
+    const html = markup(size);
+    const plate = /const BACK_PLATE =\s*\n?\s*"([^"]+)"/.exec(read("components/site/Logo.tsx"))?.[1];
+    expect(plate, "Logo.tsx no longer declares BACK_PLATE").toBeDefined();
+    expect(html).toContain(plate!);
+    expect(
+      html,
+      "the plate is drawn but not stepped, so it is hiding behind the flap again",
+    ).toContain(`transform="translate(${PLATE_OFFSET_X} 0)"`);
+  });
+
+  /**
+   * And the 16 rung has no plate to step. It sheds the plate and the tab because at that
+   * size they are two grey pixels — the same fact `app/icon.svg` is built on, which is why
+   * the favicon case below asserts the icon does not contain the plate path either.
+   */
+  it("draws no plate, and so no step, at the 16px rung", () => {
+    const html = markup(16);
+    const plate = /const BACK_PLATE =\s*\n?\s*"([^"]+)"/.exec(read("components/site/Logo.tsx"))?.[1];
+    expect(html).not.toContain(plate!);
+    /* The plate's OWN step, not any translate: the discs are placed with
+       `translate(x y)` and always will be, so a blanket check here would fail on the
+       node positions and say nothing about the plate. */
+    expect(html).not.toContain(`translate(${PLATE_OFFSET_X} 0)`);
+  });
+
+  /**
+   * The bound, as a check rather than as a sentence in a docblock.
+   *
+   * The plate spans x 6 → 58 and the `svg` root clips to its viewBox, so a step wider than
+   * 6 pushes the plate's left edge past x 0 and replaces its own 2/4 corner radius with the
+   * flat cut of the box. That is invisible in a wide header and obvious in every square
+   * slot the mark stands alone in, which is the worst way for it to be wrong. The fix for a
+   * larger step is a wider box, never an `overflow` on the root.
+   */
+  it("keeps the step inside the box, so no corner is cut by the viewBox", () => {
+    expect(Math.abs(PLATE_OFFSET_X)).toBeLessThanOrEqual(6);
+  });
+
+  /**
+   * Left, not right. The sign is the whole reading: left lands the band and the tab on one
+   * side and the mark is a stack of sheets; right lands them on opposite sides and the mark
+   * is a mistake. A tuning pass that flipped the sign would keep every other assertion here
+   * green, so the direction is asserted on its own.
+   */
+  it("steps left, so the band and the tab land on the same side", () => {
+    expect(PLATE_OFFSET_X).toBeLessThan(0);
+  });
+
+  /**
+   * It is geometry, not colour: both poles step by the same amount. `GROUNDS` carries the
+   * per-pole ink and alpha, and an offset that leaked into it would be a second place to
+   * change one number.
+   */
+  it("steps by the same amount on both grounds", () => {
+    const dark = renderToStaticMarkup(createElement(Logo, { size: 64, ground: "dark" }));
+    const sheet = renderToStaticMarkup(createElement(Logo, { size: 64, ground: "sheet" }));
+    const step = `transform="translate(${PLATE_OFFSET_X} 0)"`;
+    expect(dark).toContain(step);
+    expect(sheet).toContain(step);
   });
 });
 

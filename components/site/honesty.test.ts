@@ -31,6 +31,9 @@
    same commit and the reason goes in the message.
    ============================================================ */
 
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -292,14 +295,14 @@ const CLAIMS: Claim[] = [
   {
     surface: "/blueprints/starter-software-factory · where the trace stopped",
     why: "why a channel the analyzer cannot follow is worth naming at all. The engine writes it into the hint on every row of that list, and every hint is behind a closed disclosure",
-    says: "seeing the evidence of a failure you caused is feedback, seeing the criteria is gaming",
+    says: "seeing the evidence of a failure you caused is feedback. seeing the criteria is gaming",
     where: "open",
     html: STARTER,
   },
   {
     surface: "/blueprints/starter-software-factory · where the trace stopped",
     why: "the limit stated in both directions. \"Nothing is charged\" says what the score did; this says what the silence means",
-    says: "not evidence of a leak, and it is not evidence of isolation either",
+    says: "not evidence of a leak. it is not evidence of isolation either",
     where: "open",
     html: STARTER,
   },
@@ -308,7 +311,7 @@ const CLAIMS: Claim[] = [
   {
     surface: "/spec/card · the `cannot[]` entry in the subfield list",
     why: "half of the page's thesis. It used to close panel B of \"The split\", which asserted the free-text entry is legitimate; the IA pass of 2026-08-07 removed that band and rehomed this sentence onto the `cannot[]` entry, which is the field it was always about. Without it the symmetry has one side, and an entry nothing checks reads as an entry that failed",
-    says: "both are legitimate, and a reader has to be able to tell which is which without running anything",
+    says: "both are legitimate. a reader has to be able to tell which is which without running anything",
     where: "open",
     html: SPEC_CARD,
   },
@@ -324,7 +327,7 @@ const CLAIMS: Claim[] = [
   {
     surface: "/reading-the-radar · cost and time, if they are ever reported",
     why: "the whole telemetry block is a design nothing implements. `minRuns 5` and `outlierZScore 3` are printed as engine configuration, which is what every other number in that section is, and those two are filters on a pipeline that has never had an input. PROJECT.md §3.5 is the point at which this stops being free, so the sentence has to be beside the numbers rather than behind a disclosure",
-    says: "nothing on this site measures a run, so these two filters describe a design rather than a behaviour",
+    says: "nothing on this site measures a run. these two filters describe a design",
     where: "open",
     html: SCORING,
   },
@@ -384,15 +387,21 @@ const CLAIMS: Claim[] = [
      preview left. A reader who has just been handed a folder asks where to put it. */
   {
     surface: "/skill · the publishing panel, under the page's own rule",
-    why: "the route ends with a reader holding a blueprint their own agent wrote, and the next question anybody holding one asks is where to put it. The answer is nowhere: there is no backend, no account, no private draft and no push from a client, and all four have to be refused on the page that just handed over the folder rather than only on `/towards-a-dark-factory/the-climb`",
-    says: "not built yet: an account of your own, a blueprint kept private while it is under construction, publishing one to the registry, and pushing a change to it straight from claude code",
+    /* AMENDED at T280 (owner-instructed, 2026-08-25). This row pinned a four-refusal
+       sentence; T050 (accounts), T263 (publish + per-release visibility) and T280's page
+       wiring made three of the four the false claim in the other direction. The pin moves
+       to the one refusal still true, which is the same claim this row always guarded:
+       the reader is told, on the page that handed them the folder, what they still
+       cannot do with it from where they sit. */
+    why: "the route ends with a reader holding a blueprint their own agent wrote, and the next question anybody holding one asks is where to put it. The answer is /upload now, and the residual limit has to be stated on the page that just handed over the folder: their agent cannot push it there itself (T270 todo, SEAM-96 open)",
+    says: "not built yet: pushing a change to it straight from claude code as you work",
     where: "open",
     html: SKILL_PAGE,
   },
   {
     surface: "/skill · metadata.description",
-    why: "the same kind of disclaimer where a reader who never opens the page reads it — a search result, a shared link's preview card, a browser history entry. `/install`'s said \"not built yet: nothing here runs\" until 2026-08-07, and that came out because it became false in the OTHER direction: `npx skills@latest add Brotherhood94/darkprint` runs. This route inherits the working half, so its description names what the command actually leaves on disk and then the two capabilities that are genuinely absent. The MCP limit is NOT in this string any more, and its absence is correct rather than an omission: it moved to `/mcp`, which is now a route with a description of its own",
-    says: "not built yet: accounts and publishing",
+    why: "the same kind of disclaimer where a reader who never opens the page reads it — a search result, a shared link's preview card, a browser history entry. `/install`'s said \"not built yet: nothing here runs\" until 2026-08-07, and that came out because it became false in the OTHER direction: `npx skills@latest add Brotherhood94/darkprint` runs. AMENDED at T280 for the same both-ways rule: accounts and publishing went live, so the description now names the one capability genuinely absent — a release cut from inside the reader's own agent",
+    says: "not built yet: releasing straight from your agent",
     where: "open",
     html: SKILL_METADATA_DESCRIPTION,
   },
@@ -428,51 +437,60 @@ const CLAIMS: Claim[] = [
      a sentence, and every other route in this ledger is held to words for the same reason. */
   {
     surface: "/mcp · metadata.description",
-    why: "the one description on the site where a shared link's preview card is all that stands between a reader and a command that looks runnable. It read \"Connect an agent client to DarkPrint, test the connection, search by task, inspect provenance, and fetch an exact blueprint release\" until 2026-08-11: five capabilities in the present tense, on a route `lib/mcp.ts` opens by saying has no server behind it. A reader who never opens the page has to be told anyway",
-    says: "there is no mcp server behind the registry yet",
+    /* AMENDED at T280 (owner-instructed, 2026-08-25). T220 shipped the four operations at
+       /api/mcp/** and the page copy was recorded owed (ARCHITECTURE.md's t220 row); T280
+       paid it. The description's job is unchanged: warn the reader the COMMAND is not
+       runnable — the truth just moved from "no server" to "no npm package". */
+    why: "the one description on the site where a shared link's preview card is all that stands between a reader and a command that looks runnable. The server answers now; what fails is the npx command itself, because nothing was ever published to npm under the name it invokes. A reader who never opens the page has to be told anyway",
+    says: "the darkprint package is not published to npm",
     where: "open",
     html: MCP_METADATA_DESCRIPTION,
   },
   {
     surface: "/mcp · the lead under the h1",
-    why: "the page prints real client configuration in its first section, because that is where a reader looks for it, and a snippet that is correct in every respect except the server it points at is the most convincing thing on the route. The sentence that qualifies it has to be above it and in the reader's path, not beside the snippet where it reads as a caveat about one client",
-    says: "there is no server behind this page, so what follows is the contract being proposed rather than one you can call",
+    why: "the page prints real client configuration in its first section, because that is where a reader looks for it, and a snippet that is correct in every respect except the package it invokes is the most convincing thing on the route. The sentence that qualifies it has to be above it and in the reader's path, not beside the snippet where it reads as a caveat about one client. AMENDED at T280: the server half went live, so the qualifier names the half that is still absent",
+    says: "running the command below still fails, because the darkprint package on npm does not exist yet",
     where: "open",
     html: MCP_PAGE,
   },
-  {
-    surface: "/mcp · the status column of the contract table",
-    why: "four operations with what each takes and returns is the shape of documentation for something that exists. The status is repeated per row rather than stated once above the table, because a four-row table under one caption is read as four built operations and a caption about something else",
-    says: "not built",
-    where: "open",
-    html: MCP_PAGE,
-  },
+  /* ---- /mcp · the status column — row REMOVED at T280 (owner-instructed, 2026-08-25) ----
+     It pinned "not built" per operation-row while the four operations had no handlers.
+     T220 built all four (lib/server/mcp, app/api/mcp/**) and T280 flipped the column to
+     "live", so the pinned string's presence became the false claim. The disclosure duty
+     this row carried did not leave the route: the npm-unpublished warning is pinned twice
+     above, in the description and in the lead. If an operation is ever unshipped, its row
+     comes back here with it — the same both-ways rule every removal in this file cites. */
 
   /* ---- /upload ----
-     One paragraph, three sentences, one badge. They are asserted separately because they
-     refuse three different things and a length pass takes sentences, not paragraphs: the
-     first two have been on the page since the route was renamed off "Share a blueprint",
-     and the third arrived with the skill. Every one of them is `open` — the paragraph sits
-     above the wizard with nothing folded over it, and each qualifies a control printed in
-     the open below it. */
-  {
-    surface: "/upload · the account the verb implies",
-    why: "the route is called \"Upload blueprint\" and the word means the file goes somewhere and is kept. The author's own sketch of where this is heading — a repository you own, public or private — needs accounts, storage and a backend, and none of the three exists. Stating the direction is what earns the verb; leaving a reader to infer it from the verb is the failure",
-    says: "not built yet: an account to upload into, with each blueprint public or private the way a repository is",
-    where: "open",
-    html: UPLOAD_PAGE,
-  },
-  {
-    surface: "/upload · where the file actually goes",
-    why: "the direction above is a promise about later, and on its own it leaves today unstated. This is the sentence about today, and it is the one that has twice been deleted from this route by a pass cutting for length (see the file header). `loadBundle` runs in the tab, so it is also simply true, and it has to be printed rather than demonstrated: a reader cannot see the absence of a network call",
-    says: "there are no accounts and no backend: what you upload is read in this tab and stays in it",
-    where: "open",
-    html: UPLOAD_PAGE,
-  },
+     THREE rows stood here until T263 wired this route to the registry. Two came off in
+     that change and one stayed, and which is which is D-263-02 rather than a judgement
+     made here.
+
+     **Off: "an account to upload into, with each blueprint public or private the way a
+     repository is."** Both halves of it became real together — T050 landed accounts and
+     the wizard's Details step now carries an explicit public/private control that is sent
+     on the wire. Had only one half landed, the sentence would have been SPLIT rather than
+     deleted: a marker over two claims where one is still true is not a marker that can
+     come off whole.
+
+     **Off: "there are no accounts and no backend: what you upload is read in this tab and
+     stays in it."** This is the sentence the cutover made false in as many words, and the
+     one this file's header records as having twice been deleted by a length pass and twice
+     restored. It comes off here for the opposite reason: not because somebody was cutting,
+     but because leaving a true statement standing after it has become a lie about the
+     product is the other half of D-78 and the worse half.
+
+     **Kept: the editor push.** T270 is `todo`. The skill still writes a folder to disk and
+     nothing pushes it, so this refusal is as true as it was and its badge still earns its
+     place. It is the only reason `ComingSoonBadge` is still mounted on the route.
+
+     The two rows are not replaced by weaker ones. What replaced them is not a disclaimer at
+     all: the page now STATES what publishing does, which is a claim that can be checked
+     against behaviour rather than a limit that has to be remembered. */
   {
     surface: "/upload · no push from the editor the skill runs in",
-    why: "added with the DarkPrint skill, and the reason it is a third sentence rather than a paraphrase of the second. The paragraph above it now tells a reader that a tool inside their own editor writes a folder for this page; the very next question anybody asks is whether the editor sends it, and a page that answers by saying nothing is answering yes. `/install` refuses the same thing at the other end of the same story",
-    says: "nor is there a live push from the editor the skill runs in",
+    why: "added with the DarkPrint skill, and it outlived the two sentences it used to sit beside. The paragraph above it tells a reader that a tool inside their own editor writes a folder for this page; the very next question anybody asks is whether the editor sends it, and a page that answers by saying nothing is answering yes. T263 wired the Publish button, which makes that question MORE pressing rather than less — a reader who has just learned the button really publishes has every reason to assume the editor does too. `/install` refuses the same thing at the other end of the same story",
+    says: "not built yet: a live push from the editor the skill runs in",
     where: "open",
     html: UPLOAD_PAGE,
   },
@@ -588,7 +606,7 @@ describe("claims the site may not stop making", () => {
     expect(unanchored.length, "no bundle is unanchored any more").toBeGreaterThan(0);
     for (const bp of unanchored) {
       expect(openText(canvas(bp.slug)).toLowerCase(), bp.slug).toContain(
-        "the absence of a finding here is silence, not a clean verdict",
+        "the absence of a finding here is silence. it is not a clean verdict",
       );
     }
   });
@@ -604,5 +622,192 @@ describe("claims carried by data rather than by copy", () => {
     const row = CARD_ROWS.find((r) => r.name === "inputs · outputs");
     expect(row, "the inputs · outputs row was renamed or removed").toBeDefined();
     expect(row?.what).toContain("makes an edge checkable at all");
+  });
+});
+
+
+/* ============================================================
+   /upload step 4 — what the success screen claims (AC3, D-263-03)
+   ============================================================ */
+
+const ROOT = fileURLToPath(new URL("../../", import.meta.url));
+
+/**
+ * The wizard's ending, asserted over its SOURCE rather than over a render.
+ *
+ * ── Why this is not a ledger row ──
+ * Every other claim in this file is checked against `renderToStaticMarkup` output, and that
+ * mechanism cannot reach this one. `UPLOAD_PAGE` renders `UploadPage`, which mounts
+ * `UploadFlow` at `step === 1` with no outcome; the success screen is step 4 of a stateful
+ * client component reached by a publish that resolves. A static render never arrives there,
+ * so a ledger row over `UPLOAD_PAGE` asserting this sentence would fail against a correct
+ * page — and, worse, one asserting its ABSENCE would pass against any page at all.
+ *
+ * The two ways to make it renderable were both refused, and neither refusal is this task's.
+ * `vitest.config.ts` is `environment: "node"` with no jsdom, and adding a DOM environment to
+ * satisfy one criterion changes shared config for a test's convenience. Lifting the sentence
+ * into a pure export is refused by this file's own header two hundred lines up: "lifting it
+ * into a component to make it testable would move a sentence for a test's convenience."
+ * D-263-03 rules the source-level form instead, in T262-AC6's idiom.
+ *
+ * ── What it actually pins ──
+ * Not a verbatim string. The screen interpolates the handle, the slug, the version and the
+ * digest, so there is no constant sentence to quote — pinning a fragment around the holes
+ * would pin punctuation. It pins the CLAIM: that the published branch names each of the four
+ * things AC1 asks for, and that the words the route is no longer allowed to say are gone.
+ */
+/**
+ * Source with its commentary removed.
+ *
+ * **The copy check below is about what the PAGE says, and a comment is not what the page
+ * says.** Both directions matter and both were live here. A file whose comments explain why
+ * a retired sentence was retired would red a correct page — this guard failed on exactly
+ * that on its first run, against prose reading "`not wired up` is gone rather than
+ * reworded". And the mirror is worse: a check that matches comments can be satisfied by
+ * deleting a comment while the sentence it describes stays on screen.
+ *
+ * Block comments cover `/* *\/` and JSX's `{/* *\/}`, which is where this file's prose
+ * lives. Line comments are stripped too; `UploadFlow.tsx` carries no `://` for that to
+ * damage, checked rather than assumed.
+ */
+function withoutComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+}
+
+/**
+ * The sentences `/upload` is no longer allowed to say, now that pressing Publish publishes.
+ *
+ * Each is a claim the cutover made FALSE, not merely dated. `not wired up` is in the list
+ * because D-263-02 says it is deleted rather than reworded — a rewording keeps the phrase
+ * and changes what follows it, and this catches that.
+ *
+ * What is deliberately NOT here: "not built yet", which still stands over the editor push
+ * (T270 is `todo`), and the vocabulary note's "read against the curated core alone", whose
+ * subject is an unreadable overlay and is therefore still true after any cutover. **Subject
+ * decides whether a sentence retires, never which file it lives in** (D-263-01, D-263-12).
+ */
+const RETIRED_CLAIMS = [
+  "nothing was sent",
+  "nothing was saved",
+  "nothing was uploaded",
+  "nothing is uploaded",
+  "nothing is sent",
+  "not wired up",
+  "there is no registry backend",
+  "nothing leaves this tab",
+] as const;
+
+/**
+ * Every source file that can put copy on `/upload`, with its commentary removed.
+ *
+ * Enumerated off the filesystem rather than listed, so the sweep covers a file somebody adds
+ * to the route next year without that person having to know this guard exists.
+ */
+function ROUTE_SOURCES(): { path: string; copy: string }[] {
+  const out: { path: string; copy: string }[] = [];
+  for (const dir of ["app/upload", "components/upload"]) {
+    for (const entry of readdirSync(join(ROOT, dir), { withFileTypes: true, recursive: true })) {
+      if (!entry.isFile()) continue;
+      if (!/\.tsx?$/.test(entry.name) || /\.test\.tsx?$/.test(entry.name)) continue;
+      const path = join(entry.parentPath ?? dir, entry.name);
+      out.push({ path, copy: withoutComments(readFileSync(path, "utf8")) });
+    }
+  }
+  return out;
+}
+
+describe("/upload step 4 states what was stored", () => {
+  /**
+   * The wizard with its commentary taken out — used by EVERY cell below, not just the copy
+   * one. A structural cell reading raw source can be satisfied by a comment that mentions
+   * the binding it looks for while the branch that rendered it is gone, which is the same
+   * class of blindness as the copy cell's and was live here until D-263-12.
+   */
+  const FLOW = withoutComments(
+    readFileSync(`${ROOT}/components/upload/UploadFlow.tsx`, "utf8"),
+  );
+
+  /**
+   * AC5, and it is the check that the cutover was COMPLETE rather than mostly done.
+   *
+   * Held over the source and not the render for the reason above: two of the three places
+   * this route used to say it — the success screen and the disabled note behind the Publish
+   * button — are unreachable from a static render, which is exactly how they survived every
+   * pass until now. The header paragraph, which IS reachable, is covered by the ledger above.
+   *
+   * `not wired up` is in here because D-263-02 says it is DELETED rather than reworded. A
+   * reworded version would keep the phrase while changing what follows it, and this catches
+   * that.
+   */
+  it("no longer says the bundle is not sent, saved or wired up, on ANY file that renders the route", () => {
+    /* **Every file that renders `/upload`, not the one the criterion cites.**
+       D-263-12, and this widening is the finding rather than the line that provoked it.
+       The first version of this cell read `UploadFlow.tsx` alone, because that is the file
+       AC5's own prose points at — and it passed while `BundleDropzone.tsx` rendered "the
+       files are read in this tab and nothing is uploaded" on the upload control itself.
+       Holding the rule and recognising its instance are different acts, and a guard scoped
+       to the file the rule is written about cannot tell you about the other four.
+
+       The domain is built by READING THE DIRECTORIES rather than from a list, so a file
+       added to the route later is swept without anybody remembering to add it here. That
+       is the whole difference between this and what it replaces. */
+    const surfaces = ROUTE_SOURCES();
+    expect(surfaces.length, "the route's source files could not be read").toBeGreaterThan(3);
+
+    for (const { path, copy } of surfaces) {
+      for (const forbidden of RETIRED_CLAIMS) {
+        expect(
+          copy.toLowerCase(),
+          `${path} still says "${forbidden}", which the Publish button made false`,
+        ).not.toContain(forbidden);
+      }
+    }
+  });
+
+  /**
+   * AC1 and AC3 together: the four things a reader is owed after a release.
+   *
+   * Owner, slug and release are rendered from what this tab submitted and only the digest
+   * comes back in the body — `PublishResult` is `{bundleId, releaseId, digest, created}` and
+   * names neither an owner nor a slug (D-263-07). So this asserts the four appear on the
+   * SCREEN, which is what the criterion is about, and deliberately does not assert anything
+   * about the response shape: a cell doing that would red a correct route.
+   */
+  it("names the owner, the slug, the release and the digest on the published branch", () => {
+    const published = /outcome\.state === "published" \? \(([\s\S]*?)\) : outcome\.state === "refused"/.exec(
+      FLOW,
+    );
+    expect(published, "the published branch of the outcome screen was restructured").not.toBeNull();
+    const branch = published?.[1] ?? "";
+    expect(branch, "the owner's handle is not named").toContain("session.handle");
+    expect(branch, "the slug is not named").toContain("{slug}");
+    expect(branch, "the release version is not named").toContain("declaredVersion");
+    expect(branch, "the digest is not named").toContain("outcome.release.digest");
+    expect(branch.toLowerCase(), "the screen does not say the bundle was stored").toContain(
+      "stored as",
+    );
+  });
+
+  /**
+   * AC2, and the half of it that a status code cannot carry.
+   *
+   * `unfinished` and `in-error` are both 422 and are two different sentences, which is the
+   * whole reason `PublishRefusedError` carries a `kind`. The failure this guards is the easy
+   * one: reaching for the error count because it is in hand, at the one moment doc 2 §1.1
+   * says not to. `unfinished()`'s own docblock is explicit that an unfinished folder HAS
+   * errors — so the count is available, and printing it is a decision rather than an
+   * accident.
+   */
+  it("refuses an unfinished bundle in the unfinished wording, with no error count", () => {
+    const arm = /if \(kind === "unfinished"\) \{([\s\S]*?)\n  \}/.exec(FLOW);
+    expect(arm, "the unfinished refusal arm was restructured").not.toBeNull();
+    const body = arm?.[1] ?? "";
+    expect(body, "the unfinished refusal lost its wording").toContain("still being written");
+    expect(body, "the unfinished refusal reaches for the error count").not.toContain("errorCount");
+    expect(body, "the unfinished refusal counts errors").not.toContain("summarize");
+    // The counts it MAY print are the two `bundleProgress` reports, from `progress.ts`.
+    expect(body, "the unfinished refusal stopped saying how far along the folder is").toContain(
+      "progress.placed",
+    );
   });
 });

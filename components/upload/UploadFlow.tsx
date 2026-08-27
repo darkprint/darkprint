@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { ContentKind } from "@/lib/types";
 import {
@@ -8,8 +8,10 @@ import {
   hasErrors,
   loadBundle,
   ontologyView,
+  parseSemver,
   sortDiagnostics,
   summarize,
+  type Diagnostic,
   type LoadBundleResult,
   type OntologyTerm,
 } from "@/lib/core";
@@ -18,7 +20,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { KindBadge } from "@/components/ui/Badge";
 import { TagPill } from "@/components/ui/TagPill";
 import { PhaseCoverageBadge } from "@/components/ui/PhaseCoverage";
-import { locationLabel } from "@/components/ui/DiagnosticList";
+import { DiagnosticList, locationLabel } from "@/components/ui/DiagnosticList";
 import {
   BundleDropzone,
   assembleBundle,
@@ -28,9 +30,12 @@ import {
   type BundleDetails,
   type UploadFile,
 } from "./BundleDropzone";
+import { SingleDocDropzone, type SingleDoc } from "./SingleDocDropzone";
 import { requiredAgents, requiredTools } from "@/lib/graph-seed";
-import { bundleProgress } from "./progress";
+import { bundleProgress, type BundleProgress } from "./progress";
 import { ValidationReport, verdictLine } from "./ValidationReport";
+import { SIGN_IN_HREF, useUploadSession } from "./session";
+import { publishBundle, type PublishOutcome, type PublishRefusedKind } from "./publish-client";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // TODO(SEAM-26): PUT /api/bundles/{owner}/{slug}/agents-md
@@ -39,10 +44,20 @@ import { ValidationReport, verdictLine } from "./ValidationReport";
 // TODO(SEAM-30) (cited at line 555): POST /api/validate/bundle
 // TODO(SEAM-31) (cited at line 130): folded into SEAM-30
 // TODO(SEAM-32) (cited at line 1040): POST /api/validate/report
-// TODO(SEAM-33) (cited at line 69): POST /api/validate/card, POST /api/validate/ontology
+// SEAM-33: POST /api/validate/card, POST /api/validate/ontology — **LIVE** since T280.
+//   The effect near "SEAM-33, **LIVE**" below calls one or the other by `kind`. No TODO:
+//   the seam is closed for these two kinds; Blueprint still resolves in this tab (SEAM-30).
 // TODO(SEAM-34) (cited at line 600): folded into SEAM-27
 // TODO(SEAM-35) (cited at line 720): GET /api/slugs/available?slug=
-// TODO(SEAM-69) (cited at line 1146): POST /api/bundles
+// SEAM-69: POST /api/bundles — **LIVE** since T263. `doPublish` calls it through
+//   `./publish-client`. No TODO: the seam is closed.
+// SEAM-42 (partial): GET /api/auth/session — **LIVE** for this route's read-only use,
+//   in `./session`. The sign-in and sign-out halves are still the header's and unbuilt.
+//   Reported to the orchestrator: `docs/architecture/seams.md` has no id for a session
+//   READ, and inventing one in code would put a document's decision in a component.
+// SEAM-30 stays PLANNED on purpose. `docs/ARCHITECTURE.md` §7 puts the server's
+//   authoritative pass at PUBLISH time and keeps the client-side pass for latency, so the
+//   preview is deliberately not a round trip. See the D-263-01 note in `reportMarkdown`.
 
 /* ------------------------------------------------------------------ */
 /*  Static config                                                      */
@@ -73,10 +88,13 @@ const STEPS: { id: StepId; label: string; heading: string }[] = [
 ];
 
 /**
- * The three registry surfaces. Only the first has an upload path today: the wizard
- * runs `resolveBundle`, which joins a DOT to the cards it pins, and a lone card or a
- * vocabulary extension is a different validation entirely. Saying so beats a selector
- * that quietly does nothing.
+ * The three registry surfaces, all three ready now — reading them ready is not the same
+ * as reading them published. Blueprint joins a DOT to the cards it pins and its wizard
+ * ends in a release; Node and Ontology check one document each against the curated core
+ * alone (`POST /api/validate/card`, `POST /api/validate/ontology`) and end in a report,
+ * never a release — the registry stores a lone card or vocabulary only pinned inside a
+ * bundle that publishes, and that path is not built. Step 4 says so for those two kinds
+ * rather than offering a Publish button the registry has nowhere to put.
  */
 const KINDS: {
   key: ContentKind;
@@ -97,14 +115,14 @@ const KINDS: {
     label: "Node",
     hint: "One reusable node card",
     color: "var(--color-amber)",
-    ready: false,
+    ready: true,
   },
   {
     key: "ontology",
     label: "Ontology",
     hint: "Typed vocabulary",
     color: "var(--color-violet)",
-    ready: false,
+    ready: true,
   },
 ];
 
@@ -115,8 +133,52 @@ const KIND_NOUN: Record<ContentKind, string> = {
   ontology: "ontology",
 };
 
-const inputCls =
+/** The endpoint a Node or Ontology `singleDoc` validates against. Never asked for `blueprint`
+    — that kind resolves in this tab (see the SEAM-30 note near the top of this file). */
+const VALIDATE_ENDPOINT: Partial<Record<ContentKind, string>> = {
+  node: "/api/validate/card",
+  ontology: "/api/validate/ontology",
+};
+
+/**
+ * What the endpoint above answered about `singleDoc`, mirroring `UploadSession`'s own
+ * shape in `./session.ts`: `checking` stays distinct from `idle` so a reader is never
+ * shown a verdict for the frame before its own request has landed, and a transport
+ * failure (`failed`) is a fact about the network rather than a diagnostic about the
+ * document — printing it as one would claim the validator said something it never saw.
+ */
+type SingleValidation =
+  | { state: "idle" }
+  | { state: "checking" }
+  | { state: "done"; diagnostics: Diagnostic[]; ok: boolean }
+  | { state: "failed"; detail: string };
+
+/** Exported so `components/upload/CreateBundleForm.tsx` renders the same field, on `/new`
+    — "match the site's cyanotype identity" by reusing the one definition rather than a
+    second string that can drift from it. */
+export const inputCls =
   "w-full bg-surface-2 border border-line rounded-md px-3 py-2 text-sm text-fg placeholder:text-dim transition-colors focus:border-cyan focus:outline-none";
+
+/** What a first release is numbered, per D-263-09. Also what `reset` puts back. */
+const FIRST_VERSION = "0.1.0";
+
+/**
+ * Whether the declared version reads as a semver, using `lib/core`'s OWN parser.
+ *
+ * `parseSemver` and never a regex written here: the grammar is `lib/core/version/semver.ts`'s
+ * and it is isomorphic precisely so both sides can ask it. A second pattern beside it is the
+ * duplicated-decision defect this run has charged more than any other.
+ *
+ * **It ADVISES and does not block, and that asymmetry is measured rather than cautious.**
+ * `publish.ts:216` sorts an unparseable version "below every valid one rather than throwing",
+ * so the registry ACCEPTS a version this check dislikes — as a first release it publishes
+ * cleanly. A client gate stricter than the server would refuse a submission the registry
+ * would have taken, which is a worse failure than a note, and it is the failure a validator
+ * written on this side rather than read off that one always produces.
+ */
+function looksLikeSemver(version: string): boolean {
+  return parseSemver(version.trim()) !== undefined;
+}
 
 /* There is no `fieldLabelCls` here any more, and there must not be one again. It held
    `font-mono text-[11px] uppercase tracking-[0.14em] text-dim` — a fourth mono tier,
@@ -149,7 +211,32 @@ const EMPTY_DETAILS: BundleDetails = {
   description: "",
   category: "",
   tags: [],
+  /* D-263-09's default. It is a real starting value rather than an empty field because
+     every other field on step 2 can be left blank and this one cannot: `publish` requires
+     `version` and refuses a submission without it at the transport layer. A blank that 400s
+     is a worse first experience than a first release numbered the way first releases are. */
+  version: FIRST_VERSION,
 };
+
+/**
+ * `EMPTY_DETAILS`, prefilled from a pinned target's own stored fields.
+ *
+ * A dropped `blueprint.yaml` prefills the same way, through `detailsFromManifest` — this
+ * is the second source that can fill Details before the reader types anything, and it
+ * exists so a title and a summary given on `/new` are not retyped the moment the reader
+ * reaches `/upload` to publish into what `/new` just reserved.
+ */
+function detailsWithTarget(target: PublishTarget | undefined): BundleDetails {
+  if (target === undefined) return EMPTY_DETAILS;
+  return {
+    ...EMPTY_DETAILS,
+    ...(target.title === undefined ? {} : { title: target.title }),
+    ...(target.summary === undefined ? {} : { summary: target.summary }),
+    ...(target.description === undefined ? {} : { description: target.description }),
+    ...(target.category === undefined ? {} : { category: target.category }),
+    ...(target.tags === undefined ? {} : { tags: [...target.tags] }),
+  };
+}
 
 /* ------------------------------------------------------------------ */
 /*  The report, as a file                                              */
@@ -162,6 +249,34 @@ const EMPTY_DETAILS: BundleDetails = {
  */
 function dataHref(text: string): string {
   return `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`;
+}
+
+/**
+ * What became of these bytes, for the one sentence at the top of `REPORT.md`.
+ *
+ * A closed union rather than an optional release, because the file is now handed over on
+ * both ends of a publish (AC4) and "no release" is a fact the report has to state, not an
+ * absence it can leave to the reader.
+ */
+type StoredLine =
+  | { published: true; ownerHandle: string; slug: string; version: string; digest: string }
+  | { published: false };
+
+/**
+ * The report's opening claim about where these bytes went.
+ *
+ * Deliberately free of the words this route is no longer allowed to say (AC5): a refusal
+ * means no release was created, which is a fact about ONE submission, and the sentence must
+ * not be readable as the old blanket claim that nothing ever leaves the tab.
+ */
+function storedSentence(stored: StoredLine | undefined): string {
+  if (stored === undefined) {
+    return "This bundle has not been submitted to the registry. This file is a reading, not a record of a release.";
+  }
+  if (!stored.published) {
+    return "The registry refused this submission, so no release was created and nothing here describes a stored bundle.";
+  }
+  return `Published to the registry as ${stored.ownerHandle}/${stored.slug}, release ${stored.version}, digest ${stored.digest}.`;
 }
 
 /**
@@ -206,8 +321,17 @@ function reportMarkdown(args: {
   title: string;
   slug: string;
   kindNoun: string;
+  /**
+   * What the registry did with these bytes, when it was asked. Absent while the reader is
+   * still on the form.
+   *
+   * The report is handed over on BOTH ends of a publish now (AC4), so its opening sentence
+   * cannot be a constant any more: after a refusal nothing was stored and after a release
+   * something was, and one file claiming the wrong one of those is worse than either.
+   */
+  stored?: StoredLine;
 }): string {
-  const { result, title, slug, kindNoun } = args;
+  const { result, title, slug, kindNoun, stored } = args;
   const { blueprint, analysis } = result;
   const resolved = blueprint !== undefined && analysis !== undefined && !hasErrors(result.diagnostics);
   const progress = bundleProgress(result);
@@ -216,7 +340,7 @@ function reportMarkdown(args: {
   out.push(`# Validation report: ${title}`);
   out.push("");
   out.push(
-    "Produced by DarkPrint inside a browser tab, over the bytes named below. Nothing was uploaded and nothing was saved, so this file is the whole of the record.",
+    `Produced by DarkPrint over the bytes named below. ${storedSentence(stored)}`,
   );
   out.push("");
 
@@ -249,8 +373,8 @@ function reportMarkdown(args: {
     out.push("");
     out.push(
       progress.state === "unfinished"
-        ? `Not computed yet. ${progress.waiting} of the graph's ${progress.total} nodes have no card in the folder, and a reading taken over nodes the engine could not open would have nothing behind it. Write the rest and run this again.`
-        : "Not computed. DarkPrint will not put a number on a graph whose references it could not check, so the diagnostics below are the whole of what this run produced.",
+        ? `Not computed yet. ${progress.waiting} of the graph's ${progress.total} nodes have no card in the folder. A reading over nodes the engine could not open would have nothing behind it. Write the rest and run this again.`
+        : "Not computed. DarkPrint will not put a number on a graph whose references it could not check. The diagnostics below are the whole of what this run produced.",
     );
     out.push("");
   } else {
@@ -275,7 +399,7 @@ function reportMarkdown(args: {
     out.push("## Phase coverage");
     out.push("");
     out.push(
-      "Which of the five lifecycle phases this graph acts in. A description of scope, not a score.",
+      "Which of the five lifecycle phases this graph acts in. This describes scope. It is not a score.",
     );
     out.push("");
     out.push(
@@ -305,15 +429,79 @@ function reportMarkdown(args: {
   out.push("## What is not in here");
   out.push("");
   out.push(
-    "Two of the six axes are read off the graph and both are above. Efficacy, reliability and transparency come from weighted community and validator votes; cost and time are reported by whoever runs the graph, and the platform never sees the execution.",
+    "Two of the six axes are read off the graph, and both are above. Efficacy, reliability and transparency come from weighted community and validator votes. Cost and time are reported by whoever runs the graph. The platform never sees the execution.",
   );
   out.push("");
+  /* ── D-263-01, and this sentence is the second of the two the ruling rewrote ──
+     It used to say the wizard resolves against the curated core alone while the archive
+     adds its own namespaced terms. The cutover did not close that gap, it MOVED it, and
+     saying the old thing now would be wrong in a new way.
+
+     What is true after the cutover: the reading above is the tab's, taken against the
+     shipped core plus whatever `ontology/extensions.yaml` the folder brought. The registry
+     takes its own reading at publish against the ontology version the manifest NAMES
+     (`openView`), which for a bundle declaring an older version is a different vocabulary
+     and can be a different verdict in either direction. The client-side pass stays on
+     purpose — it is the fast one — and the server's is the one that decides. */
   out.push(
-    "This bundle was resolved against the curated core vocabulary only. A blueprint in the archive is resolved against the core plus the terms its release adds in its own namespace, so a graph using one of those comes back here with the term unknown and a static risk reading computed without it.",
+    "This reading was taken in your browser, against the curated core vocabulary plus whatever `ontology/extensions.yaml` came with the folder. The registry takes its own reading when you publish, against the ontology version this bundle's manifest names. A bundle declaring an older version can be judged on different terms there than here. The registry's reading decides.",
   );
   out.push("");
 
   return out.join("\n");
+}
+
+/**
+ * What a refusal says to the author, chosen by `kind` (AC2).
+ *
+ * ── The `kind` is the whole reason this is a switch and not the server's `detail` ──
+ * All five refusals are one class carrying a `kind` precisely because "the UI writes three
+ * different sentences from them" (`lib/server/publish/errors.ts`), and two of the five —
+ * `unfinished` and `in-error` — share a status code. Printing `detail` alone would collapse
+ * them back into one voice, which is what the `kind` exists to prevent.
+ *
+ * ── AC2, literally ──
+ * `unfinished` never mentions an error count. It has one — an unfinished folder is full of
+ * errors, all of them the shadow of a card nobody has written yet, which `unfinished()`'s own
+ * docblock says in as many words — and reporting that number as a fault is the reading doc 2
+ * §1.1 and `progress.ts` both exist to prevent. The counts it does print are `placed` and
+ * `total`, the same two the disabled note prints, from the same source.
+ *
+ * The server's `detail` is carried for every other kind rather than paraphrased: those
+ * sentences have one author (D-50-08) and re-rendering them here would put a second one on
+ * them. `conflict`, `not-owner` and `version-not-higher` all name values only the caller
+ * already holds, so there is nothing in them this page has to withhold.
+ */
+function refusalSentence(
+  kind: PublishRefusedKind,
+  detail: string,
+  progress: BundleProgress | undefined,
+): ReactNode {
+  if (kind === "unfinished") {
+    return (
+      <>
+        <span className="font-mono text-warn">still being written</span>:{" "}
+        {progress === undefined
+          ? "the registry resolved this bundle against its own vocabulary and some node has no card yet."
+          : `${progress.placed} of ${progress.total} nodes have their card.`}{" "}
+        There is nothing to fix. Write the rest and publish again. The Preview step names
+        the ones still waiting. The report below travels with you meanwhile.
+      </>
+    );
+  }
+  if (kind === "not-owner") {
+    return (
+      <>
+        <span className="font-mono text-signal">not yours</span>: {detail} A slug belongs to
+        one account, and this one is not on yours. Publish it under a slug you own.
+      </>
+    );
+  }
+  return (
+    <>
+      <span className="font-mono text-signal">{kind}</span>: {detail}
+    </>
+  );
 }
 
 /** A real bundle out of the archive, handed down by the server page (§5 step 1). */
@@ -324,11 +512,36 @@ export interface ExampleBundle {
   files: UploadFile[];
 }
 
+/**
+ * A bundle this release is pinned to, per `?owner=&slug=` — `app/upload/page.tsx` builds
+ * one only once the session it read owns the addressed bundle (B-03: the check happens
+ * server-side, before the wizard ever sees the pin).
+ *
+ * `visibility` travels with it rather than being re-asked: `publish` ignores a submitted
+ * visibility on an append and keeps the bundle's own (`publish.ts`'s own comment — "not
+ * an occasion to rewrite the bundle row's visibility"), so re-offering the control would
+ * show a choice that cannot do anything. The four optional fields are what `POST
+ * /api/bundles/draft` or an earlier release already stored; present, they fill Details
+ * the same way a dropped `blueprint.yaml` does, so the reader is not retyping a title
+ * they already gave the bundle on `/new`.
+ */
+export interface PublishTarget {
+  owner: string;
+  slug: string;
+  visibility: "public" | "private";
+  title?: string;
+  summary?: string;
+  description?: string;
+  category?: string;
+  tags?: readonly string[];
+}
+
 /* ------------------------------------------------------------------ */
 /*  Chip field (tags)                                                  */
 /* ------------------------------------------------------------------ */
 
-function ChipField({
+/** Exported for the same reason `inputCls` is: `/new`'s Tags field is this field. */
+export function ChipField({
   id,
   label,
   placeholder,
@@ -552,12 +765,65 @@ function StepIndicator({
  * the two computed scores are the ones the registry would store. Nothing is uploaded —
  * step 4 says so in as many words.
  */
-export function UploadFlow({ example }: { example: ExampleBundle }) {
+export function UploadFlow({
+  example,
+  target,
+}: {
+  example: ExampleBundle;
+  /** `?owner=&slug=`, resolved and ownership-checked by `app/upload/page.tsx`. Absent for
+      the ordinary case — a reader arriving with no bundle already in mind. */
+  target?: PublishTarget;
+}) {
   const [step, setStep] = useState<StepId>(1);
   const [kind, setKind] = useState<ContentKind>("blueprint");
   const [files, setFiles] = useState<UploadFile[]>([]);
-  const [details, setDetails] = useState<BundleDetails>(EMPTY_DETAILS);
-  const [submitted, setSubmitted] = useState(false);
+  const [details, setDetails] = useState<BundleDetails>(() => detailsWithTarget(target));
+  /** One document — a lone node card or vocabulary — for the Node and Ontology kinds.
+      `files` above stays empty for those kinds, which is what keeps `canAdvance` and the
+      Blueprint-only derived state below correctly inert rather than needing a second
+      guard on every one of them. */
+  const [singleDoc, setSingleDoc] = useState<SingleDoc | undefined>(undefined);
+  /**
+   * What `POST /api/validate/card` or `POST /api/validate/ontology` answered about
+   * `singleDoc`, kept apart from `result` above because the two ask different servers:
+   * the blueprint pass runs `loadBundle` in this tab (SEAM-30 stays client-side, by
+   * design — see the header), while a lone document is checked over HTTP, and a network
+   * call has a `checking` and a `failed` state a synchronous call never needs.
+   */
+  const [singleValidationFetch, setSingleValidationFetch] = useState<SingleValidation>({
+    state: "idle",
+  });
+  /**
+   * What the registry said, once it has been asked. Absent while the reader is on the form.
+   *
+   * This replaces the `submitted` boolean, and the widening is the whole of AC2 and AC4: a
+   * flag can only say the wizard ended, and there are now four ways it can end — a release,
+   * a refusal the author can act on, a rejection about something other than the bundle, and
+   * an unreachable registry. Each needs a different sentence, and a boolean was how the old
+   * screen came to state one outcome unconditionally.
+   */
+  const [outcome, setOutcome] = useState<PublishOutcome | undefined>(undefined);
+  /** In flight. The button says so and cannot be pressed twice into two releases. */
+  const [publishing, setPublishing] = useState(false);
+  /**
+   * Public or private, chosen rather than defaulted (D-263-09).
+   *
+   * `PublishInput.visibility` is optional and absence takes the account default, so this
+   * could have been left off the wire entirely. It is sent explicitly because the ledger row
+   * it retires promises "each blueprint public or private the way a repository is" — a
+   * promise a hidden default does not keep — and because a reader who can see the choice on
+   * screen knows what will happen without knowing what their account default is.
+   *
+   * `private` is the starting value — UNLESS a `target` is pinned, in which case it is the
+   * bundle's OWN visibility and the choice is not offered again (`publish.ts`'s own rule:
+   * an append ignores a submitted visibility and keeps the bundle's). Publishing somebody's
+   * first upload to the world because they did not notice a control is the failure that
+   * cannot be undone by editing a setting.
+   */
+  const [visibility, setVisibility] = useState<"public" | "private">(
+    () => target?.visibility ?? "private",
+  );
+  const session = useUploadSession();
 
   /* ---------- the whole pipeline, derived ---------- */
 
@@ -573,16 +839,23 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
     // whoever built the view, so the caller that built it reports them, exactly as the
     // build-time loader does with the archive's own.
     const vocabulary = parts.vocabulary === undefined ? [] : ontology.validate();
-    if (vocabulary.length === 0) return loaded;
+    // `parts.diagnostics`: problems the classifier itself raised — today, only a legacy
+    // `blueprint.dot` demoted in favour of `topology.dot` — merged the same way, since
+    // `result.diagnostics` is the one list every surface of this wizard reads.
+    const extra = [...vocabulary, ...parts.diagnostics];
+    if (extra.length === 0) return loaded;
     return {
       ...loaded,
-      diagnostics: sortDiagnostics([...loaded.diagnostics, ...vocabulary]),
+      diagnostics: sortDiagnostics([...loaded.diagnostics, ...extra]),
     };
-  }, [bundle, ontology, parts.vocabulary]);
+  }, [bundle, ontology, parts.vocabulary, parts.diagnostics]);
 
   const errorCount = result === undefined ? 0 : summarize(result.diagnostics).error;
   const blocked = result === undefined || hasErrors(result.diagnostics);
-  const canAdvance = parts.dot !== undefined;
+  /* Blueprint gates on a topology; Node and Ontology gate on the one document they check —
+     neither carries a `.dot`, so `parts.dot` alone would lock the wizard on step 1 for both
+     kinds forever. */
+  const canAdvance = kind === "blueprint" ? parts.dot !== undefined : singleDoc !== undefined;
 
   /* The same three-state reading `ValidationReport` prints on the Preview step, so the
      Publish step and the footer counter cannot describe the bundle differently from the
@@ -604,6 +877,76 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
     () => (result?.blueprint === undefined ? [] : requiredTools(result.blueprint)),
     [result],
   );
+
+  /**
+   * SEAM-33, **LIVE**: a lone Node or Ontology document, checked over HTTP the moment it
+   * lands rather than on an explicit "check" press — the same automatic-on-drop behaviour
+   * the Blueprint kind already has via the synchronous `result` above, so a reader does
+   * not have to learn two different rhythms for three kinds of one wizard.
+   *
+   * `AbortController` per request (`WelcomeForm.tsx`'s own device, for the same race): a
+   * slow answer for the first paste landing after a fast one for the second would label
+   * the second document with the first's verdict.
+   */
+  useEffect(() => {
+    const endpoint = VALIDATE_ENDPOINT[kind];
+    // No setState on this branch — `singleValidation` below derives "idle" for exactly
+    // this condition, so there is nothing for the effect to synchronise. Writing it here
+    // too would be the same state expressed twice, decided by whichever assignment runs
+    // last on a given render.
+    if (endpoint === undefined || singleDoc === undefined) return;
+    const controller = new AbortController();
+    // Inside the async body rather than as the effect's first statement: a setState
+    // called directly in an effect's top-level statements is flagged by
+    // `react-hooks/set-state-in-effect` even when — as here — it is genuinely reporting
+    // that an async operation this effect owns has started, rather than deriving a value
+    // render already had.
+    void (async () => {
+      setSingleValidationFetch({ state: "checking" });
+      let response: Response;
+      try {
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "content-type": "application/json", accept: "application/json" },
+          body: JSON.stringify({ source: singleDoc.text }),
+          signal: controller.signal,
+        });
+      } catch {
+        if (controller.signal.aborted) return;
+        setSingleValidationFetch({ state: "failed", detail: "The validator could not be reached." });
+        return;
+      }
+      if (!response.ok) {
+        const problem = (await response.json().catch(() => ({}))) as { detail?: string };
+        setSingleValidationFetch({
+          state: "failed",
+          detail: problem.detail ?? `The validator answered ${response.status}.`,
+        });
+        return;
+      }
+      const body = (await response.json()) as { card?: unknown; terms?: unknown; diagnostics?: unknown };
+      const diagnostics = Array.isArray(body.diagnostics) ? (body.diagnostics as Diagnostic[]) : [];
+      // `ValidateCardResult`/`ValidateVocabularyResult` both carry their success field only
+      // when nothing of error severity was reported — the same rule `hasErrors` checks over
+      // a blueprint's diagnostics, read here off the field's presence instead of re-summing
+      // severities the response already resolved.
+      const ok = kind === "node" ? body.card !== undefined : body.terms !== undefined;
+      setSingleValidationFetch({ state: "done", diagnostics, ok });
+    })();
+    return () => controller.abort();
+  }, [kind, singleDoc]);
+
+  /**
+   * What the UI actually shows. `singleValidationFetch` only ever holds what a fetch
+   * found — "idle" is never written to it — so a stale "done" or "failed" cannot outlive
+   * the document or the kind it was about: clearing `singleDoc`, or switching to
+   * Blueprint, reads as idle here on the very next render rather than waiting for the
+   * effect above to notice and write it back.
+   */
+  const singleValidation: SingleValidation =
+    VALIDATE_ENDPOINT[kind] === undefined || singleDoc === undefined
+      ? { state: "idle" }
+      : singleValidationFetch;
 
   /* ---------- editing ---------- */
 
@@ -633,13 +976,20 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
     setDetails((d) => ({ ...d, tags: d.tags.filter((_, i) => i !== index) }));
   }
 
-  /** Everything gone: a different project, typed from scratch. */
+  /** Everything gone: a different project, typed from scratch.
+
+      `detailsWithTarget(target)` and not the bare `EMPTY_DETAILS`, and `target?.visibility`
+      and not the bare `"private"`: a pinned bundle's own fields and its own visibility are
+      not part of what "empty" means here — they describe the ADDRESS this release still
+      goes to, which a reader typing a fresh title has not changed their mind about. */
   function reset() {
-    setSubmitted(false);
+    setOutcome(undefined);
     setStep(1);
     setKind("blueprint");
     setFiles([]);
-    setDetails(EMPTY_DETAILS);
+    setSingleDoc(undefined);
+    setDetails(detailsWithTarget(target));
+    setVisibility(target?.visibility ?? "private");
   }
 
   /**
@@ -652,17 +1002,22 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
    * it lands (see `takeFiles`), so keeping them costs nothing and is never stale.
    */
   function validateAnother() {
-    setSubmitted(false);
+    setOutcome(undefined);
     setStep(1);
     setFiles([]);
+    setSingleDoc(undefined);
   }
 
   /* ---------- navigation ---------- */
 
-  function jump(target: StepId) {
-    // Can always step back; can only go forward once there is a topology to read.
-    if (target > step && !canAdvance) return;
-    setStep(target);
+  /* Parameter named `to`, not `target`: this component also takes a `target` PROP (the
+     pinned bundle), and a local binding of the same name would shadow it for the rest of
+     this function — harmless here since the body never reads the prop, but one keystroke
+     away from a bug the next edit introduces silently. */
+  function jump(to: StepId) {
+    // Can always step back; can only go forward once there is something to read.
+    if (to > step && !canAdvance) return;
+    setStep(to);
   }
 
   function next() {
@@ -727,9 +1082,14 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
     window.scrollTo({ top: y < 0 ? 0 : y });
   }, [step]);
 
-  // The slug the registry would key on. A dropped manifest owns its own — §4 makes it
-  // the blueprint's identity — so only a synthesised manifest gets one off the title.
+  // The slug the registry would key on. A pinned target wins outright — the release has
+  // to land on the bundle the URL named, whatever a dropped manifest's own `slug` field
+  // says (`publish`'s addressing is the body's top-level `slug`, never `manifest.slug`,
+  // which travels only as descriptive metadata). Absent a pin, a dropped manifest owns
+  // its own — §4 makes it the blueprint's identity — so only a synthesised manifest gets
+  // one off the title.
   const slug =
+    target?.slug ??
     bundle?.manifest.slug ??
     (details.title.trim() === "" ? "untitled-blueprint" : slugify(details.title));
 
@@ -737,13 +1097,88 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
   const reportTitle =
     details.title.trim() || bundle?.manifest.title || `Untitled ${KIND_NOUN[kind]}`;
 
-  /** The report the success screen hands over, built only once there is one to hand. */
+  /* ---------- what the registry needs that the bundle does not carry ---------- */
+
+  /** The declared release version. Trimmed here so every reader below sees one value. */
+  const declaredVersion = (details.version ?? "").trim();
+  /** Empty is the one version state that blocks: the route reads it with `readString` and 400s. */
+  const versionMissing = declaredVersion === "";
+  /** Present but not a semver. A note, never a gate — see `looksLikeSemver`. */
+  const versionOdd = !versionMissing && !looksLikeSemver(declaredVersion);
+
+  /**
+   * Everything that has to be true before the button can do what it says.
+   *
+   * `session.state === "ready"` and not merely "not anonymous": a session with no handle
+   * cannot name an owner, and `publish` resolves the owner FROM the handle. Sending a
+   * submission without one would earn a 400 the reader cannot act on.
+   */
+  const canPublish =
+    !blocked && !versionMissing && session.state === "ready" && !publishing && bundle !== undefined;
+
+  /**
+   * What the report should say became of these bytes.
+   *
+   * Derived from the outcome rather than passed at the call site, so the file and the screen
+   * cannot disagree about whether a release exists.
+   */
+  const stored: StoredLine | undefined = useMemo(() => {
+    if (outcome === undefined) return undefined;
+    if (outcome.state !== "published") return { published: false };
+    return {
+      published: true,
+      ownerHandle: session.state === "ready" ? session.handle : "",
+      slug,
+      version: declaredVersion,
+      digest: outcome.release.digest,
+    };
+  }, [outcome, session, slug, declaredVersion]);
+
+  /**
+   * The report, built once there is a reading to hand over.
+   *
+   * **AC4: this is no longer gated on the bundle being publishable.** It used to be reachable
+   * only from the success screen, which sat behind a Publish button `blocked` kept disabled —
+   * so the population that most needed the file was the one population that could never get
+   * it (`reportMarkdown`'s own docblock: "Nobody has read that file"). Every ending renders
+   * this control now, refusals included.
+   */
   const reportHref = useMemo(() => {
     if (result === undefined) return undefined;
     return dataHref(
-      reportMarkdown({ result, title: reportTitle, slug, kindNoun: KIND_NOUN[kind] }),
+      reportMarkdown({
+        result,
+        title: reportTitle,
+        slug,
+        kindNoun: KIND_NOUN[kind],
+        ...(stored === undefined ? {} : { stored }),
+      }),
     );
-  }, [result, reportTitle, slug, kind]);
+  }, [result, reportTitle, slug, kind, stored]);
+
+  /**
+   * Ask the registry, and record whatever it says.
+   *
+   * Every failure is a state rather than a throw (`publishBundle` does not reject), so there
+   * is no `catch` here and no path on which the reader is left looking at a form that did
+   * nothing. `publishing` is cleared in both directions for the same reason.
+   */
+  async function doPublish() {
+    if (!canPublish || bundle === undefined || session.state !== "ready") return;
+    setPublishing(true);
+    const answer = await publishBundle({
+      ownerHandle: session.handle,
+      slug,
+      version: declaredVersion,
+      manifest: bundle.manifest,
+      dot: bundle.dot,
+      cardFiles: { ...bundle.cardFiles },
+      ...(parts.vocabulary === undefined ? {} : { vocabulary: parts.vocabulary.text }),
+      visibility,
+    });
+    setPublishing(false);
+    setOutcome(answer);
+  }
 
   return (
     <div className="panel overflow-hidden">
@@ -778,15 +1213,9 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
         <div className="mt-10">
         {step === 1 && (
           <div className="flex flex-col gap-8">
-            <BundleDropzone
-              files={files}
-              parts={parts}
-              onChange={takeFiles}
-              onLoadExample={loadExample}
-              exampleLabel={example.title}
-            />
-
-            {/* Content kind selector */}
+            {/* Content kind selector, ABOVE the drop target now: which one renders below
+                it depends on the answer, so a reader picks the kind before meeting a
+                target sized for it rather than after. */}
             <div className="flex flex-col gap-3">
               <span className="label" id="content-type-label">
                 Content type
@@ -805,11 +1234,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                       onClick={() => setKind(k.key)}
                       disabled={!k.ready}
                       aria-pressed={active}
-                      aria-label={
-                        k.ready
-                          ? `${k.label}: ${k.hint}`
-                          : `${k.label}: ${k.hint}. This flow does not accept one yet.`
-                      }
+                      aria-label={`${k.label}: ${k.hint}`}
                       /* Both hovers gated: this selector is a tap target on the first
                          step, and an ungated `hover:` latches on a phone — the pressed
                          kind keeps the lit state right up to the route change, which on
@@ -819,8 +1244,6 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                         active
                           ? "bg-surface-3 text-fg shadow-[inset_0_0_0_1px_var(--color-line-bright)]"
                           : "text-muted hoverable:hover:text-fg",
-                        !k.ready &&
-                          "cursor-not-allowed opacity-50 hoverable:hover:text-muted",
                       )}
                     >
                       <span
@@ -832,32 +1255,93 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                       />
                       <span className="flex flex-col items-start leading-tight">
                         <span className="font-medium">{k.label}</span>
-                        <span className="text-[11px] text-dim">
-                          {k.ready ? k.hint : `${k.hint} · not yet`}
-                        </span>
+                        <span className="text-[11px] text-dim">{k.hint}</span>
                       </span>
                     </button>
                   );
                 })}
               </div>
               <p className="max-w-xl text-xs leading-relaxed text-dim">
-                The validator joins a DOT to the cards it pins, so a whole bundle is what
-                it knows how to read. A card on its own and a vocabulary extension each
-                need their own check, and neither is wired up yet.
+                {kind === "blueprint" ? (
+                  <>
+                    The validator joins a DOT to the cards it pins, so it reads a whole
+                    bundle.
+                  </>
+                ) : (
+                  <>
+                    A {KIND_NOUN[kind]} on its own checks against the curated core
+                    vocabulary alone, the same reading a bundle&rsquo;s own cards get
+                    before any local overlay is layered on. Publishing one by itself is
+                    not built. The registry stores a {KIND_NOUN[kind]} today only when
+                    pinned inside a blueprint bundle that publishes. The last step here
+                    says so.
+                  </>
+                )}
               </p>
             </div>
+
+            {kind === "blueprint" ? (
+              <BundleDropzone
+                files={files}
+                parts={parts}
+                onChange={takeFiles}
+                onLoadExample={loadExample}
+                exampleLabel={example.title}
+              />
+            ) : (
+              <SingleDocDropzone doc={singleDoc} onChange={setSingleDoc} kindLabel={KIND_NOUN[kind]} />
+            )}
           </div>
         )}
 
-        {step === 2 && (
+        {step === 2 &&
+          (kind !== "blueprint" ? (
+            /* Node and Ontology check one document each; neither has a release, a
+               visibility or cards to read agents and tools off, so the whole of the
+               blueprint-only form below does not apply. Title is the one field a report
+               can use, and it is offered rather than asked for. */
+            <div className="grid max-w-3xl gap-5">
+              <p className="max-w-xl text-sm leading-relaxed text-muted">
+                A {KIND_NOUN[kind]} is checked on its own. No release, no visibility, no
+                derived agents or tools. Give it a title for the report, if you want one.
+              </p>
+              <div className="flex flex-col gap-2 sm:max-w-md">
+                <label className="label" htmlFor="single-title">
+                  Title
+                </label>
+                <input
+                  id="single-title"
+                  value={details.title}
+                  onChange={(e) => setField("title", e.target.value)}
+                  placeholder={`Untitled ${KIND_NOUN[kind]}`}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+          ) : (
           <div className="grid max-w-3xl gap-5">
+            {target !== undefined && (
+              /* The pin from `?owner=&slug=`. Placed first: everything below it — the
+                 slug caption, the visibility fieldset — reads differently once a reader
+                 knows this release already has an address, and the notice is what makes
+                 that legible before either one is reached. */
+              <p className="rounded-md border border-cyan/30 bg-cyan/5 px-4 py-3 text-sm leading-relaxed text-fg">
+                This release publishes into{" "}
+                <span className="font-mono text-cyan">
+                  {target.owner}/{target.slug}
+                </span>
+                . The slug and the visibility below are its own and are not asked again
+                here.
+              </p>
+            )}
+
             <p className="max-w-xl text-sm leading-relaxed text-muted">
               These fields become the bundle&rsquo;s manifest. A{" "}
               <span className="font-mono text-cyan">blueprint.yaml</span> in the
-              selection fills them in for you;{" "}
+              selection fills them in for you.{" "}
               {parts.manifest === undefined
-                ? "there is none here, so a minimal one is synthesised from what you type."
-                : `they were read from ${parts.manifest.name}.`}
+                ? "There is none here, so a minimal one is synthesised from what you type."
+                : `They were read from ${parts.manifest.name}.`}
             </p>
 
             <div className="flex flex-col gap-2">
@@ -873,6 +1357,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
               />
               <p className="font-mono text-[11px] text-dim">
                 slug <span className="text-muted">{slug}</span>
+                {target !== undefined && " (fixed: publishing into this bundle)"}
               </p>
             </div>
 
@@ -927,11 +1412,136 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
               accent="var(--color-cyan)"
             />
 
+            {/* ── The two things the registry needs that a manifest does not carry ──
+                Neither is a manifest field: `BundleManifest` has no version and no
+                visibility, so a dropped `blueprint.yaml` answers neither. They sit under
+                their own rule because they describe the RELEASE rather than the blueprint,
+                and because both are questions a reader has to have answered before the
+                Publish button two steps on can mean anything. */}
             <div className="flex flex-col gap-5 border-t border-line pt-5">
               <p className="max-w-xl text-sm leading-relaxed text-muted">
-                <span className="text-fg">Read off your cards.</span> What the graph
-                needs is a property of the nodes it instantiates, not something to
-                declare by hand, so the registry computes it instead of asking.
+                <span className="text-fg">The release.</span> A bundle is published as a
+                numbered release you own, and each later release of the same slug has to
+                be numbered above the last.
+              </p>
+
+              <div className="flex flex-col gap-2 sm:max-w-xs">
+                <label className="label" htmlFor="bp-version">
+                  Version
+                </label>
+                <input
+                  id="bp-version"
+                  value={details.version ?? ""}
+                  onChange={(e) => setField("version", e.target.value)}
+                  placeholder={FIRST_VERSION}
+                  className={cx(inputCls, "font-mono")}
+                  aria-describedby="bp-version-note"
+                />
+                {/* Two different sentences, and neither is a rejection. An empty field is
+                    the only one that stops a publish, because the registry reads the field
+                    as required; a version that does not look like a semver is passed on
+                    with a note, because the registry accepts it and sorts it below every
+                    numbered release. Saying "invalid" about a value the server takes would
+                    be this page inventing a rule. */}
+                <p id="bp-version-note" className="text-[11px] leading-relaxed text-dim">
+                  {versionMissing ? (
+                    <>
+                      A release needs a number. {FIRST_VERSION} is the usual first one.
+                    </>
+                  ) : versionOdd ? (
+                    <>
+                      <span className="font-mono text-warn">{declaredVersion}</span> is not
+                      a semantic version. The registry will take it and sort it below every
+                      numbered release, so the next release of this slug cannot be numbered
+                      against it.
+                    </>
+                  ) : (
+                    <>Semantic version. The next release of this slug must be above it.</>
+                  )}
+                </p>
+              </div>
+
+              {target !== undefined ? (
+                /* Inherited, not re-asked: `publish.ts` ignores a submitted visibility on
+                   an append and keeps the bundle's own, so offering the choice again
+                   would show a control that cannot do anything. */
+                <div className="flex flex-col gap-2">
+                  <span className="label">Visibility</span>
+                  <p className="max-w-xl text-sm leading-relaxed text-muted">
+                    Inherited from{" "}
+                    <span className="font-mono text-cyan">
+                      {target.owner}/{target.slug}
+                    </span>
+                    : this release is{" "}
+                    <span className="text-fg">{visibility === "public" ? "public" : "private"}</span>.
+                    Change it from the blueprint&rsquo;s own page, not here.
+                  </p>
+                </div>
+              ) : (
+                <fieldset className="flex flex-col gap-2">
+                  <legend className="label mb-2">Visibility</legend>
+                  <div className="flex flex-wrap gap-2">
+                    {(
+                      [
+                        {
+                          value: "private" as const,
+                          label: "Private",
+                          hint: "Only you can read it",
+                          color: "var(--color-violet)",
+                        },
+                        {
+                          value: "public" as const,
+                          label: "Public",
+                          hint: "Anyone can read it",
+                          color: "var(--color-cyan)",
+                        },
+                      ] satisfies { value: "public" | "private"; label: string; hint: string; color: string }[]
+                    ).map((choice) => {
+                      const active = visibility === choice.value;
+                      return (
+                        <button
+                          key={choice.value}
+                          type="button"
+                          onClick={() => setVisibility(choice.value)}
+                          aria-pressed={active}
+                          aria-label={`${choice.label}: ${choice.hint}`}
+                          /* Same shape and the same gated hover as the kind selector on
+                             step one, for the reason that one records: an ungated
+                             `hover:` latches on a phone and a two-way selector then reads
+                             as both chosen. */
+                          className={cx(
+                            "flex items-center gap-2 rounded-md px-3.5 py-2 text-sm transition-colors",
+                            active
+                              ? "bg-surface-3 text-fg shadow-[inset_0_0_0_1px_var(--color-line-bright)]"
+                              : "text-muted hoverable:hover:text-fg",
+                          )}
+                        >
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ background: active ? choice.color : "var(--color-line-bright)" }}
+                            aria-hidden
+                          />
+                          <span className="flex flex-col items-start leading-tight">
+                            <span className="font-medium">{choice.label}</span>
+                            <span className="text-[11px] text-dim">{choice.hint}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="max-w-xl text-[11px] leading-relaxed text-dim">
+                    Private is the starting choice. You can publish a private release and
+                    keep working. A reader of the archive sees only what you make public.
+                  </p>
+                </fieldset>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-5 border-t border-line pt-5">
+              <p className="max-w-xl text-sm leading-relaxed text-muted">
+                <span className="text-fg">Read off your cards.</span> The graph needs a
+                property of the nodes it instantiates. You do not declare it by hand. The
+                registry computes it.
               </p>
 
               <DerivedChips
@@ -957,18 +1567,68 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
               />
             </div>
           </div>
-        )}
+          ))}
 
         {step === 3 &&
-          (result === undefined ? (
+          (kind !== "blueprint" ? (
+            singleDoc === undefined ? (
+              <div className="rounded-lg border border-line bg-surface-2/40 p-5">
+                <h3 className="font-display text-xl font-semibold text-fg">
+                  Nothing to validate
+                </h3>
+                <p className="prose-lane mt-4 text-sm leading-relaxed text-muted">
+                  Drop a single <span className="font-mono text-cyan">.yaml</span>{" "}
+                  document, a {KIND_NOUN[kind]}, on the first step. It validates here.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-5">
+                {/* The same verdict strip shape `ValidationReport` draws for a blueprint,
+                    over the two-state answer a lone document gets instead of three:
+                    there is no "unfinished" here, since one document is not a graph a
+                    reader fills in a card at a time. */}
+                <div className="panel flex flex-wrap items-center gap-x-4 gap-y-2 bg-surface-2/40 px-4 py-3">
+                  {singleValidation.state === "checking" && (
+                    <span className="font-mono text-xs text-dim">Checking…</span>
+                  )}
+                  {singleValidation.state === "failed" && (
+                    <span className="font-mono text-xs text-signal">{singleValidation.detail}</span>
+                  )}
+                  {singleValidation.state === "done" && (
+                    <>
+                      <span
+                        className="font-mono text-sm"
+                        style={{
+                          color: singleValidation.ok
+                            ? "var(--color-emerald)"
+                            : "var(--color-signal)",
+                        }}
+                        aria-hidden
+                      >
+                        {singleValidation.ok ? "✓" : "✕"}
+                      </span>
+                      <span className="font-mono text-xs uppercase tracking-[0.14em] text-fg">
+                        {singleValidation.ok
+                          ? `${KIND_NOUN[kind]} resolves`
+                          : `${KIND_NOUN[kind]} rejected`}
+                      </span>
+                    </>
+                  )}
+                </div>
+                {singleValidation.state === "done" && (
+                  <DiagnosticList diagnostics={singleValidation.diagnostics} title="Validator report" />
+                )}
+              </div>
+            )
+          ) : result === undefined ? (
             <div className="rounded-lg border border-line bg-surface-2/40 p-5">
               <h3 className="font-display text-xl font-semibold text-fg">
                 Nothing to validate
               </h3>
               <p className="prose-lane mt-4 text-sm leading-relaxed text-muted">
                 A bundle without a <span className="font-mono text-cyan">.dot</span> is
-                not an incomplete bundle, it is not one at all. Go back to the first
-                step and add the topology.
+                not incomplete. It is not a bundle. Go back to the first step and add the
+                topology.
               </p>
             </div>
           ) : (
@@ -983,7 +1643,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
           ))}
 
         {step === 4 &&
-          (submitted ? (
+          (outcome !== undefined ? (
             /* ── The handover ──
                This screen used to replace the entire step with a three-line notice and
                two buttons, both of which threw the run away: one left the route and the
@@ -993,36 +1653,92 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                nine downloadable files.
 
                What the engine computed stays mounted, and it leaves with the reader as
-               `REPORT.md`. The demo disclosure below is unchanged in fact and changed in
-               framing: nothing was sent and nothing was saved is still the first thing it
-               says, but it is now the sentence that explains why the file matters rather
-               than an apology for the button. */
+               `REPORT.md`.
+
+               ── AC3, AC4 and what the cutover changed here ──
+               The screen used to have ONE ending, because there was one: the button set a
+               flag and the flag meant "the wizard is over". There are four now, and the
+               heading, the glyph and the sentence under it are all read off the outcome.
+               `REPORT.md` is offered on every one of them — that is AC4, and it is a
+               CHANGE rather than a non-regression: `hasErrors` is the plain count
+               (`lib/core/diagnostics.ts:220-222`), both non-publishable states carry
+               error-severity diagnostics, and the only control offering the file sat
+               behind a button `blocked` kept disabled. The population that most needed the
+               report was precisely the population that could never reach it. */
             <div className="flex flex-col gap-5">
               <div className="flex flex-col items-start gap-4 sm:flex-row">
                 <span
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-emerald/40 bg-emerald/10 text-2xl text-emerald"
+                  className={cx(
+                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-full border text-2xl",
+                    outcome.state === "published"
+                      ? "border-emerald/40 bg-emerald/10 text-emerald"
+                      : outcome.state === "refused"
+                        ? "border-warn/40 bg-warn/10 text-warn"
+                        : "border-signal/40 bg-signal/10 text-signal",
+                  )}
                   aria-hidden
                 >
-                  ✓
+                  {outcome.state === "published" ? "✓" : "!"}
                 </span>
                 <div className="flex min-w-0 flex-col gap-3">
                   <h3 className="font-display text-xl font-semibold text-fg">
-                    Validated. Take it with you.
+                    {outcome.state === "published"
+                      ? outcome.release.created
+                        ? "Published. The registry holds it."
+                        : "Released. The registry holds the new version."
+                      : outcome.state === "refused"
+                        ? "Not published. The registry declined it."
+                        : "Not published."}
                   </h3>
+                  {/* AC3. The success sentence states what was STORED — the owner, the
+                      slug, the release and the digest — rather than what was not sent.
+                      Owner, slug and release are rendered from what this tab submitted and
+                      only the digest comes back, which is D-263-07's ratified reading:
+                      `PublishResult` is `{bundleId, releaseId, digest, created}` and names
+                      neither an owner nor a slug, so a screen waiting for them from the
+                      body would render blanks against a correct route. */}
                   <p className="prose-lane text-sm leading-relaxed text-muted">
-                    <span className="font-mono text-amber">demo</span>: nothing was sent
-                    and nothing was saved, because there is no registry backend yet. That
-                    is exactly why the report downloads instead: it carries the digest,
-                    both computed readings in the engine&rsquo;s own words and every
-                    diagnostic, so the run survives this tab.
+                    {outcome.state === "published" ? (
+                      <>
+                        Stored as{" "}
+                        <span className="font-mono text-cyan">
+                          {session.state === "ready" ? session.handle : "you"}/{slug}
+                        </span>
+                        , release{" "}
+                        <span className="font-mono text-cyan">{declaredVersion}</span>,{" "}
+                        {visibility === "public" ? "public" : "private"}. The registry
+                        recomputed the digest from the bytes it received and recorded{" "}
+                        <span className="break-all font-mono text-[11px] text-muted">
+                          {outcome.release.digest}
+                        </span>
+                        . The report below is the same reading in a file you keep.
+                      </>
+                    ) : outcome.state === "refused" ? (
+                      refusalSentence(outcome.kind, outcome.detail, progress)
+                    ) : (
+                      <>
+                        {outcome.state === "rejected" ? outcome.title : "The registry could not be reached"}
+                        : {outcome.detail} Your bundle is still here and the report below
+                        carries the whole reading.
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
 
               {/* The result, still on the card. It was unmounted here — the digest, the
                   autonomy class and the security level all vanished the moment the
-                  reader pressed the button that produced them. */}
-              {result?.analysis !== undefined && (
+                  reader pressed the button that produced them.
+
+                  ── `!blocked` is new, and it is the gate `reportMarkdown` already keeps ──
+                  This screen used to be reachable only with a clean bundle, so `analysis`
+                  being present was the same question as the bundle resolving. It is not any
+                  more: AC4 lands a REFUSED bundle here, resolution degrades, and a folder
+                  three cards into eight arrives WITH an `analysis` computed over the two
+                  fifths that resolved. Printing an autonomy class off that is the exact
+                  failure `reportMarkdown`'s own header describes — the number this page
+                  refuses to put on screen, put on screen. Both sides withhold together. */}
+              {!blocked && result?.analysis !== undefined && (
                 <dl className="grid gap-3 rounded-lg border border-line bg-surface-2/40 p-5 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-5">
                   <dt className="label self-center">Digest</dt>
                   <dd className="break-all font-mono text-xs text-muted">
@@ -1047,11 +1763,26 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                 </dl>
               )}
 
+              {/* AC4. The download is offered on EVERY ending, refusals included, and the
+                  order changes with the ending: after a release the report is the souvenir,
+                  after a refusal it is the thing the author works from next. */}
               <div className="flex flex-wrap items-center gap-3">
                 {reportHref !== undefined && (
-                  <ButtonLink href={reportHref} download="REPORT.md" prefetch={false}>
+                  <ButtonLink
+                    href={reportHref}
+                    download="REPORT.md"
+                    prefetch={false}
+                    variant={outcome.state === "published" ? "primary" : "outline"}
+                  >
                     Download the report
                   </ButtonLink>
+                )}
+                {/* A refusal is not the end of a run. `version-not-higher` and `conflict`
+                    are both answered by editing one field two steps back, and a reader sent
+                    to "Validate another bundle" would lose the whole selection to fix a
+                    number. This keeps every file, the manifest and the form. */}
+                {outcome.state !== "published" && (
+                  <Button onClick={() => setOutcome(undefined)}>Back to the bundle</Button>
                 )}
                 <Button variant="outline" onClick={validateAnother}>
                   Validate another bundle
@@ -1076,6 +1807,47 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                   browse the blueprints →
                 </Link>
               </p>
+            </div>
+          ) : kind !== "blueprint" ? (
+            /* Node and Ontology validate, they do not publish: the registry stores a
+               lone card or vocabulary only pinned inside a blueprint bundle that
+               publishes, and that path is not built. Saying so plainly here beats a
+               Publish button wired to nowhere. */
+            <div className="flex flex-col gap-6">
+              <div className="panel flex flex-col gap-4 bg-surface-2/40 p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <KindBadge kind={kind} />
+                </div>
+                <h3 className="font-display text-xl font-semibold leading-snug text-fg">
+                  {details.title || `Untitled ${KIND_NOUN[kind]}`}
+                </h3>
+                {singleValidation.state === "done" && (
+                  <p className="text-sm leading-relaxed text-muted">
+                    {singleValidation.ok
+                      ? `This ${KIND_NOUN[kind]} resolves.`
+                      : `The validator reported ${
+                          summarize(singleValidation.diagnostics).error
+                        } error${summarize(singleValidation.diagnostics).error === 1 ? "" : "s"}.`}
+                  </p>
+                )}
+                {singleValidation.state === "checking" && (
+                  <p className="text-sm leading-relaxed text-muted">Checking…</p>
+                )}
+                {singleValidation.state === "idle" && (
+                  <p className="text-sm leading-relaxed text-muted">
+                    Nothing dropped yet. Go back to the first step.
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-lg border border-line bg-surface-2/40 p-4">
+                <p className="text-xs leading-relaxed text-muted">
+                  <span className="text-fg">Not built:</span> publishing a lone{" "}
+                  {KIND_NOUN[kind]} on its own. Today the registry only stores one pinned
+                  inside a blueprint bundle that publishes. Pick Blueprint on the first
+                  step to publish one.
+                </p>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col gap-6">
@@ -1144,41 +1916,56 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                   <span style={{ color: METRIC_SOURCE_META.community.color }}>
                     Efficacy, Reliability and Transparency
                   </span>{" "}
-                  come from weighted community &amp; validator votes;{" "}
+                  come from weighted community &amp; validator votes.{" "}
                   <span style={{ color: METRIC_SOURCE_META.reported.color }}>
                     Cost / time
                   </span>{" "}
-                  is reported by whoever runs it, the platform never sees the
-                  execution, and arrives with its run count, its spread and the
-                  model it was obtained on.
+                  is reported by whoever runs it. The platform never sees the execution.
+                  It arrives with its run count, its spread and the model it was obtained
+                  on.
                 </p>
               </div>
 
               <div>
                 <Button
                   size="lg"
-                  onClick={() => setSubmitted(true)}
-                  disabled={blocked}
+                  onClick={() => void doPublish()}
+                  disabled={!canPublish}
                   aria-describedby="publish-note"
                 >
-                  Publish {KIND_NOUN[kind]}
+                  {publishing ? "Publishing\u2026" : `Publish ${KIND_NOUN[kind]}`}
                 </Button>
                 <p
                   id="publish-note"
                   className="mt-2 max-w-xl text-xs leading-relaxed text-muted"
                 >
-                  {/* Three sentences behind one disabled button. A blueprint still being
-                      written cannot be published either, but "blocked by 5 errors" in
-                      signal red is the wrong reason to give somebody who has three cards
-                      of eight down — it names a fault where there is only a middle. The
-                      button stays disabled; what changes is what the page says it is
-                      waiting for. */}
+                  {/* ── The three reasons became two, and the third was DELETED ──
+                      `still being written` and `blocked` with an error count both survive
+                      unchanged: a blueprint mid-draft cannot be published either, but
+                      "blocked by 5 errors" in signal red is the wrong reason to give
+                      somebody who has three cards of eight down — it names a fault where
+                      there is only a middle. `not wired up` is gone rather than reworded,
+                      because it said publishing has no backend and that sentence is now
+                      false; rewording it would leave an explanation of a limitation that no
+                      longer exists, which is the failure D-78 is about.
+
+                      ── What is NOT a rewording of it ──
+                      The two sentences below about a session are new facts, not the old one
+                      in new clothes. Being signed out is a true reason this button cannot
+                      publish, `publish` resolves the owner FROM the handle so an account
+                      without one cannot name a bundle's owner, and both states are reachable
+                      (T050 AC1). A button disabled with nothing said is the failure this
+                      route's whole copy history is about.
+
+                      The bundle's own state is asked FIRST. An author whose graph is half
+                      written should read that before being asked to sign in — the sign-in is
+                      answerable in a click and the folder is the real work. */}
                   {blocked ? (
                     unfinished && progress !== undefined ? (
                       <>
                         <span className="font-mono text-warn">still being written</span>:{" "}
                         {progress.placed} of {progress.total} nodes have their card. There
-                        is nothing to fix — write the rest and drop the folder again. The
+                        is nothing to fix. Write the rest and drop the folder again. The
                         Preview step names the ones still waiting.
                       </>
                     ) : (
@@ -1191,12 +1978,50 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
                             }. The registry does not accept a bundle it cannot resolve; fix them on the Preview step.`}
                       </>
                     )
+                  ) : versionMissing ? (
+                    <>
+                      <span className="font-mono text-warn">no version</span>: a release is
+                      published under a number. Give it one on the Details step;{" "}
+                      <span className="font-mono">{FIRST_VERSION}</span> is the usual first.
+                    </>
+                  ) : session.state === "loading" ? (
+                    <>Checking whether you are signed in&hellip;</>
+                  ) : session.state === "anonymous" ? (
+                    <>
+                      <span className="font-mono text-amber">sign in to publish</span>: a
+                      release belongs to an account.{" "}
+                      <a
+                        href={SIGN_IN_HREF}
+                        className="text-fg underline decoration-line-bright underline-offset-4 transition-colors hover:text-cyan"
+                      >
+                        Sign in with GitHub
+                      </a>{" "}
+                      and come back. The bundle and everything you have typed stay where
+                      they are.
+                    </>
+                  ) : session.state === "no-handle" ? (
+                    <>
+                      <span className="font-mono text-amber">no handle yet</span>: your
+                      account has not chosen the name a blueprint is published under, and a
+                      release is stored beneath it. Nothing on this page can set one.
+                    </>
+                  ) : session.state === "unreachable" ? (
+                    <>
+                      <span className="font-mono text-signal">cannot tell</span>:{" "}
+                      {session.detail} Reload the page before publishing, so this does not
+                      fail halfway.
+                    </>
+                  ) : publishing ? (
+                    <>Sending the bundle to the registry. This can take a moment.</>
                   ) : (
                     <>
-                      <span className="font-mono text-amber">not wired up</span>:
-                      publishing has no backend. This button ends the wizard and shows
-                      you what the registry entry would look like. Nothing leaves this
-                      tab.
+                      This sends the bundle to the registry and creates{" "}
+                      <span className="font-mono text-cyan">
+                        {session.handle}/{slug}
+                      </span>{" "}
+                      release <span className="font-mono text-cyan">{declaredVersion}</span>,{" "}
+                      {visibility === "public" ? "public" : "private"}. The registry
+                      resolves it again on its side, and its reading is the one that decides.
                     </>
                   )}
                 </p>
@@ -1214,7 +2039,7 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
           counter until its steps were deleted, and this flow keeps it because it still has
           steps: four panels, in order, with an advance control at the bottom of each.
           `STEPS.length` rather than a typed 4, so the two can never disagree. */}
-      {!(step === 4 && submitted) && (
+      {!(step === 4 && outcome !== undefined) && (
         <div className="flex items-center justify-between gap-3 border-t border-line bg-surface-2/40 px-5 py-4 sm:px-8">
           <Button variant="ghost" onClick={back} disabled={step === 1}>
             ← Back
@@ -1223,13 +2048,25 @@ export function UploadFlow({ example }: { example: ExampleBundle }) {
             step {step} of {STEPS.length}
             {step === 4 &&
               ` · ${
-                !blocked
-                  ? "ready to publish"
-                  : result === undefined
-                    ? "no bundle yet"
-                    : unfinished && progress !== undefined
-                      ? `${progress.waiting} node${progress.waiting === 1 ? "" : "s"} still to card`
-                      : `blocked by ${errorCount} error${errorCount === 1 ? "" : "s"}`
+                kind !== "blueprint"
+                  ? singleDoc === undefined
+                    ? "no document yet"
+                    : singleValidation.state === "checking"
+                      ? "checking…"
+                      : singleValidation.state === "failed"
+                        ? "could not be checked"
+                        : singleValidation.state === "done" && singleValidation.ok
+                          ? "resolves"
+                          : singleValidation.state === "done"
+                            ? "rejected"
+                            : "no document yet"
+                  : !blocked
+                    ? "ready to publish"
+                    : result === undefined
+                      ? "no bundle yet"
+                      : unfinished && progress !== undefined
+                        ? `${progress.waiting} node${progress.waiting === 1 ? "" : "s"} still to card`
+                        : `blocked by ${errorCount} error${errorCount === 1 ? "" : "s"}`
               }`}
           </span>
           {step < 4 ? (
