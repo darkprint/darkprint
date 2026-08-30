@@ -40,6 +40,15 @@ const eslintConfig = defineConfig([
     "ds-bundle/**",
     ".ds-sync/**",
     ".design-sync/.cache/**",
+    // Third-party skills, vendored 2026-08-30 (`supabase/agent-skills`) and locked in
+    // `skills-lock.json` per CLAUDE.md. Somebody else's source ships its own lint config
+    // and running ours over it reports warnings nobody here can act on. Today the vendor
+    // is 40 markdown files and matches nothing; the globs are the standing rule rather
+    // than a reaction to a current error, which is what the note this line restores asked
+    // for. `.agents/` holds the content and `.claude/skills/` symlinks into it, so both
+    // want naming: the installer writes the pair, not either one alone.
+    ".agents/**",
+    ".claude/skills/**",
   ]),
 ]);
 
