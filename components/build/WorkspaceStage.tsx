@@ -321,8 +321,9 @@ export function WorkspaceStage({
      in its `detail`, which is the string `MetricBars` and the radar's caption both print:
 
        autonomy    real. `analysis.autonomy.fraction`, the share of the graph that runs
-                   unattended, which is the same number `lib/content/view.ts` puts on this
-                   axis for every published blueprint. `ScoreRadar` filters it out of the
+                   unattended read over the work and over the deciding and taken at the
+                   weaker of the two, which is the same number `lib/content/view.ts` puts
+                   on this axis for every published blueprint. `ScoreRadar` filters it out of the
                    spokes anyway (doc 2 §1.1: the band is not a length) and uses it for the
                    caption, which is exactly what is wanted — it is printed in words two
                    inches to the right.

@@ -40,10 +40,10 @@ dependencies:
   - spec-planner
   - code-builder
   - targeted-debugger
-cannot:
+cannot: []
+will_not:
   - quote a criterion in the evidence it emits
 
-requires_human: false
 risk_markers: []
 notes: >-
   This is the only node that sees both halves, and the shape of `evidence` is what keeps that
@@ -54,4 +54,3 @@ notes: >-
 
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0

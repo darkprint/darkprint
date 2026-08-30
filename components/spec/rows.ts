@@ -63,7 +63,7 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
   },
   {
     name: "ids, commas, comments",
-    what: "Whether the file runs under Attractor as it stands. DarkPrint's own parser accepts more than Attractor's grammar does, so a file can be readable here and refused there.",
+    what: "Whether Attractor's own grammar can read the file. DarkPrint's parser accepts more than that grammar does, so a file can be readable here and refused there. Parsing is not running: the file a runner takes is what `darkprint export --attractor` compiles out of the graph and its cards.",
     check: {
       codes: [
         "attractor/bad-node-id",
@@ -101,13 +101,13 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
  */
 export const CARD_ROWS: readonly CheckRow[] = [
   {
-    name: "id · version · ontology_version",
-    what: "A lowercase hyphenated id, optionally namespaced, and two semantic versions: the card's own and the vocabulary it was written against.",
+    name: "id · version",
+    what: "A lowercase hyphenated id, optionally namespaced, and one semantic version: the card's own.",
     check: { codes: ["card/bad-id", "card/bad-version"], level: "error" },
   },
   {
     name: "type",
-    what: "One node-type term. The autonomy reading asks about a type under human-in-the-loop. That type has to resolve.",
+    what: "One node-type term, and the only thing on the card that says whether a person acts here. The autonomy reading asks two things of it: whether it is under human-in-the-loop, and whether it is a node that decides whether other nodes run. That type has to resolve.",
     check: {
       codes: ["card/unknown-term", "card/wrong-term-kind"],
       level: "error",
@@ -147,13 +147,17 @@ export const CARD_ROWS: readonly CheckRow[] = [
   },
   {
     name: "cannot",
-    what: "What the node must never receive. Enforced whenever the entry names a data type.",
+    what: "Data types the node must never receive, as ontology term ids. The resolver holds every incoming edge to each one.",
     check: { codes: ["bundle/prohibition-violated"], level: "error" },
   },
   {
-    name: "requires_human",
-    what: "Whether a person acts here. A human-in-the-loop type combined with a flag that says otherwise describes two different nodes. The analysis believes the flag.",
-    check: { codes: ["card/human-type-inconsistent"], level: "error" },
+    /* The row states what nothing checks, and then names the one thing that is checked
+       about it. Both halves are needed. Leaving the `check` column empty would put this
+       row in the same visual class as a field the engine reads and happens to accept, and
+       the whole reason the field exists is that a reader can see the difference. */
+    name: "will_not",
+    what: "What the node undertakes never to do, in sentences. No check reads it. Writing a data type here instead of in `cannot` is the one thing the validator does say.",
+    check: { codes: ["card/prohibition-misfiled"], level: "warning" },
   },
   {
     name: "params",
@@ -235,11 +239,6 @@ export const ONTOLOGY_ROWS: readonly CheckRow[] = [
   {
     name: "a local id over a core one",
     what: "An overlay term that reuses a curated id. It works. It changes what that id means for everybody reading the bundle.",
-    check: { codes: ["bundle/ontology-mismatch"], level: "warning" },
-  },
-  {
-    name: "ontology_version",
-    what: "Which vocabulary the card and the bundle were written against. That is compared with the vocabulary they are being read against.",
     check: { codes: ["bundle/ontology-mismatch"], level: "warning" },
   },
   {

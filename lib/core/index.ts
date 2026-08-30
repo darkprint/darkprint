@@ -24,6 +24,30 @@ export type {
   DiagnosticOptions,
 } from "./diagnostics";
 export { error, warning, info, hasErrors, summarize, sortDiagnostics } from "./diagnostics";
+/**
+ * Storable versus approved: which findings may refuse an artefact, stated as a list.
+ *
+ * `hasErrors` above answers "did anything serious happen". `isStorable` answers the
+ * different question "may this be held at all", and the two are not the same question —
+ * see `gate.ts`'s header. Published because every surface that gates on a diagnostic list
+ * has to be able to ask the second one without inventing a third answer.
+ */
+export type { GateClass } from "./gate";
+export {
+  ADDRESS_FIELDS,
+  DIAGNOSTIC_GATE,
+  STORAGE_BLOCKING_CODES,
+  RELEASE_BLOCKING_CODES,
+  AUTHOR_DECLARED_BLOCKING_CODES,
+  INFERRED_CODES,
+  gateClassOf,
+  blocksStorage,
+  storageBlockers,
+  isStorable,
+  blocksRelease,
+  releaseBlockers,
+  isReleasable,
+} from "./gate";
 
 /* --------------------- configuration (doc 1 §11) --------------------- */
 /**
@@ -43,8 +67,23 @@ export { DARKPRINT_CONFIG } from "./config";
 /* --------------------- ontology (doc 3) --------------------- */
 export type { TermKind, TermDeprecation, OntologyTerm, Ontology } from "./ontology/types";
 export { CORE_ONTOLOGY, CORE_PHASE_IDS } from "./ontology/core";
-export type { ResolvedTerm, OntologyView, TermOrigins } from "./ontology/resolve";
-export { ontologyView, partitionTerms, splitTermId } from "./ontology/resolve";
+export type {
+  ControlCitation,
+  HumanCitation,
+  ResolvedTerm,
+  OntologyView,
+  TermOrigins,
+} from "./ontology/resolve";
+export {
+  HUMAN_IN_THE_LOOP,
+  controlCitation,
+  humanCitation,
+  isControlPoint,
+  ontologyView,
+  partitionTerms,
+  requiresHuman,
+  splitTermId,
+} from "./ontology/resolve";
 
 /* --------------------- the node card (doc 1 §3) --------------------- */
 export type { JsonValue, Port, NodeCard, CardRef } from "./card/schema";
@@ -127,13 +166,49 @@ export { lintAttractor } from "./attractor/lint";
 export type { AttractorNodeKind } from "./attractor/emit";
 export {
   ATTRACTOR_TYPE_SHAPES,
+  ATTRACTOR_TRANSLATED_TYPES,
   ATTRACTOR_ENTRY_KIND,
   ATTRACTOR_EXIT_KIND,
+  // The private / runtime-read line, published because it is the mechanical definition of
+  // "the half an Attractor runtime reads" that a round-trip gate measures against — a
+  // caller outside this package can ask which names survive an export without re-deriving
+  // the answer from the emitter's source.
+  ATTRACTOR_EMITTED_ATTRIBUTES,
+  DARKPRINT_EMITTED_ATTRIBUTES,
+  // The third list: what a runner reads and a blueprint cannot set. Derived from the two
+  // above and the reserved sets, printed into every emitted file's header, and published
+  // so a page or a CLI can state the same gap without transcribing it a second time.
+  ATTRACTOR_UNEXPRESSED_ATTRIBUTES,
   attractorKindFor,
+  attractorClassesFor,
+  // The `dp-` collapse, published because `attractor/import.ts` reads a class list back
+  // through it and a second copy of the rule is a second answer.
+  attractorClassName,
   quoteAttractorString,
   toAttractorIdentifier,
   emitAttractorDot,
 } from "./attractor/emit";
+/**
+ * The other direction: an Attractor pipeline read back into a DRAFT bundle.
+ *
+ * Published beside the emitter because the two share one mapping table and are only
+ * meaningful as a pair — `tests/attractor-round-trip.test.ts` is the witness that they
+ * invert each other, and it is the evidence behind doc 1 §0.1.1's compatibility claim.
+ * The draft is never a release: see `import.ts` on why `author` has no default.
+ */
+export type {
+  AttractorImportOptions,
+  AttractorImport,
+  ImportedCard,
+} from "./attractor/import";
+export {
+  ATTRACTOR_SHAPE_TYPES,
+  DRAFT_CARD_VERSION,
+  DERIVED_PROVENANCE_PREFIX,
+  attractorTypeFor,
+  unquoteAttractorString,
+  importAttractorDot,
+} from "./attractor/import";
 
 /* --------------------- the bundle (doc 1 §2) --------------------- */
 export type {

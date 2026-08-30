@@ -104,6 +104,9 @@ describe("AC1 — the CLI and the server disagree about nothing", () => {
   it("reads the exported folder with no manifest in it, which is what makes D3's stub load-bearing", () => {
     const read = readBundleDirectory(`public/bundles/${SLUGS[0]}`);
     expect(read.manifestFile).toBeUndefined();
-    expect(read.manifest.ontologyVersion).toBe("0.1.0");
+    /* The stub stands in for the whole document. It asserted the stub's `ontologyVersion`
+       until a manifest stopped carrying one; `slug` is derived from the directory name and
+       is the member a reader would notice missing. */
+    expect(read.manifest.slug).toBe(SLUGS[0]);
   });
 });

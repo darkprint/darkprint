@@ -29,12 +29,11 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { CORE_ONTOLOGY, type CardRef } from "@/lib/core";
+import { type CardRef } from "@/lib/core";
 import { contentVocabulary, readContent } from "@/lib/content/read";
 import { schema } from "@/lib/db";
 import { addRelease, createBundle } from "@/lib/server/archive";
 import { addCard } from "@/lib/server/cards";
-import { addOntologyVersion } from "@/lib/server/ontology";
 import { getSignals } from "@/lib/server/counters";
 import { releaseFiles, serveFile } from "@/lib/server/export";
 import { blueprint } from "@/lib/server/registry";
@@ -106,10 +105,6 @@ beforeAll(async () => {
   strangerId = stranger.id;
 
   const entry = readContent()[0];
-  await addOntologyVersion(db, {
-    version: entry.bundle.manifest.ontologyVersion,
-    terms: CORE_ONTOLOGY.terms,
-  });
 
   const seen = new Set<string>();
   for (const file of entry.cardFiles) {

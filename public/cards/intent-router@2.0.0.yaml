@@ -46,21 +46,21 @@ outputs:
     description: The event enriched with its label, ready for whichever branch picks it up.
 dependencies:
   - ticket
-cannot:
+cannot: []
+will_not:
   - change the payload it routes
   - leave an alert unrouted
 
-requires_human: false
 risk_markers: []
 notes: >-
   A named `escalation_lane` and a higher threshold are the difference from 1.0.0: an incident
   line would rather hand a misread alert to a person than route it confidently to the wrong
   runbook. `taxonomy` is optional, so a deployment that never supplies one behaves as before.
-  The version is 2.0.0 because the prohibition was reworded: `leave an event unrouted` went
-  and `leave an alert unrouted` arrived, and §4 reads an entry added to `cannot` as major
-  without asking whether the author meant it as a rewrite. A prohibition is the one field the
-  resolver holds a graph to, so the rule errs toward the stronger bump.
+  The version is 2.0.0 because the undertaking was reworded: `leave an event unrouted` went
+  and `leave an alert unrouted` arrived. `inferBump` reads both directions of `will_not` as
+  minor, since the resolver holds no graph to a sentence. The major is the author's, on the
+  ground that a reworded promise is a changed promise until somebody reads both and decides
+  otherwise.
 
 version: 2.0.0
 author: hachi
-ontology_version: 0.1.0

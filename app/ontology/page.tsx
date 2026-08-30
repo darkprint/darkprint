@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 import type { OntologyTerm, OntologyView } from "@/lib/core";
-import { ontologyView, partitionTerms } from "@/lib/core";
+import { partitionTerms } from "@/lib/core";
 import { getSharedDbClient } from "@/lib/db";
-import { getLatestOntologyVersion, openView } from "@/lib/server/ontology";
+import { openView } from "@/lib/server/ontology";
 import type { Actor } from "@/lib/server/policy";
 import { cards } from "@/lib/server/registry";
 import { searchTerms } from "@/lib/server/search";
@@ -39,7 +39,8 @@ import {
 
    The author ruled the other way: "adopt the term Ontology also for /ontology page … be
    consistent through all the website." The word is `/ontology` in the URL, `ontology/` in a
-   bundle and `ontology_version` on a card, and the chrome was the only surface disagreeing.
+   bundle and `ontologyVersion` on a score, and the chrome was the only surface disagreeing.
+   (A card carried an `ontology_version` too when that instruction was given.)
    The spec row is now "Ontology file (YAML)", the shape its siblings in that menu already
    had — see `SiteHeader`'s decision 1.
 
@@ -140,29 +141,28 @@ const VOCABULARY_SECTIONS: readonly SideRailItem[] = [
  * The vocabulary this page describes: the published core, with every local term a public
  * blueprint's current release declares merged over it.
  *
- * Two readers because there are two corpora and only one of them is a table (D-200-17).
- * `openView` builds the core view from `ontology_term`; a local term travels with the
- * release that declares it, so it arrives through `searchTerms`, which is the module that
- * owns reading them and deciding which bundles' releases may be read at all. Passing them
- * back in as `openView`'s extensions is what makes the subsumption rails and `partitionTerms`
- * see the same vocabulary the rows do — a view built from the core alone would draw a page
- * that says this archive carries no local terms while listing them three panels down.
+ * Two readers because there are two corpora and only one of them is in the database
+ * (D-200-17). The core is `CORE_ONTOLOGY`, which `openView` merges over; a local term
+ * travels with the release that declares it, so it arrives through `searchTerms`, which is
+ * the module that owns reading them and deciding which bundles' releases may be read at
+ * all. Passing them back in as `openView`'s extensions is what makes the subsumption rails
+ * and `partitionTerms` see the same vocabulary the rows do — a view built from the core
+ * alone would draw a page that says this archive carries no local terms while listing them
+ * three panels down.
  *
- * The empty view is a registry that has published no vocabulary at all. It renders the
- * page's chrome over nothing, which is the truthful answer, rather than falling back to
- * `CORE_ONTOLOGY` — the bundled core is the engine's default and this page's claim is about
- * what the REGISTRY holds, so describing one while reading the other is the single thing
- * this page must not do.
+ * ── There is no longer an empty case, and the reason it existed has gone ──
+ * The core half used to be `ontology_term` rows for the newest published version, and this
+ * function answered an EMPTY view when the registry had published none: rendering the
+ * page's chrome over nothing was the truthful answer, and falling back to `CORE_ONTOLOGY`
+ * would have described the engine's bundled default while claiming to describe what the
+ * registry holds. Those are the same vocabulary now. Nothing writes a version of the core
+ * anywhere, every card in the registry is resolved against `CORE_ONTOLOGY`, and this page
+ * reads exactly what the resolver reads. The local half is still genuinely per-registry and
+ * is still read from it.
  */
 async function vocabularyView(db: ReturnType<typeof getSharedDbClient>["db"]): Promise<OntologyView> {
-  const published = await getLatestOntologyVersion(db);
-  if (published === undefined) return ontologyView({ version: "", title: "", terms: [] });
   const local = await searchTerms(db, ANONYMOUS, { origin: "local" });
-  return openView(
-    db,
-    published.version,
-    local.hits.map((hit) => hit.item),
-  );
+  return openView(local.hits.map((hit) => hit.item));
 }
 
 export default async function Page() {

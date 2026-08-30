@@ -50,7 +50,6 @@ import { CORE_ONTOLOGY, cardRef, type Bundle, type CardRef, type NodeCard } from
 import { contentVocabulary, readContent } from "@/lib/content/read";
 import { upsertFromGitHub, changeHandle } from "@/lib/server/accounts";
 import { addCard } from "@/lib/server/cards";
-import { addOntologyVersion } from "@/lib/server/ontology";
 import type { Actor } from "@/lib/server/policy";
 import { publish } from "@/lib/server/publish";
 import { planImport, runImport } from "@/lib/server/seed";
@@ -427,13 +426,10 @@ export function privateWorld(): () => Promise<Private> {
     const scratch = await scratchDatabase();
     const db = scratch.db;
 
-    /* `publish` calls `openView(db, manifest.ontologyVersion)`, which refuses a version
-       nobody published. The seed does this too; without it every publish below refuses for
-       a reason that has nothing to do with visibility. */
-    await addOntologyVersion(db as never, {
-      version: CORE_ONTOLOGY.version,
-      terms: CORE_ONTOLOGY.terms,
-    });
+    /* No ontology version is published first. `publish` used to call
+       `openView(db, manifest.ontologyVersion)` and refuse a version nobody had published, so
+       without this every publish below refused for a reason that had nothing to do with
+       visibility. `openView` merges over `CORE_ONTOLOGY` and takes no version. */
 
     const alpha = await makeAccount(db, `t220a-${randomUUID()}`, "t220alpha");
     const beta = await makeAccount(db, `t220b-${randomUUID()}`, "t220beta");
@@ -514,10 +510,9 @@ export function privateWorld(): () => Promise<Private> {
         outputs: [],
         dependencies: [],
         cannot: [],
-        requiresHuman: false,
+        willNot: [],
         riskMarkers: [],
         version: SEED_VERSION,
-        ontologyVersion: CORE_ONTOLOGY.version,
       };
       /* The stored bytes. `addCard` keeps `source` verbatim and `mcpReadCard` is published
          to answer "the YAML as published", so this string is what the criterion compares
@@ -529,9 +524,7 @@ export function privateWorld(): () => Promise<Private> {
         `type: ${body.type}`,
         `action: ${body.action}`,
         `spec: ${body.spec}`,
-        `requires_human: false`,
         `version: ${body.version}`,
-        `ontology_version: ${body.ontologyVersion}`,
         "",
       ].join("\n");
       return { body, source };

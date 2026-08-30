@@ -38,6 +38,8 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { CORE_ONTOLOGY } from "@/lib/core";
+
 import {
   FixtureGate,
   anonymous,
@@ -141,31 +143,40 @@ describe("the fixture this file's tables rest on", () => {
     const s = gate.get();
     const [row] = await query(
       s,
-      "select array_length(card_refs, 1) as pins, dot, local_vocabulary is not null as has_vocab, " +
-        "manifest ->> 'ontologyVersion' as ov from release where id = $1",
+      "select array_length(card_refs, 1) as pins, dot, local_vocabulary is not null as has_vocab " +
+        "from release where id = $1",
       [seeded["guarded-merge-bot"].releaseId],
     );
+    /* `manifest ->> 'ontologyVersion'` was the third member here and is gone with the field:
+       a manifest declares no vocabulary version, so there is nothing in it to pin. */
     expect(
-      { pins: row?.pins, ov: row?.ov, has_vocab: row?.has_vocab },
-      `\`guarded-merge-bot\` pins six cards in \`content/\` at this commit, declares ontology ` +
-        `0.1.0, and \`seedRelease\` stores the archive's own vocabulary on every release. If ` +
-        `the corpus has moved, the drawing tables below have moved with it and want ` +
-        `re-measuring rather than loosening.`,
-    ).toEqual({ pins: 6, ov: "0.1.0", has_vocab: true });
+      { pins: row?.pins, has_vocab: row?.has_vocab },
+      `\`guarded-merge-bot\` pins six cards in \`content/\` at this commit, and ` +
+        `\`seedRelease\` stores the archive's own vocabulary on every release. If the corpus ` +
+        `has moved, the drawing tables below have moved with it and want re-measuring rather ` +
+        `than loosening.`,
+    ).toEqual({ pins: 6, has_vocab: true });
     expect(String(row?.dot)).toContain("digraph");
     const cards = await query(s, "select count(*)::int as n from card_version");
     expect(cards[0]?.n, "the pinned cards' YAML has to be in `card_version.source`").toBeGreaterThan(5);
   });
 
-  it("published the ontology version every stored manifest names", async () => {
+  it("resolves the drawn nodes against a vocabulary that actually has their terms", async () => {
+    /* This used to count `ontology_term` rows. `seedOntology` wrote the core vocabulary
+       through `addOntologyVersion`, and without its TERMS `openView` built a view that
+       resolved nothing and every node fell back to the default kind — the wrong-drawing
+       hazard arriving from the fixture side. There are no term rows and no version rows;
+       `openView` merges over `CORE_ONTOLOGY`, so the hazard is not constructible from the
+       fixture and the premise worth asserting is the one it stood in for: the vocabulary
+       the reader opens really carries the types these cards declare. */
     const s = gate.get();
-    const [row] = await query(s, "select count(*)::int as n from ontology_term");
-    expect(
-      row?.n,
-      `\`seedOntology\` writes the core vocabulary through \`addOntologyVersion\`. Without its ` +
-        `TERMS, \`openView\` builds a view that resolves nothing and every node falls back to ` +
-        `the default kind — which is the wrong-drawing hazard arriving from the fixture side.`,
-    ).toBeGreaterThan(0);
+    const rows = await query(s, "select distinct body ->> 'type' as type from card_version");
+    const declared = rows
+      .map((r) => (typeof r.type === "string" ? r.type : ""))
+      .filter((t) => t !== "");
+    expect(declared.length, "the seeded cards declare a type at all").toBeGreaterThan(0);
+    const known = new Set(CORE_ONTOLOGY.terms.filter((t) => t.kind === "node-type").map((t) => t.id));
+    expect(declared.filter((t) => !known.has(t))).toEqual([]);
   });
 });
 
@@ -424,28 +435,33 @@ describe("D-132-01: an absent entry is the answer, never a refusal", () => {
   });
 
   /**
-   * D-132-04 C-F. `openView` throws `UnknownOntologyVersionError` when no `ontology_version`
-   * row matches the release's manifest, and `graphsOf` answers in values — so the throw has
-   * to become an absent entry. The manifest is edited with direct SQL because no writer in
-   * this product publishes a release naming an unpublished version, which is precisely why
-   * the state is reachable only this way and why it is worth a cell.
+   * D-132-04 C-F, driven at the fact that is left.
+   *
+   * It used to write `"9.9.9"` into the stored manifest's `ontologyVersion` and assert the
+   * entry was absent: `openView` threw `UnknownOntologyVersionError` for a version with no
+   * `ontology_version` row, `export/build.ts` turned that into a 404, and this reader had to
+   * turn it into an absent entry instead. A manifest declares no vocabulary version, there is
+   * no version registry, and `openView` throws nothing — so that state is not constructible
+   * and neither is the throw.
+   *
+   * What C-F is about survives and is asserted the other way round: a stored manifest this
+   * reader cannot make sense of must not take the shelf down for the blueprints beside it.
+   * The manifest is replaced wholesale with direct SQL, because no writer in this product
+   * stores one like it.
    */
-  it("omits a release naming an ontology version nobody published", async () => {
-    const target = await seed("starter-software-factory", { slug: "t132-unknown-ontology" });
+  it("draws the rest of the shelf when one release's stored manifest is unusable", async () => {
+    const target = await seed("starter-software-factory", { slug: "t132-bad-manifest" });
     await query(
       gate.get(),
-      "update release set manifest = jsonb_set(manifest, '{ontologyVersion}', '\"9.9.9\"') where id = $1",
+      "update release set manifest = '{}'::jsonb where id = $1",
       [target.releaseId],
     );
-    const map = await graphsOf(anonymous, [key("t132-unknown-ontology"), key("guarded-merge-bot")]);
+    const map = await graphsOf(anonymous, [key("t132-bad-manifest"), key("guarded-merge-bot")]);
     expect(
-      map.has(keyOf(key("t132-unknown-ontology"))),
-      `D-132-04 C-F: \`openView\` raises \`UnknownOntologyVersionError\` for a version with no ` +
-        `row, and \`export/build.ts\` turns that into a 404. This reader answers in VALUES, so ` +
-        `the same fact is an absent entry — "not visible or NOT RESOLVABLE" (D-132-01). A ` +
-        `throw here would take the whole shelf down for one bad release.`,
-    ).toBe(false);
-    expect(map.has(keyOf(key("guarded-merge-bot")))).toBe(true);
+      map.has(keyOf(key("guarded-merge-bot"))),
+      `D-132-01: an absent entry is the answer and never a refusal. A throw here would take ` +
+        `the whole shelf down for one bad release, which is the failure C-F named.`,
+    ).toBe(true);
   });
 
   /**

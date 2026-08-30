@@ -219,10 +219,15 @@ function metricsFor(
     {
       key: "autonomy",
       label: "Autonomy",
-      // §8.1 scores the *share* of the graph that runs unattended. The class is that
-      // share bucketed and named, and the class is what a surface prints; this value
-      // exists so the six metrics sit on one axis, and the two autonomy renderers on
-      // the blueprint page both refuse to draw it as a length (doc 2 §1.1).
+      // §8.1 scores the *share* of the graph that runs unattended, read over the work and
+      // over the deciding and taken at the weaker of the two (`analysis/autonomy.ts`). The
+      // class is that share bucketed and named, and the class is what a surface prints;
+      // this value exists so the six metrics sit on one axis, and the two autonomy
+      // renderers on the blueprint page both refuse to draw it as a length (doc 2 §1.1).
+      //
+      // `autonomy.fraction` and not `staffingFraction`: the `detail` below quotes the
+      // comparison the band actually made, and a percentage taken from the other reading
+      // would contradict the sentence printed under it.
       value: Math.round(analysis.autonomy.fraction * 100),
       source: "auto",
       // The engine's sentence, less the band ordinal it ends on: this `detail` is printed

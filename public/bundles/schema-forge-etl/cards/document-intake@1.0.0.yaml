@@ -26,10 +26,10 @@ outputs:
     type: json
     description: The batch, one entry per document, with its source path, content and hash.
 dependencies: []
-cannot:
+cannot: []
+will_not:
   - emit the same document in two batches
 
-requires_human: false
 risk_markers: []
 notes: >-
   The content hash is what makes a re-run idempotent: a document that arrives twice resolves to
@@ -37,4 +37,3 @@ notes: >-
 
 version: 1.0.0
 author: lupo
-ontology_version: 0.1.0

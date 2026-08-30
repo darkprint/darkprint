@@ -277,7 +277,6 @@ export async function buildWorld(s: Scratch): Promise<World> {
     id: mark("card-plan"),
     phases: ["planning"],
     type: "agent",
-    requiresHuman: false,
     riskMarkers: [],
     name: "Plan the work",
   });
@@ -286,7 +285,6 @@ export async function buildWorld(s: Scratch): Promise<World> {
     id: mark("card-impl"),
     phases: ["implementation"],
     type: "tool",
-    requiresHuman: true,
     riskMarkers: [],
     name: "Write the code",
   });
@@ -295,21 +293,27 @@ export async function buildWorld(s: Scratch): Promise<World> {
     id: mark("card-test"),
     phases: ["testing"],
     type: "agent",
-    requiresHuman: false,
     riskMarkers: ["irreversible-action"],
     name: "Run the suite",
   });
   /* No phase at all, which is the normal state for an intake or a retrieval step and is
-     never a gap (`lib/core/analysis/phase-coverage.ts`). It declares `agent` and carries no
-     risk marker, so it changes no other filter cell's expected set. */
+     never a gap (`lib/core/analysis/phase-coverage.ts`). It carries no risk marker and no
+     phase, so it changes no other filter cell's expected set.
+
+     It is also the world's one staffed card, and it is staffed the only way a card can be:
+     `human-gate` is subsumed by `human-in-the-loop`, which is what `human=1` asks the
+     published vocabulary. `card-impl` used to carry the staffing, as `type: "tool"` beside
+     a `requires_human: true` — a combination the schema no longer admits, and one where
+     the card's own type contradicted the filter that selected it. `human-gate` declares no
+     phase for the same reason `agent` did: `phase=unphased` selects this card and nothing
+     above may start disagreeing with that. */
   const cardUnphased = await insertCard(s, {
     ownerId: alpha.id,
     id: mark("card-unphased"),
     phases: [],
-    type: "agent",
-    requiresHuman: false,
+    type: "human-gate",
     riskMarkers: [],
-    name: "Fetch the input",
+    name: "Approve the input",
   });
 
   const shelf = async (

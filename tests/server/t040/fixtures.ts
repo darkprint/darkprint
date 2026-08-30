@@ -13,22 +13,35 @@
    as long as it ignored them consistently.
 
    `public/bundles/<slug>/README.md` is written by `prebuild`
-   (`scripts/generate-bundles.ts`), committed, and carries four
+   (`scripts/generate-bundles.ts`), committed, and carries five
    figures per bundle in its own words:
 
        bundle digest  sha256:<64 hex>
        Autonomy: <Class>.
+       > <the autonomy sentence, ordinal removed>
        Security level <n>.
        > <the security rationale string, verbatim>
 
    It is produced by a different route from `loadBundle`'s return
    value and it sits on disk before this suite runs. **And it can
-   go red**: all nine digests, classes, levels and rationales were
-   reproduced from the shipped folder bytes before it was adopted,
-   and dropping the vocabulary from `frontline-triage` moves all
-   four. That is the two-factor check this run requires of a
-   reference — a reference that cannot register the quantity reads
-   zero for the same reason a broken one does.
+   go red**: all nine digests, classes, sentences, levels and
+   rationales were reproduced from the shipped folder bytes before
+   they were adopted, and dropping the vocabulary from
+   `frontline-triage` moves four of the five. That is the
+   two-factor check this run requires of a reference — a reference
+   that cannot register the quantity reads zero for the same reason
+   a broken one does.
+
+   The fifth, `autonomyClass`, is the one that does NOT move, and
+   saying so here is the point. It was `conditional` with the
+   vocabulary and `supervised` without it until the autonomy
+   reading gained its control-point half; both sides now land in
+   the same band (0.6667 and 0.50, against a `level2` cut-off of
+   0.50) and the class alone can no longer tell them apart. Four
+   names cannot separate two graphs that score three digits apart,
+   which is why `autonomyStatement` is parsed beside the class
+   rather than the class being trusted to carry the axis on its
+   own.
 
    ── what the oracle observes, stated rather than implied ──
    Only `frontline-triage` ships `ontology/extensions.yaml`. The
@@ -64,6 +77,13 @@ export interface EngineInput {
 export interface ArchiveOracle {
   digest: string;
   autonomyClass: string;
+  /**
+   * The autonomy sentence the README quotes: the engine's `rationale` with the band ordinal
+   * taken out by `lib/format.ts:autonomyStatement`, which is the one transform between the
+   * two. It carries the counts and the comparison, so it separates two graphs the four class
+   * names round onto one word.
+   */
+  autonomyStatement: string;
   securityLevel: number;
   securityRationale: string;
 }
@@ -89,6 +109,10 @@ function readOracle(slug: string): ArchiveOracle {
 
   const digest = /^bundle digest\s+(sha256:[0-9a-f]{64})$/m.exec(text);
   const autonomy = /^Autonomy: (.+)\.$/m.exec(text);
+  /* The autonomy sentence is the blockquote directly under the class line, anchored to it for
+     the same reason the security rationale is anchored to its own: the document carries two
+     blockquotes and an unanchored pattern would take whichever came first. */
+  const statement = /^Autonomy: .+\.\n\n> (.+)$/m.exec(text);
   const level = /^Security level (\d+)\.$/m.exec(text);
   /* The rationale is the blockquote directly under the level line. Anchored to that line so a
      second blockquote elsewhere in the document cannot be picked up by accident. */
@@ -97,11 +121,19 @@ function readOracle(slug: string): ArchiveOracle {
   const missing = [
     digest === null ? "bundle digest" : undefined,
     autonomy === null ? "Autonomy:" : undefined,
+    statement === null ? "the autonomy sentence blockquote" : undefined,
     level === null ? "Security level" : undefined,
     rationale === null ? "the security rationale blockquote" : undefined,
   ].filter((x): x is string => x !== undefined);
 
-  if (missing.length > 0 || digest === null || autonomy === null || level === null || rationale === null) {
+  if (
+    missing.length > 0 ||
+    digest === null ||
+    autonomy === null ||
+    statement === null ||
+    level === null ||
+    rationale === null
+  ) {
     throw new Error(
       `${path} did not yield ${missing.join(", ")}.\n` +
         `  This is a defect in THIS suite's oracle, not in \`@/lib/server/engine\`. AC1 is ` +
@@ -116,6 +148,7 @@ function readOracle(slug: string): ArchiveOracle {
     /* "Closed-loop." in the document, `closed-loop` in `AutonomyClass`. Lowercased rather
        than mapped through a table, because a table is a list and a list goes stale. */
     autonomyClass: autonomy[1].toLowerCase(),
+    autonomyStatement: statement[1],
     securityLevel: Number(level[1]),
     securityRationale: rationale[1],
   };
@@ -427,7 +460,6 @@ export function sentinelInput(sentinel: string, cardCount: number): EngineInput 
       title: sentinel,
       summary: sentinel,
       tags: [sentinel],
-      ontologyVersion: "0.1.0",
     },
     dot: `digraph g {\n  // ${sentinel}\n  a -> b;\n}\n`,
     cardFiles,

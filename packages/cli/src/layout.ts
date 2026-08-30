@@ -25,7 +25,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 
-import { CORE_ONTOLOGY, error, type BundleManifest, type Diagnostic, type OntologyTerm } from "../../../lib/core";
+import { error, type BundleManifest, type Diagnostic, type OntologyTerm } from "../../../lib/core";
 import { ONTOLOGY_EXTENSIONS_FILE } from "../../../lib/content/ontology-file";
 import { validateVocabularySource } from "../../../lib/server/engine";
 import { CliError } from "./errors";
@@ -43,8 +43,15 @@ const MANIFEST_NAME = /^blueprint\.(ya?ml|json)$/i;
 /** The wizard's flat vocabulary spelling, its line 106. See `readVocabulary`. */
 const FLAT_VOCABULARY_NAME = /^extensions\.(ya?ml|json)$/i;
 
-const DOT_FILE = "topology.dot";
-const CARDS_DIR = "cards";
+/**
+ * The two names that make a folder a bundle.
+ *
+ * Exported since `export.ts` grew an in-memory sibling of this reader for a release fetched
+ * over HTTP, which has the same layout and no directory. Two modules deciding separately
+ * what a bundle folder is called is the drift this avoids.
+ */
+export const DOT_FILE = "topology.dot";
+export const CARDS_DIR = "cards";
 
 /** What a bundle directory holds, in the shape `validateBundle` takes. */
 export interface BundleDirectory {
@@ -75,6 +82,11 @@ export interface BundleDirectory {
  * Throws `CliError` when `topology.dot` is absent: a directory without a topology is not
  * an incomplete bundle, it is not one at all — `BundleDropzone`'s own wording for the same
  * condition, and the reason the DOT is the only required member.
+ *
+ * The refusal names no verb. It used to open `validate:`, which was true while `validate`
+ * was the only caller and became a lie the day `export` started reading folders through
+ * the same function: `runCli` prints a thrown message on its own, so a person running
+ * `darkprint export` was told about a command they had not run.
  */
 export function readBundleDirectory(dir: string): BundleDirectory {
   const root = resolve(dir);
@@ -83,7 +95,7 @@ export function readBundleDirectory(dir: string): BundleDirectory {
   const dot = readFileIn(root, DOT_FILE);
   if (dot === undefined) {
     throw new CliError(
-      `validate: \`${dir}\` has no ${DOT_FILE}, so there is no blueprint in it to check.`,
+      `\`${dir}\` has no ${DOT_FILE}, so there is no blueprint in it to read.`,
     );
   }
 
@@ -217,9 +229,10 @@ function readVocabulary(
 /**
  * D-270-02 D3's stub, for a directory carrying no manifest.
  *
- * `ontologyVersion` is the behaviour-bearing member and the only one the diagnostics path
- * reads: `resolveBundle` compares it against the view's version for `bundle/ontology-mismatch`
- * and against each card's, and nothing else in `loadBundle` touches the manifest at all.
+ * **No member of this stub is on the diagnostics path.** `ontologyVersion` used to be, and
+ * used to be the only one: `resolveBundle` compared it against the view's version and
+ * against each card's, raising `bundle/ontology-mismatch` for either. Both comparisons are
+ * gone with the field, so `loadBundle` reads nothing from the manifest at all now, and
  * `slug`, `title` and `summary` are read by `emitAttractorDot` and `buildRegistry`, neither
  * of which runs here. Measured against the tree rather than reasoned about, because it is
  * the premise AC1's byte-identity rests on.
@@ -230,7 +243,6 @@ export function stubManifestFor(name: string): BundleManifest {
     title: name,
     summary: "",
     tags: [],
-    ontologyVersion: CORE_ONTOLOGY.version,
   };
 }
 
@@ -288,7 +300,6 @@ function readManifest(root: string, file: string, stub: BundleManifest): BundleM
     title: text_("title") ?? stub.title,
     summary: text_("summary") ?? stub.summary,
     tags: Array.isArray(fields.tags) ? fields.tags.filter((t): t is string => typeof t === "string") : stub.tags,
-    ontologyVersion: text_("ontologyVersion") ?? stub.ontologyVersion,
   };
 
   const description = text_("description");

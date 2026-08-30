@@ -89,14 +89,46 @@ export const CORE_PHASE_IDS: readonly string[] = Object.freeze(PHASES.map((p) =>
 
 /* --------------------- node-type (doc 3 §3) --------------------- */
 /**
- * Six concrete types plus the two abstract categories doc 3 §3 draws. `agent` and `tool`
- * sit at the top with no parent: the subsumption in doc 3 is exactly four edges, and
- * inventing a common root would assert a relation the contract does not draw.
+ * Nine concrete types plus the three abstract categories. `agent` and `tool` sit at the
+ * top with no parent: the subsumption doc 3 draws is exactly four edges, and inventing a
+ * common root would assert a relation the contract does not draw.
  *
  * `impliesHuman` is set only on the two concrete human types. The category itself carries
  * no flag because the autonomy metric asks `isA(type, "human-in-the-loop")` — that is the
  * whole point of doc 3 §3's note that a new human type must change the answer without
  * touching the metric's code.
+ *
+ * ── The `orchestration` branch, and why it is a third category ──
+ * Doc 3 §3 names six concrete types against the nine handlers Attractor resolves, and the
+ * three it has no word for are the ones that do no work at all: a fan-out, a fan-in, and a
+ * supervisor loop. They are named after Attractor's own handlers (`parallel`,
+ * `parallel.fan_in`, `stack.manager_loop`) rather than after anything DarkPrint invented,
+ * so `attractor/emit.ts`'s mapping table gains identity rows instead of translations and a
+ * reader of both documents never has to hold two names for one thing.
+ *
+ * They do not belong under `evaluative`. That category is about judging *content* — a
+ * verdict on an artefact, a branch taken on what the artefact says — while these three
+ * decide how the run itself is shaped: how many copies of a step exist, when the copies
+ * converge, whether the whole thing goes round again. `orchestration` is the name for that,
+ * and it is unparented for the same reason `agent` and `tool` are: a root over all three
+ * categories would assert that "who does the work", "who judges it" and "who shapes the
+ * run" are three kinds of one thing, which is a claim no document makes.
+ *
+ * `parallel.fan-in` is a sibling of `parallel`, not a child of it. A fan-in is the
+ * counterpart of a fan-out and not a kind of one, and `isA("parallel.fan-in", "parallel")`
+ * would make every rule written about fan-out silently catch the join as well. The dot in
+ * the id is part of the name Attractor gives the handler; it is not a separator anywhere in
+ * this codebase (`splitTermId` splits on `/` alone) and `/ontology/[...term]` carries it
+ * through as one segment.
+ *
+ * ── The version this branch really arrived in ──
+ * Doc 3 §8 makes adding a term a MINOR bump, which `lib/server/versioning/ontology-bump.ts`
+ * states as code, so on the letter of the contract these three are v0.2.0 and `since` should
+ * say so. `V01` is used anyway and the number is left where it is, because after the ontology
+ * version store was removed there is exactly one living vocabulary and no published 0.1.0
+ * snapshot for a 0.2.0 to be incompatible with: bumping would re-stamp every score in the
+ * archive against a predecessor that exists nowhere. The bump belongs to whoever freezes the
+ * vocabulary at launch, and it is an owner call rather than a side effect of this change.
  */
 const NODE_TYPES: readonly OntologyTerm[] = [
   {
@@ -111,6 +143,17 @@ const NODE_TYPES: readonly OntologyTerm[] = [
     kind: "node-type",
     label: "Evaluative",
     description: "The abstract category of nodes that judge or route rather than produce an artefact.",
+    // A verdict nothing acts on is not a verdict: what an evaluative node emits is what the
+    // rest of the graph branches on, so both of its children are control points.
+    governsFlow: true,
+    since: V01,
+  },
+  {
+    id: "orchestration",
+    kind: "node-type",
+    label: "Orchestration",
+    description: "The abstract category of nodes that shape the run itself: how many copies of a step exist, when they converge, whether the whole thing repeats.",
+    governsFlow: true,
     since: V01,
   },
   {
@@ -134,6 +177,11 @@ const NODE_TYPES: readonly OntologyTerm[] = [
     description: "A point where a person must approve or reject.",
     broader: "human-in-the-loop",
     impliesHuman: true,
+    // Approve or reject *is* a routing decision, so this is the one concrete type that
+    // carries the flag directly. It cannot inherit it: `broader` holds one parent and this
+    // term's is spent saying a person is here, which is the reason `governsFlow` exists as
+    // a flag rather than as a fourth category.
+    governsFlow: true,
     since: V01,
   },
   {
@@ -159,6 +207,30 @@ const NODE_TYPES: readonly OntologyTerm[] = [
     label: "Validation",
     description: "Compares an artefact against criteria and produces a verdict with evidence.",
     broader: "evaluative",
+    since: V01,
+  },
+  {
+    id: "parallel",
+    kind: "node-type",
+    label: "Parallel",
+    description: "Splits the run into branches that proceed at the same time, producing nothing itself and deciding only how many copies of the work exist.",
+    broader: "orchestration",
+    since: V01,
+  },
+  {
+    id: "parallel.fan-in",
+    kind: "node-type",
+    label: "Parallel fan-in",
+    description: "Waits for the branches a parallel node opened and joins them back into one line, deciding when the run continues rather than what it continues with.",
+    broader: "orchestration",
+    since: V01,
+  },
+  {
+    id: "manager-loop",
+    kind: "node-type",
+    label: "Manager loop",
+    description: "Supervises a sub-run, polling the work and deciding whether to act on it and whether to go round again until its stop condition holds.",
+    broader: "orchestration",
     since: V01,
   },
 ];

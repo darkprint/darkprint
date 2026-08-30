@@ -50,8 +50,6 @@ interface Vocabulary {
   localTermId: string;
   /** The token in that term's label and in nothing else. */
   localToken: string;
-  /** A deprecated CORE term, so `origin=deprecated` is not `origin=local` under another name. */
-  deprecatedTermId: string;
   /** A term id in nothing at all. */
   missToken: string;
 }
@@ -77,22 +75,28 @@ beforeAll(async () => {
 
     const owner = await insertAccount(s, mark("t200v"));
 
-    /* Doc 3 §6.2: nothing is ever deleted, it is deprecated and pointed at its successor.
-       A registry term rather than a local one, so the three `origin` values partition into
-       three genuinely different sets. */
-    const deprecatedTermId = mark("retired-tool");
-    await insertOntologyTerm(s, {
-      versionId: ontology.id,
-      term: {
-        id: deprecatedTermId,
-        kind: "tool",
-        label: "A retired tool",
-        description: "Superseded, and still valid.",
-        since: CORE_ONTOLOGY.version,
-        deprecated: { since: CORE_ONTOLOGY.version, replacedBy: "shell" },
-      },
-    });
+    /* ── there is no deprecated term in this world, and there cannot be one ──
+       Doc 3 §6.2: nothing is ever deleted, it is deprecated and pointed at its successor.
+       This fixture used to seed one as a REGISTRY term, an `ontology_term` row written
+       directly beside the core's, so the three `origin` values partitioned into three
+       genuinely different sets.
 
+       That row was a state NO WRITER IN THIS PRODUCT PRODUCES, which is the shape this
+       project has been charged for before. The registry half of the corpus was always
+       whatever the seed wrote, and the seed writes `CORE_ONTOLOGY.terms`, none of which is
+       deprecated — v0.1.0 is the first version of the vocabulary, so nothing has been
+       superseded yet, and `core.ts`'s own header says so. The registry half is
+       `CORE_ONTOLOGY` itself now, and a fixture cannot add to it.
+
+       The other corpus cannot supply one either: `parseOntologyTerms`
+       (`lib/content/ontology-file.ts`) reads `id`, `kind`, `label`, `description`, `since`,
+       `broader`, `defaultWeight` and `impliesHuman` off a stored local vocabulary and DROPS
+       `deprecated`, so a release declaring a deprecated overlay term stores one and reads
+       one back without the field. That is a pre-existing gap in the overlay parser and is
+       reported rather than patched from a test.
+
+       So `origin=deprecated` is empty for every registry this product can build, and the
+       cell below asserts exactly that rather than a partition a hand-written row faked. */
     const localToken = mark("localtok");
     const localTermId = `${owner.handle}/${mark("local-tool")}`;
     const bundle = await insertBundle(s, { owner, slug: mark("vocab-open") });
@@ -116,7 +120,7 @@ beforeAll(async () => {
       scoredOntologyVersionId: ontology.id,
     });
 
-    t = { localTermId, localToken, deprecatedTermId, missToken: mark("no-such-term") };
+    t = { localTermId, localToken, missToken: mark("no-such-term") };
   });
 });
 
@@ -196,16 +200,20 @@ describe("AC1 every key on /ontology narrows", () => {
     ).toEqual([t.localTermId]);
   });
 
-  it("`origin=deprecated` keeps the deprecated term and drops the rest", async () => {
+  it("`origin=deprecated` narrows to nothing, because nothing in this product is deprecated", async () => {
     setup.check();
     const ids = await termIds({ origin: "deprecated" });
     expect(
       ids,
       `AC1 \`origin\` ships THREE values — \`core\`, \`local\` and \`deprecated\` ` +
         `(components/ontology/VocabularyBrowser.tsx, D-200-14) — and a two-value reading ` +
-        `silently drops a shipped filter. The deprecated term here is a REGISTRY term, so ` +
-        `this set is not \`origin=local\` wearing another name.`,
-    ).toEqual([t.deprecatedTermId]);
+        `silently drops a shipped filter. This cell can only assert that the third value ` +
+        `NARROWS: see the world's own comment for why no corpus this product builds can hold ` +
+        `a deprecated term. A reader that ignored the key would answer the whole vocabulary ` +
+        `here, which is what separates "narrows to nothing" from "is not implemented".`,
+    ).toEqual([]);
+    const all = await termIds({});
+    expect(all.length, "the corpus is not empty, so the emptiness above is the FILTER's").toBeGreaterThan(0);
   });
 });
 

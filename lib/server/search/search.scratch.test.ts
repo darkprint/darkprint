@@ -14,7 +14,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { eq } from "drizzle-orm";
 
-import { bundleDigest } from "@/lib/core";
+import { CORE_ONTOLOGY, bundleDigest } from "@/lib/core";
 import { schema, type DbClient } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
 import { createTestDb, resetTestDb, type TestDb } from "../../../tests/support/db";
@@ -67,7 +67,6 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
       model: "claude-opus-5",
       tools: [],
       riskMarkers: [],
-      requiresHuman: false,
       ontologyVersion: "0.1.0",
       ...over,
     };
@@ -144,20 +143,22 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
     return { bundleId: bundle.id, digest };
   }
 
-  async function vocabulary(terms: { id: string; kind: string; label: string }[]): Promise<void> {
-    const [version] = await client.db
-      .insert(schema.ontologyVersion)
-      .values({ version: "0.1.0", digest: "sha256:v" })
-      .returning();
-    for (const term of terms) {
-      await client.db.insert(schema.ontologyTerm).values({
-        ontologyVersionId: version.id,
-        termId: term.id,
-        kind: term.kind as "node-type",
-        body: { ...term, description: `The ${term.label} term.`, since: "0.1.0" },
-      });
-    }
-  }
+  /*
+   * There is no `vocabulary()` helper any more.
+   *
+   * It inserted an `ontology_version` row and its `ontology_term` rows, and both `searchCards`
+   * (for the `human` facet and the `type`/`risk` vocabularies) and `searchTerms` (for the core
+   * half of its corpus) read them back. Both readers take the core from `CORE_ONTOLOGY` now,
+   * so a fixture vocabulary would be a table nothing reads — and a cell comparing the
+   * searcher's answer against it would be green whenever both were empty, which says nothing.
+   *
+   * The cells below therefore assert against `CORE_ONTOLOGY` itself. That is a weaker
+   * fixture in one respect and a stronger assertion in another: they can no longer choose
+   * what the core contains, and they are now comparing the searcher against the same
+   * vocabulary the SCORE is computed under, which is the agreement that matters.
+   */
+  const coreIds = (kind: string): string[] =>
+    CORE_ONTOLOGY.terms.filter((t) => t.kind === kind).map((t) => t.id).sort();
 
   /* --------------------- the criteria, driven --------------------- */
 
@@ -284,17 +285,20 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
 
   it("searches cards over their own fields and keeps the shelf's own filters", async () => {
     const owner = await account("alice");
-    await vocabulary([
-      { id: "agent", kind: "node-type", label: "Agent" },
-      { id: "human-input", kind: "node-type", label: "Human input" },
-      { id: "prompt-injection", kind: "risk-marker", label: "Prompt injection" },
-    ]);
+    /* `human-in-the-loop` and the `broader` pointer are what make `human=1` mean anything:
+       the facet asks the published vocabulary whether the card's `type` is subsumed by the
+       category, the same question `computeAutonomy` asks. It used to read a boolean off the
+       card, so this fixture published a `human-input` term rooted nowhere and the filter
+       still worked — which is exactly how a card and a score could disagree. The fixture
+       cannot publish a vocabulary at all now: `human-input` is subsumed by
+       `human-in-the-loop` in `CORE_ONTOLOGY`, which is the same subsumption the score reads
+       and the reason the two can no longer come apart. */
     await publish({
       owner,
       slug: "triage",
       cards: [
         card("solver-a", { spec: "Resolves an escalation." }),
-        card("gate-b", { type: "human-input", requiresHuman: true, phases: [], riskMarkers: ["prompt-injection"] }),
+        card("gate-b", { type: "human-input", phases: [], riskMarkers: ["prompt-injection"] }),
       ],
     });
 
@@ -312,14 +316,20 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
     expect(prose.hits.map((hit) => hit.item.id)).toEqual(["solver-a"]);
     expect(prose.hits[0].evidence).toEqual(["spec:escalation"]);
 
-    // Vocabularies, not a projection of the hit set.
-    expect(risky.facets.type).toEqual(["agent", "human-input"]);
-    expect(risky.facets.risk).toEqual(["prompt-injection"]);
+    /* Vocabularies, not a projection of the hit set — which is the whole of D-200-14 and is
+       what these two lines separate. One card is in the hit set and it declares
+       `type: human-input` and `risk_markers: [prompt-injection]`, so a facet map built from
+       the HITS would answer exactly those two values. The vocabulary answers every core
+       node-type and every core risk marker, and `prompt-injection` is not among the latter:
+       the card names a marker the core does not carry, and the facet still does not list it. */
+    expect(risky.facets.type).toEqual(coreIds("node-type"));
+    expect(risky.facets.risk).toEqual(coreIds("risk-marker"));
+    expect(risky.facets.type).toContain("human-input");
+    expect(risky.facets.risk).not.toContain("prompt-injection");
   });
 
   it("reads both term corpora, and a private bundle's local terms reach nobody", async () => {
     const owner = await account("alice");
-    await vocabulary([{ id: "agent", kind: "node-type", label: "Agent" }]);
     await publish({
       owner,
       slug: "open",
@@ -350,8 +360,14 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
       // `origin=local` filters something rather than nothing, which is why both corpora are read.
       const local = await searchTerms(client.db, actor, { origin: "local" });
       expect(local.hits.map((hit) => hit.item.id)).toEqual(["alice/repair"]);
+      /* The whole living vocabulary, and not one seeded term: the core half of this reader's
+         corpus is `CORE_ONTOLOGY`, so `origin=core` is every term this build ships. Asserted
+         as a set rather than a count so a term landing tomorrow does not red it, and with
+         the local id excluded, which is the half of the partition this line is about. */
       const core = await searchTerms(client.db, actor, { origin: "core" });
-      expect(core.hits.map((hit) => hit.item.id)).toEqual(["agent"]);
+      const coreHits = core.hits.map((hit) => hit.item.id);
+      expect(coreHits).toEqual([...CORE_ONTOLOGY.terms].map((t) => t.id).sort());
+      expect(coreHits).not.toContain("alice/repair");
     }
   });
 

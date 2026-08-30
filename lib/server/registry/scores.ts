@@ -23,9 +23,9 @@ import { withRegistryStore } from "./store";
  * different states, deliberately: no such `(owner, slug)`, a bundle the caller may not see
  * (B-03 again — a caller able to tell those apart has the leak the 404 closed), a bundle
  * with no release yet, and a release nothing has scored. The last is not an error either:
- * `autonomy`, `security`, `phase_coverage` and `scored_ontology_version_id` are all
- * nullable, and a half-written scorecard is not a scorecard — all four are required
- * together or the answer is that there is none.
+ * `autonomy`, `security` and `phase_coverage` are all nullable, and a
+ * half-written scorecard is not a scorecard — all three are required together, carrying
+ * the vocabulary version they were computed under, or the answer is that there is none.
  */
 export async function scoresOf(
   db: Db,
@@ -55,12 +55,11 @@ export async function scoresOf(
  * B-03 reason: no such key, a bundle this caller may not see, a bundle with no release, and a
  * release nothing has scored are one answer.
  *
- * **Today that is EVERY blueprint, and it is not this reader's defect.** D-260-24 measured
- * that nothing in the product has ever written `release.scored_ontology_version_id`, which
- * `scoresOf`'s all-four-or-nothing rule requires — so this answers an empty map against a
- * seeded store, correctly. The stamp is `publish.ts`'s and is not T132's. A caller must not
- * read an empty answer here as a bug in this reader, and a cell must not assert a populated
- * scorecard through it until that stamp lands.
+ * D-260-24 measured that nothing in the product had ever written
+ * `release.scored_ontology_version_id`, which this reader's fourth required field used to
+ * be, so it answered an empty map against a seeded store. That field is gone, along with
+ * the table it pointed into, and the vocabulary version is read off the stored `autonomy`
+ * that `publish.ts` has been writing all along.
  *
  * Duplicate keys are one entry; an empty `keys` answers an empty map without a statement.
  */
@@ -135,7 +134,6 @@ async function readScoresFor(
       autonomy: schema.release.autonomy,
       security: schema.release.security,
       phaseCoverage: schema.release.phaseCoverage,
-      scoredOntologyVersionId: schema.release.scoredOntologyVersionId,
     })
     .from(schema.release)
     .where(inArray(schema.release.bundleId, [...keyOfBundle.keys()]));
@@ -150,39 +148,40 @@ async function readScoresFor(
     if (held === undefined || cmpReleasesCurrentFirst(row, held) < 0) currentByBundle.set(row.bundleId, row);
   }
 
-  /* All four or nothing, applied BEFORE the third statement so it asks only about stamps
-     that can still produce an answer. `autonomy`, `security`, `phase_coverage` and
-     `scored_ontology_version_id` are all nullable and a half-written scorecard is not a
-     scorecard. D-260-24: nothing has ever written the fourth, so this is where every
-     blueprint in the product currently drops out — by design, not by accident. */
-  const complete = new Map<string, { key: string; row: (typeof releases)[number]; stamp: string }>();
+  /* All three or nothing. `autonomy`, `security` and `phase_coverage` are all nullable and
+     a half-written scorecard is not a scorecard.
+
+     ── it was four, and the fourth was a foreign key ──
+     `release.scored_ontology_version_id` named a row in `ontology_version`, and this reader
+     required it and then spent a third statement resolving it to a semver string. That
+     table is no longer written by anything: resolving a version string to a row id was the
+     last thing the vocabulary-version registry did for anybody, and it went with the
+     registry. Requiring the column would now make every scorecard in the product
+     unreadable, which is not what a stamp nobody writes should mean.
+
+     The version is read off `autonomy` instead. It is the SAME value one indirection
+     shorter, and a better one: `computeAutonomy` stamps `AutonomyResult.ontologyVersion`
+     with the version of the view the score was actually computed against, whereas the
+     column was publish-time's lookup of that string in a table. `lib/server/export/build.ts`
+     has always read the stamp from exactly here for exactly that reason.
+
+     A stored `autonomy` without the field is a scorecard whose vocabulary cannot be named,
+     which is the same "there is no scorecard" answer a null column gave — never a partial
+     record. The column itself survives in `lib/db/schema.ts`, unwritten and unread;
+     dropping it is a migration and a separate decision. */
   for (const [bundleId, row] of currentByBundle) {
     const key = keyOfBundle.get(bundleId);
     if (key === undefined) continue;
-    const { autonomy, security, phaseCoverage, scoredOntologyVersionId } = row;
+    const { autonomy, security, phaseCoverage } = row;
     if (autonomy === null || security === null || phaseCoverage === null) continue;
-    if (scoredOntologyVersionId === null) continue;
-    complete.set(bundleId, { key, row, stamp: scoredOntologyVersionId });
-  }
-  if (complete.size === 0) return scored;
-
-  const stamps = await db
-    .select({ id: schema.ontologyVersion.id, version: schema.ontologyVersion.version })
-    .from(schema.ontologyVersion)
-    .where(inArray(schema.ontologyVersion.id, [...new Set([...complete.values()].map((c) => c.stamp))]));
-  const versionOf = new Map(stamps.map((row) => [row.id, row.version]));
-
-  for (const { key, row, stamp } of complete.values()) {
-    // A stamp naming no `ontology_version` row is the fourth field being unresolvable, which
-    // is the same "there is no scorecard" answer as it being null — never a partial record.
-    const ontologyVersion = versionOf.get(stamp);
-    if (ontologyVersion === undefined) continue;
+    const ontologyVersion = (autonomy as Partial<AutonomyResult>).ontologyVersion;
+    if (typeof ontologyVersion !== "string" || ontologyVersion === "") continue;
     scored.set(
       key,
       Object.freeze({
-        autonomy: row.autonomy as AutonomyResult,
-        security: row.security as SecurityResult,
-        phaseCoverage: row.phaseCoverage as PhaseCoverage,
+        autonomy: autonomy as AutonomyResult,
+        security: security as SecurityResult,
+        phaseCoverage: phaseCoverage as PhaseCoverage,
         ontologyVersion,
       }),
     );

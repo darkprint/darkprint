@@ -68,7 +68,10 @@ describe("agentBrief", () => {
       "inputs",
       "outputs",
       "cannot",
-      "requires_human",
+      // The stated half of the prohibition pair. A brief that named only `cannot` would
+      // send an agent's prose prohibitions into the field the validator checks against the
+      // vocabulary, where every one of them is a `card/unknown-term`.
+      "will_not",
     ]) {
       expect(brief, field).toContain(field);
     }

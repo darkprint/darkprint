@@ -40,8 +40,8 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { CORE_ONTOLOGY } from "@/lib/core";
 import { categories, phases, tags } from "@/lib/server/registry";
-import { getOntologyVersion } from "@/lib/server/ontology";
 import type { Db } from "@/lib/db";
 
 import { FACET_KEYS, itemKey, sameSet, search } from "./contract";
@@ -73,10 +73,16 @@ function db(): Db {
   return s.db as Db;
 }
 
-/** The ids of the vocabulary's terms of one kind, which is what D-200-14 names. */
-async function vocabulary(kind: string): Promise<string[]> {
-  const record = await getOntologyVersion(db(), w.ontology.version);
-  return (record?.terms ?? []).filter((t) => t.kind === kind).map((t) => t.id);
+/**
+ * The ids of the vocabulary's terms of one kind, which is what D-200-14 names.
+ *
+ * Read off `CORE_ONTOLOGY` rather than out of `ontology_version` / `ontology_term`. The
+ * reader under test builds its own view the same way now, so a fixture reading rows would
+ * be comparing the searcher's answer against a table nothing writes — which is green when
+ * both are empty and says nothing.
+ */
+function vocabulary(kind: string): string[] {
+  return CORE_ONTOLOGY.terms.filter((t) => t.kind === kind).map((t) => t.id);
 }
 
 /* --------------------- the keys --------------------- */
@@ -144,7 +150,7 @@ describe("D-200-04 /blueprints facets are T080's vocabularies", () => {
 describe("D-200-14 /cards facets are T030's vocabulary and not the hit set", () => {
   it("`type` is every `node-type` in the merged vocabulary", async () => {
     setup.check();
-    const expected = await vocabulary("node-type");
+    const expected = vocabulary("node-type");
     const results = await search("searchCards", s.db, anonymous, {});
     expect(expected.length, "the control: the seeded vocabulary is not empty").toBeGreaterThan(2);
     expect(
@@ -160,7 +166,7 @@ describe("D-200-14 /cards facets are T030's vocabulary and not the hit set", () 
 
   it("`risk` is every `risk-marker` in the merged vocabulary", async () => {
     setup.check();
-    const expected = await vocabulary("risk-marker");
+    const expected = vocabulary("risk-marker");
     const results = await search("searchCards", s.db, anonymous, {});
     expect(expected.length, "the control: the seeded vocabulary is not empty").toBeGreaterThan(2);
     expect(
@@ -266,7 +272,7 @@ describe("AC3 the facets are a vocabulary, not a projection of the hit set", () 
 
   it("filtering /cards to one type still offers the other types", async () => {
     setup.check();
-    const expected = await vocabulary("node-type");
+    const expected = vocabulary("node-type");
     const results = await search("searchCards", s.db, anonymous, { type: "tool" });
     expect(
       results.hits.map((h) => itemKey(h.item)),

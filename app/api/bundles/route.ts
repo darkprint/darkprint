@@ -36,7 +36,6 @@ import { LimitExceededError, validateVocabularySource } from "@/lib/server/engin
 import { badRequest, ok, problem } from "@/lib/server/http";
 import { ArchiveConflictError, MalformedVocabularyError } from "@/lib/server/archive";
 import { ExportError } from "@/lib/server/export";
-import { UnknownOntologyVersionError } from "@/lib/server/ontology";
 import { CardStoreError } from "@/lib/server/cards";
 import { PublishRefusedError, publish, type PublishInput } from "@/lib/server/publish";
 import {
@@ -79,8 +78,8 @@ export async function POST(request: Request): Promise<Response> {
       slug: slug.value,
       version: version.value,
       /* The engine's own cast, for the engine's own reason: no manifest field is required at
-         the transport layer, because `resolveBundle` reports a wrong `ontologyVersion` as
-         `bundle/ontology-mismatch` in the caller's vocabulary and a bare 400 would say less. */
+         the transport layer, because `resolveBundle` reports every one of them as a
+         diagnostic in the caller's vocabulary and a bare 400 would say less. */
       manifest: manifest.value as unknown as BundleManifest,
       dot: dot.value,
       cardFiles: cardFiles.value,
@@ -107,12 +106,12 @@ export async function POST(request: Request): Promise<Response> {
 /* --------------------- the refusals this route maps --------------------- */
 
 /**
- * The four typed rejections a publish can raise, each with its message UNALTERED.
+ * The typed rejections a publish can raise, each with its message UNALTERED.
  *
  * D-50-08's rule, which is why this is a translation of STATUS and never of wording: one
- * sentence keeps one author. `MalformedVocabularyError` is T010's, `UnknownOntologyVersionError`
- * is T030's, `CardStoreError` is T020's, and re-rendering any of them as a publish refusal
- * would put a second author on a sentence that already has one.
+ * sentence keeps one author. `MalformedVocabularyError` is T010's, `CardStoreError` is
+ * T020's, and re-rendering either of them as a publish refusal would put a second author on
+ * a sentence that already has one.
  *
  * `undefined` rather than a 500 for anything else, so the caller rethrows: a fault in this
  * service belongs in the framework's 500 where it will be seen, and swallowing it here would
@@ -152,16 +151,10 @@ function statusFor(request: Request, thrown: unknown): Response | undefined {
       detail: thrown.message,
     });
   }
-  /* 422: the body is well formed and names an ontology version nobody published. Caught at
-     the write rather than at the first export, which is where it used to surface. */
-  if (thrown instanceof UnknownOntologyVersionError) {
-    return problem(request, {
-      type: "https://darkprint.io/problems/unknown-ontology-version",
-      title: "Unknown ontology version",
-      status: 422,
-      detail: thrown.message,
-    });
-  }
+  /* There is no arm for an unknown ontology version. A manifest used to declare one, the
+     publish resolved it against a table of published vocabulary versions, and a version
+     nobody had published was a 422 here. There is one vocabulary and a manifest names none,
+     so no request can be refused for that reason and an arm for it would be unreachable. */
   /* 422: a pinned card was refused by its own store — a bump smaller than the change
      requires (AC5), an identity mismatch, a version that is not semver. Every one is a fact
      about the submission rather than about this service. */

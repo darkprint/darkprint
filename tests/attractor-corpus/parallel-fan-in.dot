@@ -1,0 +1,21 @@
+// `shape=tripleoctagon` selects `parallel.fan_in`, the other half of a fan-out.
+// The two are separate files because a fan-in with no fan-out above it is a perfectly
+// legal pipeline and the round trip has to hold for it on its own.
+digraph parallel_fan_in {
+  goal="Collect three reviews and write one verdict.";
+  label="Parallel fan-in";
+
+  start   [label="start", shape=Mdiamond];
+  style   [label="Style", shape=box, prompt="Review the change for house style."];
+  safety  [label="Safety", shape=box, prompt="Review the change for anything unsafe."];
+  gather  [label="Gather", shape=tripleoctagon, prompt="Wait for every review and put them in one list."];
+  verdict [label="Verdict", shape=box, prompt="Read the reviews and write the verdict."];
+  exit    [label="exit", shape=Msquare];
+
+  start -> style;
+  start -> safety;
+  style -> gather;
+  safety -> gather;
+  gather -> verdict;
+  verdict -> exit;
+}

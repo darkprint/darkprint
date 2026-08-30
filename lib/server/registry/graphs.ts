@@ -13,19 +13,18 @@
 
    **The statement count, stated exactly rather than as "no extra
    queries", which is what the first draft of this comment claimed
-   and is false.** `loadSnapshot`'s four, plus ONE PER DISTINCT
-   ONTOLOGY VERSION, and nothing per blueprint. The reassembly
-   material really is free — `loadSnapshot` already selects whole
-   `release` and `card_version` rows, so the DOT, the local
-   vocabulary and the archived YAML are in hand by the time the
-   index is built and `ReleaseSource` only stops them being dropped.
-   The ONTOLOGY is not free: `openView` reads its version row, and
-   it deliberately holds no module-scope cache (its own header says
-   a cache is T080's projection concern, which is `ViewCache`
-   below). So the total is `4 + K` where K counts distinct base
-   versions among releases with no overlay, plus one for each
-   release that has one. K is 1 on today's corpus and is bounded by
-   N in the worst case; it is never zero when anything is drawn.
+   and is false.** It is `loadSnapshot`'s four, and nothing per
+   blueprint. The reassembly material really is free —
+   `loadSnapshot` already selects whole `release` and `card_version`
+   rows, so the DOT, the local vocabulary and the archived YAML are
+   in hand by the time the index is built and `ReleaseSource` only
+   stops them being dropped. The ONTOLOGY used to cost one query per
+   distinct declared version on top, which is what `ViewCache` below
+   was built for; `openView` reaches no store now, so the cache
+   still exists but for the other half of its reason — one view
+   INSTANCE shared across the batch, because `isA` memoizes per
+   instance and two readings are only comparable when they were
+   taken against the same one.
 
    ── it consumes the current-release rule, it does not restate it ──
    Which release a blueprint IS is D-80-03's decision and it is
@@ -46,19 +45,19 @@
 
    ── every failure is a VALUE ──
    An absent entry means one of: no such key, a bundle this actor
-   may not see, a release naming an ontology version nobody
-   published, a local vocabulary the column's one reader refuses, or
-   a bundle that does not resolve. A caller drawing a shelf can do
-   nothing with the difference and a caller who could tell them
+   may not see, a local vocabulary the column's one reader refuses,
+   or a bundle that does not resolve. A caller drawing a shelf can
+   do nothing with the difference and a caller who could tell them
    apart has the existence oracle B-03 closed. So this module
    publishes no class of its own, and `error-hygiene` does not move.
 
-   **A store fault is NOT folded into that.** `openView` reads
-   Postgres, and answering "no schematic" for a driver failure would
-   turn an outage into a shelf that quietly draws nothing. Only
-   `UnknownOntologyVersionError` — a fact about the release — is
-   caught; everything else reaches `withRegistryStore` and leaves as
-   `RegistryStoreError`.
+   **A store fault is NOT folded into that.** It used to be possible
+   here: `openView` read Postgres, and answering "no schematic" for
+   a driver failure would have turned an outage into a shelf that
+   quietly draws nothing, so only `UnknownOntologyVersionError` was
+   caught and everything else left as `RegistryStoreError`. Opening
+   a view touches no store now and throws nothing, so the arm that
+   had to draw that line is gone rather than widened.
    ============================================================ */
 
 import { graphForBlueprint, requiredAgents, requiredTools } from "@/lib/graph-seed";
@@ -73,7 +72,7 @@ import {
 import { cardFilePath } from "@/lib/content/bundle-export";
 import type { Db } from "@/lib/db";
 import { parseStoredVocabulary } from "@/lib/server/archive";
-import { UnknownOntologyVersionError, openView } from "@/lib/server/ontology";
+import { openView } from "@/lib/server/ontology";
 import type { Actor } from "@/lib/server/policy";
 import type { BlueprintKey, BlueprintSchematic, BlueprintSummary } from "./types";
 import { keyOf, loadSnapshot, type ReleaseSource } from "./snapshot";
@@ -124,7 +123,7 @@ async function readGraphs(
     if (release !== undefined && summary !== undefined) wanted.set(k, { release, summary });
   }
 
-  const views = new ViewCache(db);
+  const views = new ViewCache();
   for (const [key, { release, summary }] of wanted) {
     const schematic = await draw(views, release, summary, snapshot.sourceByRef);
     if (schematic !== undefined) drawn.set(key, schematic);
@@ -151,8 +150,7 @@ async function draw(
     return undefined;
   }
 
-  const ontology = await views.open(release.manifest.ontologyVersion, overlay?.terms);
-  if (ontology === undefined) return undefined;
+  const ontology = views.open(overlay?.terms);
 
   /* `summary.cardRefs` rather than the release's own `card_refs`, and that is correctness
      and not convenience. The stored column holds the pins AS WRITTEN, and two blueprints
@@ -198,54 +196,25 @@ async function draw(
 }
 
 /**
- * One merged view per distinct base version, for the releases that add nothing to the core.
+ * One merged view for every release in the batch that adds nothing to the core.
  *
- * `openView` deliberately holds no module-scope cache — that would serve two callers
- * different vocabularies under one version and its own header says a cache is T080's
- * projection concern, which is this. The cache is per CALL and never outlives it, so a
- * release published mid-batch cannot change what a request already drew.
+ * **This is a comparability device before it is a cost one.** `isA` memoizes per view
+ * instance, and `openView`'s own header records that two bundles' readings are only
+ * comparable when they were taken against the same instance. A shelf draws N blueprints in
+ * one answer, so they share one.
  *
- * **Keyed on the version alone, and only for an absent overlay.** A local vocabulary makes
- * the merged view specific to that release, and a key built by serialising the overlay
- * would be a content digest of caller-adjacent data written for a cache — more moving parts
- * than the case is worth. Overlays are the minority (most bundles add nothing to the
- * curated core) and they pay one read each.
+ * It used to be keyed by ontology version and back a Postgres read per distinct version —
+ * one merge instead of one query per blueprint. `openView` reaches no store now, so what is
+ * saved is the merge and the shared instance, and there is nothing left to key on: a
+ * release with no overlay gets the shared view and a release with one gets its own, which
+ * is what "the merged view is specific to that release" always meant.
  */
 class ViewCache {
-  private readonly db: Db;
-  /** `undefined` is a cached ANSWER — a version nobody published stays unpublished. */
-  private readonly base = new Map<string, OntologyView | undefined>();
+  private base: OntologyView | undefined;
 
-  constructor(db: Db) {
-    this.db = db;
-  }
-
-  async open(
-    version: string,
-    terms: readonly OntologyTerm[] | undefined,
-  ): Promise<OntologyView | undefined> {
-    if (terms !== undefined && terms.length > 0) return this.read(version, terms);
-    /* `has` before the value, not `?? read()`: `undefined` IS the cached answer for an
-       unpublished version, so a nullish test would re-read it once per blueprint. */
-    if (this.base.has(version)) return this.base.get(version);
-    const view = await this.read(version, undefined);
-    this.base.set(version, view);
-    return view;
-  }
-
-  private async read(
-    version: string,
-    terms: readonly OntologyTerm[] | undefined,
-  ): Promise<OntologyView | undefined> {
-    try {
-      return await openView(this.db, version, terms);
-    } catch (err) {
-      /* A release naming a version nobody published is a FACT ABOUT THE RELEASE and an
-         absent entry. Anything else is the ontology read failing — the same distinction
-         `build.ts` draws at its own `openView` — and it must not be dressed as "this
-         blueprint has no schematic", so it leaves for `withRegistryStore` to seal. */
-      if (err instanceof UnknownOntologyVersionError) return undefined;
-      throw err;
-    }
+  open(terms: readonly OntologyTerm[] | undefined): OntologyView {
+    if (terms !== undefined && terms.length > 0) return openView(terms);
+    this.base ??= openView();
+    return this.base;
   }
 }

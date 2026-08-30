@@ -112,8 +112,14 @@ async function batch(s: Scratch, mark: string): Promise<{ ruled: string[]; suppl
     visibility: "public",
     cardId: `t140-ord-${mark}-card`,
   });
-  const alpha = await seedTerm(s, `t140-ord-${mark}/aaa`);
-  const beta = await seedTerm(s, `t140-ord-${mark}/bbb`);
+  /* Two terms the vocabulary really carries, allocated rather than named: a term is not a row
+     a fixture can mint any more, so an invented id like `t140-ord-<mark>/aaa` would not resolve
+     and would drop out of the listing this cell is sorting. `seedTerm` hands out core ids in
+     ascending order, which is the `refId ASC` relation this batch needs, and the assertion
+     below sorts what it got rather than trusting that. */
+  const first = seedTerm(s);
+  const second = seedTerm(s);
+  const [alpha, beta] = first.termId < second.termId ? [first, second] : [second, first];
 
   const blueprintT: Target = { kind: "blueprint", refId: bundle.id };
   const cardT: Target = { kind: "card", refId: card.cardId };

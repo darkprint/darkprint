@@ -346,7 +346,7 @@ export function SkeletonPane({
                                 720px on a desktop and 304px on a phone, so the 88
                                 characters the `action` slot used to be cut at were one
                                 line on one and two on the other. A line count is the same
-                                promise at both widths. Two rather than three because 23
+                                promise at both widths. Two rather than three because 22
                                 rows share a `max-h-[26rem]` box.
 
                                 `Ticked` for the same reason the note below it gets one:

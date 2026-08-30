@@ -106,13 +106,25 @@ describe("a key's block is the key plus what is indented under it", () => {
   });
 
   it("stops at the blank line after a sequence", () => {
-    // `cannot` has two entries and a paragraph break under it. A run that swallowed the
+    // `will_not` has an entry and a paragraph break under it. A run that swallowed the
     // break would highlight a blank line and draw the leader to the middle of nothing.
-    const range = keyBlock(CARD, "cannot");
+    // Asked of `will_not` rather than of `cannot` since the prohibition split: `cannot` is
+    // now followed immediately by `will_not`, so it is the second of the pair that sits
+    // against the break and the first that proves a run stops at the next KEY.
+    const range = keyBlock(CARD, "will_not");
     expect(range).toBeDefined();
     expect(LINES[(range?.to ?? 1) - 1]?.trim()).toBe(
       "- read the checks the work will be run against",
     );
+  });
+
+  it("stops at the next top-level key, with no blank line to help it", () => {
+    // The other half, and the split created the case: `cannot` and `will_not` are adjacent
+    // with nothing between them, so a run that read to the next blank line would swallow
+    // the second field whole and the enforced half would highlight the stated one.
+    const range = keyBlock(CARD, "cannot");
+    expect(range).toBeDefined();
+    expect(LINES[(range?.to ?? 1) - 1]?.trim()).toBe("- acceptance-criteria");
   });
 
   it("is undefined for a key the card does not carry", () => {

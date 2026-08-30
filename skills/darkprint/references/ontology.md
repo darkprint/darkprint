@@ -7,14 +7,15 @@
 
 # DarkPrint core vocabulary
 
-Ontology version `0.1.0`. 49 terms.
+Ontology version `0.1.0`. 53 terms.
 
 Every card field that names a term is resolved against this list. A term that is not
 here is `card/unknown-term` (error). A term of the wrong kind — a `data-type` in the
 `tools` list, a `tool` in `type` — is `card/wrong-term-kind` (error).
 
-Write `ontology_version: "0.1.0"` on every card. A card declaring a
-different version loads, and reports `bundle/ontology-mismatch` (warning) once per card.
+A card names no vocabulary version. There is one vocabulary, every card is read against
+it, and the version a SCORE was computed under is recorded on the score. Writing
+`ontology_version:` on a card is `card/retired-field` (warning).
 
 ## phase — the five, closed
 
@@ -38,26 +39,39 @@ reports in.
 
 ## node-type — what does the job
 
-Exactly one per card, in `type`. Two of these are **abstract categories** and a node
+Exactly one per card, in `type`. Three of these are **abstract categories** and a node
 should not be typed with one: they exist so the metrics can ask a subsumption question.
 
 `human-gate` and `human-input` are subsumed by `human-in-the-loop` and carry
-`impliesHuman`, so a card declaring either **must** also declare `requires_human: true`.
-Getting that wrong is `card/human-type-inconsistent`, an **error**, not a warning.
+`impliesHuman`. Declaring one of them is the whole of how a card says a person acts at
+the node: there is no second field beside `type` to set, and nothing else on the card
+can say otherwise.
 
-The autonomy fraction is the share of nodes whose `type` is *not* subsumed by
-`human-in-the-loop`. Bands: > 0.9 closed-loop, ≥ 0.7 conditional, ≥ 0.5 supervised, below that assisted.
+The `orchestration` branch is control flow: `parallel` splits the run, `parallel.fan-in`
+joins it back, `manager-loop` supervises a sub-run and decides whether it repeats. The
+three are named after the Attractor handlers they compile to, so a bundle's `topology.dot`
+reads the same on both sides.
 
-| id | label | broader | implies human | meaning |
-| --- | --- | --- | --- | --- |
-| `agent` | Agent | — | no | A model that reasons and produces non-deterministic output. |
-| `decision` | Decision | `evaluative` | no | A conditional switch that evaluates and routes without producing artefacts. |
-| `evaluative` | Evaluative | — | no | The abstract category of nodes that judge or route rather than produce an artefact. |
-| `human-gate` | Human gate | `human-in-the-loop` | yes | A point where a person must approve or reject. |
-| `human-in-the-loop` | Human in the loop | — | no | The abstract category of nodes at which a person acts, and the one the autonomy metric interrogates. |
-| `human-input` | Human input | `human-in-the-loop` | yes | A point where a person must supply data or content. |
-| `tool` | Tool | — | no | A deterministic operation: running tests, compiling, formatting, calling an API. |
-| `validation` | Validation | `evaluative` | no | Compares an artefact against criteria and produces a verdict with evidence. |
+Autonomy is read twice off `type` and the weaker reading is the one that lands in a band.
+How much runs alone: the share of nodes whose `type` is *not* subsumed by
+`human-in-the-loop`. How much of the deciding runs alone: the same share taken over the
+**control points** only, which are the nodes under `evaluative` or `orchestration` plus
+`human-gate`, and it decides a band only from 2 control points up. Bands: > 0.9 closed-loop, ≥ 0.7 conditional, ≥ 0.5 supervised, below that assisted.
+
+| id | label | broader | implies human | governs flow | meaning |
+| --- | --- | --- | --- | --- | --- |
+| `agent` | Agent | — | no | no | A model that reasons and produces non-deterministic output. |
+| `decision` | Decision | `evaluative` | no | yes | A conditional switch that evaluates and routes without producing artefacts. |
+| `evaluative` | Evaluative | — | no | yes | The abstract category of nodes that judge or route rather than produce an artefact. |
+| `human-gate` | Human gate | `human-in-the-loop` | yes | yes | A point where a person must approve or reject. |
+| `human-in-the-loop` | Human in the loop | — | no | no | The abstract category of nodes at which a person acts, and the one the autonomy metric interrogates. |
+| `human-input` | Human input | `human-in-the-loop` | yes | no | A point where a person must supply data or content. |
+| `manager-loop` | Manager loop | `orchestration` | no | yes | Supervises a sub-run, polling the work and deciding whether to act on it and whether to go round again until its stop condition holds. |
+| `orchestration` | Orchestration | — | no | yes | The abstract category of nodes that shape the run itself: how many copies of a step exist, when they converge, whether the whole thing repeats. |
+| `parallel` | Parallel | `orchestration` | no | yes | Splits the run into branches that proceed at the same time, producing nothing itself and deciding only how many copies of the work exist. |
+| `parallel.fan-in` | Parallel fan-in | `orchestration` | no | yes | Waits for the branches a parallel node opened and joins them back into one line, deciding when the run continues rather than what it continues with. |
+| `tool` | Tool | — | no | no | A deterministic operation: running tests, compiling, formatting, calling an API. |
+| `validation` | Validation | `evaluative` | no | yes | Compares an artefact against criteria and produces a verdict with evidence. |
 
 **The trap.** `tool`'s own description names running tests, which invites typing the
 test runner `tool`. The `criteria-leak` check defines its generator set as the

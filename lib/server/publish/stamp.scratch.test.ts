@@ -3,15 +3,27 @@
    D-300-06 F4.2 wiring, witnessed through the PRODUCTION writer.
 
    The orchestrator's one visit to publish.ts (both rulings name
-   it) landed two changes: the release's scorecard gains its
-   fourth field, and a publish triggers `reembedRelease`. Neither
-   had a witness anywhere — D-260-24's own history is a column
-   nothing wrote while every suite stamped its fixtures by hand,
-   and "every hand-built row is a claim that some code path
+   it) landed two changes: the release's scorecard gains the field
+   that makes it complete, and a publish triggers `reembedRelease`.
+   Neither had a witness anywhere — D-260-24's own history is a
+   column nothing wrote while every suite stamped its fixtures by
+   hand, and "every hand-built row is a claim that some code path
    produces it" is the T260 finding this file exists to honour.
    So the world here is built by `runImport`, which composes
    `publish()` for all nine bundles: the exact path a real
    publish takes, not a fixture more complete than the writer.
+
+   ── the stamp changed carrier, and the criterion did not ──
+   D-260-24's field was `release.scored_ontology_version_id`, a
+   uuid into `ontology_version`. Removing the vocabulary-version
+   registry took the table's only writer and the only reader that
+   resolved an id back to a semver, so the stamp is now the string
+   on the stored `AutonomyResult`. What D-260-24 was about is
+   unchanged and is still what the first cell measures: `scoresOf`
+   answering a complete scorecard for a release the production
+   writer published. The second cell moved to the new carrier and
+   gained the negative — the column must stay NULL — because a
+   stamp nobody writes must not quietly reappear.
 
    Falsified at authorship (2026-08-24), both directions:
    removing the stamp spread in publish.ts reds the scoresOf
@@ -76,20 +88,40 @@ describe("D-260-24: a publish stamps the fourth scorecard field", () => {
   });
 
   /**
-   * The stamp names the row the score was computed against, not merely A row. One seeded
-   * ontology version exists in this world ("0.1.0", `planImport`'s own pin), so every
-   * release must point at exactly it — an id from anywhere else has no source here.
+   * The stamp names the vocabulary the score was computed against, not merely A version.
+   *
+   * ── it moved, and the move is the point ──
+   * It used to be `release.scored_ontology_version_id`, a uuid pointing at the one
+   * `ontology_version` row `runImport` seeded, and this cell read the column and compared
+   * ids. Nothing writes that table now: resolving a version STRING to a row id was the last
+   * thing the vocabulary-version registry did for anybody, and it went with the registry.
+   * The stamp is the string `computeAutonomy` puts on `AutonomyResult.ontologyVersion`,
+   * which `publish()` stores verbatim in `release.autonomy` and which `scoresOf` reads.
+   *
+   * Asserted through the column as well as through the value, in both directions: the
+   * column must be NULL on every release (a stamp nobody writes must not quietly reappear)
+   * and the string must be present on every one. A cell that only checked the string would
+   * stay green if publish started writing a dangling uuid again.
    */
-  it("all nine releases carry the seeded ontology version's own id", async () => {
+  it("all nine releases carry the vocabulary version on the score, and no row stamp", async () => {
+    const rows = await db
+      .select({
+        stamped: schema.release.scoredOntologyVersionId,
+        autonomy: schema.release.autonomy,
+      })
+      .from(schema.release);
+    expect(rows.length).toBe(9);
+    for (const row of rows) {
+      expect(row.stamped, "`scored_ontology_version_id` is written by nothing").toBeNull();
+      expect((row.autonomy as { ontologyVersion?: unknown } | null)?.ontologyVersion).toBe("0.1.0");
+    }
     const [version] = await db
       .select({ id: schema.ontologyVersion.id })
       .from(schema.ontologyVersion);
-    expect(version).toBeDefined();
-    const rows = await db
-      .select({ stamped: schema.release.scoredOntologyVersionId })
-      .from(schema.release);
-    expect(rows.length).toBe(9);
-    for (const row of rows) expect(row.stamped).toBe(version?.id);
+    expect(
+      version,
+      "`ontology_version` is written by nothing either, so a seeded registry holds no rows",
+    ).toBeUndefined();
   });
 });
 

@@ -4,7 +4,7 @@ A staged pipeline that snapshots state after every stage, so a failure at stage 
 
 ```
 blueprint      checkpoint-resume-runner
-bundle digest  sha256:22a716912a0dbebb3bd2b68f00abec1e0d0e6e32eca68b81ecf1ee33cb5145f5
+bundle digest  sha256:be642a47e5995b47425aa2b8785d458fee8c6ee9a0161fb2cbb2910861948018
 ontology       v0.1.0
 nodes          9
 cards pinned   9
@@ -21,8 +21,13 @@ executes nothing and holds none of your provider keys.
 
 This folder carries the topology and its pinned cards, nothing compiled. `topology.dot` names
 every node, every edge and the card version pinned on it. Each card under `cards/` carries the
-`spec` that becomes that node's prompt. Turning the two into a running pipeline is your own
-harness's job; DarkPrint does not compile or execute one.
+`spec` that becomes that node's prompt.
+
+To compile these two into a pipeline a graph runner takes, run `darkprint export <dir>
+--attractor`. It writes Attractor DOT to stdout, and that file opens with a list of everything
+a DarkPrint blueprint had no way to express, so you can see what the runner falls back to its
+own defaults for. Adapting the result, or building the run yourself from these files instead,
+is your own harness's job.
 
 5 of the 9 nodes name the model they run on, in their card's own `model` field. Read it off
 `cards/<ref>.yaml`; whether your harness honours it is yours to decide.
@@ -75,7 +80,7 @@ whom.
 
 Autonomy: Closed-loop.
 
-> 9 of 9 nodes run unattended, none have a person in the loop. 1.00 > 0.90 → Closed-loop.
+> 9 of 9 nodes run unattended, none have a person in the loop. The graph declares 1 control point, which is one reading rather than a share. 1.00 > 0.90 → Closed-loop.
 
 Security level 4.
 

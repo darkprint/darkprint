@@ -486,7 +486,12 @@ export default function WhatABlueprintIsPage() {
   const kinds = (["phase", "node-type", "data-type", "risk-marker"] as const).map(
     (kind) => ({ kind, count: view.byKind(kind).length }),
   );
-  const ontologyVersion = card?.ontologyVersion ?? "";
+  /* The version of the vocabulary the figure is COUNTING, read off the same view the
+     counts come from. It used to be the sample card's own `ontology_version` declaration,
+     which was a different number in principle: the version the author wrote against rather
+     than the one these kinds were enumerated from. A card declares no vocabulary version
+     now, and the figure labels what it actually drew. */
+  const ontologyVersion = view.ontology.version;
 
   /* By route rather than by position. The three bands below are hand-written because each
      carries its own figure and its own sentence, and reading the layer out of the list by

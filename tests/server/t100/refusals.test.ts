@@ -190,7 +190,7 @@ describe("T100 AC2 — an error diagnostic is refused with the error count", () 
       refusal.kind,
       `AC2: the refusal carries kind ${JSON.stringify(refusal.kind)}.\n` +
         `  This submission has every node carded (${env.inError.placed} of ${env.inError.total}) ` +
-        `and ${String(env.inError.expectedErrors)} genuine port mismatches, so \`unfinished\` ` +
+        `and ${String(env.inError.expectedErrors)} node pinning a digest its card does not have, so \`unfinished\` ` +
         `would be the wrong sentence and a generic refusal loses the distinction entirely.\n` +
         `  Message was: ${refusal.message}`,
     ).toBe("in-error");
@@ -206,7 +206,7 @@ describe("T100 AC2 — an error diagnostic is refused with the error count", () 
     expect(
       Number(match?.[1]),
       `AC2: the sentence names ${match?.[1]} errors; the submission's mutation produces ` +
-        `${String(env.inError.expectedErrors)} (one added edge, two ports that do not exist).`,
+        `${String(env.inError.expectedErrors)} (one node pinning a digest no card hashes to).`,
     ).toBe(env.inError.expectedErrors);
   });
 

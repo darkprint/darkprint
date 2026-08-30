@@ -44,7 +44,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import TermPage from "@/app/ontology/[...term]/page";
 import { DARKPRINT_CONFIG } from "@/lib/core";
 import { plainText } from "@/components/ui/visible-text";
-import { getLatestOntologyVersion, openView } from "@/lib/server/ontology";
+import { openView } from "@/lib/server/ontology";
 import { searchTerms } from "@/lib/server/search";
 import type { Actor } from "@/lib/server/policy";
 import { planImport, runImport } from "@/lib/server/seed";
@@ -75,19 +75,16 @@ beforeAll(async () => {
   const db = testDb.client.db;
   await runImport(db, await planImport(), createObjectStorage());
 
-  /* The page's OWN composition, not a re-derivation of it: `openView` takes the version
-     STRING (not the row id), and the LOCAL vocabulary arrives as EXTENSIONS from
-     `searchTerms(origin: "local")` rather than from the published version's own terms.
-     Getting either wrong loses exactly the locally priced marker this file is about —
-     measured: passing the row id throws `UnknownOntologyVersionError`, and omitting the
-     extensions would have left a core-only view that passes the configured half and is
-     blind to the middle rung. `app/ontology/[...term]/page.tsx`'s `vocabularyView` is the
-     sequence being followed. */
-  const published = await getLatestOntologyVersion(db);
-  if (published === undefined) throw new Error("the import published no ontology version");
+  /* The page's OWN composition, not a re-derivation of it: the LOCAL vocabulary arrives as
+     EXTENSIONS from `searchTerms(origin: "local")` rather than from the core. Getting that
+     wrong loses exactly the locally priced marker this file is about — omitting the
+     extensions leaves a core-only view that passes the configured half and is blind to the
+     middle rung. `app/ontology/[...term]/page.tsx`'s `vocabularyView` is the sequence being
+     followed; it used to resolve a published version STRING first, and there is no version
+     to resolve. */
   const anonymous: Actor = { kind: "anonymous" };
   const local = await searchTerms(db, anonymous, { origin: "local" });
-  const view = await openView(db, published.version, local.hits.map((hit) => hit.item));
+  const view = openView(local.hits.map((hit) => hit.item));
   weighted = view
     .byKind("risk-marker")
     .filter((term) => CONFIGURED.has(term.id) || term.defaultWeight !== undefined)

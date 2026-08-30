@@ -17,10 +17,9 @@ const BASE: NodeCard = {
   outputs: [{ name: "draft", type: "json" }],
   dependencies: ["planner"],
   cannot: [],
-  requiresHuman: false,
+  willNot: [],
   riskMarkers: [],
   version: "1.0.0",
-  ontologyVersion: "0.1.0",
 };
 
 /** `next` differs from BASE only by the given patch. */
@@ -85,12 +84,17 @@ describe("inferBump, major", () => {
       }),
       /required input `context` was added/,
     ],
-    [
-      "requires_human flips false to true",
-      next({ requiresHuman: true }),
-      /`requires_human` changed false → true/,
-    ],
+    /* Staffing a node is priced here, and only here. There used to be a second row for
+       `requires_human` flipping false → true, major because it invalidated every autonomy
+       score computed against the card. The field is gone and the answer comes off `type`,
+       so this row now carries both consequences: a re-typed card breaks the wiring a
+       blueprint pinned AND moves whether a person acts at the node. */
     ["the node type changes", next({ type: "tool" }), /node type changed: agent → tool/],
+    [
+      "the node type becomes a human gate",
+      next({ type: "human-gate" }),
+      /node type changed: agent → human-gate/,
+    ],
     ["the card id changes", next({ id: "solver-b" }), /card id changed: solver-a → solver-b/],
   ])("is major when %s", (_name, candidate, reason) => {
     const analysis = inferBump(BASE, candidate);
@@ -188,14 +192,8 @@ describe("inferBump, minor", () => {
       next({ dependencies: ["planner", "router"] }),
       /dependency `router` was added/,
     ],
-    [
-      "requires_human flips true to false",
-      { ...next({ requiresHuman: false }) },
-      /`requires_human` changed true → false/,
-    ],
-  ])("is minor when %s", (name, candidate, reason) => {
-    const previous = name.includes("true to false") ? next({ requiresHuman: true }) : BASE;
-    const analysis = inferBump(previous, candidate);
+  ])("is minor when %s", (_name, candidate, reason) => {
+    const analysis = inferBump(BASE, candidate);
     expect(analysis.level).toBe("minor");
     expect(analysis.reasons.join(" | ")).toMatch(reason);
   });
@@ -305,13 +303,16 @@ describe("inferBump, `cannot`, whose two directions are inverted", () => {
     ]);
   });
 
-  it("is major for a free-text prohibition too, not only an ontology term", () => {
-    // The bump level cannot depend on whether the vocabulary happens to define the entry
-    // today: a term added in a later ontology version would silently turn yesterday's
-    // free text into an enforced rule, and the published bump would already be wrong.
-    const analysis = inferBump(BASE, next({ cannot: ["never opens a shell"] }));
+  it("is major whatever the term is, since every entry here is one the resolver reads", () => {
+    /* This cell used to assert the same level for `cannot: ["never opens a shell"]`, on the
+       ground that the bump could not depend on whether the vocabulary happened to define
+       the entry today. That reasoning belonged to the conflated field. A sentence is a
+       `card/unknown-term` in `cannot` now, so the case it described is unreachable, and the
+       question it was really asking — does the level depend on which entry it is — is what
+       this asks against a second real term. */
+    const analysis = inferBump(BASE, next({ cannot: ["plan"] }));
     expect(analysis.level).toBe("major");
-    expect(analysis.reasons[0]).toContain("`never opens a shell` was declared");
+    expect(analysis.reasons[0]).toContain("`plan` was declared");
   });
 
   it("is minor when a prohibition is withdrawn", () => {
@@ -328,8 +329,8 @@ describe("inferBump, `cannot`, whose two directions are inverted", () => {
   });
 
   it("is patch for a pure reorder, which prohibits the same set", () => {
-    const before = next({ cannot: ["acceptance-criteria", "secret material"] });
-    const after = next({ cannot: ["secret material", "acceptance-criteria"] });
+    const before = next({ cannot: ["acceptance-criteria", "plan"] });
+    const after = next({ cannot: ["plan", "acceptance-criteria"] });
     expect(inferBump(before, after)).toEqual({
       level: "patch",
       reasons: ["`cannot` entries were reordered"],
@@ -348,15 +349,65 @@ describe("inferBump, `cannot`, whose two directions are inverted", () => {
   });
 
   it("does not split entries on a space when deciding a reorder", () => {
-    // Entries are free text, so joining on a space to compare sequences would read
-    // ["a b"] and ["a", "b"] as the same list.
-    const before = next({ cannot: ["no shell"] });
-    const after = next({ cannot: ["no", "shell"] });
+    // The separator has to be a character the values exclude. `will_not` entries really are
+    // free text, so joining on a space would read ["a b"] and ["a", "b"] as one list and
+    // call this a reorder. It is not one: "no shell" is gone and two other undertakings
+    // arrived. Pinned to `major` rather than merely "not patch" so the cell still fails if
+    // the reorder branch swallows it, and fails differently if D-108's withdrawal level
+    // moves. The withdrawal dominates the two additions, which is what `major` records.
+    const before = next({ willNot: ["no shell"] });
+    const after = next({ willNot: ["no", "shell"] });
     expect(inferBump(before, after).level).toBe("major");
   });
 
   it("is none when neither version prohibits anything", () => {
     expect(inferBump(BASE, next({ cannot: [] }))).toEqual({ level: "none", reasons: [] });
+  });
+});
+
+describe("inferBump, `will_not`, which breaks in the opposite direction from `cannot`", () => {
+  /* D-108, owner ruling of 2026-08-30. The field nothing in the engine reads, which is why
+     it is priced on the way OUT rather than the way in: because no resolver will ever tell a
+     reader that a published undertaking disappeared, the version number is the only witness
+     they get. `compareWillNot` carries the argument. These cells hold BOTH directions,
+     because an asymmetry that is deliberate and one that is a leftover look identical until
+     one side moves. */
+  it("is minor when an undertaking is stated", () => {
+    const analysis = inferBump(BASE, next({ willNot: ["never opens a shell"] }));
+    expect(analysis.level).toBe("minor");
+    expect(analysis.reasons).toEqual(["undertaking `never opens a shell` was stated"]);
+  });
+
+  it("is major when an undertaking is withdrawn, since nothing else reports the loss", () => {
+    const before = next({ willNot: ["never opens a shell"] });
+    const analysis = inferBump(before, BASE);
+    expect(analysis.level).toBe("major");
+    expect(analysis.reasons).toEqual([
+      "undertaking `never opens a shell` was withdrawn, and no check will tell a reader it is gone",
+    ]);
+  });
+
+  it("inverts `cannot`: one is major on the way in, the other on the way out", () => {
+    // All four corners, so neither field can quietly drift onto the other's schedule.
+    // `cannot` narrows what the node accepts and can break a graph nobody touched, so it is
+    // major when it GAINS an entry. `will_not` binds nothing and can only disappoint a
+    // reader, so it is major when it LOSES one.
+    const withCannot = next({ cannot: ["acceptance-criteria"] });
+    const withWillNot = next({ willNot: ["acceptance criteria in prose"] });
+
+    expect(inferBump(BASE, withCannot).level).toBe("major");
+    expect(inferBump(withCannot, BASE).level).toBe("minor");
+    expect(inferBump(BASE, withWillNot).level).toBe("minor");
+    expect(inferBump(withWillNot, BASE).level).toBe("major");
+  });
+
+  it("is patch for a pure reorder, which undertakes the same set", () => {
+    const before = next({ willNot: ["no shell", "no network"] });
+    const after = next({ willNot: ["no network", "no shell"] });
+    expect(inferBump(before, after)).toEqual({
+      level: "patch",
+      reasons: ["`will_not` entries were reordered"],
+    });
   });
 });
 
@@ -488,11 +539,6 @@ describe("inferBump, patch", () => {
       next({ inputs: [{ name: "task", type: "text", description: "the sub-task" }] }),
       "input `task` description changed",
     ],
-    [
-      "the ontology version changes",
-      next({ ontologyVersion: "0.2.0" }),
-      "`ontology_version` changed: 0.1.0 → 0.2.0",
-    ],
     // §4's minor rule is about the declared surface *growing*; these all shrink it or
     // leave it alone, so "patch otherwise" applies and a legitimate patch release is
     // not rejected by `card/version-bump-too-small`.
@@ -606,10 +652,9 @@ describe("inferBump, combinations and edge cases", () => {
       outputs: [],
       dependencies: [],
       cannot: [],
-      requiresHuman: false,
+      willNot: [],
       riskMarkers: [],
       version: "0.0.1",
-      ontologyVersion: "0.1.0",
     };
     expect(inferBump(empty, { ...empty })).toEqual({ level: "none", reasons: [] });
     expect(inferBump(empty, { ...empty, outputs: [{ name: "o", type: "any" }] }).level).toBe(

@@ -1,0 +1,19 @@
+// `a -> b -> c` in one statement, with the statement's own attributes.
+// DOT gives every edge of a chain the same attribute block, so this is two edges both
+// labelled `draft`, and an importer that reads the chain as one edge loses the second.
+digraph chained_edges {
+  goal="Take a brief through three hands without stopping.";
+  label="Chained edges";
+
+  node [shape=box];
+
+  start  [label="start", shape=Mdiamond];
+  brief  [label="Brief",  prompt="Write the brief for the piece."];
+  draft  [label="Draft",  prompt="Write the piece from the brief."];
+  polish [label="Polish", prompt="Edit the piece for length and clarity."];
+  exit   [label="exit", shape=Msquare];
+
+  start -> brief;
+  brief -> draft -> polish [label="draft"];
+  polish -> exit;
+}

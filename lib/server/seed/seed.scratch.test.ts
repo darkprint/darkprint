@@ -15,9 +15,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { inArray } from "drizzle-orm";
 import { readFileSync } from "node:fs";
-import { CORE_ONTOLOGY } from "@/lib/core";
 import { schema, type Db, type ObjectStorage } from "@/lib/db";
-import { addOntologyVersion } from "@/lib/server/ontology";
 import { getBundle, listReleases } from "@/lib/server/archive";
 import { changeHandle, resolveOwner, upsertFromGitHub } from "@/lib/server/accounts";
 import { getSignals, recordDownload } from "@/lib/server/counters";
@@ -239,10 +237,11 @@ describe("a refusal that is not a conflict", () => {
       const scratchPlan = await planImport();
       const scratchStore = memoryStorage();
 
-      /* The two preconditions `publish` has, made through the same merged doors
-         `runImport` uses — not a second implementation of them, and deliberately WITHOUT
-         importing, so the target bundle's first release is the modified one below. */
-      await addOntologyVersion(scratch, { version: "0.1.0", terms: CORE_ONTOLOGY.terms });
+      /* The precondition `publish` still has, made through the same merged door `runImport`
+         uses — not a second implementation of it, and deliberately WITHOUT importing, so the
+         target bundle's first release is the modified one below. There were two: an ontology
+         version had to be published before any bundle could be, and there is no version
+         table to write now. */
       const account = await upsertFromGitHub(scratch, { githubId: "0", githubLogin: "darkprint" });
       const actor: Actor = { kind: "account", accountId: account.accountId, handle: null };
       await changeHandle(scratch, actor, account.accountId, "darkprint");

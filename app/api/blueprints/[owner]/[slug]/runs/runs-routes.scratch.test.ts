@@ -85,7 +85,7 @@ describe.skipIf(!hasDb)("app/api/blueprints/[owner]/[slug]/runs", () => {
       bundleId: bundle.id,
       version: "1.0.0",
       dot: `digraph { ${slug} }`,
-      manifest: { slug, title: slug, summary: "fixture", tags: [], ontologyVersion: "0.1.0" },
+      manifest: { slug, title: slug, summary: "fixture", tags: [] },
       cardRefs: [],
       cardDigests: [],
     });

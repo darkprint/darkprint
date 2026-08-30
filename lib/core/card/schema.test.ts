@@ -80,19 +80,18 @@ describe("NodeCard shape", () => {
     action: "Draft a candidate solution for the sub-task",
     spec: "Read the sub-task, draft one candidate solution, and return it as JSON on the draft port.",
     tools: [],
-    // `mcp` and `cannot` default to `[]` on the wire and are required on the model, the
-    // way `tools` and `risk_markers` are: an empty list is the answer for a node that
-    // needs no server and declares no prohibition, and it is not an absent one.
+    // `mcp`, `cannot` and `willNot` default to `[]` on the wire and are required on the
+    // model, the way `tools` and `risk_markers` are: an empty list is the answer for a node
+    // that needs no server and declares no prohibition, and it is not an absent one.
     mcp: [],
     params: {},
     inputs: [{ name: "task", type: "text" }],
     outputs: [{ name: "draft", type: "json" }],
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: [],
     version: "1.0.0",
-    ontologyVersion: "0.1.0",
   };
 
   it("accepts the minimal card and refs it", () => {
@@ -111,20 +110,27 @@ describe("NodeCard shape", () => {
     expect(JSON.parse(JSON.stringify(card.params))).toEqual(card.params);
   });
 
-  it("carries the three fields the paradigm needs, with `skill` optional", () => {
+  it("carries the four fields the paradigm needs, with `skill` optional", () => {
     const card: NodeCard = {
       ...minimal,
       mcp: ["filesystem", "github"],
       skill: "skills/solver.md",
-      cannot: ["acceptance-criteria", "never opens a shell"],
+      cannot: ["acceptance-criteria"],
+      willNot: ["never opens a shell"],
     };
     expect(card.mcp).toEqual(["filesystem", "github"]);
     expect(card.skill).toBe("skills/solver.md");
-    // Both spellings of a `cannot` entry live in the same list. The first names an
-    // ontology `data-type` and `bundle/resolve.ts` checks it against the edges; the second
-    // names no term and is read by a person. Neither is a lesser entry.
-    expect(card.cannot).toEqual(["acceptance-criteria", "never opens a shell"]);
-    // `skill` is the only one of the three that may be absent.
+    /* The two prohibitions, in the two fields that decide what happens to them. This
+       assertion used to hold BOTH of these strings in `cannot`, one array, with a comment
+       explaining that the first names an ontology `data-type` the resolver checks and the
+       second names no term and is read by a person. That comment was the whole defect: the
+       type could not tell them apart, so a reader had to be told in prose which entry was
+       which. Held apart here so the shape itself says it, and a regression that folded them
+       back into one list would red on the array that lost a member rather than on a comment
+       nobody compiles. */
+    expect(card.cannot).toEqual(["acceptance-criteria"]);
+    expect(card.willNot).toEqual(["never opens a shell"]);
+    // `skill` is the only one of the four that may be absent.
     expect(minimal.skill).toBeUndefined();
   });
 

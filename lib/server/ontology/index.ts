@@ -4,36 +4,31 @@
    paths are internal and may be rearranged, so nothing outside
    `lib/server/ontology` should reach for one. Re-exports are
    written out by name rather than `export *` so this file doubles
-   as the inventory of what the store promises.
-   ============================================================ */
+   as the inventory of what the module promises.
 
-/* --------------------- versions --------------------- */
-export type { OntologyVersionRecord } from "./store";
-export {
-  addOntologyVersion,
-  getLatestOntologyVersion,
-  getOntologyVersion,
-  listOntologyVersions,
-} from "./store";
+   ── It promises one thing now ──
+   This module used to be a registry of published vocabulary
+   versions: a `store` writing `ontology_version` and
+   `ontology_term`, a digest over each version's terms, an
+   input-shape check, an unrepresentable-content check, a
+   structural validator, a semver bump check for a new version, six
+   rejection classes, and `openView(db, version, extensions)` on
+   top. All of it existed to answer one question — read this
+   release against the vocabulary its manifest names — and nothing
+   ever asked it. A release stores its own scorecard at publish
+   time, so no score is recomputed against a historical vocabulary;
+   `deprecated: {since, replacedBy}` retires a term inside the one
+   living vocabulary; and the weights half of the score
+   (`DARKPRINT_CONFIG.security.weights`) was never versioned at
+   all, so a resolvable version could not have made a score
+   reproducible even in principle.
+
+   The tables are still declared in `lib/db/schema.ts` and are no
+   longer read or written by anything. No migration drops them:
+   `release.scored_ontology_version_id` still references
+   `ontology_version`, and a schema change is a separate decision
+   from this one.
+   ============================================================ */
 
 /* --------------------- the merged view --------------------- */
 export { openView } from "./view";
-
-/* --------------------- validation --------------------- */
-export { validateVocabulary } from "./validate";
-
-/* --------------------- identity --------------------- */
-export { ontologyDigest } from "./digest";
-
-/* --------------------- AC6 --------------------- */
-export { checkOntologyBump } from "./bump";
-
-/* --------------------- rejections --------------------- */
-export {
-  DuplicateOntologyVersionError,
-  InvalidVocabularyError,
-  MalformedContentError,
-  OntologyStoreError,
-  UnknownOntologyVersionError,
-  VersionBumpTooSmallError,
-} from "./errors";

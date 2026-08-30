@@ -348,8 +348,10 @@ describe("AC1 every key on /cards narrows", () => {
     const hit = await keys("searchCards", { human: "1" });
     expect(
       hit,
-      "AC1 `human=1` did not narrow. One of the four cards carries `requiresHuman: true`.",
-    ).toEqual([`card:${w.cardImpl.ref}`]);
+      "AC1 `human=1` did not narrow. One of the four cards declares a `type` subsumed by " +
+        "`human-in-the-loop`, which is the whole of what the facet asks: the card's own " +
+        "`requires_human` boolean is gone and `searchCards` reads the published vocabulary.",
+    ).toEqual([`card:${w.cardUnphased.ref}`]);
   });
 
   it("`risk=1` narrows to the cards carrying a risk marker", async () => {

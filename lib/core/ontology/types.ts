@@ -50,6 +50,24 @@ export interface OntologyTerm {
    * counted without touching the metric.
    */
   impliesHuman?: boolean;
+  /**
+   * True when a node of this type decides whether and how *other* nodes run: the
+   * `evaluative` branch, the `orchestration` branch, and `human-gate`, whose entire
+   * definition in doc 3 §3 is that a person approves or rejects.
+   *
+   * Unlike `impliesHuman` this flag **is** the membership rule, and it is inherited
+   * down `broader` the way `impliesHuman` is read. That asymmetry is forced: doc 3 §3
+   * already has a category for "a person acts here", so `isA` answers that question,
+   * while the nodes that govern control flow are spread across three categories and
+   * `human-gate`'s single `broader` slot is spent on `human-in-the-loop`. No `isA` test
+   * can name the set, and giving the vocabulary a second parent per term to make one
+   * possible would change the shape of every walk in `resolve.ts` for one metric.
+   *
+   * `ontology/resolve.ts`'s `controlCitation` is the only reader, for the same reason
+   * `humanCitation` is the only reader of `impliesHuman`: two implementations of a
+   * membership rule are two answers to one question.
+   */
+  governsFlow?: boolean;
 }
 
 /** A whole vocabulary: the core one, or a namespaced extension of it. */

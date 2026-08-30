@@ -1,9 +1,10 @@
 # The DOT, and what a card becomes when it is compiled
 
 Two things live here: how to write `topology.dot` so it loads clean, and what happens to a
-card when DarkPrint compiles the bundle into a runnable pipeline. The second half is
-background — **this skill does not emit `factory.dot`** — but an author is entitled to know
-what their `spec` turns into.
+card when DarkPrint compiles the bundle into a pipeline a runner takes. **This skill
+compiles nothing**, and no published bundle folder carries a compiled graph. The second half
+is background, and an author is entitled to know what their `spec` turns into and which
+parts of their card never leave DarkPrint.
 
 ---
 
@@ -103,10 +104,11 @@ skill always does it.
 
 ## Part 2 — what a card becomes
 
-DarkPrint's own exporter compiles a resolved bundle into a `factory.dot` that
-[Attractor](https://github.com/strongdm/attractor) runs as it stands. **This skill does not
-write that file** — duplicating the emit rules here would let the two drift, and the exporter
-is the one that gets tested against Attractor's parser on every build.
+`darkprint export <dir> --attractor` compiles a resolved bundle into an Attractor DOT and
+writes it to stdout. **This skill does not write that file** and neither does a published
+bundle folder carry one (owner instruction, 2026-08-25): duplicating the emit rules here
+would let the two drift, and the exporter is the one that gets tested against Attractor's
+parser on every build.
 
 It is documented because an author writing a `spec` should know it is the thing that will be
 handed to the agent verbatim.
@@ -117,27 +119,102 @@ handed to the agent verbatim.
 | `name` | `label` |
 | `model` | `llm_model`, Attractor's reserved model identifier |
 | `params.max_iterations` (or `maxIterations`, or `max_retries`) | `max_retries` |
+| `type` and `phases` | `class`, every name prefixed `dp-` |
 | `type: agent` | `shape=box` → the `codergen` handler |
 | `type: validation` | `shape=box` → the `codergen` handler |
 | `type: tool` | `shape=parallelogram` → the `tool` handler |
 | `type: human-gate` | `shape=hexagon` → the `wait.human` handler |
 | `type: human-input` | `shape=hexagon` → the `wait.human` handler |
 | `type: decision` | `shape=diamond` → the `conditional` handler |
-| edge `label` | edge `label` |
+| `type: parallel` | `shape=component` → the `parallel` handler |
+| `type: parallel.fan-in` | `shape=tripleoctagon` → the `parallel.fan_in` handler |
+| `type: manager-loop` | `shape=house` → the `stack.manager_loop` handler |
+| edge `label`, `condition`, `weight` | the same three edge attributes, carried verbatim |
+| the manifest's `summary` and `title` | graph `goal` and `label` |
 
 A `__start` and a `__exit` node are **synthesised** rather than borrowed from your graph: your
 entry node is an ordinary card node with a prompt to run, and re-shaping it into a boundary
 would mean that prompt never runs. `card="id@version"` rides along in the compiled file
 untouched, because Attractor ignores attributes it does not reserve.
 
+### What the compiled file cannot say
+
+The compiled DOT opens with a comment listing every attribute Attractor reads that a
+DarkPrint blueprint has no way to set. That list is derived from the engine rather than
+written by hand, so it is the current answer and not a sentence somebody forgot to update.
+Today it covers goal gates, timeouts, the whole retry policy above `max_retries`, fidelity,
+thread ids, the parallel join policy, the manager-loop controls and the graph-level
+defaults, hooks and model stylesheet. Each one falls back to whatever the runner's own
+default is, and nothing warns anybody: a gate nobody wrote is a gate that never fires. An
+author who needs one adds it to the compiled file by hand, and a later export replaces the
+whole file.
+
+The other half is what stops at the DarkPrint boundary. A node's `prompt` is everything the
+runner receives from its card, so ports, dependencies, `cannot` and `risk_markers` are not
+enforced by anything in the compiled file. They are enforced by the engine, at the moment
+the bundle is scored, which is a different moment from the moment the pipeline runs.
+
 Three consequences for how you write a card:
 
 1. **`spec` is the prompt.** It is delivered to an agent that does not see the rest of the
    graph, so it has to be self-sufficient — and it must respect the isolation the topology
    declares. An absent edge with the criteria paraphrased into the prose is a false isolation.
-2. **`model` is a default, not a binding.** The compiled graph carries a model stylesheet whose
-   rules can override it, and an explicit node attribute outranks the sheet. Absence is an
-   answer: the node takes whatever the runner supplies.
+2. **`model` is what the node runs on unless somebody edits the file.** DarkPrint writes
+   `llm_model` and writes no `model_stylesheet`, so there is no sheet in the compiled graph
+   to override it. Absence is still an answer: a card that names no model emits no
+   `llm_model` at all, and the node takes whatever the runner supplies.
 3. **The iteration cap has one home.** Write it as a top-level key of `params`. The security
    analyzer and the exporter read it through the same function, so a cap that scores as
    uncapped would also compile as unbounded.
+
+---
+
+## Part 3 — reading a pipeline back
+
+`darkprint import <pipeline.dot> --as <handle> --out <dir>` is the other direction. It reads
+an Attractor pipeline and writes a **draft** bundle: a `topology.dot` and one card per node,
+in the layout `/upload` and `darkprint validate` both accept. The mapping table above is run
+backwards, from the same table, so the two directions cannot drift apart.
+
+| the pipeline says | the card says |
+|---|---|
+| `prompt` | `spec` |
+| `label` | `name` |
+| `llm_model` | `model` |
+| `max_retries` | `params.max_iterations` |
+| `shape` | `type`, through the table above |
+| `class` | which of a shared shape's two types, and the `phase` list |
+| `card="id@version"` | the card's own `id` and `version` |
+
+### Both flags are required, and neither has a default
+
+`--out` because a bundle is a folder and a folder cannot go down a pipe. `--as` because a
+`prompt` is somebody's writing: every synthesised card carries `author` set to the handle you
+give and `provenance` set to `derived:attractor <the pipeline>`, so a compiled card can be
+told from a written one by reading it or by grepping for the marker. Every card comes out at
+version `0.1.0`. It is a draft and it is meant to be edited before anybody publishes it.
+
+### What a round trip keeps, and what it does not
+
+`tests/attractor-round-trip.test.ts` runs a corpus of pipelines out and back and asserts that
+every attribute an Attractor runner reads survives unchanged. What it does not keep is
+recorded there too, exactly, rather than left to be discovered:
+
+- **Ports, dependencies, `cannot`, `will_not` and `risk_markers` come back empty.** No
+  Attractor file has ever carried them, so an import cannot invent them. You write them.
+- **A node with no `prompt` becomes a card with no `spec`.** Attractor allows it; a DarkPrint
+  card does not. The import says which node, and the bundle does not resolve until you write
+  the missing half.
+- **`shape=box` comes back as `agent` and `shape=hexagon` as `human-gate`** unless the file
+  carries the `class` DarkPrint writes. Attractor selects one handler for `agent` and
+  `validation` alike, and stores nothing that separates them.
+- **Subgraphs are gone**, and with them the classes §2.10 derives from a subgraph's label.
+- **Every attribute in the compiled file's own disclosure header is dropped** — goal gates,
+  timeouts, the retry policy above `max_retries`, the parallel and manager-loop controls, the
+  graph defaults, hooks and the model stylesheet.
+- **An attribute on an edge to the start or the exit is dropped**, because DarkPrint
+  synthesises both boundary nodes and derives their wiring rather than storing it.
+
+A DarkPrint bundle that goes out through `export` and back through `import` comes home byte
+for byte, the blueprint digest line aside. The losses above are what a *foreign* pipeline
+pays, and they are the price of the two formats not being the same size.

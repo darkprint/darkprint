@@ -401,11 +401,10 @@ export function nodeCard(o: CardOptions): NodeCard {
     outputs: [],
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: [],
     notes: o.notes,
     version: o.version ?? "1.0.0",
-    ontologyVersion: "0.1.0",
   };
 }
 
@@ -416,7 +415,6 @@ function cardSource(card: NodeCard): string {
     `name: ${card.name}`,
     `type: ${card.type}`,
     `version: ${card.version}`,
-    `ontology_version: ${card.ontologyVersion}`,
     `action: ${card.action}`,
     `spec: ${JSON.stringify(card.spec)}`,
     "",
@@ -470,7 +468,6 @@ export function manifest(slug: string, o: { tags?: readonly string[]; summary?: 
     category: undefined,
     tags: [...(o.tags ?? [])],
     author: undefined,
-    ontologyVersion: "0.1.0",
   };
 }
 
@@ -554,23 +551,24 @@ export async function insertBundle(
 /**
  * A COMPLETE scorecard, written straight onto the row.
  *
- * **This fixture is more complete than any writer in this product, and that is the whole
- * reason it needs a name and this docblock.** D-260-24: nothing has ever written
- * `release.scored_ontology_version_id`. `publish.ts` writes `analysis: {autonomy, security,
- * phaseCoverage}` — three fields — and `registry/scores.ts:82` requires four, so `scoresOf`
- * returns `undefined` for every blueprint ever published and the batch reader returns an
- * EMPTY map over the whole seeded store. The stamp is NOT this task's; D-132-01 says so, and
- * says cells must not assert populated scorecards through these readers yet.
+ * ── it is no longer more complete than the writer, and that is the change ──
+ * This fixture used to be, and its docblock said so at length. D-260-24 measured that
+ * nothing wrote `release.scored_ontology_version_id`: `publish.ts` wrote
+ * `analysis: {autonomy, security, phaseCoverage}` and `registry/scores.ts` required a
+ * fourth, so `scoresOf` answered `undefined` for every blueprint ever published and the
+ * batch reader answered an EMPTY map over the whole seeded store. A positive control had to
+ * stamp the column by hand and therefore measured a state the product could not reach —
+ * the T200 shape this project has paid for once, "a suite passing against seeded data that
+ * no writer creates".
  *
- * So a positive control for the batch reader has to STAMP THE COLUMN BY HAND, and what it
- * then measures is a state the product cannot reach. That is the T200 shape this project has
- * already paid for once — "a suite passing against seeded data that no writer creates" — and
- * the mitigation is not to avoid the fixture, which would leave the batch reader with no
- * positive control at all, but to label it here and in every cell that uses it.
+ * The fourth column is gone from the rule. The version a score was computed under is on the
+ * score, at `AutonomyResult.ontologyVersion`, which `publish.ts` has always written, so a
+ * three-payload scorecard IS the complete one and this fixture writes exactly what a publish
+ * writes. It still sets the column, because the column still exists and a reader that went
+ * back to requiring it must red rather than pass.
  *
  * The three payloads are the shapes `AddReleaseInput.analysis` declares and `scores.ts` casts
- * back to (D-260-28: the payloads agree on both sides, the hole is purely the fourth column),
- * so the only fabricated part is the stamp itself.
+ * back to (D-260-28: the payloads agree on both sides).
  */
 export async function stampScorecard(
   s: Scratch,
@@ -601,7 +599,16 @@ export async function stampScorecard(
     "update release set autonomy = $1, security = $2, phase_coverage = $3, " +
       "scored_ontology_version_id = $4 where id = $5",
     [
-      JSON.stringify(o.autonomy ?? { autonomyClass: "supervised", level: 2 }),
+      /* The stamp itself, on the payload the reader takes it from. `ontologyVersion` is
+         spread AFTER the caller's `autonomy` so a caller supplying its own does not lose it
+         and a caller supplying none still produces a readable scorecard. */
+      JSON.stringify({
+        autonomyClass: "supervised",
+        level: 2,
+        ...(o.autonomy as Record<string, unknown> | undefined),
+        ontologyVersion:
+          (o.autonomy as { ontologyVersion?: string } | undefined)?.ontologyVersion ?? version,
+      }),
       JSON.stringify(o.security ?? { level: 3, raw: 3, penalties: [], findings: [], rationale: "4 to 3" }),
       JSON.stringify(o.phaseCoverage ?? { covered: ["planning"], missing: [], byPhase: {}, unphased: [] }),
       ontologyVersionId,

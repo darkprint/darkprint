@@ -38,7 +38,6 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import type { Bundle, BundleManifest, OntologyTerm } from "@/lib/core";
-import { CORE_ONTOLOGY } from "@/lib/core";
 import { contentVocabulary, readContent, type LoadedBundle } from "@/lib/content/read";
 
 /* --------------------- the archive --------------------- */
@@ -140,7 +139,6 @@ export function ruledManifestStub(dirName: string): BundleManifest {
     title: dirName,
     summary: "",
     tags: [],
-    ontologyVersion: CORE_ONTOLOGY.version,
   };
 }
 
@@ -218,15 +216,15 @@ function manifestText(manifest: BundleManifest, filename: string): string {
     `slug: ${manifest.slug}`,
     `title: ${JSON.stringify(manifest.title)}`,
     `summary: ${JSON.stringify(manifest.summary)}`,
-    /* `ontologyVersion`, camelCase — the key BOTH readers actually accept:
-       `lib/content/read.ts:436` is `requireString(doc, "ontologyVersion", file)` and the
-       archive's own `blueprint.yaml` is written that way. This fixture wrote
-       `ontology_version` and neither reader found it, so every manifest cell silently fell
-       back to the stub and the with-manifest and absent-manifest paths were the SAME test.
-       Found by a prediction MISS: mutating the stub's `ontologyVersion` was predicted to red
-       1 cell and reddened 26. A cell asserting an explicit value is vacuous when the
-       subject's default already equals it. */
-    `ontologyVersion: ${manifest.ontologyVersion}`,
+    /* There is no `ontologyVersion` line, because a manifest no longer has that member.
+       It used to be written here in camelCase, which was the key BOTH readers accepted, and
+       the reason is worth keeping: this fixture once wrote it as `ontology_version`,
+       neither reader found it, and every manifest cell silently fell back to the stub — so
+       the with-manifest and absent-manifest paths were the SAME test. It was found by a
+       prediction MISS (mutating the stub's `ontologyVersion` was predicted to red 1 cell and
+       reddened 26), and the lesson survives the field: a cell asserting an explicit value is
+       vacuous when the subject's default already equals it. `title` and `summary` are what
+       distinguish the two paths now. */
     `tags: [${manifest.tags.map((tag) => JSON.stringify(tag)).join(", ")}]`,
     "",
   ].join("\n");

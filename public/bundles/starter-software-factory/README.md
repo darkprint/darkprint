@@ -4,7 +4,7 @@ The canonical five-node factory, plan, build, test, debug, release, and the one 
 
 ```
 blueprint      starter-software-factory
-bundle digest  sha256:945448e03d7997e279f30ccb0f020ce0575cb2fa7cebed510c7b84f5e68e39af
+bundle digest  sha256:a1141199e8a69a94a661144e5a2a634f362cca3ebf5ae6c30a4f21491a90e718
 ontology       v0.1.0
 nodes          5
 cards pinned   5
@@ -21,8 +21,13 @@ executes nothing and holds none of your provider keys.
 
 This folder carries the topology and its pinned cards, nothing compiled. `topology.dot` names
 every node, every edge and the card version pinned on it. Each card under `cards/` carries the
-`spec` that becomes that node's prompt. Turning the two into a running pipeline is your own
-harness's job; DarkPrint does not compile or execute one.
+`spec` that becomes that node's prompt.
+
+To compile these two into a pipeline a graph runner takes, run `darkprint export <dir>
+--attractor`. It writes Attractor DOT to stdout, and that file opens with a list of everything
+a DarkPrint blueprint had no way to express, so you can see what the runner falls back to its
+own defaults for. Adapting the result, or building the run yourself from these files instead,
+is your own harness's job.
 
 4 of the 5 nodes name the model they run on, in their card's own `model` field. Read it off
 `cards/<ref>.yaml`; whether your harness honours it is yours to decide.
@@ -67,7 +72,7 @@ whom.
 
 Autonomy: Closed-loop.
 
-> 5 of 5 nodes run unattended, none have a person in the loop. 1.00 > 0.90 → Closed-loop.
+> 5 of 5 nodes run unattended, none have a person in the loop. The graph declares 1 control point, which is one reading rather than a share. 1.00 > 0.90 → Closed-loop.
 
 Security level 4.
 

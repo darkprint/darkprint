@@ -63,23 +63,54 @@ export function optionsFromEnv(env: NodeJS.ProcessEnv): RegistryOptions {
   return options;
 }
 
+/** What a caller may add to a request. Absent means the GET every read route takes. */
+export interface RequestInit_ {
+  method?: string;
+  /** Serialized already. The caller owns the encoding and declares it in `headers`. */
+  body?: string;
+  /** Merged OVER the defaults below, so a caller can add a header and not lose them. */
+  headers?: Record<string, string>;
+}
+
 /**
- * One GET against the registry, returning the body as text.
+ * One request against the registry, returning the body as text.
  *
  * `path` is always built by this package from a caller's arguments through
  * `encodeURIComponent`, never concatenated raw: a slug is agent-supplied text and a `..`
  * segment in it would otherwise address a different route.
+ *
+ * ── why the third parameter exists, and what it does NOT unlock ──
+ * Everything T220 ships is a GET, and this was a GET-only function. `packages/cli`'s
+ * `report` verb posts a run report, and the alternative was a second HTTP client in the CLI
+ * with a second base-URL default, a second env read and a second copy of the 429 rendering
+ * — the exact duplication D-270-05(2) names ("one env contract, one base-URL default, one
+ * 429 rendering"). So the one client learns a method instead. Spelled `= undefined` rather
+ * than `?` so `Function.length` is unmoved (T250's arity rule), and every existing call
+ * site keeps its exact behaviour: no `init` is the same GET it always sent.
+ *
+ * It grants no authority. `apiKey` still means what T230 gave it, no write route accepts
+ * one (D-270-01 C4, still true), and a caller that needs a session sends the cookie itself
+ * through `headers` — which is a credential this module does not mint, store or default.
  */
-export async function request(options: RegistryOptions, path: string): Promise<string> {
+export async function request(
+  options: RegistryOptions,
+  path: string,
+  init: RequestInit_ | undefined = undefined,
+): Promise<string> {
   const headers: Record<string, string> = { accept: "application/json, text/yaml" };
   /* The header T220's routes read. It is the standard spelling and is UNPUBLISHED by T230,
      which mints the secret and publishes `resolveKey` and says nothing about presentation —
      reported rather than assumed silently. */
   if (options.apiKey !== undefined) headers.authorization = `Bearer ${options.apiKey}`;
+  Object.assign(headers, init?.headers);
 
   let response: Response;
   try {
-    response = await options.fetch(`${options.baseUrl}${path}`, { headers });
+    response = await options.fetch(`${options.baseUrl}${path}`, {
+      headers,
+      ...(init?.method === undefined ? {} : { method: init.method }),
+      ...(init?.body === undefined ? {} : { body: init.body }),
+    });
   } catch (cause) {
     /* An unreachable registry is not a refusal and must not read like one: an agent told
        "not found" stops looking, where an agent told the host is unreachable retries or

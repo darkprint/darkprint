@@ -48,8 +48,9 @@ const EMITTED_BY: Record<DiagnosticCode, string | null> = {
   "card/unknown-phase": "card/validate",
   "card/namespaced-phase": "card/validate",
   "card/duplicate-phase": "card/validate",
-  "card/human-type-inconsistent": "card/validate",
+  "card/retired-field": "card/validate",
   "card/spec-too-thin": "card/validate",
+  "card/prohibition-misfiled": "card/validate",
 
   "bundle/missing-card": "bundle/resolve",
   "bundle/orphan-card": "bundle/resolve",

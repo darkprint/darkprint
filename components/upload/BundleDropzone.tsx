@@ -2,7 +2,6 @@
 
 import { useRef, useState, type DragEvent } from "react";
 import {
-  CORE_ONTOLOGY,
   formatForFilename,
   parseDocument,
   warning,
@@ -447,9 +446,6 @@ export function assembleBundle(
     title,
     summary,
     tags,
-    // No manifest means the bundle is being read against the vocabulary it is about
-    // to be validated with, which is exactly what the core version says.
-    ontologyVersion: (doc && field(doc.ontologyVersion)) ?? CORE_ONTOLOGY.version,
   };
   if (manifest.slug === "") manifest.slug = "untitled-blueprint";
 

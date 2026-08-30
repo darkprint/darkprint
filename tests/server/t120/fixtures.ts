@@ -58,13 +58,12 @@
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 
-import { CORE_ONTOLOGY, parseCardRef } from "@/lib/core";
+import { parseCardRef } from "@/lib/core";
 import type { BundleManifest, LoadBundleResult } from "@/lib/core";
 import { createDbClient, migrateUp, type Db, type DbClient } from "@/lib/db";
 import { readContent, type LoadedBundle } from "@/lib/content/read";
 import { bundleProgress } from "@/components/upload/progress";
 
-import { addOntologyVersion } from "@/lib/server/ontology";
 import { validateBundle } from "@/lib/server/engine";
 import { listReleases } from "@/lib/server/archive";
 import { allocateHandle } from "@/lib/server/naming";
@@ -159,13 +158,10 @@ export async function scratchDatabase(tag: string): Promise<Scratch> {
     );
   }
 
-  /* Every publish opens an `OntologyView` for whatever the manifest names, and an
-     unpublished version raises T030's `UnknownOntologyVersionError` — a foreign rejection
-     that does not even look like a T120 failure. Seeded once, here. */
-  await addOntologyVersion(client.db, {
-    version: CORE_ONTOLOGY.version,
-    terms: [...CORE_ONTOLOGY.terms],
-  });
+  /* A publish used to open an `OntologyView` for whatever the manifest named, and an
+     unpublished version raised `UnknownOntologyVersionError` — a foreign rejection that did
+     not even look like a T120 failure, which is why it was seeded once here. A manifest names
+     no version and `openView` merges over `CORE_ONTOLOGY`. */
 
   return {
     db: client.db,
@@ -343,17 +339,9 @@ function resolvingCorpora(): readonly Corpus[] {
         `distinct digests.`,
     );
   }
-  for (const corpus of resolving) {
-    if (corpus.manifest.ontologyVersion !== CORE_ONTOLOGY.version) {
-      throw new Error(
-        `${corpus.sourceSlug}'s manifest declares ontologyVersion ` +
-          `\`${corpus.manifest.ontologyVersion}\` and scratchDatabase seeds ` +
-          `\`${CORE_ONTOLOGY.version}\`.\n` +
-          `  Every publish would raise T030's UnknownOntologyVersionError, which is a foreign ` +
-          `rejection and reads as anything but a broken fixture.`,
-      );
-    }
-  }
+  /* The per-corpus ontology-version check that stood here is gone with the field it read: a
+     manifest declares no vocabulary version, so no bundle in `content/` can name one the seed
+     did not publish, and `openView` merges over `CORE_ONTOLOGY` either way. */
   corpusCache = resolving;
   return corpusCache;
 }

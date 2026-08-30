@@ -33,69 +33,41 @@
    predicate that disagrees with itself on the day one copy is
    edited. It is plain TypeScript with no React in it so
    `progress.test.ts` can hold it over real bundles.
+
+   ── the three states became the two gates (D-109, 2026-08-30) ──
+   This module used to answer with `hasErrors` and a hand-kept set
+   of "awaiting card" codes, worked out here because nothing else in
+   the tree had drawn the line. `lib/core/gate.ts` has since drawn
+   it for the whole engine, one entry per diagnostic code with its
+   ground beside it, and it reached the same two codes —
+   `bundle/missing-card` and `bundle/unpinned-card` — from the other
+   direction. So the local set and the `bundle/missing-dependency`
+   shadow rule are gone, and the question is asked once where a
+   reviewer can read the whole list.
+
+   What that changed, and it is a change rather than a refactor: a
+   bundle whose ports do not fit, whose types cannot flow, or that
+   names an unminted term used to read as `rejected` and could not be
+   published. Every one of those is DarkPrint comparing two things
+   the author wrote; `gate.ts`'s rule 4 forbids an inference from
+   refusing anybody's work, and a release is entitled to carry a bad
+   score. They now read as `resolves` with the finding printed beside
+   them. `rejected` narrows to what the registry cannot hold at all,
+   plus the one refusal a card's own author asked for.
    ============================================================ */
 
-import { hasErrors, type Diagnostic, type LoadBundleResult, type ResolvedBlueprint } from "@/lib/core";
-
-/**
- * The two resolution errors that mean "not written yet" rather than "wrong".
- *
- * Both are raised per DOT node statement and both say the same thing about the author's
- * state: the graph names a node, and the card behind it is not in the folder — either
- * because no file carries that ref (`bundle/missing-card`) or because the pointer is not
- * yet a pinned `id@version` (`bundle/unpinned-card`). Everything else `resolveBundle`
- * raises is a contradiction between two things the author *did* write: a port that does
- * not exist, a type that cannot flow, a digest that does not match, a prohibition the
- * graph breaks. Those are defects at any stage of writing and are framed as defects.
- *
- * `lib/core/bundle/resolve.ts` emits at most one of these per node — `referenceFor`
- * returns after pushing one, and the entry lookup pushes one — which is what makes the
- * count below a count of nodes rather than a count of complaints.
- */
-const AWAITING_CARD: ReadonlySet<string> = new Set([
-  "bundle/missing-card",
-  "bundle/unpinned-card",
-]);
-
-/**
- * Whether an error is the *shadow* of a card that is not written yet, rather than a fact
- * about the bundle in its own right.
- *
- * There is exactly one such code and finding it cost a test. `bundle/missing-dependency`
- * fires on a card that IS in the folder: it declares `dependencies: [spec-planner]`, and
- * the resolver looks for an incoming edge from a node holding that card. When the
- * predecessor's own card has not been written, that predecessor is deliberately left out
- * of the supply list (`resolve.ts` skips it so one broken pointer is not reported twice)
- * — so the dependency reads as unmet purely because the file on the other end of the edge
- * does not exist yet. Truncate a real archive bundle to two of its five cards and two of
- * the five errors are these.
- *
- * Decided from the graph rather than from the message. The diagnostic carries
- * `location.nodeId` — the dependent node — so the question "could an unwritten card have
- * caused this?" is answered by asking whether that node has a predecessor with no card.
- * A bundle where every node has its card can never take this branch, which is what keeps
- * a genuine unmet dependency an error in a finished blueprint.
- */
-function shadowsAnUnwrittenCard(
-  diagnostic: Diagnostic,
-  blueprint: ResolvedBlueprint,
-  carded: ReadonlySet<string>,
-): boolean {
-  if (diagnostic.code !== "bundle/missing-dependency") return false;
-  const nodeId = diagnostic.location?.nodeId;
-  if (nodeId === undefined) return false;
-  return blueprint.graph.predecessors(nodeId).some((id) => !carded.has(id));
-}
+import { isReleasable, isStorable, type LoadBundleResult } from "@/lib/core";
 
 /** Which of three states a dropped bundle is in, and how far the graph got. */
 export interface BundleProgress {
   /**
-   * `resolves` — every reference checked, both computed readings available.
-   * `unfinished` — the topology parsed, at least one node has no card yet, and every
-   *   error is either that fact or a direct consequence of it. Work in progress, and the
-   *   page says so in those words.
-   * `rejected` — the DOT did not parse, or something the author wrote contradicts
-   *   something else they wrote.
+   * `resolves` — every node points at a card, and both computed readings are available.
+   *   Findings may still be printed beside it: a release is allowed to score badly.
+   * `unfinished` — the topology parsed and at least one node has no card pinned yet. Work
+   *   in progress, and the page says so in those words. Storable, not publishable.
+   * `rejected` — the bytes are not a bundle DarkPrint can hold: the DOT did not parse, a
+   *   card cannot be addressed, or the graph breaks a prohibition the card's own author
+   *   declared.
    */
   state: "resolves" | "unfinished" | "rejected";
   /** DOT nodes joined to a card in this bundle. */
@@ -115,8 +87,9 @@ export interface BundleProgress {
 /**
  * Read the state of a dropped bundle off what the engine returned.
  *
- * `resolves` mirrors `ValidationReport`'s own `usable` exactly — blueprint, analysis and
- * no error — because the two must never disagree about whether a score is shown.
+ * `resolves` still has to mean the same thing as `ValidationReport`'s own `usable`, because
+ * the two must never disagree about whether a score is shown. Both moved together: `usable`
+ * asks `isReleasable` now, for the reason in this file's header.
  */
 export function bundleProgress(result: LoadBundleResult): BundleProgress {
   const { blueprint, analysis } = result;
@@ -124,19 +97,14 @@ export function bundleProgress(result: LoadBundleResult): BundleProgress {
   const placed = blueprint?.nodes.length ?? 0;
   const waiting = total - placed;
 
-  if (blueprint !== undefined && analysis !== undefined && !hasErrors(result.diagnostics)) {
-    return { state: "resolves", placed, total, waiting };
+  /* D-109's two ladders, read in order. The three states this module has always had turn
+     out to BE the two gates: `rejected` is the bytes DarkPrint cannot hold, `unfinished` is
+     the bytes it can hold but cannot publish as a release, `resolves` is both. */
+  if (!isStorable(result.diagnostics)) {
+    return { state: "rejected", placed, total, waiting };
   }
-
-  const errors = result.diagnostics.filter((d) => d.severity === "error");
-  const carded = new Set(blueprint?.nodes.map((node) => node.nodeId) ?? []);
-  const unfinished =
-    blueprint !== undefined &&
-    waiting > 0 &&
-    errors.length > 0 &&
-    errors.every(
-      (d) => AWAITING_CARD.has(d.code) || shadowsAnUnwrittenCard(d, blueprint, carded),
-    );
-
-  return { state: unfinished ? "unfinished" : "rejected", placed, total, waiting };
+  if (blueprint === undefined || analysis === undefined || !isReleasable(result.diagnostics)) {
+    return { state: "unfinished", placed, total, waiting };
+  }
+  return { state: "resolves", placed, total, waiting };
 }

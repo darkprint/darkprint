@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { NodeCard } from "@/lib/core";
 import { buildPaneModel, cardYamlBlocks, type PaneNodeInput } from "./build";
 import { CARD_FIELD_KEYS } from "./model";
+import type { PaneNode } from "./model";
 
 /* ============================================================
    The line numbers pane 3 highlights and the line ranges pane 4
@@ -46,12 +47,10 @@ outputs:
     type: code
 dependencies: []
 
-requires_human: false
 risk_markers: []
 
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0
 `;
 
 function card(overrides: Partial<NodeCard> = {}): NodeCard {
@@ -70,11 +69,10 @@ function card(overrides: Partial<NodeCard> = {}): NodeCard {
     outputs: [{ name: "build", type: "code" }],
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: [],
     version: "1.0.0",
     author: "orin",
-    ontologyVersion: "0.1.0",
     ...overrides,
   };
 }
@@ -194,7 +192,13 @@ describe("cardYamlBlocks", () => {
     // charged to `spec`.
     expect(blocks.get("spec")).toEqual({ start: 8, end: 9 });
     expect(blocks.get("inputs")).toEqual({ start: 13, end: 15 });
-    expect(blocks.get("ontology_version")).toEqual({ start: 26, end: 26 });
+    // `author` and not `ontology_version`, at 24 rather than 25. Two withdrawals in a row
+    // moved this probe: `requires_human` leaving the schema took the fixture from 26 to 25,
+    // and `ontology_version` leaving it took the KEY as well, so the last top-level line of
+    // the document is now `author`. It asks the identical question — the last key in the
+    // document owns exactly its own line — and the block boundaries this cell is about did
+    // not change either time; the document did.
+    expect(blocks.get("author")).toEqual({ start: 24, end: 24 });
   });
 
   it("does not mistake an indented key for a top-level one", () => {
@@ -308,8 +312,16 @@ describe("buildPaneModel — the card skeleton", () => {
     expect(tools?.lines).toEqual({ start: 11, end: 11 });
   });
 
-  it("states both sides of requires_human without weighing one against the other", () => {
-    const unattended = model().nodes.find((n) => n.nodeId === "builder");
+  it("draws no row for a key the schema no longer has", () => {
+    /* This cell used to be "states both sides of requires_human without weighing one
+       against the other", and it drove the two sentences the pane printed for `true` and
+       `false`. The field is gone: whether a person acts at the node is the `type`, and the
+       pane says it there. Doc 2 §1.1's rule that the two answers weigh the same is not
+       lost with the row, it moved to `FIELD_NOTE.type` with the answer.
+
+       What is checked here instead is that the pane did not keep a slot for the withdrawn
+       key. A row reading `requires_human — false` off a document that no longer writes it
+       would be the pane inventing a field. */
     const attended = buildPaneModel({
       slug: "s",
       title: "S",
@@ -319,17 +331,18 @@ describe("buildPaneModel — the card skeleton", () => {
           nodeId: "builder",
           label: "B",
           ref: "code-builder@1.0.0",
-          card: card({ requiresHuman: true }),
+          card: card({ type: "human-gate" }),
           yaml: CARD_YAML,
         },
       ],
     });
-    const off = unattended?.card?.fields.find((f) => f.key === "requires_human");
-    const on = attended.nodes[0].card?.fields.find((f) => f.key === "requires_human");
-    expect(off?.filled).toBe(true);
-    expect(on?.filled).toBe(true);
-    expect(on?.value).toBe("true. The run holds here until a person acts.");
-    expect(off?.value).toBe("false. A run passes through without stopping.");
+    const keys = (n: PaneNode | undefined): string[] => n?.card?.fields.map((f) => f.key) ?? [];
+    expect(keys(model().nodes.find((n) => n.nodeId === "builder"))).not.toContain(
+      "requires_human",
+    );
+    expect(keys(attended.nodes[0])).not.toContain("requires_human");
+    // The type is still a row, and it still says which type it is.
+    expect(attended.nodes[0].card?.fields.find((f) => f.key === "type")?.value).toBe("human-gate");
   });
 
   it("gives `dependencies` the DOT lines of the edges it names", () => {

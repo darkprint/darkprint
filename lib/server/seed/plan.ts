@@ -117,11 +117,16 @@ export async function planImport(): Promise<ImportPlan> {
   return {
     bundles,
     cards,
-    /* The core's own version, because the core's own terms are what `runImport` publishes
-       under it — there is no other vocabulary for it to name. The nine manifests declare
-       this same string today, and a manifest that declared another would be refused at the
-       write by `openView`'s `UnknownOntologyVersionError`. That refusal is T030's and is
-       left as T030's: a check here would put a second author on one sentence. */
+    /* The vocabulary version every release this import creates will be scored under, and
+       therefore the version stamped on each stored scorecard (`AutonomyResult.ontologyVersion`,
+       read back by `registry/scores.ts` and by the export's README).
+
+       It used to mean something adjacent and stronger: the version `runImport` would
+       PUBLISH into `ontology_version` before any bundle, because `publish` refused a
+       manifest naming a version nobody had published. There is no version registry and no
+       manifest declaration any more, so the number no longer describes a write. It still
+       describes the import, and it is still the core's own version, because the core's own
+       terms are the only vocabulary a release is ever resolved against. */
     ontologyVersion: CORE_ONTOLOGY.version,
     registryHandle: REGISTRY_HANDLE,
   };

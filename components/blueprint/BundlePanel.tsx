@@ -28,7 +28,6 @@ export interface BundleNode {
  */
 export function BundlePanel({
   digest,
-  ontologyVersion,
   scoredOntologyVersion,
   nodes,
   pinnedCards,
@@ -38,21 +37,22 @@ export function BundlePanel({
 }: {
   /** Full "sha256:…" bundle digest. */
   digest: string;
-  /** The vocabulary version the manifest is written against. */
-  ontologyVersion: string;
   /**
    * The vocabulary version the two computed scores were actually produced under —
    * `AutonomyResult.ontologyVersion`, which is read off the view the bundle was
-   * resolved against rather than off the manifest.
+   * resolved against.
    *
    * Doc 3 §8: "La scheda deve indicare con quale versione dell'ontologia un punteggio
    * è stato calcolato, altrimenti due valutazioni non sono confrontabili." Tuning a
    * weight is only a PATCH of the ontology and still moves every score in the archive,
-   * so a number without its version is not comparable with anything.
+   * so a number without its version is not comparable with anything. That is why this
+   * row survives a change that took every other ontology version off this page.
    *
-   * Shown next to the manifest's declaration rather than instead of it, because the
-   * two answer different questions and are allowed to disagree: the manifest says what
-   * the author wrote the bundle against, this says what the engine queried.
+   * There used to be a second row beside it, `ontologyVersion`, the version the MANIFEST
+   * declared, with a triangle and a paragraph for the case where the two disagreed. A
+   * manifest declares no vocabulary version now, and the disagreement it reported was
+   * between two hand-maintained copies of one number rather than between two readings of
+   * this blueprint. What is left is the one figure that is a fact about the score.
    */
   scoredOntologyVersion: string;
   nodes: readonly BundleNode[];
@@ -84,7 +84,6 @@ export function BundlePanel({
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);
-  const versionsAgree = scoredOntologyVersion === ontologyVersion;
 
   async function copy() {
     try {
@@ -142,23 +141,9 @@ export function BundlePanel({
             <dt className="text-sm text-muted">Pinned cards</dt>
             <dd className="font-mono text-sm tabular-nums text-fg">{pinnedCards}</dd>
           </div>
-          <div className="flex items-center justify-between py-2.5">
-            <dt className="text-sm text-muted">Ontology declared</dt>
-            <dd className="font-mono text-sm tabular-nums text-violet">
-              v{ontologyVersion}
-            </dd>
-          </div>
           <div className="flex items-center justify-between gap-3 py-2.5">
             <dt className="text-sm text-muted">Scores computed under</dt>
-            <dd
-              className={cx(
-                "flex items-baseline gap-1.5 font-mono text-sm tabular-nums",
-                versionsAgree ? "text-violet" : "text-amber",
-              )}
-            >
-              {/* Glyph and value, never the colour on its own — and the sentence
-                  below spells the mismatch out in words. */}
-              {!versionsAgree && <span aria-hidden>▲</span>}
+            <dd className="font-mono text-sm tabular-nums text-violet">
               v{scoredOntologyVersion}
             </dd>
           </div>
@@ -166,13 +151,11 @@ export function BundlePanel({
 
         {/* Doc 3 §8. Weights live in the configuration and retuning one is a PATCH of
             the ontology that still moves every score in the archive, so Autonomy and
-            Security only mean something next to the vocabulary that produced them. */}
-        {/* The agreeing branch used to open by restating the two rows directly above it.
-            The claim that survives is the one the rows cannot make on their own. */}
+            Security only mean something next to the vocabulary that produced them. This
+            is the claim the row above cannot make on its own, and it is the reason the
+            row is still here. */}
         <p className="mt-2 text-xs leading-snug text-dim">
-          {versionsAgree
-            ? "Two scores from different ontology versions are not comparable."
-            : `The manifest is written against v${ontologyVersion} and the scores were computed against v${scoredOntologyVersion}. Read them against the second, and treat any comparison with a blueprint scored under a different version as a comparison of two different measurements.`}
+          Two scores from different ontology versions are not comparable.
         </p>
       </section>
 

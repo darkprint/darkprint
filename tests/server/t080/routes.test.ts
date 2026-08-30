@@ -123,7 +123,7 @@ beforeAll(async () => {
     version: "1.0.0",
     cards: [twinA, twinB, v1, v2, hidden, namespaced],
     manifest: manifest({ slug: SLUG, tags: ["route-open-tag"], category: "Route-Open-Category" }),
-    autonomy: { autonomyClass: "supervised", level: 2 },
+    autonomy: { autonomyClass: "supervised", level: 2, ontologyVersion: "0.1.0" },
     security: { level: 3, raw: 3, penalties: [], findings: [], rationale: "4 − 1.00 → 3" },
     phaseCoverage: { covered: [PHASE], missing: [], byPhase: {}, unphased: [] },
     scoredOntologyVersionId: ontology.id,

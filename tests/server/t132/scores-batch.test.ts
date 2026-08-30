@@ -88,7 +88,10 @@ let stamped: BundleFixture;
 let plain: BundleFixture;
 
 const STAMP = {
-  autonomy: { autonomyClass: "supervised", level: 2, isDarkFactory: false },
+  /* `ontologyVersion` is part of the payload, because that is where the stamp lives:
+     `computeAutonomy` puts it on `AutonomyResult` and `scores.ts` reads it from there. It
+     used to be a separate uuid column and this literal did not carry it. */
+  autonomy: { autonomyClass: "supervised", level: 2, isDarkFactory: false, ontologyVersion: "0.1.0" },
   security: { level: 3, raw: 4, penalties: ["shell"], findings: [], rationale: "4 to 3" },
   phaseCoverage: { covered: ["planning", "build"], missing: ["ship"], byPhase: {}, unphased: [] },
 } as const;
@@ -252,30 +255,32 @@ describe("D-132-04 C-A: one call, keyed owner/slug", () => {
 
 /* --------------------- D-260-24, asserted as the criterion it is --------------------- */
 
-describe("D-260-24: no release this product can publish has a scorecard", () => {
+describe("D-260-24: what a release this product can publish carries", () => {
   /**
    * The whole seeded store, through the writer the product uses.
    *
-   * This is the cell D-132-01 asks for in place of a populated-scorecard assertion, and it is
-   * a claim about `publish.ts`'s hole as much as about this reader: `addRelease` takes
-   * `analysis: {autonomy, security, phaseCoverage}` — three fields, no stamp — and
-   * `scores.ts:82` requires four. A reader answering an entry here would either have dropped
-   * the fourth-field rule that `scoresOf` enforces, or have invented a stamp nobody wrote.
+   * ── this cell was the emptiness assertion, and it inverted ──
+   * D-132-01 asked for it in place of a populated-scorecard assertion, because
+   * `addRelease` took `analysis: {autonomy, security, phaseCoverage}` and `scores.ts`
+   * required a fourth field nothing wrote, so every blueprint in the product read as
+   * unscored. Its own docblock said it would go green the day D-260-24's fix landed and
+   * should then be re-read rather than deleted, because the fix changes what it means.
    *
-   * It goes green the day D-260-24's fix lands in `publish.ts`, and at that point it should
-   * be re-read rather than deleted: the fix changes what this cell means.
+   * This is that re-reading, one fix later than expected. `publish.ts` closed the hole by
+   * resolving the version to a row id; removing the vocabulary-version registry took the
+   * resolution away again, and the rule moved instead: the version a score was computed
+   * under is read off the stored `autonomy`, which `addRelease` has always carried. So
+   * these three releases DO have scorecards, and asserting that is what keeps a reader
+   * that answers nothing to everything from passing here.
    */
-  it("answers an empty map over releases written by `addRelease`", async () => {
+  it("answers an entry for every release written by `addRelease`", async () => {
     const map = await scoresFor(anonymous, written);
     expect(
-      [...map.keys()],
-      `D-260-24: "NOTHING IN THIS PRODUCT HAS EVER WRITTEN \`scored_ontology_version_id\`, SO ` +
-        `T080's \`scoresOf\` RETURNS \`undefined\` FOR EVERY BLUEPRINT EVER PUBLISHED". These ` +
-        `three went in through \`addRelease\` with a full \`analysis\`, which is everything a ` +
-        `publish writes. An entry here means the batch reader is more permissive than ` +
-        `\`scoresOf\` — two readers disagreeing about what makes a scorecard complete, which ` +
-        `is the defect D-260-24 IS.`,
-    ).toEqual([]);
+      [...map.keys()].sort(),
+      `These three went in through \`addRelease\` with a full \`analysis\`, which is ` +
+        `everything a publish writes. An empty answer means the batch reader still wants a ` +
+        `field no writer produces — the shape D-260-24 named, at a different column.`,
+    ).toEqual(written.map(keyOf).sort());
   });
 
   it("agrees with `scoresOf`, key by key, over the writer-written store (a tautology against this implementation)", async () => {
@@ -287,24 +292,22 @@ describe("D-260-24: no release this product can publish has a scorecard", () => 
         { batch: map.has(keyOf(key)), singular: singular !== undefined },
         `\`scoresFor\` is \`scoresOf\`'s batch form. Where they disagree, one of them is a ` +
           `second opinion about what a complete scorecard is — \`${keyOf(key)}\`.`,
-      ).toEqual({ batch: false, singular: false });
+      ).toEqual({ batch: true, singular: true });
     }
   });
 });
 
 /* --------------------- the positive control, and what it is standing in for --------------------- */
 
-describe("the stand-in fixture: a scorecard no writer in this product can produce", () => {
+describe("the stand-in fixture, which is no longer standing in for anything", () => {
   /**
-   * Every cell in this block runs against `stampScorecard`, which writes the fourth column by
-   * hand. The state it creates is unreachable through `publish.ts` today (D-260-24), and that
-   * is stated in each cell's own name rather than only in this file's header — a fixture more
-   * complete than any writer is exactly the shape T200's suite was green about, and the
-   * mitigation this project settled on is labelling rather than avoidance.
-   *
-   * Without these cells the emptiness above would be satisfied by a reader that returns an
-   * empty map to everything, which looks safer than the correct one and makes the shelf fast
-   * at returning nothing — D-260-24's own phrase for the failure.
+   * Every cell in this block runs against `stampScorecard`, which writes the scorecard onto
+   * the row directly. That used to create a state unreachable through `publish.ts` — it wrote
+   * a fourth column no writer wrote (D-260-24) — and each cell said so in its own name,
+   * because a fixture more complete than any writer is exactly the shape T200's suite was
+   * green about. It writes what a publish writes now, so the label is history rather than a
+   * warning, and the block is kept because it drives values the seeded corpus does not (a
+   * chosen `security` payload, a release with `security` deliberately null).
    */
   it("stand-in: returns the stamped scorecard, field for field", async () => {
     const map = await scoresFor(anonymous, [{ ownerHandle: owner.handle, slug: stamped.slug }]);
@@ -321,12 +324,14 @@ describe("the stand-in fixture: a scorecard no writer in this product can produc
   });
 
   /**
-   * `Scores.ontologyVersion` is "the version string the three axes were computed under,
-   * resolved through `release.scored_ontology_version_id`" — a JOIN, not the column. A reader
-   * projecting the uuid straight out satisfies "the member is present" and puts a database id
-   * on a page that prints a version.
+   * `Scores.ontologyVersion` is the version string the three axes were computed under, read
+   * off the stored `autonomy`. It used to be resolved through
+   * `release.scored_ontology_version_id` — a JOIN, not the column — and a reader projecting
+   * the uuid straight out satisfied "the member is present" while putting a database id on a
+   * page that prints a version. The column is still written by this fixture and still holds
+   * that uuid, so the negative below is still drivable and still worth driving.
    */
-  it("stand-in: resolves the stamp to the version STRING, never the row id", async () => {
+  it("stand-in: answers the version STRING, never the row id the column still holds", async () => {
     const map = await scoresFor(anonymous, [{ ownerHandle: owner.handle, slug: stamped.slug }]);
     const value = map.get(`${owner.handle}/${stamped.slug}`) as Record<string, unknown> | undefined;
     const [row] = await query(s, "select scored_ontology_version_id as id from release where id = $1", [

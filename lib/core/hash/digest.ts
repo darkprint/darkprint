@@ -23,7 +23,7 @@ const SHORT_LENGTH = 8;
  * Fields excluded from a card's identity. Both are provenance metadata: who typed
  * the file and where it came from say nothing about what the node *does*, and if
  * they counted, the same card contributed by two authors would fail to dedup (§4).
- * Everything else is included, `version` and `ontologyVersion` among them.
+ * Everything else is included, `version` among them.
  */
 const VOLATILE_FIELDS: readonly (keyof NodeCard)[] = ["author", "provenance"];
 

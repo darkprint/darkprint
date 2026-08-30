@@ -13,7 +13,7 @@
    and never recomputed here; the card chain check is T020's inside
    `addCard`; the vocabulary's shape is T010's `parseStoredVocabulary`;
    the unfinished/in-error distinction is `bundleProgress`'s; the
-   merged ontology view is T030's `openView`. The only things this
+   merged ontology view is `openView`. The only things this
    file decides are the ORDER those questions are asked in and the
    transaction they are asked inside.
 
@@ -61,7 +61,7 @@ import {
 import { addCard, getCard } from "@/lib/server/cards";
 import { validateBundle } from "@/lib/server/engine";
 import { exportRelease } from "@/lib/server/export";
-import { getOntologyVersion, openView } from "@/lib/server/ontology";
+import { openView } from "@/lib/server/ontology";
 import { isTombstone } from "@/lib/server/lifecycle";
 import { can, type Actor } from "@/lib/server/policy";
 import { reembedRelease } from "@/lib/server/search";
@@ -178,13 +178,16 @@ export async function publish(
   const vocabulary = parseStoredVocabulary(input.vocabulary, "publish");
 
   /* A2/D-100-01, and this line is the one that keeps a publish and its own export agreeing.
-     `validateBundle` defaults to the SHIPPED core; `lib/server/export/build.ts` resolves a
-     stored release against the version its manifest names. Left to default, a bundle
-     declaring an older ontology version would be scored here against terms the export never
-     uses, and the first export of it would throw `releaseDoesNotResolve` on a release this
-     function had accepted. `openView` also refuses a version nobody published, which is what
-     moves that failure from first-export to the write. */
-  const ontology = await openView(db, input.manifest.ontologyVersion, vocabulary?.terms);
+     `validateBundle` defaults to the shipped core with NO overlay; `lib/server/export/build.ts`
+     opens the stored release's own. Left to default, a bundle whose local vocabulary defines
+     the terms its cards use would be scored here against a view that does not have them, and
+     the first export of it would resolve differently from the publish that accepted it.
+
+     It used to also carry the manifest's declared ontology version, and refuse a version
+     nobody had published. That is gone with the version registry: there is one vocabulary,
+     both sides open it the same way, and the agreement this line exists for is now about the
+     overlay alone. */
+  const ontology = openView(vocabulary?.terms);
 
   const result = validateBundle({
     manifest: input.manifest,
@@ -219,18 +222,6 @@ export async function publish(
   const digest = blueprint.digest;
   const cardRefs = blueprint.nodes.map((node) => node.ref);
   const cardDigests = blueprint.nodes.map((node) => node.digest);
-
-  /* D-260-24: the fourth field of the scorecard, resolved HERE because this function is the
-     one production writer of scores. `analysis.ontologyVersion` is the version the score was
-     actually computed against (`lib/core/analysis/analyze.ts:94` reads it off the view this
-     function built above), and `registry/scores.ts` refuses to call a scorecard complete
-     without the row id it names. `getOntologyVersion` cannot miss on this path — `openView`
-     above already refused a version nobody published, and `analysis.ontologyVersion` IS that
-     view's version — but a miss still stamps nothing rather than throwing: an incomplete
-     scorecard is the honest record of a score whose vocabulary row cannot be named. The
-     published reader is consumed even though it loads terms this caller discards; a lean
-     id-only reader would be a second query beside it, and the cost is one publish-time read. */
-  const scored = await getOntologyVersion(db, analysis.ontologyVersion);
 
   if (existing !== undefined) {
     /* AC6, before AC8 (B3/D-100-01): a conflict is a statement about IDENTITY, and the
@@ -331,14 +322,20 @@ export async function publish(
          `exportBundle` can re-emit the file byte for byte. */
       ...(input.vocabulary === undefined ? {} : { vocabulary: input.vocabulary }),
       /* Passed through unmodified. `BlueprintAnalysis` carries a fourth field,
-         `ontologyVersion`, that this column has no room for; the export reads it back off
-         `autonomy` instead, because that is the vocabulary the score was actually computed
-         against rather than the one the manifest declares. */
+         `ontologyVersion`, that no column of `release` has room for; every reader takes it
+         off `autonomy`, where `computeAutonomy` stamped the version of the view the score
+         was actually computed against.
+
+         `scoredOntologyVersionId` is NOT set, and cannot be. It named a row in
+         `ontology_version`, a table nothing writes any more: resolving a version STRING to a
+         row id was the last thing the version registry did for anybody, and the registry is
+         gone. The column survives unwritten (dropping it is a migration and a separate
+         decision) and `registry/scores.ts` reads the version off `autonomy` instead, which
+         is the same value one indirection shorter. */
       analysis: {
         autonomy: analysis.autonomy,
         security: analysis.security,
         phaseCoverage: analysis.phaseCoverage,
-        ...(scored === undefined ? {} : { scoredOntologyVersionId: scored.id }),
       },
     });
 

@@ -31,6 +31,13 @@
 import { describe, expect, it } from "vitest";
 
 import { CORE_ONTOLOGY, ontologyView } from "@/lib/core";
+/* The one transform between `AutonomyResult.rationale` and the sentence the README quotes:
+   `exportBundle` writes `autonomyStatement(rationale)` and nothing else touches that line. It
+   is imported rather than re-spelled here because a copy of the regex is a second answer to
+   "what does the README say", which is the whole thing this file refuses to have. It sits on
+   the ORACLE's production route, not the engine's, so applying it to the engine's output and
+   comparing against committed bytes is still two routes meeting. */
+import { autonomyStatement } from "@/lib/format";
 
 import {
   asLoadBundleResult,
@@ -54,7 +61,7 @@ describe("AC1: the oracle itself", () => {
   /* Not ceremony. Every figure below is read out of a file `prebuild` writes, and a README
      whose format drifted would otherwise let nine assertions compare `undefined` to
      `undefined` and report a pass. A set that can only be empty is not a measurement. */
-  it("parses four figures out of all nine shipped READMEs", () => {
+  it("parses five figures out of all nine shipped READMEs", () => {
     const cases = archiveCases();
     expect(cases).toHaveLength(EXPECTED_BUNDLE_COUNT);
     for (const { slug, oracle } of cases) {
@@ -63,6 +70,17 @@ describe("AC1: the oracle itself", () => {
         ["assisted", "supervised", "conditional", "closed-loop"],
         `${slug} autonomy class`,
       ).toContain(oracle.autonomyClass);
+      expect(oracle.autonomyStatement, `${slug} autonomy sentence`).toMatch(
+        /^\d+ of \d+ nodes run unattended, /,
+      );
+      /* The two autonomy parses cross-checked against each other rather than each against a
+         shape of its own. The sentence ends in the class the line above it names, so a pattern
+         that drifted onto the security blockquote — or onto another bundle's section — reds
+         here instead of quietly supplying an oracle from the wrong place. */
+      expect(
+        oracle.autonomyStatement.toLowerCase(),
+        `${slug} autonomy sentence ends in the class the line above it names`,
+      ).toContain(`→ ${oracle.autonomyClass}.`);
       expect([1, 2, 3, 4], `${slug} security level`).toContain(oracle.securityLevel);
       expect(oracle.securityRationale, `${slug} security rationale`).toMatch(/^4 −/);
     }
@@ -151,13 +169,33 @@ describe("AC1: the supplied vocabulary is the one in force", () => {
 
     expect(codesOf(result.diagnostics)).not.toContain("card/unknown-term");
     expect(result.analysis?.security.level).toBe(oracle.securityLevel);
+    /* The positive half of the autonomy axis, and what stops the negation below from passing
+       for the wrong reason: a rendering that collapsed every sentence onto one string would
+       make that `not.toBe` true whatever the engine answered, and reds here first. */
+    expect(
+      result.analysis === undefined
+        ? undefined
+        : autonomyStatement(result.analysis.autonomy.rationale),
+      "the archive's committed autonomy sentence, re-derived from today's engine",
+    ).toBe(oracle.autonomyStatement);
   });
 
-  /* Saturation. Measured against base before it was written: dropping the vocabulary moves the
-     digest, the autonomy class (conditional → supervised), the security level (2 → 4) and the
-     diagnostic count (1 → 6). The README says the same thing in its own words — "Score the
-     folder without that file and those ids resolve against nothing, the cards carrying them
-     are rejected with them, and both numbers move."
+  /* Saturation. Re-measured after the autonomy reading gained its control-point half: dropping
+     the vocabulary moves the digest, the security level (2 → 4), the diagnostic count (1 → 6)
+     and the autonomy sentence, from "6 of 7 nodes run unattended, 1 has a person in the loop.
+     2 of 3 control points run unattended. 0.6667 ≥ 0.50" to "4 of 7 nodes run unattended, 1 has
+     a person in the loop, 2 have no card in the bundle. 1 of 2 control points run unattended.
+     0.50 ≥ 0.50". The README says the same thing in its own words — "Score the folder without
+     that file and those ids resolve against nothing, the cards carrying them are rejected with
+     them, and both numbers move."
+
+     The autonomy CLASS is deliberately not one of the four figures. It was the axis here until
+     the second reading landed, and the two answers now sit in the same band: 0.6667 and 0.50
+     are both at or above the 0.50 cut-off, so both are `supervised`. A `not.toBe` on a
+     four-valued name reports "the vocabulary did not arrive" for what is a collision of the
+     cut-offs, on an engine that moved every other figure it should have. The sentence is the
+     same axis at the resolution the two answers actually differ at, and it reds under
+     everything the class redded under, the class being a suffix of it.
 
      Every assertion here is therefore a NEGATION of the archive's answer. A module that
      quietly layers `content/ontology/extensions.yaml` in regardless of its argument passes
@@ -185,7 +223,12 @@ describe("AC1: the supplied vocabulary is the one in force", () => {
 
     expect(result.blueprint?.digest).not.toBe(oracle.digest);
     expect(result.analysis?.security.level).not.toBe(oracle.securityLevel);
-    expect(result.analysis?.autonomy.autonomyClass).not.toBe(oracle.autonomyClass);
+    expect(
+      result.analysis === undefined
+        ? undefined
+        : autonomyStatement(result.analysis.autonomy.rationale),
+      "the autonomy sentence must not be the archive's once the vocabulary is gone",
+    ).not.toBe(oracle.autonomyStatement);
   });
 
   /* `vocabulary` omitted and `vocabulary: []` are the same statement — "this submission adds

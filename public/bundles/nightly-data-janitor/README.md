@@ -4,7 +4,7 @@ An unattended overnight cleanup line: extract deltas, normalize, validate agains
 
 ```
 blueprint      nightly-data-janitor
-bundle digest  sha256:bdc1e438ac76355c2629ee2b67a244471ff834db68df47278e6cdb3d8cde8b17
+bundle digest  sha256:b728a7a6c5218056943a39b2073f9103515a0c9a41ddd53d21d6cc27161c9bf7
 ontology       v0.1.0
 nodes          7
 cards pinned   7
@@ -21,8 +21,13 @@ executes nothing and holds none of your provider keys.
 
 This folder carries the topology and its pinned cards, nothing compiled. `topology.dot` names
 every node, every edge and the card version pinned on it. Each card under `cards/` carries the
-`spec` that becomes that node's prompt. Turning the two into a running pipeline is your own
-harness's job; DarkPrint does not compile or execute one.
+`spec` that becomes that node's prompt.
+
+To compile these two into a pipeline a graph runner takes, run `darkprint export <dir>
+--attractor`. It writes Attractor DOT to stdout, and that file opens with a list of everything
+a DarkPrint blueprint had no way to express, so you can see what the runner falls back to its
+own defaults for. Adapting the result, or building the run yourself from these files instead,
+is your own harness's job.
 
 3 of the 7 nodes name the model they run on, in their card's own `model` field. Read it off
 `cards/<ref>.yaml`; whether your harness honours it is yours to decide.
@@ -71,7 +76,7 @@ whom.
 
 Autonomy: Closed-loop.
 
-> 7 of 7 nodes run unattended, none have a person in the loop. 1.00 > 0.90 → Closed-loop.
+> 7 of 7 nodes run unattended, none have a person in the loop. The graph declares 1 control point, which is one reading rather than a share. 1.00 > 0.90 → Closed-loop.
 
 Security level 1.
 

@@ -1,0 +1,21 @@
+// `weight` on an edge, in both spellings the grammar admits: a bare Integer/Float, and a
+// quoted String for anything else. Both parse back to the same characters, and the
+// emitter chooses between them by whether the value looks like a number.
+digraph weights {
+  goal="Prefer the cheap path and fall back to the expensive one.";
+  label="Weighted routing";
+
+  start  [label="start", shape=Mdiamond];
+  pick   [label="Pick a path", shape=diamond, prompt="Choose which retrieval path this question needs."];
+  cheap  [label="Cache", shape=parallelogram, prompt="Look the question up in the answer cache."];
+  costly [label="Full search", shape=parallelogram, prompt="Run the full retrieval over the corpus."];
+  answer [label="Answer", shape=box, prompt="Write the answer from whatever you were given."];
+  exit   [label="exit", shape=Msquare];
+
+  start -> pick;
+  pick -> cheap  [weight=10];
+  pick -> costly [weight=0.5];
+  cheap -> answer;
+  costly -> answer [weight="2"];
+  answer -> exit;
+}

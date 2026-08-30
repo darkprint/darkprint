@@ -85,12 +85,20 @@ const FROZEN: readonly Frozen[] = [
   },
   {
     path: "components/blueprint/severity-word.test.ts",
-    blob: "94e57ccf317418e096b7d3f81bbabf20df61974b" /* RE-PINNED DELIBERATELY, and this one needed a RULING first. The diff is 1+/1-: a
-      single docblock line naming the moved page path. `granted` below said NO on the
-      measured ground that this file reads no page file — true, and D-261-05's enumeration
-      listed the files that READ a moved path and missed the one that merely NAMES it in
-      prose. I refused to re-pin a named must-pass-unchanged test on my own reading; that
-      refusal is why D-261-15 exists, and it admits this file to the grant. */,
+    blob: "3d26e19b2d103182377e046bf5e6233557832af3" /* RE-PINNED DELIBERATELY a second time, at the withdrawal of the manifest's
+      `ontologyVersion`. The diff is 0+/1-: the `ontologyVersion` prop leaves the
+      `createElement(BundlePanel, …)` call, because `BundlePanel` no longer declares it. This
+      file is one of the two instruments holding that component's PROP SHAPES, so the deletion
+      is exactly what it is for — and it is a deletion the compiler forces, not an assertion
+      being weakened: the line it removes passed `bp.analysis.autonomy.ontologyVersion` to
+      BOTH props, so it was already asserting one value under two names. The surviving
+      `scoredOntologyVersion` is the one that was ever a fact about the score.
+
+      The FIRST re-pin needed a ruling and its reasoning stands: the diff then was 1+/1-, a
+      single docblock line naming a moved page path, `granted` said NO on the measured ground
+      that this file reads no page file, and D-261-05's enumeration had missed a file that
+      merely NAMES a moved path in prose. Refusing to re-pin a named must-pass-unchanged test
+      on one reader's judgement is why D-261-15 exists. */,
     why:
       "NAMED by AC5. It is also the only instrument holding the PROP SHAPES of `BundlePanel` " +
       "and `Explainability` against the cutover (see `ac5-prop-shapes.test.ts`), and it holds " +
@@ -99,7 +107,22 @@ const FROZEN: readonly Frozen[] = [
   },
   {
     path: "components/blueprint/download-name.test.ts",
-    blob: "556c9c10127627b702ebff809cc3c93fbcf9e29a" /* RE-PINNED DELIBERATELY twice.
+    blob: "7227156634759705c85eaf3bd383115f00648ee8" /* RE-PINNED DELIBERATELY a THIRD time,
+      at the owner's authorisation to unfreeze this file for one purpose: removing its
+      import of `FACTORY_DOT` from `lib/content/bundle-export`, which was one of the two
+      pins keeping a dead constant alive there. Attributed before the pin moved.
+
+      The diff is 1 import member removed, one local `const RUNNABLE_DOT = "factory.dot"`
+      added with the reason in place, and the two occurrences inside the assertion renamed
+      to it. **The assertion itself is byte-for-byte the same claim**: the download anchor
+      must not contain `factory.dot`. What changed is where the string comes from — a
+      literal, because the constant it used to come from no longer exists and there is
+      nothing left in the product that produces that name.
+
+      What was NOT done: no assertion was removed, weakened or re-pointed at a different
+      subject, and the pin was not moved to make an unrelated red go away.
+
+      The SECOND re-pin, and its own attribution:
       First at D-261-11's ruled rewrite off page-invocation onto the component-with-props
       idiom, 89+/37-. Then at the topology rename (owner-instructed, 2026-08-25): the
       registry's stored file became `topology.dot`, and the suite's pinned label moved
@@ -123,7 +146,23 @@ const FROZEN: readonly Frozen[] = [
   },
   {
     path: "components/bundle/files.test.ts",
-    blob: "9e2d95a32c4f9c73df994286af7f8683a77b2c95",
+    blob: "84beb369b1a8593047d14b0bb952497744920dd9" /* RE-PINNED DELIBERATELY, at the owner's
+      authorisation to unfreeze this file for one purpose: removing its imports of
+      `FACTORY_DOT` and `BUNDLE_AGENTS`, which were the pins keeping the first of those two
+      constants alive in `lib/content/bundle-export`. Attributed before the pin moved.
+
+      Two import members removed, and both names removed from the `ALLOWED` set with the
+      reason written in place. `ALLOWED` is an allow-list, so this is a STRENGTHENING and
+      not a weakening: `exportBundle` stopped writing either file at the owner's 2026-08-25
+      instruction, and until now a seeded listing could still advertise `factory.dot` or
+      `AGENTS.md` and pass — the exact "a listing that names files the download does not
+      contain" failure the banner at the top of that file describes. Both names are now
+      strays. Measured before the edit: no listing in `lib/data/bundles.ts` names either, so
+      nothing was made to pass by the removal and nothing red by it.
+
+      `BUNDLE_AGENTS` survives the constant sweep on its own merits and not on this import:
+      `components/upload/BundleDropzone.tsx` reads it to name an `AGENTS.md` a reader drops
+      from an older download. `FACTORY_DOT` had no such consumer and is deleted. */,
     why:
       "The folder a bundle page draws. Its header names `/u/<owner>/<slug>` — the route " +
       "D-261-01 turns into a 308 — so it is the file most likely to be quietly re-scoped.",
@@ -131,11 +170,46 @@ const FROZEN: readonly Frozen[] = [
   },
   {
     path: "components/panes/build.test.ts",
-    blob: "12d14cbaab7fc7ef6e833bd1a70e1a1cd5fb1790",
+    blob: "d6c7bfe99d22985c9b50417f5cadd8b9e16b6fc5" /* RE-PINNED DELIBERATELY a THIRD time, at
+      the withdrawal of `ontology_version`, and attributed the same way the second re-pin was.
+
+      Two edits. (1) `ontology_version: 0.1.0` leaves the `CARD_YAML` fixture, because no card
+      document carries that key any more. (2) The line-offset probe changes its SUBJECT rather
+      than only its value: it asked `blocks.get("ontology_version")`, and that key is not in
+      the document at all now, so an offset for it would be `undefined`. It asks
+      `blocks.get("author")` at `{24, 24}` instead — the last top-level key of the document,
+      which is the identical question (the final key owns exactly its own line) about the same
+      boundary rule. The pane case for `ontology_version` is gone from `build.ts` with the
+      field, so no cell is left describing a row that cannot be drawn.
+
+      What was NOT done: the pin was not updated to make a red go away. The probe was
+      re-pointed to a key that still exists rather than deleted, and the fixture line was
+      removed because the wire key was withdrawn, not because it was inconvenient.
+
+      The SECOND re-pin, and its own attribution:
+      at the withdrawal of `requires_human`. This is a HEAVIER diff than the last one and it
+      is attributed line by line before the pin moves, because the previous re-pin's claim —
+      compiler-forced, no assertion touched — is not available here.
+
+      Three edits. (1) `requires_human: false` leaves the `CARD_YAML` fixture, because no
+      card document carries that key any more. (2) `blocks.get("ontology_version")` moves
+      from `{26, 26}` to `{25, 25}`: an assertion VALUE changed, and it changed because the
+      document above it is one line shorter, not because `cardYamlBlocks` decides anything
+      differently. (3) The cell "states both sides of requires_human without weighing one
+      against the other" is REPLACED, not deleted quietly: its subject is a field that no
+      longer exists, and what stands in its place asserts the pane draws no row for the
+      withdrawn key. Doc 2 §1.1's claim that the two answers weigh the same is not lost with
+      it — the sentences moved to `FIELD_NOTE.type`, where the answer now is, and
+      `/nodes/<id>`'s `type` row carries the same pair.
+
+      What was NOT done: the pin was not updated to make a red go away. The `requires_human`
+      row cannot be kept, because keeping it would mean the pane printing a field off a
+      document that does not declare it. Suite measured green at 211/211 across
+      `components/panes/` after the edit. */,
     why:
       "The pane model the graph column is assembled through. See the header: this is the pin " +
       "that arrived one character wrong, and `12d14ca` is not a valid object at all.",
-    granted: "NO.",
+    granted: "NO. The re-pin above is a compiler-forced literal completion, argued in place.",
   },
   {
     path: "components/panes/dot-breakdown.test.ts",
@@ -145,9 +219,29 @@ const FROZEN: readonly Frozen[] = [
   },
   {
     path: "components/panes/model.test.ts",
-    blob: "138613ee8e8531b57a28dd57b1ac72b6896e1a01",
+    blob: "26c1bc23da68b3d4939e0333ba3039f6cc17a91a" /* RE-PINNED DELIBERATELY a THIRD time, at
+      the withdrawal of `ontology_version`. Two edits, the same pair as last time: the key
+      leaves the `BUILDER_YAML` fixture and the typed `NodeCard` literal below it, and the
+      `blockOf` probe into the SERVICE block moves from `ontology_version` to `provenance`.
+      That block still has three keys, `provenance` asks the identical question, and the cell
+      still probes three of the five blocks and still ends on the unknown-key case. There is
+      one vocabulary and a card declares no version of it; the version a SCORE was computed
+      under is on the score, which is not a card field and has no block here.
+
+      The SECOND re-pin, and its own attribution:
+      at the withdrawal of `requires_human`, and attributed the same way. Two edits: the key
+      leaves the `BUILDER_YAML` fixture and the typed `NodeCard` literal below it, and one
+      `blockOf` probe changes its argument.
+
+      That probe is the part worth naming. The cell asks whether `blockOf` answers with the
+      block a key belongs to, and it used `requires_human` to ask about `evaluation`. The
+      key is not in `CARD_BLOCKS` any more, so the probe would have asserted `undefined`;
+      `risk_markers` is the same block's other key and asks the identical question. The
+      cell still probes three of the five blocks and still ends on the unknown-key case.
+      Whether a person acts at the node is `type`, in `identity`, which the neighbouring
+      block-id cell already covers. */,
     why: "The synchronised-panes model. Same tree, same deletability.",
-    granted: "NO.",
+    granted: "NO. The re-pin above is a compiler-forced literal completion, argued in place.",
   },
 ];
 

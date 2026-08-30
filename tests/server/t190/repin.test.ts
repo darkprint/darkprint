@@ -50,8 +50,7 @@
 
 import { afterAll, describe, expect, it } from "vitest";
 
-import { CORE_ONTOLOGY, parseCardRef } from "@/lib/core";
-import { addOntologyVersion } from "@/lib/server/ontology";
+import { parseCardRef } from "@/lib/core";
 import { publishBundle, resolvingCorpus, seedAccount, type Account } from "../t110/fixtures";
 import {
   type Scratch,
@@ -77,10 +76,6 @@ interface RepinWorld {
 
 const setup = deferred<RepinWorld>(async () => {
   const scratch = await scratchDatabase("repin");
-  await addOntologyVersion(scratch.db, {
-    version: CORE_ONTOLOGY.version,
-    terms: [...CORE_ONTOLOGY.terms],
-  });
   const corpus = resolvingCorpus();
 
   const pinner = await seedAccount(scratch, mark("rp").toLowerCase());

@@ -8,7 +8,7 @@
    digest is the engine's, computed during resolution inside
    `publish` and never recomputed. The card chain check is T020's
    inside `addCard`. The visibility grant is T060's `can`. The
-   merged ontology view is T030's `openView`. The vocabulary's
+   merged ontology view is `openView`. The vocabulary's
    shape is T010's `parseStoredVocabulary`. The freeze is T090's
    `exportRelease` plus T100's `persistArtefacts`. The refusal for
    a release that already exists is T100's, and this file's only
@@ -23,11 +23,9 @@
    this task deciding a product question by shipping.
    ============================================================ */
 
-import { CORE_ONTOLOGY } from "@/lib/core";
 import { contentVocabulary, readContent } from "@/lib/content/read";
 import type { Db, ObjectStorage } from "@/lib/db";
 import { changeHandle, upsertFromGitHub } from "@/lib/server/accounts";
-import { DuplicateOntologyVersionError, addOntologyVersion } from "@/lib/server/ontology";
 import type { Actor } from "@/lib/server/policy";
 import { PublishRefusedError, publish } from "@/lib/server/publish";
 import { REGISTRY_HANDLE, SEED_RELEASE_VERSION, type ImportPlan } from "./plan";
@@ -88,26 +86,18 @@ export async function runImport(
 ): Promise<ImportResult> {
   const registry = await registryActor(db, plan.registryHandle);
 
-  /* Before any bundle: `publish` calls `openView`, which refuses a version nobody has
-     published. The terms are the core's because the core's terms are what this version IS
-     — `asOntology(record.version, record.terms)` is what `openView` hands the engine, and
-     a row holding anything else would score the archive against a vocabulary the site
-     never used.
+  /* There is no vocabulary write before the bundles any more. This function used to open
+     with `addOntologyVersion(db, {version: plan.ontologyVersion, terms: CORE_ONTOLOGY.terms})`,
+     catching the duplicate-version refusal so a second import was a no-op, and it had to:
+     `publish` opened a view by version and refused one nobody had published, so an unseeded
+     registry could not accept a single bundle. `openView` merges over `CORE_ONTOLOGY`
+     directly now, which is the vocabulary that row always held anyway.
 
-     The archive's own overlay does NOT go in here. It is a local namespace layered over
-     the core per release (`ontology/extensions.yaml`, doc 3 §7), not a new core version,
-     and it travels on `release.local_vocabulary` below. */
-  try {
-    await addOntologyVersion(db, { version: plan.ontologyVersion, terms: CORE_ONTOLOGY.terms });
-  } catch (err) {
-    /* AC2. The typed refusal for "this version already exists", caught rather than
-       pre-empted with a `SELECT`: the existence check and the insert are not one atomic
-       act, so a read would be a race the unique index has already settled. Every other
-       refusal — malformed input, an invalid vocabulary, a bump too small — leaves. */
-    if (!(err instanceof DuplicateOntologyVersionError)) throw err;
-  }
+     The archive's own overlay was never part of that write and still is not. It is a local
+     namespace layered over the core per release (`ontology/extensions.yaml`, doc 3 §7), and
+     it travels on `release.local_vocabulary` below.
 
-  /* The archive's vocabulary, as a file rather than as terms (D-90-03): `text` is
+     The archive's vocabulary, as a file rather than as terms (D-90-03): `text` is
      `content/ontology/extensions.yaml` byte for byte so `exportBundle` re-emits it
      unaltered, and `terms` is its parse. Handed to every bundle, not only the ones that
      use a local term, because `readContent` builds ONE view for the whole archive and the

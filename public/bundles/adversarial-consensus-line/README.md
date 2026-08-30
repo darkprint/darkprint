@@ -4,7 +4,7 @@ Two agents solve the same task from opposite temperatures, then a consensus node
 
 ```
 blueprint      adversarial-consensus-line
-bundle digest  sha256:69bcfb1ebb45c1c86598c199ef6c3984fe8737855a6d5241a927d6e5a6808658
+bundle digest  sha256:7774ccb18935d1f84d05e4dd5ffe84b5eb405467dc24cfca5c51835cdbcaab72
 ontology       v0.1.0
 nodes          8
 cards pinned   8
@@ -21,8 +21,13 @@ executes nothing and holds none of your provider keys.
 
 This folder carries the topology and its pinned cards, nothing compiled. `topology.dot` names
 every node, every edge and the card version pinned on it. Each card under `cards/` carries the
-`spec` that becomes that node's prompt. Turning the two into a running pipeline is your own
-harness's job; DarkPrint does not compile or execute one.
+`spec` that becomes that node's prompt.
+
+To compile these two into a pipeline a graph runner takes, run `darkprint export <dir>
+--attractor`. It writes Attractor DOT to stdout, and that file opens with a list of everything
+a DarkPrint blueprint had no way to express, so you can see what the runner falls back to its
+own defaults for. Adapting the result, or building the run yourself from these files instead,
+is your own harness's job.
 
 2 of the 8 nodes name the model they run on, in their card's own `model` field. Read it off
 `cards/<ref>.yaml`; whether your harness honours it is yours to decide.
@@ -73,7 +78,7 @@ whom.
 
 Autonomy: Closed-loop.
 
-> 8 of 8 nodes run unattended, none have a person in the loop. 1.00 > 0.90 → Closed-loop.
+> 8 of 8 nodes run unattended, none have a person in the loop. 2 of 2 control points run unattended. 1.00 > 0.90 → Closed-loop.
 
 Security level 4.
 

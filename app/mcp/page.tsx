@@ -347,6 +347,26 @@ export default function McpPage() {
           The digest is the load-bearing part. Fetch by slug and you get whatever the
           registry holds today. Fetch by digest and you get the bytes you tested against.
         </p>
+
+        {/* The server offers a fifth tool and the table above has four rows, so the page has
+            to say which is which rather than let a client's tool list contradict it. It is
+            deliberately NOT a fifth row: the table is the advertised registry contract, held
+            to this array's own count by `tests/server/t220/surface.test.ts`, and
+            `export_pipeline` is not a registry operation. It reads the release route and the
+            files route, both of which `fetch a release` already grants, and compiles their
+            bytes locally. A row would claim the registry gained an answer it did not. */}
+        <p className="text-[15px] leading-relaxed text-muted">
+          The server offers one more tool that is not a registry read.{" "}
+          <code className="font-mono text-[13px] text-blueprint-ink">export_pipeline</code>{" "}
+          takes the files of one release and compiles them into a DOT pipeline a graph runner
+          takes, which is the same thing{" "}
+          <code className="font-mono text-[13px] text-blueprint-ink">
+            darkprint export &lt;dir&gt; --attractor
+          </code>{" "}
+          does in a terminal. It reaches nothing the four operations above do not, and the
+          file it returns opens with a list of everything a DarkPrint blueprint had no way to
+          express, so a reader can see what the runner falls back to its own defaults for.
+        </p>
       </section>
 
       {/* ---------- 3. Still to decide ---------- */}

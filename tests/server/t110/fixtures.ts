@@ -72,10 +72,9 @@
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 
-import { CORE_ONTOLOGY, parseCardRef } from "@/lib/core";
+import { parseCardRef } from "@/lib/core";
 import type { BundleManifest, LoadBundleResult } from "@/lib/core";
 import { createDbClient, migrateUp, type Db, type DbClient } from "@/lib/db";
-import { addOntologyVersion } from "@/lib/server/ontology";
 import { validateBundle } from "@/lib/server/engine";
 import { createBundle, addRelease, listReleases } from "@/lib/server/archive";
 import type { BundleRecord, ReleaseRecord } from "@/lib/server/archive";
@@ -163,15 +162,11 @@ export async function scratchDatabase(tag: string): Promise<Scratch> {
     );
   }
 
-  /* The ontology version has to be a row before any publish can run (D-100-05 A2). `publish`
-     opens an `OntologyView` for `manifest.ontologyVersion`, and an unpublished version raises
-     T030's `UnknownOntologyVersionError` — a foreign rejection that reaches the caller unaltered
-     and does not even look like a T110 failure. Every scratch database in this suite publishes
-     an upstream, so this belongs here rather than per file. */
-  await addOntologyVersion(client.db, {
-    version: CORE_ONTOLOGY.version,
-    terms: [...CORE_ONTOLOGY.terms],
-  });
+  /* The ontology version used to have to be a row before any publish could run (D-100-05 A2):
+     `publish` opened an `OntologyView` for `manifest.ontologyVersion` and an unpublished
+     version raised `UnknownOntologyVersionError`, a foreign rejection that reached the caller
+     unaltered and did not even look like a T110 failure. `openView` merges over
+     `CORE_ONTOLOGY` and there is no version table, so the precondition is gone. */
 
   return {
     db: client.db,
@@ -282,19 +277,9 @@ export function resolvingCorpus(): Corpus {
   )[0];
   const corpus = corpusFrom(smallest as LoadedBundle);
 
-  /* The join between the corpus and the seed. `scratchDatabase` publishes
-     `CORE_ONTOLOGY.version` and `publish` opens a view for whatever the MANIFEST names, so if the
-     archive ever declares a different one every cell in this suite would fail at `openView` with
-     an error that has nothing to do with its criterion. Checked here, once. */
-  if (corpus.manifest.ontologyVersion !== CORE_ONTOLOGY.version) {
-    throw new Error(
-      `${corpus.sourceSlug}'s manifest declares ontologyVersion ` +
-        `\`${corpus.manifest.ontologyVersion}\` and scratchDatabase seeds ` +
-        `\`${CORE_ONTOLOGY.version}\`.\n` +
-        `  Every publish would then raise T030's UnknownOntologyVersionError, which is a foreign ` +
-        `rejection and reads as anything but a broken fixture.`,
-    );
-  }
+  /* There is no join left to check between the corpus and the seed: a manifest declares no
+     ontology version and `openView` merges over `CORE_ONTOLOGY`, so the archive and the seed
+     cannot name two different vocabularies at each other. */
   return corpus;
 }
 

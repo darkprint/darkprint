@@ -1,4 +1,5 @@
 import type { CardVersionRecord, OntologyTerm } from "@/lib/core";
+import { requiresHuman } from "@/lib/core";
 import type { Author, Blueprint } from "@/lib/types";
 import {
   allBlueprints,
@@ -206,7 +207,9 @@ export function nodeSummaryFor(tile: NodeTile, author: Author | undefined): Node
       label: ontology.resolve(id, "phase")?.term.label ?? id,
     })),
     tools: [...card.tools],
-    requiresHuman: card.requiresHuman,
+    // Derived, never stored. The card carries `type` and nothing beside it, so the tile
+    // and the node page it links to cannot disagree about where the people are.
+    requiresHuman: requiresHuman(ontology, card.type),
     riskMarkers: card.riskMarkers.map(
       (marker) => ontology.resolve(marker, "risk-marker")?.term.label ?? marker,
     ),
@@ -257,7 +260,9 @@ function nodeSummaryForOwned(row: CardSummary, author: Author | undefined): Node
       label: ontology.resolve(id, "phase")?.term.label ?? id,
     })),
     tools: [...card.tools],
-    requiresHuman: card.requiresHuman,
+    // Derived, never stored. The card carries `type` and nothing beside it, so the tile
+    // and the node page it links to cannot disagree about where the people are.
+    requiresHuman: requiresHuman(ontology, card.type),
     riskMarkers: card.riskMarkers.map(
       (marker) => ontology.resolve(marker, "risk-marker")?.term.label ?? marker,
     ),

@@ -48,16 +48,21 @@ outputs:                    # must be PRESENT. [] is how a sink is declared.
     description: What is handed over.
 dependencies:               # the card ids or DOT node ids of the suppliers, derived from the edges
   - upstream-card-id
-cannot:
-  # An entry naming a data-type is ENFORCED: the resolver refuses any incoming edge whose
-  # carrier is that type or anything narrower, with bundle/prohibition-violated. On an
-  # unpinned edge the carriers are EVERY output of the source card; with `out=` only that port.
+cannot:                     # data-type term ids ONLY. Anything else is card/unknown-term.
+  # ENFORCED: the resolver refuses any incoming edge whose carrier is that type or anything
+  # narrower, with bundle/prohibition-violated. On an unpinned edge the carriers are EVERY
+  # output of the source card; with `out=` only that port.
   - acceptance-criteria
-  # An entry naming anything else is PROSE. A reader reads it; nothing checks it.
+will_not:                   # your own sentences. Nothing checks them, and nothing can.
+  # Addressed to whoever reads the card and to the agent instantiated from it. Putting a
+  # data-type here is card/prohibition-misfiled, a warning: the card loads and no edge is
+  # ever checked against the rule you meant to state.
   - read the checks the work will be run against
 
 # ---- evaluation metadata ----
-requires_human: false       # MUST be true when `type` is human-gate or human-input
+# Whether a person acts here is not a field. It is `type`: human-gate and human-input are
+# subsumed by human-in-the-loop and every other type is not. Writing `requires_human` here
+# is card/retired-field, a warning, and the key is ignored.
 risk_markers: []            # risk-marker terms. unbounded-loop, unvalidated-external-access and
                             # criteria-leak are inferred from the graph whether declared or not.
 notes: >-
@@ -68,4 +73,6 @@ notes: >-
 # ---- service fields ----
 version: 1.0.0              # full semver. A published version is never edited in place.
 author: your-handle         # optional
-ontology_version: 0.1.0     # the vocabulary this card is written against
+# No ontology_version. There is one vocabulary, every card is read against it, and the
+# version a score was computed under is recorded on the score. Writing the key is
+# card/retired-field, a warning.

@@ -64,9 +64,7 @@
 
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
-import { CORE_ONTOLOGY } from "@/lib/core";
 import { schema, type Db } from "@/lib/db";
-import { addOntologyVersion } from "@/lib/server/ontology";
 import { enqueueRepinEvents } from "@/lib/server/notifications";
 import { createTestDb, type TestDb } from "@/tests/support/db";
 import {
@@ -114,7 +112,6 @@ let afterRetry: { pinner: QueueRow[] };
 beforeAll(async () => {
   testDb = await createTestDb();
   db = testDb.client.db;
-  await addOntologyVersion(db, { version: CORE_ONTOLOGY.version, terms: [...CORE_ONTOLOGY.terms] });
 
   /* `publishBundle`/`seedAccount`/`repinOneCard` are typed against T110's own `Scratch`
      (`{ db, pool, client, name, drop() }`), so this adapts `createTestDb`'s result to that

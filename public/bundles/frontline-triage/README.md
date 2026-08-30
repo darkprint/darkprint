@@ -4,7 +4,7 @@ Classifies inbound tickets, auto-resolves the simple ones with a KB lookup, QAs 
 
 ```
 blueprint      frontline-triage
-bundle digest  sha256:a4c9d09c6acdb62d082cd870546eb2dc4d9564435e0a91b0f1d9467f81a108d1
+bundle digest  sha256:7569292e411df641caa77edc120b8295764ae089ac2c5b0904a4e36f3e405cf4
 ontology       v0.1.0
 nodes          7
 cards pinned   7
@@ -22,8 +22,13 @@ executes nothing and holds none of your provider keys.
 
 This folder carries the topology and its pinned cards, nothing compiled. `topology.dot` names
 every node, every edge and the card version pinned on it. Each card under `cards/` carries the
-`spec` that becomes that node's prompt. Turning the two into a running pipeline is your own
-harness's job; DarkPrint does not compile or execute one.
+`spec` that becomes that node's prompt.
+
+To compile these two into a pipeline a graph runner takes, run `darkprint export <dir>
+--attractor`. It writes Attractor DOT to stdout, and that file opens with a list of everything
+a DarkPrint blueprint had no way to express, so you can see what the runner falls back to its
+own defaults for. Adapting the result, or building the run yourself from these files instead,
+is your own harness's job.
 
 2 of the 7 nodes name the model they run on, in their card's own `model` field. Read it off
 `cards/<ref>.yaml`; whether your harness honours it is yours to decide.
@@ -70,9 +75,9 @@ whom.
 
 ## What DarkPrint computed
 
-Autonomy: Conditional.
+Autonomy: Supervised.
 
-> 6 of 7 nodes run unattended, 1 has a person in the loop. 0.8571 ≥ 0.70 → Conditional.
+> 6 of 7 nodes run unattended, 1 has a person in the loop. 2 of 3 control points run unattended. 0.6667 ≥ 0.50 → Supervised.
 
 Where a person acts:
 

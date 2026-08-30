@@ -179,7 +179,6 @@ export interface CardOptions {
   spec?: string;
   notes?: string;
   type?: string;
-  requiresHuman?: boolean;
   riskMarkers?: readonly string[];
 }
 
@@ -199,11 +198,10 @@ export function nodeCard(o: CardOptions): NodeCard {
     outputs: [],
     dependencies: [],
     cannot: [],
-    requiresHuman: o.requiresHuman ?? false,
+    willNot: [],
     riskMarkers: [...(o.riskMarkers ?? [])],
     notes: o.notes,
     version: o.version ?? "1.0.0",
-    ontologyVersion: "0.1.0",
   };
 }
 
@@ -226,7 +224,6 @@ export function manifest(o: ManifestOptions): BundleManifest {
     category: o.category,
     tags: [...(o.tags ?? [])],
     author: o.author,
-    ontologyVersion: "0.1.0",
   };
 }
 
@@ -237,7 +234,6 @@ function cardSource(card: NodeCard): string {
     `name: ${card.name}`,
     `type: ${card.type}`,
     `version: ${card.version}`,
-    `ontology_version: ${card.ontologyVersion}`,
     `action: ${card.action}`,
     `spec: ${JSON.stringify(card.spec)}`,
     "",

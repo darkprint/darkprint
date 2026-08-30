@@ -15,13 +15,12 @@
  * run.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CORE_ONTOLOGY, type CardRef } from "@/lib/core";
+import { type CardRef } from "@/lib/core";
 import { contentVocabulary, readContent } from "@/lib/content/read";
 import { schema } from "@/lib/db";
 import { createObjectStorage } from "@/lib/db/storage";
 import { addRelease, createBundle } from "@/lib/server/archive";
 import { addCard } from "@/lib/server/cards";
-import { addOntologyVersion } from "@/lib/server/ontology";
 import { createTestDb, type TestDb } from "../../../tests/support/db";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
@@ -46,10 +45,10 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
     const entry = readContent()[0];
     slug = entry.slug;
     pinned = entry.blueprint.nodes[0].ref;
-    await addOntologyVersion(db, {
-      version: entry.bundle.manifest.ontologyVersion,
-      terms: CORE_ONTOLOGY.terms,
-    });
+    /* No ontology version is seeded first. `publish` used to open a view by the version its
+       manifest named and refuse one nobody had published, so an unseeded registry could not
+       accept a bundle at all; the view is a merge over `CORE_ONTOLOGY` now and there is no
+       table to write. */
 
     const seen = new Set<string>();
     for (const file of entry.cardFiles) {
@@ -213,11 +212,13 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
      * load-bearing — which it was, wrongly, until the mutation sweep found it.
      *
      * Dropping `ontology_version` first and then `card_version` looked like it observed
-     * two sites and observed one: `openView` runs **before** the pinned-card loop, so
+     * two sites and observed one: `openView` ran **before** the pinned-card loop, so
      * after the first outage the blueprint route never reached the second, and the
      * assertion labelled "via pinned cards" was still measuring `openView`. Unwrapping
      * the pinned-card catch then reddened **nothing** — a probe that could not reach the
-     * guard, wearing the label of one that could.
+     * guard, wearing the label of one that could. That shadowing is gone with `openView`'s
+     * database read, and it is exactly why the surviving outages are still isolated one at
+     * a time.
      *
      * A rename is reversible, so each site is isolated: break one statement, measure,
      * put it back, and assert the route is 200 again before moving on. That restoration
@@ -228,8 +229,10 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
        * D-091-04. **Every observation in this cell is of the GENERATE path, and under T091's
        * freeze-on-miss a successful serve WRITES the folder it just built** — so each 200
        * this cell asserts arms the NEXT outage to read frozen bytes and answer 200 where a
-       * 500 is required. The three outages are each preceded by a 200, so all three were
-       * exposed; `openView` is simply the first and reds before the others are reached.
+       * 500 is required. Each outage is preceded by a 200, so each is exposed. The first of
+       * them no longer asserts a 500 at all: see the `ontology_version` block below, where
+       * the clearing still matters because a 200 read off a frozen folder would satisfy
+       * that assertion for the wrong reason.
        *
        * Clearing here rather than at each call site makes it an invariant of an outage —
        * **an outage begins from an unfrozen subject** — instead of three lines somebody can
@@ -279,17 +282,21 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
       );
     };
 
-    /* The ontology read, reached only through `buildExport`'s `openView`. */
+    /* ── the ontology outage is gone, and its absence is asserted rather than dropped ──
+       This cell used to open by renaming `ontology_version` away and asserting a 500 out of
+       `buildExport`'s `openView`. `openView` merges over `CORE_ONTOLOGY` and issues no
+       statement, so there is no ontology READ left to fail — and the table it read is written
+       by nothing. Asserted in the affirmative, because "an outage I can no longer construct"
+       and "an outage the route now swallows" are the same green otherwise. */
     await breakTable("ontology_version");
-    await expectReadError(await getFile(), "openView", "/api/files/b");
-    /* Untouched by it, which says the outage was where this test claims. */
-    expect((await getCard()).status).toBe(200);
+    expect(
+      (await getFile()).status,
+      "the ontology tables are read by nothing, so their absence is not an outage",
+    ).toBe(200);
     await fixTable("ontology_version");
-    expect((await getFile()).status).toBe(200);
 
     /* The card read: `serveCard` reaches it directly, `buildExport` through the pinned-card
-       loop. Both were unwrapped, and both are separately observed only because `openView`
-       is working again above. */
+       loop. Both were unwrapped, and both are separately observed. */
     await breakTable("card_version");
     await expectReadError(await getCard(), "serveCard -> resolveCardRef", "/api/files/c");
     await expectReadError(await getFile(), "buildExport -> pinnedCards", "/api/files/b");

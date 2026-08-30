@@ -60,9 +60,7 @@
    constant, well over the line.
    ============================================================ */
 
-import { CORE_ONTOLOGY } from "@/lib/core";
 import { changeHandle, upsertFromGitHub } from "@/lib/server/accounts";
-import { addOntologyVersion } from "@/lib/server/ontology";
 import { publish } from "@/lib/server/publish";
 
 import { ONTOLOGY_VERSION, recorded, scratchDatabase, type Scratch } from "./contract";
@@ -141,19 +139,14 @@ export interface CardSpec {
    * claim rather than an account — nothing in this repository verifies that `ada` is anybody.
    */
   author?: string;
-  /**
-   * Required `true` by the four node-types that put a person in the loop.
-   *
-   * Not a convenience. `validateBundle` raises `card/human-type-inconsistent` as an ERROR for
-   * `human-gate`, `human-input` (and the rest of that family) unless this is set, `publish`
-   * refuses any bundle carrying an error, and the invalid card is then also dropped from the
-   * bundle — so the refusal arrives as TWO errors, the second a cascaded
-   * `bundle/missing-card` pointing at the DOT node rather than at the field that is actually
-   * wrong. Found by driving the fixture rather than by reading; left explicit rather than
-   * derived from `type`, because a fixture that silently repaired its own cards would hide
-   * exactly this class of refusal from whoever writes the next one.
-   */
-  requiresHuman?: boolean;
+  /* There is no `requiresHuman` member here any more, and the paragraph that argued for one
+     is gone with it. The field it wrote was withdrawn from the card schema: whether a person
+     acts at a node is the `type`, so a card can no longer carry an answer that disagrees with
+     the one every surface reads. What stood here recorded a real trap, worth keeping as
+     history — a `human-gate` card WITHOUT the flag was refused by `publish` with a cascaded
+     `bundle/missing-card` naming the DOT node rather than the field that was actually wrong,
+     found by driving the fixture rather than by reading it. That refusal cannot happen now,
+     which is why `AC3` and `AC6` below declare a `type` and stop. */
 }
 
 /**
@@ -194,7 +187,7 @@ export function cardDocument(spec: CardSpec): string {
     ...ports("outputs", spec.outputs),
     "dependencies: []",
     "cannot: []",
-    `requires_human: ${spec.requiresHuman ?? false}`,
+    "will_not: []",
     `risk_markers: [${(spec.markers ?? []).join(", ")}]`,
     `version: ${spec.version ?? "1.0.0"}`,
     ...(spec.author === undefined ? [] : [`author: ${spec.author}`]),
@@ -293,7 +286,6 @@ export async function publishBundle(db: unknown, spec: BundleSpec): Promise<{ di
       title: `Fixture ${spec.slug}`,
       summary: `A fixture blueprint named ${spec.slug}.`,
       tags: [],
-      ontologyVersion: ONTOLOGY_VERSION,
     },
     dot: `digraph fixture {\n${nodes}\n}\n`,
     cardFiles,
@@ -306,18 +298,15 @@ export async function publishBundle(db: unknown, spec: BundleSpec): Promise<{ di
 }
 
 /**
- * A scratch database with the ontology version published and nothing else.
+ * A scratch database with nothing in it.
  *
- * Every world below starts here. `addOntologyVersion` first because `publish` calls `openView`,
- * which refuses a version nobody published — the same ordering `runImport` takes.
+ * Every world below starts here. It used to publish the ontology version first, because
+ * `publish` called `openView` and that refused a version nobody had published — the same
+ * ordering `runImport` took. `openView` merges over `CORE_ONTOLOGY` and reaches no store, so
+ * there is no longer anything to do before the first bundle.
  */
 export async function emptyWorld(): Promise<Scratch> {
-  const scratch = await scratchDatabase();
-  await addOntologyVersion(scratch.db as never, {
-    version: ONTOLOGY_VERSION,
-    terms: CORE_ONTOLOGY.terms,
-  });
-  return scratch;
+  return await scratchDatabase();
 }
 
 /* ============================================================
@@ -608,7 +597,6 @@ export const AC3 = {
   card: {
     id: "t210-ac3-card",
     type: "human-gate",
-    requiresHuman: true,
     author: "ada",
   } satisfies CardSpec,
   publicSlugs: ["ac3-open-one", "ac3-open-two"] as const,
@@ -795,7 +783,6 @@ export const AC6 = {
   card: {
     id: "t210-ac6-card",
     type: "human-input",
-    requiresHuman: true,
     author: "ada",
   } satisfies CardSpec,
   firstSlug: "ac6-first",

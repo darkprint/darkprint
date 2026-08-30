@@ -76,16 +76,23 @@ const HELD: readonly Held[] = [
   {
     path: "components/blueprint/BundlePanel.tsx",
     component: "BundlePanel",
+    /* `ontologyVersion` was here, between `digest` and `scoredOntologyVersion`, and is gone
+       from both sides in the same edit: the manifest declared a vocabulary version, the panel
+       drew it beside the version the SCORES were computed under, and neither exists now.
+       D-261-07(8) forbids a rename or a removal that reshapes these props under a frozen
+       caller — this is a removal, and it is admissible only because the caller moved WITH it
+       (`severity-word.test.ts` was re-pinned in the same edit, 0+/1-, cause named in
+       `frozen-tests.test.ts`) rather than being left passing a prop the component dropped.
+       `scoredOntologyVersion` is the one that was ever a fact about the score, and it stays. */
     passed: [
       "digest",
-      "ontologyVersion",
       "scoredOntologyVersion",
       "nodes",
       "pinnedCards",
       "diagnostics",
       "explainedNotes",
     ],
-    where: "components/blueprint/severity-word.test.ts:73-88",
+    where: "components/blueprint/severity-word.test.ts:73-87",
   },
 ];
 

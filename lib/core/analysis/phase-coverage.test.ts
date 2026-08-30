@@ -30,7 +30,6 @@ const MANIFEST: BundleManifest = {
   title: "Test bundle",
   summary: "A hand-built blueprint for phase-coverage tests.",
   tags: [],
-  ontologyVersion: "0.1.0",
 };
 
 function makeCard(over: Partial<NodeCard> & { id: string }): NodeCard {
@@ -47,10 +46,9 @@ function makeCard(over: Partial<NodeCard> & { id: string }): NodeCard {
     outputs: [],
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: [],
     version: "1.0.0",
-    ontologyVersion: "0.1.0",
     ...over,
   };
 }

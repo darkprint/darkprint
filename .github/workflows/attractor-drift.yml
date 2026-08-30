@@ -1,0 +1,48 @@
+name: attractor spec drift
+
+# `lib/core/attractor/reserved.ts` is a hand transcription of `attractor-spec.md` in
+# strongdm/attractor, and DarkPrint's compatibility claim rests on it being complete.
+# Upstream last moved that file on 2026-03-17 and nothing watched it. This job does.
+#
+# ── why a workflow and not a vitest cell ──
+# `lib/core` is isomorphic and network-free by contract, and no test in this repository
+# performs real outbound I/O (`tests/server/t300/egress.test.ts` is a standing guard on
+# exactly that). A cell that fetched GitHub would also make `npm test` fail on somebody
+# else's outage, offline, and in every sandbox. So the check runs here, where a network
+# call is ordinary and a failure is a notification rather than a broken suite.
+#
+# ── the schedule is the real trigger ──
+# The subject is a document in another repository, so nothing in a DarkPrint pull request
+# causes this to change: waiting for a PR to notice would mean noticing whenever somebody
+# happened to open one. The weekly run is what bounds how stale the claim can get. The
+# `pull_request` trigger is narrowed to the transcription itself, so re-verifying that file
+# re-checks the pin in the same PR, and every other PR is left alone.
+#
+# ── continue-on-error, deliberately, and this is the same reasoning docs-drift.yml gives ──
+# A red here reports that SOMEBODY ELSE changed a document. That is a job for a person to
+# read, and it must not block a merge that has nothing to do with Attractor. The script's
+# own exit codes keep the two failures apart: 1 is a drift, 2 is "could not check", and a
+# GitHub outage answers 2. Both go red in the Actions UI, which is the signal.
+
+on:
+  schedule:
+    # Mondays, 07:00 UTC. Weekly is chosen against the observed rate of change upstream
+    # (three commits to that file in seven months), not against how urgent a drift is.
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "lib/core/attractor/reserved.ts"
+      - "scripts/check-attractor-drift.mjs"
+      - ".github/workflows/attractor-drift.yml"
+
+jobs:
+  check-attractor-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # No `npm ci`: the script imports nothing outside `node:` builtins and reads the pin
+      # out of the source with a regex, so it runs against a bare checkout. Installing the
+      # tree would make this job fail for reasons that have nothing to do with the spec.
+      - run: node scripts/check-attractor-drift.mjs
+        continue-on-error: true

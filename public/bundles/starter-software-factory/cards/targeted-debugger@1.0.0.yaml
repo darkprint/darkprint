@@ -36,9 +36,9 @@ dependencies:
   - acceptance-tester
 cannot:
   - acceptance-criteria
+will_not:
   - special-case the literal values in a trace
 
-requires_human: false
 risk_markers: []
 notes: >-
   `max_iterations: 3` is the declared cap for the `tester -> debugger -> tester` cycle, and it is
@@ -52,4 +52,3 @@ notes: >-
 
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0

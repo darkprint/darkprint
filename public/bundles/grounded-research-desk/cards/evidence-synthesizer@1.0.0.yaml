@@ -44,11 +44,11 @@ dependencies:
   - vector-recall
   - code-index-search
   - claim-verifier
-cannot:
+cannot: []
+will_not:
   - read the rule the fact-checker judges its citations by
   - assert anything the retrieved pool will not carry
 
-requires_human: false
 risk_markers: []
 notes: >-
   `gaps` is optional because the first pass has none, the node is written to be entered twice,
@@ -59,4 +59,3 @@ notes: >-
 
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0

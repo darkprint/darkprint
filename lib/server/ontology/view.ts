@@ -9,43 +9,47 @@
    reuses it for a whole resolution batch; a function that built a
    fresh view per call could not satisfy AC5 however it was tested.
 
-   **There is deliberately no module-scope cache keyed by version.**
-   That would turn a per-batch guarantee into a process-lifetime
-   one: an ontology released mid-batch would then serve two callers
-   different vocabularies under one version, and the second caller
-   would have no way to tell. Each `openView` reads the version as
-   it stands now and hands back an instance the caller owns. If a
-   cache is wanted it is T080's projection concern.
+   ── There is no version to open against ──
+   This used to take a `Db` and a version string, read the terms of
+   that published version out of `ontology_version` / `ontology_term`,
+   and refuse a version nobody had published. **Nothing consumed the
+   resolution.** A release stores its whole scorecard when it is
+   published (`release.autonomy`, `release.security`,
+   `release.phase_coverage`), so a published score is a fact written
+   once and never recomputed against an older vocabulary — which is
+   the only thing reading a historical version could have been for.
+   Two further facts settled it: `deprecated: {since, replacedBy}`
+   already lets the one living vocabulary add and retire terms
+   without minting a version, and half of what a score depends on
+   was never versioned at all (`DARKPRINT_CONFIG.security.weights`
+   has no version and never had one), so a resolvable vocabulary
+   version could not have made a score reproducible even in
+   principle.
+
+   What survives is the part that was doing work: the OVERLAY merge.
+   `extensions` is a bundle's own local vocabulary, supplied per
+   bundle by the caller from the release that declares it, and it is
+   the reason this function exists at all rather than every caller
+   naming `CORE_ONTOLOGY` itself. An overlay term sharing an id
+   replaces the core term *in place*, keeping its position, and the
+   shadowing is reported by `validate()` as
+   `bundle/ontology-mismatch` — both are `ontologyView`'s behaviour,
+   consumed here rather than reimplemented.
+
+   It is synchronous, and that is the whole visible shape of the
+   change at every call site.
    ============================================================ */
 
-import { ontologyView } from "@/lib/core";
+import { CORE_ONTOLOGY, ontologyView } from "@/lib/core";
 import type { OntologyTerm, OntologyView } from "@/lib/core";
-import type { Db } from "@/lib/db";
-
-import { UnknownOntologyVersionError } from "./errors";
-import { getOntologyVersion } from "./store";
-import { asOntology } from "./vocabulary";
 
 /**
- * Open one merged view over a published version, with a bundle's local overlay layered on.
+ * Open one merged view over the living vocabulary, with a bundle's local overlay layered on.
  *
- * `extensions` is how an overlay reaches the merge — supplied by the caller per bundle, from
- * the release that declares it. It is never a global row: this module stores core terms only.
- *
- * The merged view keeps the **base** version (AC1), which is what lets a card still declare
- * `ontology_version: 0.1.0` while using local terms. An overlay term sharing an id replaces
- * the base term *in place*, keeping its position, and the shadowing is reported by
- * `validate()` (AC2) — both are `ontologyView`'s behaviour, consumed here rather than
- * reimplemented.
+ * The merged view keeps the **core's** version (AC1), which is what a score records as the
+ * vocabulary it was computed under: `BlueprintAnalysis.ontologyVersion` reads
+ * `bp.ontology.ontology.version` and is stored on the release beside the score.
  */
-export async function openView(
-  db: Db,
-  version: string,
-  extensions?: readonly OntologyTerm[],
-): Promise<OntologyView> {
-  const record = await getOntologyVersion(db, version);
-  if (record === undefined) {
-    throw new UnknownOntologyVersionError(`Ontology version \`${version}\` is not published.`);
-  }
-  return ontologyView(asOntology(record.version, record.terms), extensions);
+export function openView(extensions?: readonly OntologyTerm[]): OntologyView {
+  return ontologyView(CORE_ONTOLOGY, extensions);
 }

@@ -35,11 +35,11 @@ outputs:
     description: Every command as issued, its output and its exit code, in the order they ran.
 dependencies:
   - blast-radius-check
-cannot:
+cannot: []
+will_not:
   - run a step the mitigation does not contain
   - touch a host outside the resolved target list
 
-requires_human: false
 risk_markers:
   - arbitrary-code-execution
   - secret-access
@@ -52,4 +52,3 @@ notes: >-
 
 version: 1.0.0
 author: mara-veil
-ontology_version: 0.1.0

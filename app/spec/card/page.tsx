@@ -107,12 +107,15 @@ import { getNodeCard } from "@/lib/content";
    REHOMED rather than dropped and both are still in the open:
 
      · "both are legitimate, and a reader has to be able to tell
-       which is which without running anything" is now the last
-       sentence of the `cannot` entry below, which is the field it
-       was always about. It is half of this page's thesis — panel B
-       asserted that the free-text entry is legitimate, and without
-       this the symmetry has one side and an entry nothing checks
-       reads as an entry that failed.
+       which is which without running anything" is the last
+       sentence of the `will_not` entry below. It moved once more
+       with the prohibition split: it had been rehomed onto
+       `cannot`, which was then one field holding both kinds of
+       entry, and the split gave the unchecked half a field of its
+       own. The sentence is now a description of the schema rather
+       than a warning about it, and it is still half of this
+       page's thesis — without it the symmetry has one side and a
+       promise nothing checks reads as a promise that failed.
 
      · "error bundle/prohibition-violated", the severity in word
        form beside the code, is the quoted diagnostic under the
@@ -133,8 +136,8 @@ import { getNodeCard } from "@/lib/content";
    §4.3's disclosure had been hiding the need for: `CARD_ROWS` is a
    table of top-level wire keys, and several of those keys hold
    structure the table has no column for — a port's four keys, the
-   two list fields that look alike and are not, the two kinds of
-   entry `cannot` accepts. No count is written into either the
+   two list fields that look alike and are not, the two prohibition
+   fields that answer to different readers. No count is written into either the
    docblock or the prose: the one that was there ("fifteen rows")
    was already wrong about a table this page does not own. Every
    claim in that list is
@@ -185,16 +188,17 @@ const BAND_H2 =
  * The table answers "what holds it" per top-level wire key, which is the right shape for
  * a reference and the wrong shape for six of them: `inputs · outputs` is one
  * row over a structure with four keys in it, `tools · risk_markers` is one row over two
- * lists that answer different questions, and `cannot` is one row over a list whose entries
- * are read two different ways depending on what they say.
+ * lists that answer different questions, and `cannot` and `will_not` are two rows a
+ * reader has to read against each other to see what separates them.
  *
  * Every sentence here is `lib/core/card/schema.ts` or `lib/core/card/validate.ts` read
  * back, and the point of each entry is the ROLE — what the subfield decides, and what
  * goes wrong when it is absent or wrong. A list that said "`type`: the port's type" would
  * be the table again at greater length.
  *
- * `cannot` is last on purpose: the quoted refusal under this list is the engine's answer
- * to its first kind of entry, and the two read as one argument in that order.
+ * The prohibition pair is last on purpose, `cannot` then `will_not`: the quoted refusal
+ * under this list is the engine's answer to the first of the two, and the three read as
+ * one argument in that order.
  */
 const SUBFIELDS: readonly { key: string; role: React.ReactNode }[] = [
   {
@@ -296,12 +300,25 @@ const SUBFIELDS: readonly { key: string; role: React.ReactNode }[] = [
     key: "cannot[]",
     role: (
       <>
-        Two kinds of entry appear in one list. An entry naming a <Id>data-type</Id> term is
-        a prohibition the resolver enforces: an incoming edge able to carry that type, or a
-        narrower kind of it, fails the bundle. An entry naming no term is read as free text
-        and checked by nothing. That is what the second line under <Id>cannot</Id> on the
-        card above is. Both are legitimate. A reader has to be able to tell which is
-        which without running anything.
+        Ontology <Id>data-type</Id> term ids, and nothing else. Each one is a prohibition
+        the resolver enforces: an incoming edge able to carry that type, or a narrower kind
+        of it, fails the bundle. A sentence written here is a <Id>card/unknown-term</Id>,
+        because the engine has no way to hold a graph to a sentence and this is the field
+        it holds graphs to.
+      </>
+    ),
+  },
+  {
+    key: "will_not[]",
+    role: (
+      <>
+        The prohibitions the author states and the engine cannot check: &ldquo;never opens
+        a shell&rdquo;, &ldquo;does not edit the code under test&rdquo;. Nothing reads
+        them, and they are addressed to whoever runs the node and to the agent that reads
+        the specification. These two fields were one field until the split, and the reason
+        they are two is the sentence that used to sit here apologising for it. Both are
+        legitimate. A reader has to be able to tell which is which without running
+        anything.
       </>
     ),
   },
@@ -354,7 +371,7 @@ export default function SpecCardPage() {
           reach. Fields, then the file.
 
           Every value is read off `code-builder@1.0.0`, the card the rest of the site opens
-          with. A page explaining what `mcp` and `cannot` are, illustrated with invented
+          with. A page explaining what `mcp` and the prohibition fields are, illustrated with invented
           values, would be teaching a schema nobody ships. */}
       {reachCard !== undefined && (
         <section id="card-reach" className="scroll-mt-24 border-b border-line bg-void py-12 sm:py-16">
@@ -364,8 +381,19 @@ export default function SpecCardPage() {
               tools={reachCard.tools.length > 0 ? reachCard.tools.join(", ") : "none"}
               mcp={reachCard.mcp.length > 0 ? reachCard.mcp.join(", ") : "none"}
               skill={reachCard.skill ?? "none"}
+              /* The first entry of each, and both fields are read rather than one being
+                 derived from the other by position. This page used to pass
+                 `cannot[0]` for the term and read `cannot[1]` as the prose two figures
+                 down, which worked only because the archive's one enforced card happened
+                 to write them in that order. The two fields make the read say what it
+                 means. */
               cannot={
-                reachCard.cannot.length > 0 ? (reachCard.cannot[0] ?? "") : "nothing declared"
+                reachCard.cannot.length > 0 ? (reachCard.cannot[0] ?? "") : "no type refused"
+              }
+              willNot={
+                reachCard.willNot.length > 0
+                  ? (reachCard.willNot[0] ?? "")
+                  : "nothing undertaken"
               }
               riskMarkers={
                 reachCard.riskMarkers.length > 0

@@ -40,10 +40,9 @@ function card(over: Partial<NodeCard> & Pick<NodeCard, "id">): NodeCard {
     outputs: [],
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: [],
     version: "1.0.0",
-    ontologyVersion: "0.1.0",
     ...over,
   };
 }

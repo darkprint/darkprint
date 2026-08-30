@@ -67,9 +67,10 @@ export interface ValidateBundleInput {
    * The vocabulary to resolve against, when the caller has one. Defaults to the shipped
    * core with `extensions` layered on, which is exactly what `lib/content/read.ts:146`
    * builds for the archive — so AC1 reproduces the build by construction rather than by
-   * coincidence. A caller holding a *stored* ontology version (T030's `openView`) passes
-   * it here, which is the only way B-08's re-score against an older vocabulary is drivable
-   * from a module that takes no `Db`.
+   * coincidence. `openView` passes one here, which is how a bundle's own overlay reaches
+   * the resolution from a module that takes no `Db`. It used to be how a caller holding a
+   * STORED ontology version drove B-08's re-score against an older vocabulary; there are no
+   * stored versions, and the parameter is now about the overlay alone.
    */
   ontology?: OntologyView;
 }

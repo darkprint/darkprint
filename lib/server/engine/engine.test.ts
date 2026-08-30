@@ -628,7 +628,7 @@ describe("every bound owes BOTH ends, and one of them was unheld", () => {
     expect(() =>
       validateBundle(
         {
-          manifest: { slug: "p", title: "P", summary: "s", tags: [], ontologyVersion: "0.1.0" },
+          manifest: { slug: "p", title: "P", summary: "s", tags: [] },
           dot: "digraph g { a }",
           cardFiles,
         },
@@ -641,7 +641,7 @@ describe("every bound owes BOTH ends, and one of them was unheld", () => {
        accepted submission does read them. */
     reads = 0;
     validateBundle({
-      manifest: { slug: "p", title: "P", summary: "s", tags: [], ontologyVersion: "0.1.0" },
+      manifest: { slug: "p", title: "P", summary: "s", tags: [] },
       dot: "digraph g { a }",
       cardFiles,
     });

@@ -42,10 +42,10 @@ outputs:
 dependencies:
   - extract
   - repair
-cannot:
+cannot: []
+will_not:
   - invent a value to fill a gap
 
-requires_human: false
 risk_markers: []
 notes: >-
   `fields` is typed `structured` rather than `json` on purpose: the same normalizer takes JSON
@@ -55,4 +55,3 @@ notes: >-
 
 version: 1.0.0
 author: lupo
-ontology_version: 0.1.0

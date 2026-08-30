@@ -11,7 +11,7 @@
 
    So for two passes the node page's six marks lit only for a reader
    who ARRIVED on the fragment. Opening `/nodes/<id>#interfaces` in
-   the address bar drew the cyan edge; clicking `Cannot receive` in
+   the address bar drew the cyan edge; clicking the prohibition row in
    the rail moved the scroll and left the edge where it was. Measured
    in Chrome, both halves, and neither `tsc`, `eslint` nor the suite
    noticed — the class was compiled, the element matched it, and the

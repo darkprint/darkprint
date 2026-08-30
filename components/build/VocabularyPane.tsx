@@ -89,9 +89,11 @@ function spendersByTerm(
     for (const p of card.phases) add(p, nodeId);
     add(card.type, nodeId);
     for (const port of [...card.inputs, ...card.outputs]) add(port.type, nodeId);
-    /* A `cannot` entry naming a data type is a term the bundle spends: the resolver
-       enforces it against every incoming edge. An entry naming anything else is a sentence
-       and `view.get` returns nothing for it, which is the filter above. */
+    /* Every `cannot` entry is a term the bundle spends: the resolver enforces it against
+       every incoming edge. `willNot` is deliberately not walked. Its entries are sentences
+       and no vocabulary lookup can succeed on one, so indexing them would have been a
+       no-op that read as a decision, and a term id misfiled there is already
+       `card/prohibition-misfiled` at the card, where the author can move it. */
     for (const c of card.cannot) add(c, nodeId);
     for (const m of card.riskMarkers) add(m, nodeId);
   }

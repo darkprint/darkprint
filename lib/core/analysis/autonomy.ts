@@ -30,6 +30,61 @@
    nodes produced the score, and *where* the people are — both
    false about the same node.
 
+   ── Two readings, because there are two questions ──
+   Doc 3 §6's fraction is a headcount, and a headcount weighs
+   every node the same. That is fine for "how much of this graph
+   runs alone" and useless for "who is in charge of it": six
+   branches running unattended under one human approval score the
+   same as six unattended nodes in a line, and a `manager-loop`
+   deciding whether the whole graph goes round again counts for
+   exactly as much as the node it supervises. The metric had one
+   number for two questions and was answering only the first.
+
+   So there are two, and they are computed over the same
+   contributions rather than from each other:
+
+     staffingFraction  nodes that run alone / nodes in the graph.
+                       Doc 3 §6, unchanged, to the digit. It is
+                       what `autonomousNodes` and `totalNodes`
+                       have always counted.
+
+     control.fraction  of the nodes that DECIDE whether and how
+                       other nodes run, the share that runs alone.
+                       A control point is a node whose type carries
+                       `governsFlow` through its `broader` chain:
+                       the `evaluative` branch, the `orchestration`
+                       branch, and `human-gate`, whose definition
+                       is that a person approves or rejects.
+                       `ontology/resolve.ts` owns that membership
+                       and this file only asks it.
+
+   `fraction` — the number the bands read and every surface
+   prints — is the weaker of the two. A graph is as autonomous as
+   its weaker half: one where every worker runs alone and a person
+   makes every routing call is not running by itself in any sense a
+   reader would recognise, and one where every decision is
+   automatic but people do all the work is not either. The
+   combination needs no weight to tune, which is deliberate. A
+   blend would put a number in the score that no document
+   justifies, and the class names stay true under a minimum in a
+   way they do not under an average: `assisted` is a graph where
+   the machine assists the person, and a graph whose every decision
+   is a person's is exactly that however many nodes it has.
+
+   The one tunable is `autonomy.minControlPoints`. A graph with a
+   single control point has a control fraction of 0 or 1 and
+   nothing in between, and swinging a whole class off one node is
+   reading a distribution from one observation. Below the floor the
+   reading is still computed, still reported and still in the
+   rationale; it just does not decide the band. Same shape as
+   `telemetry.minRuns` and the same reason.
+
+   Doc 2 §1.1 governs the second reading exactly as it governs the
+   first. "A person makes two of the three decisions here" is a
+   description of a design, and the design is often the point: a
+   blueprint that touches something irreversible is a blueprint
+   whose author wanted a person on that call.
+
    ── A class, and a shape with a name ──
    The reading a surface renders is `autonomyClass`, not `level`.
    Two scales were both arriving as a small integer — the 1-to-5
@@ -58,7 +113,8 @@ import type { Diagnostic, DiagnosticOptions } from "../diagnostics";
 import { warning } from "../diagnostics";
 import type { CardRef, NodeCard } from "../card/schema";
 import type { ResolvedBlueprint, ResolvedNode } from "../bundle/types";
-import type { OntologyView } from "../ontology/resolve";
+import type { HumanCitation, OntologyView } from "../ontology/resolve";
+import { controlCitation, humanCitation } from "../ontology/resolve";
 import type { DarkprintConfig } from "../config";
 import { DARKPRINT_CONFIG } from "../config";
 
@@ -68,20 +124,30 @@ import { DARKPRINT_CONFIG } from "../config";
 /**
  * Why a node counted as one where a person acts.
  *
- * `"human-in-the-loop-type"` — the card's `type` is subsumed by doc 3 §3's
- * `human-in-the-loop` category. `"requires-human-flag"` — the type says nothing about
- * people and the author set `requires_human` anyway, which doc 3 §3's validator note
- * explicitly allows in that direction.
+ * One member, and it is the whole of the answer: the card's `type` is subsumed by doc 3
+ * §3's `human-in-the-loop` category. There used to be a second, `"requires-human-flag"`,
+ * for a type that said nothing about people on a node whose card set `requires_human`
+ * anyway. That field is gone, so the reason it named cannot occur.
+ *
+ * It stays a named union rather than collapsing into the `requiresHuman` boolean because
+ * the reason is what the explainability panel cites next to the node, and a second reason
+ * arriving here is a second source of truth about where the people are — the exact thing
+ * this metric was reading twice. A union of one says so at the type.
  */
-export type HumanReason = "requires-human-flag" | "human-in-the-loop-type";
+export type HumanReason = "human-in-the-loop-type";
 
 /**
  * The named class of a graph's autonomy, and the thing every interface renders.
  *
  * Four names for four shapes a graph can have. They are co-ordinate, the way "acyclic" and
- * "cyclic" are: `assisted` describes a graph where people act at most of the nodes and
- * `closed-loop` one where they act at none, and neither is the destination of the other.
- * Doc 2 §1.1 rules out sorting a gallery by them, ranking them, or awarding one.
+ * "cyclic" are: `assisted` describes a graph a person is in for most of it and
+ * `closed-loop` one they are in for none of it, and neither is the destination of the
+ * other. Doc 2 §1.1 rules out sorting a gallery by them, ranking them, or awarding one.
+ *
+ * "Most of it" is now measured over both readings and not only over the headcount, so
+ * `assisted` also names the graph whose workers all run alone while a person makes every
+ * routing call. That is the honest word for it: the machine is assisting the person, which
+ * is what the name has always said.
  *
  * The class exists because doc 2 §1.1's tension had grown a second head. Two different
  * scales were both showing up as a small integer: the organisational maturity ladder,
@@ -91,6 +157,38 @@ export type HumanReason = "requires-human-flag" | "human-in-the-loop-type";
  * arithmetic and an ordinal is what sorts, and no user-facing surface prints it.
  */
 export type AutonomyClass = "assisted" | "supervised" | "conditional" | "closed-loop";
+
+/**
+ * The second reading: of the nodes that decide whether and how other nodes run, how many
+ * run without a person.
+ *
+ * Separate from the headcount rather than folded into it, because they answer different
+ * questions and a reader has to be able to see both. A graph can run almost entirely
+ * unattended and still have a person on every routing call, and the headcount alone
+ * cannot say so.
+ */
+export interface AutonomyControl {
+  /** Nodes whose type governs whether and how other nodes run. */
+  totalNodes: number;
+  /**
+   * Of those, the ones that have a card and nobody in them.
+   *
+   * `totalNodes − unattendedNodes` is not the number staffed, for the same reason it is
+   * not on the result above: a control point whose card is missing is in neither set.
+   */
+  unattendedNodes: number;
+  /** unattendedNodes / totalNodes, 0–1, 4dp. 0 when the graph declares no control point. */
+  fraction: number;
+  /**
+   * True when the graph declares at least `config.autonomy.minControlPoints` of them, and
+   * therefore whether `fraction` on the result above read this reading at all.
+   *
+   * False is not a defect and not an absence of control: a graph with one decision in it
+   * has one decision, and the reading is reported either way. It says only that one
+   * observation is not a share.
+   */
+  counted: boolean;
+}
 
 /** One node's share of the fraction, with the sentence the UI shows next to it. */
 export interface AutonomyContribution {
@@ -112,6 +210,15 @@ export interface AutonomyContribution {
    * "runs unattended" over a card nobody wrote.
    */
   resolved: boolean;
+  /**
+   * True when this node's type decides whether and how *other* nodes run, which is what
+   * puts it in the second reading. False for a node whose card is missing, on the same
+   * grounds as `requiresHuman`: nothing states what it does, so nothing states that it
+   * decides anything.
+   */
+  governsFlow: boolean;
+  /** The ontology term that made it a control point, when `governsFlow` is true. */
+  controlTerm?: string;
   /** One sentence for the UI: what this node does and who is in it. */
   explanation: string;
 }
@@ -158,8 +265,29 @@ export interface AutonomyResult {
   level: 1 | 2 | 3 | 4;
   /** The class in title case, ready to drop into a sentence. Doc 2 §1.1 governs it. */
   label: string;
-  /** unattended / total, 0–1, rounded to 4dp. */
+  /**
+   * The reading the band used, 0–1, rounded to 4dp, and **the one a surface prints**.
+   *
+   * The weaker of `staffingFraction` and `control.fraction`, or `staffingFraction` alone
+   * when the graph declares too few control points for the second reading to be a share
+   * (`control.counted`). It is the number quoted in `rationale`'s comparison, so what a
+   * page shows as a percentage and what the sentence under it says can never disagree.
+   *
+   * It is no longer `autonomousNodes / totalNodes`. That quotient is `staffingFraction`
+   * below, and the two are the same number for every graph whose decisions run the way
+   * the rest of it does.
+   */
   fraction: number;
+  /**
+   * autonomousNodes / totalNodes, 0–1, 4dp. Doc 3 §6's headcount, unchanged: how many of
+   * the graph's nodes run alone.
+   *
+   * Published rather than left to the caller because the two counts beside it are already
+   * the thing surfaces get wrong by dividing and subtracting for themselves.
+   */
+  staffingFraction: number;
+  /** The second reading: how much of the deciding runs unattended. */
+  control: AutonomyControl;
   /**
    * Nodes that have a card and no person in them.
    *
@@ -216,20 +344,12 @@ function labelForLevel(level: 1 | 2 | 3 | 4): string {
 }
 
 /**
- * The abstract category of doc 3 §3, and the only membership test this metric performs
- * on a type. Never a hard-coded list of type ids: doc 3 §3 says a human type added to the
- * vocabulary later must change this metric's answer without the metric's code being
- * touched, which is the stated reason the category exists at all.
- */
-const HUMAN_IN_THE_LOOP = "human-in-the-loop";
-
-/**
  * Score a resolved blueprint's autonomy.
  *
  * The denominator is *nodi totali* (doc 3 §6): every node in the graph, whether or not its
- * card was found. A node with no card has no `requires_human` and no `type` to read, so
- * nothing states how it runs and it cannot be quietly dropped — leaving it out would let a
- * bundle whose cards are nearly all missing come back "Closed-loop" off its one good node.
+ * card was found. A node with no card has no `type` to read, so nothing states how it runs
+ * and it cannot be quietly dropped — leaving it out would let a bundle whose cards are
+ * nearly all missing come back "Closed-loop" off its one good node.
  *
  * It is equally not a node where a person acts. The numerator is therefore over three
  * categories and not two — unattended, staffed, and undescribed — and the third one is
@@ -268,6 +388,10 @@ export function computeAutonomy(
       level: 1,
       label: labelForLevel(1),
       fraction: 0,
+      staffingFraction: 0,
+      // A graph with no nodes has no control point either, so the second reading is the
+      // empty one rather than a zero anybody could read as "every decision is a person's".
+      control: { totalNodes: 0, unattendedNodes: 0, fraction: 0, counted: false },
       autonomousNodes: 0,
       totalNodes: 0,
       contributions,
@@ -287,7 +411,13 @@ export function computeAutonomy(
   }
 
   const bands = config.autonomy;
-  const fraction = round4(autonomousNodes / totalNodes);
+  const staffingFraction = round4(autonomousNodes / totalNodes);
+  const control = controlReading(contributions, bands.minControlPoints);
+  // The weaker of the two readings, and the reason the file has two of them: a graph whose
+  // workers all run alone while a person makes every routing call is not running by itself,
+  // and the headcount on its own says it is. Both are rounded before the comparison, so the
+  // number a page prints is the number that was compared.
+  const fraction = control.counted ? Math.min(staffingFraction, control.fraction) : staffingFraction;
   // The level is derived from the *rounded* fraction so the number shown to the user
   // and the comparison in the rationale can never disagree.
   const level: 1 | 2 | 3 | 4 =
@@ -317,6 +447,11 @@ export function computeAutonomy(
   // `bp.phaseCoverage` is computed by `computePhaseCoverage` before this runs, so this
   // reads it rather than re-deriving it: two derivations of one fact are two answers to
   // one question. `missing` is already the five minus the covered, in lifecycle order.
+  //
+  // The second reading cannot take this badge away and does not appear in the test. Every
+  // control point is a node, so `autonomousNodes === totalNodes` already says each of them
+  // has a card and nobody in it, which makes `control.fraction` 1 whenever this holds. A
+  // clause for it would be a condition that is true whenever the one beside it is.
   const isDarkFactory = autonomousNodes === totalNodes && bp.phaseCoverage.missing.length === 0;
 
   const comparison =
@@ -334,12 +469,47 @@ export function computeAutonomy(
     level,
     label,
     fraction,
+    staffingFraction,
+    control,
     autonomousNodes,
     totalNodes,
     contributions,
-    rationale: `${unattendedClause(autonomousNodes, totalNodes)}, ${humanClause(humanNodes)}${unresolvedClause(unresolvedIds.length)}. ${comparison} → level ${level} (${label}).`,
+    rationale: `${unattendedClause(autonomousNodes, totalNodes)}, ${humanClause(humanNodes)}${unresolvedClause(unresolvedIds.length)}.${controlClause(control)} ${comparison} → level ${level} (${label}).`,
     ontologyVersion,
     diagnostics,
+  };
+}
+
+/**
+ * The second reading, over the contributions the first one is counted from.
+ *
+ * Counted from the same list rather than from a second walk of the graph, so the two
+ * readings can never disagree about which node is which.
+ *
+ * A node whose card is missing is in neither count, which is the one place the two
+ * readings differ on purpose. The headcount keeps it in its denominator because doc 3 §6
+ * divides by *nodi totali* and dropping it would let a bundle of broken pointers come back
+ * closed-loop. This reading cannot: `governsFlow` is read off a card's `type`, and a node
+ * with no card has no type, so calling it a control point would be inventing a decision
+ * nobody wrote. That is also why `unattendedNodes` does not re-test `resolved` — a
+ * contribution only carries `governsFlow` when it has a card.
+ */
+function controlReading(
+  contributions: readonly AutonomyContribution[],
+  minControlPoints: number,
+): AutonomyControl {
+  const totalNodes = contributions.reduce((n, c) => (c.governsFlow ? n + 1 : n), 0);
+  const unattendedNodes = contributions.reduce(
+    (n, c) => (c.governsFlow && !c.requiresHuman ? n + 1 : n),
+    0,
+  );
+  return {
+    totalNodes,
+    unattendedNodes,
+    // 0 rather than 1 for a graph with no control points, because a fraction over nothing
+    // is not a full mark. `counted` is what stops it being read as one.
+    fraction: totalNodes === 0 ? 0 : round4(unattendedNodes / totalNodes),
+    counted: totalNodes >= minControlPoints,
   };
 }
 
@@ -391,6 +561,10 @@ function unresolved(nodeId: string): AutonomyContribution {
     name: nodeId,
     requiresHuman: false,
     resolved: false,
+    // For the same reason as `requiresHuman` above: the second reading asks what a node's
+    // `type` decides, and there is no type here to ask. A node nobody described is not a
+    // node this bundle can claim decides anything.
+    governsFlow: false,
     explanation: `No card in the bundle instantiates \`${nodeId}\`, so nothing states how it runs; it counts in the total with no person recorded at it.`,
   };
 }
@@ -403,13 +577,21 @@ function contributionFor(
   const card = node.card;
   const what = actionPhrase(card);
 
-  // The type is tested first, and wins when both would fire. Doc 3 §3's validator note
-  // makes `requires_human: true` mandatory on a human type, so on well-formed data the
-  // flag is a consequence of the type rather than an independent fact — citing the flag
-  // there would hide the actual cause and leave "human-in-the-loop-type" unreachable.
-  // The flag keeps its own reason for the case doc 3 §3 allows in the other direction:
-  // a type that says nothing about people on a node the author still staffs.
+  // The type, and nothing beside it. This used to test the type first and fall through to
+  // the card's own `requires_human` when the type said nothing about people, which meant
+  // the metric had two inputs and no rule holding them together in the direction that
+  // mattered: `type: human-gate` with `requires_human: false` counted as unattended while
+  // the drawing put a person on the same node. The field is gone and `ontology/resolve.ts`
+  // owns the one answer, so this reads it rather than deciding anything itself.
   const citation = humanCitation(ontology, card.type);
+  // The second reading's half of the same question, asked of the same view and answered by
+  // the same module. `human-gate` is the type that comes back true from both, which is the
+  // whole reason the two are asked separately: who acts and what is decided are different
+  // facts about one node, and one field cannot carry both.
+  const control = controlCitation(ontology, card.type);
+  const governs =
+    control === undefined ? { governsFlow: false as const } : { governsFlow: true as const, controlTerm: control.term };
+
   if (citation !== undefined) {
     return {
       nodeId: node.nodeId,
@@ -419,19 +601,8 @@ function contributionFor(
       resolved: true,
       reason: "human-in-the-loop-type",
       term: citation.term,
+      ...governs,
       explanation: `${what} (${citeType(card.type, citation)}). A person acts here.`,
-    };
-  }
-
-  if (card.requiresHuman) {
-    return {
-      nodeId: node.nodeId,
-      ref: node.ref,
-      name: card.name,
-      requiresHuman: true,
-      resolved: true,
-      reason: "requires-human-flag",
-      explanation: `${what} (requires_human: true). A person acts here.`,
     };
   }
 
@@ -441,53 +612,9 @@ function contributionFor(
     name: card.name,
     requiresHuman: false,
     resolved: true,
+    ...governs,
     explanation: `${what} (type: ${card.type}). Runs unattended.`,
   };
-}
-
-/** The term to name as the reason, and how the declared type reaches it. */
-interface HumanCitation {
-  term: string;
-  /** `self` — the type itself; `broader` — an ancestor; `deprecation` — its successor. */
-  via: "self" | "broader" | "deprecation";
-}
-
-/**
- * Whether this type puts a person in the loop, and which term says so.
- *
- * Membership is decided by `isA(type, "human-in-the-loop")` alone (doc 3 §6). `impliesHuman`
- * is deliberately *not* a second membership rule: it only picks the most specific term to
- * cite inside a chain that already qualifies. A local type carrying the flag but rooted
- * outside the category is not counted here — it is counted when its cards set
- * `requires_human`, which doc 3 §3 permits — because two independent ways to be "human"
- * would defeat the point of having the category at all.
- */
-function humanCitation(ontology: OntologyView, type: string): HumanCitation | undefined {
-  const own = citationWithin(ontology, type);
-  if (own !== undefined) return own;
-
-  // Doc 1 §6.2: a deprecated term stays valid, and it may predate the category its
-  // successor sits under, so follow the redirect once before concluding otherwise.
-  const resolved = ontology.resolve(type, "node-type");
-  if (resolved === undefined || resolved.term.id === type) return undefined;
-  if (citationWithin(ontology, resolved.term.id) === undefined) return undefined;
-  // The successor is cited rather than the ancestor that carries the flag: "superseded by
-  // human-gate" is true, "superseded by human-in-the-loop" would not be.
-  return { term: resolved.term.id, via: "deprecation" };
-}
-
-/** The citation for a type taken as written, or `undefined` when it is not in the category. */
-function citationWithin(ontology: OntologyView, id: string): HumanCitation | undefined {
-  if (!ontology.isA(id, HUMAN_IN_THE_LOOP)) return undefined;
-  for (const term of ontology.ancestors(id)) {
-    if (term.impliesHuman === true) {
-      return { term: term.id, via: term.id === id ? "self" : "broader" };
-    }
-  }
-  // Reached by a term that sits under the category without repeating the flag — and by
-  // the category itself, which `isA` answers reflexively even if the view has never
-  // heard of it, so this branch never depends on the term object existing.
-  return { term: HUMAN_IN_THE_LOOP, via: id === HUMAN_IN_THE_LOOP ? "self" : "broader" };
 }
 
 /** The parenthetical that names the type and, when they differ, the term that answered. */
@@ -549,6 +676,29 @@ function unresolvedClause(unresolved: number): string {
   return unresolved === 1
     ? ", 1 has no card in the bundle"
     : `, ${unresolved} have no card in the bundle`;
+}
+
+/**
+ * " 2 of 3 control points run unattended." — the second reading, as its own sentence.
+ *
+ * Empty for a graph that declares none, so the sentence such a blueprint produces is
+ * byte-for-byte what it was before the second reading existed, the way `unresolvedClause`
+ * leaves a fully resolved bundle alone. The comparison that follows quotes whichever
+ * number the band actually read, so a reader who can see both counts can also see which
+ * one decided.
+ *
+ * Below the floor the sentence says so rather than omitting the reading: a count the band
+ * ignored and a count that does not exist are different facts about a graph, and doc 2
+ * §1.1's rule that the indicator shows *where* the people are applies to the decisions as
+ * much as to the work. Plurality follows the total, matching `unattendedClause`.
+ */
+function controlClause(control: AutonomyControl): string {
+  if (control.totalNodes === 0) return "";
+  const points = `control point${control.totalNodes === 1 ? "" : "s"}`;
+  if (!control.counted) {
+    return ` The graph declares ${control.totalNodes} ${points}, which is one reading rather than a share.`;
+  }
+  return ` ${control.unattendedNodes} of ${control.totalNodes} ${points} run unattended.`;
 }
 
 /** There is no graph at all — no id, no card, nothing to read a type off. */

@@ -382,9 +382,9 @@ function Field({
    * so I suggested to use a more evocative name … but ONLY for the home page". A term with
    * a footnote is still a term first. See `CardStackFigure` for what replaced it.
    *
-   * The prop stays because a card whose `cannot[0]` has no plain sibling in the archive
-   * will want it, and because it is the only place the two-line row's alignment is worked
-   * out. Nothing calls it today.
+   * The prop stays because a card that refuses a type under `cannot` and states no
+   * `will_not` sentence beside it will want it, and because it is the only place the
+   * two-line row's alignment is worked out. Nothing calls it today.
    */
   hint?: string;
   /**
@@ -700,8 +700,8 @@ function StatusRow({ filled, children }: { filled?: boolean; children: React.Rea
  * ── Every value is the card's ──
  * Nothing here is authored except four labels: `IN`, `OUT`, `Must never arrive:` and the
  * glyph. Id, version, author, type, phase, model, the first input and output with their
- * types, and both `cannot` entries are read off the `card` prop, which the caller reads off
- * `content/cards/`. A picture with an invented field in it is the one thing this beat cannot
+ * types, and the `cannot` term and the `will_not` sentence are read off the `card` prop,
+ * which the caller reads off `content/cards/`. A picture with an invented field in it is the one thing this beat cannot
  * afford, because three seconds later it turns into the file it is a picture of.
  */
 function StagePlate({ card }: { card: NodeCard }) {
@@ -713,19 +713,25 @@ function StagePlate({ card }: { card: NodeCard }) {
      acceptance-criteria` so I suggested to use a more evocative name instead of
      `acceptance-criteria` but ONLY for the home page."
 
-     `cannot` is a list, and this archive writes it as a pair: the ontology term the resolver
-     enforces, then the same rule in words. `code-builder@1.0.0` has `acceptance-criteria`
-     and "read the checks the work will be run against". So the band prints the SECOND entry
-     and nothing is invented — the evocative name was already in the file, one line down from
-     the technical one.
+     The pair the band prints is `will_not[0]` in words and `cannot[0]` as the term.
+     `code-builder@1.0.0` has `acceptance-criteria` under `cannot` and "read the checks the
+     work will be run against" under `will_not`, so the evocative name is already in the
+     file and nothing here is invented.
 
-     That is the whole reason the term is not simply rewritten. It names a data type in the
-     ontology, and drawing a different word would have this figure disagree with the file it
-     turns into three seconds later, on the beat whose one claim is that the two are the same
-     thing. The term stays visible at the right end of the band, so the plate shows both
-     halves of the pair rather than choosing between them. */
-  const plain = card.cannot[1] ?? card.cannot[0];
-  const term = card.cannot[0];
+     Read off two fields now, and that is the repair rather than a rename. This was
+     `cannot[1] ?? cannot[0]` and `cannot[0]`, which is index-0-is-the-term as a
+     convention: it held because the one card in the archive with an enforced entry happened
+     to write it first, and a card that wrote the two the other way round would have put a
+     sentence where the term goes and a term in the band. The split makes the read say what
+     it means, and the fallbacks cover a card that fills only one of the two.
+
+     The term is not simply rewritten into plain words, for the reason it never was. It
+     names a data type in the ontology, and drawing a different word would have this figure
+     disagree with the file it turns into three seconds later, on the beat whose one claim
+     is that the two are the same thing. The term stays visible at the right end of the
+     band, so the plate shows both halves rather than choosing between them. */
+  const plain = card.willNot[0] ?? card.cannot[0];
+  const term = card.cannot[0] ?? card.willNot[0];
 
   return (
     <div

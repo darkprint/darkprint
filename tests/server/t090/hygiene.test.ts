@@ -210,25 +210,12 @@ describe("every refusal is sealed, per the governance clause", () => {
     );
   }, 120_000);
 
-  it("seals `…the ontology version this release names is not published.`", async () => {
-    const own = await scratchDatabase("hygiene_noont");
-    try {
-      const account = await seedAccount(own, "hygnoont");
-      const r = await seedRelease(own, account, bundleBySlug("starter-software-factory"));
-      const mod = await loadExport();
-      const outcome = await outcomeOf(() =>
-        requiredFn(mod, "exportRelease")(own.db, ANONYMOUS, r.bundleId, r.digest),
-      );
-      expect(outcome.kind).toBe("throw");
-      expectSealed(
-        (outcome as { error: unknown }).error,
-        ADMISSIBLE.ontologyUnpublished,
-        "`exportRelease` with the ontology version absent",
-      );
-    } finally {
-      await own.drop();
-    }
-  }, 300_000);
+  /* There is no cell sealing `…the ontology version this release names is not published.`
+     because there is no such form. It was raised when a release's manifest named a vocabulary
+     version nobody had published; a manifest names none and `openView` reaches no store, so
+     the throw this sealed cannot happen. `export.test.ts` drives the same fixture — a release
+     in a database with no published vocabulary — and asserts it exports, which is what keeps
+     the removal from being invisible. */
 
   it("seals `…this release's stored vocabulary is not a term list.`", async () => {
     const own = await scratchDatabase("hygiene_badvocab");

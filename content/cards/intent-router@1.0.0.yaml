@@ -38,11 +38,11 @@ outputs:
     description: The event enriched with its label, ready for whichever branch picks it up.
 dependencies:
   - ticket
-cannot:
+cannot: []
+will_not:
   - change the payload it routes
   - leave an event unrouted
 
-requires_human: false
 risk_markers: []
 notes: >-
   The default lane is what stops anything falling on the floor. `labels` is configuration rather
@@ -50,4 +50,3 @@ notes: >-
 
 version: 1.0.0
 author: hachi
-ontology_version: 0.1.0

@@ -15,13 +15,23 @@ import { readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as YAML from "yaml";
-import { CORE_ONTOLOGY, cardRef, emitAttractorDot, lintAttractor, parseDot, type CardRef, type NodeCard } from "@/lib/core";
+import { cardRef, emitAttractorDot, lintAttractor, parseDot, type CardRef, type NodeCard } from "@/lib/core";
 import { contentVocabulary, readContent } from "@/lib/content/read";
-import { BUNDLE_VOCABULARY, FACTORY_DOT, cardFilePath } from "@/lib/content/bundle-export";
+import { BUNDLE_VOCABULARY, cardFilePath } from "@/lib/content/bundle-export";
+
+/**
+ * The name the compiled, runnable copy of the graph carried until the owner instructed it
+ * out of every published folder (2026-08-25).
+ *
+ * A literal. This name was a constant in `lib/content/bundle-export` and was bound here;
+ * the constant was deleted once the two frozen suites that were its only other consumers
+ * were unfrozen, so no definition is left to track. The 404 below is unchanged in force:
+ * the path a release used to serve a compiled pipeline at is not served any more.
+ */
+const RUNNABLE_DOT = "factory.dot";
 import { schema, type Db, type DbClient } from "@/lib/db";
 import { addRelease, createBundle } from "@/lib/server/archive";
 import { addCard } from "@/lib/server/cards";
-import { addOntologyVersion } from "@/lib/server/ontology";
 import type { Actor } from "@/lib/server/policy";
 import { and, eq } from "drizzle-orm";
 import { createTestDb, type TestDb } from "../../../tests/support/db";
@@ -70,12 +80,9 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
     const loaded = readContent();
     const vocabulary = contentVocabulary();
 
-    /* Every ontology version any manifest names. The archive resolves against the core, so
-       in practice this is one row — derived rather than assumed, so a manifest that names
-       another version seeds it instead of failing on a lookup nobody would attribute. */
-    for (const version of new Set(loaded.map((entry) => entry.bundle.manifest.ontologyVersion))) {
-      await addOntologyVersion(db, { version, terms: CORE_ONTOLOGY.terms });
-    }
+    /* No ontology version is seeded. This used to walk every version any manifest named and
+       publish a row for each, because `openView` refused a version nobody had published.
+       A manifest names none and the view is a merge over `CORE_ONTOLOGY`. */
 
     /* Cards first, globally, sorted by (id, version): one card version can be pinned by two
        blueprints and is one published document either way, and `addCard` checks a declared
@@ -206,7 +213,7 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
   /* --------------------- AC4 --------------------- */
 
   /**
-   * AC4 used to be checked on the served bytes: `serveFile(..., FACTORY_DOT)` returned a
+   * AC4 used to be checked on the served bytes: `serveFile(..., "factory.dot")` returned a
    * compiled graph and this asserted it parsed and linted clean. Owner instruction,
    * 2026-08-25: `exportBundle` no longer writes `factory.dot` into any release's folder, so
    * there is nothing left to serve at that path — the two cases below hold what replaced it.
@@ -260,7 +267,7 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
     });
 
     await expect(
-      serveFile(db, ANONYMOUS, { ownerHandle: "exporter", slug: bundle.slug }, FACTORY_DOT),
+      serveFile(db, ANONYMOUS, { ownerHandle: "exporter", slug: bundle.slug }, RUNNABLE_DOT),
     ).rejects.toThrow("serveFile: no such file in this release.");
   });
 

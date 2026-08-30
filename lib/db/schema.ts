@@ -109,7 +109,21 @@ export const handleReservation = pgTable("handle_reservation", {
 
 /* --------------------- ontology_version / ontology_term (B-04, B-07, B-08) --------------------- */
 
-/** One row per published version of the *core*, shared vocabulary. */
+/* ── NOTHING READS OR WRITES THESE TWO TABLES ──
+   They held published versions of the core vocabulary so a release could be resolved
+   against the version its manifest named. Nothing ever consumed that: a release stores its
+   whole scorecard when it is published, so no score is recomputed against a historical
+   vocabulary, and the version a score WAS computed under is on the score
+   (`AutonomyResult.ontologyVersion`, inside `release.autonomy`). The one living vocabulary
+   is `CORE_ONTOLOGY`, in the process, and `deprecated: {since, replacedBy}` is how a term is
+   retired inside it.
+
+   The declarations stay and no migration drops them. `release.scored_ontology_version_id`
+   still references `ontology_version`, so dropping the table is a schema change with its own
+   ordering, and it is a separate decision from removing the code. A row here is inert: it is
+   read by nothing, so it can neither help nor mislead. */
+
+/** One row per published version of the *core*, shared vocabulary. Written by nothing. */
 export const ontologyVersion = pgTable("ontology_version", {
   id: uuid("id").primaryKey().defaultRandom(),
   version: text("version").notNull(),
@@ -228,6 +242,10 @@ export const release = pgTable("release", {
   autonomy: jsonb("autonomy"),
   security: jsonb("security"),
   phaseCoverage: jsonb("phase_coverage"),
+  /* Written by nothing and read by nothing. It named the `ontology_version` row a score was
+     computed under, and `registry/scores.ts` resolved it back to a semver string; the string
+     is on `autonomy` and is taken from there. Kept because dropping a column is a migration
+     and a separate decision. */
   scoredOntologyVersionId: uuid("scored_ontology_version_id").references(() => ontologyVersion.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [

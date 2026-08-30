@@ -186,7 +186,7 @@ export function OntologyCatalog({
       status: "resolver only",
       glyph: "◐",
       color: "var(--color-amber)",
-      body: `Anyone can coin a node type or a risk marker inside their own namespace, ${localTerms[0]?.id ?? "berti/memory-risk"} for instance, without touching the core. This is not a phase. Those five are closed. The resolver merges local terms over the core. It keeps the core's version, so a card can still declare ontology_version ${version}. It refuses a local term the core does not subsume. It warns when a term shadows a curated id or ships without a weight. This archive carries ${localTerms.length === 0 ? "no local term yet" : `${localTerms.length} local ${localTerms.length === 1 ? "term" : "terms"}, listed below alongside the curated ones`}.`,
+      body: `Anyone can coin a node type or a risk marker inside their own namespace, ${localTerms[0]?.id ?? "berti/memory-risk"} for instance, without touching the core. This is not a phase. Those five are closed. The resolver merges local terms over the core, and the merged view keeps the core's version, ${version}, which is the version a score computed against it is recorded under. It refuses a local term the core does not subsume. It warns when a term shadows a curated id or ships without a weight. This archive carries ${localTerms.length === 0 ? "no local term yet" : `${localTerms.length} local ${localTerms.length === 1 ? "term" : "terms"}, listed below alongside the curated ones`}.`,
     },
     {
       id: "promotion",

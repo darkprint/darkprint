@@ -12,11 +12,12 @@
    passing every other criterion".
 
    ── why the submission still resolves ──
-   The mutation is `requires_human: false → true` on the second
-   card, declared as a patch. `inferBump` rates that MAJOR and it
-   touches no port, so `validateBundle` reports the bundle as
-   resolving with all five nodes carded and zero errors — measured,
-   and re-checked by `chainFailureVariant` every time it is built.
+   The mutation re-types the second card, declared as a patch.
+   `inferBump` rates a changed `type` MAJOR and it touches no port,
+   so `validateBundle` reports the bundle as resolving with all five
+   nodes carded and zero errors — measured, and re-checked by
+   `chainFailureVariant` every time it is built. It used to flip
+   `requires_human`, which the schema no longer has.
    An implementation that refuses this can only have refused it at
    the chain check, so a green here cannot be an AC2 refusal wearing
    AC5's name.

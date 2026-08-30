@@ -143,20 +143,26 @@ describe("T100 AC3 — the stored digest is the engine's over the submitted byte
     const first = files[0] as string;
     const text = env.base.cardFiles[first] as string;
 
-    /* `requires_human: false → true` changes the parsed `NodeCard`, so it changes that card's
+    /* Rewriting the card's `action` changes the parsed `NodeCard`, so it changes that card's
        `cardDigest` and therefore the bundle's. The DOT is untouched, which isolates the card
        half of the digest from the DOT half — a `bundleDigest` that hashed only `dot` passes
-       every other cell in this file and fails this one. */
+       every other cell in this file and fails this one.
+
+       This used to flip `requires_human: false → true`. That key was withdrawn from the
+       schema and a document still carrying it is ignored, so the mutation would have changed
+       the FILE without changing the parsed card, and the premise below reads the file. A
+       field that is still in the identity is the only honest probe for whether the cards are
+       in the digest. */
     const mutated: Corpus = {
       ...env.base,
       cardFiles: {
         ...env.base.cardFiles,
-        [first]: text.replace(/^requires_human:\s*\S+\s*$/mu, "requires_human: true"),
+        [first]: text.replace(/^action:\s*.*$/mu, "action: Do something else entirely"),
       },
     };
     expect(
       mutated.cardFiles[first],
-      `AC3 premise: ${first} has no top-level \`requires_human\` key, so the mutation did not ` +
+      `AC3 premise: ${first} has no top-level \`action\` key, so the mutation did not ` +
         `apply and this cell would compare a bundle with itself.`,
     ).not.toBe(text);
 
@@ -281,19 +287,31 @@ describe("T100 AC3 — the stored digest is the engine's over the submitted byte
 
        What it is worth beyond `digestOf` agreeing with itself: the same string is stamped into
        the SHIPPED artefact by the build — `public/bundles/starter-software-factory/README.md`
-       carries `sha256:945448e0…e39af`, written by `scripts/generate-bundles.ts` through
+       carries `sha256:a1141199…0e718`, written by `scripts/generate-bundles.ts` through
        `exportBundle`. That is a different call path from this suite's, reached without any test
        running, so the literal is corroborated by something this author did not write. It is not
        a fully independent axis — both paths bottom out in `lib/core`'s resolver — and the cells
        above are still the ones that establish anything about the digest's BEHAVIOUR.
        (`factory.dot` also carried the digest until the owner instructed it out of every
-       published bundle, 2026-08-25; `README.md` alone corroborates it now.) */
+       published bundle, 2026-08-25; `README.md` alone corroborates it now.)
+
+       RE-PINNED TWICE, both times because a schema change moved card identity on purpose.
+       `sha256:945448e0…e39af` -> `sha256:7ebdb0d0…daaab` at the `cannot` / `will_not`
+       prohibition split, where every one of the 57 cards gained a key; then
+       -> `sha256:a1141199…0e718` at the withdrawal of `ontology_version`, where every one of
+       them lost a key AND the manifest lost one too. `cardDigest` spreads the whole card and
+       `bundleDigest` covers the DOT and every pinned card digest, so all of it moves
+       together, which is the signature of a schema change rather than of one card being
+       edited. Both new values were taken from the corroborating artefact rather than from
+       this suite, which cannot run without a database: `README.md` and an independent read
+       of `readContent()` off `content/` both report it, and the 80-digest
+       `bundle-equivalence` snapshot moved in the same edit each time. */
     expect(
       digestOf(env.base),
       "AC3: the archive corpus's digest moved. This literal is a change-detector — if the " +
         "change was intended (the bundle, a card, or `bundleDigest` changed), re-pin it; if it " +
         "was not, something is hashing different bytes than it did.",
-    ).toBe("sha256:945448e03d7997e279f30ccb0f020ce0575cb2fa7cebed510c7b84f5e68e39af");
+    ).toBe("sha256:a1141199e8a69a94a661144e5a2a634f362cca3ebf5ae6c30a4f21491a90e718");
   });
 });
 

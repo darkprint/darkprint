@@ -32,8 +32,9 @@
 
    ── Why the card is read and not typed ──
    `code-builder@1.0.0`, off the archive, because the seventh part
-   of the walk is `cannot: [acceptance-criteria]` and the resolver
-   really does enforce it. `/spec/card` opens the same document at
+   of the walk is `cannot: [acceptance-criteria]` beside a
+   `will_not` the engine never reads, and the resolver really does
+   enforce the first of the two. `/spec/card` opens the same document at
    full length, so the two beats are one card seen twice rather
    than two examples.
 
@@ -64,25 +65,27 @@ const CARD_REF = "code-builder@1.0.0";
  * card in the home page the fields requires_human, risk_markers, version, author,
  * ontology_version as they are unuseful details here to show to the user."
  *
- * They are the card's METADATA, and this beat is not about a card's metadata. Two of them
- * are empty or false, `version` is already printed in the figure's own header and in the
- * rail above the listing, and `author` and `ontology_version` are provenance — real, worth
- * having, and the business of `/nodes/[...id]`, where a reader is deciding whether to trust
- * a card rather than learning what one is.
+ * They are the card's METADATA, and this beat is not about a card's metadata.
+ * `risk_markers` is empty, `version` is already printed in the figure's own header and in
+ * the rail above the listing, and `author` and `ontology_version` are provenance — real,
+ * worth having, and the business of `/nodes/[...id]`, where a reader is deciding whether
+ * to trust a card rather than learning what one is.
+ *
+ * The list is four keys and the instruction named six. Two of the six are not card fields
+ * any more. `requires_human` answered whether a person acts at the node beside a `type`
+ * that already answered it, and the two could disagree in one document. `ontology_version`
+ * named the vocabulary the author wrote against, and nothing ever read an old card against
+ * an old vocabulary. Both were withdrawn rather than reconciled, and a filter for a key no
+ * card can carry hides nothing, so each went with its field. The instruction is quoted
+ * above as it was given, and the reasoning above for hiding `ontology_version` as
+ * provenance is left standing because it was the right reason at the time.
  *
  * Nothing annotated is at risk: `annotations.ts` anchors its nine runs on `id`/`name`/
  * `type`/`phase`, `action`, `spec`, `model`, `tools`/`mcp`, `skill`, `inputs`, `outputs`
- * and `cannot`, and not one of these six is among them. The last run ends at `cannot`, and
- * all six sit below it.
+ * and the `cannot`/`will_not` pair, and not one of these four is among them. The last run
+ * ends at `will_not`, and all four sit below it.
  */
-const HIDDEN_KEYS = [
-  "notes",
-  "requires_human",
-  "risk_markers",
-  "version",
-  "author",
-  "ontology_version",
-] as const;
+const HIDDEN_KEYS = ["notes", "risk_markers", "version", "author"] as const;
 
 /**
  * The card with those keys, and anything indented under them, taken out.
@@ -95,7 +98,7 @@ const HIDDEN_KEYS = [
  * lines that moved.
  *
  * Trailing blank lines collapse so the file does not end in the holes the removals left —
- * five of the six are consecutive at the foot of this card, and without it the listing
+ * four of the five are consecutive at the foot of this card, and without it the listing
  * closed on four empty rows.
  */
 function withoutKeys(card: string, keys: readonly string[]): string {

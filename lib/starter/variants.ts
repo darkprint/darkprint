@@ -19,7 +19,7 @@
                            no edge, no metric.
    choice 2, approval      one node and one edge. The autonomy
                            class moves from closed-loop to
-                           conditional, and doc 2 §1.1 governs every
+                           supervised, and doc 2 §1.1 governs every
                            word written about that — including the
                            comments this file writes into the DOT,
                            which travel inside the download.
@@ -166,11 +166,10 @@ function manifestFor(choices: StarterVariant, nodeCount: number): BundleManifest
     // level 4" was one call away from being the per-graph number printed beside the
     // 1-to-5 organisational ladder. The class says the same thing and cannot collide.
     description: human
-      ? `${p.description}\n\nA sixth node holds the run at the release boundary until a person accepts the work. With that node the blueprint is classed conditional and without it closed-loop, and the class records where a person acts.`
+      ? `${p.description}\n\nA sixth node holds the run at the release boundary until a person accepts the work. With that node the blueprint is classed supervised and without it closed-loop, and the class records where a person acts.`
       : p.description,
     category: p.category,
     tags,
-    ontologyVersion: "0.1.0",
   };
 }
 
@@ -240,7 +239,7 @@ export function starterDot(choices: StarterChoices): string {
     // wording the manifest description and the approver card already carry.
     lines.push("  // Doc 2 §5.3: a person accepts the work before it is released. The graph");
     lines.push("  // changes here and the autonomy class changes with it: with this node the");
-    lines.push("  // blueprint is classed conditional, without it closed-loop. The class records");
+    lines.push("  // blueprint is classed supervised, without it closed-loop. The class records");
     lines.push("  // where a person acts in the run.");
     lines.push(`  ${pad("tester")} -> ${pad("approver")} [label="approved build"];`);
     lines.push(`  ${pad("approver")} -> ${pad("deployer")} [label="human approval"];`);
@@ -444,16 +443,15 @@ export function cardDocument(card: StarterCardSpec): string {
   lines.push(...portsLines("outputs", card.outputs));
   lines.push(...listLines("dependencies", card.dependencies));
   lines.push(...listLines("cannot", card.cannot));
+  lines.push(...listLines("will_not", card.willNot));
   lines.push("");
 
-  lines.push(`requires_human: ${card.requiresHuman ? "true" : "false"}`);
   lines.push(...listLines("risk_markers", card.riskMarkers));
   lines.push(...foldedBlock("notes", card.notes, ""));
   lines.push("");
 
   lines.push(`version: ${JSON.stringify(card.version)}`);
   lines.push(`provenance: ${yamlString(card.provenance)}`);
-  lines.push(`ontology_version: ${JSON.stringify(card.ontologyVersion)}`);
 
   return `${lines.join("\n")}\n`;
 }

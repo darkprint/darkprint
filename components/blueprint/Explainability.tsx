@@ -249,11 +249,16 @@ const AUTONOMY_GROUP = {
   },
 } as const;
 
-/** Why this node counts as one where a person acts, in the shortest true form. */
+/**
+ * Why this node counts as one where a person acts, in the shortest true form.
+ *
+ * One case, and a `switch` rather than an `if` on purpose: `HumanReason` used to have a
+ * second member for a card that set `requires_human` on a type that said nothing about
+ * people, and that field is gone. A `switch` over the union is what makes the compiler
+ * name this function on the day somebody adds a third way to be staffed.
+ */
 function reasonLabel(contribution: AutonomyContribution): string | undefined {
   switch (contribution.reason) {
-    case "requires-human-flag":
-      return "requires_human: true";
     case "human-in-the-loop-type":
       return `type ⊂ ${contribution.term ?? "human-in-the-loop"}`;
     default:

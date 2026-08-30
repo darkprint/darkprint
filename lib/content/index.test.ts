@@ -443,7 +443,10 @@ describe("raw source", () => {
       expect(source.cards).toHaveLength(bp.graph.nodes.length);
       for (const card of source.cards) {
         expect(card.file).toMatch(/^content\/cards\/.+@\d+\.\d+\.\d+\.yaml$/);
-        expect(card.text).toContain("ontology_version");
+        /* `version:` and not `ontology_version:`. This asserts the text really is the card
+           DOCUMENT rather than an empty string or a path, so it needs a key every card
+           carries; `ontology_version` was that key until it left the schema. */
+        expect(card.text).toContain("version:");
       }
     }
     expect(bundleSource("nope")).toEqual({ dot: "", cards: [] });
@@ -477,7 +480,7 @@ describe("the vocabulary", () => {
     expect(local?.defaultWeight).toBeGreaterThan(0);
   });
 
-  it("declares exactly the five phases and the six node types of doc 3", () => {
+  it("declares exactly the five phases and the nine concrete node types", () => {
     const ontology = getOntologyView();
     expect(ontology.byKind("phase").map((t) => t.id).sort()).toEqual([
       "debugging",
@@ -486,15 +489,21 @@ describe("the vocabulary", () => {
       "planning",
       "testing",
     ]);
+    // The three abstract categories are dropped by name: a card may not declare one
+    // (`card/validate.ts` refuses it), so what is left is the set an author can write.
+    const abstract = new Set(["human-in-the-loop", "evaluative", "orchestration"]);
     const concrete = ontology
       .byKind("node-type")
-      .filter((t) => t.id !== "human-in-the-loop" && t.id !== "evaluative")
+      .filter((t) => !abstract.has(t.id))
       .map((t) => t.id);
     expect(concrete).toEqual([
       "agent",
       "decision",
       "human-gate",
       "human-input",
+      "manager-loop",
+      "parallel",
+      "parallel.fan-in",
       "tool",
       "validation",
     ]);

@@ -42,12 +42,12 @@ before they do: an author surprised by the upload screen has been failed by the 
 - [ ] `id` matches `^(?:ns/)?[a-z0-9]+(-[a-z0-9]+)*$` — `card/bad-id` **error**
 - [ ] `name`, `action`, `spec` present and non-blank; `inputs` and `outputs` **present**, even
       when empty — `card/missing-field` **error**
-- [ ] `version` and `ontology_version` are full semver; `ontology_version: "0.1.0"` on every
-      card — `card/bad-version` **error**, *`bundle/ontology-mismatch`*
+- [ ] `version` is full semver — `card/bad-version` **error**
 - [ ] `type` is one concrete `node-type`, never `human-in-the-loop` or `evaluative` —
       `card/unknown-term`, `card/wrong-term-kind` **error**
-- [ ] `type` subsumed by `human-in-the-loop` ⇒ `requires_human: true` —
-      `card/human-type-inconsistent` **error**
+- [ ] every node where a person acts carries a `type` subsumed by `human-in-the-loop`, and
+      no node where nobody acts does. `type` is the only field that says it — writing a
+      `requires_human` key is `card/retired-field`, a **warning**, and it is ignored
 - [ ] every `phase` entry is one of the five, never namespaced, never repeated —
       `card/unknown-phase`, `card/namespaced-phase` **error**, *`card/duplicate-phase`*
 - [ ] every `tools` entry is a `tool` term; every `risk_markers` entry is a `risk-marker` term
@@ -55,9 +55,11 @@ before they do: an author surprised by the upload screen has been failed by the 
 - [ ] `required:` only on inputs
 - [ ] every `spec` over 40 characters, and written as an instruction rather than a label —
       *`card/spec-too-thin`*
+- [ ] the card names no vocabulary version. There is one, and a score records the version it
+      was computed under — writing an `ontology_version` key is `card/retired-field`, a
+      **warning**, and it is ignored
 - [ ] no key outside the accepted set (`references/card-schema.md`) — a typo is an `info` and
-      is **silently ignored**, so check the spelling of `risk_markers` and `requires_human`
-      by eye
+      is **silently ignored**, so check the spelling of `risk_markers` and `will_not` by eye
 
 ## 4. Every edge carries something
 
@@ -73,8 +75,11 @@ before they do: an author surprised by the upload screen has been failed by the 
 
 ## 5. The prohibitions
 
-- [ ] every `cannot` entry sorted: does it name a `data-type`? If yes it is enforced. If no it
-      is prose, and you have told the author which pile it is in
+- [ ] every `cannot` entry names a `data-type` term id. A sentence here is
+      `card/unknown-term` **error** and the card does not load
+- [ ] every `will_not` entry is a sentence. A `data-type` here is
+      *`card/prohibition-misfiled`*, and it means a rule the resolver could have enforced
+      is sitting where nothing reads it
 - [ ] no edge carries into a node a type its `cannot` refuses — `bundle/prohibition-violated`
       **error**. Two directions to keep straight:
       - **subsumption** — `cannot: [structured]` refuses an incoming `acceptance-criteria`;

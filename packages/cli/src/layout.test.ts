@@ -123,7 +123,9 @@ describe("the directory itself", () => {
     expect(read.manifestFile).toBe("blueprint.yml");
     expect(read.manifest.slug).toBe("hand-written");
     /* The stub still supplies what the document omitted, which is why a partial manifest
-       from the wizard is not a refusal. */
-    expect(read.manifest.ontologyVersion).toBe("0.1.0");
+       from the wizard is not a refusal. `ontologyVersion` was the member this asserted on
+       until a manifest stopped carrying one; `summary` is the stub's own empty string and
+       asks the same question of the same merge. */
+    expect(read.manifest.summary).toBe("");
   });
 });

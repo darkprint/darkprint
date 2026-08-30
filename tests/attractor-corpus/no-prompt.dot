@@ -1,0 +1,19 @@
+// The asymmetry that costs the most, isolated so its cost is legible.
+// An Attractor node need not carry a `prompt`: a `tool` node runs a `tool_command` and a
+// `wait.human` node may simply wait. A DarkPrint card MUST carry a `spec`. So `sign_off`
+// below imports as a card with an empty `spec`, that card does not load, and the node it
+// belongs to comes back with neither its shape nor its label — which is the honest
+// outcome and is asserted here rather than smoothed over.
+digraph no_prompt {
+  goal="Run a command, then wait for somebody.";
+  label="A node with nothing to say";
+
+  start    [label="start", shape=Mdiamond];
+  compile  [label="Compile", shape=box, prompt="Build the project and report what broke."];
+  sign_off [label="Sign off", shape=hexagon];
+  exit     [label="exit", shape=Msquare];
+
+  start -> compile;
+  compile -> sign_off;
+  sign_off -> exit;
+}

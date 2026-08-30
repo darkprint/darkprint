@@ -100,11 +100,10 @@ function body(plan: CardPlan): NodeCard {
     outputs: (plan.outputTypes ?? []).map((type, i) => ({ name: `out${i}`, type })),
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: plan.riskMarkers ?? [],
     version: "1.0.0",
     author: plan.author,
-    ontologyVersion: "0.1.0",
   };
 }
 

@@ -84,16 +84,28 @@ describe("the MCP transport speaks the protocol", () => {
     expect(result.capabilities).toEqual({ tools: {} });
   });
 
-  it("lists the four advertised operations and nothing else", async () => {
+  it("lists the four advertised operations, the compiler, and nothing else", async () => {
     const [, list] = await session(
       [INITIALIZE, { jsonrpc: "2.0", id: 2, method: "tools/list" }],
       answering(new Response("{}")),
     );
     const tools = (list?.result as { tools: { name: string }[] }).tools;
 
-    /* Exact set, not a superset. A fifth tool is a capability the contract's "read access and
-       nothing else" does not grant, and a missing one is an operation `/mcp` advertises. */
+    /* Still an exact set and not a superset: a tool nobody argued for is a capability
+       nobody granted, and a missing one is an operation `/mcp` advertises.
+       AMENDED for `export_pipeline`. This cell read four and said "a fifth tool is a
+       capability the contract's `read access and nothing else` does not grant", which is
+       the right rule and is not what `export_pipeline` does. It reaches the release route
+       and the files route, both of which `fetch_release` already grants and `clone`
+       already uses; it writes nothing; and it returns a transformation of those bytes
+       rather than anything new out of the registry. An agent that calls it can reproduce
+       the answer with `darkprint clone` and `darkprint export --attractor`, which is the
+       test of whether a tool granted access or only saved a step.
+       The four still stand for the four operations `app/mcp/page.tsx` advertises, and
+       `tests/server/t220/surface.test.ts` holds the barrel to that page's own count. This
+       list is the distributable's, which is a wider thing than the page's table. */
     expect(tools.map((tool) => tool.name).sort()).toEqual([
+      "export_pipeline",
       "fetch_release",
       "inspect_provenance",
       "read_card",

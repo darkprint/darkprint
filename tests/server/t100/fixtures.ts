@@ -52,7 +52,6 @@ import { CORE_ONTOLOGY, bundleDigest, parseCardRef } from "@/lib/core";
 import type { BundleManifest, LoadBundleResult } from "@/lib/core";
 import { createDbClient, migrateUp, type Db, type DbClient } from "@/lib/db";
 import { addCard, getCard } from "@/lib/server/cards";
-import { addOntologyVersion } from "@/lib/server/ontology";
 import { validateBundle, validateCardSource } from "@/lib/server/engine";
 import { readContent, type LoadedBundle } from "@/lib/content/read";
 import { bundleProgress } from "@/components/upload/progress";
@@ -142,18 +141,13 @@ export async function scratchDatabase(tag: string): Promise<Scratch> {
      version raises T030's `UnknownOntologyVersionError` — which is a foreign rejection that
      reaches the caller unaltered, so it does not even look like a T100 refusal.
 
-     Seeded here rather than per file because EVERY scratch database in this suite is used to
-     publish, so a file that forgot the call would not be exercising a different scenario, it
-     would be measuring an upstream failure and reporting it as a criterion. `t090/fixtures.ts`
-     and `t140/fixtures.ts` seed it too, for the same reason their docstrings give.
-
-     A2 ("`openView` REQUIRED, T030 joins the composition set") was ruled in a message and never
-     reached `backend.md`, so the original enumeration of merged modules in this file's header
-     was correct against the contract as written and wrong against the contract as ruled. */
-  await addOntologyVersion(client.db, {
-    version: CORE_ONTOLOGY.version,
-    terms: [...CORE_ONTOLOGY.terms],
-  });
+     It was seeded here rather than per file because EVERY scratch database in this suite is
+     used to publish, so a file that forgot the call would not have been exercising a different
+     scenario, it would have been measuring an upstream failure and reporting it as a criterion.
+     `openView` merges over `CORE_ONTOLOGY` and reaches no store, so there is no precondition
+     left to forget. A2 ("`openView` REQUIRED, T030 joins the composition set") was ruled in a
+     message and never reached `backend.md`; `openView` is still in the composition set and no
+     longer takes a database. */
 
   return {
     db: client.db,
@@ -260,19 +254,11 @@ export function resolvingCorpus(): Corpus {
   )[0];
   const corpus = corpusFrom(smallest as LoadedBundle);
 
-  /* The join between the corpus and the seed. `scratchDatabase` publishes
-     `CORE_ONTOLOGY.version`, and `publish` opens a view for whatever the MANIFEST names — so if
-     the archive ever declares a different one, every cell in this suite would fail at
-     `openView` with an error that has nothing to do with its criterion. Checked here, once,
-     where both halves are visible. */
-  if (corpus.manifest.ontologyVersion !== CORE_ONTOLOGY.version) {
-    throw new Error(
-      `${corpus.slug}'s manifest declares ontologyVersion \`${corpus.manifest.ontologyVersion}\` ` +
-        `and scratchDatabase seeds \`${CORE_ONTOLOGY.version}\`.\n` +
-        `  Every publish would then raise T030's UnknownOntologyVersionError, which is a foreign ` +
-        `rejection and reads as anything but a broken fixture.`,
-    );
-  }
+  /* There is no join left to check between the corpus and the seed. `scratchDatabase` used to
+     publish `CORE_ONTOLOGY.version` and `publish` opened a view for whatever the MANIFEST
+     named, so an archive declaring a different one would have failed every cell in this suite
+     at `openView` with an error that had nothing to do with its criterion. A manifest declares
+     no version and `openView` merges over `CORE_ONTOLOGY`, so the two halves cannot disagree. */
   return corpus;
 }
 
@@ -345,44 +331,64 @@ export function unfinishedVariant(base: Corpus, dropped = 2): Variant {
 }
 
 /**
- * A bundle that is IN ERROR: every card is present and one added edge names two ports that do
- * not exist.
+ * A bundle that is IN ERROR: every card is present and one node pins a digest its card does
+ * not hash to.
  *
  * **Every node keeps its card, and that is the load-bearing property rather than a detail.**
- * `bundleProgress` can only return `unfinished` when `waiting > 0`, so a variant whose `placed`
- * equals its `total` is structurally incapable of being read as unfinished — which is what stops
- * AC2 from degenerating into a second, weaker copy of AC1. A refusal here can only be `in-error`.
+ * `bundleProgress` can only return `unfinished` when a node resolves to no card, so a variant
+ * whose `placed` equals its `total` is structurally incapable of being read as unfinished —
+ * which is what stops AC2 from degenerating into a second, weaker copy of AC1. A refusal here
+ * can only be `in-error`.
  *
- * **Four other mutations were measured and rejected, and the reason is worth keeping.**
+ * **Why not a port mismatch, which this fixture used until 2026-08-30.** It was the right
+ * choice under the old gate and D-109 retired it. A port that does not exist is DarkPrint
+ * comparing two things the author wrote, `lib/core/gate.ts` classifies it `approval`, and rule
+ * 4 forbids an inference from refusing anybody's work — so that mutation now publishes
+ * successfully, with the mismatch printed on the scorecard, and this fixture stopped producing
+ * a refusal at all. The old docblock's own sentence is what dates it: "a port mismatch is the
+ * one mutation that is purely a contradiction between two things the author wrote." That is
+ * exactly the class the ruling stopped refusing.
+ *
+ * **Why a pinned digest.** `bundle/digest-mismatch` is `unaddressable`: a node pinning a hash
+ * the card does not have leaves the reference undecidable, which is a fact about the bytes
+ * rather than a reading of the work, so it refuses at both stages. It is also generic over any
+ * corpus, needing only one node statement to attach to, where the other author-declared
+ * refusal (`bundle/prohibition-violated`) needs a blueprint whose cards happen to declare a
+ * `cannot:` the graph can be made to break.
+ *
+ * **Three other mutations were measured and rejected, and the reason is worth keeping.**
  * Contradicting a card's declared `id`, contradicting its `version`, and pointing an edge at an
  * undeclared node all report `bundle/missing-card` and read as UNFINISHED — the resolver treats
  * a pin it cannot satisfy as a card not written yet, whatever made it unsatisfiable. Unparseable
  * card YAML does reach `rejected`, but it does so carrying a `bundle/missing-card` alongside two
- * `card/parse-error`s, so its error count mixes the two readings. A port mismatch is the one
- * mutation that is purely a contradiction between two things the author wrote.
+ * `card/parse-error`s, so its error count mixes the two readings.
  */
 export function inErrorVariant(base: Corpus): Variant {
-  const [from, to] = base.nodeIds;
-  if (from === undefined || to === undefined) {
-    throw new Error(`inErrorVariant: ${base.slug} declares fewer than two nodes.`);
+  const [first] = base.nodeIds;
+  if (first === undefined) {
+    throw new Error(`inErrorVariant: ${base.slug} declares no nodes.`);
   }
-  /* Appended just before the closing brace, so the DOT the rest of the bundle depends on is
-     untouched and the only difference from a bundle that resolves is this one statement. */
-  const dot = base.dot.replace(
-    /\n\}\s*$/u,
-    `\n  ${from} -> ${to} [out="no-such-port", in="also-missing"];\n}\n`,
-  );
-  if (dot === base.dot) {
-    throw new Error(`inErrorVariant: ${base.slug}'s DOT has no closing brace to append before.`);
+  /* A hash no card can have, attached to the first node's own statement so the rest of the
+     bundle is untouched and the only difference from a bundle that resolves is this attribute.
+     Anchored on the `[` that opens that node's attribute block: appending a second statement
+     for the same id would raise `dot/duplicate-node` as well and mix two readings into the
+     count, which is the defect the rejected mutations above all share. */
+  const unreachableDigest = `sha256:${"0".repeat(64)}`;
+  const nodeStatement = new RegExp(`(^|\\n)(\\s*)${first}(\\s*)\\[`, "u");
+  if (!nodeStatement.test(base.dot)) {
+    throw new Error(
+      `inErrorVariant: ${base.slug}'s DOT has no attribute block on node \`${first}\` to pin a digest in.`,
+    );
   }
+  const dot = base.dot.replace(nodeStatement, `$1$2${first}$3[digest="${unreachableDigest}", `);
 
   const variant: Variant = {
     ...base,
     dot,
     placed: base.nodeIds.length,
     total: base.nodeIds.length,
-    /* One edge, two ports, neither of which exists: two `bundle/port-mismatch` diagnostics. */
-    expectedErrors: 2,
+    /* One node, one pin, one card it does not match: a single `bundle/digest-mismatch`. */
+    expectedErrors: 1,
   };
 
   assertProgress(variant, "rejected", `inErrorVariant(${base.slug})`);
@@ -671,12 +677,19 @@ export interface ChainFailure {
  * A submission whose SECOND card fails its chain check while the bundle itself resolves.
  *
  * **AC5 is "the criterion that makes this a transaction and not a sequence"**, and this fixture
- * is built so that nothing else can account for the refusal. The mutation is
- * `requires_human: false → true` on the second card, which `inferBump` rates MAJOR ("changed
- * false → true, which breaks the autonomy contract") while the submission declares a PATCH —
- * and which touches no port, so `validateBundle` still reports the bundle as resolving with
- * every node carded and zero error diagnostics. An implementation that refuses this submission
- * can only have refused it at the chain check.
+ * is built so that nothing else can account for the refusal. The mutation re-types the second
+ * card, which `inferBump` rates MAJOR ("node type changed") while the submission declares a
+ * PATCH — and which touches no port, so `validateBundle` still reports the bundle as resolving
+ * with every node carded and zero error diagnostics. An implementation that refuses this
+ * submission can only have refused it at the chain check.
+ *
+ * The mutation used to be `requires_human: false → true`, priced major because it invalidated
+ * every autonomy score computed against the card. That field was withdrawn from the schema and
+ * a document still carrying it is ignored, so the mutation would have changed nothing at all
+ * and this fixture's own premise check would have caught it. `type` is the successor for a
+ * reason rather than for convenience: whether a person acts at the node is read off `type` now,
+ * so re-typing a card is the change that moves both the wiring and the score, and it is the
+ * strictest thing `inferBump` prices.
  *
  * The first card in DOT order is deliberately left out of the store. A step-by-step
  * implementation walks the cards in order, stores that one, then hits the second and throws —
@@ -698,14 +711,22 @@ export function chainFailureVariant(base: Corpus): ChainFailure {
     throw new Error(`chainFailureVariant: ${base.slug} has no ${previousFile}.`);
   }
 
-  /* A patch bump on the published version, carrying a change that requires a major one. */
+  /* A patch bump on the published version, carrying a change that requires a major one.
+
+     The replacement type is chosen against what the card already declares, so the mutation
+     cannot silently become a no-op on a corpus whose second card happens to be typed the way
+     this fixture would otherwise have re-typed it. Both candidates are real `node-type` terms
+     the core vocabulary carries, so the mutated card still loads. */
   const declaredVersion = patchOf(previous.version);
+  const declaredType = /^type:\s*human-gate\s*$/mu.test(previousSource)
+    ? "human-input"
+    : "human-gate";
   const declaredSource = previousSource
     .replace(/^version:\s*\S+\s*$/mu, `version: ${declaredVersion}`)
-    .replace(/^requires_human:\s*\S+\s*$/mu, "requires_human: true");
+    .replace(/^type:\s*\S+\s*$/mu, `type: ${declaredType}`);
   if (declaredSource === previousSource) {
     throw new Error(
-      `chainFailureVariant: neither \`version\` nor \`requires_human\` is a top-level key in ` +
+      `chainFailureVariant: neither \`version\` nor \`type\` is a top-level key in ` +
         `${previousFile}, so the mutation this fixture depends on did not apply.`,
     );
   }

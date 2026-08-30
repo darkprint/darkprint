@@ -55,13 +55,22 @@ import {
   CORE_PHASE_IDS,
   DARKPRINT_CONFIG,
   INFERRED_MARKERS,
+  isControlPoint,
   ITERATION_CAP_KEYS,
+  ontologyView,
   type OntologyTerm,
   type TermKind,
 } from "@/lib/core";
 
 /** Repo root: this file sits in `scripts/`. */
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+/**
+ * A view over the shipped vocabulary, so the "governs flow" column is asked of the engine
+ * rather than transcribed. The flag is inherited down `broader`, which a column reading
+ * `term.governsFlow` directly would get wrong for every term but the three that carry it.
+ */
+const VIEW = ontologyView(CORE_ONTOLOGY);
 
 /** Where the skill lives. Named once; every path below hangs off it. */
 export const SKILL_DIR = join("skills", "darkprint");
@@ -215,8 +224,9 @@ export function renderOntologyReference(): string {
     "here is `card/unknown-term` (error). A term of the wrong kind — a `data-type` in the",
     "`tools` list, a `tool` in `type` — is `card/wrong-term-kind` (error).",
     "",
-    "Write `ontology_version: \"" + o.version + '"` on every card. A card declaring a',
-    "different version loads, and reports `bundle/ontology-mismatch` (warning) once per card.",
+    "A card names no vocabulary version. There is one vocabulary, every card is read against",
+    "it, and the version a SCORE was computed under is recorded on the score. Writing",
+    "`ontology_version:` on a card is `card/retired-field` (warning).",
     "",
   );
 
@@ -243,26 +253,36 @@ export function renderOntologyReference(): string {
   sections.push(
     "## node-type — what does the job",
     "",
-    "Exactly one per card, in `type`. Two of these are **abstract categories** and a node",
+    "Exactly one per card, in `type`. Three of these are **abstract categories** and a node",
     "should not be typed with one: they exist so the metrics can ask a subsumption question.",
     "",
     "`human-gate` and `human-input` are subsumed by `human-in-the-loop` and carry",
-    "`impliesHuman`, so a card declaring either **must** also declare `requires_human: true`.",
-    "Getting that wrong is `card/human-type-inconsistent`, an **error**, not a warning.",
+    "`impliesHuman`. Declaring one of them is the whole of how a card says a person acts at",
+    "the node: there is no second field beside `type` to set, and nothing else on the card",
+    "can say otherwise.",
     "",
-    "The autonomy fraction is the share of nodes whose `type` is *not* subsumed by",
-    "`human-in-the-loop`. Bands: " +
+    "The `orchestration` branch is control flow: `parallel` splits the run, `parallel.fan-in`",
+    "joins it back, `manager-loop` supervises a sub-run and decides whether it repeats. The",
+    "three are named after the Attractor handlers they compile to, so a bundle's `topology.dot`",
+    "reads the same on both sides.",
+    "",
+    "Autonomy is read twice off `type` and the weaker reading is the one that lands in a band.",
+    "How much runs alone: the share of nodes whose `type` is *not* subsumed by",
+    "`human-in-the-loop`. How much of the deciding runs alone: the same share taken over the",
+    "**control points** only, which are the nodes under `evaluative` or `orchestration` plus",
+    `\`human-gate\`, and it decides a band only from ${DARKPRINT_CONFIG.autonomy.minControlPoints} control points up. Bands: ` +
       `> ${DARKPRINT_CONFIG.autonomy.level4} closed-loop, ` +
       `≥ ${DARKPRINT_CONFIG.autonomy.level3} conditional, ` +
       `≥ ${DARKPRINT_CONFIG.autonomy.level2} supervised, below that assisted.`,
     "",
     table(
-      ["id", "label", "broader", "implies human", "meaning"],
+      ["id", "label", "broader", "implies human", "governs flow", "meaning"],
       alphabetical("node-type").map((t) => [
         code(t.id),
         t.label,
         code(t.broader),
         t.impliesHuman === true ? "yes" : "no",
+        isControlPoint(VIEW, t.id) ? "yes" : "no",
         describe(t),
       ]),
     ),
@@ -442,6 +462,7 @@ function lattice(kind: TermKind): string[] {
  *
  * (b) `lib/core/card/schema.ts` verbatim. Its jsdoc *is* the specification — why `phases`
  * is optional and repeatable, why `spec` has to be self-sufficient, what `cannot` enforces
+ * and what `will_not` deliberately does not
  * — and an agent reads TypeScript fine. `readFileSync` cannot drift by construction.
  *
  * The orientation header in front of it is not decoration. That file's comments cite
@@ -459,8 +480,8 @@ export function renderCardSchemaReference(): string {
       "# The node card, on the wire",
       "",
       "A card is one YAML or JSON document describing one node. The wire format is",
-      "**snake_case** — `requires_human`, `risk_markers`, `ontology_version` — and the",
-      "validator maps it onto the camelCase model quoted at the bottom of this file.",
+      "**snake_case** — `risk_markers`, `will_not` — and the validator maps it onto the",
+      "camelCase model quoted at the bottom of this file.",
       "",
       "## Every key the validator accepts",
       "",
@@ -469,10 +490,9 @@ export function renderCardSchemaReference(): string {
       "",
       keys.map((k) => `- \`${k}\``).join("\n"),
       "",
-      "Where two spellings appear (`phase`/`phases`, `requires_human`/`requiresHuman`,",
-      "`risk_markers`/`riskMarkers`, `ontology_version`/`ontologyVersion`) both load. Writing",
-      "both on one card is an `info` and the snake_case one wins. Prefer snake_case: it is what",
-      "every shipped card is written in.",
+      "Where two spellings appear (`phase`/`phases`, `will_not`/`willNot`,",
+      "`risk_markers`/`riskMarkers`) both load. Writing both on one card is an `info` and the",
+      "snake_case one wins. Prefer snake_case: it is what every shipped card is written in.",
       "",
       "## Required, and what happens when they are missing",
       "",
@@ -502,11 +522,6 @@ export function renderCardSchemaReference(): string {
           ],
           ["`outputs`", "must be **present**; `[]` is how a sink is declared", "`card/missing-field`"],
           ["`version`", "full semver `MAJOR.MINOR.PATCH`", "`card/bad-version`"],
-          [
-            "`ontology_version`",
-            `semver; \`${CORE_ONTOLOGY.version}\` for this vocabulary`,
-            "`card/bad-version`",
-          ],
         ],
       ),
       "",
@@ -535,19 +550,22 @@ export function renderCardSchemaReference(): string {
           ["`mcp`", "`[]`", "**no** — free text, installed server names"],
           ["`params`", "`{}`", "no — any JSON-serialisable mapping, nesting depth under 100"],
           ["`dependencies`", "`[]`", "no here — checked against the graph by the resolver"],
-          ["`cannot`", "`[]`", "**no here** — see below"],
-          ["`requires_human`", "`false`", "no"],
+          ["`cannot`", "`[]`", "yes — `data-type` terms, and see below"],
+          ["`will_not`", "`[]`", "**no** — free text, see below"],
           ["`risk_markers`", "`[]`", "yes — `risk-marker` terms"],
           ["`model`, `agent`, `skill`, `notes`, `author`, `provenance`", "absent", "no"],
         ],
       ),
       "",
-      "## `cannot` is two fields wearing one name",
+      "## `cannot` and `will_not` are two prohibitions, and only one is checked",
       "",
-      "An entry that names a `data-type` is **enforced**. The resolver refuses any incoming",
-      "edge whose *carrier* is that type or anything narrower, with `bundle/prohibition-violated`,",
-      "an error. That is what turns an absent edge from a convention somebody remembered into a",
-      "rule the engine holds the graph to.",
+      "Write a prohibition in the field that matches what you want to happen to it.",
+      "",
+      "`cannot` holds **`data-type` term ids and nothing else**. The resolver refuses any",
+      "incoming edge whose *carrier* is that type or anything narrower, with",
+      "`bundle/prohibition-violated`, an error. That is what turns an absent edge from a",
+      "convention somebody remembered into a rule the engine holds the graph to. A sentence",
+      "written here is `card/unknown-term`, an error, and the card does not load.",
       "",
       "**What counts as the carrier** decides how far the enforcement reaches, so read this",
       "twice. On an edge with no `out=` pin the carriers are **every output of the source card**,",
@@ -558,12 +576,14 @@ export function renderCardSchemaReference(): string {
       "edge carries. `cannot` is the fast tripwire that stops the bundle loading; the analyzer is",
       "the backstop that prices it. Neither replaces the other.",
       "",
-      "An entry that names anything else is **free text**. It is shown to a reader and checked",
-      "by nothing, because no engine can decide \"never opens a shell\" against a topology.",
-      "Writing one is legitimate and useful; believing it is enforced is not. A misspelled data",
-      "type downgrades silently to prose with no diagnostic anywhere.",
+      "`will_not` holds **your own sentences**: \"never opens a shell\", \"does not edit the code",
+      "under test\". Nothing checks them, because no engine can decide a sentence against a",
+      "topology. They are addressed to whoever reads the card and to the agent instantiated from",
+      "it, which is a real audience and not a lesser one. Putting a `data-type` here is",
+      "`card/prohibition-misfiled`, a **warning**: the card loads, the entry is shown, and",
+      "nothing enforces it.",
       "",
-      "Two asymmetries that decide which entry to write:",
+      "Two asymmetries that decide what to put in `cannot`:",
       "",
       "- Subsumption runs one way. `cannot: [structured]` refuses an incoming",
       "  `acceptance-criteria`, because that is narrower. `cannot: [acceptance-criteria]` does",
@@ -571,11 +591,27 @@ export function renderCardSchemaReference(): string {
       "- An output typed `any` never violates a narrower prohibition. Lazy typing makes the",
       "  whole mechanism unenforceable.",
       "",
-      "## The one cross-field rule",
+      "## Who acts at the node",
       "",
-      "A `type` subsumed by `human-in-the-loop` — `human-gate`, `human-input`, or",
-      "`human-in-the-loop` itself, since subsumption is reflexive — with `requires_human` not",
-      "set to `true` is `card/human-type-inconsistent`, an **error**.",
+      "`type`, and nothing else. A `type` subsumed by `human-in-the-loop` — `human-gate`,",
+      "`human-input`, or `human-in-the-loop` itself, since subsumption is reflexive — is a node",
+      "where a person acts, and every other type is a node that runs unattended. The autonomy",
+      "reading, the schematic and the card page all ask that one question of that one field.",
+      "",
+      "There used to be a `requires_human` boolean beside it. A card could set it to `false` on",
+      "a `human-gate`, or to `true` on a `tool`, and nothing refused the document. Writing it",
+      "today is `card/retired-field`, a **warning**: the card still loads, the key is ignored,",
+      "and the diagnostic says what the card's own `type` answers instead.",
+      "",
+      "## Which vocabulary a card is read against",
+      "",
+      "The one this build ships. A card used to declare `ontology_version`, and the engine read",
+      "it against the vocabulary that string named — but a release stores its whole scorecard at",
+      "publish time, so no score is ever recomputed against an older vocabulary and nothing ever",
+      "asked for the older one. Terms are added and retired inside the one vocabulary with",
+      "`deprecated: {since, replacedBy}`, which is what a card naming a renamed term follows.",
+      "Writing `ontology_version:` today is `card/retired-field`, a **warning**, on the same",
+      "terms as `requires_human`.",
       "",
       "## Re-emitting a card",
       "",

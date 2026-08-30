@@ -293,7 +293,18 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
        on purpose, so the walk counts leaves and not the family. The carried prediction said
        52; the derived count at 7735db9 said 53, and the derived number is the one this
        equality records. */
-    ).toBe(53);
+    /* 53 -> 47 at the removal of the ontology version registry: `lib/server/ontology` stops
+       publishing SIX classes, and the barrel itself stops being a rejection surface at all.
+       They were `OntologyStoreError` and its five descendants — `MalformedContentError`,
+       `InvalidVocabularyError`, `DuplicateOntologyVersionError`, `VersionBumpTooSmallError`,
+       `UnknownOntologyVersionError`. Every one of them was a way for the vocabulary-version
+       STORE to refuse a write or for `openView` to refuse a version nobody had published;
+       there is no store, no version to publish and no write, so each names a condition that
+       cannot occur. This is the first time this number has gone DOWN, which is exactly what
+       the message below says the equality exists to notice: a floor would have absorbed the
+       removal in silence. Derived here by the walk against the tree the removal landed in,
+       not carried from a prediction. */
+    ).toBe(47);
 
     const rendered: string[] = [];
     const traceless: string[] = [];

@@ -33,9 +33,73 @@
    that Appendix A does not tabulate carries the section that reads
    it.
 
+   ── Which of these names DarkPrint actually writes. Reserving a
+   name and emitting one are different claims, and this file only
+   makes the first. The second is declared in `emit.ts` as
+   `ATTRACTOR_EMITTED_ATTRIBUTES`, whose every entry has to be a
+   member of a set below, beside `DARKPRINT_EMITTED_ATTRIBUTES`,
+   whose every entry has to be a member of none of them. That pair
+   is the private / runtime-read line, and it is checked rather
+   than described: this file stays the transcription, and nothing
+   here needs to know what the emitter chose.
+
+   ── this is a HAND TRANSCRIPTION and the source can move ──
+   Everything above is copied out of a document in somebody else's
+   repository, by a person, once. Nothing in this file re-reads it,
+   and nothing can: `lib/core` is isomorphic and network-free by
+   contract, and a test that fetched the spec would make the suite
+   fail when GitHub is slow. So the source is pinned instead, as
+   `ATTRACTOR_SPEC_PIN` below, and `scripts/check-attractor-drift.mjs`
+   compares the pin against the live file from CI. A revision
+   upstream turns that job red and says to re-verify this file. It
+   is the only thing standing between "the formats ARE compatible"
+   and a claim that was true in March.
+
    Source: https://github.com/strongdm/attractor (attractor-spec.md),
    quoted in the Fase 0 implementation contract, PART 0.
    ============================================================ */
+
+/**
+ * The exact bytes the three sets above were transcribed from.
+ *
+ * Two digests of one file, because they answer to different readers. `blob` is the git
+ * object id, which is what `https://api.github.com/repos/strongdm/attractor/contents/
+ * attractor-spec.md` reports and what `git hash-object attractor-spec.md` prints, so a
+ * person can check the pin by hand in one command against either. `sha256` is the one to
+ * trust when the two disagree: a blob id is sha1, and a drift guard whose whole job is to
+ * notice a changed document should not rest on a hash with a public collision.
+ *
+ * `bytes` is here for the same reason the pair is: a truncated download has the right
+ * length far less often than it has the wrong digest, and a length mismatch says
+ * "transfer" where a digest mismatch says "revision".
+ *
+ * `upstreamCommit` and `movedOn` are the commit that last touched the file when the pin
+ * was taken, so a reader who has to re-verify starts from a diff rather than from the
+ * whole 93 KB document:
+ *
+ *     https://github.com/strongdm/attractor/commits/main/attractor-spec.md
+ *
+ * `verifiedOn` is when a person last read the spec against the sets above, which is a
+ * different claim from when the digests were taken and is the one that decays.
+ *
+ * **Values are read out of this file by regex** (`scripts/check-attractor-drift.mjs`), so
+ * every member stays a plain string literal on its own line. A computed value here would
+ * make the guard report a drift that is really a parse failure.
+ *
+ * Deliberately NOT re-exported from `lib/core/index.ts`. The barrel is the surface other
+ * code binds to, and nothing in the product should branch on when a document was last
+ * read: this is provenance for one guard and for a person doing the re-verification, and
+ * publishing it would invite a consumer that would have to be kept working.
+ */
+export const ATTRACTOR_SPEC_PIN = Object.freeze({
+  rawUrl: "https://raw.githubusercontent.com/strongdm/attractor/main/attractor-spec.md",
+  blob: "aaaa969f0d5c1144b5c3b30b389e5fb6c588e53a",
+  sha256: "235354496e2bc35cba9822cded2ebd71ff35a8fb7fce4e51f52b2788586e92ec",
+  bytes: "93036",
+  upstreamCommit: "fb57a55ed97372a27ac90102f436947e29f48426",
+  movedOn: "2026-03-17",
+  verifiedOn: "2026-08-30",
+});
 
 /**
  * Where an attribute is attached. Attractor reserves a different set of names in
@@ -79,9 +143,14 @@ export const ATTRACTOR_GRAPH_ATTRIBUTES: readonly string[] = Object.freeze([
  * `lint.ts` enforces as `attractor/reserved-attribute`.
  *
  * The last eight are read by handler pseudocode rather than tabulated in Appendix A.
- * They are only reachable through a shape DarkPrint does not emit today, which is
- * precisely why they belong here: the day the mapping table grows a `component` or a
- * `house` row, the names must already be spoken for.
+ * They were listed here while nothing could reach them, against the day the mapping
+ * table grew a `component` or a `house` row. That day arrived: `emit.ts` now emits both,
+ * plus `tripleoctagon`, for the `orchestration` branch of doc 3 §3. So five of the eight
+ * (`join_policy`, `max_parallel` and the three `manager.*` names) are now live
+ * configuration for shapes DarkPrint writes, and the emitter deliberately writes none of
+ * them: a fan-out with no `join_policy` and a manager loop with no `manager.max_cycles`
+ * take the runner's own defaults, which is the honest output for a card that declares
+ * neither. The names stay reserved so nothing later parks DarkPrint data in one.
  */
 export const ATTRACTOR_NODE_ATTRIBUTES: readonly string[] = Object.freeze([
   "label",

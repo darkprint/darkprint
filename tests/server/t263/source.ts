@@ -351,11 +351,30 @@ export const FROZEN: Readonly<Record<string, string>> = {
   /* Re-pinned at the topology rename (owner-instructed, 2026-08-25): one word in the
      header comment moved with the file the whole tree renamed (`blueprint.dot` →
      `topology.dot`). No exported value or behaviour changed; the pair's test half is
-     byte-identical. The pin fired exactly as designed and this records the cause. */
+     byte-identical. The pin fired exactly as designed and this records the cause.
+
+     Re-pinned again at D-109 (owner-instructed, 2026-08-30), and this time BEHAVIOUR moved,
+     which is the case this freeze exists to escalate rather than to prevent. The owner ruled
+     that the publish gate splits by lifecycle stage: a draft is near-unconditional, a release
+     must additionally resolve. `bundleProgress` was the last place still asking `hasErrors`,
+     so `publish.ts:207` inherited the old bar through it.
+
+     What moved, stated so a reader does not have to diff two digests to find out:
+       - `resolves` now means `isReleasable` rather than "no error anywhere", so a bundle
+         whose ports do not fit, whose types cannot flow, or that names an unminted term is
+         published WITH its findings instead of refused. Those are inferences, and
+         `lib/core/gate.ts` rule 4 forbids an inference from refusing anybody's work.
+       - `rejected` narrows to bytes the registry cannot hold, plus the one refusal a card's
+         own author declared through `cannot:`.
+       - `unfinished` is unchanged in meaning. The local `AWAITING_CARD` set and the
+         `bundle/missing-dependency` shadow rule are deleted, because `gate.ts` reached the
+         same two codes from the other direction and one list is reviewable where two are not.
+     `publish.ts` is untouched: it reads `progress.state` and the state it reads now answers
+     the release question. Both halves of the pair changed, so both digests move. */
   "components/upload/progress.ts":
-    "b5caa4b5c041ed2ed8f5969a57eb423ddd2f59e2bf28f46018ec8e4babefc788",
+    "87e57c31fc312144dffc7640da997044a231d3bd07d2be0f4fb6abe7f223a6a9",
   "components/upload/progress.test.ts":
-    "548c52cf4fdb78c8c9f8476c474dd486eefda105dc153f8e575a7852540a30a5",
+    "8f5d2c72152220876659d88554036f6643728084e3abbc1bed1c2ac365022b73",
 };
 
 export function sha256Of(relPath: string): string {

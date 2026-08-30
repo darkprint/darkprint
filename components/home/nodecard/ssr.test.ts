@@ -395,6 +395,9 @@ describe("the walk lays out for a phone before it lays out for a screen", () => 
   it.each(SURFACES)("%s gives the sideways scroller a keyboard stop and a name", (_n, html) => {
     expect(html).toContain('tabindex="0"');
     expect(html).toContain('role="region"');
-    expect(html).toContain('aria-label="code-builder@1.0.0, 52 lines"');
+    // 53 -> 52 -> 51: `requires_human` was withdrawn from the card schema and left every
+    // document in `content/cards/`, and `ontology_version` followed it. The name states
+    // how much the scroller holds, so it moves with the file.
+    expect(html).toContain('aria-label="code-builder@1.0.0, 51 lines"');
   });
 });

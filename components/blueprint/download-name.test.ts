@@ -33,7 +33,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { allBlueprints } from "@/lib/content";
-import { FACTORY_DOT, TOPOLOGY_DOT, cardFilePath } from "@/lib/content/bundle-export";
+import { TOPOLOGY_DOT, cardFilePath } from "@/lib/content/bundle-export";
 import { blueprintFileHref } from "@/lib/href";
 import { DownloadPanel } from "./DownloadPanel";
 
@@ -41,6 +41,20 @@ const BLUEPRINTS = allBlueprints();
 
 /** The handle the archive's nine are owned by, which is what their URLs carry. */
 const OWNER = "darkprint";
+
+/**
+ * The name the compiled, runnable copy of the graph carried until the owner instructed it
+ * out of every published folder (2026-08-25).
+ *
+ * A literal rather than an import. This file used to bind the name from
+ * `lib/content/bundle-export`, and that import was the only thing keeping the constant
+ * alive there: the writer stopped emitting the file, so the export existed to be imported
+ * by a test and by nothing else. The constant is deleted, and the assertion below is
+ * unchanged in force — it still says the download button must not save the runnable copy
+ * under the topology's label. Nothing in the product produces this name any more, so
+ * there is no definition left for it to track.
+ */
+const RUNNABLE_DOT = "factory.dot";
 
 /**
  * The panel exactly as the canonical page mounts it, for one bundle.
@@ -97,8 +111,8 @@ describe("the header's quick download button names the file it saves", () => {
       );
       // The exact regression this guards: a rename that moves the label and leaves the
       // attribute pointing at the runnable pipeline instead of the topology file.
-      expect(tag, `${slug}: still saves ${FACTORY_DOT} under the new label`).not.toContain(
-        FACTORY_DOT,
+      expect(tag, `${slug}: still saves ${RUNNABLE_DOT} under the new label`).not.toContain(
+        RUNNABLE_DOT,
       );
     },
   );

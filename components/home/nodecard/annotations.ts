@@ -34,8 +34,11 @@
    - step 3's forty characters is `card/spec-too-thin`, raised at
      warning severity;
    - step 4's `llm_model` is what `lib/core/attractor/emit.ts`
-     writes, and Attractor spec §8's model stylesheet is what can
-     override it;
+     writes, and `ATTRACTOR_UNEXPRESSED_ATTRIBUTES` is where
+     `model_stylesheet` sits: Attractor spec §8's sheet outranks a
+     node attribute (§8.5), and DarkPrint emits no sheet, so the
+     card's line is what the node runs on until somebody edits the
+     compiled file;
    - step 6's "the engine reads nothing at the other end" is
      `lib/core/card/schema.ts` on `skill`, and the missing folder is
      the paragraph `lib/content/bundle-export.ts` puts in every
@@ -104,8 +107,9 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
       // claim is unchanged — the model line really does land in the compiled export and
       // NOT in `topology.dot`, which carries no `model` at all — only the name is gone.
       "The model this agent is instantiated with. The compiled export writes it as " +
-      "`llm_model`. Attractor reads that field. A model stylesheet can override it at run " +
-      "time. A card with no such line inherits whatever the run supplies.",
+      "`llm_model`. Attractor reads that field. A model stylesheet in the graph would " +
+      "outrank it, and DarkPrint writes none. A card with no such line inherits whatever " +
+      "the run supplies.",
   },
   {
     id: "reach",
@@ -144,13 +148,19 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
       "type. A mismatch is reported as `bundle/port-mismatch`.",
   },
   {
+    /* Two keys, one step, and the walk still has nine parts. `geometry.ts` sizes the rail
+       for a fixed count, so a tenth would move the arithmetic; and the two keys belong in
+       one step anyway, because the thing worth showing is the pair. A reader who sees
+       `cannot` alone learns what the engine checks and learns nothing about the promise
+       sitting under it that the engine does not. */
     id: "cannot",
-    keys: ["cannot"],
+    keys: ["cannot", "will_not"],
     title: "What must never arrive",
     body:
-      "The prohibition. The engine holds the graph to it. `acceptance-criteria` names an " +
-      "ontology data type. An edge carrying it into this node fails the bundle with " +
-      "`bundle/prohibition-violated`. The second entry names no term. It is read as free text.",
+      "Two fields, because the engine can hold the graph to only one of them. `cannot` takes " +
+      "data types: an edge carrying `acceptance-criteria` in fails the bundle with " +
+      "`bundle/prohibition-violated`. `will_not` takes the author's sentences, and nothing " +
+      "reads those.",
   },
 ];
 

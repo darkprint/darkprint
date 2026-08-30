@@ -50,9 +50,7 @@
 
 import { afterAll, describe, expect, it } from "vitest";
 
-import { CORE_ONTOLOGY } from "@/lib/core";
 import { forkBundle } from "@/lib/server/lineage";
-import { addOntologyVersion } from "@/lib/server/ontology";
 import {
   publishBundle,
   resolvingCorpus,
@@ -87,13 +85,9 @@ interface ForkWorld {
 
 const setup = deferred<ForkWorld>(async () => {
   const scratch = await scratchDatabase("fork");
-  /* `publish` opens an `OntologyView` for whatever the manifest names, and an unpublished
-     version raises T030's `UnknownOntologyVersionError` — a foreign rejection that does not
-     even look like a T190 failure. Seeded once, here. */
-  await addOntologyVersion(scratch.db, {
-    version: CORE_ONTOLOGY.version,
-    terms: [...CORE_ONTOLOGY.terms],
-  });
+  /* No ontology version is seeded. `publish` used to open a view for whatever the manifest
+     named and refuse an unpublished version, which was a foreign rejection that did not even
+     look like a T190 failure; `openView` merges over `CORE_ONTOLOGY` now. */
   const corpus = resolvingCorpus();
   const author = await seedAccount(scratch, mark("up").toLowerCase());
   const forker = await seedAccount(scratch, mark("fk").toLowerCase());

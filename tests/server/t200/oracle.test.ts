@@ -31,6 +31,8 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { CORE_ONTOLOGY } from "@/lib/core";
+
 import {
   blueprints,
   cards,
@@ -40,7 +42,6 @@ import {
   scoresOf,
   tags,
 } from "@/lib/server/registry";
-import { getLatestOntologyVersion, getOntologyVersion } from "@/lib/server/ontology";
 import type { Db } from "@/lib/db";
 
 import {
@@ -219,36 +220,35 @@ describe("the vocabularies the AC3 cells compare against are non-empty", () => {
   });
 });
 
-describe("the merged vocabulary the /cards and /terms facets come from is published", () => {
-  it("`getOntologyVersion` reads back the 49 core terms this suite seeded", async () => {
+describe("the merged vocabulary the /cards and /terms facets come from is the living one", () => {
+  /*
+   * Two cells stood at the head of this block and both read the published-versions table:
+   * `getOntologyVersion` reading back the 49 terms this world seeded, and
+   * `getLatestOntologyVersion` finding that version without being told which. They existed
+   * because D-200-14 takes `/cards`'s `type` and `risk` facets and `/terms`'s `kind` facet
+   * from a stored vocabulary, and a version row with no term rows would have left those
+   * facets legitimately empty — the AC3 cells would then have reddened a correct module for
+   * a hole in the fixture.
+   *
+   * There is no stored vocabulary. The readers open a view over `CORE_ONTOLOGY`, so the hole
+   * those cells guarded against is not constructible, and a reader cannot be told which
+   * version to use because there is one. What still needs asserting is the part that was
+   * never about storage: that the vocabulary really carries the ids the facet cells name.
+   */
+  it("the vocabulary carries the values the /cards facet cells name", () => {
     setup.check();
-    const record = await getOntologyVersion(db(), w.ontology.version);
-    expect(
-      record?.terms.length,
-      "D-200-14 takes `/cards`'s `type` and `risk` facets and `/terms`'s `kind` facet from " +
-        "merged T030's ontology. A version row with no term rows would leave those facets " +
-        "legitimately empty and the AC3 cells would red a correct module for a hole here.",
-    ).toBe(49);
-  });
-
-  it("`getLatestOntologyVersion` finds it, so an implementation need not be told which", async () => {
-    setup.check();
-    const latest = await getLatestOntologyVersion(db());
-    expect(latest?.version).toBe(w.ontology.version);
-  });
-
-  it("the vocabulary carries the values the /cards facet cells name", async () => {
-    setup.check();
-    const record = await getOntologyVersion(db(), w.ontology.version);
     const byKind = new Map<string, string[]>();
-    for (const term of record?.terms ?? []) {
+    for (const term of CORE_ONTOLOGY.terms) {
       const held = byKind.get(term.kind);
       if (held === undefined) byKind.set(term.kind, [term.id]);
       else held.push(term.id);
     }
-    expect(byKind.get("node-type") ?? [], "`agent` and `tool` are the two the cards use").toEqual(
-      expect.arrayContaining(["agent", "tool"]),
-    );
+    expect(
+      byKind.get("node-type") ?? [],
+      "`agent`, `tool` and `human-gate` are the three the cards use, and `human-in-the-loop` " +
+        "is the category `human=1` asks about — the facet resolves the card's `type` through " +
+        "the vocabulary rather than reading a boolean off the card",
+    ).toEqual(expect.arrayContaining(["agent", "tool", "human-gate", "human-in-the-loop"]));
     expect(
       byKind.get("risk-marker") ?? [],
       "`irreversible-action` is the marker the world's third card carries, and it is a CORE " +

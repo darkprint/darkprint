@@ -10,9 +10,15 @@
 # enforces all three.
 #
 # `version` is this overlay's own semver (doc 3 §8). It does not
-# mint a new vocabulary version: the view keeps the core's, which
-# is what lets a card using a local term still declare the core
-# `ontology_version` it was written against.
+# mint a new vocabulary version: the merged view keeps the core's,
+# and that is the version every score computed against this overlay
+# records. A card used to declare an `ontology_version` of its own
+# and this paragraph existed to explain how a local term could
+# appear in a card that still declared the core's number. There is
+# one vocabulary and a card declares no version of it, so the
+# question the paragraph answered no longer arises; what the line
+# above still says is that adding a term here does not change what
+# a score is stamped with.
 # ============================================================
 version: "0.1.0"
 terms:

@@ -106,7 +106,12 @@ export const ADMISSIBLE = {
   doesNotResolve: "exportRelease: this release does not resolve.",
   badFactoryDot: "exportRelease: the emitted factory.dot is not valid Attractor input.",
   cardUnavailable: "exportRelease: a card this release pins is unavailable.",
-  ontologyUnpublished: "exportRelease: the ontology version this release names is not published.",
+  /* There is no `ontologyUnpublished`. It read "exportRelease: the ontology version this
+     release names is not published." and was raised when a release's manifest named a
+     vocabulary version nobody had published. A manifest names no version and `openView`
+     merges over `CORE_ONTOLOGY` without reaching a store, so the condition is not
+     constructible and the form is gone from `lib/server/export/errors.ts`. Six
+     caller-observable forms stand where there were seven. */
   vocabularyNotTerms: "exportRelease: this release's stored vocabulary is not a term list.",
   noSuchFile: "serveFile: no such file in this release.",
   /**
@@ -129,20 +134,19 @@ export const ADMISSIBLE = {
    * to prevent.
    *
    * It is not caller-observable: the route rethrows it and the caller gets a generic 500 with no
-   * body from this module. **The seven forms a caller can observe are still seven**, which is why
-   * the count assertion below is over `RELEASE_FACT_FORMS` and not over every literal this file
-   * knows.
+   * body from this module. **The forms a caller can observe are counted separately**, which is
+   * why the count assertion below is over `RELEASE_FACT_FORMS` and not over every literal this
+   * file knows. There were seven of them; the withdrawal of `ontologyUnpublished` leaves six.
    */
   readFailed: "export: reading this release failed.",
 } as const;
 
-/** The seven that mean "a fact about the release" — everything except the driver-failure sibling. */
+/** The six that mean "a fact about the release" — everything except the driver-failure sibling. */
 export const RELEASE_FACT_FORMS: readonly string[] = [
   ADMISSIBLE.noSuchRelease,
   ADMISSIBLE.doesNotResolve,
   ADMISSIBLE.badFactoryDot,
   ADMISSIBLE.cardUnavailable,
-  ADMISSIBLE.ontologyUnpublished,
   ADMISSIBLE.vocabularyNotTerms,
   ADMISSIBLE.noSuchFile,
 ];

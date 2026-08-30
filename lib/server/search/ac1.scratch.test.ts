@@ -68,7 +68,6 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
       model: "claude-opus-5",
       tools: [],
       riskMarkers: [],
-      requiresHuman: false,
       ontologyVersion: "0.1.0",
       ...over,
     };

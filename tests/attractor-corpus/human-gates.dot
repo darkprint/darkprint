@@ -1,0 +1,22 @@
+// Both hexagon types, and the reason a hexagon cannot come home as itself.
+// `human-gate` and `human-input` select one handler (`wait.human`) and one shape, so
+// Attractor stores nothing that separates them. A file that came out of DarkPrint says
+// which it meant in its `class`; this one did not, and both nodes arrive as `human-gate`.
+digraph human_gates {
+  goal="Take a decision to a person, then take their answer back.";
+  label="Human gates";
+
+  start   [label="start", shape=Mdiamond];
+  propose [label="Propose", shape=box, prompt="Draft the change and explain what it does."];
+  approve [label="Approve", shape=hexagon, prompt="A maintainer reads the change and approves or rejects it."];
+  collect [label="Collect the reason", shape=hexagon, prompt="Ask the maintainer why, in their own words."];
+  land    [label="Land", shape=box, prompt="Merge the approved change."];
+  exit    [label="exit", shape=Msquare];
+
+  start -> propose;
+  propose -> approve;
+  approve -> land    [label="approved", condition="verdict == 'approve'"];
+  approve -> collect [label="rejected", condition="verdict == 'reject'"];
+  collect -> exit;
+  land -> exit;
+}

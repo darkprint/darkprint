@@ -40,11 +40,11 @@ outputs:
     description: The run write-up a maintainer reads, suites, durations, failures, coverage delta.
 dependencies:
   - review-drafter
-cannot:
+cannot: []
+will_not:
   - edit the code under test
   - re-run a failing suite hoping for a different answer
 
-requires_human: false
 risk_markers: []
 notes: >-
   `max_iterations: 3` bounds the draft/test loop. Drop it and the pair still terminates in practice,
@@ -52,4 +52,3 @@ notes: >-
 
 version: 1.0.0
 author: sol-antczak
-ontology_version: 0.1.0

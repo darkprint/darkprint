@@ -118,9 +118,15 @@ export const AUTONOMY_LABELS: Record<1 | 2 | 3 | 4, string> = {
  * something the band cannot promise, since the top band is a fraction above 0.90 and a
  * graph of eleven nodes reaches it with a person still standing in it. That claim now
  * belongs to `isDarkFactory` alone, which counts the human nodes rather than the share.
+ *
+ * `assisted` says "in most of this graph" rather than "at most of the nodes" because the
+ * band now reads the weaker of two shares (`analysis/autonomy.ts`): a graph whose workers
+ * all run alone while a person makes every routing call lands here too, and the older
+ * sentence was a headcount claim that would have been false about it.
  */
 export const AUTONOMY_BLURB: Record<AutonomyClass, string> = {
-  assisted: "A person acts at most of the nodes, and the agents work under that hand.",
+  assisted:
+    "A person is in most of this graph, at the nodes or at the calls that decide what the nodes do.",
   supervised:
     "Agents do the work, and a person approves the moves this graph treats as critical.",
   conditional:

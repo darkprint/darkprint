@@ -69,6 +69,33 @@ export interface CardBlockSpec {
  *   cannot  interfaces. §3.3 is "what arrives, what leaves"; a prohibition is the one
  *           thing that must not arrive, and `bundle/prohibition-violated` is raised
  *           against an edge, which is the same currency as `inputs`.
+ *
+ * ── `will_not` sits beside `cannot`, and not in evaluation ──
+ * The prohibition split put the author's own sentences in a field of their own. The
+ * temptation is to file them under evaluation, next to `notes`, because nothing in the
+ * engine reads them. That is the wrong reading of the block: evaluation holds the keys
+ * DarkPrint's static analysis reads, and this one is read by nobody at all. What it says
+ * is a statement about what may arrive on this node, which is what §3.3 is, so it belongs
+ * where the reader is already looking for a prohibition. Drawing it beside `cannot` is
+ * also the whole point of the split: a reader compares two adjacent slots and sees which
+ * of the two the engine checks.
+ *
+ * ── `ontology_version` is not here either ──
+ * Service used to hold a fourth key, the semver of the vocabulary the author wrote the
+ * card against. The engine read it to resolve the card against that vocabulary rather than
+ * the current one, and nothing ever consumed the resolution: a release stores its whole
+ * scorecard when it is published, so no score is recomputed against an older vocabulary.
+ * What the key produced on this pane was a version number a reader could do nothing with,
+ * in the block whose purpose sentence had to name it. The version a SCORE was computed
+ * under is still recorded, on the score.
+ *
+ * ── `requires_human` is not here, and it is not anywhere ──
+ * Evaluation used to hold three keys. The first was a boolean saying whether a person
+ * acts at the node, sitting one block away from the `type` that already said it, and the
+ * document could answer the question twice and differently. The field is gone from the
+ * schema and `type` is the whole answer, so the key that would have been drawn here is
+ * not a key any more. `identity` is where a reader now finds who acts at the node, which
+ * is where doc 1 §3.1 puts `type`.
  */
 export const CARD_BLOCKS: readonly CardBlockSpec[] = [
   {
@@ -90,21 +117,21 @@ export const CARD_BLOCKS: readonly CardBlockSpec[] = [
     label: "Interfaces",
     ref: "doc 1 §3.3",
     purpose: "What arrives, what leaves, which nodes it expects to hear from, and what may not.",
-    keys: ["inputs", "outputs", "dependencies", "cannot"],
+    keys: ["inputs", "outputs", "dependencies", "cannot", "will_not"],
   },
   {
     id: "evaluation",
     label: "Evaluation metadata",
     ref: "doc 1 §3.4",
     purpose: "The keys the static analysis reads. Nothing here instructs the agent.",
-    keys: ["requires_human", "risk_markers", "notes"],
+    keys: ["risk_markers", "notes"],
   },
   {
     id: "service",
     label: "Service fields",
     ref: "doc 1 §3.5",
-    purpose: "The version, who wrote it, and the vocabulary it was written against.",
-    keys: ["version", "author", "provenance", "ontology_version"],
+    purpose: "The card's own version, and who wrote it.",
+    keys: ["version", "author", "provenance"],
   },
 ];
 
@@ -159,7 +186,7 @@ export interface PaneField {
    *
    * What the field is *for* is not here and is not per card: it is one paragraph in
    * `./field-notes.ts`, which the renderer looks up by `key`. Carrying it through this
-   * model would put the same 23 paragraphs in the page payload once per node.
+   * model would put the same 22 paragraphs in the page payload once per node.
    */
   detail?: string;
   /** 1-based inclusive line range in the card document, when the document writes the key. */

@@ -78,10 +78,9 @@ function body(id: string, version: string, phases: string[], action = "solve"): 
     outputs: [],
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: [],
     version,
-    ontologyVersion: "0.1.0",
   };
 }
 
@@ -163,6 +162,12 @@ beforeAll(async () => {
   const bobId = await account("bob");
   alice = { kind: "account", accountId: aliceId, handle: "alice" };
 
+  /* Two `ontology_version` rows, still written, still referenced by
+     `release.scored_ontology_version_id` below. Neither the column nor the table is read by
+     anything any more — `scoresOf` takes the version off the stored `autonomy`, which is
+     where `computeAutonomy` stamps it — so these exist to keep the FK satisfiable and to
+     keep the fixture honest about what a real release row looks like. They are NOT what
+     makes the scorecards below readable; the `ontologyVersion` on each `autonomy` is. */
   const [v1] = await db
     .insert(schema.ontologyVersion)
     .values({ version: "0.1.0", digest: "sha256:onto-1" })
@@ -210,19 +215,23 @@ beforeAll(async () => {
   // `vault`'s release is left wholly unscored, which is the "nothing stored" case.
   await release(vault, "1.0.0", "vault", ["secret"], "private-cat", ["hidden@1.0.0"]);
 
-  // A half-written scorecard: stamped with an ontology version, one axis present, two
-  // null. Added because breaking the all-four-or-nothing rule reddened nothing without it
-  // — every unscored fixture here had all four columns null, so the stamp check alone
-  // covered them and the rule was load-bearing nowhere the suite could see.
+  // A half-written scorecard: one axis present, two null. Added because breaking the
+  // all-or-nothing rule reddened nothing without it — every unscored fixture here had every
+  // column null, so they were covered by the axis checks alone and the rule was load-bearing
+  // nowhere the suite could see. Its `autonomy` carries a version, so what makes this
+  // incomplete is the two missing axes and not a missing stamp.
   await db
     .update(schema.release)
-    .set({ autonomy: { level: "assisted" }, scoredOntologyVersionId: ontologyV1 })
+    .set({
+      autonomy: { level: "assisted", ontologyVersion: "0.1.0" },
+      scoredOntologyVersionId: ontologyV1,
+    })
     .where(eq(schema.release.id, bobReleaseId));
 
   await db
     .update(schema.release)
     .set({
-      autonomy: { level: "assisted" },
+      autonomy: { level: "assisted", ontologyVersion: "0.1.0" },
       security: { level: "guarded" },
       phaseCoverage: { present: ["planning"] },
       scoredOntologyVersionId: ontologyV1,
@@ -415,14 +424,14 @@ describe("AC7: the stored scorecard is read, never recomputed", () => {
   it("returns the stored axes stamped with the ontology version they were computed under", async () => {
     const scores = await scoresOf(db, ANON, "alice", "atlas");
     expect(scores?.ontologyVersion).toBe("0.1.0");
-    expect(scores?.autonomy).toEqual({ level: "assisted" });
+    expect(scores?.autonomy).toEqual({ level: "assisted", ontologyVersion: "0.1.0" });
   });
 
   it("returns the new values and no trace of the old after a re-score", async () => {
     await db
       .update(schema.release)
       .set({
-        autonomy: { level: "supervised" },
+        autonomy: { level: "supervised", ontologyVersion: "0.2.0" },
         security: { level: "hardened" },
         phaseCoverage: { present: ["planning", "testing"] },
         scoredOntologyVersionId: ontologyV2,
@@ -431,7 +440,7 @@ describe("AC7: the stored scorecard is read, never recomputed", () => {
 
     const scores = await scoresOf(db, ANON, "alice", "atlas");
     expect(scores).toEqual({
-      autonomy: { level: "supervised" },
+      autonomy: { level: "supervised", ontologyVersion: "0.2.0" },
       security: { level: "hardened" },
       phaseCoverage: { present: ["planning", "testing"] },
       ontologyVersion: "0.2.0",

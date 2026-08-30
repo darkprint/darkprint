@@ -41,7 +41,6 @@ describe("app/api/files — classification", () => {
       "exportRelease: this release does not resolve.",
       "exportRelease: the emitted factory.dot is not valid Attractor input.",
       "exportRelease: a card this release pins is unavailable.",
-      "exportRelease: the ontology version this release names is not published.",
       "exportRelease: this release's stored vocabulary is not a term list.",
     ];
     const bodies = new Set<string>();
@@ -51,13 +50,14 @@ describe("app/api/files — classification", () => {
       expect(response.headers.get("content-type"), message).toBe("application/problem+json");
       bodies.add(await response.text());
     }
-    /* One body for all seven, and none of them carries its own message: the seven forms are
+    /* One body for all six, and none of them carries its own message: the forms are
        diagnostic inside the module, and B-03 requires the outside to be unable to tell them
-       apart. */
+       apart. It was seven until `…the ontology version this release names is not published.`
+       was withdrawn with the vocabulary-version registry that could raise it. */
     expect(bodies.size).toBe(1);
     expect([...bodies][0]).not.toContain("release");
 
-    /* `undefined` — absent or invisible — is the eighth way in and answers identically. */
+    /* `undefined` — absent or invisible — is the last way in and answers identically. */
     const absent = await respondWithFile(REQUEST(), () => Promise.resolve(undefined));
     expect(absent.status).toBe(404);
     expect(await absent.text()).toBe([...bodies][0]);

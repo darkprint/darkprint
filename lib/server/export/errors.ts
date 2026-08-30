@@ -54,7 +54,8 @@ Object.defineProperty(ExportError.prototype, "name", {
  * about the *infrastructure* and must reach the caller as a 500. Sharing the type made
  * a Postgres outage answer 404 under a comment saying it must not, and made the same
  * outage answer 404 or 500 depending on which statement failed first, since a driver
- * error raised inside `resolveCardRef` or `openView` was never wrapped at all.
+ * error raised inside `resolveCardRef` or `openView` was never wrapped at all. (`openView`
+ * issues no statement now and cannot be the site of an outage; `resolveCardRef` still can.)
  *
  * The three harms were not cosmetic: alerting on 5xx reads an outage as traffic to
  * missing files; B-03 reserves 404 for absent-or-invisible so existence does not leak,
@@ -135,10 +136,13 @@ export function pinnedCardUnavailable(): ExportError {
   return new ExportError("exportRelease: a card this release pins is unavailable.", undefined);
 }
 
-/** The ontology version the release's manifest names is not published (B-08's stamp is dangling). */
-export function unpublishedOntologyVersion(cause?: unknown): ExportError {
-  return new ExportError("exportRelease: the ontology version this release names is not published.", cause);
-}
+/* There is no `unpublishedOntologyVersion`. It rendered "exportRelease: the ontology version
+   this release names is not published." for the case where a release's manifest named a
+   version nobody had published (B-08's stamp dangling). A manifest names no version, and
+   `openView` merges over `CORE_ONTOLOGY` without reaching a store, so the condition it
+   reported cannot arise and a form for it would be a sentence no caller can ever be handed.
+   Deleted rather than left unreachable: `build.ts` is the only site that raised it and its
+   own comment records what the two removed arms were for. */
 
 /**
  * `release.local_vocabulary` held something that is not `{ text, terms }`.

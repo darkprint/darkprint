@@ -40,11 +40,11 @@ outputs:
     description: The claims that failed, with the reason each citation did not carry them.
 dependencies:
   - evidence-synthesizer
-cannot:
+cannot: []
+will_not:
   - edit a sentence to make it pass
   - supply a citation of its own
 
-requires_human: false
 risk_markers: []
 notes: >-
   `max_iterations` is what bounds the synthesize/verify loop: after three passes the run stops
@@ -54,4 +54,3 @@ notes: >-
 
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0

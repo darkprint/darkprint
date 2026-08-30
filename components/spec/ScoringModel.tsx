@@ -29,7 +29,11 @@
    use. Doc 1 §11 put the thresholds in one file so they could be
    re-tuned after launch against real data, and doc 3 §8 makes
    moving one of them a PATCH of the ontology version because it
-   re-scores every published blueprint. A table transcribed by hand
+   re-scores every published blueprint. (That is a rule for whoever
+   edits the file, not a mechanism: the weights live in
+   `DARKPRINT_CONFIG` and not in the vocabulary, so nothing moves
+   the version with them. The panel below says so in the open.)
+   A table transcribed by hand
    survives that re-tuning and lies about it afterwards, which is
    the failure mode `SectionExample` already avoids for the one
    number it quotes. So this component takes a `DarkprintConfig`
@@ -518,12 +522,15 @@ export function ScoringModel({
             several places that read them.
           </p>
           <p className="prose-lane text-sm leading-relaxed text-muted">
-            Moving any of them is a PATCH of the ontology version. Every score already
-            published changes with it. That is why a score records the vocabulary
-            version it was computed under (doc 3 §8). Four of the nine blueprints in this
-            archive land on the floor today. That is either weights that are heavy or a
-            scale that is short. Telling those apart needs a corpus this site has no way
-            to collect.
+            Doc 3 §8 makes moving any of them a PATCH of the ontology version, and every
+            score already published changes with it. That rule is a discipline on whoever
+            edits the file and nothing enforces it: the weights are not part of the
+            vocabulary, so the version a score records does not move when a weight does.
+            Two scores carrying the same version were not necessarily computed under the
+            same numbers, and the site has no way to tell you which. Four of the nine
+            blueprints in this archive land on the floor today. That is either weights that
+            are heavy or a scale that is short. Telling those apart needs a corpus this site
+            has no way to collect.
           </p>
           {/* The two reasons cut out of the panels above to keep them short. Both are the
               answer to a "why that number" a reader may not have, and §3.1's licence

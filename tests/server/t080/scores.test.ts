@@ -34,6 +34,8 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { CORE_ONTOLOGY } from "@/lib/core";
+
 import {
   type Scratch,
   anonymous,
@@ -55,13 +57,17 @@ const SLUG = "scored-bundle";
 const UNSCORED_SLUG = "unscored-bundle";
 /** Stamped, one axis present, two null — the case a stamp check cannot tell from scored. */
 const HALF_SCORED_SLUG = "half-scored-bundle";
-/** All three axes and no `scored_ontology_version_id`. */
+/** All three axes, and an `autonomy` that does not say which vocabulary produced them. */
 const UNSTAMPED_SLUG = "unstamped-bundle";
 
 const OLD_ONTOLOGY = "7.1.0";
 const NEW_ONTOLOGY = "7.2.0";
 /** In `ontology_version` and referenced by nothing. */
 const UNREFERENCED_ONTOLOGY = "7.3.0";
+/* The stamp is `AutonomyResult.ontologyVersion` on the stored score, not a row id.
+   `release.scored_ontology_version_id` and the `ontology_version` rows below are still
+   written by this fixture and are read by nothing: keeping them is how the cells assert the
+   reader IGNORES them, and `oldTells` carries the old row's id for exactly that. */
 
 let s: Scratch;
 let handle: string;
@@ -105,7 +111,7 @@ beforeAll(async () => {
     version: "1.0.0",
     cards: [card],
     createdAt: "2030-01-01T00:00:00Z",
-    autonomy: { autonomyClass: sentinels.oldAutonomy, level: 1 },
+    autonomy: { autonomyClass: sentinels.oldAutonomy, level: 1, ontologyVersion: OLD_ONTOLOGY },
     security: {
       level: 1,
       raw: 1,
@@ -123,7 +129,7 @@ beforeAll(async () => {
     version: "2.0.0",
     cards: [card],
     createdAt: "2020-01-01T00:00:00Z",
-    autonomy: { autonomyClass: sentinels.newAutonomy, level: 4 },
+    autonomy: { autonomyClass: sentinels.newAutonomy, level: 4, ontologyVersion: NEW_ONTOLOGY },
     security: {
       level: 4,
       raw: 4,
@@ -142,17 +148,17 @@ beforeAll(async () => {
   const unscored = await insertBundle(s, { owner, slug: UNSCORED_SLUG });
   await insertRelease(s, { bundle: unscored, version: "1.0.0", cards: [card] });
 
-  /* Half written: stamped, one axis present, two null. */
+  /* Half written: one axis present and carrying its version, two null. */
   const half = await insertBundle(s, { owner, slug: HALF_SCORED_SLUG });
   await insertRelease(s, {
     bundle: half,
     version: "1.0.0",
     cards: [card],
-    autonomy: { autonomyClass: "supervised", level: 2 },
+    autonomy: { autonomyClass: "supervised", level: 2, ontologyVersion: NEW_ONTOLOGY },
     scoredOntologyVersionId: newOntology.id,
   });
 
-  /* Three axes and no stamp. */
+  /* Three axes, and an `autonomy` that names no vocabulary. */
   const unstamped = await insertBundle(s, { owner, slug: UNSTAMPED_SLUG });
   await insertRelease(s, {
     bundle: unstamped,
@@ -219,13 +225,16 @@ describe("AC7 the reader returns the new values", () => {
       found.ontologyVersion,
       `B-08: the axes are "stored beside the ontology version they were computed under", and ` +
         `\`Scores.ontologyVersion\` is declared \`string\` — the semver, as ` +
-        `\`SecurityResult.ontologyVersion\` carries it, not the \`ontology_version.id\` uuid. ` +
-        `${UNREFERENCED_ONTOLOGY} is the newest row in the table and is referenced by ` +
-        `nothing, so reading "the latest ontology" instead of the release's own stamp ` +
-        `answers that.`,
+        `\`AutonomyResult.ontologyVersion\` carries it on the stored score, not the ` +
+        `\`ontology_version.id\` uuid this release also still carries. ` +
+        `${UNREFERENCED_ONTOLOGY} is the newest row in that table and is referenced by ` +
+        `nothing, so reading "the latest ontology" answers that; \`CORE_ONTOLOGY.version\` ` +
+        `is what reading "the vocabulary this build ships" answers, and neither is the ` +
+        `version this release was scored under.`,
     ).toBe(NEW_ONTOLOGY);
     expect(found.ontologyVersion).not.toBe(UNREFERENCED_ONTOLOGY);
     expect(found.ontologyVersion).not.toBe(newOntologyId);
+    expect(found.ontologyVersion).not.toBe(CORE_ONTOLOGY.version);
   });
 });
 
@@ -250,8 +259,8 @@ describe("AC7 scoresOf is all four or nothing", () => {
     const scoresOf = await bind("scoresOf");
     expect(
       await scoresOf(s.db, anonymous, handle, HALF_SCORED_SLUG),
-      `\`${HALF_SCORED_SLUG}\`'s current release carries a \`scored_ontology_version_id\` ` +
-        `and an \`autonomy\`, with \`security\` and \`phase_coverage\` null.`,
+      `\`${HALF_SCORED_SLUG}\`'s current release carries an \`autonomy\` naming its own ` +
+        `vocabulary version, with \`security\` and \`phase_coverage\` null.`,
     ).toBeUndefined();
   });
 
@@ -261,8 +270,10 @@ describe("AC7 scoresOf is all four or nothing", () => {
       await scoresOf(s.db, anonymous, handle, UNSTAMPED_SLUG),
       `The fourth member is \`ontologyVersion: string\`, and B-08 is explicit that "a score ` +
         `that does not say which vocabulary produced it is not comparable with any other ` +
-        `score" (lib/core/analysis/security.ts). Three axes and no stamp is a half-written ` +
-        `scorecard in the direction nobody looks.`,
+        `score" (lib/core/analysis/security.ts). Three axes whose \`autonomy\` names no ` +
+        `vocabulary is a half-written scorecard in the direction nobody looks — and the one ` +
+        `a reader is most likely to paper over, since substituting the version this build ` +
+        `ships would produce a complete-looking answer that is a guess.`,
     ).toBeUndefined();
   });
 });

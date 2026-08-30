@@ -38,7 +38,6 @@ export interface PrivateCard {
   typeLabel: string;
   phases: { id: string; label: string }[];
   tools: string[];
-  requiresHuman: boolean;
   riskMarkers: string[];
 }
 
@@ -61,7 +60,6 @@ export const PRIVATE_CARDS: readonly PrivateCard[] = [
     typeLabel: "Decision",
     phases: [{ id: "plan", label: "Plan" }],
     tools: [],
-    requiresHuman: false,
     riskMarkers: [],
   },
   {
@@ -75,7 +73,6 @@ export const PRIVATE_CARDS: readonly PrivateCard[] = [
     typeLabel: "Agent",
     phases: [{ id: "build", label: "Build" }],
     tools: ["http-fetch"],
-    requiresHuman: true,
     riskMarkers: [],
   },
 ];

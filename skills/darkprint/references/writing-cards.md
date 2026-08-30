@@ -120,7 +120,8 @@ published card in place, which edges are deliberately absent and the `cannot` en
 enforce them, where the iteration cap lives, and the rule that nothing may edge from the
 criteria producer into a node whose work is judged. The owner instructed the file out of every
 blueprint folder, published or skill-written (2026-08-25), so this skill no longer writes one.
-Fold the same points into `README.md`'s edge section and the `cannot` split above instead,
+Fold the same points into `README.md`'s edge section and the `cannot` / `will_not` split
+above instead,
 addressed to whoever reads the folder next, agent or person.*
 
 ---

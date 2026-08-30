@@ -37,10 +37,10 @@ outputs:
     description: Per-file risk bands, the blast radius the diff implies, and the suites to run.
 dependencies:
   - pr-intake
-cannot:
+cannot: []
+will_not:
   - push to the repository it reads
 
-requires_human: false
 risk_markers: []
 notes: >-
   Read scope on the repository only, the triager clones and diffs, it never pushes. The write
@@ -48,4 +48,3 @@ notes: >-
 
 version: 1.0.0
 author: sol-antczak
-ontology_version: 0.1.0

@@ -238,7 +238,6 @@ export async function buildWorld(s: Scratch): Promise<World> {
       id: mark(`t300-${key}`),
       phases: [phase],
       type: "agent",
-      requiresHuman: false,
       riskMarkers: [],
       name: spec.name,
       action: spec.action,

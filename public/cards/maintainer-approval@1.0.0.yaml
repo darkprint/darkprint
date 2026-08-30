@@ -35,18 +35,16 @@ outputs:
     description: The maintainer's verdict, and nothing else, the merge step reads no other input.
 dependencies:
   - test-runner
-cannot:
+cannot: []
+will_not:
   - summarise the change for the maintainer
   - recommend an outcome
 
-requires_human: true
 risk_markers: []
 notes: >-
   `review` is optional because an edge carries a single value: the test runner wires its report,
-  and the maintainer pulls the draft from the PR thread. The `requires_human` flag is redundant
-  with the node type and set anyway, this gate is the whole point of the blueprint and should be
-  legible without an ontology lookup.
+  and the maintainer pulls the draft from the PR thread. This gate is the whole point of the
+  blueprint, and the `human-gate` type is the whole of what says so.
 
 version: 1.0.0
 author: sol-antczak
-ontology_version: 0.1.0

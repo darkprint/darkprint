@@ -120,9 +120,11 @@ and give them back byte-identically.
 **Behaviour**
 
 - Stores, per published bundle: manifest fields (`slug`, `title`, `summary`, optional
-  `description`, `category`, `author`, `createdAt`, `updatedAt`, required `tags`,
-  `ontologyVersion` — `lib/core/bundle/types.ts`, validated by `read.ts:425-449`), the DOT
-  source verbatim, the set of pinned card refs, and the digest.
+  `description`, `category`, `author`, `createdAt`, `updatedAt`, required `tags` —
+  `lib/core/bundle/types.ts`), the DOT source verbatim, the set of pinned card refs, and the
+  digest. **`ontologyVersion` left the manifest with D-93**: there is one living vocabulary
+  and no historical version to resolve against, so the version survives only as a stamp on a
+  stored score (`release.scoredOntologyVersionId`), never as a field an author types.
 - The digest is computed, never accepted from the client: it is `sha256` over the DOT plus
   the sorted card digests, and card digests are sorted but **not** deduplicated, so a
   bundle pinning one card twice is a different bundle (`digest.ts:61`).
@@ -210,9 +212,12 @@ with a content digest and a checkable version chain, shared across all bundles t
    `REF_VERSION` and the seeded `phases` ids (`plan`, `build`) are not among the five
    phases. Are private cards held to the same schema as published ones, or not validated
    until publish?
-4. Which wire spelling is canonical over an API — the card's snake_case
-   (`requires_human`, `ontology_version`) or the manifest's camelCase (`ontologyVersion`)?
-   One bundle carries both today.
+4. Which wire spelling is canonical over an API — the card's snake_case or the manifest's
+   camelCase? **The three fields this question was asked about are all gone**: D-92 withdrew
+   `requires_human` and D-93 withdrew `ontology_version` and `ontologyVersion`. The question
+   itself stands for whatever field is added next, and `will_not` (D-101's prohibition split)
+   is the first case decided under it: snake_case on the wire, `willNot` on the model, with
+   the camelCase spelling also accepted on input.
 5. Is a version ever yanked, deprecated or superseded? Nothing in the UI proposes one.
 6. Are unknown card keys preserved on round-trip, or dropped? They are accepted with an
    `info` diagnostic and never re-emitted.
@@ -344,14 +349,16 @@ each card on its own address — at stable URLs that a `curl` line and an agent 
 
 - `code` — `scripts/generate-bundles.ts` writes `public/bundles/<slug>/**` (9 folders) and
   `public/cards/<ref>.yaml` (57 files) at `prebuild`, deterministically, and re-parses every
-  emitted `factory.dot` through `parseDot` + `lintAttractor` before shipping it
+  compiled graph through `parseDot` + `lintAttractor` before shipping it, without writing it
   (script header, `:1-52`). SEAM-109, SEAM-19, SEAM-22.
 - `code` — `lib/content/bundle-export.ts` decides what a bundle *is* once it leaves the
-  site: `TOPOLOGY_DOT`, `FACTORY_DOT`, `BUNDLE_CARDS_DIR`, `BUNDLE_README`, `BUNDLE_AGENTS`,
-  `BUNDLE_VOCABULARY`; `bundleFilePaths`, `bundleHref`, `bundleDownloadCommand:308`,
+  site: `TOPOLOGY_DOT`, `BUNDLE_CARDS_DIR`, `BUNDLE_README`, `BUNDLE_AGENTS`,
+  `BUNDLE_VOCABULARY` (`FACTORY_DOT` was deleted by D-104); `bundleFilePaths`, `bundleHref`, `bundleDownloadCommand:308`,
   `cardDownloadCommand:321`, both over `SITE_ORIGIN = "https://darkprint.io"` (`:121`).
-- `code` — `factory.dot` is compiled by the exporter and is never in `content/`; the
-  authoring skill deliberately does not emit it (`lib/skill.ts` header). SEAM-24.
+- `code` — no bundle folder carries a compiled `factory.dot` (owner instruction,
+  2026-08-25). `emitAttractorDot` still runs as a compile-time gate on every release, and
+  D-100 makes it reachable on demand through `darkprint export --attractor`, which writes to
+  stdout rather than into a folder. SEAM-24 is RETIRED.
 - `code` — `README.md` and `AGENTS.md` are generated per bundle (`bundleReadme`,
   `bundleAgents`), and the generated half of `AGENTS.md` always exists so nobody is blocked
   from publishing (`docs/DECISIONS.md` D-52, `CONFIRMED`). SEAM-25.

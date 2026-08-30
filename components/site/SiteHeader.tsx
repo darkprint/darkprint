@@ -45,8 +45,9 @@ import { SIGN_IN_PROVIDERS } from "@/components/auth/SignInButtons";
 
    The author overruled it on 2026-08-12: "adopt the term Ontology also for /ontology page …
    be consistent through all the website". One concept, one word, everywhere it appears —
-   the route is `/ontology`, the file is `ontology/`, the field on a card is
-   `ontology_version`, and the chrome was the only surface calling it something else.
+   the route is `/ontology`, the directory in a bundle is `ontology/`, the field a score
+   carries is `ontologyVersion`, and the chrome was the only surface calling it something
+   else. (A card carried an `ontology_version` too when that instruction was given.)
 
    So the collision is resolved at the other end, and the fix was available all along:
    `/spec/ontology` becomes "Ontology file (YAML)", which is the shape its two siblings in

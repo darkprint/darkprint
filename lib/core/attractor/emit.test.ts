@@ -16,17 +16,28 @@
 
 import { describe, expect, it } from "vitest";
 import type { Bundle, BundleManifest, ResolvedBlueprint } from "../bundle/types";
+import type { NodeCard } from "../card/schema";
 import { resolveBundle } from "../bundle/resolve";
 import { parseDot, type DotGraph } from "../dot/parser";
 import { CORE_ONTOLOGY } from "../ontology/core";
 import { ontologyView } from "../ontology/resolve";
 import type { OntologyTerm } from "../ontology/types";
 import { lintAttractor } from "./lint";
-import { isReserved, isAttractorIdentifier, type AttractorScope } from "./reserved";
 import {
+  ATTRACTOR_RESERVED,
+  isReserved,
+  isAttractorIdentifier,
+  type AttractorScope,
+} from "./reserved";
+import {
+  ATTRACTOR_EMITTED_ATTRIBUTES,
+  ATTRACTOR_UNEXPRESSED_ATTRIBUTES,
   ATTRACTOR_ENTRY_KIND,
   ATTRACTOR_EXIT_KIND,
+  ATTRACTOR_TRANSLATED_TYPES,
   ATTRACTOR_TYPE_SHAPES,
+  DARKPRINT_EMITTED_ATTRIBUTES,
+  attractorClassesFor,
   attractorKindFor,
   emitAttractorDot,
   quoteAttractorString,
@@ -67,7 +78,6 @@ name: Planner
 type: agent
 phase: planning
 version: 1.0.0
-ontology_version: 0.1.0
 action: Turn the request into a plan and acceptance criteria
 spec: Read the request and write an ordered plan of implementation steps, plus the acceptance criteria the finished work will be judged against. Hand the plan onward and keep the criteria for the tester.
 model: claude-opus-5
@@ -82,7 +92,6 @@ name: Builder
 type: agent
 phase: implementation
 version: 1.0.0
-ontology_version: 0.1.0
 action: Turn the plan into working code
 spec: Implement the plan you are given, one step at a time, and return the source you produced. You do not receive the acceptance criteria and must not ask for them.
 model: claude-opus-5
@@ -97,7 +106,6 @@ name: Tester
 type: validation
 phase: testing
 version: 1.0.0
-ontology_version: 0.1.0
 action: Run the checks and produce the evidence
 spec: Run the acceptance checks against the code you are given and return a verdict together with the evidence of every failure: the assertion, the expected value and the value observed.
 tools: [shell]
@@ -113,7 +121,6 @@ name: Debugger
 type: agent
 phase: debugging
 version: 1.0.0
-ontology_version: 0.1.0
 action: Turn failure evidence into a targeted patch
 spec: Read the failure evidence, find the smallest change that addresses it, and return the patched source. Stop when two consecutive rounds produce the same failures.
 model: claude-opus-5
@@ -130,8 +137,6 @@ name: Release gate
 type: human-gate
 phase: deployment
 version: 1.0.0
-ontology_version: 0.1.0
-requires_human: true
 action: Ask a person to approve the release
 spec: Show the reviewer the verdict and the change set, and wait for an explicit approval or rejection before anything is released.
 tools: [human-review]
@@ -146,7 +151,6 @@ name: Deployer
 type: tool
 phase: deployment
 version: 1.0.0
-ontology_version: 0.1.0
 action: Publish the approved release
 spec: Publish the approved artefact to the release channel and return the published reference. This step cannot be undone once it has run.
 tools: [ci]
@@ -164,7 +168,6 @@ const MANIFEST: BundleManifest = {
   title: "Starter factory",
   summary: "Specifications go in. Software comes out.",
   tags: ["starter"],
-  ontologyVersion: "0.1.0",
 };
 
 /* --------------------- helpers --------------------- */
@@ -333,7 +336,7 @@ describe("the card → node mapping", () => {
     expect(attrsOf(graph, "__exit").shape).toBe("Msquare");
   });
 
-  it("transcribes the six rows of the table exactly", () => {
+  it("transcribes the nine rows of the table exactly", () => {
     expect(ATTRACTOR_TYPE_SHAPES).toEqual({
       agent: { shape: "box", handler: "codergen" },
       tool: { shape: "parallelogram", handler: "tool" },
@@ -341,9 +344,61 @@ describe("the card → node mapping", () => {
       "human-input": { shape: "hexagon", handler: "wait.human" },
       decision: { shape: "diamond", handler: "conditional" },
       validation: { shape: "box", handler: "codergen" },
+      parallel: { shape: "component", handler: "parallel" },
+      "parallel.fan-in": { shape: "tripleoctagon", handler: "parallel.fan_in" },
+      "manager-loop": { shape: "house", handler: "stack.manager_loop" },
     });
     expect(ATTRACTOR_ENTRY_KIND).toEqual({ shape: "Mdiamond", handler: "start" });
     expect(ATTRACTOR_EXIT_KIND).toEqual({ shape: "Msquare", handler: "exit" });
+  });
+
+  /**
+   * The last three rows are identity rows, and that is the point of the names.
+   *
+   * The ontology spells the term the way Attractor spells the handler, so the table maps a
+   * name onto itself apart from the `-`/`_` the two grammars force. A rename on either
+   * side turns the row back into a translation, and this is what says so.
+   */
+  it("keeps the control-flow rows an identity between the two vocabularies", () => {
+    const identity = (termId: string): string => termId.replace(/-/g, "_");
+    for (const termId of ["parallel", "parallel.fan-in", "manager-loop"]) {
+      const row = ATTRACTOR_TYPE_SHAPES[termId];
+      expect(row, termId).toBeDefined();
+      // `manager-loop` is the one that is not literally equal: Attractor namespaces its
+      // handler under the stack that owns it, and the term does not carry the namespace
+      // because DarkPrint has no second `manager-loop` to tell it apart from.
+      expect(row.handler.replace(/^stack\./, ""), termId).toBe(identity(termId));
+    }
+  });
+
+  /** A card declaring a control-flow type draws with the shape its handler needs. */
+  it("gives the three control-flow types their own shapes", () => {
+    const ontology = ontologyView(CORE_ONTOLOGY);
+    expect(attractorKindFor("parallel", ontology)).toEqual({
+      shape: "component",
+      handler: "parallel",
+    });
+    expect(attractorKindFor("parallel.fan-in", ontology)).toEqual({
+      shape: "tripleoctagon",
+      handler: "parallel.fan_in",
+    });
+    expect(attractorKindFor("manager-loop", ontology)).toEqual({
+      shape: "house",
+      handler: "stack.manager_loop",
+    });
+  });
+
+  /**
+   * The category names a family and not a handler, exactly as `evaluative` and
+   * `human-in-the-loop` do, so a local type rooted straight at it takes the fallback and
+   * still runs its card's spec rather than being drawn as something it is not.
+   */
+  it("falls back for the orchestration category itself", () => {
+    const ontology = ontologyView(CORE_ONTOLOGY);
+    expect(attractorKindFor("orchestration", ontology)).toEqual({
+      shape: "box",
+      handler: "codergen",
+    });
   });
 
   it("puts the manifest summary in `goal` and the title in `label`", () => {
@@ -408,6 +463,535 @@ describe("the card → node mapping", () => {
     const graph = reparse(emitAttractorDot(STARTER()));
     for (const node of graph.nodes) {
       expect(Object.prototype.hasOwnProperty.call(node.attrs, "type")).toBe(false);
+    }
+  });
+
+  /**
+   * The identity rule, and the six rows it deliberately does not bind.
+   *
+   * `ATTRACTOR_TRANSLATED_TYPES` is what stops the rule reading as pre-violated on the day
+   * it was written: the six types doc 3 §3 named describe what a node IS, not which
+   * handler runs it, and two of them (`agent` and `validation`) share one handler, so
+   * collapsing them onto their handler names would lose a distinction the vocabulary
+   * exists to make. Every row added after those six has to be an identity row instead.
+   */
+  it("keeps every row either an identity row or an explicitly grandfathered translation", () => {
+    const identity = (termId: string): string => termId.replace(/-/g, "_");
+    for (const termId of Object.keys(ATTRACTOR_TYPE_SHAPES)) {
+      if (ATTRACTOR_TRANSLATED_TYPES.includes(termId)) continue;
+      expect(ATTRACTOR_TYPE_SHAPES[termId].handler.replace(/^stack\./, ""), termId).toBe(
+        identity(termId),
+      );
+    }
+  });
+
+  it("grandfathers exactly the six types that predate the mapping table", () => {
+    expect([...ATTRACTOR_TRANSLATED_TYPES]).toEqual([
+      "agent",
+      "tool",
+      "human-gate",
+      "human-input",
+      "decision",
+      "validation",
+    ]);
+    // A grandfathered name that is not in the table any more is a clause with no subject,
+    // and would silently exempt whatever took its place.
+    for (const termId of ATTRACTOR_TRANSLATED_TYPES) {
+      expect(Object.keys(ATTRACTOR_TYPE_SHAPES), termId).toContain(termId);
+    }
+  });
+});
+
+/* ============================================================
+   the class, and the collision it has to step around
+   ============================================================ */
+
+describe("the node class", () => {
+  const classesOf = (graph: DotGraph, id: string): string[] => {
+    const raw = attrsOf(graph, id).class;
+    return raw === undefined ? [] : raw.split(" ");
+  };
+
+  it("carries the card's type and its phases", () => {
+    const graph = reparse(emitAttractorDot(STARTER()));
+    expect(classesOf(graph, "planner")).toEqual(["dp-agent", "dp-planning"]);
+    expect(classesOf(graph, "deployer")).toEqual(["dp-tool", "dp-deployment"]);
+  });
+
+  /**
+   * `human-gate ⊂ human-in-the-loop` is one of the four subsumption edges doc 3 §3 draws,
+   * and a stylesheet is where subsumption pays: a rule aimed at every node a person
+   * touches should catch this one without naming the concrete type.
+   */
+  it("walks the type's ancestors, so a category is selectable too", () => {
+    const graph = reparse(emitAttractorDot(STARTER()));
+    expect(classesOf(graph, "approve")).toEqual([
+      "dp-human-gate",
+      "dp-human-in-the-loop",
+      "dp-deployment",
+    ]);
+  });
+
+  it("prefixes every class, so a reader's subgraph label cannot collide with it", () => {
+    // Spec §2.10 turns `subgraph { label="Agent" }` into the class `agent`. Without the
+    // prefix that is the same string this file writes for `type: agent`, on a different
+    // set of nodes, and a stylesheet has no way to tell the two apart.
+    const graph = reparse(emitAttractorDot(STARTER()));
+    for (const node of graph.nodes) {
+      for (const name of classesOf(graph, node.id)) {
+        expect(name.startsWith("dp-"), `${node.id} carries \`${name}\``).toBe(true);
+      }
+    }
+  });
+
+  it("resolves a local namespaced type through its `broader` chain", () => {
+    const local: OntologyTerm[] = [
+      {
+        id: "berti/simulation-node",
+        kind: "node-type",
+        label: "Simulation node",
+        description: "A local agent that runs a simulation.",
+        broader: "agent",
+        since: "0.1.0",
+      },
+    ];
+    const card = STARTER_CARDS["cards/planner@1.0.0.yaml"].replace(
+      "type: agent",
+      "type: berti/simulation-node",
+    );
+    const bp = resolve(
+      bundleOf(STARTER_DOT, { ...STARTER_CARDS, "cards/planner@1.0.0.yaml": card }),
+      local,
+    );
+    // The namespace separator becomes the hyphen §2.10 already uses, and the ancestor is
+    // written out beside it so a rule for every agent still catches the local type.
+    expect(classesOf(reparse(emitAttractorDot(bp)), "planner")).toEqual([
+      "dp-berti-simulation-node",
+      "dp-agent",
+      "dp-planning",
+    ]);
+  });
+
+  it("keeps a control-flow type's dot out of the class name", () => {
+    const bp = resolve(
+      bundleOf(`digraph g { fan [card="fan@1.0.0"]; }`, {
+        "cards/fan@1.0.0.yaml": `id: fan
+name: Fan in
+type: parallel.fan-in
+version: 1.0.0
+action: Join the branches back together
+spec: Wait for every branch to report, then hand the collected results onward as one payload.
+inputs: []
+outputs: []
+`,
+      }),
+    );
+    expect(classesOf(reparse(emitAttractorDot(bp)), "fan")).toEqual([
+      "dp-parallel-fan-in",
+      "dp-orchestration",
+    ]);
+  });
+
+  it("says what the card says for a type the vocabulary has never heard of", () => {
+    // Called directly, the way `attractorKindFor`'s own fallback is: a card declaring an
+    // unknown type does not load at all (`card/unknown-term` is an error), so nothing
+    // through `resolveBundle` reaches this arm. It is still the arm a caller that built a
+    // blueprint by hand lands on, and losing the author's own word for the node would be
+    // answering a validation problem by dropping data.
+    const card: NodeCard = {
+      ...STARTER().nodes[0].card,
+      type: "berti/mystery",
+      phases: ["deployment"],
+    };
+    expect(attractorClassesFor(card, ONTOLOGY)).toEqual(["dp-berti-mystery", "dp-deployment"]);
+  });
+
+  it("lets nothing but `[a-z0-9-]` into a class, the list being space-separated", () => {
+    // A class carrying a space would silently become two, which is a selector matching
+    // nodes nobody aimed at. §2.10's own derivation is a lowercase-and-hyphenate, and this
+    // is the same one applied to a term id.
+    const card: NodeCard = {
+      ...STARTER().nodes[0].card,
+      type: "Berti/Odd Type.v2",
+      phases: [],
+    };
+    expect(attractorClassesFor(card, ONTOLOGY)).toEqual(["dp-berti-odd-type-v2"]);
+  });
+
+  it("drops the class along with everything else when the card did not load", () => {
+    const card = STARTER_CARDS["cards/deployer@1.0.0.yaml"].replace("type: tool", "type: mystery");
+    const bp = resolve(
+      bundleOf(STARTER_DOT, { ...STARTER_CARDS, "cards/deployer@1.0.0.yaml": card }),
+    );
+    expect(classesOf(reparse(emitAttractorDot(bp)), "deployer")).toEqual([]);
+  });
+
+  it("emits no class at all on a node with no card", () => {
+    const bp = resolve(
+      bundleOf(`digraph g { known [card="planner@1.0.0"]; known -> stranger; }`, {
+        "cards/planner@1.0.0.yaml": STARTER_CARDS["cards/planner@1.0.0.yaml"],
+      }),
+    );
+    const graph = reparse(emitAttractorDot(bp));
+    expect(attrsOf(graph, "stranger").class).toBeUndefined();
+    expect(attrsOf(graph, "__start").class).toBeUndefined();
+  });
+});
+
+/* ============================================================
+   edge guards, carried and never read
+   ============================================================ */
+
+describe("the edge guard and the routing weight", () => {
+  const GUARD = "attempts > 3 && !approved";
+
+  const guardedStarter = (): ResolvedBlueprint =>
+    resolve(
+      bundleOf(
+        STARTER_DOT.replace(
+          'builder  -> tester   [label="artifact"];',
+          `builder  -> tester   [label="artifact", condition="${GUARD}", weight=7];`,
+        ),
+        STARTER_CARDS,
+      ),
+    );
+
+  it("carries both onto the emitted edge, under Attractor's own names", () => {
+    const graph = reparse(emitAttractorDot(guardedStarter()));
+    const edge = graph.edges.find((e) => e.source === "builder" && e.target === "tester");
+    expect(edge?.attrs.condition).toBe(GUARD);
+    expect(edge?.attrs.weight).toBe("7");
+    expect(edge?.attrs.label).toBe("artifact");
+  });
+
+  it("round-trips the expression byte for byte, having parsed none of it", () => {
+    // DarkPrint implements no part of Attractor §10. The proof that it does not is that
+    // an expression it could not possibly understand survives the trip unchanged.
+    const weird = 'ctx["a b"] != null || retries >= 2 && flag == "y"';
+    const bp = resolve(
+      bundleOf(
+        STARTER_DOT.replace(
+          'planner  -> builder  [label="plan"];',
+          // `JSON.stringify` escapes the quote and the backslash exactly as Attractor's
+          // String rule does, which is what puts the expression into the DOT unmangled.
+          `planner  -> builder  [condition=${JSON.stringify(weird)}];`,
+        ),
+        STARTER_CARDS,
+      ),
+    );
+    const graph = reparse(emitAttractorDot(bp));
+    const edge = graph.edges.find((e) => e.source === "planner" && e.target === "builder");
+    expect(edge?.attrs.condition).toBe(weird);
+  });
+
+  it("omits both on an edge that declares neither", () => {
+    const graph = reparse(emitAttractorDot(STARTER()));
+    const edge = graph.edges.find((e) => e.source === "tester" && e.target === "debugger");
+    expect(edge?.attrs.condition).toBeUndefined();
+    expect(edge?.attrs.weight).toBeUndefined();
+  });
+
+  it("quotes a weight the grammar could not hold bare, and leaves a number bare", () => {
+    const bp = resolve(
+      bundleOf(
+        STARTER_DOT.replace(
+          'planner  -> builder  [label="plan"];',
+          'planner  -> builder  [weight="as high as it goes"];',
+        ),
+        STARTER_CARDS,
+      ),
+    );
+    const emitted = emitAttractorDot(bp);
+    expect(emitted).toContain('weight="as high as it goes"');
+    expect(lintAttractor(reparse(emitted), emitted)).toEqual([]);
+    const numeric = emitAttractorDot(guardedStarter());
+    expect(numeric).toContain("weight=7");
+  });
+
+  it("stays lint-clean with a guard on every edge", () => {
+    const emitted = emitAttractorDot(guardedStarter());
+    expect(lintAttractor(reparse(emitted), emitted)).toEqual([]);
+  });
+});
+
+/* ============================================================
+   the private / runtime-read line
+   Every attribute this emitter writes is read by exactly one of
+   two parties, and which one is a property of the NAME. The two
+   declared lists below are the mechanical definition of that
+   split, and this is where they are held to the emitter's real
+   output — in both directions, so neither list can drift from
+   what is written and neither can be widened past what Attractor
+   reserves.
+   ============================================================ */
+
+describe("the private / runtime-read line", () => {
+  const SCOPES: AttractorScope[] = ["graph", "node", "edge"];
+
+  /** One fixture that reaches every branch of the emitter that writes an attribute. */
+  const EVERYTHING_DOT = `digraph starter_factory {
+  "solver-a" [card="planner@1.0.0"];
+  builder    [card="builder@1.0.0"];
+  debugger   [card="debugger@1.0.0"];
+
+  "solver-a" -> builder  [label="plan", condition="attempts > 0", weight=2];
+  builder    -> debugger;
+}`;
+
+  const everything = (): DotGraph =>
+    reparse(
+      emitAttractorDot(
+        resolve(
+          bundleOf(EVERYTHING_DOT, {
+            "cards/planner@1.0.0.yaml": STARTER_CARDS["cards/planner@1.0.0.yaml"],
+            "cards/builder@1.0.0.yaml": STARTER_CARDS["cards/builder@1.0.0.yaml"],
+            "cards/debugger@1.0.0.yaml": STARTER_CARDS["cards/debugger@1.0.0.yaml"],
+          }),
+        ),
+      ),
+    );
+
+  /** Every attribute name actually present in an emitted graph, by scope. */
+  const emittedKeys = (graph: DotGraph): Record<AttractorScope, Set<string>> => {
+    const keys: Record<AttractorScope, Set<string>> = {
+      graph: new Set(Object.keys(graph.graphAttrs)),
+      node: new Set(),
+      edge: new Set(),
+    };
+    for (const node of graph.nodes) for (const k of Object.keys(node.attrs)) keys.node.add(k);
+    for (const edge of graph.edges) for (const k of Object.keys(edge.attrs)) keys.edge.add(k);
+    return keys;
+  };
+
+  it("declares an Attractor half that Attractor reserves every name of", () => {
+    // The subset claim, and the one that matters most: a name here is a name the runner
+    // acts on, so a DarkPrint value written under one of them configures a run.
+    for (const scope of SCOPES) {
+      for (const key of ATTRACTOR_EMITTED_ATTRIBUTES[scope]) {
+        expect(isReserved(scope, key), `${scope} \`${key}\``).toBe(true);
+      }
+    }
+  });
+
+  it("declares a DarkPrint half that Attractor reserves none of", () => {
+    // The other direction, and the whole compatibility verdict of doc 1 §0.1.1: `card` and
+    // `dp_node` survive a run because Attractor ignores every name it does not reserve.
+    for (const scope of SCOPES) {
+      for (const key of DARKPRINT_EMITTED_ATTRIBUTES[scope]) {
+        expect(isReserved(scope, key), `${scope} \`${key}\``).toBe(false);
+      }
+    }
+  });
+
+  it("keeps the two halves disjoint", () => {
+    for (const scope of SCOPES) {
+      const attractor = new Set(ATTRACTOR_EMITTED_ATTRIBUTES[scope]);
+      for (const key of DARKPRINT_EMITTED_ATTRIBUTES[scope]) {
+        expect(attractor.has(key), `${scope} \`${key}\``).toBe(false);
+      }
+    }
+  });
+
+  it("emits exactly the two halves and nothing else", () => {
+    // An equality rather than a subset in both directions at once: a name written but not
+    // declared is the private/runtime line broken, and a name declared but never written
+    // is a list that has stopped describing the emitter.
+    const keys = emittedKeys(everything());
+    for (const scope of SCOPES) {
+      const declared = [
+        ...ATTRACTOR_EMITTED_ATTRIBUTES[scope],
+        ...DARKPRINT_EMITTED_ATTRIBUTES[scope],
+      ].sort();
+      expect([...keys[scope]].sort(), scope).toEqual(declared);
+    }
+  });
+
+  it("writes nothing outside the two halves on any fixture in this file", () => {
+    const fixtures: ResolvedBlueprint[] = [
+      STARTER(),
+      resolve(bundleOf(STARTER_DOT, STARTER_CARDS, { summary: "", title: "" })),
+      resolve(bundleOf("digraph empty { }", {})),
+      resolve(
+        bundleOf(`digraph g { known [card="planner@1.0.0"]; known -> stranger; }`, {
+          "cards/planner@1.0.0.yaml": STARTER_CARDS["cards/planner@1.0.0.yaml"],
+        }),
+      ),
+    ];
+    for (const bp of fixtures) {
+      const keys = emittedKeys(reparse(emitAttractorDot(bp)));
+      for (const scope of SCOPES) {
+        const declared = new Set([
+          ...ATTRACTOR_EMITTED_ATTRIBUTES[scope],
+          ...DARKPRINT_EMITTED_ATTRIBUTES[scope],
+        ]);
+        for (const key of keys[scope]) {
+          expect(declared.has(key), `${bp.manifest.slug} ${scope} \`${key}\``).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("is frozen at both levels, being a contract rather than state", () => {
+    expect(Object.isFrozen(ATTRACTOR_EMITTED_ATTRIBUTES)).toBe(true);
+    expect(Object.isFrozen(DARKPRINT_EMITTED_ATTRIBUTES)).toBe(true);
+    for (const scope of SCOPES) {
+      expect(Object.isFrozen(ATTRACTOR_EMITTED_ATTRIBUTES[scope]), scope).toBe(true);
+      expect(Object.isFrozen(DARKPRINT_EMITTED_ATTRIBUTES[scope]), scope).toBe(true);
+    }
+  });
+});
+
+/* ============================================================
+   what the artefact says it cannot say
+   ============================================================ */
+
+describe("the unexpressed half", () => {
+  const SCOPES: AttractorScope[] = ["graph", "node", "edge"];
+
+  /** The one reserved name that is withheld rather than missing. See `EXPRESSED_AS_SHAPE`. */
+  const WITHHELD: Record<AttractorScope, string[]> = { graph: [], node: ["type"], edge: [] };
+
+  it("partitions every reserved name into emitted, withheld or unexpressed", () => {
+    /* The strong form, and the reason the list can be printed into a file a stranger reads:
+       a name Attractor reserves is in exactly one of the three, so a name reserved tomorrow
+       lands in the unexpressed list by itself and reaches the header without anybody
+       remembering to put it there. A subset check in one direction would pass against a
+       list that had silently stopped mentioning `timeout`. */
+    for (const scope of SCOPES) {
+      const partition = [
+        ...ATTRACTOR_EMITTED_ATTRIBUTES[scope],
+        ...WITHHELD[scope],
+        ...ATTRACTOR_UNEXPRESSED_ATTRIBUTES[scope],
+      ];
+      expect(partition.slice().sort(), `${scope}: the three lists do not cover the reserved set`)
+        .toEqual([...ATTRACTOR_RESERVED[scope]].sort());
+      expect(new Set(partition).size, `${scope}: a name appears in two of the three lists`).toBe(
+        partition.length,
+      );
+    }
+  });
+
+  it("names only reserved attributes, so it cannot advertise a gap Attractor never had", () => {
+    for (const scope of SCOPES) {
+      for (const key of ATTRACTOR_UNEXPRESSED_ATTRIBUTES[scope]) {
+        expect(isReserved(scope, key), `${scope} \`${key}\``).toBe(true);
+      }
+    }
+  });
+
+  it("is frozen at both levels, being a contract rather than state", () => {
+    expect(Object.isFrozen(ATTRACTOR_UNEXPRESSED_ATTRIBUTES)).toBe(true);
+    for (const scope of SCOPES) {
+      expect(Object.isFrozen(ATTRACTOR_UNEXPRESSED_ATTRIBUTES[scope]), scope).toBe(true);
+    }
+  });
+
+  /**
+   * The names the header actually declares, by scope, read back out of the emitted bytes.
+   *
+   * Parsed rather than substring-matched, because the names nest: `goal` is a prefix of
+   * `goal_gate` and `max_retries` of `default_max_retries`, so a `toContain` over the whole
+   * header answers yes for a name the header never lists. That is not hypothetical — it is
+   * how the first version of the cell below passed while measuring nothing.
+   */
+  const headerNames = (dot: string): Record<AttractorScope, string[]> => {
+    const split = (text: string): string[] =>
+      text
+        .split(",")
+        .map((piece) => piece.trim())
+        .filter((piece) => piece !== "");
+
+    const found: Record<AttractorScope, string[]> = { graph: [], node: [], edge: [] };
+    let scope: AttractorScope | undefined;
+    for (const line of dot.split("\n")) {
+      if (!line.startsWith("//")) break;
+      const labelled = /^\/\/ {3}(graph|node|edge): (.*)$/.exec(line);
+      if (labelled !== null) {
+        scope = labelled[1] as AttractorScope;
+        found[scope].push(...split(labelled[2]));
+        continue;
+      }
+      const wrapped = /^\/\/ {5,}(\S.*)$/.exec(line);
+      if (wrapped !== null && scope !== undefined) found[scope].push(...split(wrapped[1]));
+      else scope = undefined;
+    }
+    return found;
+  };
+
+  it("reaches the emitted file, every name of it and no other, under its own scope", () => {
+    /* The point of the whole exercise: the list is only worth deriving if it is printed
+       where the artefact is opened. An equality rather than a subset, so it answers both
+       questions at once — a name missing from the header is a gap the reader is not told
+       about, and a name in the header that the emitter has since started writing tells a
+       reader their `condition` was dropped, which stops them writing guards. */
+    const declared = headerNames(emitAttractorDot(STARTER()));
+    for (const scope of SCOPES) {
+      expect(declared[scope], scope).toEqual([...ATTRACTOR_UNEXPRESSED_ATTRIBUTES[scope]]);
+    }
+  });
+
+  it("never lists a name the emitter writes or withholds", () => {
+    const declared = headerNames(emitAttractorDot(STARTER()));
+    for (const scope of SCOPES) {
+      for (const key of [...ATTRACTOR_EMITTED_ATTRIBUTES[scope], ...WITHHELD[scope]]) {
+        expect(declared[scope].includes(key), `${scope} \`${key}\``).toBe(false);
+      }
+    }
+  });
+
+  /**
+   * The sentence the derived list cannot carry, held to the artefact rather than to prose.
+   *
+   * `cannot`, the ports and the risk markers are DarkPrint's own declarations and there is
+   * no Attractor attribute that means any of them, so they stop at the export. The header
+   * says so; this asserts the file matches the header, because a card field that quietly
+   * DID reach the DOT would make the disclosure a false confession rather than a true one.
+   */
+  const SEALED = `id: sealed
+name: Sealed
+type: agent
+phase: implementation
+version: 1.0.0
+action: Do the work
+spec: Do the work you are given and return what you produced.
+inputs:
+  - { name: zqinport, type: plan }
+outputs:
+  - { name: zqoutport, type: code }
+cannot:
+  - acceptance-criteria
+risk_markers:
+  - unchecked-write
+dependencies: [zqdependency]
+`;
+
+  const sealed = (): string =>
+    emitAttractorDot(
+      resolve(bundleOf(`digraph g { only [card="sealed@1.0.0"]; }`, { "cards/sealed.yaml": SEALED })),
+    );
+
+  it("loads the sealed fixture as a card, which the cell below depends on", () => {
+    /* The instrument, first, because the negative below is satisfied by a node that has no
+       card at all: a fixture that fails to load emits `label` and `shape` and nothing else,
+       and every needle is absent for a reason that has nothing to do with the claim. The
+       first version of this fixture did exactly that — `risk_markers: [shell]` names a tool
+       and `cannot: [zqprohibition]` names no term, so the card was refused and the cell
+       below stayed green under a mutation that copied `cannot` straight onto a node. */
+    const emitted = sealed();
+    expect(emitted.includes("prompt="), "the sealed card did not load").toBe(true);
+    expect(emitted.includes("card=\"sealed@1.0.0\""), "the node lost its card pin").toBe(true);
+  });
+
+  it("carries no ports, no prohibitions, no risk markers and no dependencies out of the card", () => {
+    const emitted = sealed();
+    for (const token of [
+      "zqinport",
+      "zqoutport",
+      "acceptance-criteria",
+      "unchecked-write",
+      "zqdependency",
+    ]) {
+      expect(emitted.includes(token), `\`${token}\` reached the emitted DOT`).toBe(false);
     }
   });
 });

@@ -160,7 +160,7 @@ describe.skipIf(!hasDb)("app/api/bundles/[owner]/[slug]/{fork,forks,drift}", () 
       bundleId: bundle.id,
       version,
       dot: `digraph { ${slug} }`,
-      manifest: { slug, title: slug, summary: "fixture", tags: [], ontologyVersion: "0.1.0" },
+      manifest: { slug, title: slug, summary: "fixture", tags: [] },
       cardRefs: refs,
       cardDigests: refs.map((ref) => `d-${ref.replace("@", "-")}`),
     });
@@ -400,7 +400,7 @@ describe.skipIf(!hasDb)("app/api/bundles/[owner]/[slug]/{fork,forks,drift}", () 
         bundleId: upstream.id,
         version: "1.0.0",
         dot: "digraph { drift_moved }",
-        manifest: { slug: "drift-moved", title: "drift-moved", summary: "fixture", tags: [], ontologyVersion: "0.1.0" },
+        manifest: { slug: "drift-moved", title: "drift-moved", summary: "fixture", tags: [] },
         cardRefs: ["beta@1.0.0"],
         cardDigests: ["d-beta-1.0.0"],
       });
@@ -417,7 +417,7 @@ describe.skipIf(!hasDb)("app/api/bundles/[owner]/[slug]/{fork,forks,drift}", () 
         bundleId: upstream.id,
         version: "2.0.0",
         dot: "digraph { drift_moved }",
-        manifest: { slug: "drift-moved", title: "drift-moved", summary: "fixture", tags: [], ontologyVersion: "0.1.0" },
+        manifest: { slug: "drift-moved", title: "drift-moved", summary: "fixture", tags: [] },
         cardRefs: ["beta@2.0.0"],
         cardDigests: ["d-beta-2.0.0"],
       });

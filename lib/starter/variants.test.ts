@@ -33,6 +33,7 @@ import {
   loadCard,
   ontologyView,
   parseDot,
+  requiresHuman,
   CORE_ONTOLOGY,
   type Bundle,
   type BlueprintAnalysis,
@@ -166,10 +167,17 @@ describe.each(STARTER_VARIANTS)(
       expect(autonomy.totalNodes).toBe(human ? 6 : 5);
       expect(autonomy.autonomousNodes).toBe(5);
       if (human) {
-        // 5 of 6 run unattended. The band, not a constant, decides what that is called.
-        expect(autonomy.fraction).toBeLessThanOrEqual(bands.level4);
-        expect(autonomy.fraction).toBeGreaterThanOrEqual(bands.level3);
-        expect(autonomy.level).toBe(3);
+        // 5 of 6 run unattended, and the graph has two control points: the tester, which
+        // decides the work is finished, and the approver, where a person decides it may
+        // ship. Half the deciding is a person's, which is the weaker of the two readings
+        // and therefore the one the band sees. The band, not a constant, names it.
+        expect(autonomy.staffingFraction).toBeGreaterThanOrEqual(bands.level3);
+        expect(autonomy.control.totalNodes).toBe(2);
+        expect(autonomy.control.unattendedNodes).toBe(1);
+        expect(autonomy.fraction).toBe(autonomy.control.fraction);
+        expect(autonomy.fraction).toBeLessThan(bands.level3);
+        expect(autonomy.fraction).toBeGreaterThanOrEqual(bands.level2);
+        expect(autonomy.level).toBe(2);
         const staffed = autonomy.contributions.filter((c) => c.requiresHuman);
         expect(staffed.map((c) => c.nodeId)).toEqual(["approver"]);
         expect(staffed[0].reason).toBe("human-in-the-loop-type");
@@ -310,12 +318,11 @@ function expectedNodeCard(card: StarterCardSpec): NodeCard {
     })),
     dependencies: [...card.dependencies],
     cannot: [...card.cannot],
-    requiresHuman: card.requiresHuman,
+    willNot: [...card.willNot],
     riskMarkers: [...card.riskMarkers],
     notes: card.notes,
     version: card.version,
     provenance: card.provenance,
-    ontologyVersion: card.ontologyVersion,
   };
   if (card.agent !== undefined) out.agent = card.agent;
   if (card.skill !== undefined) out.skill = card.skill;
@@ -375,12 +382,18 @@ describe("the iteration cap does not multiply the structural cases", () => {
    ============================================================ */
 
 describe("choice 2: who decides the work is finished", () => {
-  it("moves autonomy from 4 to 3 and names the node responsible", () => {
+  it("moves the autonomy class and names the node responsible", () => {
     for (const output of STARTER_OUTPUTS) {
       const alone = load({ output, approval: "tester", maxIterations: 3 });
       const gated = load({ output, approval: "human", maxIterations: 3 });
-      expect(alone.analysis.autonomy.level).toBe(4);
-      expect(gated.analysis.autonomy.level).toBe(3);
+      expect(alone.analysis.autonomy.autonomyClass).toBe("closed-loop");
+      /* The gate is a control point as well as a staffed node, so it moves both readings
+         and the weaker one decides. Without it the tester is the graph's only control
+         point, which is one observation rather than a share, so that branch reads off the
+         headcount alone. */
+      expect(gated.analysis.autonomy.autonomyClass).toBe("supervised");
+      expect(alone.analysis.autonomy.control.counted).toBe(false);
+      expect(gated.analysis.autonomy.control.counted).toBe(true);
       const staffed = gated.analysis.autonomy.contributions.filter((c) => c.requiresHuman);
       expect(staffed).toHaveLength(1);
       expect(staffed[0].nodeId).toBe("approver");
@@ -392,15 +405,21 @@ describe("choice 2: who decides the work is finished", () => {
     }
   });
 
-  it("satisfies the validator's rule for a human type", () => {
-    // Doc 3 §3: a type under `human-in-the-loop` with `requires_human` unset is an error,
-    // not a warning. This is the rule a hand-written gate gets wrong.
+  it("writes the gate's staffing as its type, and writes nothing else that could say it", () => {
+    /* This cell used to check that the emitted gate satisfied a cross-field rule: a type
+       under `human-in-the-loop` with `requires_human` unset was an error, and a
+       hand-written gate got it wrong. There is no second field to keep in step. What is
+       left to check is that the writer says it in the one place that means anything, and
+       that the document it emits carries no withdrawn key that would warn on load. */
     const gate = cardModel({ output: "python", approval: "human" }, "python-script-approval");
     expect(gate.type).toBe("human-gate");
-    expect(gate.requiresHuman).toBe(true);
-    const parsed = loadCard(cardDocument(gate), { ontology: ONTOLOGY, file: "cards/gate.yaml" });
+    const document = cardDocument(gate);
+    expect(document).not.toContain("requires_human");
+    const parsed = loadCard(document, { ontology: ONTOLOGY, file: "cards/gate.yaml" });
     expect(errorsOf(parsed.diagnostics), describeDiagnostics(parsed.diagnostics)).toEqual([]);
-    expect(parsed.diagnostics.some((d) => d.code === "card/human-type-inconsistent")).toBe(false);
+    expect(parsed.diagnostics.some((d) => d.code === "card/retired-field")).toBe(false);
+    // And the reading agrees with the type, through the one predicate everything uses.
+    expect(requiresHuman(ONTOLOGY, parsed.card?.type ?? "")).toBe(true);
   });
 
   it("says nothing about the human gate that reads as a shortfall", () => {
@@ -901,7 +920,6 @@ describe("the surfaces the workspace reads", () => {
   it("writes a manifest the engine accepts and a slug that reads", () => {
     const bundle = buildStarterBundle({ output: "react", approval: "human", maxIterations: 3 });
     expect(bundle.manifest.slug).toBe("react-component-factory-with-approval");
-    expect(bundle.manifest.ontologyVersion).toBe(CORE_ONTOLOGY.version);
     expect(bundle.manifest.tags).toContain("human-in-the-loop");
     // No accounts exist yet (doc 2 §6 is a later phase), so nothing invents an author.
     expect(bundle.manifest.author).toBeUndefined();

@@ -35,7 +35,6 @@ const MANIFEST: BundleManifest = {
   title: "Test bundle",
   summary: "A hand-built blueprint for autonomy tests.",
   tags: [],
-  ontologyVersion: "0.1.0",
 };
 
 /** A minimal valid card; every field a test cares about is overridable. */
@@ -53,10 +52,9 @@ function makeCard(over: Partial<NodeCard> & { id: string }): NodeCard {
     outputs: [],
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: [],
     version: "1.0.0",
-    ontologyVersion: "0.1.0",
     ...over,
   };
 }
@@ -108,11 +106,42 @@ function makeBlueprint(
   return bp;
 }
 
-/** `total` nodes of which the first `humans` carry `requires_human: true`. */
+/**
+ * `total` nodes of which the first `humans` are typed `human-input`.
+ *
+ * The type is how a card says a person acts at its node, and it is the only way: the
+ * `requires_human` boolean that used to say it beside the type is gone, so a fixture that
+ * wants a staffed node states one here rather than setting a flag the metric would have
+ * read instead of the type.
+ *
+ * `human-input` and not `human-gate`, which is what this used to build. The two are both
+ * staffed and only one of them is a control point, so a graph of `human-gate`s exercises
+ * the headcount and the second reading at once and a sweep over the bands stops being a
+ * sweep over the bands: two gates in ten nodes would put the control fraction at 0 and
+ * take every row in the table to level 1. The staffing sweeps below are about the
+ * headcount and say so by using the human type that decides nothing;
+ * `withHumanGates` is the fixture for the other reading.
+ */
 function withHumans(total: number, humans: number): NodeSpec[] {
   return Array.from({ length: total }, (_, i) => ({
     id: `n${i}`,
-    card: i < humans ? { requiresHuman: true } : {},
+    card: i < humans ? { type: "human-input" } : {},
+  }));
+}
+
+/**
+ * `total` nodes, `controls` of which are control points, `staffed` of those being
+ * `human-gate` and the rest `validation`.
+ *
+ * The fixture for the second reading. `human-gate` is staffed and decides;
+ * `validation` decides and runs alone; everything else is a plain `agent`. That covers
+ * the three states a node can be in for the two readings at once, which is what the
+ * control fraction is taken over.
+ */
+function withControlPoints(total: number, controls: number, staffed: number): NodeSpec[] {
+  return Array.from({ length: total }, (_, i) => ({
+    id: `n${i}`,
+    card: i < staffed ? { type: "human-gate" } : i < controls ? { type: "validation" } : {},
   }));
 }
 
@@ -346,11 +375,11 @@ describe("computeAutonomy — isDarkFactory", () => {
     expect(computeAutonomy(makeBlueprint(fullLifecycle(1, 1))).isDarkFactory).toBe(false);
   });
 
-  it("counts a human type, not only the flag", () => {
+  it("counts a human type", () => {
     const gated = computeAutonomy(
       makeBlueprint([
         { id: "build" },
-        { id: "gate", card: { type: "human-gate", requiresHuman: true } },
+        { id: "gate", card: { type: "human-gate" } },
       ]),
     );
     expect(gated.isDarkFactory).toBe(false);
@@ -436,8 +465,8 @@ describe("computeAutonomy — the number is a description, not a verdict", () =>
     {
       name: "a graph with two human gates",
       nodes: [
-        { id: "gate", card: { type: "human-gate", requiresHuman: true } },
-        { id: "ask", card: { type: "human-input", requiresHuman: true } },
+        { id: "gate", card: { type: "human-gate" } },
+        { id: "ask", card: { type: "human-input" } },
         { id: "build", card: {} },
       ],
     },
@@ -449,7 +478,7 @@ describe("computeAutonomy — the number is a description, not a verdict", () =>
     // and diagnostic are newest — so it is the one most likely to leak a shortfall.
     {
       name: "a graph with a person, an unattended node and one missing card",
-      nodes: [{ id: "gate", card: { requiresHuman: true } }, { id: "build" }],
+      nodes: [{ id: "gate", card: { type: "human-gate" } }, { id: "build" }],
       graphIds: ["gate", "build", "ghost"],
     },
     {
@@ -612,6 +641,9 @@ describe("computeAutonomy — nothing to score", () => {
       name: "b",
       requiresHuman: false,
       resolved: false,
+      // No card, so no type, so nothing says it decides anything either. The second
+      // reading leaves it out entirely rather than counting it as a decision nobody made.
+      governsFlow: false,
       explanation:
         "No card in the bundle instantiates `b`, so nothing states how it runs; it counts in the total with no person recorded at it.",
     });
@@ -626,12 +658,12 @@ describe("computeAutonomy — nothing to score", () => {
 
   it("names the three categories in the rationale, and only when there are three", () => {
     const mixed = computeAutonomy(
-      makeBlueprint([{ id: "a" }, { id: "gate", card: { requiresHuman: true } }], {
+      makeBlueprint([{ id: "a" }, { id: "gate", card: { type: "human-gate" } }], {
         graphIds: ["a", "gate", "ghost"],
       }),
     );
     expect(mixed.rationale).toBe(
-      "1 of 3 nodes run unattended, 1 has a person in the loop, 1 has no card in the bundle. 0.3333 < 0.50 → level 1 (Assisted).",
+      "1 of 3 nodes run unattended, 1 has a person in the loop, 1 has no card in the bundle. The graph declares 1 control point, which is one reading rather than a share. 0.3333 < 0.50 → level 1 (Assisted).",
     );
 
     // A fully resolved blueprint reads exactly as it did before the third category
@@ -652,7 +684,7 @@ describe("computeAutonomy — contributions", () => {
     const result = computeAutonomy(
       makeBlueprint([
         { id: "plan", card: { type: "agent", phases: ["planning"] } },
-        { id: "review", card: { requiresHuman: true } },
+        { id: "review", card: { type: "human-gate" } },
         { id: "ship", card: { type: "tool", phases: ["deployment"] } },
       ]),
     );
@@ -665,35 +697,48 @@ describe("computeAutonomy — contributions", () => {
     expect(result.contributions.every((c) => c.explanation.length > 0)).toBe(true);
   });
 
-  it("names the flag when a type that says nothing about people carries requires_human", () => {
-    // Doc 3 §3's note allows exactly this direction: a non-human type may still be staffed.
+  it("reads `type` and nothing else about the card when it decides who acts", () => {
+    /* The cell the `requires_human` removal is for. A card used to answer this question
+       twice, and this metric used to read both: the type first, then the boolean beside
+       it. So a `type: agent` card could be counted as staffed, and a `type: human-gate`
+       card as unattended, off a field the drawing never looked at.
+
+       What it can catch and what it cannot, stated rather than assumed: two cards here
+       differ in every field a card still has except `type`, and they get the same answer;
+       two that differ in `type` alone get different answers. That reds if any surviving
+       field is wired back into the decision. It cannot red for a field that does not
+       exist yet — a second boolean added tomorrow would need its own cell, which is the
+       argument for there not being one. */
+    const busy = {
+      name: "Customer delivery",
+      phases: ["deployment"],
+      action: "Publish the approved report to the customer channel",
+      spec: "Take the approved report and publish it to the channel named in the run configuration.",
+      tools: ["http-fetch"],
+      mcp: ["filesystem"],
+      params: { channel: "customers" },
+      riskMarkers: ["irreversible-action"],
+      notes: "A person signs this off elsewhere in the process.",
+      willNot: ["decide whether the report is good enough"],
+    } satisfies Partial<NodeCard>;
+
     const result = computeAutonomy(
       makeBlueprint([
-        {
-          id: "publish",
-          card: {
-            name: "Customer delivery",
-            type: "agent",
-            phases: ["deployment"],
-            action: "Publish the approved report to the customer channel",
-            requiresHuman: true,
-          },
-        },
+        { id: "plain", card: { type: "agent" } },
+        { id: "loaded", card: { ...busy, type: "agent" } },
+        { id: "gate", card: { ...busy, type: "human-gate" } },
       ]),
     );
 
-    expect(result.contributions[0]).toEqual({
-      nodeId: "publish",
-      ref: "publish@1.0.0",
-      name: "Customer delivery",
-      requiresHuman: true,
-      resolved: true,
-      reason: "requires-human-flag",
-      explanation:
-        "Publish the approved report to the customer channel (requires_human: true). A person acts here.",
-    });
-    // No ontology term fired, so `term` is absent rather than set to undefined.
-    expect("term" in result.contributions[0]).toBe(false);
+    const [plain, loaded, gate] = result.contributions;
+    expect([plain.requiresHuman, loaded.requiresHuman]).toEqual([false, false]);
+    expect(plain.reason).toBeUndefined();
+    expect(loaded.reason).toBeUndefined();
+    expect(gate.requiresHuman).toBe(true);
+    expect(gate.reason).toBe("human-in-the-loop-type");
+    expect(gate.explanation).toBe(
+      "Publish the approved report to the customer channel (type: human-gate). A person acts here.",
+    );
   });
 
   it("names the ontology term for a human-gate", () => {
@@ -706,7 +751,6 @@ describe("computeAutonomy — contributions", () => {
             type: "human-gate",
             phases: ["deployment"],
             action: "Waits for a reviewer to approve the merge before continuing",
-            requiresHuman: true,
           },
         },
       ]),
@@ -720,6 +764,10 @@ describe("computeAutonomy — contributions", () => {
       resolved: true,
       reason: "human-in-the-loop-type",
       term: "human-gate",
+      // The one type that answers both questions: a person acts here AND the run turns on
+      // what they answer. Two fields, because they are two facts about one node.
+      governsFlow: true,
+      controlTerm: "human-gate",
       explanation:
         "Waits for a reviewer to approve the merge before continuing (type: human-gate). A person acts here.",
     });
@@ -734,7 +782,6 @@ describe("computeAutonomy — contributions", () => {
             type: "human-input",
             phases: ["planning"],
             action: "Collect the target repo from the operator",
-            requiresHuman: true,
           },
         },
         { id: "work", card: { type: "agent" } },
@@ -777,7 +824,6 @@ describe("computeAutonomy — contributions", () => {
               type: "berti/approval-desk",
               phases: ["deployment"],
               action: "Queue the change for the duty engineer",
-              requiresHuman: true,
             },
           },
         ],
@@ -854,27 +900,19 @@ describe("computeAutonomy — contributions", () => {
     );
   });
 
-  it("prefers the type over the flag when both would fire", () => {
-    // Doc 3 §3's validator note makes the flag mandatory on a human type, so on valid
-    // data the two always co-occur; citing the flag would hide the actual cause.
+  it("lets the type alone decide the level, with no second field to forget", () => {
+    /* Two cells used to stand here: one for the flag winning against the type, one for a
+       human-typed card whose author left the flag at `false`. The second was the real
+       defect — the card said `human-gate`, the drawing put a person on the node, and the
+       reading came back level 4 off a boolean. Neither state can be written any more, so
+       what survives is the claim they were both about: this level comes off `type`. */
     const result = computeAutonomy(
-      makeBlueprint([
-        { id: "gate", card: { type: "human-gate", requiresHuman: true } },
-      ]),
-    );
-
-    expect(result.contributions[0].reason).toBe("human-in-the-loop-type");
-    expect(result.contributions[0].term).toBe("human-gate");
-  });
-
-  it("still counts a human type whose card forgot the flag", () => {
-    // `card/human-type-inconsistent` is validate.ts's to report; the metric must not
-    // quietly hand the blueprint a level it did not design for.
-    const result = computeAutonomy(
-      makeBlueprint([{ id: "gate", card: { type: "human-gate", requiresHuman: false } }]),
+      makeBlueprint([{ id: "gate", card: { type: "human-gate" } }]),
     );
 
     expect(result.contributions[0].requiresHuman).toBe(true);
+    expect(result.contributions[0].reason).toBe("human-in-the-loop-type");
+    expect(result.contributions[0].term).toBe("human-gate");
     expect(result.level).toBe(1);
   });
 
@@ -891,6 +929,7 @@ describe("computeAutonomy — contributions", () => {
       name: "Node solve",
       requiresHuman: false,
       resolved: true,
+      governsFlow: false,
       // The card's trailing full stop is dropped so the sentence reads as one.
       explanation: "Draft a candidate solution (type: agent). Runs unattended.",
     });
@@ -967,9 +1006,18 @@ describe("computeAutonomy — non-triggers", () => {
   });
 
   it("does not let `impliesHuman` outside the category act as a second membership rule", () => {
-    // Doc 3 §3 gives the metric one question to ask. A local term that claims the flag
-    // but roots itself elsewhere is not in the category, and the way to have such a node
-    // counted is the `requires_human` field — which is why the second node here counts.
+    /* Doc 3 §3 gives the metric one question to ask, and `broader` is what answers it.
+       Two local terms carrying the identical `impliesHuman: true` and differing only in
+       where they are rooted: the one under `agent` is not a human node and the one under
+       `human-in-the-loop` is.
+
+       This cell used to end differently. It said the way to have the rogue node counted
+       was the card's `requires_human` field, and it asserted a second contribution with
+       `reason: "requires-human-flag"`. That was the escape hatch: an author who rooted a
+       term badly could still get a person drawn on the node by setting a boolean, and the
+       vocabulary and the score then disagreed about what the term meant. The field is
+       gone, so the fix for a rogue term is to root it correctly, which is what the second
+       node now shows. */
     const extension: OntologyTerm[] = [
       {
         id: "berti/rogue-desk",
@@ -980,22 +1028,34 @@ describe("computeAutonomy — non-triggers", () => {
         impliesHuman: true,
         since: "0.1.0",
       },
+      {
+        id: "berti/rooted-desk",
+        kind: "node-type",
+        label: "Rooted desk",
+        description: "The same claim, rooted where doc 3 §3 puts a person.",
+        broader: "human-in-the-loop",
+        impliesHuman: true,
+        since: "0.1.0",
+      },
     ];
     const ontology = ontologyView(CORE_ONTOLOGY, extension);
     const result = computeAutonomy(
       makeBlueprint(
         [
           { id: "rogue", card: { type: "berti/rogue-desk" } },
-          { id: "staffed", card: { type: "berti/rogue-desk", requiresHuman: true } },
+          { id: "rooted", card: { type: "berti/rooted-desk" } },
         ],
         { ontology },
       ),
     );
 
     expect(ontology.isA("berti/rogue-desk", "human-in-the-loop")).toBe(false);
+    expect(ontology.isA("berti/rooted-desk", "human-in-the-loop")).toBe(true);
     expect(result.contributions[0].requiresHuman).toBe(false);
+    expect(result.contributions[0].reason).toBeUndefined();
     expect(result.contributions[1].requiresHuman).toBe(true);
-    expect(result.contributions[1].reason).toBe("requires-human-flag");
+    expect(result.contributions[1].reason).toBe("human-in-the-loop-type");
+    expect(result.contributions[1].term).toBe("berti/rooted-desk");
   });
 
   it("does not count a type that names a term of the wrong kind", () => {
@@ -1042,7 +1102,7 @@ describe("computeAutonomy — ordering and configuration", () => {
   it("honours tuned bands from the single config file", () => {
     const lenient: DarkprintConfig = {
       ...DARKPRINT_CONFIG,
-      autonomy: { level4: 0.5, level3: 0.4, level2: 0.3 },
+      autonomy: { ...DARKPRINT_CONFIG.autonomy, level4: 0.5, level3: 0.4, level2: 0.3 },
     };
     const bp = makeBlueprint(withHumans(10, 4)); // fraction 0.60
 
@@ -1063,6 +1123,7 @@ describe("computeAutonomy — ordering and configuration", () => {
       level4: 0.9,
       level3: 0.7,
       level2: 0.5,
+      minControlPoints: 2,
     });
   });
 
@@ -1070,5 +1131,252 @@ describe("computeAutonomy — ordering and configuration", () => {
     const bp = makeBlueprint(withHumans(7, 2));
 
     expect(computeAutonomy(bp)).toEqual(computeAutonomy(bp));
+  });
+});
+
+/* --------------------- the second reading: what decides --------------------- */
+
+describe("computeAutonomy — the control reading", () => {
+  it("counts the nodes whose type decides whether other nodes run", () => {
+    // 2 validations and 1 human gate among 7 nodes: three control points, two of them
+    // running alone.
+    const result = computeAutonomy(makeBlueprint(withControlPoints(7, 3, 1)));
+
+    expect(result.control.totalNodes).toBe(3);
+    expect(result.control.unattendedNodes).toBe(2);
+    expect(result.control.fraction).toBe(0.6667);
+    expect(result.control.counted).toBe(true);
+  });
+
+  it("leaves a graph with no control point at zero and uncounted", () => {
+    const result = computeAutonomy(makeBlueprint(withHumans(5, 1)));
+
+    expect(result.control).toEqual({
+      totalNodes: 0,
+      unattendedNodes: 0,
+      fraction: 0,
+      counted: false,
+    });
+    // Zero is not "every decision is a person's": `counted` is what keeps a graph that
+    // declares no decision at all from being read as one that hands them all over.
+    expect(result.fraction).toBe(result.staffingFraction);
+  });
+
+  it("does not count `human-input`, which is staffed and decides nothing", () => {
+    const result = computeAutonomy(makeBlueprint(withHumans(4, 2)));
+
+    expect(result.control.totalNodes).toBe(0);
+    expect(result.contributions.every((c) => !c.governsFlow)).toBe(true);
+  });
+
+  it("takes the weaker of the two readings when the control reading is weaker", () => {
+    // 10 nodes, 8 alone. Two of the four control points are human gates, so the decisions
+    // run at 0.50 while the headcount reads 0.80.
+    const result = computeAutonomy(makeBlueprint(withControlPoints(10, 4, 2)));
+
+    expect(result.staffingFraction).toBe(0.8);
+    expect(result.control.fraction).toBe(0.5);
+    expect(result.fraction).toBe(0.5);
+    expect(result.level).toBe(2);
+    expect(result.autonomyClass).toBe("supervised");
+  });
+
+  it("takes the headcount when the headcount is the weaker of the two", () => {
+    // Six human-input nodes and two unattended validations: everything that decides runs
+    // alone, and most of the work does not.
+    const nodes: NodeSpec[] = [
+      ...Array.from({ length: 6 }, (_, i) => ({
+        id: `h${i}`,
+        card: { type: "human-input" },
+      })),
+      { id: "v1", card: { type: "validation" } },
+      { id: "v2", card: { type: "validation" } },
+    ];
+    const result = computeAutonomy(makeBlueprint(nodes));
+
+    expect(result.control.fraction).toBe(1);
+    expect(result.staffingFraction).toBe(0.25);
+    expect(result.fraction).toBe(0.25);
+    expect(result.level).toBe(1);
+  });
+
+  it("does not let one control point decide the band", () => {
+    /* The floor. A single control point yields exactly 0 or exactly 1, and reading a class
+       off one node is reading a distribution off one observation — the reason
+       `config.autonomy.minControlPoints` exists and the reason it is 2. Nine nodes running
+       alone and one human gate is a supervised-looking graph by the headcount; letting the
+       lone gate speak for every decision would call it assisted. */
+    const result = computeAutonomy(makeBlueprint(withControlPoints(10, 1, 1)));
+
+    expect(result.control.totalNodes).toBe(1);
+    expect(result.control.fraction).toBe(0);
+    expect(result.control.counted).toBe(false);
+    expect(result.fraction).toBe(result.staffingFraction);
+    expect(result.fraction).toBe(0.9);
+    expect(result.level).toBe(3);
+  });
+
+  it("lets the second one, which makes it a share", () => {
+    // The same graph with one more gate. Two observations are a share, and the reading is
+    // then what it says: both of this graph's decisions are a person's.
+    const result = computeAutonomy(makeBlueprint(withControlPoints(10, 2, 2)));
+
+    expect(result.control.counted).toBe(true);
+    expect(result.control.fraction).toBe(0);
+    expect(result.fraction).toBe(0);
+    expect(result.level).toBe(1);
+    expect(result.autonomyClass).toBe("assisted");
+  });
+
+  it("honours a tuned floor from the single config file", () => {
+    const strict: DarkprintConfig = {
+      ...DARKPRINT_CONFIG,
+      autonomy: { ...DARKPRINT_CONFIG.autonomy, minControlPoints: 5 },
+    };
+    const bp = makeBlueprint(withControlPoints(10, 4, 2));
+
+    expect(computeAutonomy(bp).fraction).toBe(0.5);
+    // Four control points is below the tuned floor, so the band falls back to the headcount.
+    expect(computeAutonomy(bp, strict).fraction).toBe(0.8);
+    expect(computeAutonomy(bp, strict).control.counted).toBe(false);
+    // And the reading is still computed and still reported, which is the whole difference
+    // between a floor and a switch.
+    expect(computeAutonomy(bp, strict).control.fraction).toBe(0.5);
+  });
+
+  it("names the control point and the term that made it one", () => {
+    const result = computeAutonomy(
+      makeBlueprint([
+        { id: "check", card: { type: "validation" } },
+        { id: "gate", card: { type: "human-gate" } },
+        { id: "work", card: { type: "agent" } },
+      ]),
+    );
+    const byId = new Map(result.contributions.map((c) => [c.nodeId, c]));
+
+    expect(byId.get("check")?.governsFlow).toBe(true);
+    expect(byId.get("check")?.controlTerm).toBe("evaluative");
+    expect(byId.get("gate")?.governsFlow).toBe(true);
+    expect(byId.get("gate")?.controlTerm).toBe("human-gate");
+    expect(byId.get("work")?.governsFlow).toBe(false);
+    expect(byId.get("work")?.controlTerm).toBeUndefined();
+  });
+
+  it("counts a local type rooted in the orchestration branch (doc 3 §7)", () => {
+    const ontology = ontologyView(CORE_ONTOLOGY, [
+      {
+        id: "berti/spread",
+        kind: "node-type",
+        label: "Spread",
+        description: "A local fan-out.",
+        broader: "parallel",
+        since: "0.1.0",
+      },
+    ]);
+    const result = computeAutonomy(
+      makeBlueprint(
+        [{ id: "split", card: { type: "berti/spread" } }, { id: "join", card: { type: "parallel.fan-in" } }],
+        { ontology },
+      ),
+    );
+
+    expect(result.control.totalNodes).toBe(2);
+    expect(result.control.unattendedNodes).toBe(2);
+    expect(result.control.fraction).toBe(1);
+  });
+
+  it("keeps the dotted type resolving as itself and not as a namespaced one", () => {
+    // `parallel.fan-in` carries a dot and `splitTermId` reads only `/`, so the type has to
+    // resolve out of the curated core rather than being taken for somebody's extension.
+    const result = computeAutonomy(
+      makeBlueprint([{ id: "join", card: { type: "parallel.fan-in" } }]),
+    );
+
+    expect(result.contributions[0].governsFlow).toBe(true);
+    expect(result.contributions[0].controlTerm).toBe("orchestration");
+    expect(result.contributions[0].explanation).toContain("(type: parallel.fan-in)");
+  });
+
+  it("leaves a node with no card out of the reading entirely", () => {
+    const result = computeAutonomy(
+      makeBlueprint([{ id: "check", card: { type: "validation" } }], {
+        graphIds: ["check", "ghost"],
+      }),
+    );
+
+    expect(result.control.totalNodes).toBe(1);
+    expect(result.totalNodes).toBe(2);
+  });
+
+  it("states the second reading in the rationale when it is a share", () => {
+    const result = computeAutonomy(makeBlueprint(withControlPoints(10, 4, 2)));
+
+    expect(result.rationale).toBe(
+      "8 of 10 nodes run unattended, 2 have a person in the loop. 2 of 4 control points run unattended. 0.50 ≥ 0.50 → level 2 (Supervised).",
+    );
+  });
+
+  it("says so when there are too few of them to be a share", () => {
+    const result = computeAutonomy(makeBlueprint(withControlPoints(10, 1, 1)));
+
+    expect(result.rationale).toContain(
+      "The graph declares 1 control point, which is one reading rather than a share.",
+    );
+  });
+
+  it("leaves the sentence alone when the graph declares no control point at all", () => {
+    // Byte-for-byte what it was before the second reading existed, the same way the
+    // missing-card clause appends only when it has something to say.
+    const result = computeAutonomy(makeBlueprint(withHumans(10, 2)));
+
+    expect(result.rationale).toBe(
+      "8 of 10 nodes run unattended, 2 have a person in the loop. 0.80 ≥ 0.70 → level 3 (Conditional).",
+    );
+  });
+
+  it("cannot take the dark factory badge away, whatever the second reading says", () => {
+    /* `autonomousNodes === totalNodes` already says every node has a card and nobody in
+       it, and every control point is a node, so a fully unattended graph has a control
+       fraction of 1 by construction. Swept rather than asserted once, because the claim is
+       about every shape a graph can take and the whole point is that no shape breaks it. */
+    for (const controls of [0, 1, 2, 3, 5]) {
+      const bp = makeBlueprint(
+        withControlPoints(5, controls, 0).map((spec) => ({
+          ...spec,
+          card: { ...spec.card, phases: [...CORE_PHASE_IDS] },
+        })),
+      );
+      const result = computeAutonomy(bp);
+      expect(result.isDarkFactory, `${controls} control points`).toBe(true);
+      expect(result.control.fraction === 0 || result.control.fraction === 1).toBe(true);
+      expect(result.fraction, `${controls} control points`).toBe(1);
+    }
+  });
+
+  it("takes the weaker reading, or the headcount alone, and never anything in between", () => {
+    /* The combination rule, swept over shapes where each half wins in turn. Stated as the
+       rule rather than as a list of expected numbers: an average or a weighting would pass
+       a spot check on the two ends and fail here on the middle, and the reason there is no
+       weight to tune is that a minimum needs none. */
+    for (const [total, controls, staffed] of [
+      [10, 4, 2],
+      [10, 1, 1],
+      [10, 2, 2],
+      [8, 2, 0],
+      [6, 6, 3],
+      [5, 0, 0],
+      [1, 1, 1],
+    ] as const) {
+      const result = computeAutonomy(makeBlueprint(withControlPoints(total, controls, staffed)));
+      const expected = result.control.counted
+        ? Math.min(result.staffingFraction, result.control.fraction)
+        : result.staffingFraction;
+      expect(result.fraction, `${total}/${controls}/${staffed}`).toBe(expected);
+      // And it is one of the two, never a blend of them.
+      expect(
+        [result.staffingFraction, result.control.fraction],
+        `${total}/${controls}/${staffed}`,
+      ).toContain(result.fraction);
+    }
   });
 });

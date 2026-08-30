@@ -48,6 +48,7 @@ import { MetricBars } from "@/components/ui/MetricBars";
 import { More } from "@/components/ui/More";
 import { SideRail, type SideRailItem } from "@/components/ui/SideRail";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
+import { AttractorCompatibility } from "@/components/blueprint/AttractorCompatibility";
 import { absencesFor } from "@/components/panes/absences";
 import { buildPaneModel, type PaneNodeInput } from "@/components/panes/build";
 import { DotBreakdown } from "@/components/panes/DotBreakdown";
@@ -886,12 +887,11 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
           <div className="order-1 min-w-0 lg:order-none">
             <BundlePanel
               digest={bp.digest}
-              ontologyVersion={summary.manifest.ontologyVersion ?? "unknown"}
               // Doc 3 §8: the version a score was computed under, which the engine
-              // takes from the view the bundle was resolved against and not from
-              // the manifest. Both metrics carry the same value; a test in
-              // `lib/core` asserts they and `BlueprintAnalysis.ontologyVersion`
-              // can never disagree.
+              // takes from the view the bundle was resolved against. Both metrics
+              // carry the same value; a test in `lib/core` asserts they and
+              // `BlueprintAnalysis.ontologyVersion` can never disagree. The manifest
+              // used to declare a version of its own beside it, and no longer does.
               scoredOntologyVersion={bp.analysis.autonomy.ontologyVersion}
               nodes={bundleNodes}
               pinnedCards={new Set(summary.cardRefs).size}
@@ -962,6 +962,25 @@ export default async function Page({ params }: PageProps<"/blueprints/[owner]/[s
             contribution row and a finding row naming the same node still cross-light
             each other. */}
         <BlueprintCanvas graph={bp.graph} analysis={bp.analysis} />
+
+        {/* SEAM-41's answer, on a page for the first time. `lintAttractor` has been
+            exported for an editor since it shipped and the seam row says "no dedicated
+            UI", so every blueprint here has had a computable "would a runner read this
+            file" verdict that no reader was ever shown. It sits under Explainability
+            because it is a reading of the same artefact and belongs with the other two,
+            and it takes `bp.graph.dot` — the same source `DotBreakdown` lists further
+            down — so the verdict and the file a reader is looking at cannot part.
+
+            Outside `BlueprintCanvas` deliberately. That component exists to share one
+            `highlighted` node id across Explainability's sub-lists, and these findings are
+            about the DOT's text rather than about nodes in the schematic; folding them in
+            would put rows that cannot cross-light inside the mechanism whose whole job is
+            cross-lighting. It is also a server component and stays one here. */}
+        {/* No margin of its own, like `Tool scopes` and `BlueprintCanvas` above it. The
+            column owns the spacing (`lg:gap-8`, and the outer grid's below `lg`, where the
+            aside is `contents`), so a panel that added one would sit further from its
+            neighbour than the two above it do. */}
+        <AttractorCompatibility dot={bp.graph.dot} file={paneModel.dotFile} />
 
         </div>
 

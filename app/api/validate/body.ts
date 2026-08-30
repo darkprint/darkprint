@@ -132,7 +132,7 @@ export function readCardFiles(
  * The manifest, checked only for being an object.
  *
  * No field is required here, and that is deliberate rather than lax: `resolveBundle` reads
- * `manifest.ontologyVersion` and reports a mismatch as `bundle/ontology-mismatch`, which is
+ * every manifest field it is given and reports what it finds as a diagnostic, which is
  * a 200 diagnostic and the right answer. Refusing a manifest at the transport layer for a
  * missing field would convert a complaint the engine already makes, in the caller's own
  * vocabulary, into a bare 400 that says less. What is checked is what would make the engine

@@ -34,10 +34,10 @@ outputs:
     description: The ordered sub-tasks, each carrying the slice of the acceptance criteria it answers to.
 dependencies:
   - task-intake
-cannot:
+cannot: []
+will_not:
   - decompose the same brief two different ways
 
-requires_human: false
 risk_markers: []
 notes: >-
   Low temperature on purpose. The adversarial spread belongs downstream between the two solvers;
@@ -45,4 +45,3 @@ notes: >-
 
 version: 1.0.0
 author: mara-veil
-ontology_version: 0.1.0

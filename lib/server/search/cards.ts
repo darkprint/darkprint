@@ -4,11 +4,16 @@
    fixed by the live URL. `components/nodes/NodeBrowser.tsx` is the
    specification for what each one means and its `passes()` is read
    off rather than reinvented — including the two that would
-   otherwise be guessed: `human` is the CARD's own `requiresHuman`
-   flag (`app/nodes/page.tsx:40` reads exactly that field, not the
-   ontology subsumption `computeAutonomy` uses for a node in a
-   graph), and `phase=unphased` is the shelf's own sentinel for the
-   cards that declare none.
+   otherwise be guessed: `human` is the ontology subsumption
+   `computeAutonomy` uses, asked of the card's own `type` through
+   `requiresHuman`, and `phase=unphased` is the shelf's own
+   sentinel for the cards that declare none.
+
+   `human` used to read a `requires_human` boolean stored on the
+   card, which is a different question from the one the score asks
+   and could give a different answer about the same card. That
+   field is gone. There is one predicate now and this facet calls
+   it rather than restating it.
 
    `unphased` is accepted as a filter value and is NOT listed in
    the `phase` facet. AC3 asks for the VOCABULARY, and a sentinel
@@ -19,11 +24,11 @@
    ============================================================ */
 
 import { asc, eq, lte, sql } from "drizzle-orm";
-import { cardRef, CORE_PHASE_IDS } from "@/lib/core";
+import { cardRef, CORE_PHASE_IDS, requiresHuman } from "@/lib/core";
 import type { Db } from "@/lib/db";
 import { schema } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
-import { getLatestOntologyVersion } from "@/lib/server/ontology";
+import { openView } from "@/lib/server/ontology";
 import { cards, phases, type CardSummary } from "@/lib/server/registry";
 import type { NodeCard, OntologyTerm } from "@/lib/server/types";
 import { embed, SEMANTIC_K, SIMILAR_EVIDENCE, SIMILAR_MIN } from "./embed";
@@ -119,7 +124,17 @@ export async function searchCards(
 
 async function search(db: Db, params: Record<string, string>): Promise<Results<CardSummary>> {
   const all = await cards(db, PUBLIC_ONLY);
-  const vocabulary = (await getLatestOntologyVersion(db))?.terms ?? [];
+  /* The living vocabulary, with no overlay: this reader indexes the PUBLIC shelf across
+     every bundle, so there is no one release whose local terms it could layer on, and a
+     card is listed here under the core's terms whatever its own bundle adds. `openView`
+     rather than `CORE_ONTOLOGY` directly so the facet asks the same question the score
+     does, through the same function every other reader opens a view with.
+
+     This used to read the latest row out of `ontology_version` and build a view from its
+     terms, which meant the shelf's facets were whatever had last been seeded rather than
+     what this build actually resolves cards against. */
+  const view = openView();
+  const vocabulary = view.ontology.terms;
 
   const labels = new Map(vocabulary.map((term: OntologyTerm) => [term.id, term.label]));
   const labelOf = (id: string): string => labels.get(id) ?? id;
@@ -151,7 +166,10 @@ async function search(db: Db, params: Record<string, string>): Promise<Results<C
       const declared = list(card.phases);
       if (phase === UNPHASED ? declared.length > 0 : !declared.includes(phase)) return false;
     }
-    if (humanOnly && card.requiresHuman !== true) return false;
+    /* `card.type` is optional here because `cardOf` types a stored body as
+       `Partial<NodeCard>`; an absent type is a card that says nothing about who acts at
+       it, which is not a staffed one. */
+    if (humanOnly && !requiresHuman(view, card.type ?? "")) return false;
     if (riskOnly && list(card.riskMarkers).length === 0) return false;
     return true;
   });

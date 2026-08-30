@@ -174,12 +174,16 @@ export default async function BlueprintsPage() {
     const key = `${bp.ownerHandle}/${bp.slug}`;
     const drawing = graphs.get(key);
     const scorecard = scores.get(key);
-    /* A BLUEPRINT WITHOUT A SCORECARD IS OFF THE SHELF, AND TODAY THAT IS EVERY BLUEPRINT.
+    /* A BLUEPRINT WITHOUT A SCORECARD IS OFF THE SHELF.
        ------------------------------------------------------------
-       D-260-24: nothing in this product has ever written `release.scored_ontology_version_id`,
-       so `scoresOf` — and any batch form of it — answers `undefined` for every blueprint ever
-       published. Until that is fixed this shelf renders EMPTY, and that is the honest
-       outcome rather than a bug in this loop.
+       That used to be every blueprint. D-260-24 measured that nothing in the product wrote
+       `release.scored_ontology_version_id`, which `scoresOf` required, so it and any batch
+       form of it answered `undefined` for every blueprint ever published and this shelf
+       rendered EMPTY. `publish.ts` closed that by resolving the version to a row id, and the
+       vocabulary-version registry that made the resolution possible has since been removed —
+       so the scorecard's version is read off the stored `autonomy`, which `publish.ts` has
+       always written. A blueprint whose release carries no score is still off the shelf, and
+       that is still the honest outcome rather than a bug in this loop.
 
        The alternative was to draw the row with a placeholder class, and it is refused on
        principle: `autonomy.autonomyClass` is the one field doc 2 §1.1 guards most tightly,

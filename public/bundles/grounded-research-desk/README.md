@@ -4,7 +4,7 @@ Fans a question across web, vector and code search, synthesizes one answer, and 
 
 ```
 blueprint      grounded-research-desk
-bundle digest  sha256:3f0c67eefe58bc915804c069ce37c9f7af59a23143d3190a2681ccad8a27eeba
+bundle digest  sha256:de8b1c0d1d19d1b17e17787ea567495cf41e5a39f1f8c6c3b07085503a607b00
 ontology       v0.1.0
 nodes          8
 cards pinned   8
@@ -21,8 +21,13 @@ executes nothing and holds none of your provider keys.
 
 This folder carries the topology and its pinned cards, nothing compiled. `topology.dot` names
 every node, every edge and the card version pinned on it. Each card under `cards/` carries the
-`spec` that becomes that node's prompt. Turning the two into a running pipeline is your own
-harness's job; DarkPrint does not compile or execute one.
+`spec` that becomes that node's prompt.
+
+To compile these two into a pipeline a graph runner takes, run `darkprint export <dir>
+--attractor`. It writes Attractor DOT to stdout, and that file opens with a list of everything
+a DarkPrint blueprint had no way to express, so you can see what the runner falls back to its
+own defaults for. Adapting the result, or building the run yourself from these files instead,
+is your own harness's job.
 
 3 of the 8 nodes name the model they run on, in their card's own `model` field. Read it off
 `cards/<ref>.yaml`; whether your harness honours it is yours to decide.
@@ -73,7 +78,7 @@ whom.
 
 Autonomy: Closed-loop.
 
-> 8 of 8 nodes run unattended, none have a person in the loop. 1.00 > 0.90 → Closed-loop.
+> 8 of 8 nodes run unattended, none have a person in the loop. The graph declares 1 control point, which is one reading rather than a share. 1.00 > 0.90 → Closed-loop.
 
 Security level 2.
 

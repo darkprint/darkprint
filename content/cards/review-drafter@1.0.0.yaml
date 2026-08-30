@@ -40,10 +40,10 @@ outputs:
 dependencies:
   - diff-triager
   - test-runner
-cannot:
+cannot: []
+will_not:
   - write about a file banded mechanical
 
-requires_human: false
 risk_markers: []
 notes: >-
   `failures` is optional because the first pass has nothing to fold in: it is fed only by the red
@@ -51,4 +51,3 @@ notes: >-
 
 version: 1.0.0
 author: sol-antczak
-ontology_version: 0.1.0

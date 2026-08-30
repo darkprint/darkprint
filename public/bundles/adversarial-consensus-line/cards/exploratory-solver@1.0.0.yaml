@@ -33,10 +33,10 @@ outputs:
     description: One candidate answer, with the divergences it took flagged for the vote to weigh.
 dependencies:
   - task-decomposer
-cannot:
+cannot: []
+will_not:
   - manufacture a departure the brief does not admit
 
-requires_human: false
 risk_markers: []
 notes: >-
   The temperature is the whole design. Drop it toward the conservative solver's and the two
@@ -44,4 +44,3 @@ notes: >-
 
 version: 1.0.0
 author: mara-veil
-ontology_version: 0.1.0

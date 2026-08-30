@@ -36,7 +36,7 @@ const hasDb = Boolean(process.env.DATABASE_URL);
 const ANONYMOUS: Actor = { kind: "anonymous" };
 
 function manifestFor(slug: string): BundleManifest {
-  return { slug, title: slug, summary: "fixture", tags: [], ontologyVersion: "0.1.0" };
+  return { slug, title: slug, summary: "fixture", tags: [] };
 }
 
 describe.skipIf(!hasDb)("lib/server/lineage against Postgres", () => {

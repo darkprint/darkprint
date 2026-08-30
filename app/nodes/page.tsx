@@ -5,9 +5,10 @@ import { NodeBrowser, type NodeTypeTerm } from "@/components/nodes/NodeBrowser";
 import type { NodeSummary } from "@/components/nodes/NodeCardSummary";
 import { authorFor } from "@/components/profile/author";
 import type { TermKind } from "@/lib/core";
+import { requiresHuman } from "@/lib/core";
 import { getSharedDbClient } from "@/lib/db";
 import { getPublicAuthor } from "@/lib/server/accounts";
-import { getLatestOntologyVersion, openView } from "@/lib/server/ontology";
+import { openView } from "@/lib/server/ontology";
 import type { Actor } from "@/lib/server/policy";
 import { latestCards, usersOfMany } from "@/lib/server/registry";
 import type { Author } from "@/lib/types";
@@ -78,22 +79,22 @@ export const dynamic = "force-dynamic";
 export default async function NodesPage() {
   const { db } = getSharedDbClient();
 
-  /* The vocabulary this build resolves against, or nothing at all.
+  /* The vocabulary this build resolves against.
      ------------------------------------------------------------
-     `openView` throws on a version it does not hold, so the absent case is answered before
-     it is asked rather than caught after: a registry with no published ontology has no
-     labels, and every `label` below falls back to the id it could not resolve. That is the
-     same answer the archive-backed page gave for an id the vocabulary did not know, so the
-     fallback is unchanged and only its cause is new.
+     There used to be an absent case here, answered before it was asked: `openView` read the
+     newest published version out of Postgres and threw for a version it did not hold, so a
+     registry nobody had seeded had no labels and every `label` below fell back to the id.
+     The vocabulary is in the process now, so the shelf is labelled on an empty registry the
+     same way it is on a full one. A term id the vocabulary does not know still falls back to
+     itself, which is the case that was always the interesting one.
 
      A view rather than the flat `id -> label` map `lib/server/search/cards.ts` builds for
      its facets. `resolve` follows a deprecation redirect and checks the kind; a map does
      neither, so a card still naming a renamed term would print the raw id here and its own
      label everywhere else on the site. */
-  const published = await getLatestOntologyVersion(db);
-  const ontology = published === undefined ? undefined : await openView(db, published.version);
+  const ontology = openView();
   const labelOf = (id: string, kind: TermKind): string =>
-    ontology?.resolve(id, kind)?.term.label ?? id;
+    ontology.resolve(id, kind)?.term.label ?? id;
 
   /* `latestCards` and NOT `cards`, and the difference is visible on this shelf today.
      ------------------------------------------------------------
@@ -154,7 +155,15 @@ export default async function NodesPage() {
          written rather than guessed at. */
       phases: card.phases.map((id) => ({ id, label: labelOf(id, "phase") })),
       tools: [...card.tools],
-      requiresHuman: card.requiresHuman,
+      /* Derived from `type` through the vocabulary, the same call `computeAutonomy` makes,
+         so a tile and the blueprint page that scores the same card cannot disagree about
+         where the people are.
+
+         `false` when this registry has published no vocabulary at all, and the tile then
+         draws no marker rather than the word "unattended" — the same degradation as the
+         labels above, which fall back to the raw id. With no terms there is no
+         subsumption to ask about, and answering "nobody is here" would be a claim. */
+      requiresHuman: ontology !== undefined && requiresHuman(ontology, card.type),
       riskMarkers: card.riskMarkers.map((marker) => labelOf(marker, "risk-marker")),
       usedIn: usedIn.get(record.id) ?? 0,
       /* Resolved here rather than in the tile, and left `undefined` when no account holds

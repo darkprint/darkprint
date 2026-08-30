@@ -80,7 +80,7 @@ import {
   seedAccount,
   seedBundle,
   seedCard,
-  publishNewerOntologyVersion,
+  absentTermId,
   seedTerm,
   setBundleVisibility,
   setCardVisibility,
@@ -278,7 +278,7 @@ describe("AC3: the count and the listing agree in every state", () => {
 
     const pubBundle = await seedBundle(s, { ownerId: publisher.id, visibility: "public" });
     const pubCard = await seedCard(s, { ownerId: publisher.id, visibility: "public" });
-    const term = await seedTerm(s);
+    const term = seedTerm(s);
     const ownPrivate = await seedBundle(s, { ownerId: account.id, visibility: "private" });
 
     const steps: { what: string; run: () => Promise<void> }[] = [
@@ -513,50 +513,63 @@ describe("D-140-03: a term asks EXISTENCE IN THE CURRENT ONTOLOGY VERSION", () =
     const saveTarget = await bind("saveTarget");
     const { account, actor } = await saver(s);
 
-    const term = await seedTerm(s);
-    await saveTarget(s.db, actor, account.id, { kind: "term", refId: term.termId });
-    expect(
-      await visibleTargets(s, actor, account.id),
-      "the fixture's own premise: while its version is the current one, the term is listed",
-    ).toEqual([key({ kind: "term", refId: term.termId })]);
-
-    /* A newer published version that does not carry it. The term's OWN row is untouched. */
-    await publishNewerOntologyVersion(s, [term.termId]);
+    /* Two saves in one account, so the cell separates "this id does not resolve" from "no term
+       is ever listed" — a filter that drops every term of every kind satisfies a single-save
+       version of this cell completely. */
+    const carried = seedTerm(s);
+    const absent = absentTermId();
+    await saveTarget(s.db, actor, account.id, { kind: "term", refId: carried.termId });
+    await saveTarget(s.db, actor, account.id, { kind: "term", refId: absent });
 
     expect(
       await visibleTargets(s, actor, account.id),
-      "D-140-03: `ontology_term` has no owner column and B-07 keeps terms public, so the " +
-        "question is EXISTENCE IN THE CURRENT VERSION rather than visibility — a term published " +
-        "in one version and absent from the next has been deleted in AC3's sense. A read that " +
-        "asks `does any ontology_term row carry this id` lists it forever, and the term's own " +
-        "row is still there, which is what makes the two readings the same green until now.",
-    ).toEqual([]);
-    expect(await ownerCount(s, actor, account.id)).toBe(0);
+      "D-140-03: a term has no owner and B-07 keeps terms public, so the question is EXISTENCE " +
+        "rather than visibility, and a term exists when the living vocabulary carries its id. " +
+        "A read that lists whatever was saved lists both.",
+    ).toEqual([key({ kind: "term", refId: carried.termId })]);
+    expect(await ownerCount(s, actor, account.id)).toBe(1);
     expect(
       await storedRowCount(s, account.id),
-      "the save row is retained: AC3 retains the row for every kind, and nothing about the " +
-        "term's own row changed either",
-    ).toBe(1);
+      "both save rows are retained: AC3 retains the row for every kind, and the vocabulary is " +
+        "not something a save can change",
+    ).toBe(2);
+
+    /* ── What this cell used to drive, and cannot ──
+       It saved a term while its version was current, published a NEWER ontology version that
+       did not carry it, and asserted the listing dropped it — AC3's *deleted* for a term,
+       distinct from D-140-07's *never existed* below. There is no version registry now:
+       `visible.ts` asks `CORE_ONTOLOGY` whether it carries the id, and a vocabulary term
+       cannot stop existing at run time (`deprecated: {since, replacedBy}` retires a term and
+       leaves its id in place). So the only way a saved term fails to resolve is the one driven
+       above, and the two branches of AC3 that the registry separated are now one. */
   });
 
-  it("a term the current version does carry stays listed", async () => {
+  it("a term the vocabulary carries stays listed alongside one it does not", async () => {
     /* Its own database too, for the reason above. */
     const s = await openDatabase();
     const saveTarget = await bind("saveTarget");
     const { account, actor } = await saver(s);
 
-    const older = await seedTerm(s);
-    const { version } = await publishNewerOntologyVersion(s, [older.termId]);
-    const current = await seedTerm(s, undefined, version);
-
-    await saveTarget(s.db, actor, account.id, { kind: "term", refId: current.termId });
-
+    /* The saturation direction, driven from the other end: a rule that drops every term
+       satisfies the cell above completely and destroys the criterion. Two carried terms and
+       one absent, so a listing that is right by accident about ONE id is not enough. */
+    const first = seedTerm(s);
+    const second = seedTerm(s);
+    const absent = absentTermId();
     expect(
-      await visibleTargets(s, actor, account.id),
-      "the saturation direction: a rule that drops every term once a newer version exists " +
-        "satisfies the cell above completely and destroys the criterion",
-    ).toEqual([key({ kind: "term", refId: current.termId })]);
-    expect(await ownerCount(s, actor, account.id)).toBe(1);
+      first.termId === second.termId,
+      "the fixture's own premise: two calls hand out two DIFFERENT vocabulary terms, or this " +
+        "cell is the one-term case wearing a two-term name",
+    ).toBe(false);
+
+    for (const refId of [first.termId, second.termId, absent]) {
+      await saveTarget(s.db, actor, account.id, { kind: "term", refId });
+    }
+
+    expect(await visibleTargets(s, actor, account.id)).toEqual(
+      [key({ kind: "term", refId: first.termId }), key({ kind: "term", refId: second.termId })].sort(),
+    );
+    expect(await ownerCount(s, actor, account.id)).toBe(2);
   });
 });
 

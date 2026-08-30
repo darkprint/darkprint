@@ -18,7 +18,13 @@
    of the ontology version because it re-scores every blueprint.
    ============================================================ */
 
-/** Autonomy fraction-to-level cut-offs. Doc 3 §6, doc 1 §8.1. Strictly decreasing, all in 0..1. */
+/**
+ * What the autonomy reading can be tuned by. Doc 3 §6, doc 1 §8.1.
+ *
+ * The first three are the fraction-to-level cut-offs, strictly decreasing, all in 0..1.
+ * `minControlPoints` is not a cut-off and is kept here anyway, because splitting one
+ * metric's numbers across two config sections is the treasure hunt doc 1 §11 forbids.
+ */
 export interface AutonomyBands {
   /** fraction > level4 → level 4. Open in doc 3 §9 ("taratura delle fasce"), doc 1 §11. */
   level4: number;
@@ -26,6 +32,17 @@ export interface AutonomyBands {
   level3: number;
   /** fraction >= level2 → level 2. Below it, level 1. Open in doc 3 §9, doc 1 §11. */
   level2: number;
+  /**
+   * How many control points a graph must declare before the share of them that runs
+   * unattended is allowed to decide the band (`analysis/autonomy.ts`).
+   *
+   * A graph with one control point yields a control fraction of exactly 0 or exactly 1,
+   * and letting one node swing the whole class is reading a distribution off a single
+   * observation. Same shape and same reason as `telemetry.minRuns`: the reading is still
+   * computed and still reported, it just does not move the band until there is enough of
+   * it to be a share. Open, like every other number in this file.
+   */
+  minControlPoints: number;
 }
 
 /** Security penalties, in points subtracted from a starting score of 4. Doc 3 §5. */
@@ -133,6 +150,11 @@ export const DARKPRINT_CONFIG: DarkprintConfig = Object.freeze({
     level4: 0.9,
     level3: 0.7,
     level2: 0.5,
+    /**
+     * Two: the smallest number of control points that can express a share other than 0 or
+     * 1. Below it the reading is reported and the band is taken from the headcount alone.
+     */
+    minControlPoints: 2,
   }),
 
   security: Object.freeze({

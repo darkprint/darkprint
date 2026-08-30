@@ -36,11 +36,23 @@ import { citedNumbers, sourceLine } from "./contract";
  */
 const TRANSCRIBED = [
   /* In `citedNumbers()`'s own order, which is by path. */
-  /* 91 -> 111 -> 132 -> 134: T263 then the topology-rename compat block (owner, 2026-08-25) each added lines above the constant (D-263-12's sweep and the
-     publish wiring), so the citation moved with the tree. Updated in the same commit as the
-     backend.md citation, which is the synchronised move this pin exists to force. */
-  { value: 512, path: "components/upload/BundleDropzone.tsx", line: 134 },
-  { value: 100, path: "lib/core/card/validate.ts", line: 108 },
+  /* 91 -> 111 -> 132 -> 134 -> 133: T263 then the topology-rename compat block (owner, 2026-08-25) each added lines above the constant (D-263-12's sweep and the
+     publish wiring), so the citation moved with the tree. The withdrawal of the manifest's
+     `ontologyVersion` then moved it back one: this file's `CORE_ONTOLOGY` import went with
+     the field, and it sat above the constant. Updated in the same commit as the backend.md
+     citation, which is the synchronised move this pin exists to force. */
+  { value: 512, path: "components/upload/BundleDropzone.tsx", line: 133 },
+  /* 108 -> 119 -> 145 -> 175: three schema changes in a row added lines above this
+     constant. The `cannot` / `will_not` split put `will_not` and `willNot` into
+     `CARD_KNOWN_KEYS`; the withdrawal of `requires_human` took two entries OUT of that set
+     while adding the `RETIRED_KEYS` map that says what happened to them; and the
+     withdrawal of `ontology_version` took two more entries out, gave `RETIRED_KEYS` a
+     value type so each withdrawn key can carry its own advice, and added the paragraph
+     recording that no reader ever asked to resolve a historical vocabulary. The pin fired
+     all three times and named the line the citation had slid onto; moved here in the same
+     commit as the three `backend.md` citations, which is the synchronised move it exists
+     to force. The number itself has never changed. */
+  { value: 100, path: "lib/core/card/validate.ts", line: 175 },
 ];
 
 describe("T230 the starting numbers the contract cites", () => {

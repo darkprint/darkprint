@@ -25,7 +25,7 @@
    rather than because a filter downstream remembered to drop it.
    ============================================================ */
 
-import { splitTermId, type TermKind } from "@/lib/core";
+import { CORE_ONTOLOGY, splitTermId, type TermKind } from "@/lib/core";
 import type { Db } from "@/lib/db";
 import { schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
@@ -35,7 +35,6 @@ import {
   getRelease,
   parseStoredVocabulary,
 } from "@/lib/server/archive";
-import { getLatestOntologyVersion } from "@/lib/server/ontology";
 import { blueprints } from "@/lib/server/registry";
 import type { OntologyTerm } from "@/lib/server/types";
 import { value } from "./params";
@@ -162,7 +161,10 @@ function isLocal(term: OntologyTerm): boolean {
 async function bothCorpora(db: Db): Promise<readonly OntologyTerm[]> {
   const byId = new Map<string, OntologyTerm>();
 
-  for (const term of (await getLatestOntologyVersion(db))?.terms ?? []) {
+  /* The living vocabulary, read off the module that ships it. This used to be the terms of
+     the newest row in `ontology_version`, which made the registry-wide term list whatever
+     a seed had last written rather than what every card is actually resolved against. */
+  for (const term of CORE_ONTOLOGY.terms) {
     if (!byId.has(term.id)) byId.set(term.id, term);
   }
 

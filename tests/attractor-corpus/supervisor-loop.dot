@@ -1,0 +1,21 @@
+// `shape=house` selects `stack.manager_loop`, and the four `manager.*` attributes are its
+// whole configuration. DarkPrint has a `manager-loop` node type and no field that sets a
+// poll interval, a cycle cap, a stop condition or an action list, so this file is the one
+// that pins how much of a supervisor survives being read into a card: the node does, and
+// everything that told it when to stop does not.
+digraph supervisor_loop {
+  goal="Watch the build until it goes green or the supervisor gives up.";
+  label="Supervisor loop";
+
+  start     [label="start", shape=Mdiamond];
+  supervise [label="Supervise", shape=house, prompt="Watch the build and decide whether to run the repair again.", "manager.poll_interval"="30s", "manager.max_cycles"="8", "manager.stop_condition"="tests_pass", "manager.actions"="rerun,report"];
+  repair    [label="Repair", shape=box, prompt="Read the failing test and change the code so it passes.", max_retries=3];
+  build     [label="Build", shape=parallelogram, prompt="Run the build and the test suite."];
+  exit      [label="exit", shape=Msquare];
+
+  start -> supervise;
+  supervise -> repair;
+  repair -> build;
+  build -> supervise [label="result", loop_restart="true"];
+  supervise -> exit [condition="tests_pass"];
+}

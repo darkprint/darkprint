@@ -33,10 +33,10 @@ outputs:
     description: One candidate answer, with the assumptions it leaned on made explicit for the vote.
 dependencies:
   - task-decomposer
-cannot:
+cannot: []
+will_not:
   - add a requirement the brief does not state
 
-requires_human: false
 risk_markers: []
 notes: >-
   Half of an adversarial pair. It is only useful next to the exploratory solver, run alone it is
@@ -44,4 +44,3 @@ notes: >-
 
 version: 1.0.0
 author: mara-veil
-ontology_version: 0.1.0

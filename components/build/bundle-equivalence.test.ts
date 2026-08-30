@@ -21,8 +21,37 @@
    This is deliberately a guard on the *artefact*, not on how the
    page gets there. It asserts nothing about steps, panes or state
    machines, so it survived the restructuring while everything
-   around it was rewritten, and the snapshot has not moved since it
-   was first written.
+   around it was rewritten.
+
+   The snapshot has moved FOUR times, and each cause is recorded
+   here rather than left as an unexplained diff. First the
+   `cannot` / `will_not` prohibition split, which gave every card a
+   key. Then the withdrawal of `requires_human`, which took one
+   away: whether a person acts at a node is the `type` and there is
+   no second field beside it, so the starter writer stopped emitting
+   the key and every card in every variant lost a line. Then the
+   withdrawal of `ontology_version`, which took another, and this
+   one moved the MANIFEST as well — the manifest declared a
+   vocabulary version too, and that is why the third diff is the
+   only one of the three a two-field hash would still have caught.
+   All three times `cardDigest` spread the whole card and all 80
+   moved together, which is the signature of a schema change rather
+   than of a refactor slipping through.
+
+   The fourth is the first one where SOME of the 80 moved, and the
+   40 are the `human` half exactly. The autonomy metric gained a
+   second reading over the nodes that decide whether other nodes
+   run, and the approval node is one of them, so the variant that
+   adds it is classed `supervised` where it used to be
+   `conditional`. That class name is written into the approval
+   card's `notes` in as many words, and `variants.test.ts` holds
+   the sentence to the class the engine actually computes for the
+   bundle the card ships in, so the copy had to move with the
+   reading. Nothing else in the bundle changed: the ontology and
+   the metric are not inputs to `cardDigest`, and the `tester` half
+   of the matrix is byte-identical, which is what says so. A future
+   diff in which some other subset moves is still a different
+   animal from all four of these.
 
    All three `Bundle` fields (`lib/core/bundle/types.ts`) are hashed
    — `manifest`, `dot` and `cardFiles` — not just the latter two. A

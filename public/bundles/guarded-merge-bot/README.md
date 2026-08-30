@@ -4,7 +4,7 @@ An agent line triages the PR and drafts the review, iterating with the test runn
 
 ```
 blueprint      guarded-merge-bot
-bundle digest  sha256:3e12918b0be5bfb932011edc8b5f3ff96d448cab3620d87f4c4a36869d3484fa
+bundle digest  sha256:17219680a59d857ad0a6fa03574ac87225467cd20a14b85b3a5c45740301f001
 ontology       v0.1.0
 nodes          6
 cards pinned   6
@@ -21,8 +21,13 @@ executes nothing and holds none of your provider keys.
 
 This folder carries the topology and its pinned cards, nothing compiled. `topology.dot` names
 every node, every edge and the card version pinned on it. Each card under `cards/` carries the
-`spec` that becomes that node's prompt. Turning the two into a running pipeline is your own
-harness's job; DarkPrint does not compile or execute one.
+`spec` that becomes that node's prompt.
+
+To compile these two into a pipeline a graph runner takes, run `darkprint export <dir>
+--attractor`. It writes Attractor DOT to stdout, and that file opens with a list of everything
+a DarkPrint blueprint had no way to express, so you can see what the runner falls back to its
+own defaults for. Adapting the result, or building the run yourself from these files instead,
+is your own harness's job.
 
 3 of the 6 nodes name the model they run on, in their card's own `model` field. Read it off
 `cards/<ref>.yaml`; whether your harness honours it is yours to decide.
@@ -66,9 +71,9 @@ whom.
 
 ## What DarkPrint computed
 
-Autonomy: Conditional.
+Autonomy: Supervised.
 
-> 5 of 6 nodes run unattended, 1 has a person in the loop. 0.8333 ≥ 0.70 → Conditional.
+> 5 of 6 nodes run unattended, 1 has a person in the loop. 1 of 2 control points run unattended. 0.50 ≥ 0.50 → Supervised.
 
 Where a person acts:
 

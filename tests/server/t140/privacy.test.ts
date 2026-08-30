@@ -156,7 +156,7 @@ async function build(): Promise<World> {
    */
   const bundle = await seedBundle(s, { ownerId: publisher.id, visibility: "public" });
   const card = await seedCard(s, { ownerId: publisher.id, visibility: "public" });
-  const term = await seedTerm(s);
+  const term = seedTerm(s);
   const spare = await seedBundle(s, { ownerId: publisher.id, visibility: "public" });
 
   const aliceTargets: Target[] = [

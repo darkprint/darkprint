@@ -274,8 +274,8 @@ const WALK_BODY: Record<string, string> = {
     "One output, typed the same way. `build` is `code`, and it is what the edge to the " +
     "acceptance tester carries. A downstream mismatch fails the bundle.",
   cannot:
-    "The prohibition, and the engine holds the graph to it. An edge carrying " +
-    "`acceptance-criteria` into this node fails the bundle rather than warning about it.",
+    "Two fields, because only one of them is checkable. An edge carrying " +
+    "`acceptance-criteria` fails the bundle. `will_not` is what the author promises instead.",
 };
 
 /* `ordinal`, `lineSpan` and `body` used to be declared here. They moved to `./prose.tsx`
@@ -552,7 +552,7 @@ export function CardWalk({
                  keyboard at all (WCAG 2.1.1, Level A): there is nothing to tab to, so the
                  32 characters past the right edge are available to a mouse and to nobody
                  else. `role="region"` with a name is what makes the stop worth having —
-                 "code-builder@1.0.0, 52 lines" rather than an unlabelled group. */
+                 "code-builder@1.0.0, 53 lines" rather than an unlabelled group. */
               tabIndex={0}
               role="region"
               aria-label={`${cardRef}, ${lines.length} lines`}

@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { JsonValue, NodeCard } from "@/lib/core";
-import { shortDigest } from "@/lib/core";
-import { ontologyView } from "@/lib/core";
+import { requiresHuman, shortDigest } from "@/lib/core";
 import type { OntologyView } from "@/lib/core";
 import { getSharedDbClient } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
-import { getLatestOntologyVersion, openView } from "@/lib/server/ontology";
+import { openView } from "@/lib/server/ontology";
 import { latestCards, usersOf, usersOfMany, versionsOf } from "@/lib/server/registry";
 import { searchTerms } from "@/lib/server/search";
 import { serveCardSource } from "@/lib/server/export";
@@ -90,18 +89,16 @@ async function actorNow(): Promise<Actor> {
 /**
  * The core vocabulary with every public local term layered on.
  *
- * `openView` stores core terms only and takes an overlay per bundle — *"never a global
- * row"*, its own words — while this route needs the registry-wide vocabulary a namespaced
- * id like `lupo/pii-handling` lives in. `searchTerms` is the module that knows which terms
- * are local, so the composition is its answer fed back in as the extensions. Three published
- * readers in the order T260's merged `/ontology` already composes them; the decisions in it
- * are theirs and only the call sequence repeats here.
+ * `openView` merges the core with an overlay supplied per bundle, while this route needs
+ * the registry-wide vocabulary a namespaced id like `lupo/pii-handling` lives in.
+ * `searchTerms` is the module that knows which terms are local, so the composition is its
+ * answer fed back in as the extensions. Two published readers in the order T260's merged
+ * `/ontology` already composes them; the decisions in it are theirs and only the call
+ * sequence repeats here.
  */
 async function vocabularyView(db: ReturnType<typeof getSharedDbClient>["db"]): Promise<OntologyView> {
-  const published = await getLatestOntologyVersion(db);
-  if (published === undefined) return ontologyView({ version: "", title: "", terms: [] });
   const local = await searchTerms(db, ANONYMOUS, { origin: "local" });
-  return openView(db, published.version, local.hits.map((hit) => hit.item));
+  return openView(local.hits.map((hit) => hit.item));
 }
 
 export async function generateMetadata({ params }: PageProps<"/nodes/[...id]">) {
@@ -244,6 +241,19 @@ interface FieldValue {
 
 /** What the detail functions are allowed to read, resolved once by the page. */
 interface FieldView {
+  /**
+   * Whether a person acts at this node, derived from `type` through the vocabulary.
+   *
+   * On the view rather than read off the card, because the card no longer stores it: the
+   * answer is `requiresHuman(ontology, card.type)` and the ontology is resolved once for
+   * the whole page. The three surfaces that draw it — the `type` row, the header chip and
+   * the evaluation panel — therefore read one value rather than each asking.
+   *
+   * Named `staffed` rather than repeating the predicate's name, so a reader of any of
+   * those three sites can see at a glance that they are all reading the same computed
+   * value and not each calling the vocabulary again.
+   */
+  staffed: boolean;
   phases: { id: string; label: string; href: string; description?: string }[];
   tools: { id: string; label: string }[];
   params_: [string, JsonValue][];
@@ -354,6 +364,30 @@ const FIELD_ROWS: readonly FieldRow[] = [
     block: "identity",
     name: "type",
     read: (c) => one(c.type),
+    /* Doc 2 §1.1, and both sentences weigh the same. This used to be a row of its own,
+       `requires_human`, in the evaluation block: the card stored the answer a second time
+       and a reader had two places to look and no guarantee they agreed. The field is gone
+       and the sentence moved to the field that decides it, so the page says it once, where
+       the answer is. Neither state is a result. */
+    detail: (c, v) => (
+      <Detail>
+        {v.staffed ? (
+          <>
+            <code className="font-mono text-[12px] text-fg">{c.type}</code> is a{" "}
+            <code className="font-mono text-[12px] text-fg">human-in-the-loop</code> type, so
+            the run holds here until a person acts. That is the whole of what makes this a
+            staffed node: no other field on the card says it, and none can contradict it.
+          </>
+        ) : (
+          <>
+            <code className="font-mono text-[12px] text-fg">{c.type}</code> is not under{" "}
+            <code className="font-mono text-[12px] text-fg">human-in-the-loop</code>, so a run
+            passes through this node without stopping. Staffing it is a change of type, not a
+            flag beside one.
+          </>
+        )}
+      </Detail>
+    ),
   },
   {
     block: "identity",
@@ -516,7 +550,7 @@ const FIELD_ROWS: readonly FieldRow[] = [
   {
     block: "interfaces",
     name: "cannot",
-    read: (c) => list(c.cannot),
+    read: (c) => list(c.cannot, "no type is refused"),
     seeHref: "#prohibitions",
     seeLabel: "and what enforces it",
     detail: (_c, v) =>
@@ -525,43 +559,41 @@ const FIELD_ROWS: readonly FieldRow[] = [
           {v.prohibitions.map((p) => (
             <Detail key={p.entry}>
               <code className="font-mono text-[12px] text-fg">{p.entry}</code>{" "}
-              {p.term === undefined ? (
-                <>
-                  names no data type, so it is a sentence addressed to a reader and{" "}
-                  <span className="text-fg">nothing enforces it</span>.
-                </>
-              ) : (
-                <>
-                  is a data type, so the resolver holds every incoming edge to it: a bundle
-                  carrying it fails with{" "}
-                  <code className="font-mono text-[12px] text-muted">
-                    bundle/prohibition-violated
-                  </code>
-                  .
-                </>
-              )}
+              is a data type, so the resolver holds every incoming edge to it: a bundle
+              carrying it fails with{" "}
+              <code className="font-mono text-[12px] text-muted">
+                bundle/prohibition-violated
+              </code>
+              .
+            </Detail>
+          ))}
+        </div>
+      ),
+  },
+  {
+    /* The row beside `cannot`, and the two are next to each other on purpose: the reader
+       who wants to know which promises are checked reads two adjacent slots instead of
+       resolving each entry of one list in their head. `list`'s empty word is the field's
+       own subject rather than "none", for the reason `components/panes/build.ts` gives:
+       a card with an empty `cannot` and a full `will_not` refuses plenty. */
+    block: "interfaces",
+    name: "will_not",
+    read: (c) => list(c.willNot, "nothing is undertaken"),
+    detail: (c) =>
+      c.willNot.length === 0 ? undefined : (
+        <div className="flex flex-col gap-2">
+          {c.willNot.map((entry) => (
+            <Detail key={entry}>
+              <code className="font-mono text-[12px] text-fg">{entry}</code> is the
+              card&rsquo;s own sentence. No check reads it, and no topology could answer it. It is
+              addressed to whoever runs the node, and the agent is handed the specification
+              at the top of this page.
             </Detail>
           ))}
         </div>
       ),
   },
 
-  {
-    block: "evaluation",
-    name: "requires_human",
-    /* Doc 2 §1.1, and both sentences weigh the same. This row printed `false` and drew it
-       dim, in the same grey the page uses for a field the card left blank — so a card that
-       had answered the question read as a card that had not, and `false` read as the
-       lesser of the two answers. `empty` is false either way: a declared `false` is a
-       design decision, and it is also what `${declared} declared` counts. The wording is
-       the skeleton pane's, so the two surfaces say one thing once. */
-    read: (c) => ({
-      text: c.requiresHuman
-        ? "true. The run holds here until a person acts."
-        : "false. A run passes through without stopping.",
-      empty: false,
-    }),
-  },
   {
     block: "evaluation",
     name: "risk_markers",
@@ -600,10 +632,9 @@ const FIELD_ROWS: readonly FieldRow[] = [
   },
 
   { block: "service", name: "version", read: (c) => one(c.version) },
-  { block: "service", name: "ontology_version", read: (c) => one(c.ontologyVersion) },
   { block: "service", name: "author", read: (c) => one(c.author, "unattributed") },
   /* `CARD_BLOCKS` has always listed it and this table did not, so the two surfaces
-     disagreed about how many fields a card has. It is the last of the 23. */
+     disagreed about how many fields a card has. It is the last of the 22. */
   { block: "service", name: "provenance", read: (c) => one(c.provenance, "not stated") },
 ];
 
@@ -753,19 +784,21 @@ function TermChip({ href, label, aria }: { href: string; label: string; aria: st
 /**
  * One entry of `cannot`, with the vocabulary lookup already done.
  *
- * `term` set is the whole difference the reader needs. An entry naming a `data-type` is a
- * rule the resolver holds the graph to: an incoming edge able to carry that type, meaning
- * the type or a narrower kind of it, is `bundle/prohibition-violated` at error severity.
- * An entry naming nothing in the vocabulary is a sentence addressed to a person, and the
- * schema is explicit that writing one is legitimate. Two very different promises, so they
- * are drawn as two different things.
- *
  * `entry` is what the card wrote and `term.id` is what it resolved to. A deprecated
  * spelling still names its successor, so the two can differ, and both are shown.
+ *
+ * ── `term` used to be optional, and losing that is the change ──
+ * This page once rendered `cannot` as one list holding two kinds of entry, and this view
+ * had an optional `term` to say which kind each one was. The panel then counted them
+ * (`enforcedCount`) so the reader could tell how much of what they were looking at the
+ * engine actually checks. Both are gone: `cannot` holds `data-type` ids and nothing else,
+ * the card's own sentences are `willNot`, and a count apologising for a conflated list has
+ * nothing left to apologise for. `term` is required here because an entry that resolves to
+ * nothing is a `card/unknown-term` the card never got past, so this page cannot receive one.
  */
 interface ProhibitionView {
   entry: string;
-  term?: { id: string; label: string; description?: string };
+  term: { id: string; label: string; description?: string };
 }
 
 /** A `params` value as JSON: scalars inline, anything nested as an indented block. */
@@ -846,6 +879,13 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   const typeLabel = type?.term.label ?? card.type;
   const typeHref = termHref(type?.term.id ?? card.type);
 
+  /* Whether a person acts here, asked once. The card used to carry the answer as its own
+     boolean and this page read that boolean in three places; now `type` is the whole of
+     it, and `requiresHuman` is the same call `computeAutonomy` makes about a node in a
+     graph, so the chip, the field row and the evaluation panel cannot come apart from the
+     score a blueprint page prints for the same card. */
+  const staffed = requiresHuman(ontology, card.type);
+
   /* Phase and type are two independent dimensions, and doc 3 §2 closes the phase list,
      so an id the vocabulary does not know is shown as written rather than guessed at.
      Neither dimension is a score: this is where in the lifecycle the node works, not
@@ -888,23 +928,25 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
     return { id: resolved?.term.id ?? tool, label: resolved?.term.label ?? tool };
   });
 
-  /* Only a `data-type` can be enforced, because a data type is the only thing an edge
-     carries. An entry naming a phase, a node type or a tool is read as free text, which
-     is why the lookup is pinned to one kind rather than asked of the vocabulary at
-     large. */
-  const prohibitions: ProhibitionView[] = card.cannot.map((entry) => {
+  /* Pinned to `data-type` because that is what the field holds: a data type is the only
+     thing an edge carries and therefore the only thing the resolver can refuse. An entry
+     that resolves to nothing is dropped rather than drawn as an unresolved chip. It never
+     reaches a published card, since `card/unknown-term` is an error and the card would not
+     have loaded, so drawing the impossible case would be inventing a state to render. */
+  const prohibitions: ProhibitionView[] = card.cannot.flatMap((entry) => {
     const resolved = ontology.resolve(entry, "data-type");
-    if (resolved === undefined) return { entry };
-    return {
-      entry,
-      term: {
-        id: resolved.term.id,
-        label: resolved.term.label,
-        description: resolved.term.description,
+    if (resolved === undefined) return [];
+    return [
+      {
+        entry,
+        term: {
+          id: resolved.term.id,
+          label: resolved.term.label,
+          description: resolved.term.description,
+        },
       },
-    };
+    ];
   });
-  const enforcedCount = prohibitions.filter((p) => p.term !== undefined).length;
 
   /* The weight comes from `markerWeight`, not from `term.defaultWeight`.
      ------------------------------------------------------------
@@ -987,6 +1029,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
      leaving nine fields empty has said nine things, and the count is the one number that
      tells a reader whether they are looking at a full card or a sparse one. */
   const fieldView: FieldView = {
+    staffed,
     phases,
     tools,
     params_,
@@ -1038,8 +1081,15 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
     },
     {
       href: "#prohibitions",
-      label: "Cannot receive",
-      meta: prohibitions.length === 0 ? "none" : `${prohibitions.length} declared`,
+      label: "What it refuses",
+      /* Two numbers where one stood, and the two words are the sentence. "Declared" was
+         the only word available while one list held both kinds, and it flattened them:
+         a reader saw `2 declared` and could not tell whether the engine was holding the
+         graph to two rules or to none. */
+      meta:
+        prohibitions.length === 0 && card.willNot.length === 0
+          ? "none"
+          : `${prohibitions.length} enforced · ${card.willNot.length} undertaken`,
     },
     {
       href: "#fields",
@@ -1206,7 +1256,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 about a node type. The vocabulary links beside it are cyan now, because
                 they are links, and violet is left doing the one job
                 `lib/format.ts`'s `HUMAN_PRESENCE_MARK` reserves it for. */}
-            {card.requiresHuman && (
+            {staffed && (
               <span className={cx(CHIP, "border-violet/40 bg-violet/10 text-violet")}>
                 <span aria-hidden>⏸</span> human in the loop
               </span>
@@ -1218,10 +1268,22 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 down and this was the only mention of them above the fold. That also
                 settles its colour — it goes somewhere, so it is cyan like the two
                 vocabulary chips, and the row's remaining violet is the human one. */}
+            {/* Two chips, or one, or none. The pair of counts belongs in the header for
+                the reason the panel's meta line carries it too: `cannot · 2 declared` was
+                one number over two different promises, and a reader above the fold had no
+                way to tell how much of it the engine was standing behind. Each half draws
+                only when the card has one, so a card that refuses a type and undertakes
+                nothing shows one chip rather than a chip and a zero. */}
             {prohibitions.length > 0 && (
               <a href="#prohibitions" className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}>
                 <span className="text-muted">cannot ·</span>
-                {prohibitions.length} declared
+                {prohibitions.length} enforced
+              </a>
+            )}
+            {card.willNot.length > 0 && (
+              <a href="#prohibitions" className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}>
+                <span className="text-muted">will_not ·</span>
+                {card.willNot.length} undertaken
               </a>
             )}
             {/* Risk, in the header, which is the one fact a reader deciding whether to
@@ -1304,11 +1366,13 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               `components/panes/build.ts`, where a blueprint pane counts its *words*. The
               page drew every wire around the work and never the work.
 
-              That absence made the page contradict its own source. `Cannot receive`
-              below glosses a free-text entry as "nothing checks it", while on
+              That absence made the page contradict its own source. The prohibition panel
+              below glossed a free-text entry as "nothing checks it", while on
               `maintainer-approval` the spec three panels down says "do not summarise the
               change for them and do not recommend an outcome" — the prohibition is
-              carried, addressed to the agent, in the field that was not on the page.
+              carried, addressed to the agent, in the field that was not on the page. The
+              gloss is gone and the panel's footnote states the mechanism instead; the
+              reason the spec is rendered here at all is unchanged.
 
               Rendered whole rather than clamped: every spec in the archive is a single
               paragraph of 71–169 words (median 117), so there is nothing here that a
@@ -1347,115 +1411,144 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               statement: those rows say what arrives on this node, and these say what may
               not. It is also the field doc 2 §3's whole argument rests on — the rule that
               a Skill cannot express, because it is a property of who is wired to whom —
-              so it gets a panel of its own rather than a line inside Behaviour. */}
+              so it gets a panel of its own rather than a line inside Behaviour.
+
+              ── Two groups, where one list used to stand ──
+              This panel drew one list holding two kinds of entry, badged each row with
+              which kind it was, and counted the two kinds in the meta line so a reader
+              could work out how much of what they were looking at the engine stood
+              behind. Every one of those devices was a repair on the card format, which
+              carried both promises under one key. The format has been repaired instead.
+              `cannot` holds the data types the resolver refuses; `will_not` holds the
+              author's own sentences. So the panel draws the two fields as two groups
+              under headings that say what the engine does about each, and the question
+              "which of these is actually checked" is answered by a heading rather than
+              by counting badges down a list.
+
+              Both groups are drawn even when one of them is empty, as long as the card
+              declared something. A card that undertakes four things and refuses no type
+              is making a real statement about itself, and hiding the empty half would
+              leave a reader who had never seen the other one unable to tell that there
+              was a difference to look for. */}
           <Panel
             id="prohibitions"
             className="scroll-mt-24"
-            label="Cannot receive"
+            label="What it refuses"
             meta={
-              prohibitions.length === 0
+              prohibitions.length === 0 && card.willNot.length === 0
                 ? "none declared"
-                : `${enforcedCount} enforced · ${prohibitions.length - enforcedCount} free text`
+                : `${prohibitions.length} enforced · ${card.willNot.length} undertaken`
             }
           >
-            {prohibitions.length === 0 ? (
+            {prohibitions.length === 0 && card.willNot.length === 0 ? (
               <div className="flex flex-col gap-2">
                 <p className="text-[15px] leading-relaxed text-muted">
-                  <span className="text-fg">None declared.</span> The ordinary case: a
+                  <span className="text-fg">Nothing declared.</span> The ordinary case: a
                   node is usually isolated by the edges its graph does not draw. Writing
                   the rule down here makes it checkable.
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col gap-4">
-                {/* The paragraph that stood here restated the panel: the label says
-                    "Cannot receive", the meta counts enforced against free text, and each
-                    row below carries a badge saying which kind it is. The author asked it
-                    off. The `none declared` branch above keeps its explanation, because
-                    there the panel is empty and there are no rows to read it off. */}
-                <ul className="flex flex-col gap-2.5">
-                  {prohibitions.map((p) =>
-                    p.term === undefined ? (
-                      /* Free text. Drawn plainly and drawn at full size: the schema
-                         calls writing one legitimate, so it is a second kind of entry
-                         and not a lesser one. What separates it is the promise, which
-                         the badge states in words. */
-                      /* The gloss that stood here — "No data type by this name, so
-                         nothing checks it. It speaks to whoever reads the card." — was
-                         wrong twice over, so it is gone rather than reworded in place.
-
-                         Wrong once because it was printed verbatim on every free-text
-                         row, twice per page about 60px apart, saying one fact about the
-                         panel as if it were a fact about each entry. It belongs in the
-                         footnote below, which already existed to say exactly this kind
-                         of thing, and now does.
-
-                         Wrong twice because "nothing checks it" is false. On
-                         `maintainer-approval` the two free-text entries are restated
-                         almost word for word in the specification now rendered at the
-                         top of this page, where the agent reads them. The resolver does
-                         not enforce them; that is not the same as nothing acting on
-                         them, and the page was asserting the stronger claim while
-                         printing the evidence against it. The footnote states the
-                         mechanism instead. */
-                      <li
-                        key={p.entry}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line bg-surface-2 px-3 py-2.5"
-                      >
-                        <span className="font-mono text-[12px] text-fg">{p.entry}</span>
-                        <span className="label inline-flex items-center gap-1">
-                          <span aria-hidden>◌</span> free text
-                        </span>
-                      </li>
-                    ) : (
-                      /* Emerald, not violet. What separates this row from the one above
-                         it is that the resolver holds the graph to it — a fact read off
-                         the engine, which is the job emerald carries everywhere else on
-                         this page (the download figure, the `✓ none declared` line in
-                         the aside). Violet had to go regardless: it is reserved for
-                         where a person acts, and the chip inside this row is a cyan link
-                         now, so a violet frame around it named nothing at all. */
-                      <li
-                        key={p.entry}
-                        className="flex flex-col gap-1.5 rounded-md border border-emerald/30 bg-emerald/5 px-3 py-2.5"
-                      >
-                        <span className="flex flex-wrap items-center justify-between gap-2">
-                          <TermChip
-                            href={termHref(p.term.id)}
-                            label={p.entry}
-                            aria={`Ontology data type: ${p.term.label}`}
-                          />
-                          <span className="label inline-flex items-center gap-1 text-emerald">
-                            <span aria-hidden>⊘</span> enforced
+              <div className="flex flex-col gap-6">
+                {/* Emerald on the heading, matching the rows under it. What separates
+                    this group from the one below is that the resolver holds the graph to
+                    it, a fact read off the engine, which is the job emerald carries
+                    everywhere else on this page. Violet stays out of both: it is reserved
+                    for where a person acts. */}
+                <section
+                  className="flex flex-col gap-2.5"
+                  aria-labelledby="prohibitions-enforced"
+                >
+                  <h3
+                    id="prohibitions-enforced"
+                    className="label inline-flex items-center gap-1.5 text-emerald"
+                  >
+                    <span aria-hidden>⊘</span> cannot receive · the resolver checks every
+                    edge against these
+                  </h3>
+                  {prohibitions.length === 0 ? (
+                    <p className="text-[15px] leading-relaxed text-muted">
+                      No type is refused. Every edge the graph draws into this node
+                      resolves as far as this card is concerned.
+                    </p>
+                  ) : (
+                    <ul className="flex flex-col gap-2.5">
+                      {prohibitions.map((p) => (
+                        <li
+                          key={p.entry}
+                          className="flex flex-col gap-1.5 rounded-md border border-emerald/30 bg-emerald/5 px-3 py-2.5"
+                        >
+                          <span className="flex flex-wrap items-center justify-between gap-2">
+                            <TermChip
+                              href={termHref(p.term.id)}
+                              label={p.entry}
+                              aria={`Ontology data type: ${p.term.label}`}
+                            />
                           </span>
-                        </span>
-                        {p.term.description !== undefined && (
-                          <span className="text-xs leading-relaxed text-muted">
-                            {p.term.description}
-                          </span>
-                        )}
-                        <span className="text-xs leading-relaxed text-dim">
-                          Any edge that could carry{" "}
-                          <code className="font-mono text-muted">{p.term.id}</code>, or a
-                          narrower type, fails the bundle with{" "}
-                          <code className="font-mono text-muted">
-                            bundle/prohibition-violated
-                          </code>
-                          .
-                          {p.entry !== p.term.id && (
-                            <>
-                              {" "}
-                              The card writes{" "}
-                              <code className="font-mono text-muted">{p.entry}</code>,
-                              which the vocabulary resolves to{" "}
-                              <code className="font-mono text-muted">{p.term.id}</code>.
-                            </>
+                          {p.term.description !== undefined && (
+                            <span className="text-xs leading-relaxed text-muted">
+                              {p.term.description}
+                            </span>
                           )}
-                        </span>
-                      </li>
-                    ),
+                          <span className="text-xs leading-relaxed text-dim">
+                            Any edge that could carry{" "}
+                            <code className="font-mono text-muted">{p.term.id}</code>, or a
+                            narrower type, fails the bundle with{" "}
+                            <code className="font-mono text-muted">
+                              bundle/prohibition-violated
+                            </code>
+                            .
+                            {p.entry !== p.term.id && (
+                              <>
+                                {" "}
+                                The card writes{" "}
+                                <code className="font-mono text-muted">{p.entry}</code>,
+                                which the vocabulary resolves to{" "}
+                                <code className="font-mono text-muted">{p.term.id}</code>.
+                              </>
+                            )}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                </ul>
+                </section>
+
+                {/* Drawn plainly and drawn at full size. The schema calls stating an
+                    undertaking legitimate, so this is a second kind of promise and not a
+                    lesser one: on `maintainer-approval` the two entries here are restated
+                    almost word for word in the specification at the top of this page,
+                    where the agent reads them. What separates the group is who acts on
+                    it, and the heading states that in words. */}
+                <section
+                  className="flex flex-col gap-2.5"
+                  aria-labelledby="prohibitions-undertaken"
+                >
+                  <h3
+                    id="prohibitions-undertaken"
+                    className="label inline-flex items-center gap-1.5"
+                  >
+                    <span aria-hidden>◌</span> will not · the card&rsquo;s own undertaking,
+                    which no check reads
+                  </h3>
+                  {card.willNot.length === 0 ? (
+                    <p className="text-[15px] leading-relaxed text-muted">
+                      Nothing is undertaken. This card states no rule beyond the type it
+                      refuses above.
+                    </p>
+                  ) : (
+                    <ul className="flex flex-col gap-2.5">
+                      {card.willNot.map((entry) => (
+                        <li
+                          key={entry}
+                          className="rounded-md border border-line bg-surface-2 px-3 py-2.5"
+                        >
+                          <span className="font-mono text-[12px] text-fg">{entry}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
 
                 {/* No em dash in here, even though `app/nodes` is outside the trees
                     `components/build/workspace.test.ts` guards. That exemption exists for copy
@@ -1464,10 +1557,10 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                     this pass, so it follows the rule the guard cannot see it break. */}
                 <p className="text-xs leading-relaxed text-dim">
                   Only a data type can be enforced, because only a data type travels on an
-                  edge. An entry naming anything else is free text. The resolver does not
-                  hold the graph to it. That does not mean nothing acts on it. It
-                  is addressed to whoever runs the node, and the agent reads the
-                  specification at the top of this page.
+                  edge. The sentences in the second group are unchecked because no topology
+                  answers them. That does not mean nothing acts on them. They are addressed
+                  to whoever runs the node, and the agent reads the specification at the
+                  top of this page.
                 </p>
               </div>
             )}
@@ -1608,7 +1701,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                                   row is open or shut.
 
                                   Three rather than the skeleton pane's two, because this
-                                  panel has no height cap and 23 rows do not share a
+                                  panel has no height cap and 22 rows do not share a
                                   `max-h-[26rem]` box here. Lines rather than characters
                                   because this column measures 534px on a desktop and 290px
                                   on a phone, and one character budget cannot be right at
@@ -1734,7 +1827,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               Open, this was 40% of the page's words. On `intent-router`: 1239 words
               rendered, 496 of them inside this panel, re-printing `name`, `type`,
               `phase`, `action` verbatim, `tools`, `params`, `inputs`, `outputs`,
-              `dependencies`, `cannot`, `notes`, `version` and `author` — every one of
+              `dependencies`, `cannot`, `will_not`, `notes`, `version` and `author` — every one of
               which the panels above already draw — plus the digest for a third time.
 
               It was also the direct cause of the mobile clipping fixed at the top of
@@ -1882,7 +1975,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   key="autonomy"
                   className="flex items-start gap-2 text-sm leading-relaxed text-muted"
                 >
-                  {card.requiresHuman ? (
+                  {staffed ? (
                     <>
                       <span className="font-mono text-violet" aria-hidden>
                         ⏸
@@ -2027,12 +2120,6 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   >
                     {shortDigest(record.digest)}
                   </a>
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-3 py-2.5 last:pb-0">
-                <dt className="text-sm text-muted">Ontology</dt>
-                <dd className="font-mono text-sm tabular-nums text-fg">
-                  v{card.ontologyVersion}
                 </dd>
               </div>
             </dl>

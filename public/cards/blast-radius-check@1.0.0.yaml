@@ -42,11 +42,11 @@ outputs:
     description: The risk verdict, what routes a mitigation to on-call instead of to the host.
 dependencies:
   - resolution-composer
-cannot:
+cannot: []
+will_not:
   - edit the mitigation it judges
   - clear a target it could not resolve
 
-requires_human: false
 risk_markers: []
 notes: >-
   It reads live inventory over HTTP to expand the target set, which is the only reason this node
@@ -57,4 +57,3 @@ notes: >-
 
 version: 1.0.0
 author: mara-veil
-ontology_version: 0.1.0

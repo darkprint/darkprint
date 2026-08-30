@@ -79,7 +79,7 @@ const ALL = plainText(SHIPPED);
  */
 const OTHER: DarkprintConfig = {
   ...DARKPRINT_CONFIG,
-  autonomy: { level4: 0.88, level3: 0.66, level2: 0.44 },
+  autonomy: { level4: 0.88, level3: 0.66, level2: 0.44, minControlPoints: 4 },
   security: {
     weights: {
       "arbitrary-code-execution": 3.7,

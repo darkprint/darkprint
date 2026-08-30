@@ -98,7 +98,8 @@ export function fileResponse(file: ServedFile): Response {
  * **That sentence was here while the code did the opposite** (D-90-A). `readFailed`
  * returned an `ExportError`, so a driver failure matched this `instanceof` and answered
  * 404 — and the same outage answered 500 instead whenever it happened to be raised inside
- * `resolveCardRef` or `openView`, which were never wrapped. The fix is not a second
+ * `resolveCardRef` or `openView`, which were never wrapped. (`openView` reaches no store
+ * now and cannot raise one; `resolveCardRef` still can.) The fix is not a second
  * `instanceof` here: `ExportReadError` is a **sibling** of `ExportError`, so this line is
  * right by construction and cannot be made wrong again by someone adding a third read
  * path. A comment agreeing with the code is not the guard; the type is.

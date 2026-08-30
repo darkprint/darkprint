@@ -44,12 +44,20 @@
    the topology and the pinned cards — and stops shipping a second, compiled description
    of the same graph next to the first. `emitAttractorDot` itself is untouched in
    `lib/core`; it has callers outside this module (`lib/starter/variants.test.ts`,
-   `emit.test.ts`) and stays there as a general DOT-emission capability. `FACTORY_DOT` and
-   `BUNDLE_AGENTS` stay exported below, at their old names and values, only because two
-   FROZEN suites (`components/blueprint/download-name.test.ts`,
-   `components/bundle/files.test.ts`) import them by name to assert a bundle never emits
-   them — deleting the export would fail those suites to compile, which is a different and
-   worse failure than the one this removal is trying to make.
+   `emit.test.ts`) and stays there as a general DOT-emission capability.
+
+   `FACTORY_DOT` outlived that removal for one reason and no longer has it: the two FROZEN
+   suites that imported the name were its only consumers, so the export existed to be
+   imported by a test. The owner authorised unfreezing both (2026-08-25 instruction,
+   re-stated in conversation), the pins came out, and the constant is DELETED. Nothing in
+   the product writes, serves or names that file any more; the suites that assert a bundle
+   never contains one spell it as a literal, which is the honest spelling for a name with
+   no definition behind it.
+
+   `BUNDLE_AGENTS` stays, and for a different and real reason: `components/upload/
+   BundleDropzone.tsx` reads it to recognise an `AGENTS.md` a reader drops from an older
+   download or writes by hand, so the wizard can say what the file is instead of calling it
+   an unreadable document. That is a live consumer in the product, not a test pin.
    ============================================================ */
 
 import {
@@ -67,17 +75,6 @@ import { ONTOLOGY_EXTENSIONS_FILE } from "./ontology-file";
 
 /* --------------------- the layout --------------------- */
 
-/**
- * The name a compiled, Attractor-runnable pipeline used to have in a published bundle.
- *
- * `exportBundle` no longer writes this file (owner instruction, 2026-08-25 — see the file
- * banner). The constant survives, unused by the writer, because two FROZEN suites import
- * it by name to assert exactly that: `download-name.test.ts` checks the download button
- * never saves a file under this name, and `files.test.ts` uses it to build its allow-list
- * of names a seeded listing may contain.
- */
-export const FACTORY_DOT = "factory.dot";
-
 /** The DarkPrint topology, as the registry stores it. */
 export const TOPOLOGY_DOT = "topology.dot";
 
@@ -87,8 +84,11 @@ export const BUNDLE_README = "README.md";
  * The name an agent-facing file used to have in a published bundle.
  *
  * `exportBundle` no longer writes this file (owner instruction, 2026-08-25 — see the file
- * banner). Kept exported for the same reason as `FACTORY_DOT`: `files.test.ts` (FROZEN)
- * imports it by name for its allow-list.
+ * banner), and no download has contained one since. It is still exported because
+ * `components/upload/BundleDropzone.tsx` recognises the name: a reader dropping an older
+ * download, or a folder they wrote by hand, gets told what the file is rather than being
+ * told it is not a `.dot`, `.yaml`, `.yml` or `.json` document. Naming that file needs
+ * this constant to exist even though nothing writes one.
  */
 export const BUNDLE_AGENTS = "AGENTS.md";
 
@@ -480,7 +480,11 @@ export function bundleReadme(input: BundleExportInput): string {
   push("```");
   push(`blueprint      ${manifest.slug}`);
   push(`bundle digest  ${blueprint.digest}`);
-  push(`ontology       v${manifest.ontologyVersion}`);
+  /* The version the scores below were COMPUTED under, off the analysis, which is where it
+     has always been the true answer. The manifest used to declare a version of its own and
+     this line quoted that one — the number the author typed, not the number the engine
+     read the bundle against. */
+  push(`ontology       v${analysis.ontologyVersion}`);
   push(`nodes          ${blueprint.nodes.length}`);
   push(`cards pinned   ${cards.length}`);
   if (local.length > 0) {
@@ -503,15 +507,30 @@ export function bundleReadme(input: BundleExportInput): string {
   );
   /* Owner instruction, 2026-08-25: the folder no longer carries a compiled, runnable
      `factory.dot`, so a section leading on `attractor run factory.dot` would be printing a
-     command against a file that is not there. What is true instead: the folder hands over
-     the topology and the pinned cards a reader's own harness turns into a run. */
+     command against a file that is not there. That instruction was about the FOLDER, and it
+     stands: nothing compiled is written here.
+
+     The last sentence used to end "DarkPrint does not compile or execute one", which was
+     true of the folder and became false of the product when `darkprint export` shipped. The
+     two halves are now separated, because they were never one claim: DarkPrint compiles a
+     pipeline when somebody asks for one, and executes nothing under any circumstances. The
+     execution half is doc 1 §0.1.3 and is pinned above, in its own paragraph, where a length
+     pass cannot take it out with a sentence about compilation. */
   push(
     ...wrap(
       `This folder carries the topology and its pinned cards, nothing compiled. \`${TOPOLOGY_DOT}\` ` +
         `names every node, every edge and the card version pinned on it. Each card under ` +
-        `\`${BUNDLE_CARDS_DIR}/\` carries the \`spec\` that becomes that node's prompt. Turning the ` +
-        "two into a running pipeline is your own harness's job; DarkPrint does not compile or " +
-        "execute one.",
+        `\`${BUNDLE_CARDS_DIR}/\` carries the \`spec\` that becomes that node's prompt.`,
+    ),
+    "",
+  );
+  push(
+    ...wrap(
+      "To compile these two into a pipeline a graph runner takes, run `darkprint export <dir> " +
+        "--attractor`. It writes Attractor DOT to stdout, and that file opens with a list of " +
+        "everything a DarkPrint blueprint had no way to express, so you can see what the runner " +
+        "falls back to its own defaults for. Adapting the result, or building the run yourself " +
+        "from these files instead, is your own harness's job.",
     ),
     "",
   );
@@ -639,7 +658,7 @@ export function bundleReadme(input: BundleExportInput): string {
     push(
       ...wrap(
         [
-          `Both were read against ontology v${manifest.ontologyVersion} and the local terms these`,
+          `Both were read against ontology v${analysis.ontologyVersion} and the local terms these`,
           `cards declare: ${local.map((term) => `\`${term.id}\``).join(", ")}.`,
           `Their definitions and the weights that price them are in \`${BUNDLE_VOCABULARY}\`, in this`,
           "folder. Score the folder without that file and those ids resolve against nothing, the",

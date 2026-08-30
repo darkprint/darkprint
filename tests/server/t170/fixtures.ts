@@ -185,10 +185,9 @@ export function nodeCard(cardId: string, version = "1.0.0"): NodeCard {
     outputs: [],
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: [],
     version,
-    ontologyVersion: ONTOLOGY_VERSION,
   };
 }
 
@@ -198,7 +197,6 @@ function cardSource(card: NodeCard): string {
     `name: ${card.name}`,
     `type: ${card.type}`,
     `version: ${card.version}`,
-    `ontology_version: ${card.ontologyVersion}`,
     `action: ${card.action}`,
     `spec: ${JSON.stringify(card.spec)}`,
     "",

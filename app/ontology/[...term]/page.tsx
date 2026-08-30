@@ -2,10 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { OntologyTerm, OntologyView } from "@/lib/core";
 import { CORE_PHASE_IDS, DARKPRINT_CONFIG, INFERRED_MARKERS } from "@/lib/core";
-import { ontologyView } from "@/lib/core";
 import { getSharedDbClient } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
-import { getLatestOntologyVersion, openView } from "@/lib/server/ontology";
+import { openView } from "@/lib/server/ontology";
 import { blueprints, cards, latestCards } from "@/lib/server/registry";
 import { searchTerms } from "@/lib/server/search";
 import { HUMAN_PRESENCE_MARK } from "@/lib/format";
@@ -53,18 +52,16 @@ const ANONYMOUS: Actor = Object.freeze({ kind: "anonymous" });
 /**
  * The core vocabulary with every public local term layered on.
  *
- * `openView` stores core terms only and takes its overlay per bundle — *"never a global
- * row"* — while this route must resolve a namespaced id like `lupo/pii-handling`, which
- * lives in whichever release declares it. `searchTerms` is the module that knows which
- * terms are local, so its answer is fed back in as the extensions. Three published readers
- * in the order T260's merged `/ontology` already composes them; the decisions are theirs
- * and only the call sequence repeats here.
+ * `openView` merges the core with an overlay supplied per call, while this route must
+ * resolve a namespaced id like `lupo/pii-handling`, which lives in whichever release
+ * declares it. `searchTerms` is the module that knows which terms are local, so its answer
+ * is fed back in as the extensions. Two published readers in the order T260's merged
+ * `/ontology` already composes them; the decisions are theirs and only the call sequence
+ * repeats here.
  */
 async function vocabularyView(db: ReturnType<typeof getSharedDbClient>["db"]) {
-  const published = await getLatestOntologyVersion(db);
-  if (published === undefined) return ontologyView({ version: "", title: "", terms: [] });
   const local = await searchTerms(db, ANONYMOUS, { origin: "local" });
-  return openView(db, published.version, local.hits.map((hit) => hit.item));
+  return openView(local.hits.map((hit) => hit.item));
 }
 
 export async function generateMetadata({ params }: PageProps<"/ontology/[...term]">) {

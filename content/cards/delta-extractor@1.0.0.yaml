@@ -33,11 +33,11 @@ outputs:
     description: The changed rows over a fixed set of columns, in warehouse order.
 dependencies:
   - delta-intake
-cannot:
+cannot: []
+will_not:
   - write anything back to the warehouse
   - reshape the rows it returns
 
-requires_human: false
 risk_markers: []
 notes: >-
   This node only reads, but the vocabulary's `sql` capability does not distinguish a read from a
@@ -47,4 +47,3 @@ notes: >-
 
 version: 1.0.0
 author: k0bra
-ontology_version: 0.1.0

@@ -15,7 +15,6 @@ import {
   BUNDLE_AGENTS,
   BUNDLE_README,
   BUNDLE_VOCABULARY,
-  FACTORY_DOT,
   TOPOLOGY_DOT,
   SITE_ORIGIN,
   bundleDir,
@@ -35,6 +34,17 @@ import {
 import { parseOntologyTerms } from "./ontology-file";
 import { contentVocabulary, readContent, type LoadedBundle } from "./read";
 import { autonomyStatement } from "@/lib/format";
+
+/**
+ * The name the compiled, runnable copy of the graph carried until the owner instructed it
+ * out of every published folder (2026-08-25).
+ *
+ * A literal. This name was a constant in the module under test and was bound here; it was
+ * deleted once the two frozen suites that were its only other consumers were unfrozen, so
+ * no definition is left to track. The two negatives below are unchanged
+ * in force: no export writes this file, and no README lists it.
+ */
+const RUNNABLE_DOT = "factory.dot";
 
 /* --------------------- the real archive --------------------- */
 
@@ -107,7 +117,7 @@ describe("exportBundle over content/", () => {
   it("never writes factory.dot or AGENTS.md", () => {
     for (const { slug, files } of EXPORTS) {
       const paths = files.map((f) => f.path);
-      expect([slug, paths]).toEqual([slug, paths.filter((p) => p !== FACTORY_DOT && p !== BUNDLE_AGENTS)]);
+      expect([slug, paths]).toEqual([slug, paths.filter((p) => p !== RUNNABLE_DOT && p !== BUNDLE_AGENTS)]);
     }
   });
 
@@ -484,10 +494,10 @@ describe("the README", () => {
       ]);
       expect([slug, text.includes(entry.blueprint.digest)]).toEqual([slug, true]);
       expect([slug, text.includes(`blueprint      ${slug}`)]).toEqual([slug, true]);
-      expect([slug, text.includes(`v${entry.blueprint.manifest.ontologyVersion}`)]).toEqual([
-        slug,
-        true,
-      ]);
+      /* The vocabulary the scores were computed under, off the analysis. It used to be read
+         off the manifest, which declared a version of its own; the README quotes the version
+         the engine actually resolved against, which is the only one a reader can use. */
+      expect([slug, text.includes(`v${entry.analysis.ontologyVersion}`)]).toEqual([slug, true]);
     }
   });
 
@@ -519,7 +529,7 @@ describe("the README", () => {
       text: fileMap(e.files).get(BUNDLE_README) ?? "",
     }))) {
       const listing = text.split("## What is in the folder")[1]?.split("```")[1] ?? "";
-      expect([slug, listing.includes(FACTORY_DOT)]).toEqual([slug, false]);
+      expect([slug, listing.includes(RUNNABLE_DOT)]).toEqual([slug, false]);
       expect([slug, listing.includes(BUNDLE_AGENTS)]).toEqual([slug, false]);
       expect([slug, listing.includes(TOPOLOGY_DOT)]).toEqual([slug, true]);
       const carries = fileMap(files).has(BUNDLE_VOCABULARY);

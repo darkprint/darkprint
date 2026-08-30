@@ -181,7 +181,7 @@ function optional(value: string | undefined, empty: string): { filled: boolean; 
  * this does not fit within the available space, on click it shows the details." Three
  * fields used to answer with a description of themselves instead — `spec` and `notes` with
  * a word count, `action` with the first 88 characters — and `params` answered with its keys
- * and dropped every value. So every one of the 23 keys below now returns what the card
+ * and dropped every value. So every one of the 22 keys below now returns what the card
  * wrote, and the renderer clamps it to two lines and unclamps it when the row is opened.
  * Nothing is cut at build time and nothing is behind a measurement.
  *
@@ -271,16 +271,22 @@ function fieldValue(
     case "dependencies":
       return list(card.dependencies, "no upstream node is named");
     case "cannot":
-      // The negative half of §3.3. `[]` is a complete answer and is not drawn as a gap:
-      // most cards declare nothing here, and the ones that do are making a claim the
-      // resolver checks rather than filling in a form.
-      return list(card.cannot, "nothing is ruled out");
-    case "requires_human":
-      // Doc 2 §1.1. Both states are a design decision and the two sentences are written
-      // to weigh the same. Neither one is a result.
-      return card.requiresHuman
-        ? { filled: true, value: "true. The run holds here until a person acts." }
-        : { filled: true, value: "false. A run passes through without stopping." };
+      // The enforced half of §3.3's negative. `[]` is a complete answer and is not drawn
+      // as a gap: most cards declare nothing here, and the ones that do are making a claim
+      // the resolver checks rather than filling in a form.
+      //
+      // The empty sentence names the field's subject rather than the field. "Nothing is
+      // ruled out" was true of the conflated list and is false of this one: a card with an
+      // empty `cannot` and a full `will_not` rules plenty out, and only this half is
+      // checked. Two slots that both said "nothing is ruled out" would have reproduced the
+      // conflation the split removed, one row further down.
+      return list(card.cannot, "no type is refused");
+    case "will_not":
+      // The stated half. Deliberately not marked as lesser and deliberately not glossed
+      // here: `FIELD_NOTE.will_not` carries the claim about who reads it, in one place,
+      // the way `FIELD_NOTE.notes` does for `notes`. A gloss on the value would be this
+      // slot answering with a description of itself.
+      return list(card.willNot, "nothing is undertaken");
     case "risk_markers":
       return list(card.riskMarkers, "none declared");
     case "notes":
@@ -300,8 +306,6 @@ function fieldValue(
       return optional(card.author, "unattributed");
     case "provenance":
       return optional(card.provenance, "not stated");
-    case "ontology_version":
-      return { filled: true, value: card.ontologyVersion };
     default:
       return { filled: false, value: "not part of the schema" };
   }

@@ -30,11 +30,12 @@ a workspace, a sync or a push.
 ## Read these when you need them
 
 - `references/ontology.md` — every term the validator resolves against, generated from the
-  engine. The five phases, the eight node types, the nine risk markers and what each costs,
+  engine. The five phases, the twelve node types, the nine risk markers and what each costs,
   the fifteen data types and their lattice, the twelve tool capabilities. **Read it before
   you type any card**, and quote term ids from it rather than from memory.
 - `references/card-schema.md` — the wire format, generated from the validator. Every
-  accepted key, what is required, what defaults to what, and the two halves of `cannot`.
+  accepted key, what is required, what defaults to what, and which of `cannot` and
+  `will_not` the engine checks.
 - `references/dot-and-attractor.md` — how to write the DOT so it loads clean, and what a
   card becomes when DarkPrint compiles the bundle for Attractor.
 - `references/preflight.md` — the checklist, keyed to diagnostic codes. Walk your own output
@@ -67,8 +68,8 @@ This is a grill, not a form.
    before the author chooses, not after.
 
 Derive everything derivable. The author never types a card id, a DOT node id, a version, a
-`dependencies` list, a port description, a `requires_human` flag or a `spec`. Those come out
-of answers they already gave.
+`dependencies` list, a port description or a `spec`. Those come out of answers they already
+gave.
 
 ---
 
@@ -100,7 +101,7 @@ names it, and the check is blind to that channel). Name which of the two they ha
 what it costs.
 
 **Q0.5** — *Name three files, directories or systems you do not want touched.*
-FOR: the free-text half of `cannot`, and the boundary sentences in the builder's `spec`. An
+FOR: the `will_not` entries, and the boundary sentences in the builder's `spec`. An
 author who cannot name three is still inventing the requirements, and the blueprint will
 execute that ambiguity faithfully.
 
@@ -137,8 +138,10 @@ routes, or a check that produces a verdict with evidence?*
 Ask it in those words. You map it onto `agent` / `tool` / `human-gate` / `human-input` /
 `decision` / `validation`.
 FOR: `type`. Never type a node with an abstract category (`human-in-the-loop`,
-`evaluative`). The two human types force `requires_human: true` — set it yourself, never ask;
-getting it wrong is `card/human-type-inconsistent`, an **error**.
+`evaluative`). This answer is the whole of what says a person acts at the node: there is no
+flag beside it to set, and the autonomy reading, the schematic and the card page all ask this
+one field. Getting it wrong puts a person on a node where nobody is, or scores a staffed node
+as unattended, and nothing else on the card can correct it.
 
 **Q1.4** — *Is this planning, implementation, testing, debugging or deployment — or none of
 them?*
@@ -315,8 +318,8 @@ prose, and prose is your job.
 
 `action`, `spec`, every port `description`, `dependencies` (**derived from the confirmed edge
 list, never asked** — a declared dependency with no edge is an error and an edge with no
-declaration is a warning, so asking twice invites the two to disagree), `notes`,
-`requires_human`, `version`, `ontology_version`, the DOT and `README.md`.
+declaration is a warning, so asking twice invites the two to disagree), `notes`, `version`,
+the DOT and `README.md`.
 
 Rules for the prose are in `references/writing-cards.md`. The one that is load-bearing: a
 generator's `spec` must not paraphrase the criteria producer's. Under 0.35 3-gram Jaccard, no
@@ -329,7 +332,7 @@ Not the whole bundle. These three, because they are the three no author can dele
 
 1. **the edge list, including the edges deliberately absent**, with one line per absence
    saying why it is deliberate;
-2. **the `cannot` entries, sorted into "the engine enforces this" and "a reader reads this"**;
+2. **the `cannot` and `will_not` entries, and why each one is in the field it is in**;
 3. **the `spec` of every node whose work is judged** — the one place a leak can still hide
    after the topology is clean.
 

@@ -67,7 +67,9 @@ export interface CardSummary {
  * The stored scorecard (B-08). Read from `release`, never recomputed here: T080 owns the
  * projection and the read, and the re-score belongs to whichever task publishes the
  * ontology release. `ontologyVersion` is the version string the three axes were computed
- * under, resolved through `release.scored_ontology_version_id`.
+ * under, read off the stored `autonomy` where `computeAutonomy` stamped it. It used to be
+ * resolved through `release.scored_ontology_version_id`, a uuid into a table of published
+ * vocabulary versions that nothing writes any more.
  */
 export interface Scores {
   autonomy: AutonomyResult;

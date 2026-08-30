@@ -34,11 +34,11 @@ outputs:
     description: One object per document, field name to extracted value, with the source span.
 dependencies:
   - document-intake
-cannot:
+cannot: []
+will_not:
   - paraphrase a value it copies
   - invent a field the document does not state
 
-requires_human: false
 risk_markers: []
 notes: >-
   `temperature: 0` is not a style preference here. Extraction is a transcription task, and a
@@ -46,4 +46,3 @@ notes: >-
 
 version: 1.0.0
 author: lupo
-ontology_version: 0.1.0

@@ -227,7 +227,7 @@ export function CardBreakdown({
         {/* A scroll container with no focusable child cannot be reached from the keyboard
             at all (WCAG 2.1.1, Level A): there is nothing to tab to, so the characters past
             the right edge are available to a mouse and to nobody else. `role="region"` with
-            a name is what makes the stop worth having — "code-builder@1.0.0, 52 lines"
+            a name is what makes the stop worth having — "code-builder@1.0.0, 53 lines"
             rather than an unlabelled group.
 
             No height and no transform, at any width. See this file's header: the figure is

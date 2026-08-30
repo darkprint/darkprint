@@ -58,9 +58,8 @@
    only as far as the contract decides.
    ============================================================ */
 
-import { cardDigest, type NodeCard } from "@/lib/core";
+import { CORE_ONTOLOGY, cardDigest, type NodeCard } from "@/lib/core";
 import { validateCardId } from "@/lib/server/naming";
-import { ontologyDigest } from "@/lib/server/ontology";
 
 import {
   type Scratch,
@@ -177,10 +176,9 @@ export function nodeCard(cardId: string, version = "1.0.0"): NodeCard {
     outputs: [],
     dependencies: [],
     cannot: [],
-    requiresHuman: false,
+    willNot: [],
     riskMarkers: [],
     version,
-    ontologyVersion: ONTOLOGY_VERSION,
   };
 }
 
@@ -191,7 +189,6 @@ function cardSource(card: NodeCard): string {
     `name: ${card.name}`,
     `type: ${card.type}`,
     `version: ${card.version}`,
-    `ontology_version: ${card.ontologyVersion}`,
     `action: ${card.action}`,
     `spec: ${JSON.stringify(card.spec)}`,
     "",
@@ -284,120 +281,69 @@ export function assertLegalCardId(cardId: string): void {
 /* --------------------- ontology terms --------------------- */
 
 /*
- * D-140-03: a saved TERM asks a different question from a saved blueprint or card. There is no
- * owner column on `ontology_term` and B-07 keeps terms public, so the predicate is EXISTENCE IN
- * THE CURRENT ONTOLOGY VERSION rather than visibility — and "the current version" is what makes
- * a second version worth seeding at all. A term published in 0.1.0 and absent from 0.2.0 has
- * been deleted in AC3's sense, and nothing about the term's own row changed.
+ * D-140-03: a saved TERM asks a different question from a saved blueprint or card. A term has
+ * no owner and B-07 keeps terms public, so the predicate is EXISTENCE rather than visibility.
  *
- * That is why these helpers take a version instead of closing over one constant: a fixture that
- * could only ever seed a single version could not reach the cell the ruling is about.
+ * ── What "exists" means changed, and these fixtures moved with it ──
+ * It used to mean EXISTENCE IN THE CURRENT ONTOLOGY VERSION, read out of `ontology_term` rows
+ * under the newest `ontology_version` row. So this file seeded term rows, seeded a second
+ * version, and drove "published in 0.1.0 and absent from 0.2.0" as AC3's *deleted*. That
+ * registry is gone: nothing writes either table, and `visible.ts` asks `CORE_ONTOLOGY` whether
+ * it carries the id.
+ *
+ * Two consequences the cells below live with, stated here rather than discovered:
+ *
+ *   1. A term exists because the VOCABULARY carries it, so a fixture cannot mint one. These
+ *      helpers hand out real core term ids instead of seeding rows, and they hand out a
+ *      distinct one per call because two saves of one id are one save.
+ *   2. **AC3's *deleted* is no longer separately reachable for a term.** A vocabulary term
+ *      cannot stop existing at run time — `deprecated: {since, replacedBy}` retires a term
+ *      while leaving its id in the vocabulary — so the only way a saved term id fails to
+ *      resolve is that the vocabulary never carried it, which is D-140-07's *never existed*.
+ *      The two branches merged because the thing that separated them was the version registry.
  */
 
-/** The version cards declare. The CURRENT one unless something newer is published beside it. */
-const NEWER_ONTOLOGY_VERSION = "0.2.0";
+/** Core term ids in a fixed order, so an allocation is reproducible across runs. */
+const VOCABULARY_TERM_IDS: readonly string[] = [...CORE_ONTOLOGY.terms.map((term) => term.id)].sort();
 
-interface TermBody {
-  id: string;
-  kind: "phase" | "node-type" | "risk-marker" | "data-type" | "tool";
-  label: string;
-  description: string;
-  since: string;
-}
-
-/** Per scratch database, per version: the terms seeded so far, so the digest stays honest. */
-const seededTerms = new Map<Scratch, Map<string, TermBody[]>>();
+/** Per scratch database: how many core term ids this file has handed out. */
+const allocatedTerms = new Map<Scratch, number>();
 
 /**
- * One `ontology_term` row under one `ontology_version`.
+ * One term the living vocabulary really carries, or the caller's own id verbatim.
  *
- * The version row's `digest` is recomputed by `ontologyDigest` over every term seeded into that
- * version, which is what `addOntologyVersion` stores — so the version row stays a row production
- * could have written rather than one carrying a digest of nothing.
- */
-export async function seedTerm(
-  s: Scratch,
-  termId?: string,
-  version: string = ONTOLOGY_VERSION,
-): Promise<{ termId: string; version: string }> {
-  const id = termId ?? mark("t140/term");
-  const versionId = await ensureOntologyVersion(s, version);
-
-  const body: TermBody = {
-    id,
-    kind: "tool",
-    label: "T140 fixture term",
-    description: "A term seeded so a saved target of kind `term` resolves.",
-    since: version,
-  };
-  const [row] = await s.query(
-    "insert into ontology_term (ontology_version_id, term_id, kind, body) values ($1, $2, $3, $4) " +
-      "returning id",
-    [versionId, id, body.kind, JSON.stringify(body)],
-  );
-  if (typeof row?.id !== "string") {
-    throw new Error(`Could not seed an ontology term: its row id came back as ${describe_(row?.id)}.`);
-  }
-
-  const byVersion = seededTerms.get(s) ?? new Map<string, TermBody[]>();
-  const terms = byVersion.get(version) ?? [];
-  terms.push(body);
-  byVersion.set(version, terms);
-  seededTerms.set(s, byVersion);
-  await s.query("update ontology_version set digest = $2 where id = $1", [
-    versionId,
-    ontologyDigest({ version, terms }),
-  ]);
-
-  return { termId: id, version };
-}
-
-/**
- * A published `ontology_version` carrying none of the terms an earlier one did.
+ * Nothing is written. A term is not a row any more, so "seed" here means "reserve an id no
+ * other cell in this database is using", which is what every caller actually needed.
  *
- * The premise every "current version" cell rests on, asserted here rather than assumed: after
- * this call the newer version really is present and really does not carry `absentFrom`.
+ * A supplied `termId` is returned unchanged, INCLUDING one the vocabulary does not carry: the
+ * AC4 cells need a term sharing a bundle's uuid, and that id is legitimately unresolvable.
  */
-export async function publishNewerOntologyVersion(
-  s: Scratch,
-  absentFrom: readonly string[],
-): Promise<{ version: string }> {
-  await seedTerm(s, mark("t140/carrier"), NEWER_ONTOLOGY_VERSION);
-  const rows = await s.query(
-    "select t.term_id from ontology_term t join ontology_version v on v.id = t.ontology_version_id " +
-      "where v.version = $1",
-    [NEWER_ONTOLOGY_VERSION],
-  );
-  const carried = new Set(rows.map((r) => String(r.term_id)));
-  const leaked = absentFrom.filter((id) => carried.has(id));
-  if (leaked.length > 0) {
+export function seedTerm(s: Scratch, termId?: string): { termId: string; version: string } {
+  if (termId !== undefined) return { termId, version: ONTOLOGY_VERSION };
+
+  const used = allocatedTerms.get(s) ?? 0;
+  const id = VOCABULARY_TERM_IDS[used];
+  if (id === undefined) {
     throw new Error(
-      `The newer ontology version ${NEWER_ONTOLOGY_VERSION} carries ${leaked.join(", ")}, which ` +
-        `the cell that uses it requires to be ABSENT. A fixture whose premise is wrong inverts ` +
-        `every result built on it.`,
+      `This database has already taken all ${VOCABULARY_TERM_IDS.length} core term ids, so ` +
+        `there is no distinct term left to hand out.\n` +
+        `  This is a BROKEN FIXTURE and not a failed criterion: two saves of one term id are ` +
+        `ONE save, so a repeated id would make a cell measure deduplication under the name of ` +
+        `whatever it thought it was measuring.`,
     );
   }
-  if (carried.size === 0) {
-    throw new Error(
-      `The newer ontology version ${NEWER_ONTOLOGY_VERSION} carries no terms at all, so it is ` +
-        `indistinguishable from one that was never published.`,
-    );
-  }
-  return { version: NEWER_ONTOLOGY_VERSION };
+  allocatedTerms.set(s, used + 1);
+  return { termId: id, version: ONTOLOGY_VERSION };
 }
 
-async function ensureOntologyVersion(s: Scratch, version: string): Promise<string> {
-  const existing = await s.query("select id from ontology_version where version = $1", [version]);
-  const found = existing[0]?.id;
-  if (typeof found === "string") return found;
-
-  const [row] = await s.query(
-    "insert into ontology_version (version, digest) values ($1, $2) returning id",
-    [version, ontologyDigest({ version, terms: [] })],
-  );
-  const id = row?.id;
-  if (typeof id !== "string" || id === "") {
-    throw new Error(`Could not seed an ontology version: its id came back as ${describe_(id)}.`);
+/** An id the living vocabulary does not carry, which is the whole of "this term does not resolve". */
+export function absentTermId(): string {
+  const id = mark("t140/absent");
+  if (VOCABULARY_TERM_IDS.includes(id)) {
+    throw new Error(
+      `\`${id}\` is a real vocabulary term, so a cell built on it would assert the opposite of ` +
+        `what it says. This is a BROKEN FIXTURE and not a failed criterion.`,
+    );
   }
   return id;
 }

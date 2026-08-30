@@ -594,9 +594,13 @@ export default async function HowABlueprintIsGradedPage() {
         className="scroll-mt-24"
       >
         <p className={BODY}>
-          These two are the engine&apos;s own arithmetic, run at build time. Autonomy
-          is the share of nodes that run unattended. Security opens at four and loses
-          the weight of every risk marker the graph carries. A blueprint&apos;s own
+          These two are the engine&apos;s own arithmetic, run at build time. Autonomy is
+          read twice: the share of nodes that run unattended, and the share of the nodes
+          that decide whether other nodes run that do the same. The weaker of the two is
+          the one that lands in a band, because a graph where a person makes every routing
+          call is not running by itself however much of the work is automatic. Security
+          opens at four and loses the weight of every risk marker the graph carries. A
+          blueprint&apos;s own
           scorecard states the reading, and its detail page keeps the subtraction in
           the panel that shows the working. Either way the result is rescaled onto the
           0–100 axis the other rows share, so four of four reads there as 100.

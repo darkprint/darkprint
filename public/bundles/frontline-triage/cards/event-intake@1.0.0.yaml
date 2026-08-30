@@ -28,11 +28,11 @@ outputs:
     type: json
     description: The event as received, with its correlation id and arrival time attached.
 dependencies: []
-cannot:
+cannot: []
+will_not:
   - change the payload it admits
   - admit a record that repeats one inside the dedupe window
 
-requires_human: false
 risk_markers: []
 notes: >-
   A support ticket and a production alert are the same shape at this boundary, payload, source,
@@ -42,4 +42,3 @@ notes: >-
 
 version: 1.0.0
 author: hachi
-ontology_version: 0.1.0

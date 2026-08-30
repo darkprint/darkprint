@@ -19,11 +19,17 @@
      type: human-input          | shape=hexagon       → wait.human
      type: decision             | shape=diamond       → conditional
      type: validation           | shape=box           → codergen
+     type: parallel             | shape=component     → parallel
+     type: parallel.fan-in      | shape=tripleoctagon → parallel.fan_in
+     type: manager-loop         | shape=house         → stack.manager_loop
      graph entry (in-degree 0)  | synthesised shape=Mdiamond → start
      graph exit  (out-degree 0) | synthesised shape=Msquare  → exit
      params.max_iterations      | node `max_retries`
+     card `type` + `phase`      | node `class` (`dp-` prefixed)
      manifest `summary`         | graph `goal`
      edge label                 | edge `label`
+     edge condition             | edge `condition` (verbatim)
+     edge weight                | edge `weight` (verbatim)
 
    Emission is strictly doc 2 §11 item 10's job. It is here
    because it is the only way to *prove* item 0 instead of
@@ -76,6 +82,50 @@
    `end`). The last two matter for the same reason as the first:
    `node [label="…"]` is a defaults statement, not a node, and a
    node called `start` is a second start node.
+
+   ── The private / runtime-read line ──
+   Every attribute this file writes is read by exactly one of two
+   parties, and which one is a property of the NAME, not of the
+   intention behind it. Attractor reads a name in its reserved set
+   for that scope and silently ignores every other name, so:
+
+     the Attractor half   a reserved name, carrying Attractor's
+                          own meaning for it. Writing DarkPrint
+                          data here does not go unnoticed, it
+                          CONFIGURES A RUN.
+     the DarkPrint half   a name Attractor ignores, carrying data
+                          only DarkPrint reads. `card` and
+                          `dp_node` are the whole of it, and the
+                          fact that neither is reserved is the
+                          compatibility claim of doc 1 §0.1.1 in
+                          one sentence.
+
+   The two halves are declared below as
+   `ATTRACTOR_EMITTED_ATTRIBUTES` and `DARKPRINT_EMITTED_ATTRIBUTES`
+   rather than left to be inferred from the code, because the
+   failure this line exists to catch is silent in both directions:
+   a private field parked on a reserved name quietly sets a
+   runner's behaviour, and a runtime field written under an
+   unreserved name is dropped on the floor by the runner while the
+   bundle claims to carry it. `emit.test.ts` holds the emitter's
+   real output to those two lists, in both directions, so neither
+   list can drift from what is written and neither can be widened
+   past what Attractor reserves.
+
+   ── The third list, and the header it prints ──
+   Doc 1 §0.1.1's verdict is about the FORMAT: an Attractor runner
+   accepts this file. A reader holding the file hears a claim about
+   the PIPELINE, which is larger and is false. Attractor reads
+   reserved names that no DarkPrint card, manifest or topology has
+   any way to set, from `goal_gate` and `timeout` through the whole
+   retry policy above `max_retries`, and none of them is an error:
+   a gate nobody wrote is a gate that never fires.
+   `ATTRACTOR_UNEXPRESSED_ATTRIBUTES` is that set, DERIVED from the
+   reserved sets minus what is emitted, and `emitAttractorDot`
+   prints it into the header of every file it writes. The artefact
+   is opened on a machine that has neither this repository nor its
+   documentation, so the disclosure has to travel inside the
+   artefact rather than beside it.
    ============================================================ */
 
 import type { NodeCard } from "../card/schema";
@@ -83,7 +133,12 @@ import { readIterationCap } from "../card/iteration-cap";
 import type { ResolvedBlueprint } from "../bundle/types";
 import type { Graph } from "../dot/graph";
 import type { OntologyView } from "../ontology/resolve";
-import { isAttractorKeyword, isUsableAttractorNodeId } from "./reserved";
+import {
+  ATTRACTOR_RESERVED,
+  isAttractorKeyword,
+  isUsableAttractorNodeId,
+  type AttractorScope,
+} from "./reserved";
 
 /** One row of the mapping table: the DOT shape, and the Attractor handler it selects. */
 export interface AttractorNodeKind {
@@ -97,9 +152,18 @@ export interface AttractorNodeKind {
 }
 
 /**
- * `type` → shape, exactly the six rows of the mapping table. Keyed by ontology term id
+ * `type` → shape, exactly the nine rows of the mapping table. Keyed by ontology term id
  * (doc 3 §3), so a local namespaced type resolves through its `broader` chain rather
  * than needing a row of its own.
+ *
+ * The last three are identity rows: the ontology names them after the Attractor handler
+ * they select (`parallel`, `parallel.fan_in`, `stack.manager_loop`) rather than after
+ * anything DarkPrint invented, so the table records a spelling and not a translation. That
+ * is the whole reason the terms are spelled the way they are — a mapping whose two columns
+ * hold different names for one thing is a mapping somebody has to keep in their head.
+ *
+ * The first six are translations, and `ATTRACTOR_TRANSLATED_TYPES` grandfathers them by
+ * name so the identity rule does not read as pre-violated on the day it was written.
  */
 export const ATTRACTOR_TYPE_SHAPES: Readonly<Record<string, AttractorNodeKind>> = Object.freeze({
   agent: Object.freeze({ shape: "box", handler: "codergen" }),
@@ -108,7 +172,37 @@ export const ATTRACTOR_TYPE_SHAPES: Readonly<Record<string, AttractorNodeKind>> 
   "human-input": Object.freeze({ shape: "hexagon", handler: "wait.human" }),
   decision: Object.freeze({ shape: "diamond", handler: "conditional" }),
   validation: Object.freeze({ shape: "box", handler: "codergen" }),
+  parallel: Object.freeze({ shape: "component", handler: "parallel" }),
+  "parallel.fan-in": Object.freeze({ shape: "tripleoctagon", handler: "parallel.fan_in" }),
+  "manager-loop": Object.freeze({ shape: "house", handler: "stack.manager_loop" }),
 });
+
+/**
+ * The six rows whose term id is a DarkPrint word and whose handler is Attractor's, kept
+ * that way deliberately.
+ *
+ * Doc 3 §3 named these six before this mapping table existed, and each of them names what
+ * the node IS in the vocabulary a card author writes in: `validation` is a node that
+ * judges work, and `codergen` is the handler that happens to run it — the same handler
+ * `agent` selects, which is the tell that the two columns are answering different
+ * questions. Renaming them onto their handlers would collapse `agent` and `validation`
+ * into one word, move the `type` of every card in the archive, and move every card digest
+ * and every bundle digest with it, all to make a table read more tidily.
+ *
+ * So the identity rule (`term id == handler name`, modulo the `-`/`_` the two grammars
+ * force and Attractor's own `stack.` namespace) binds terms added FROM the orchestration
+ * branch onward, and these six are grandfathered. Stated as a list rather than as prose
+ * because `emit.test.ts` checks the rule against it: a tenth row added tomorrow has to be
+ * an identity row or be added here with its own reason, and neither happens by accident.
+ */
+export const ATTRACTOR_TRANSLATED_TYPES: readonly string[] = Object.freeze([
+  "agent",
+  "tool",
+  "human-gate",
+  "human-input",
+  "decision",
+  "validation",
+]);
 
 /** The synthesised entry node. */
 export const ATTRACTOR_ENTRY_KIND: AttractorNodeKind = Object.freeze({
@@ -126,10 +220,123 @@ export const ATTRACTOR_EXIT_KIND: AttractorNodeKind = Object.freeze({
  * What a node whose type resolves to nothing gets. `box` → `codergen` is the handler
  * that reads a `prompt`, so an unrecognised type still runs its card's spec instead of
  * being dropped from the graph. Used for a type the vocabulary does not know (which the
- * card validator has already reported) and for the two abstract categories, which name a
+ * card validator has already reported) and for the three abstract categories, which name a
  * family rather than a handler.
  */
 const FALLBACK_KIND: AttractorNodeKind = ATTRACTOR_TYPE_SHAPES.agent;
+
+/* --------------------- the private / runtime-read line --------------------- */
+
+/**
+ * The Attractor half: every name `emitAttractorDot` can write **with Attractor's own
+ * meaning for it**, by scope.
+ *
+ * This list is the mechanical definition of "the half a runtime reads", and it is the set
+ * a round-trip gate measures — a bundle that survives export and re-import loses nothing
+ * an Attractor runner was ever going to read exactly when this is the set that made it
+ * across. Every entry must satisfy `isReserved(scope, name)`; `emit.test.ts` asserts the
+ * subset in one direction and the emitter's real output in the other, so a name cannot be
+ * added here without Attractor reserving it and cannot be emitted without appearing here.
+ *
+ * Ordered as the emitter writes them, so the list reads as the file does.
+ */
+export const ATTRACTOR_EMITTED_ATTRIBUTES: Readonly<Record<AttractorScope, readonly string[]>> =
+  Object.freeze({
+    graph: Object.freeze(["goal", "label"]),
+    node: Object.freeze(["label", "shape", "prompt", "llm_model", "max_retries", "class"]),
+    edge: Object.freeze(["label", "condition", "weight"]),
+  });
+
+/**
+ * The DarkPrint half: every name `emitAttractorDot` can write that Attractor **ignores**,
+ * by scope.
+ *
+ * Two names, both on nodes, and the fact that neither is reserved is the whole of the
+ * compatibility verdict: `card` carries doc 1 §4's pin through a file a runner executes
+ * without ever reading it, and `dp_node` records an id the Identifier rule forced the
+ * emitter to move. A third name added here has to be checked against the reserved sets
+ * before it is written, because the failure mode is not an error — it is a run configured
+ * by data that was never meant to configure anything.
+ */
+export const DARKPRINT_EMITTED_ATTRIBUTES: Readonly<Record<AttractorScope, readonly string[]>> =
+  Object.freeze({
+    graph: Object.freeze([]),
+    node: Object.freeze(["card", "dp_node"]),
+    edge: Object.freeze([]),
+  });
+
+/**
+ * The one reserved name this file withholds ON PURPOSE, which makes it not a gap.
+ *
+ * Node `type` is Attractor's handler override. DarkPrint's node type is an ontology term
+ * inside the card (doc 3 §3) and it reaches the runner as `shape`, which is the row the
+ * mapping table at the top of this file records. Writing `type` as well would override the
+ * handler the shape just selected, and `lint.ts` reports a DOT that does it as
+ * `attractor/reserved-attribute`. Announcing it as unexpressed would tell a reader the
+ * node's type was dropped on the way out, which is the opposite of what happens to it.
+ *
+ * Kept as a set of its own rather than folded into the emitted list, because the two
+ * claims differ: `ATTRACTOR_EMITTED_ATTRIBUTES` is what a runner reads out of this file,
+ * and `type` is precisely what it must not find here.
+ */
+const EXPRESSED_AS_SHAPE: Readonly<Record<AttractorScope, readonly string[]>> = Object.freeze({
+  graph: Object.freeze([]),
+  node: Object.freeze(["type"]),
+  edge: Object.freeze([]),
+});
+
+/**
+ * Every name Attractor reads that a DarkPrint blueprint has no way to set, by scope.
+ *
+ * **Derived, never transcribed.** A list of what is missing is the kind of sentence that
+ * goes stale without anybody noticing: the day the emitter learns to write `timeout`, a
+ * transcribed list keeps telling a reader the artefact drops it, and a reader on another
+ * machine believes the file over the code they cannot see. This is `ATTRACTOR_RESERVED`
+ * minus what the emitter writes and minus the one name above, so it moves in the same edit
+ * that changes what is emitted, and `emit.test.ts` holds the three sets to a partition of
+ * the reserved sets in both directions.
+ *
+ * `emitAttractorDot` prints it into the header of every file it writes. That is the whole
+ * point of publishing it: a pipeline handed to somebody else's runner is opened on a
+ * machine that has neither this repository nor its documentation, so what the artefact
+ * does not carry has to travel inside the artefact.
+ *
+ * Ordered as the reserved sets are, which is the order the Attractor spec lists them in.
+ */
+export const ATTRACTOR_UNEXPRESSED_ATTRIBUTES: Readonly<
+  Record<AttractorScope, readonly string[]>
+> = Object.freeze({
+  graph: unexpressedIn("graph"),
+  node: unexpressedIn("node"),
+  edge: unexpressedIn("edge"),
+});
+
+function unexpressedIn(scope: AttractorScope): readonly string[] {
+  const spokenFor = new Set([
+    ...ATTRACTOR_EMITTED_ATTRIBUTES[scope],
+    ...EXPRESSED_AS_SHAPE[scope],
+  ]);
+  return Object.freeze(ATTRACTOR_RESERVED[scope].filter((name) => !spokenFor.has(name)));
+}
+
+/**
+ * The prefix on every class this file emits.
+ *
+ * Spec §2.10 derives a class from a subgraph's label by lowercasing and hyphenating it, so
+ * a reader who wraps part of their pipeline in `subgraph { label="Agent" }` gets the class
+ * `agent` — the same string a bare `type: agent` would emit, on a different set of nodes,
+ * with no way for a stylesheet to tell the two apart. The prefix removes that collision
+ * outright rather than hoping nobody writes that subgraph.
+ *
+ * The ergonomic cost is real and the reader pays it: a `model_stylesheet` rule written
+ * against Attractor's own `agent` class matches none of DarkPrint's nodes, so every rule
+ * aimed at a DarkPrint-emitted class has to name `dp-agent`, and a reader who does not
+ * know that writes a rule that silently matches nothing. That is the smaller of the two
+ * costs. The other one is a subgraph somebody added for layout quietly re-routing every
+ * agent in the factory onto a different model, which is a wrong answer rather than a
+ * missing one.
+ */
+const CLASS_PREFIX = "dp-";
 
 /** Ids for the synthesised boundary nodes, before collision avoidance. */
 const ENTRY_ID = "__start";
@@ -233,12 +440,153 @@ export function attractorKindFor(type: string, ontology: OntologyView): Attracto
   return FALLBACK_KIND;
 }
 
+/**
+ * One term id as a class name: `dp-` plus the id lowercased and hyphenated.
+ *
+ * That is §2.10's own derivation, applied to a term id rather than to a subgraph label, so
+ * the classes DarkPrint writes are spelled the way the classes Attractor derives are
+ * spelled. In practice it moves two characters: `/`, doc 3 §7's namespace separator, and
+ * `.`, which an Attractor handler name carries (`parallel.fan-in`). The class list is
+ * space-separated, which is the other reason nothing but `[a-z0-9-]` may survive: a class
+ * carrying a space would silently become two.
+ *
+ * The collapse is not injective. `berti/simulation` and `berti-simulation` both give
+ * `dp-berti-simulation`, and that is accepted rather than escaped: a stylesheet selector
+ * is a blunt instrument by design, an author who has minted both of those ids has a naming
+ * problem the exporter cannot fix for them, and an escape sequence in a class name would
+ * be unusable in the rule that has to match it.
+ *
+ * Exported because `import.ts` reads a class list back and has to ask the same question
+ * from the other end — which term id produced this class. A second copy of this one line
+ * is a second answer, and the two directions disagreeing about a single character is a
+ * node that silently changes type on a round trip.
+ */
+export function attractorClassName(id: string): string {
+  return CLASS_PREFIX + id.toLowerCase().replace(/[^a-z0-9-]+/g, "-");
+}
+
+/**
+ * The classes for one card: its type, its type's ancestors, then its phases.
+ *
+ * The ancestors are there because subsumption is the reason the vocabulary carries
+ * `broader` at all (doc 3 §3), and a stylesheet is exactly the place it pays: a local type
+ * `berti/simulation-node ⊂ agent` emits `dp-berti-simulation-node dp-agent`, so the rule a
+ * reader wrote for every agent catches it without them having heard of the local term.
+ * This is the same walk `attractorKindFor` does for the shape, and doing it differently
+ * here would let a node draw as an agent while missing the agent's model rule.
+ *
+ * Nearest first, so the most specific class is the first one a reader sees. A type the
+ * vocabulary has never heard of has no ancestors and falls back to the declared string, so
+ * the class still says what the card says — the unknown term is already reported as
+ * `card/unknown-term`, and dropping the class here would answer a validation problem by
+ * losing data.
+ *
+ * Phases follow, in the card's own order, and there may be none: doc 3 §2 makes an empty
+ * `phases` a complete answer, so a node with no phase class is not a node missing one.
+ */
+export function attractorClassesFor(card: NodeCard, ontology: OntologyView): string[] {
+  const chain = ontology.ancestors(card.type);
+  const typed = chain.length === 0 ? [card.type] : chain.map((term) => term.id);
+  const classes: string[] = [];
+  const seen = new Set<string>();
+  for (const id of [...typed, ...card.phases]) {
+    const name = attractorClassName(id);
+    if (seen.has(name)) continue;
+    seen.add(name);
+    classes.push(name);
+  }
+  return classes;
+}
+
+/**
+ * The grammar's `Integer`/`Float`, which is the only form an attribute value may take
+ * unquoted and still be the number it looks like.
+ *
+ * A `weight` is emitted bare when it matches and quoted otherwise. Both spellings parse
+ * back to the same string, so nothing is lost either way; the split exists so an ordinary
+ * numeric weight goes out looking like the number the author wrote, and so a weight
+ * carrying a space or a quote cannot break the file it is written into.
+ */
+const DOT_NUMBER = /^-?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)$/;
+
 /* --------------------- emission --------------------- */
 
 /** One `key=value` pair, already formatted. */
 interface Attribute {
   key: string;
   value: string;
+}
+
+/**
+ * Where a wrapped list of attribute names is allowed to run to.
+ *
+ * A DOT comment has no width rule, so this is chosen for the reader: the file is opened in
+ * a terminal beside a runner's output as often as in an editor, and a header that wraps in
+ * somebody's 80-column pane is a header they skim past.
+ */
+const HEADER_WIDTH = 88;
+
+/**
+ * `name, name, name` under a `scope:` label, wrapped and comment-prefixed.
+ *
+ * Written as a wrapper rather than one long line because the node scope alone carries
+ * nineteen names today and grows every time Attractor reserves another one. The
+ * continuation lines are indented under the first name so the three scopes stay legible as
+ * three blocks.
+ */
+function wrapNames(label: string, names: readonly string[]): string[] {
+  if (names.length === 0) return [];
+  const lead = `//   ${label}: `;
+  const continuation = `//   ${" ".repeat(label.length + 2)}`;
+  const lines: string[] = [];
+  let current = "";
+
+  for (const name of names) {
+    const prefix = lines.length === 0 ? lead : continuation;
+    if (current !== "" && prefix.length + current.length + 2 + name.length > HEADER_WIDTH) {
+      lines.push(`${prefix}${current},`);
+      current = name;
+      continue;
+    }
+    current = current === "" ? name : `${current}, ${name}`;
+  }
+  lines.push(`${lines.length === 0 ? lead : continuation}${current}`);
+  return lines;
+}
+
+/**
+ * The disclosure every emitted file opens with.
+ *
+ * Doc 1 §0.1.1's compatibility claim is about the FORMAT, and a reader holding the file
+ * reasonably reads it as a claim about the pipeline. The two differ, and the difference is
+ * invisible from inside the artefact unless the artefact says it: a `goal_gate` nobody
+ * wrote is not an error, it is a gate that never fires, and a `timeout` nobody wrote is a
+ * step that runs until the runner's own default stops it. Somebody debugging that on a
+ * machine with no copy of this repository has the file and nothing else, so the file is
+ * where the answer has to be.
+ *
+ * The attribute names come from `ATTRACTOR_UNEXPRESSED_ATTRIBUTES`, which is derived, so
+ * this text cannot fall behind what the emitter writes. The two sentences after the lists
+ * are the two things a derived list cannot say: that one reserved name is withheld rather
+ * than missing, and that the card's own declarations stop at the DarkPrint boundary.
+ */
+function disclosureLines(): string[] {
+  return [
+    "//",
+    "// What this file leaves to the runner. Attractor reads the attributes below and a",
+    "// DarkPrint blueprint has no field that sets any of them, so each one falls back to",
+    "// the runner's own default. Write them in by hand where you need them, and expect a",
+    "// later export to replace the whole file.",
+    ...wrapNames("graph", ATTRACTOR_UNEXPRESSED_ATTRIBUTES.graph),
+    ...wrapNames("node", ATTRACTOR_UNEXPRESSED_ATTRIBUTES.node),
+    ...wrapNames("edge", ATTRACTOR_UNEXPRESSED_ATTRIBUTES.edge),
+    "// A node's `type` is held back on purpose: the card's type arrives as that node's",
+    "// `shape`, and a `type` here would override the handler the shape already selected.",
+    "// A node's `prompt` is all the runner receives from its card. Ports, dependencies,",
+    "// declared prohibitions and risk markers stay on the DarkPrint side of the export, so",
+    "// nothing in this file enforces them.",
+    "//",
+  ];
 }
 
 function renderAttributes(attrs: readonly Attribute[]): string {
@@ -366,6 +714,9 @@ function exitSources(graph: Graph): string[] {
  * everything else in doc 1 §4.
  *
  * What the output contains, and why it is compatible:
+ * - a `//` header carrying the blueprint digest and `disclosureLines()`, which names every
+ *   Attractor attribute a DarkPrint blueprint cannot set. The artefact is read on machines
+ *   that hold no other DarkPrint document, so what it does not carry travels with it;
  * - one plain `digraph`, named after the manifest slug, sanitised to an identifier;
  * - `goal` from the manifest summary and `label` from its title, both reserved graph
  *   attributes used with their own meaning;
@@ -373,7 +724,11 @@ function exitSources(graph: Graph): string[] {
  *   including a node whose card is missing (already reported as `bundle/missing-card`;
  *   dropping it here would quietly emit a different graph);
  * - `label`, `shape` and `prompt` on every node that has a card, plus `llm_model` where
- *   the card names a model and `max_retries` where it declares an iteration cap;
+ *   the card names a model, `max_retries` where it declares an iteration cap, and `class`
+ *   built from the card's type chain and its phases so a `model_stylesheet` has something
+ *   to select on that shape alone cannot express;
+ * - `label` on every edge that carries one, plus `condition` and `weight` verbatim where
+ *   the topology declares them — passengers, read by the runner and by nothing here;
  * - `card="id@version"` — *not* a reserved Attractor name, so Attractor ignores it while
  *   DarkPrint keeps the pin (doc 1 §4). That is the compatibility claim in one line;
  * - `dp_node="…"` only when the node id had to be rewritten, so nothing is lost;
@@ -411,6 +766,7 @@ export function emitAttractorDot(bp: ResolvedBlueprint): string {
   const lines: string[] = [];
   lines.push("// Attractor-compatible DOT, generated by DarkPrint (doc 1 §0.1.1).");
   lines.push(`// Blueprint digest: ${bp.digest}`);
+  lines.push(...disclosureLines());
 
   const slug = bp.manifest.slug.trim();
   lines.push(`digraph ${slug === "" ? FALLBACK_GRAPH_NAME : toAttractorIdentifier(slug)} {`);
@@ -460,6 +816,16 @@ export function emitAttractorDot(bp: ResolvedBlueprint): string {
       // capped in the artefact and uncharged in the score, always as one decision.
       const cap = readIterationCap(card.params);
       if (cap !== undefined) attrs.push({ key: "max_retries", value: String(cap) });
+      // Spec §8's `model_stylesheet` selects on shape, class or id, and shape is already
+      // spoken for: six of the nine types share three shapes, so a sheet written against
+      // shapes cannot tell an `agent` from a `validation` node. The class is what hands a
+      // reader the whole model-routing capability while DarkPrint owns none of the policy
+      // — the sheet is theirs to write, and this file states no opinion about which model
+      // any of these classes should run on.
+      const classes = attractorClassesFor(card, ontology);
+      if (classes.length > 0) {
+        attrs.push({ key: "class", value: quoteAttractorString(classes.join(" ")) });
+      }
       const ref = refByNodeId.get(id);
       if (ref !== undefined) attrs.push({ key: "card", value: quoteAttractorString(ref) });
     }
@@ -487,6 +853,20 @@ export function emitAttractorDot(bp: ResolvedBlueprint): string {
       label === undefined || label === ""
         ? []
         : [{ key: "label", value: quoteAttractorString(label) }];
+    // Carried verbatim, and NOT trimmed the way the label is: a label is a caption and its
+    // surrounding space means nothing, while a condition is an expression somebody else's
+    // parser reads and DarkPrint has no standing to decide which of its bytes are
+    // decorative. `ResolvedEdge.condition` carries the rest of the reasoning, including
+    // why nothing here looks at what the expression says.
+    if (edge.condition !== undefined) {
+      attrs.push({ key: "condition", value: quoteAttractorString(edge.condition) });
+    }
+    if (edge.weight !== undefined) {
+      attrs.push({
+        key: "weight",
+        value: DOT_NUMBER.test(edge.weight) ? edge.weight : quoteAttractorString(edge.weight),
+      });
+    }
     lines.push(`  ${source} -> ${target}${renderAttributes(attrs)};`);
   }
   for (const id of exits) {

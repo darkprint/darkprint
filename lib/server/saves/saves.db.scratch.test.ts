@@ -82,21 +82,20 @@ describe.skipIf(!hasDb)("lib/server/saves against Postgres", () => {
     });
   }
 
-  async function makeOntologyVersion(version: string, termIds: readonly string[]) {
-    const [row] = await db
-      .insert(schema.ontologyVersion)
-      .values({ version, digest: `d-${version}` })
-      .returning({ id: schema.ontologyVersion.id });
-    for (const termId of termIds) {
-      await db.insert(schema.ontologyTerm).values({
-        ontologyVersionId: row!.id,
-        termId,
-        kind: "phase",
-        body: {},
-      });
-    }
-    return row!.id;
-  }
+  /*
+   * There is no `makeOntologyVersion` any more, and its absence is the point.
+   *
+   * It inserted an `ontology_version` row plus its `ontology_term` rows, because a saved
+   * term was listed when the newest published version carried its id. Nothing writes either
+   * table now: `visible.ts` asks `CORE_ONTOLOGY` whether it carries the id, so a term a
+   * fixture invented would read as absent however many rows stood behind it.
+   *
+   * A term that EXISTS is therefore a real core term id, and a term that does not is any id
+   * the vocabulary never had. Both are named rather than generated, so a cell says which of
+   * the two it is driving in the id itself.
+   */
+  const CARRIED_TERMS = ["acceptance-criteria", "irreversible-action", "human-gate", "shell"] as const;
+  const ABSENT_TERM = "t140/never-a-term";
 
   beforeAll(async () => {
     testDb = await createTestDb();
@@ -166,9 +165,11 @@ describe.skipIf(!hasDb)("lib/server/saves against Postgres", () => {
 
     it("un-saving one kind leaves the same refId under another kind alone", async () => {
       const actor = actorFor(owner);
-      const shared = "collides-across-kinds";
+      /* A real vocabulary term worn as a card id too, so both saves resolve and the cell
+         measures the delete's key rather than one of the two targets falling out. It used to
+         be an invented string with a fabricated `ontology_term` row behind it. */
+      const shared = CARRIED_TERMS[0];
       await makeCardVersion(owner, shared, "1.0.0", "public");
-      await makeOntologyVersion("1.0.0", [shared]);
 
       await saveTarget(db, actor, owner, { kind: "card", refId: shared });
       await saveTarget(db, actor, owner, { kind: "term", refId: shared });
@@ -188,11 +189,11 @@ describe.skipIf(!hasDb)("lib/server/saves against Postgres", () => {
       const actor = actorFor(owner);
       const bundleId = await makeBundle(owner, "b-ac4", "public");
       await makeCardVersion(owner, "card-ac4", "1.0.0", "public");
-      await makeOntologyVersion("1.0.0", ["term-ac4"]);
+      const term = CARRIED_TERMS[0];
 
       await saveTarget(db, actor, owner, { kind: "blueprint", refId: bundleId });
       await saveTarget(db, actor, owner, { kind: "card", refId: "card-ac4" });
-      await saveTarget(db, actor, owner, { kind: "term", refId: "term-ac4" });
+      await saveTarget(db, actor, owner, { kind: "term", refId: term });
 
       const saves = await listSaves(db, actor, owner);
       /* Sorted here rather than asserted in listing order: the ORDER is this module's own
@@ -201,8 +202,8 @@ describe.skipIf(!hasDb)("lib/server/saves against Postgres", () => {
       expect([...saves].map((s) => `${s.targetKind}:${s.refId}`).sort()).toEqual([
         `blueprint:${bundleId}`,
         "card:card-ac4",
-        "term:term-ac4",
-      ]);
+        `term:${term}`,
+      ].sort());
       expect(await countSaves(db, actor, owner)).toBe(3);
       for (const save of saves) expect(save.savedAt).toBeInstanceOf(Date);
     });
@@ -267,50 +268,46 @@ describe.skipIf(!hasDb)("lib/server/saves against Postgres", () => {
       expect(await countSaves(db, actor, owner)).toBe(0);
     });
 
-    it("D-140-03 term half: EXISTENCE in the current ontology version, not visibility", async () => {
+    it("D-140-03 term half: EXISTENCE in the vocabulary, not visibility", async () => {
       const actor = actorFor(owner);
-      await makeOntologyVersion("1.0.0", ["term-kept", "term-dropped"]);
-      await saveTarget(db, actor, owner, { kind: "term", refId: "term-kept" });
-      await saveTarget(db, actor, owner, { kind: "term", refId: "term-dropped" });
-      expect(await countSaves(db, actor, owner)).toBe(2);
+      const kept = CARRIED_TERMS[0];
+      await saveTarget(db, actor, owner, { kind: "term", refId: kept });
+      await saveTarget(db, actor, owner, { kind: "term", refId: ABSENT_TERM });
 
-      /* A newer ontology release that no longer carries one of them. Both terms still exist
-         in 1.0.0, so "exists somewhere" would answer 2 and "exists in the CURRENT version"
-         answers 1 — which is the reading D-140-03 ruled and the only thing separating them. */
-      await makeOntologyVersion("2.0.0", ["term-kept"]);
-
+      /* Two saves, one listed. A filter that drops every term satisfies half of this and a
+         filter that lists whatever was saved satisfies the other half, so both are asserted
+         in one cell rather than one of them alone. */
       const left = await listSaves(db, actor, owner);
-      expect(left.map((s) => s.refId)).toEqual(["term-kept"]);
+      expect(left.map((s) => s.refId)).toEqual([kept]);
       expect(await countSaves(db, actor, owner)).toBe(1);
       expect(await db.select().from(schema.save)).toHaveLength(2);
     });
 
-    it("current is decided by SEMVER, not by insertion order", async () => {
-      const actor = actorFor(owner);
-      await saveTarget(db, actor, owner, { kind: "term", refId: "term-x" });
-      /* 2.0.0 written FIRST and 10.0.0 second would agree under either rule, so the newer
-         version is inserted EARLIER: a createdAt-ordered reading picks 2.0.0 and lists the
-         term, a semver-ordered one picks 10.0.0 and does not. */
-      await makeOntologyVersion("10.0.0", []);
-      await makeOntologyVersion("2.0.0", ["term-x"]);
+    /* ── two cells stood here and are gone with what they measured ──
+       The first drove D-140-03's *deleted* through a version bump: two terms published in
+       1.0.0, a 2.0.0 carrying only one, and the dropped one leaving the listing. The second,
+       "current is decided by SEMVER, not by insertion order", inserted 10.0.0 before 2.0.0 so
+       a createdAt-ordered reading and a semver-ordered one gave different answers.
 
-      expect(await countSaves(db, actor, owner)).toBe(0);
-    });
+       Both rested on a registry of published vocabulary versions, and there is none. A term
+       exists when `CORE_ONTOLOGY` carries its id, which no fixture can change at run time —
+       `deprecated: {since, replacedBy}` retires a term and leaves its id in place. So AC3's
+       *deleted* for a term and D-140-07's *never existed* are one case now, driven by the
+       cell above. */
 
     it("the count and the listing cannot disagree, over a mixed set", async () => {
       const actor = actorFor(owner);
       const visible = await makeBundle(stranger, "b-visible", "public");
       const hidden = await makeBundle(stranger, "b-hidden", "private");
       await makeCardVersion(stranger, "c-visible", "1.0.0", "public");
-      await makeOntologyVersion("1.0.0", ["term-visible"]);
 
       for (const target of [
         { kind: "blueprint", refId: visible },
         { kind: "blueprint", refId: hidden },
         { kind: "card", refId: "c-visible" },
         { kind: "card", refId: "c-absent" },
-        { kind: "term", refId: "term-visible" },
-        { kind: "term", refId: "term-absent" },
+        { kind: "term", refId: CARRIED_TERMS[0] },
+        { kind: "term", refId: ABSENT_TERM },
       ] as const) {
         await saveTarget(db, actor, owner, target);
       }
@@ -351,11 +348,14 @@ describe.skipIf(!hasDb)("lib/server/saves against Postgres", () => {
       const older = new Date("2026-08-19T12:00:00.000Z");
       await makeCardVersion(owner, "cc", "1.0.0", "public");
       await makeCardVersion(owner, "aa", "1.0.0", "public");
-      await makeOntologyVersion("1.0.0", ["tt"]);
+      /* A real vocabulary term, so the term save is LISTED and takes part in the ordering.
+         It used to be the invented id `tt` with a fabricated `ontology_term` row behind it,
+         and an unlisted save cannot be ordered against anything. */
+      const tt = CARRIED_TERMS[0];
       const b = await makeBundle(owner, "b-order", "public");
 
       for (const row of [
-        { targetKind: "term" as const, targetId: "tt", createdAt: tied },
+        { targetKind: "term" as const, targetId: tt, createdAt: tied },
         { targetKind: "card" as const, targetId: "cc", createdAt: tied },
         { targetKind: "card" as const, targetId: "aa", createdAt: tied },
         { targetKind: "blueprint" as const, targetId: b, createdAt: older },
@@ -363,7 +363,7 @@ describe.skipIf(!hasDb)("lib/server/saves against Postgres", () => {
         await db.insert(schema.save).values({ accountId: owner, ...row });
       }
 
-      const expected = [`card:aa`, `card:cc`, `term:tt`, `blueprint:${b}`];
+      const expected = [`card:aa`, `card:cc`, `term:${tt}`, `blueprint:${b}`];
       const seen = (await listSaves(db, actor, owner)).map((s) => `${s.targetKind}:${s.refId}`);
 
       /* `blueprint` sorts LAST despite being first in the enum, because `saved_at DESC` beats

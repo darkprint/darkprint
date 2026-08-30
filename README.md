@@ -3,11 +3,12 @@
 **A registry of blueprints: reusable patterns for getting work done by agents.**
 *Autonomy you can read as a graph.*
 
-DarkPrint is a concept build for `darkprint.io` — a place where builders share the
-**blueprints** they use to put agents to work. This repository is a fully static front-end
-plus the engine behind it: a real archive of blueprint bundles under `content/`, parsed,
-resolved and scored at build time by `lib/core`. There is no backend — no auth, no uploads,
-no voting, no telemetry — and the site says so on every surface where it matters.
+DarkPrint is a build for `darkprint.io` — a place where builders share the **blueprints**
+they use to put agents to work. This repository holds the front end, the engine behind it,
+and the backend it is served from: a real archive of blueprint bundles under `content/`,
+parsed, resolved and scored by `lib/core`, plus a Postgres-backed registry that accounts can
+publish into. Where a number is still a fixture, the site says so on the surface that renders
+it rather than in a footnote.
 
 ## What's a blueprint?
 
@@ -42,9 +43,10 @@ front rather than in a footnote:
 
 | | |
 | --- | --- |
-| **Real** | The 8 blueprint bundles and 52 node-card documents under `content/`, parsed and validated by `lib/core`. The 54-term core ontology. The **Autonomy** and **Security** scores, computed from each resolved graph at build time with their full rationale. Every count on the homepage that comes off the archive. The upload wizard's steps 1–3, which run the real validator in your browser. |
+| **Real** | The 9 blueprint bundles and 57 node-card documents under `content/` (53 distinct card ids; the rest are older pinned versions), parsed and validated by `lib/core`. The 53-term core ontology. The **Autonomy** and **Security** scores, computed from each resolved graph at build time with their full rationale. Every count on the homepage that comes off the archive. The upload wizard's steps 1–3, which run the real validator in your browser. |
 | **Seeded** | Downloads, votes, comments, the author table, and the four non-computed metrics (Efficacy, Reliability, Transparency, Cost / time). These live in `lib/data/community.ts` and `lib/data/users.ts` and are labelled as seeded wherever they render. |
-| **Not built** | Execution, run telemetry, voting, reputation, publishing, and the ontology promotion workflow. All designed, none wired up; the UI says so in place rather than implying otherwise. |
+| **Live** | Accounts and sessions (GitHub and Google), publishing (`POST /api/bundles`), forking, saves, notes, and run-report ingestion (`POST /api/blueprints/{owner}/{slug}/runs`) — 71 route files under `app/api/`. A `darkprint` CLI and an MCP server ship from `packages/`. |
+| **Not built** | Execution: nothing here runs a blueprint, by decision. Voting, reputation and the ontology promotion workflow are designed and not wired up; the UI says so in place rather than implying otherwise. Run telemetry has a door and no traffic — the route accepts reports, nothing on the site posts one, and the `Cost / time` metric stays seeded until an external harness does. |
 
 ## The engine — `lib/core`
 
@@ -59,10 +61,11 @@ runs at build time on the server and inside the upload wizard in the browser.
   that supports namespaced local extensions.
 - **Bundle loader** — joins a DOT to the cards it pins, type-checks every edge against
   the data-type lattice, and reports `Diagnostic`s with severity, code, hint and location.
-- **Analysis** — Autonomy (§8.1: the share of nodes that run unattended, bucketed 1–4)
-  and Security (§8.2: a clean 4 minus weighted risk-pattern penalties). Every tunable
-  number lives in one frozen `DEFAULT_ANALYSIS_CONFIG`, which the marketing copy reads
-  from rather than restating.
+- **Analysis** — Autonomy (§8.1: two readings of how much runs unattended — the share of
+  all nodes, and the share of just the nodes that decide whether other nodes run — banded
+  1–4 off whichever is weaker) and Security (§8.2: a clean 4 minus weighted risk-pattern
+  penalties). Every tunable number lives in one frozen `DARKPRINT_CONFIG`, which the
+  marketing copy reads from rather than restating.
 - **Registry** — the index over every loaded bundle: cards by id and version, who uses
   what, term usage counts.
 
@@ -129,8 +132,10 @@ npm test           # vitest, the lib/ suite
 npm run lint       # eslint
 ```
 
-The site is fully static: every dynamic route has `generateStaticParams` and
-`dynamicParams = false`, and nothing is fetched at request time.
+The site is no longer fully static. The explainer and archive routes still prerender, and
+twelve route files opt into `force-dynamic` because what they render depends on who is asking
+— a signed-in account's own shelves, drafts and saves. Anything reading the registry reads it
+at request time.
 
 ## Project structure
 

@@ -42,8 +42,10 @@
    ============================================================ */
 
 import {
+  CORE_ONTOLOGY,
   emitAttractorDot,
   hasErrors,
+  isReleasable,
   lintAttractor,
   loadBundle,
   parseDot,
@@ -63,14 +65,13 @@ import {
 import type { Db } from "@/lib/db";
 import type { ReleaseRecord } from "@/lib/server/archive";
 import { resolveCardRef } from "@/lib/server/cards";
-import { UnknownOntologyVersionError, openView } from "@/lib/server/ontology";
+import { openView } from "@/lib/server/ontology";
 import type { Actor } from "@/lib/server/policy";
 import {
   factoryDotRejected,
   pinnedCardUnavailable,
   readFailed,
   releaseDoesNotResolve,
-  unpublishedOntologyVersion,
 } from "./errors";
 import { storedVocabulary } from "./vocabulary";
 
@@ -88,21 +89,15 @@ export async function buildExport(
 ): Promise<readonly ExportedFile[]> {
   const vocabulary = storedVocabulary(release.vocabulary);
 
-  // The overlay the release itself declares, layered over the published core version its
-  // manifest names — never the latest one. B-08 stamps a release's scores with the
-  // vocabulary they were computed under, and resolving against a newer core would score
-  // the folder against terms the site never used for it.
-  let ontology;
-  try {
-    ontology = await openView(db, release.manifest.ontologyVersion, vocabulary?.terms);
-  } catch (err) {
-    // A fact about the release — it names a version nobody published — and a 404.
-    if (err instanceof UnknownOntologyVersionError) throw unpublishedOntologyVersion(err);
-    // Anything else here is the ontology *read* failing, and D-90-A is what makes this
-    // branch exist: an unwrapped driver error escaped raw, so the same Postgres outage
-    // answered 500 from this line and 404 from `lookup.ts`. One outage, one status.
-    throw readFailed(err);
-  }
+  /* The overlay the release itself declares, layered over the living vocabulary. This used
+     to read the core terms of the version the manifest named, so that a folder was resolved
+     against the vocabulary the site had scored it with rather than a newer one. There is no
+     newer one to be resolved against: `openView` is a merge over `CORE_ONTOLOGY` and reaches
+     no store, so it cannot fail and neither of the two failure arms this call carried
+     (`unpublishedOntologyVersion` for a dangling stamp, `readFailed` for a driver fault)
+     has anything left to catch. The stamp the export prints is still the one the score
+     carries: `storedAnalysis` reads it off `autonomy`, below. */
+  const ontology = openView(vocabulary?.terms);
 
   const cards = await pinnedCards(db, actor, release.cardRefs);
 
@@ -116,11 +111,13 @@ export async function buildExport(
   if (loaded.blueprint === undefined || loaded.analysis === undefined) {
     throw releaseDoesNotResolve();
   }
-  // `readContent()` refuses a bundle carrying any error-severity diagnostic and the build
-  // fails rather than shipping it; a stored release is held to the same bar. This is also
-  // what keeps `exportBundle` from throwing on a node pinning a card the input does not
-  // carry — that arrives here first, as `bundle/missing-card`.
-  if (hasErrors(loaded.diagnostics)) throw releaseDoesNotResolve();
+  // A stored release is held to the release bar, not to "no error anywhere" (D-109). What
+  // still refuses: bytes the registry cannot hold, and a node pinning a card the input does
+  // not carry, which arrives here as `bundle/missing-card` and is exactly what keeps
+  // `exportBundle` from throwing further down. What no longer refuses: a port that does not
+  // fit, a type that cannot flow, a term nobody has minted. Those are readings, they ship
+  // on the scorecard, and this function is not where DarkPrint gets to veto them.
+  if (!isReleasable(loaded.diagnostics)) throw releaseDoesNotResolve();
 
   const files = exportBundle({
     blueprint: loaded.blueprint,
@@ -203,10 +200,14 @@ async function pinnedCards(
  * quietly answer a different question — what this build of the engine says today — under
  * the same two numbers the site prints elsewhere.
  *
- * `ontologyVersion` comes off `autonomy` rather than off the manifest, because that field
- * is the vocabulary the score was actually computed against and the manifest's is the one
- * the release declares. `diagnostics` are merged the way `analyzeBlueprint` merges them:
- * the same fact said once, however many stages noticed it.
+ * `ontologyVersion` comes off `autonomy`, which is where `computeAutonomy` stamped the
+ * version of the view the score was actually computed against. It is the only place it has
+ * ever been readable from: the manifest used to declare one too, and that copy was the
+ * version the AUTHOR wrote against rather than the one the score used. `CORE_ONTOLOGY`'s
+ * version is the fallback for a scorecard stored without the field, since that is the
+ * vocabulary this build would compute against if it recomputed. `diagnostics` are merged
+ * the way `analyzeBlueprint` merges them: the same fact said once, however many stages
+ * noticed it.
  */
 function storedAnalysis(release: ReleaseRecord): BlueprintAnalysis | undefined {
   const stored = release.analysis;
@@ -225,7 +226,7 @@ function storedAnalysis(release: ReleaseRecord): BlueprintAnalysis | undefined {
     // `TypeError` out of this module. That reached a route as a 500 for a release whose
     // folder is otherwise perfectly servable, and it is the same class as D-90-A: an
     // unsealed throw escaping where a fact about the release was meant.
-    ontologyVersion: asString(stored.autonomy?.ontologyVersion) ?? release.manifest.ontologyVersion,
+    ontologyVersion: asString(stored.autonomy?.ontologyVersion) ?? CORE_ONTOLOGY.version,
     diagnostics: dedupe([
       ...asDiagnostics(stored.autonomy?.diagnostics),
       ...asDiagnostics(stored.security?.diagnostics),

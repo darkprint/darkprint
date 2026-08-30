@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { ContentKind } from "@/lib/types";
 import {
   CORE_ONTOLOGY,
-  hasErrors,
+  isReleasable,
   loadBundle,
   ontologyView,
   parseSemver,
@@ -333,7 +333,12 @@ function reportMarkdown(args: {
 }): string {
   const { result, title, slug, kindNoun, stored } = args;
   const { blueprint, analysis } = result;
-  const resolved = blueprint !== undefined && analysis !== undefined && !hasErrors(result.diagnostics);
+  /* D-109, and it has to stay spelled the same as `ValidationReport`'s `usable` and
+     `bundleProgress`'s `resolves`: the downloadable report opens on the verdict the page
+     printed, so a third spelling of this predicate is a report that contradicts the screen
+     it came from. */
+  const resolved =
+    blueprint !== undefined && analysis !== undefined && isReleasable(result.diagnostics);
   const progress = bundleProgress(result);
 
   const out: string[] = [];
@@ -851,7 +856,10 @@ export function UploadFlow({
   }, [bundle, ontology, parts.vocabulary, parts.diagnostics]);
 
   const errorCount = result === undefined ? 0 : summarize(result.diagnostics).error;
-  const blocked = result === undefined || hasErrors(result.diagnostics);
+  /* The publish gate. D-109 makes it `isReleasable` rather than "carries any error": a
+     reading DarkPrint drew about somebody else's graph may be printed beside a release and
+     may not refuse one, and the wizard is the surface where that refusal was felt. */
+  const blocked = result === undefined || !isReleasable(result.diagnostics);
   /* Blueprint gates on a topology; Node and Ontology gate on the one document they check —
      neither carries a `.dot`, so `parts.dot` alone would lock the wizard on step 1 for both
      kinds forever. */

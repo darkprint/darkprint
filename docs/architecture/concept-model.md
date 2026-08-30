@@ -96,7 +96,6 @@ point `ResolvedBlueprint.digest` names it.
 | `category` | `string` | opt | view model defaults it to `"Uncategorised"` (`lib/content/view.ts:81`) |
 | `tags` | `string[]` | req | may be `[]`; a missing key coerces to `[]` (`read.ts:469`) |
 | `author` | `string` | opt | an `Author.username`, not a foreign key the loader checks |
-| `ontologyVersion` | `string` | req | semver of the vocabulary the manifest was written against |
 | `createdAt` | `string` | opt | ISO date, supplied by the caller. `lib/core` never reads the clock |
 | `updatedAt` | `string` | opt | |
 
@@ -139,7 +138,17 @@ point `ResolvedBlueprint.digest` names it.
 | `fromPort` | `Port` | opt | resolved output port on `source`, where it could be resolved |
 | `toPort` | `Port` | opt | resolved input port on `target` |
 | `label` | `string` | opt | |
+| `condition` | `string` | opt | Attractor's edge guard, carried **verbatim and never parsed**. DarkPrint implements no part of Attractor's expression grammar. Lifted out of `attrs` and left in it as well, so no existing reader loses it |
+| `weight` | `string` | opt | Attractor's routing priority, carried verbatim as a **string**, never coerced to a number: `0` and `0.0` are different bytes in a file somebody else's runner reads |
 | `attrs` | `DotAttrs` | req | |
+
+**Neither field is read by any DarkPrint analyzer, and that is a rule rather than an
+omission.** A conditional edge counts exactly as much as an unconditional one, in every risk
+analysis, always: the guard is evaluated at run time, on another machine, against data
+DarkPrint never sees, so no static reading may treat a guarded edge as maybe-not-taken. The
+improvement is worth precisely what an author gains by writing `condition="false"` on the
+edge that leaks. Held by `lib/core/analysis/analyze.test.ts`, `lib/core/bundle/resolve.test.ts`
+and `lib/content/view.test.ts` — the schematic does not distinguish a guarded edge either.
 
 ### `NodeCard`
 
@@ -163,14 +172,23 @@ onto camelCase by `validate.ts`. Status: `LIVE`.
 | `inputs` | `inputs` | `Port[]` | req | |
 | `outputs` | `outputs` | `Port[]` | req | |
 | `dependencies` | `dependencies` | `string[]` | req | ids of other cards this one receives data from. May also name a DOT node (`app/nodes/[...id]/page.tsx:778-783`) |
-| `cannot` | `cannot` | `string[]` | req | **half-enforced.** An entry naming a `data-type` term is a declared prohibition the resolver holds the graph to (`bundle/prohibition-violated`, error severity). Anything else is free text checked by nothing (`:119-143`) |
-| `requiresHuman` | `requires_human` | `boolean` | req | |
+| `cannot` | `cannot` | `string[]` | req (may be `[]`) | **fully enforced, and `data-type` term ids ONLY.** Every entry is a declared prohibition the resolver holds the graph to (`bundle/prohibition-violated`, error). A sentence here is `card/unknown-term`; a phase, tool or node type is `card/wrong-term-kind`. Both errors |
+| `willNot` | `will_not` (alias `willNot`) | `string[]` | req (may be `[]`) | **the author's own undertaking, in their own words, read by nothing.** Deliberately symmetric with `cannot` rather than modelled as a lesser citizen. An entry that resolves to a `data-type` raises `card/prohibition-misfiled` at *warning*, pointing at `cannot` |
 | `riskMarkers` | `risk_markers` | `string[]` | req (may be `[]`) | `risk-marker` term ids |
 | `notes` | `notes` | `string` | opt | |
 | `version` | `version` | `string` | req | semver of the card. Other half of the primary key. A published version is never edited in place |
 | `author` | `author` | `string` | opt | excluded from the digest |
 | `provenance` | `provenance` | `string` | opt | excluded from the digest |
-| `ontologyVersion` | `ontology_version` | `string` | req | semver of the vocabulary the card is written against |
+
+**Two keys are RETIRED rather than renamed** (2026-08-30). `requires_human` and
+`ontology_version`, with their camelCase aliases, are no longer part of the schema and no
+longer members of `CARD_KNOWN_KEYS`. A card still carrying one raises `card/retired-field` at
+**warning** — not error, because every card published before the change carries them and
+refusing them would turn a schema change into an archive-wide outage. Each key carries its own
+sentence and its own hint: the `requires_human` hint quotes the card's own `type` back with
+different advice per answer, and the `ontology_version` hint says a card is always read against
+the one living vocabulary. `ontology_version` is no longer semver-checked either, so
+`ontology_version: "1.x"` loads with one warning instead of failing `card/bad-version`.
 
 **Identified by:** `CardRef = "id@version"` (`:161`, built by `cardRef` at `:177`).
 **Content-identified by:** `cardDigest` (`lib/core/hash/digest.ts:44`), sha256 over the
@@ -204,6 +222,7 @@ node collapse onto one digest however their YAML ordered its keys, which is what
 | `since` | `string` | req | ontology version that introduced it |
 | `defaultWeight` | `number` | opt | **local risk markers only.** No core term carries one; the seven core weights live in `DARKPRINT_CONFIG.security.weights` |
 | `impliesHuman` | `boolean` | opt | set on the two concrete human types. Picks the most specific term to *cite*, never a second membership rule (`lib/core/analysis/autonomy.ts:452-461`) |
+| `governsFlow` | `boolean` | opt | **the control-point membership rule, and unlike `impliesHuman` it IS one.** Set on `evaluative`, `orchestration` and `human-gate`, and INHERITED down `broader`. A flag rather than an `isA` test because the set spans three categories and `human-gate`'s single `broader` slot is already spent on `human-in-the-loop`; no `isA` test can name the set and a second parent per term would change every walk in `resolve.ts` for one metric |
 
 ### `TermDeprecation`
 
@@ -218,7 +237,7 @@ node collapse onto one digest however their YAML ordered its keys, which is what
 ### `Ontology`
 
 `lib/core/ontology/types.ts:56`. Status: `LIVE`. Two instances exist: `CORE_ONTOLOGY`
-(`lib/core/ontology/core.ts:503`, version `0.1.0`, 49 terms) and the archive's overlay
+(`lib/core/ontology/core.ts`, version `0.1.0`, **53 terms** — 5 phases, 12 node types, 9 risk markers, 15 data types, 12 tools) and the archive's overlay
 (`content/ontology/extensions.yaml`, 1 term).
 
 | Field | Type | Opt | Notes |
@@ -512,7 +531,6 @@ there is public by definition, the same way a bundle in `content/blueprints/` is
 | `typeLabel` | `string` | req | |
 | `phases` | `{ id: string; label: string }[]` | req | |
 | `tools` | `string[]` | req | |
-| `requiresHuman` | `boolean` | req | |
 | `riskMarkers` | `string[]` | req | |
 
 No `usedIn` or `support` field: both are always `0` for a private card (`components/
@@ -565,7 +583,8 @@ Three separate mechanisms, and the UI relies on all three:
 `sha256:<64 hex>` over `canonicalJson(card)` minus `author` and `provenance`. Both are
 provenance metadata: who typed the file says nothing about what the node does, and if they
 counted, the same card contributed by two authors would fail to dedup (`:20-23`).
-`version` and `ontologyVersion` **are** included.
+`version` **is** included. `ontologyVersion` was too, until the field left the card on
+2026-08-30; that removal moved every card digest and every bundle digest in the archive.
 
 **2 · A published version is immutable.** `content/cards/` holds one file per
 `id@version`, so the library is append-only by construction. `lib/content/index.ts:103-106`
@@ -633,7 +652,9 @@ one a label (`Static analysis`, `Reported by runners`, `Community vote`), a shor
 | `isDarkFactory` | `boolean` | `autonomousNodes === totalNodes && phaseCoverage.missing.length === 0` (`:317`). Both halves counted, never read off the band |
 | `level` | `1 \| 2 \| 3 \| 4` | the band. Filtering and ordering only; **no surface prints it** |
 | `label` | `string` | the class in title case |
-| `fraction` | `number` | unattended / total, 0-1, 4dp |
+| `fraction` | `number` | **the reading the band used**, 0-1, 4dp: the weaker of the two below when the control reading is a share, the headcount alone otherwise |
+| `staffingFraction` | `number` | the headcount — unattended / total, 0-1, 4dp. Unchanged to the digit from what `fraction` meant before 2026-08-30 |
+| `control` | `AutonomyControl` | `{ totalNodes, unattendedNodes, fraction, counted }` over control points alone. `counted` is false below `DARKPRINT_CONFIG.autonomy.minControlPoints` (2), and a reading below the floor is still computed, still reported and still in the rationale — it just does not decide the band |
 | `autonomousNodes` | `number` | nodes with a card **and** nobody in them |
 | `totalNodes` | `number` | every node in the graph |
 | `contributions` | `AutonomyContribution[]` | one per node, in graph order |
@@ -645,10 +666,20 @@ one a label (`Static analysis`, `Reported by runners`, `Community vote`), a shor
 unattended, staffed, and undescribed (card missing). Count `contributions` by
 `requiresHuman` / `resolved`, never by subtraction (`:160-167`).
 
-`AutonomyContribution` (`:93`): `nodeId`, `ref`, `name`, `requiresHuman`, `reason?`
-(`"requires-human-flag"` \| `"human-in-the-loop-type"`), `term?`, `resolved`, `explanation`.
+`AutonomyContribution` (`:93`): `nodeId`, `ref`, `name`, `requiresHuman`, `reason?`, `term?`,
+`resolved`, `governsFlow`, `controlTerm?`, `explanation`. `HumanReason` is a **one-member**
+union now — `"human-in-the-loop-type"` — because the card's `type` is the only thing that says
+a person acts; the `"requires-human-flag"` member went with the field.
 
-Bands: `level4: 0.9`, `level3: 0.7`, `level2: 0.5` (`lib/core/config.ts:128-132`).
+Bands: `level4: 0.9`, `level3: 0.7`, `level2: 0.5`, `minControlPoints: 2`
+(`lib/core/config.ts`).
+
+**`isDarkFactory` cannot be moved by the second reading, structurally rather than by luck.**
+`autonomousNodes === totalNodes` already says every node has a card and nobody in it, and every
+control point is a node, so the control fraction is 1 whenever the badge holds. Measured across
+the nine shipped blueprints: three of them (`frontline-triage`, `guarded-merge-bot`,
+`incident-commander`) moved from `conditional` to `supervised` when the control reading landed,
+and no badge moved.
 
 **`SecurityResult`** (`lib/core/analysis/security.ts:175`), computed by `computeSecurity`
 (`:438`). Formula: `clamp(round(4 − Σ marker weights), 1, 4)`.
@@ -699,6 +730,31 @@ proxy for criteria that only exist at run time.
 
 **An error-severity diagnostic never reaches a published page.** `lib/content/read.ts:277-287`
 throws and fails the build.
+
+**The union holds 60 codes. Three moved on 2026-08-30:**
+
+| Code | Severity | Emitter | Why |
+|---|---|---|---|
+| `card/prohibition-misfiled` | warning | `checkMisfiled`, `lib/core/card/validate.ts` | a `will_not` entry resolves to a `data-type` term, so the author probably meant `cannot`. Warning and not error on two stated grounds: the entry still says what it says, and the vocabulary can grow a term that would otherwise turn a previously-clean published card unloadable |
+| `card/retired-field` | warning | `retiredField`, driven by the `RETIRED_KEYS` map | a card carries a key the schema has withdrawn. Four members today: `requires_human`, `requiresHuman`, `ontology_version`, `ontologyVersion`. Warning because every card published before the change carries one |
+| `card/human-type-inconsistent` | **DELETED** | — | it had one emitter and the state it named — a human `type` without `requires_human: true` — is now inexpressible |
+
+**Severity is no longer the whole of what may refuse an artefact.** `lib/core/gate.ts`
+classifies **every** code into one of four `GateClass`es (`unreadable`, `unaddressable`,
+`author-declared`, `approval`) in an exhaustive `Record<DiagnosticCode, GateClass>` that fails
+to compile if a code joins the union unclassified. Twelve codes block storage and are derived
+from that table rather than transcribed: `dot/parse-error`, `dot/not-directed`,
+`card/parse-error`, `card/bad-type` (unreadable); `card/missing-field`, `card/bad-id`,
+`card/bad-version`, `bundle/digest-mismatch`, `card/version-bump-too-small`,
+`bundle/version-bump-too-small`, `ontology/version-bump-too-small` (unaddressable);
+`bundle/prohibition-violated` (author-declared, the only one that is not about legibility).
+`card/missing-field` and `card/bad-type` are narrowed a second time by the field they already
+name (`ADDRESS_FIELDS = ["id", "version"]`), because holding either whole would refuse a
+legible, addressed, attributed draft over one field still to be written. Everything else,
+including every `bundle/port-mismatch`, `bundle/type-mismatch` and `card/unknown-term` at error
+severity, is `approval`. `INFERRED_CODES` (38 codes) is written by hand against a *different*
+question and held disjoint from the blocking set by its own cell — a derived pair would be
+disjoint by construction and prove nothing.
 
 ---
 
@@ -824,8 +880,10 @@ is working.
 (`lib/core/ontology/resolve.ts:128`) merges a curated core with a local overlay. An
 extension sharing an id replaces the base term **in place**, keeping the shadowed term's
 position, and `validate()` reports the shadowing as `bundle/ontology-mismatch`
-(`:445-456`). The merged view keeps the **base** version, which is what lets a card declare
-`ontology_version: 0.1.0` while using local terms (`:125-127`).
+(`:445-456`). The merged view keeps the **base** version (`:125-127`). That used to be what let
+a card declare `ontology_version: 0.1.0` while using local terms; since 2026-08-30 no card
+declares a vocabulary version at all, so the property now only decides which version a *score*
+computed under that view records.
 
 **Locality is provenance, not spelling.** A term is local because it arrived through the
 extension channel, not because its id has a slash in it (`:150-155`). That is a column, not
@@ -864,9 +922,11 @@ real term beats resolving to nothing (`:278-302`).
 | `tools` | `tool` | 0..n |
 | `riskMarkers` | `risk-marker` | 0..n |
 | `inputs[].type`, `outputs[].type` | `data-type` | 1 per port |
-| `cannot[]` | `data-type` **only** (anything else is free text) | 0..n |
+| `cannot[]` | `data-type` **only** — anything else is `card/unknown-term` or `card/wrong-term-kind`, both errors | 0..n |
 
-`mcp[]` is deliberately **not** a term reference (`schema.ts:88-100`).
+`mcp[]` is deliberately **not** a term reference (`schema.ts:88-100`), and neither is
+`willNot[]`: it is the author's own prose, and a `will_not` entry that happens to resolve to a
+`data-type` raises `card/prohibition-misfiled` at warning rather than being read as a rule.
 
 **Promotion of a local term to the core is designed and unbuilt.** `PromotionConfig`
 (`lib/core/config.ts:66`): `distinctAuthors` 3, `distinctBlueprints` 5. Nothing reads it.
@@ -988,7 +1048,7 @@ erDiagram
     CARD_VERSION }o--o{ ONTOLOGY_TERM : "phases (phase, 0..n)"
     CARD_VERSION }o--o{ ONTOLOGY_TERM : "tools (tool, 0..n)"
     CARD_VERSION }o--o{ ONTOLOGY_TERM : "riskMarkers (risk-marker, 0..n)"
-    CARD_VERSION }o--o{ ONTOLOGY_TERM : "cannot (data-type enforced, else free text)"
+    CARD_VERSION }o--o{ ONTOLOGY_TERM : "cannot (data-type only, enforced)"
     CARD_VERSION ||--o{ COMMENT : "notes (empty today)"
     CARD_VERSION ||--o| NODE_DOWNLOAD : "counter, keyed by id not ref"
     PORT }o--|| ONTOLOGY_TERM : "type (data-type)"
@@ -1018,7 +1078,6 @@ erDiagram
         string category "optional"
         string_array tags
         string author FK "optional, unchecked"
-        string ontologyVersion
         string createdAt "optional, caller-supplied"
         string updatedAt "optional"
         string dot "the topology, verbatim"
@@ -1040,13 +1099,12 @@ erDiagram
         string skill "optional, pointer only"
         json params
         string_array dependencies
-        string_array cannot "data-type entries enforced"
-        boolean requiresHuman
+        string_array cannot "data-type term ids only, all enforced"
+        string_array willNot "the author's prose, read by nothing"
         string_array riskMarkers
         string notes "optional"
         string author "optional, excluded from digest"
         string provenance "optional, excluded from digest"
-        string ontologyVersion
     }
     ONTOLOGY_TERM {
         string id PK "bare = core, namespaced = local"
@@ -1056,7 +1114,8 @@ erDiagram
         string broader FK "optional"
         string since
         number defaultWeight "optional, local risk markers only"
-        boolean impliesHuman "optional"
+        boolean impliesHuman "optional, a citation rule not a membership rule"
+        boolean governsFlow "optional, inherited: the control-point membership rule"
         boolean local "provenance, not spelling"
     }
     PORT {
@@ -1074,6 +1133,8 @@ erDiagram
         string source FK
         string target FK
         string label "optional"
+        string condition "optional, Attractor's guard, carried verbatim, never parsed"
+        string weight "optional, Attractor's routing priority, carried as a string"
         json attrs
     }
     AUTHOR {
@@ -1106,7 +1167,6 @@ erDiagram
         string action
         string type "node-type term id, unresolved"
         string typeLabel
-        boolean requiresHuman
     }
     OWNED_BUNDLE {
         string owner PK "also FK to AUTHOR"
@@ -1142,7 +1202,9 @@ erDiagram
         string autonomyClass "the only value rendered"
         boolean isDarkFactory "all 5 phases AND zero human nodes"
         number level "1-4 band, never rendered"
-        number fraction
+        number fraction "the reading the band used: the weaker of the two below"
+        number staffingFraction "the headcount"
+        json control "AutonomyControl: totalNodes, unattendedNodes, fraction, counted"
         number autonomousNodes
         number totalNodes
         string rationale

@@ -36,10 +36,10 @@ outputs:
     description: The candidate unchanged, now signed off against the named criteria set.
 dependencies:
   - assemble-stage
-cannot:
+cannot: []
+will_not:
   - pass a candidate that missed a criterion
 
-requires_human: false
 risk_markers: []
 notes: >-
   One exit only: a candidate that misses a criterion stops the run rather than being routed
@@ -49,4 +49,3 @@ notes: >-
 
 version: 1.0.0
 author: sol-antczak
-ontology_version: 0.1.0

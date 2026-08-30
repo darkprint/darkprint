@@ -1,0 +1,22 @@
+// `shape=component` selects the ParallelHandler, and `join_policy` and `max_parallel`
+// configure it. DarkPrint has a `parallel` node type and no field that sets either
+// control, so the shape survives the round trip and the two controls do not.
+digraph parallel_fan_out {
+  goal="Ask three reviewers at once and keep whatever comes back.";
+  label="Parallel fan-out";
+
+  start   [label="start", shape=Mdiamond];
+  split   [label="Fan out", shape=component, prompt="Send the change to every reviewer.", join_policy="all", max_parallel="3"];
+  style   [label="Style", shape=box, prompt="Review the change for house style."];
+  safety  [label="Safety", shape=box, prompt="Review the change for anything unsafe."];
+  perf    [label="Performance", shape=box, prompt="Review the change for cost and latency."];
+  exit    [label="exit", shape=Msquare];
+
+  start -> split;
+  split -> style;
+  split -> safety;
+  split -> perf;
+  style -> exit;
+  safety -> exit;
+  perf -> exit;
+}

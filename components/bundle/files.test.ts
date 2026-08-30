@@ -20,11 +20,9 @@ import { describe, expect, it } from "vitest";
 
 import { allBlueprints, nodeCardVersions } from "@/lib/content";
 import {
-  BUNDLE_AGENTS,
   BUNDLE_CARDS_DIR,
   BUNDLE_README,
   BUNDLE_VOCABULARY,
-  FACTORY_DOT,
   TOPOLOGY_DOT,
 } from "@/lib/content/bundle-export";
 import { OWNED_BUNDLES } from "@/lib/data/bundles";
@@ -32,16 +30,21 @@ import { OWNED_BUNDLES } from "@/lib/data/bundles";
 /**
  * Every name a bundle page may print.
  *
- * The first five come from the exporter's own constants, so a rename there fails here.
+ * The first three come from the exporter's own constants, so a rename there fails here.
  * `cards/` is the directory row the listing folds the card documents into, and `NOTES.md`
  * is the local file the design puts in a working copy — `exportBundle` never writes it,
  * which is the whole point of the `local` state beside it.
+ *
+ * `factory.dot` and `AGENTS.md` were in this set until the owner instructed both out of
+ * every published folder (2026-08-25) and then authorised this pin's removal. They were
+ * admitted here as names the exporter generated, and it stopped generating either — so
+ * leaving them listed let a seeded listing advertise a file no download contains, which
+ * is the exact failure the banner above describes. Their absence is now checked rather
+ * than allowed: neither name is in this set, so a listing that prints one is a stray.
  */
 const ALLOWED = new Set<string>([
   TOPOLOGY_DOT,
-  FACTORY_DOT,
   BUNDLE_README,
-  BUNDLE_AGENTS,
   BUNDLE_VOCABULARY,
   `${BUNDLE_CARDS_DIR}/`,
   "NOTES.md",

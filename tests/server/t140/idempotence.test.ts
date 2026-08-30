@@ -80,7 +80,7 @@ async function threeTargets(s: Scratch): Promise<[Target, Target, Target]> {
   const publisher = await seedAccount(s, "pub");
   const bundle = await seedBundle(s, { ownerId: publisher.id, visibility: "public" });
   const card = await seedCard(s, { ownerId: publisher.id, visibility: "public" });
-  const term = await seedTerm(s);
+  const term = seedTerm(s);
   return [
     { kind: "blueprint", refId: bundle.id },
     { kind: "card", refId: card.cardId },

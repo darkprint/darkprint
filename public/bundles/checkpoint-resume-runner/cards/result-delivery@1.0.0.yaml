@@ -27,12 +27,11 @@ inputs:
 outputs: []
 dependencies:
   - acceptance-verifier
-cannot:
+cannot: []
+will_not:
   - alter the result it was handed
 
-requires_human: false
 risk_markers: []
 
 version: 1.0.0
 author: k0bra
-ontology_version: 0.1.0

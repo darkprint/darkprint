@@ -271,10 +271,17 @@ export function cardSource(o: CardOptions): string {
     `    type: ${o.outputType ?? "json"}`,
     "    description: The fixture result.",
     "dependencies: []",
+    /* The prose entry is under `will_not` and the term ids under `cannot`, because the two
+       fields take different things: `cannot` holds `data-type` term ids the resolver checks
+       every incoming edge against, and a sentence there is `card/unknown-term`, an error
+       this fixture's own guard below would refuse to build past. `requires_human` used to
+       follow; it was withdrawn from the schema, and a document still carrying it earns a
+       `card/retired-field` warning that would appear in every diagnostics assertion this
+       suite makes. */
     "cannot:",
     ...(o.extraCannot ?? []).map((c) => `  - ${c}`),
+    "will_not:",
     "  - begin any work beyond the one output",
-    "requires_human: false",
     "risk_markers: []",
   ];
   if (o.notes !== undefined) lines.push(`notes: ${JSON.stringify(o.notes)}`);

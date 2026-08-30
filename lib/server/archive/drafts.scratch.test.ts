@@ -5,9 +5,7 @@
  * continuity the contract names by name.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { CORE_ONTOLOGY } from "@/lib/core";
 import { readContent } from "@/lib/content/read";
-import { addOntologyVersion } from "@/lib/server/ontology";
 import { publish } from "@/lib/server/publish";
 import type { Actor } from "@/lib/server/policy";
 import { createTestDb, resetTestDb, type TestDb } from "../../../tests/support/db";
@@ -208,10 +206,8 @@ describe.skipIf(!hasDb)("lib/server/archive — 0007_drafts", () => {
       throw new Error("readContent() returned no bundles — a broken checkout, not a 0007_drafts defect.");
     }
 
-    await addOntologyVersion(client.db, {
-      version: entry.bundle.manifest.ontologyVersion,
-      terms: [...CORE_ONTOLOGY.terms],
-    });
+    /* No ontology version is seeded first: `publish` opens its view over `CORE_ONTOLOGY`
+       and no longer refuses a bundle for naming an unpublished vocabulary version. */
 
     const owner = await seedOwner("gh-continuity");
     const actor: Actor = { kind: "account", accountId: owner.id, handle: owner.handle };

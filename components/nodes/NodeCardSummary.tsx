@@ -36,6 +36,19 @@ export interface NodeSummary {
   phases: { id: string; label: string }[];
   /** `tool` term ids, as the card writes them. */
   tools: string[];
+  /**
+   * Whether a person acts at this node.
+   *
+   * DERIVED, and resolved on the server before a tile is built: the card carries a `type`
+   * and no boolean beside it, so the answer is `requiresHuman(ontology, card.type)` — the
+   * same call `computeAutonomy` makes about a node inside a graph. A tile and the blueprint
+   * page that scores the same card therefore cannot disagree about where the people are,
+   * which they could when the card stored the answer twice.
+   *
+   * `false` also covers "this registry has published no vocabulary to ask", and the tile
+   * draws no marker either way rather than printing the word "unattended" over a question
+   * it could not resolve.
+   */
   requiresHuman: boolean;
   /** `risk-marker` labels, already resolved. */
   riskMarkers: string[];
@@ -100,9 +113,16 @@ const TYPE_TONE: Readonly<Record<string, string>> = {
 };
 
 /**
- * A type the table does not know — a local type declared under `broader` (doc 3 §7) —
- * takes the neutral tool grey rather than being guessed into one of the five. Grey is
- * the one answer that does not claim something the card did not say.
+ * A type the table does not know takes the neutral tool grey rather than being guessed
+ * into one of the five. Grey is the one answer that does not claim something the card did
+ * not say.
+ *
+ * Two kinds of type land here. A local one declared under `broader` (doc 3 §7), which is
+ * what the fallback was written for, and the `orchestration` branch — `parallel`,
+ * `parallel.fan-in`, `manager-loop` — which is core and deliberately has no row. The tile
+ * carries no legend, so a sixth colour would be a distinction the reader cannot decode,
+ * and both remaining accents are spoken for by the two lines above. The disc says
+ * "not one of the five" and the type is printed in words on the same tile.
  */
 const DEFAULT_TONE = NODE_KIND_META.tool.color;
 

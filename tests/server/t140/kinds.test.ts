@@ -85,7 +85,7 @@ async function seedTargetOfKind(
       return { kind, refId: card.cardId };
     }
     case "term": {
-      const term = await seedTerm(s, refId);
+      const term = seedTerm(s, refId);
       return { kind, refId: term.termId };
     }
     default:
@@ -151,9 +151,13 @@ describe("AC4: two saves differing ONLY in kind are two saves", () => {
         "columns. Three rows here; a store keyed on `(account, refId)` collapses them to one and " +
         "passes every other AC4 cell in this file.",
     ).toBe(3);
-    expect(await visibleTargets(s, actor, account.id)).toEqual(
-      [blueprint, card, term].map(key).sort(),
-    );
+    /* Two of the three, and the third is absent for a reason that is about this refId rather
+       than about the store. The shared id is the bundle's uuid, and a term is listed only when
+       the living vocabulary carries its id — no uuid is a vocabulary term, so the term save is
+       retained (the count above) and omitted (here), which is exactly AC3's rule for a target
+       that does not resolve. It used to be listed because a fixture could write an
+       `ontology_term` row under any id it liked, and there is no such table to write. */
+    expect(await visibleTargets(s, actor, account.id)).toEqual([blueprint, card].map(key).sort());
   });
 
   it("unsaving one kind leaves the other two", async () => {
@@ -174,13 +178,16 @@ describe("AC4: two saves differing ONLY in kind are two saves", () => {
     await unsaveTarget(s.db, actor, account.id, card);
 
     expect(
-      await visibleTargets(s, actor, account.id),
+      await storedRowCount(s, account.id),
       "an unsave that matches on `refId` alone takes all three. This is the same axis as the " +
         "cell above, driven through the delete path rather than the insert path — a store can " +
         "key its writes on three columns and its deletes on two, and only a per-verb cell " +
-        "separates those.",
-    ).toEqual([blueprint, term].map(key).sort());
-    expect(await storedRowCount(s, account.id)).toBe(2);
+        "separates those. Counted rather than listed, because the term save's refId is a uuid " +
+        "the vocabulary does not carry: it survives the unsave and is not listed either way, so " +
+        "the LISTING cannot tell a two-column delete from a three-column one here.",
+    ).toBe(2);
+    expect(await visibleTargets(s, actor, account.id)).toEqual([blueprint].map(key));
+    void term;
   });
 });
 

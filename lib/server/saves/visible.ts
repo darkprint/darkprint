@@ -17,10 +17,12 @@
      a card is visible when ANY version is. That is the semantics
      `lib/server/registry`'s snapshot already applies to these same
      rows, and T140 must not mint a second one for them.
-   * **term** — `ontology_term` has no owner column at all and B-07
-     keeps terms public, so there is no visibility question to ask.
-     The question is EXISTENCE, and AC3's *deleted* is a term that
-     is not in the current ontology version.
+   * **term** — a term has no owner at all and B-07 keeps terms
+     public, so there is no visibility question to ask. The question
+     is EXISTENCE, and AC3's *deleted* is a term that is not in the
+     living vocabulary. That used to be read out of `ontology_term`
+     for the newest row of `ontology_version`; the vocabulary is
+     `CORE_ONTOLOGY` and the question is asked of it directly.
 
    **Cards ask *visible* and terms ask *exists*. Those are
    different predicates and neither reduces to the other.**
@@ -43,16 +45,10 @@
    one line over T060's answer, not because one copied the other.
    ============================================================ */
 
-import { compareVersionStrings } from "@/lib/core";
+import { CORE_ONTOLOGY } from "@/lib/core";
 import type { Db } from "@/lib/db";
 import { visibleTo, type Actor } from "@/lib/server/policy";
-import {
-  bundleRowsIn,
-  cardVersionRowsIn,
-  ontologyVersionRows,
-  saveRowsFor,
-  termIdsIn,
-} from "./store";
+import { bundleRowsIn, cardVersionRowsIn, saveRowsFor } from "./store";
 import type { SaveRecord, SaveTargetKind } from "./types";
 
 /**
@@ -78,21 +74,24 @@ function readable(actor: Actor, row: { ownerId: string; visibility: "public" | "
  */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** The term ids the CURRENT ontology version carries, out of `wanted`. */
-async function presentTermIds(db: Db, wanted: readonly string[]): Promise<ReadonlySet<string>> {
+/**
+ * The term ids the living vocabulary carries, out of `wanted`.
+ *
+ * AC3's *deleted* for a term is a term that is not in the vocabulary, and the vocabulary is
+ * `CORE_ONTOLOGY`. This used to be two queries: read every `(id, version)` out of
+ * `ontology_version`, pick the maximum by semver, then ask `ontology_term` which of
+ * `wanted` that version carried. Both tables held the core's terms and nothing else, and
+ * both were written only by the seed, so the answer was the same set one process boundary
+ * further away — and it was silently EMPTY on a registry nobody had seeded, which made
+ * every saved term read as deleted.
+ *
+ * A save of a bundle's local overlay term was absent under the old reading (the tables held
+ * core terms only) and is absent under this one, so the predicate has not moved.
+ */
+function presentTermIds(wanted: readonly string[]): ReadonlySet<string> {
   if (wanted.length === 0) return new Set();
-  const versions = await ontologyVersionRows(db);
-  if (versions.length === 0) return new Set();
-
-  /* "Current" is a total order this repository already defines, and it is by SEMVER rather
-     than by insertion time: `compareVersionStrings` is `@/lib/core`'s, published and pure,
-     and `getLatestOntologyVersion` picks its maximum the same way. Consumed rather than
-     re-derived, so a saved term and the ontology agree about which version is current by
-     sharing the comparator instead of by two functions happening to sort alike. */
-  const current = versions.reduce((best, row) =>
-    compareVersionStrings(row.version, best.version) > 0 ? row : best,
-  );
-  return new Set(await termIdsIn(db, current.id, wanted));
+  const present = new Set(CORE_ONTOLOGY.terms.map((term) => term.id));
+  return new Set(wanted.filter((id) => present.has(id)));
 }
 
 /**
@@ -122,11 +121,13 @@ export async function visibleSaves(
   const cardRefs = refsOf("card");
   const termRefs = refsOf("term");
 
-  const [bundles, cardVersions, terms] = await Promise.all([
+  /* Two statements now, not three: the term question is answered in process. It stays
+     inside the same `Promise.all` shape so the two that do reach Postgres still overlap. */
+  const [bundles, cardVersions] = await Promise.all([
     bundleRowsIn(db, bundleRefs),
     cardVersionRowsIn(db, cardRefs),
-    presentTermIds(db, termRefs),
   ]);
+  const terms = presentTermIds(termRefs);
 
   const visibleBundles = new Set(
     bundles.filter((row) => readable(actor, row)).map((row) => row.id),

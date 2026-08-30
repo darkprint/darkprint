@@ -3,6 +3,39 @@
    The contract that holds everything else up: identity,
    behaviour, interfaces and evaluation metadata for one node.
    Design doc §3–§4, engine spec §4.
+
+   ── Who reads which of these fields ──
+   A card is read twice, by two parties that never meet, and it
+   is worth knowing which of them is reading a field before
+   deciding what to write in it.
+
+   Some fields are handed to the RUNTIME. When a bundle is
+   exported, `attractor/emit.ts` writes them onto the DOT under
+   the names Attractor reserves for them, and the runner acts on
+   them: `spec` becomes `prompt`, `name` becomes `label`, `model`
+   becomes `llm_model`, `params.max_iterations` becomes
+   `max_retries`, and `type` and `phases` become the node's
+   `class` (prefixed `dp-`), which a `model_stylesheet` selects
+   on. Write those fields for a machine that will execute them.
+
+   Everything else is read by DARKPRINT, and by whoever opens the
+   card. `cannot`, `will_not`, `risk_markers`, `inputs`,
+   `outputs`, `dependencies`, `notes`, `tools`, `mcp` and `skill`
+   are scored, indexed, drawn and shown; no Attractor runner sees
+   any of them. The one thing that crosses back is the card's
+   identity, which travels as `card="id@version"` on the node.
+   Attractor does not reserve that name, so it ignores it, and
+   that is the entire reason a DarkPrint bundle runs unchanged.
+
+   The line between the two is a property of the NAME a value is
+   written under, never of the intention behind it: a DarkPrint
+   field emitted under a reserved Attractor name would not be
+   ignored, it would configure a run. `attractor/emit.ts` declares
+   both halves as lists and its tests hold the emitter to them, so
+   nothing crosses that line by accident. Nothing here asks a card
+   author to check anything; it asks them to know that `type` and
+   `spec` are instructions somebody's machine will follow, and
+   that `will_not` is a promise addressed to a person.
    ============================================================ */
 
 /** Any value that survives a JSON round-trip — what `params` is allowed to hold. */
@@ -20,15 +53,32 @@ export interface Port {
 
 /**
  * One node, fully described. The wire format (YAML/JSON on disk) is snake_case —
- * `requires_human`, `risk_markers`, `ontology_version` — and `validate.ts` maps it
- * onto this camelCase model.
+ * `risk_markers`, `will_not` — and `validate.ts` maps it onto this camelCase model.
  */
 export interface NodeCard {
   /* 3.1 identity */
   /** Unique id, optionally namespaced ("berti/solver-a"). Ties the card to its DOT node. */
   id: string;
   name: string;
-  /** `node-type` term id. Doc 3 §1: exactly one. */
+  /**
+   * `node-type` term id. Doc 3 §1: exactly one.
+   *
+   * It is also the whole of the card's answer to whether a person acts at this node. A
+   * type subsumed by doc 3 §3's `human-in-the-loop` category is staffed and nothing else
+   * is, and `ontology/resolve.ts`'s `requiresHuman` is where that is read. There used to
+   * be a `requires_human` boolean here as well, so a card could say `type: human-gate`
+   * and `requires_human: false` in the same document: the archive loaded it, the
+   * schematic drew a person on the node, and the autonomy reading counted it unattended.
+   * Nothing in the system compared the two, and a field that can contradict the field
+   * beside it is not a second opinion, it is a second source of truth.
+   *
+   * It is also the field the exporter reads twice: once for the node's `shape`, which is
+   * how Attractor picks the handler that runs the node, and once for its `class`, where
+   * the type and every category above it are written out as `dp-agent`, `dp-human-gate`,
+   * `dp-orchestration` and so on. A `model_stylesheet` selects on class, so the second
+   * one is what lets whoever runs the bundle say "every agent on this machine runs on the
+   * cheap model" without editing a single card.
+   */
   type: string;
   /**
    * `phase` term ids: any number of doc 3 §2's five, never namespaced (doc 3 §7 keeps the
@@ -44,6 +94,11 @@ export interface NodeCard {
    *
    * Nothing downstream may render an empty list as a defect: it feeds phase coverage,
    * which doc 2 §1.1 and doc 3 §2 make descriptive rather than a score.
+   *
+   * Each declared phase is also written onto the exported node as a `dp-planning`,
+   * `dp-testing` class beside the type's, so a stylesheet can route by lifecycle stage as
+   * well as by what the node is. A card that declares none carries no phase class, which
+   * is the same answer `phases: []` gives everywhere else.
    *
    * The wire key stays the singular `phase` and accepts a scalar or a sequence, because
    * both spellings read naturally in YAML; `validate.ts` normalises them onto this field.
@@ -117,44 +172,85 @@ export interface NodeCard {
   /** Ids of other cards this one receives data from. */
   dependencies: string[];
   /**
-   * What this node must never do or receive. The negative half of the interface: `inputs`
-   * and `dependencies` say what arrives, and this says what may not.
+   * What this node must never RECEIVE, as ontology `data-type` term ids the engine
+   * enforces. The negative half of the interface: `inputs` and `dependencies` say what
+   * arrives, and this says what may not.
    *
-   * **An entry naming an ontology `data-type` is enforced.** It is a declared prohibition
-   * on receiving that type, and `bundle/resolve.ts` holds the graph to it: an incoming
-   * edge able to carry the type, meaning the type itself or a narrower kind of it, raises
+   * `bundle/resolve.ts` holds the graph to every entry: an incoming edge able to carry
+   * the type, meaning the type itself or a narrower kind of it, raises
    * `bundle/prohibition-violated` at error severity, naming the card, the edge and the
    * type. That is what turns doc 2 §3's isolation argument from prose into something the
    * engine enforces. `code-builder` declaring `cannot: [acceptance-criteria]` makes the
    * starter's absent edge a rule the analyzer checks, in place of a convention the author
    * happened to remember.
    *
-   * A `data-type` is the only kind of term enforced here, because it is the only kind an
-   * edge carries. An entry naming a `phase`, a `node-type` or a `tool` is read as free
-   * text.
+   * A `data-type` is the only thing this field takes, because a data type is the only
+   * thing an edge carries and therefore the only thing the resolver can refuse. An entry
+   * naming a `phase`, a `node-type`, a `tool` or nothing at all is a `card/unknown-term`
+   * or a `card/wrong-term-kind` here, and belongs in `willNot` instead.
    *
-   * **An entry naming no ontology term is free text.** It is shown to the reader and
-   * checked by nothing, because the engine has no way to decide "never opens a shell"
-   * against a topology. Writing one is legitimate, and it addresses a reader rather than
-   * the resolver.
-   *
-   * `[]` when the node declares no prohibitions.
+   * `[]` when the node declares no enforced prohibition, which is the ordinary case.
    */
   cannot: string[];
+  /**
+   * What this node undertakes never to do, in the author's own sentences. The prohibitions
+   * that are real and that no engine can check: "never opens a shell", "does not edit the
+   * code under test", "cannot recommend an outcome".
+   *
+   * ── Why this is a field of its own, and why it is named this ──
+   * These two lists were one list until the split. That list carried two different
+   * promises under one key, and the only way to tell them apart was to resolve each entry
+   * against the vocabulary yourself — so a page that showed the list either lied by
+   * omission or grew a count (`enforcedCount`) to apologise for the conflation. A reader
+   * has to be able to tell which promise they are being given without running anything,
+   * and two keys is the only way to say it in the file itself.
+   *
+   * `will_not` rather than `unenforced`, `advisory`, `notes` or `soft_cannot`. Those words
+   * grade the promise, and this half is not the lesser half: a node that undertakes not to
+   * push to a repository is making the more consequential statement of the two on most
+   * cards in the archive. The English already draws the line the engine draws. `cannot` is
+   * an incapacity somebody else imposes and holds you to. `will not` is an undertaking you
+   * give, in your own words, and stand behind. The difference between them is exactly the
+   * difference between a rule `bundle/resolve.ts` checks and a rule it has no way to see,
+   * and it survives being read aloud by somebody who has never opened this file.
+   *
+   * Nothing in the engine checks an entry here, and nothing may report one as a defect for
+   * that reason. It is addressed to whoever reads the card and to the agent instantiated
+   * from it, which is a real audience: on `maintainer-approval` the entries here are
+   * restated in the `spec` the agent actually executes.
+   *
+   * An entry that names a `data-type` term is a `card/prohibition-misfiled` warning, since
+   * the author has written something the engine could have enforced into the field where
+   * it never will be. The card still loads and the entry is still shown, because what it
+   * says is what this field says.
+   *
+   * `[]` when the node states no undertaking.
+   */
+  willNot: string[];
 
   /* 3.4 evaluation metadata */
-  requiresHuman: boolean;
   /** `risk-marker` term ids. */
   riskMarkers: string[];
   notes?: string;
 
   /* 3.5 service fields */
-  /** Semver of the card itself. §4: a published version is never edited in place. */
+  /**
+   * Semver of the card itself. §4: a published version is never edited in place.
+   *
+   * The only version a card declares. There used to be an `ontology_version` here too,
+   * naming the vocabulary the author wrote the card against, and the engine resolved that
+   * string to a stored vocabulary before reading the card. Nothing consumed the
+   * resolution: a published release stores its whole scorecard at publish time, so a score
+   * is a fact written once and never recomputed against an older vocabulary, and the
+   * version it was computed under is recorded on the score itself. The field asked every
+   * author to maintain an answer no reader had a question for, and the two diagnostics it
+   * fed reported disagreement between three copies of one number. `deprecated: {since,
+   * replacedBy}` is what lets the one living vocabulary add and retire terms without any
+   * of that.
+   */
   version: string;
   author?: string;
   provenance?: string;
-  /** Semver of the vocabulary the card is written against. */
-  ontologyVersion: string;
 }
 
 /** "id@version" — how a DOT node pins the exact card it instantiates. */

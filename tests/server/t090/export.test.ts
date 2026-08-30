@@ -356,22 +356,26 @@ describe("exportRelease refuses, with the message form the contract published", 
     );
   }, 60_000);
 
-  it("throws `…the ontology version this release names is not published.` when the vocabulary version is absent", async () => {
+  it("exports a release into a database that has published no vocabulary at all", async () => {
     /*
-     * Reachable without contriving anything: a release names an ontology version in its manifest,
-     * `openView` needs that version to be a row, and a database holding the release but not the
-     * version is what a restore, a partial import or a seed run in the wrong order produces.
+     * The INVERSE of the cell that used to stand here, and it is the same fixture.
+     *
+     * That cell asserted `…the ontology version this release names is not published.`: a
+     * release named an ontology version in its manifest, `openView` needed that version to be
+     * a row, and a database holding the release but not the version — what a restore, a
+     * partial import or a seed run in the wrong order produces — refused the export. There is
+     * no version registry and no manifest declaration, so the same database now exports
+     * normally, and asserting that is what stops the removal being invisible.
      */
     const own = await scratchDatabase("export_noontology");
     try {
       const account = await seedAccount(own, "noont");
       const release = await seedRelease(own, account, bundleBySlug("starter-software-factory"));
-      const outcome = await outcomeOf(() => exportFrom(own.db, release.bundleId, release.digest));
-      expectThrewExactly(
-        outcome,
-        ADMISSIBLE.ontologyUnpublished,
-        "`exportRelease` on a release whose ontology version was never published",
-      );
+      const files = await exportFrom(own.db, release.bundleId, release.digest);
+      expect(
+        files.map((f) => f.path),
+        "an unseeded vocabulary registry is no longer a fact about the release",
+      ).toContain("README.md");
     } finally {
       await own.drop();
     }
@@ -504,10 +508,15 @@ describe("exportRelease refuses, with the message form the contract published", 
      */
     const admissible: readonly string[] = Object.values(ADMISSIBLE);
     expect(admissible).not.toContain("serveFile: recording the download failed.");
-    /* Seven CALLER-OBSERVABLE forms, not seven literals. The eighth — the driver-failure sibling —
+    /* Six CALLER-OBSERVABLE forms, not six literals. The last — the driver-failure sibling —
        is rethrown by the route and never reaches a caller, so counting it here would assert a
-       number about this file rather than about the surface. */
-    expect(RELEASE_FACT_FORMS).toHaveLength(7);
-    expect(admissible).toHaveLength(8);
+       number about this file rather than about the surface.
+
+       It was seven and eight. `ontologyUnpublished` is gone: a release's manifest named an
+       ontology version, `openView` refused one nobody had published, and this form said so.
+       There is no version registry and a manifest names no version, so the refusal has no
+       condition left to report. */
+    expect(RELEASE_FACT_FORMS).toHaveLength(6);
+    expect(admissible).toHaveLength(7);
   });
 });

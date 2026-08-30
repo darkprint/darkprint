@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { hasErrors, shortDigest, summarize, type LoadBundleResult } from "@/lib/core";
+import { isReleasable, shortDigest, summarize, type LoadBundleResult } from "@/lib/core";
 import { autonomyStatement, cx } from "@/lib/format";
 import { graphForBlueprint } from "@/lib/graph-seed";
 import { SourceBadge } from "@/components/ui/Badge";
@@ -93,8 +93,16 @@ export function ValidationReport({
   className?: string;
 }) {
   const { blueprint, analysis } = result;
-  const failed = hasErrors(result.diagnostics);
-  const usable = blueprint !== undefined && analysis !== undefined && !failed;
+  /* D-109: `usable` decides whether a score is shown, and it has to keep agreeing with
+     `bundleProgress`'s `resolves` or the same bundle gets two verdicts on one screen. Both
+     ask `isReleasable`, so a port that does not fit is now printed as a finding under a
+     score rather than used to withhold one.
+
+     A separate `failed = hasErrors(...)` stood here and fed only this line. It is gone
+     rather than re-pointed at `isStorable`: `progress.state === "rejected"` below is that
+     question already, and a second spelling of it beside the first is how two readings of
+     one bundle start disagreeing on one screen. */
+  const usable = blueprint !== undefined && analysis !== undefined && isReleasable(result.diagnostics);
 
   /* Which of three states this bundle is in, and how far the graph got. `components/
      upload/progress.ts` says at length why "rejected" is the wrong word for a folder the

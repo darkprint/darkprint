@@ -10,7 +10,7 @@
    the node webpage card)".
 
    Two surfaces, one set of sentences. `/nodes/<id>`'s field table
-   and the blueprint page's card skeleton draw the same 23 wire
+   and the blueprint page's card skeleton draw the same 22 wire
    keys, and until this module existed the prose behind them was
    written twice — the `skill` row on the node page and step 3 of
    `/spec/card`'s figure already said the same sentence in two
@@ -47,9 +47,19 @@
  * One paragraph per wire key of doc 1 §3, keyed exactly as the YAML spells it.
  *
  * `phase` and not `phases`: the wire key is what both surfaces label their rows with, so
- * it is what they look a note up by. The engine's camelCase model (`requiresHuman`,
- * `riskMarkers`, `ontologyVersion`) never appears on either surface and does not appear
- * here either.
+ * it is what they look a note up by. The engine's camelCase model (`riskMarkers`,
+ * `ontologyVersion`) never appears on either surface and does not appear here either.
+ *
+ * There is no `requires_human` note, because there is no such key. It answered whether a
+ * person acts at the node, one block below the `type` that answered the same question,
+ * and the two could disagree in a document nothing refused. The sentence it carried is in
+ * `type` now, where the answer is.
+ *
+ * There is no `ontology_version` note either, and for a different reason: nothing replaced
+ * it. The note said the field let a term that had since moved be read the way it was meant,
+ * and no reader ever asked for that — a release stores its whole scorecard, so no score is
+ * recomputed against an older vocabulary. A card is read against the one living vocabulary
+ * and says nothing about which.
  */
 export const FIELD_NOTE: Record<string, string> = {
   /* --------------------- 3.1 identity --------------------- */
@@ -58,7 +68,7 @@ export const FIELD_NOTE: Record<string, string> = {
 
   name: "What a person calls the node. The drawing prints it and every listing leads with it. Nothing in the engine joins on it: that is the `id`'s job, and the two are free to disagree.",
 
-  type: "One `node-type` term from the vocabulary, exactly one. It says what kind of work the node is, and it is the term the static analysis groups by when it reads the shape of a graph.",
+  type: "One `node-type` term from the vocabulary, exactly one. It says what kind of work the node is, it is the term the static analysis groups by when it reads the shape of a graph, and it is where a reader finds out whether a person acts here. A type under `human-in-the-loop`, such as `human-gate`, means the run holds until somebody acts; every other type means it passes through. Both are a design decision and neither is a result.",
 
   phase: "Which of the five phases the node stands in, any number of them. The phases describe a blueprint's shape. They do not put every node into one of them. Intake, retrieval and routing are real work that none of the five names, so declaring none is an answer. Nothing here reads an empty list as a defect.",
 
@@ -88,11 +98,11 @@ export const FIELD_NOTE: Record<string, string> = {
 
   dependencies: "Cards this one expects to hear from, by id. This is the one card field that names topology, so it can point back at a line in the DOT on its own. The DOT still decides what is wired; this field says what the author expected to be wired.",
 
-  cannot: "What must never arrive. An entry naming an ontology `data-type` is enforced. The resolver checks every incoming edge against it and raises `bundle/prohibition-violated` if an edge can carry that type. An entry naming anything else is free text. It is addressed to whoever runs the node, and nothing checks it.",
+  cannot: "Data types that must never arrive, written as ontology term ids. The resolver checks every incoming edge against every entry and raises `bundle/prohibition-violated` when an edge can carry that type, or a narrower one. This is the half the engine holds the graph to.",
+
+  will_not: "What the node undertakes never to do, in the author's own sentences. Nothing in the engine checks an entry here, and nothing can: no topology answers \"never opens a shell\". It is addressed to whoever reads the card and to the agent instantiated from it, which is why it is a field of its own rather than a second kind of entry inside `cannot`.",
 
   /* --------------------- 3.4 evaluation metadata --------------------- */
-
-  requires_human: "Whether a person acts at this node. Both answers are a design decision, not a result. `true` means no graph containing this node is closed-loop. `false` means the node runs unattended whenever the graph reaches it.",
 
   risk_markers: "`risk-marker` terms the author declares against the node. The static analysis prices them into the blueprint's static risk-exposure reading. Declaring none is an answer, not an omission, and nothing infers a marker the card did not write.",
 
@@ -106,5 +116,4 @@ export const FIELD_NOTE: Record<string, string> = {
 
   provenance: "Where the card came from when it did not start here, such as the bundle it was forked from or the document behind it. Free text, and excluded from the card's digest.",
 
-  ontology_version: "Semver of the vocabulary the card was written against. It lets a term that has since moved be read the way it was meant when the card was written.",
 };

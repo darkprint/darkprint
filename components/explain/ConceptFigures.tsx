@@ -128,6 +128,7 @@ export function WhatACardReaches({
   mcp,
   skill,
   cannot,
+  willNot,
   riskMarkers,
 }: {
   model: string;
@@ -135,11 +136,12 @@ export function WhatACardReaches({
   mcp: string;
   skill: string;
   cannot: string;
+  willNot: string;
   riskMarkers: string;
 }) {
-  /* Six rows, and each carries its own fine print.
+  /* Seven rows, and each carries its own fine print.
      ------------------------------------------------------------
-     Both changes come from the same defect. The page drew this figure with five rows
+     Two of the changes come from the same defect. The page drew this figure with five rows
      and then set a six-box grid under it, one box per field, keyed by the same names. The
      same list twice, and the two disagreed: the figure said five rows, the grid explained
      six, and `risk_markers` appeared only in the grid. A reader counting fields on a page
@@ -149,10 +151,18 @@ export function WhatACardReaches({
      says what the field reaches; the note says the thing about it a reader would otherwise
      find out by trying it. Nothing was cut.
 
+     The seventh arrived with the prohibition split. `cannot` used to hold both the data
+     types the resolver refuses and the sentences it cannot read, and this row's note was
+     where the figure admitted it: "an entry that names a data type is enforced, an entry
+     that names anything else is a note for a reader". A figure whose subject is what one
+     card reaches was spending a note on telling a reader that one of its own rows meant
+     two things. The card format says it now, so the figure draws two rows and the note is
+     free to say what each is for.
+
      `code-builder` declares no risk markers, and the row says so. That is the honest
      drawing: the field exists on every card and this card leaves it empty. */
   return (
-    <ReachList label="One card, six rows">
+    <ReachList label="One card, seven rows">
       <ReachRow
         field="model"
         value={model}
@@ -198,10 +208,19 @@ export function WhatACardReaches({
         field="cannot"
         value={cannot}
         barred
-        note="An entry that names a data type is enforced. An entry that names anything else is a note for a reader; nothing checks it."
+        note="Ontology data types, and nothing else. Writing one here is what turns a stated rule into a checked one."
       >
-        What must never arrive. Naming a data type turns it into a rule. The resolver
-        enforces that rule against every incoming edge, no matter which node draws it.
+        What must never arrive. The resolver enforces it against every incoming edge, no
+        matter which node draws the edge.
+      </ReachRow>
+      <ReachRow
+        field="will_not"
+        value={willNot}
+        barred
+        note="The prohibitions no engine can check, kept apart from the ones it can, so a reader can tell them apart without running anything."
+      >
+        What the card undertakes, in the author&rsquo;s own sentences. It reaches whoever
+        runs the node, and the agent that reads the specification.
       </ReachRow>
       <ReachRow
         field="risk_markers"
@@ -257,9 +276,9 @@ export function WhatACardReaches({
 
    ── Why the site can draw it at all ──
    Because the definition is already the machinery. `lib/core/bundle/resolve.ts`'s
-   `checkProhibitions` raises `bundle/prohibition-violated` at **error** severity when a
-   `cannot` entry names a `data-type` and an incoming edge can carry it, whichever node
-   drew the edge; `bundle/port-mismatch` refuses an edge whose two ends do not agree on a
+   `checkProhibitions` raises `bundle/prohibition-violated` at **error** severity when an
+   incoming edge can carry a `data-type` a card lists under `cannot`, whichever node drew
+   the edge; `bundle/port-mismatch` refuses an edge whose two ends do not agree on a
    type. Those are the document's input and output guardrails, written in a file, checked
    by a reader of files. So this figure reports the engine rather than illustrating an
    idea, which is the rule `/what-a-blueprint-is` states for its own drawings.
@@ -285,14 +304,15 @@ export function WhatACardReaches({
    harness frame already made two figures up and is worth being consistent about: on this
    page, neutral means "the box you bring yourself".
 
-   The `cannot` row of `WhatACardReaches` sits about one screen above this and draws its
-   connector in AMBER, via `ReachList`'s `barred`. That was noticed and deliberately not
-   matched. `barred` means "this row is a refusal"; copper here means "this cell is
-   something a card declares" — two different claims, so the two drawings are not one
-   idea in two colours. The amber itself is a standing question for `ReachList`, whose own
-   docblock calls amber "this site's colour for a limit" against a sitewide rule that says
-   it is not; `barred` renders on exactly one row sitewide, this one, so the flip is cheap
-   whenever the author wants it. It is not made here, in a file that does not own it.
+   The `cannot` and `will_not` rows of `WhatACardReaches` sit about one screen above this
+   and draw their connectors in AMBER, via `ReachList`'s `barred`. That was noticed and
+   deliberately not matched. `barred` means "this row is a refusal"; copper here means
+   "this cell is something a card declares" — two different claims, so the two drawings
+   are not one idea in two colours. The amber itself is a standing question for
+   `ReachList`, whose own docblock calls amber "this site's colour for a limit" against a
+   sitewide rule that says it is not; `barred` renders on exactly two rows sitewide, both
+   of them there, so the flip is cheap whenever the author wants it. It is not made here,
+   in a file that does not own it.
 
    ── No text inside a viewBox ──
    There is no viewBox. The whole drawing is boxes and rules in DOM text, so
@@ -320,7 +340,7 @@ const GUARDRAIL_BANDS: readonly GuardrailBand[] = [
     band: "input",
     bundle: (
       <>
-        <Field>cannot</Field>, naming a data type. The resolver refuses every incoming
+        <Field>cannot</Field>, holding a data type. The resolver refuses every incoming
         edge that can carry it, at error severity, no matter which node draws the edge.
       </>
     ),

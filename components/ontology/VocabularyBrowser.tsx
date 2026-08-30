@@ -216,8 +216,10 @@ export function VocabularyBrowser({
             <span className="text-fg">{results.length}</span> of {terms.length} term
             {/* "ontology v", not "vocabulary v", on the author's instruction of 2026-08-12.
                 The version this prints is `OntologyView.ontology.version`, the semver the
-                core file carries and the number a card's own `ontology_version` is checked
-                against — so the word here now matches the field it is reading. */}
+                core file carries and the number every score computed against this view is
+                recorded under. It used to be described as the number a card's own
+                `ontology_version` was checked against; a card declares no version and
+                nothing is checked against this one. */}
             {terms.length === 1 ? "" : "s"} · ontology v{version}
             {active === 0 && " · grouped by kind"}
           </p>

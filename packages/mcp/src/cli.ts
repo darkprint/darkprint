@@ -21,11 +21,17 @@ const USAGE = `darkprint — the DarkPrint registry from your terminal and from 
   npx -y darkprint mcp                      serve the registry over MCP (stdio)
   npx -y darkprint clone <owner>/<slug> [--version <v> | --digest <d>] [--out <dir>]
   npx -y darkprint validate [<dir>]
+  npx -y darkprint export [<dir>] --attractor
+  npx -y darkprint import <pipeline.dot> --as <handle> --out <dir>
   npx -y darkprint bump [<dir>] --declare <version> --target <owner>/<slug>
+  npx -y darkprint report <run-dir> --target <owner>/<slug> --cost <units>
 
 Environment:
   DARKPRINT_URL      registry base URL (default https://darkprint.io)
   DARKPRINT_API_KEY  an API key, which raises the rate limit ceiling
+  DARKPRINT_SESSION  a signed-in session cookie. report is the one verb that
+                     writes, and the route that takes a run report reads a
+                     session: no write route accepts an API key.
 `;
 
 export async function main(argv: readonly string[]): Promise<number> {

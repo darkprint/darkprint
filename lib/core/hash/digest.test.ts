@@ -20,10 +20,9 @@ const CARD: NodeCard = {
   outputs: [{ name: "draft", type: "json" }],
   dependencies: [],
   cannot: [],
-  requiresHuman: false,
+  willNot: [],
   riskMarkers: [],
   version: "1.0.0",
-  ontologyVersion: "0.1.0",
 };
 
 describe("cardDigest — shape", () => {
@@ -37,21 +36,30 @@ describe("cardDigest — shape", () => {
     //
     // Recomputed when `phase` and `spec` became required fields (doc 3 §2, doc 1 §3.2),
     // again when `phase` became the optional, repeatable `phases` (the author's ruling
-    // that the five phases describe the factory, not every node), and again when `mcp`
-    // and `cannot` joined the card. The digest necessarily moves each time: `cardDigest`
-    // spreads the whole card, and doc 1 §4 wants a card that says something different to
-    // hash differently. A card carrying `cannot: []` states that it declares no
-    // prohibition, which is a statement the earlier schema had no way to make.
+    // that the five phases describe the factory, not every node), again when `mcp` and
+    // `cannot` joined the card, again when `cannot` split into the enforced `cannot` and
+    // the stated `willNot`, again when `requiresHuman` was withdrawn, and again when
+    // `ontologyVersion` was. The digest necessarily moves each time: `cardDigest` spreads
+    // the whole card, and doc 1 §4 wants a card that says something different to hash
+    // differently.
+    //
+    // The last two both made a card say LESS, and they are not the same kind of less.
+    // `requiresHuman`'s answer stayed in the identity, inside `type`, which is where it
+    // always also was. `ontologyVersion`'s answer left the card entirely: which vocabulary
+    // a card is read against is not a property of the card any more, and the version a
+    // SCORE was computed under is recorded on the score. So two cards that differed only in
+    // that field are now one card, which is the correct reading of §4 — they described the
+    // same node.
     expect(canonicalJson({ ...CARD })).toBe(
       '{"action":"Draft a candidate solution for the sub-task","cannot":[],"dependencies":[],' +
         '"id":"solver-a","inputs":[{"name":"task","type":"text"}],"mcp":[],"name":"Solver A",' +
-        '"ontologyVersion":"0.1.0","outputs":[{"name":"draft","type":"json"}],"params":{},' +
-        '"phases":["implementation"],"requiresHuman":false,"riskMarkers":[],' +
+        '"outputs":[{"name":"draft","type":"json"}],"params":{},' +
+        '"phases":["implementation"],"riskMarkers":[],' +
         '"spec":"Read the sub-task, draft one candidate solution, and return it as JSON on the draft port.",' +
-        '"tools":[],"type":"agent","version":"1.0.0"}',
+        '"tools":[],"type":"agent","version":"1.0.0","willNot":[]}',
     );
     expect(cardDigest(CARD)).toBe(
-      "sha256:258157d00277e4b24e7298da9b54313a174b4e1f4122ff3726550ed42fdabff0",
+      "sha256:674afe29f89bcacf4f44beaf6a612dc625f67d0f4ea78e5193148c6f440b354e",
     );
   });
 
@@ -61,6 +69,9 @@ describe("cardDigest — shape", () => {
     expect(cardDigest({ ...CARD, mcp: ["filesystem"] })).not.toBe(cardDigest(CARD));
     expect(cardDigest({ ...CARD, skill: "skills/solver.md" })).not.toBe(cardDigest(CARD));
     expect(cardDigest({ ...CARD, cannot: ["acceptance-criteria"] })).not.toBe(cardDigest(CARD));
+    // The half nothing enforces still moves the identity, and it has to: two cards that
+    // undertake different things are two different cards, whatever the resolver reads.
+    expect(cardDigest({ ...CARD, willNot: ["never opens a shell"] })).not.toBe(cardDigest(CARD));
   });
 
   it("does not mutate the card it is given", () => {
@@ -107,11 +118,9 @@ describe("cardDigest — included fields", () => {
     ["inputs", { ...CARD, inputs: [{ name: "task", type: "prompt" }] }],
     ["outputs", { ...CARD, outputs: [{ name: "draft", type: "report" }] }],
     ["dependencies", { ...CARD, dependencies: ["planner"] }],
-    ["requiresHuman", { ...CARD, requiresHuman: true }],
     ["riskMarkers", { ...CARD, riskMarkers: ["pii-handling"] }],
     ["notes", { ...CARD, notes: "watch the token budget" }],
     ["version", { ...CARD, version: "1.0.1" }],
-    ["ontologyVersion", { ...CARD, ontologyVersion: "1.1.0" }],
   ];
 
   it.each(changed)("changes when %s changes", (_field, card) => {
@@ -146,16 +155,14 @@ describe("cardDigest — key order does not matter", () => {
       outputs: [{ name: "draft", type: "json" }],
       dependencies: [],
       cannot: ["acceptance-criteria"],
-      requiresHuman: false,
+      willNot: ["never opens a shell"],
       riskMarkers: [],
       version: "1.0.0",
-      ontologyVersion: "0.1.0",
     };
     const b: NodeCard = {
-      ontologyVersion: "0.1.0",
       version: "1.0.0",
       riskMarkers: [],
-      requiresHuman: false,
+      willNot: ["never opens a shell"],
       cannot: ["acceptance-criteria"],
       dependencies: [],
       outputs: [{ type: "json", name: "draft" }],
@@ -255,7 +262,7 @@ describe("shortDigest", () => {
 
   it("shortens a real card digest to 15 characters", () => {
     const short = shortDigest(cardDigest(CARD));
-    expect(short).toBe("sha256:258157d0");
+    expect(short).toBe("sha256:674afe29");
     expect(short).toHaveLength("sha256:".length + 8);
   });
 

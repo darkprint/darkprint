@@ -80,7 +80,7 @@ import { DotBreakdown } from "@/components/panes/DotBreakdown";
 export const metadata: Metadata = {
   title: "The topology file (DOT)",
   description:
-    "Layer 1 of a DarkPrint blueprint: one directed graph per bundle, written in a subset of DOT. Attractor runs it as it stands. One added attribute pins each node to the card that describes it.",
+    "Layer 1 of a DarkPrint blueprint: one directed graph per bundle, written in a subset of DOT that Attractor parses. One added attribute pins each node to the card that describes it. Compiling the two into a file Attractor runs is a separate step.",
 };
 
 const HERE = "/spec/topology";
@@ -196,14 +196,29 @@ export default function SpecTopologyPage() {
               DOT attribute values are flat strings. That is why the
               format splits into two: the graph carries the wiring, and every
               piece of detail lives in a card beside it. DarkPrint reads a
-              strict subset that{" "}
+              strict subset of the DOT that{" "}
               <SpecLink href="https://github.com/strongdm/attractor" external>
                 Attractor
               </SpecLink>{" "}
-              runs as it stands. Attractor silently ignores every attribute
+              parses, and Attractor silently ignores every attribute
               name outside its own reserved list. That is what lets{" "}
               <Id>card</Id> and <Id>digest</Id> travel inside a file a runner
-              still executes.
+              still reads.
+            </p>
+            {/* The paragraph this page went without until 2026-08-30, and the reason the
+                metadata above changed with it. The old sentence said Attractor "runs it as
+                it stands", which is true of the grammar and false of the file: a topology
+                carries no prompt, no start node and no exit node, so Attractor parses it
+                and its own lint rules refuse the pipeline. The compiled file is a different
+                artefact and now has a command that writes it, so the page can say which is
+                which instead of eliding them. */}
+            <p>
+              A topology on its own is not a pipeline. It carries no prompts and
+              neither of the two boundary nodes Attractor requires, so a runner
+              parses it and then refuses to run it. <Id>darkprint export &lt;dir&gt; --attractor</Id>{" "}
+              is what compiles the graph and its cards into the file a runner
+              takes, and that file opens with a list of everything a blueprint
+              had no way to say.
             </p>
             <p>
               One name looks free, but it is not. A node <Id>type</Id> attribute means{" "}

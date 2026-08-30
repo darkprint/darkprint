@@ -22,8 +22,7 @@
       three-item list where two carry the information.
 
    The wire model here is deliberately the *document* shape
-   (`phase`, `requires_human`, `risk_markers`) rather than the
-   engine's `NodeCard`: this module describes files, and
+   (`phase`, `risk_markers`) rather than the engine's `NodeCard`: this module describes files, and
    `variants.ts` writes them out. `variants.test.ts` closes the
    loop by parsing every emitted file back through the engine's own
    `loadCard` and comparing it with the model below, so a bug in
@@ -100,16 +99,19 @@ export interface StarterCardSpec {
   outputs: readonly StarterPort[];
   dependencies: readonly string[];
   /**
-   * What the node must never do or receive. An entry naming an ontology `data-type` is
-   * enforced by the resolver; everything else is prose for the reader.
+   * `data-type` term ids the node must never receive. The resolver holds every incoming
+   * edge to each one. `[]` on most of these cards, and that is an answer.
    */
   cannot: readonly string[];
-  requiresHuman: boolean;
+  /**
+   * What the node undertakes never to do, in sentences. Nothing checks these, which is
+   * the reason they are not in `cannot` beside the term ids.
+   */
+  willNot: readonly string[];
   riskMarkers: readonly string[];
   notes: string;
   version: string;
   provenance: string;
-  ontologyVersion: string;
 }
 
 /** One DOT node and the card it pins. */
@@ -310,7 +312,10 @@ export const STARTER_PROFILES: Readonly<Record<StarterOutput, StarterProfile>> =
 
 /* --------------------- shared card constants --------------------- */
 
-const ONTOLOGY_VERSION = "0.1.0";
+/* There is no `ONTOLOGY_VERSION` here. Every starter card used to carry one, naming the
+   vocabulary it was written against, and the wizard emitted it into each YAML file. A card
+   declares no vocabulary version any more: there is one, every card is read against it, and
+   a score records the version it was computed under on the score itself. */
 
 /**
  * Doc 2 §6 does not exist yet: there are no accounts, so there is no author to record.
@@ -401,13 +406,12 @@ function planner(p: StarterProfile): StarterCardSpec {
       },
     ],
     dependencies: [],
-    cannot: ["write any of the code it plans", "weaken a criterion to make it easier to meet"],
-    requiresHuman: false,
+    cannot: [],
+    willNot: ["write any of the code it plans", "weaken a criterion to make it easier to meet"],
     riskMarkers: [],
     notes: `The \`plan\` port is deliberately not wired to the builder in this blueprint, and the gap is the lesson rather than an oversight. Doc 3 §4.1 defines \`criteria-leak\` over a path from the criteria producer to the node whose artefact they judge, and the analyzer reads that path at node level, so any edge at all from this node into the builder establishes the marker whichever port it carries. The builder is handed its brief when the graph is instantiated, and nothing leaves this node except the criteria, which go to the tester. The other end of that gap is written down too: the builder's card lists \`${NO_CRITERIA}\` under \`cannot\`, so an edge from here into it is refused by the resolver as well as charged by the analyzer.`,
     version: BASE_VERSION,
     provenance: PROVENANCE,
-    ontologyVersion: ONTOLOGY_VERSION,
   };
 }
 
@@ -441,13 +445,12 @@ function builder(p: StarterProfile): StarterCardSpec {
       },
     ],
     dependencies: [],
-    cannot: [NO_CRITERIA, "read the checks the work will be run against"],
-    requiresHuman: false,
+    cannot: [NO_CRITERIA],
+    willNot: ["read the checks the work will be run against"],
     riskMarkers: [],
     notes: `Doc 1 §3.2 makes isolation a property of the prose as well as of the diagram. The spec above names no criterion, quotes no threshold and paraphrases nothing the planner wrote, so the similarity half of the \`criteria-leak\` check stays quiet on this card as well as the topological half. A card that keeps the arrow off the drawing and repeats the criteria in its prose is isolated on the diagram and leaking in practice. A third check sits under both of those. \`${NO_CRITERIA}\` names a data type in the vocabulary, so the entry under \`cannot\` is one the resolver enforces: an edge carrying the criteria into this node fails the bundle with \`bundle/prohibition-violated\`, whatever the prose says.`,
     version: BASE_VERSION,
     provenance: PROVENANCE,
-    ontologyVersion: ONTOLOGY_VERSION,
   };
 }
 
@@ -491,13 +494,12 @@ function tester(p: StarterProfile): StarterCardSpec {
       },
     ],
     dependencies: [`${p.slug}-planner`, `${p.slug}-builder`, `${p.slug}-debugger`],
-    cannot: ["quote a criterion in the evidence it emits"],
-    requiresHuman: false,
+    cannot: [],
+    willNot: ["quote a criterion in the evidence it emits"],
     riskMarkers: [],
     notes: `This is the only node that sees both halves, and the shape of \`evidence\` is what keeps that safe. Doc 2 §5.5: seeing the criteria lets a node produce work built to pass them, seeing the evidence of a failure it caused says only what broke. The first is gaming and the second is feedback. Emitting the criterion text alongside the trace would collapse that distinction and hand the debugger the acceptance surface a line at a time.`,
     version: BASE_VERSION,
     provenance: PROVENANCE,
-    ontologyVersion: ONTOLOGY_VERSION,
   };
 }
 
@@ -537,13 +539,12 @@ function debugger_(p: StarterProfile, maxIterations: number): StarterCardSpec {
       },
     ],
     dependencies: [`${p.slug}-tester`],
-    cannot: [NO_CRITERIA, "special-case the literal values in a trace"],
-    requiresHuman: false,
+    cannot: [NO_CRITERIA],
+    willNot: ["special-case the literal values in a trace"],
     riskMarkers: [],
     notes: `\`max_iterations\` is the declared cap for the \`tester -> debugger -> tester\` cycle and it is load-bearing twice over. Drop it and doc 3 §4.1 charges the blueprint for an unbounded loop. It also bounds a slower leak doc 2 §5.5 names: every iteration reveals another slice of the acceptance surface through the failure messages, so the cap limits how much of the criteria this node can reconstruct by accumulation. The other two requirements of a healthy loop are written into the spec above rather than into the graph. \`stop_on_repeated_evidence\` is a progress criterion over the content of two consecutive runs, which a topology cannot express; \`on_cap_exhausted\` ends the run and hands the evidence back, and an escalation edge drawn to the planner would take the planner's incoming degree above zero and move the run's entry point onto the builder. The cap bounds how fast this node can rebuild the criteria out of failure messages; \`${NO_CRITERIA}\` under \`cannot\` closes the direct route, and the resolver enforces that entry because it names a data type in the vocabulary.`,
     version: debuggerVersion(maxIterations),
     provenance: PROVENANCE,
-    ontologyVersion: ONTOLOGY_VERSION,
   };
 }
 
@@ -571,13 +572,12 @@ function releaseGate(p: StarterProfile): StarterCardSpec {
     ],
     outputs: [],
     dependencies: [`${p.slug}-tester`],
-    cannot: ["alter the artefact on the way through", "release work the tester did not sign off"],
-    requiresHuman: false,
+    cannot: [],
+    willNot: ["alter the artefact on the way through", "release work the tester did not sign off"],
     riskMarkers: [],
     notes: `No \`irreversible-action\` marker, deliberately. Doc 3 §4 prices that marker for actions that cannot be undone, and this node's declared destination is the run's own release target: it writes one tagged, digest-stamped artefact, sends nothing to a third party and deletes nothing. Point this node at a package registry or at a production branch and the marker applies, and the engine charges it against this blueprint at whatever weight the shipped configuration gives it.`,
     version: BASE_VERSION,
     provenance: PROVENANCE,
-    ontologyVersion: ONTOLOGY_VERSION,
   };
 }
 
@@ -610,8 +610,8 @@ function approver(p: StarterProfile): StarterCardSpec {
       },
     ],
     dependencies: [`${p.slug}-tester`],
-    cannot: ["summarise the work for the approver", "recommend an outcome"],
-    requiresHuman: true,
+    cannot: [],
+    willNot: ["summarise the work for the approver", "recommend an outcome"],
     riskMarkers: [],
     // The class, never the band behind it. This string is written into the card YAML the
     // reader downloads and reads in the Cards tab, so spec part 2 binds it exactly as it
@@ -619,10 +619,9 @@ function approver(p: StarterProfile): StarterCardSpec {
     // appearing on a single graph, which is the collision the class exists to end. The
     // class name is the same fact, and `variants.test.ts` holds the sentence to the class
     // the engine actually computes for the bundle this card ships in.
-    notes: `With this node the blueprint is classed conditional. Without it, closed-loop. The class records where a person acts in the run, and this is where. A blueprint that touches something you cannot roll back is a blueprint you want this node in, and the class names which of the two designs you are holding. \`requires_human\` is redundant with the node type and set anyway, so the gate is legible without an ontology lookup.`,
+    notes: `With this node the blueprint is classed supervised. Without it, closed-loop. The class records where a person acts in the run, and this is where. A blueprint that touches something you cannot roll back is a blueprint you want this node in, and the class names which of the two designs you are holding. The \`human-gate\` type is what says a person acts here, and it is the only thing that says it.`,
     version: BASE_VERSION,
     provenance: PROVENANCE,
-    ontologyVersion: ONTOLOGY_VERSION,
   };
 }
 
@@ -655,13 +654,12 @@ function approvedRelease(p: StarterProfile): StarterCardSpec {
     ],
     outputs: [],
     dependencies: [`${p.slug}-approval`],
-    cannot: ["alter the artefact on the way through", "release work no approver accepted"],
-    requiresHuman: false,
+    cannot: [],
+    willNot: ["alter the artefact on the way through", "release work no approver accepted"],
     riskMarkers: [],
-    notes: `\`${p.slug}-release-gate\` is this node in the variant with no approval gate, and the two are separate cards because they refuse different things: that one refuses work the tester did not release, this one refuses work no person accepted. Doc 1 §4 makes the ref the key to the content, so one id covering both would put two behaviours behind a single pin. \`requires_human\` is false here. The person acts at the gate upstream, and nothing waits for anybody at this node.`,
+    notes: `\`${p.slug}-release-gate\` is this node in the variant with no approval gate, and the two are separate cards because they refuse different things: that one refuses work the tester did not release, this one refuses work no person accepted. Doc 1 §4 makes the ref the key to the content, so one id covering both would put two behaviours behind a single pin. This card's \`tool\` type is what says nobody waits here: the person acts at the gate upstream.`,
     version: BASE_VERSION,
     provenance: PROVENANCE,
-    ontologyVersion: ONTOLOGY_VERSION,
   };
 }
 

@@ -42,7 +42,6 @@ import type { BlueprintAnalysis, ResolvedBlueprint } from "@/lib/core";
 import { createDbClient, migrateUp, type Db, type DbClient } from "@/lib/db";
 import { addRelease, createBundle } from "@/lib/server/archive";
 import { addCard } from "@/lib/server/cards";
-import { addOntologyVersion } from "@/lib/server/ontology";
 import { contentVocabulary, readContent, type LoadedBundle } from "@/lib/content/read";
 
 /* --------------------- the scratch database --------------------- */
@@ -328,16 +327,19 @@ export async function seedAccount(scratch: Scratch, marker: string): Promise<See
 }
 
 /**
- * The core vocabulary, at the version every bundle in `content/` declares.
+ * The version every release in `content/` is scored under.
  *
- * `exportRelease` has to resolve a stored release back into a `ResolvedBlueprint`, which needs
- * an `OntologyView`, which T030 publishes as `openView(db, version, extensions)` — so the
- * version named by `manifest.ontologyVersion` has to be a row before any export can run.
+ * It USED to be a write. `exportRelease` resolves a stored release back into a
+ * `ResolvedBlueprint`, which needs an `OntologyView`, which was `openView(db, version,
+ * extensions)` — so the version a manifest named had to be a row before any export could
+ * run. `openView` merges over `CORE_ONTOLOGY` and reaches no store, so nothing has to be
+ * seeded and this returns the version the exports will actually carry. It is kept as a
+ * function, and still takes `db`, because every caller reads it as "the version this
+ * database's exports are stamped with" and a bare constant would lose that.
  */
 export async function seedOntology(db: Db): Promise<string> {
-  const version = CORE_ONTOLOGY.version;
-  await addOntologyVersion(db, { version, terms: [...CORE_ONTOLOGY.terms] });
-  return version;
+  void db;
+  return CORE_ONTOLOGY.version;
 }
 
 /* --------------------- the archive as a fixture --------------------- */

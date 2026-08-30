@@ -451,7 +451,16 @@ export interface LoadBundleResultShape {
     graph: { ids: readonly string[]; predecessors(id: string): readonly string[] };
   };
   analysis?: {
-    autonomy: { autonomyClass: string; contributions: readonly { resolved: boolean }[] };
+    /* `rationale` sits beside `autonomyClass` for the same reason `security.rationale` sits
+       beside `security.level`: the class is one of four names and rounds many different graphs
+       onto one word, so a cell that can only read the class cannot tell two answers apart once
+       they land in the same band. The sentence carries the counts and the comparison that
+       produced the band, which is the figure that still moves when the band does not. */
+    autonomy: {
+      autonomyClass: string;
+      rationale: string;
+      contributions: readonly { resolved: boolean }[];
+    };
     security: { level: number; rationale: string };
     ontologyVersion: string;
   };
