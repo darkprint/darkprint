@@ -47,6 +47,8 @@ agent   tool   human-gate   human-input   decision   validation
 `human-gate` and `human-input` are under `human-in-the-loop`, which is what
 `requires_human` must agree with and what `isDarkFactory` counts.
 
+> **Superseded 2026-08-30 by D-92, D-110 (`docs/DECISIONS.md`).** `requires_human` no longer exists: a card's `type` is the whole answer, and the boolean is derived from it rather than stored, so the two can no longer disagree and there is no inconsistency left to validate. The text above is kept verbatim as the record of what was specified. The capability it implies — staffing a node whose type says nothing about people — was deliberately not restored.
+
 ### `risk-marker` — 9
 
 ```
@@ -118,6 +120,8 @@ Rules:
 ## Versioning the ontology
 
 Doc 3 §8. The version is stamped on every card (`ontology_version`) and every bundle.
+
+> **Superseded 2026-08-30 by D-93 (`docs/DECISIONS.md`).** The version is stamped on neither. `ontology_version` left the card and `ontologyVersion` left the bundle manifest when the vocabulary-version registry was removed: there is one living vocabulary, so there is nothing to resolve a stamp against. The version survives only on a stored score (`release.scoredOntologyVersionId`), which is where reproducibility actually lives. Kept verbatim as the record of what was specified.
 
 | change | bump |
 |---|---|

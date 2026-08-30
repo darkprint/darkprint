@@ -126,7 +126,28 @@ export const ADVERTISED = [
   "read a card",
   "inspect provenance",
   "fetch a release",
+  "export a pipeline",
 ] as const;
+
+/**
+ * The advertised operations that are NOT server verbs, and what each one composes.
+ *
+ * Empty until D-107. `export a pipeline` is the first operation `/mcp` advertises that
+ * `lib/server/mcp` does not publish a verb for, because it is `mcpFetchRelease` followed by a
+ * pure local compile (`attractorPipeline`, from `packages/cli`) — it reaches no route
+ * `fetch a release` does not already reach and it writes nothing.
+ *
+ * **Why this list exists rather than a bumped number.** `surface.test.ts` held "the barrel
+ * publishes one verb per advertised operation", which was an equality only while every
+ * operation happened to be a server read. Relaxing it to `>=` would have made it stop
+ * detecting the thing it was written for: a tool published against no barrel verb at all.
+ * Naming the exceptions and what they compose keeps the cell exact — a sixth operation with
+ * no verb and no entry here still reds, and an entry here whose constituents are not
+ * themselves published reds too.
+ */
+export const COMPOSED: Readonly<Record<string, readonly PublishedName[]>> = Object.freeze({
+  "export a pipeline": ["mcpFetchRelease"],
+});
 
 /**
  * The operation names read OFF `app/mcp/page.tsx`, not off the constant above.

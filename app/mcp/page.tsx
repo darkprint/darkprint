@@ -122,6 +122,18 @@ const OPERATIONS = [
        not produce would be describing a different registry. */
     returns: `the bundle: ${TOPOLOGY_DOT}, ${BUNDLE_CARDS_DIR}/*.yaml, ${BUNDLE_README}`,
   },
+  {
+    /* The fifth, and the only one that is not a server read. It fetches a release through
+       the operation above and compiles it locally, so it reaches nothing `fetch a release`
+       does not already reach and an agent with a shell can reproduce it exactly:
+       `darkprint clone`, then `darkprint export --attractor`. Listed anyway, because a page
+       that advertises four while the server offers five is under-describing itself, and
+       "you could have done it yourself" is a reason to publish a convenience rather than to
+       hide one (D-107). */
+    name: "export a pipeline",
+    takes: "a slug and an exact digest",
+    returns: "the same bundle compiled to Attractor DOT, with what it could not express named in the file",
+  },
 ] as const;
 
 /**

@@ -60,6 +60,8 @@ decision      ⊂ evaluative
 
 > **Nota per il validatore.** Se `type` è un sottotipo di `human-in-the-loop`, il campo `requires_human` della card **deve** essere `true`. Incoerenza tra i due è un errore di validazione, non un avviso.
 
+> **Superseded 2026-08-30 by D-92, D-110 (`docs/DECISIONS.md`).** `requires_human` no longer exists: a card's `type` is the whole answer, and the boolean is derived from it rather than stored, so the two can no longer disagree and there is no inconsistency left to validate. The text above is kept verbatim as the record of what was specified. The capability it implies — staffing a node whose type says nothing about people — was deliberately not restored.
+
 ---
 
 ## 4. `risk_markers` — i marcatori di rischio

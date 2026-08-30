@@ -115,6 +115,8 @@ type lattice, so `json` satisfies a port typed `structured`.
 |---|---|---|
 | `cannot` | `string[]` | **Enforced when the entry names an ontology data type.** |
 | `requires_human` | `boolean` | Must agree with `type`; `card/human-type-inconsistent` otherwise. |
+
+> **Superseded 2026-08-30 by D-92, D-110 (`docs/DECISIONS.md`).** `requires_human` no longer exists: a card's `type` is the whole answer, and the boolean is derived from it rather than stored, so the two can no longer disagree and there is no inconsistency left to validate. The text above is kept verbatim as the record of what was specified. The capability it implies — staffing a node whose type says nothing about people — was deliberately not restored.
 | `risk_markers` | `string[]` | **Ontology `risk-marker` terms.** Drive the security reading. |
 
 **`cannot` is the field that makes the site's argument checkable.** An entry naming an

@@ -1,7 +1,20 @@
 # CLAIMS_RAW — verbatim claims extracted from the context surface
 
 Phase 0A raw material for the darkprint context-reset audit. This file quotes; it does not
-judge. Every row is a verbatim, one-sentence quotation from a document in this repository's
+judge.
+
+> **Currency note, added 2026-08-30. The rows below are unchanged and will stay unchanged.**
+>
+> Seven of them quote rules the code no longer follows, and a reader who acts on them will be
+> acting on a retired rule: **FON-007, SKM-019, SKM-025, SKO-010, SKP-004, SKC-013, ARO-007**
+> all rest on the `requires_human` cross-field rule, which D-92 withdrew when a card's `type`
+> became the whole answer, or on the ontology version being stamped on a card, which D-93
+> withdrew with the vocabulary-version registry.
+>
+> They are named here rather than corrected in place because this file's contract is to quote
+> verbatim: editing a row would destroy the evidence of what the document said when it was read,
+> which is the only thing the file is for. `docs/ARCHITECTURE.md` §11 carries the same list
+> against the code. Every row is a verbatim, one-sentence quotation from a document in this repository's
 instruction surface (see `docs/audit/CONTEXT_SURFACE.md` for the full file inventory), trimmed
 to one sentence but otherwise unedited — grammar, typos, and phrasing are preserved exactly as
 written. Statements are included whether or not they already look implemented, obvious, or

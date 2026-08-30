@@ -7,14 +7,27 @@
    a suite whose every red says "cannot find module" has measured
    the hand-off rather than the work.
 
-   ── the four operations may not be renamed ──
+   ── the advertised operations may not be renamed ──
    D-220-01 (3) makes `app/mcp/page.tsx:85-110` the advertised
-   contract. What this file holds the module to is the BLOCK's four
+   contract. What this file holds the module to is the BLOCK's
    names, because a page's prose does not spell an identifier — the
    page itself says so: *"There are no `search_blueprints(...)`
    signatures on this page because no signature has been designed."*
-   What the page does fix is that there are FOUR operations and no
-   fifth, and that is asserted against the page's own count.
+   What the page fixes is HOW MANY operations there are and what
+   they are called, and that is asserted against the page's own
+   count rather than against a transcription.
+
+   ── one of them is not a server verb, and that is checked ──
+   D-107 added `export a pipeline`, which `lib/server/mcp` publishes
+   no verb for: it is `mcpFetchRelease` followed by a pure local
+   compile, reaching no route `fetch a release` does not already
+   reach. So "the barrel publishes one verb per operation" is no
+   longer an equality, and the cell below does NOT relax to `>=` —
+   that would stop it detecting the thing it was written for, a tool
+   published against no barrel verb at all. `contract.ts`'s
+   `COMPOSED` names the exceptions and what each one composes, and
+   the cell holds every constituent to being published itself. A
+   sixth operation with neither a verb nor an entry still reds.
    ============================================================ */
 
 import { readFileSync } from "node:fs";
@@ -25,6 +38,7 @@ import { describe, expect, it } from "vitest";
 import {
   ADVERTISED,
   advertisedOperations,
+  COMPOSED,
   MCP,
   PUBLISHED,
   PUBLISHED_ARITY,
@@ -56,16 +70,35 @@ describe("T220 — the barrel publishes the four verbs", () => {
     const advertised = advertisedOperations(page);
     expect(
       advertised,
-      "the page's own OPERATIONS table is where the four names live",
+      "the page's own OPERATIONS table is where the names live",
     ).toEqual([...ADVERTISED]);
 
     const mod = await loadMcp();
     const exported = PUBLISHED_NAMES.filter((n) => mod[n] !== undefined);
+
+    /* Every advertised operation is either a server verb or a named composition of them.
+       Subtracting the compositions keeps this an EQUALITY: a tool published against no verb
+       and no `COMPOSED` entry still reds, which is the only failure this cell was written to
+       catch. */
+    const composed = advertised.filter((name) => name in COMPOSED);
     expect(
       exported,
-      `/mcp advertises ${advertised.length} operations (${advertised.join(", ")}) and they ` +
-        "may not be renamed (D-220-01 (3)). The barrel must publish one verb for each.",
-    ).toHaveLength(advertised.length);
+      `/mcp advertises ${advertised.length} operations (${advertised.join(", ")}), of which ` +
+        `${composed.length} compose others (${composed.join(", ") || "none"}). They may not be ` +
+        "renamed (D-220-01 (3)). The barrel must publish one verb for each operation that is " +
+        "not a composition.",
+    ).toHaveLength(advertised.length - composed.length);
+
+    /* And a composition may only name constituents the barrel really publishes, so
+       `COMPOSED` cannot become a place to park an operation nothing implements. */
+    for (const [name, parts] of Object.entries(COMPOSED)) {
+      for (const part of parts) {
+        expect(
+          exported,
+          `\`${name}\` is declared to compose \`${part}\`, which the barrel does not publish.`,
+        ).toContain(part);
+      }
+    }
   });
 
   /* Arity is pinned because two spellings of an optional parameter differ observably here

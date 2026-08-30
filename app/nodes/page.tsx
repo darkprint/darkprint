@@ -182,12 +182,19 @@ export default async function NodesPage() {
    * one-line definition. Resolving it in the browser would mean shipping the ontology to the
    * client to answer eight questions that are settled the moment the page renders.
    *
-   * All eight node types, not the five the card library happens to use, and that is load
-   * bearing rather than generous. The group header prints its type's INDEX, and an index is
-   * a position in a complete list — `Tool` is `07` because it is the seventh of the
-   * vocabulary's eight types in label order, and it would be `04` counted against the five
-   * types that currently have cards. A number that moves when somebody publishes the first
-   * `human-input` card is not an index, it is a rank.
+   * Every node type the vocabulary carries, not the five the card library happens to use,
+   * and that is load bearing rather than generous. The group header prints its type's INDEX,
+   * and an index is a position in a complete list — `Tool` is `11` because it is the
+   * eleventh of the vocabulary's twelve node types in label order, and it would be `04`
+   * counted against the five types that currently have cards. A number that moves when
+   * somebody publishes the first `human-input` card is not an index, it is a rank.
+   *
+   * The count moves when the VOCABULARY grows, which is correct and has happened: this
+   * paragraph read "eight types" and called `Tool` `07` until D-94 added `parallel`,
+   * `parallel.fan-in` and `manager-loop`. The numbers are worked here rather than derived
+   * because the point is the reasoning, not the arithmetic — but they are read off
+   * `byKind("node-type")` sorted by label, so anyone can check them and should when the
+   * vocabulary next moves.
    *
    * `byKind` returns them sorted by id; the browser re-sorts by label, next to the rule that
    * says the grid is ordered that way, so the two orders cannot come apart.

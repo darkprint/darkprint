@@ -16,7 +16,7 @@ import type { OntologyView } from "../ontology/resolve";
    stand-ins, not usable objects.
 
    Cards are written against ontology v0.1 (doc 3): one of the five
-   phases, one of the six real node types, and a `spec` that is a
+   phases, one of the concrete node types, and a `spec` that is a
    real self-sufficient instruction (doc 1 §3.2) rather than a
    placeholder — a card the validator would accept, because a
    fixture that could not be published is not evidence of anything.

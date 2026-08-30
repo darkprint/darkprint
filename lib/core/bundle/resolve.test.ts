@@ -6,7 +6,7 @@
    caused by the one thing that was changed.
 
    The card library was rewritten against ontology v0.1 (doc 3): one
-   of the five phases and one of the six node types on every card, a
+   of the five phases and one of the vocabulary node types on every card, a
    `spec` that is a real instruction rather than a placeholder, and
    the vocabulary version the engine actually ships. The old
    `trigger` / `sink` / `memory` types and the `image` port type no
