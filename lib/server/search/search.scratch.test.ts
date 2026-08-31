@@ -68,6 +68,21 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
       tools: [],
       riskMarkers: [],
       ontologyVersion: "0.1.0",
+      /* The fields this fixture used to omit, added 2026-08-31 when `storedCard` began
+         parsing a stored body instead of casting it. Not a concession to the guard: the
+         registry's own 58 rows were measured and every one carries all sixteen required
+         fields, so a body without them was never something the writer produces. A fixture
+         thinner than anything that can exist is a fixture that tests a shape the product
+         does not have. `ontologyVersion` stays because the real rows carry it too, and it
+         keeps this fixture exercising the guard's tolerance of a retired key. */
+      mcp: [],
+      params: {},
+      inputs: [],
+      outputs: [],
+      dependencies: [],
+      cannot: [],
+      willNot: [],
+      version: "1.0.0",
       ...over,
     };
   }

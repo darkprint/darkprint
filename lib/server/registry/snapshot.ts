@@ -19,6 +19,7 @@ import { canonicalJson, cardRef, parseCardRef, CORE_PHASE_IDS } from "@/lib/core
 import { visibleTo, type Actor } from "@/lib/server/policy";
 import type { BundleManifest, CardRef, NodeCard } from "@/lib/server/types";
 import type { BlueprintKey, BlueprintSummary, CardSummary } from "./types";
+import { storedCard } from "@/lib/server/cards/stored-card";
 import {
   cmpBlueprints,
   cmpBlueprintKeys,
@@ -272,21 +273,24 @@ export async function loadSnapshot(db: Db, actor: Actor): Promise<RegistrySnapsh
 
   const cards = frozen(
     [...rowsByRef.entries()]
-      .map(([ref, row]): CardSummary => {
+      .flatMap(([ref, row]): CardSummary[] => {
         const users = usedIn.get(ref) ?? [];
-        return Object.freeze({
+        /* Skipped, not cast: see `registry/cards.ts` and `lib/server/cards/stored-card.ts`. */
+        const card = storedCard(row.body);
+        if (card === undefined) return [];
+        return [Object.freeze({
           ref,
           id: row.cardId,
           version: row.version,
           digest: row.digest,
-          card: row.body as NodeCard,
+          card,
           usedIn: frozen(users.sort(cmpBlueprintKeys).map((key) => Object.freeze({ ...key }))),
           // Always "public" through this constructor in practice: `cardRows` above is
           // already filtered by `readable()`, and the one caller that can see a private
           // row here is its own owner, for whom the distinction is moot. Carried anyway
           // so `CardSummary.visibility` is not a field only `cardsOwnedBy` bothers to fill.
           visibility: row.visibility,
-        });
+        })];
       })
       .sort(cmpCards),
   );

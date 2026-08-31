@@ -12,6 +12,7 @@ import type { CardSummary } from "./types";
 import { cmpCards, frozen } from "./order";
 import { loadSnapshot, readable } from "./snapshot";
 import { withRegistryStore } from "./store";
+import { storedCard } from "@/lib/server/cards/stored-card";
 
 const NONE: readonly CardSummary[] = Object.freeze([]);
 /** The `usedIn` of a row no visible blueprint pins. Shared, so it is one frozen array. */
@@ -120,14 +121,20 @@ export async function cardsOwnedBy(
     const snapshot = await loadSnapshot(db, actor);
     return frozen(
       rows
-        .map((row): CardSummary => {
+        .flatMap((row): CardSummary[] => {
           const ref = cardRef(row.cardId, row.version);
-          return Object.freeze({
+          /* A row whose body is not a card is SKIPPED rather than cast into one. It happens
+             when the schema moved and the row did not, and the alternative is a shelf that
+             throws three layers up in a renderer. `storedCardGaps` says why, for a caller
+             that wants to report it. */
+          const card = storedCard(row.body);
+          if (card === undefined) return [];
+          return [Object.freeze({
             ref,
             id: row.cardId,
             version: row.version,
             digest: row.digest,
-            card: row.body as NodeCard,
+            card,
             // The published join, read for this exact version. `[]` when the index does not
             // hold the row at all, which is what an unpinned card's users are.
             usedIn: snapshot.byRef.get(ref)?.usedIn ?? EMPTY_KEYS,
@@ -135,7 +142,7 @@ export async function cardsOwnedBy(
             // that returns an owner's own private cards (D-132-04 C-C), so a caller needs to
             // tell them apart from the public rows in the same array.
             visibility: row.visibility,
-          });
+          })];
         })
         .sort(cmpCards),
     );

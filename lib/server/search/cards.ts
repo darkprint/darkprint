@@ -100,7 +100,10 @@ function fieldsWith(labelOf: (id: string) => string): readonly Field<CardSummary
  */
 function cardOf(row: CardSummary): Partial<NodeCard> {
   const card: unknown = row.card;
-  return typeof card === "object" && card !== null ? (card as NodeCard) : {};
+  /* Cast to `Partial<NodeCard>`, which is what the signature already promises and what
+     the row can actually support. Casting to `NodeCard` here claimed every field was
+     present on a value this module states it never validated. */
+  return typeof card === "object" && card !== null ? (card as Partial<NodeCard>) : {};
 }
 
 function list(raw: unknown): readonly string[] {

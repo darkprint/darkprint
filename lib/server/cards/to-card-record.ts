@@ -11,6 +11,7 @@
 
 import type { NodeCard } from "@/lib/server/types";
 import type { CardRecord } from "./types";
+import { storedCard } from "./stored-card";
 
 interface CardVersionRow {
   id: string;
@@ -32,7 +33,7 @@ export function toCardRecord(row: CardVersionRow): CardRecord {
     digest: row.digest,
     ownerId: row.ownerId,
     visibility: row.visibility,
-    body: row.body as NodeCard,
+    body: storedCard(row.body),
     source: row.source,
     createdAt: row.createdAt,
   };

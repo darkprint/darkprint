@@ -16,7 +16,14 @@ export interface CardRecord {
   ownerId: string;
   visibility: "public" | "private";
   /** jsonb: VALUE-identical on read-back, never byte-identical. */
-  body: NodeCard;
+  /**
+   * The stored body when it is a card, `undefined` when the row cannot supply one.
+   *
+   * Was `NodeCard`, filled by a cast that never looked. A row written under an older schema
+   * satisfies neither the type nor its readers, and the difference surfaced as a `TypeError`
+   * in a renderer rather than as a value a caller could branch on. See `stored-card.ts`.
+   */
+  body: NodeCard | undefined;
   /** text: BYTE-identical on read-back, verbatim YAML. */
   source: string;
   createdAt: Date;

@@ -20,6 +20,7 @@ import { schema, type Db } from "@/lib/db";
 import { cardDigest, checkVersionChain, compareVersionStrings, parseSemver } from "@/lib/core";
 import type { NodeCard } from "@/lib/server/types";
 import type { CardRecord } from "./types";
+import { storedCard } from "./stored-card";
 import { toCardRecord } from "./to-card-record";
 import { findWellFormednessIssue } from "./well-formed";
 import { CARD_ID_VERSION_UNIQUE_CONSTRAINT } from "./constraint";
@@ -95,10 +96,16 @@ export async function addCard(db: Db, input: AddCardInput): Promise<CardRecord> 
       }
     }
 
+    /* A neighbour whose stored body is not a card is dropped from the chain rather than
+       cast into one: `checkVersionChain` would otherwise compare this card against a shape
+       it cannot read, and answer about a diff that never happened. Dropping it can only
+       make the inferred bump SMALLER, so the refusal below stays conservative. */
     const neighbors: { card: NodeCard }[] = [];
-    if (predecessor !== undefined) neighbors.push({ card: predecessor.body as NodeCard });
+    const before = predecessor === undefined ? undefined : storedCard(predecessor.body);
+    const after = successor === undefined ? undefined : storedCard(successor.body);
+    if (before !== undefined) neighbors.push({ card: before });
     neighbors.push({ card: body });
-    if (successor !== undefined) neighbors.push({ card: successor.body as NodeCard });
+    if (after !== undefined) neighbors.push({ card: after });
 
     if (neighbors.length > 1) {
       const bumpDiagnostics = checkVersionChain(neighbors).filter((d) => d.code === "card/version-bump-too-small");
