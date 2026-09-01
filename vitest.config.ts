@@ -66,5 +66,25 @@ export default defineConfig({
        files and exit 1. A run read off the test total then looks green while the gate is red.
        Found by T090's blind author. */
     hookTimeout: 30000,
+    /* The two raises above bought headroom against contention and did not buy enough,
+       because the contention is not for the CPU. Vitest's default worker count is
+       `max(availableParallelism - 1, 1)`, nine on this ten-core machine, and every one of
+       those workers points a DB-backed suite at the same Postgres container
+       `compose.yaml` brings up: `tests/support/db.ts` issues a `CREATE DATABASE` plus a
+       full `migrateUp` for each scratch database it hands out.
+
+       Measured 2026-08-31 on this tree. At the default worker count the full run produced
+       12 to 30 timeouts with zero assertion failures, and every file that timed out passed
+       when run on its own, which is what says the timeouts were contention and not a
+       defect. They also compound: a file killed by `testTimeout` never reaches its
+       `afterAll`, so its scratch database survives, and the next run competes with the
+       leftovers of the last one. At `--maxWorkers=3` the same tree passed 519 files / 9452
+       tests with 0 timeouts.
+
+       A fixed count rather than a percentage of cores, because what saturates is the one
+       Postgres. A percentage would restore the failure on any machine with more cores
+       pointed at the same database. `--maxWorkers` on the command line still overrides
+       this, so a session that has the database to itself can raise it. */
+    maxWorkers: 3,
   },
 });
