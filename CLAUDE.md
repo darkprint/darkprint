@@ -55,6 +55,18 @@ this repository's own skill.
   docs/ARCHITECTURE.md (how the system is), docs/DECISIONS.md (why it is that way).
 * Plans, status updates, session summaries and retrospectives do not belong in the
   repository. They are ephemeral and they stay in the conversation.
+* **Outstanding work is the one exception, and it lives in `docs/ARCHITECTURE.md` §11.0.**
+  Read it at the start of a session, before proposing what to do next. It is not a plan and
+  not a status report: it is the list of things that are owed, each with what blocks it and
+  where the detail is. It exists because "is this done yet" kept being re-derived from
+  conversation that no longer exists, and re-derivation gets it wrong — a premise that was
+  true in one session is quietly false in the next.
+  * Update a row **in the same change that changes its state**, never afterwards. A queue
+    updated later is a queue that disagrees with the tree.
+  * A row reaching `DONE` carries the date and the commit, and moves into §11's subsections
+    on the next pass. §11.0 stays short enough to actually read.
+  * Adding a row is cheap and correct. Leaving something owed out of it, because it felt
+    obvious at the time, is how it gets lost.
 * Never record a decision in docs/DECISIONS.md as CONFIRMED unless the owner stated it
   in this conversation. Otherwise it is PENDING-OWNER-REVIEW and carries no authority.
 * When an instruction file and the code disagree, the code wins and you report the

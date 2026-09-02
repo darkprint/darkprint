@@ -1758,7 +1758,7 @@ Reported, not resolved. In each case the code is quoted as it stands.
    `lib/core/ontology/core.ts:42-88`) — `plan` is in fact a `data-type` term. Neither the
    glossary nor the concept model records this. It matters here because it is the only
    evidence in the repository about whether private cards are validated at all.
-5. **`docs/ARCHITECTURE.md` §11.3 names `docs/audit/CHANGELOG.md` as its source and that file
+5. **`docs/ARCHITECTURE.md` §11.4 names `docs/audit/CHANGELOG.md` as its source and that file
    exists in no commit** — the document already flags this as a `TBD:`, and it is still true
    at this commit.
 6. **`PLATFORM_STATS` (`lib/data/index.ts`) is documented as the homepage counters and is
