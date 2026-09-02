@@ -272,14 +272,22 @@ published (`:66-71`).
 > `backend.md` §T220 and to the page together, and needs an owner ruling.
 
 > **SEAM-117's `TODO(SEAM-117)` anchor is in `packages/mcp/src/tools.ts`, and
-> `scripts/check-docs-drift.mjs` cannot see it.** That script's `CODE_DIRS` is
-> `["app", "components", "lib", "scripts"]` — `packages/` is outside its walk — so SEAM-117
-> will keep appearing in its "in the doc, missing from the code" list however the anchor is
-> written. It is in good company: that list already held **43 ids** before this seam existed,
-> including the two most recent LIVE seams, SEAM-115 and SEAM-116, which carry no anchor at
-> all. The job is `continue-on-error: true` and blocks nothing. Widening `CODE_DIRS` to
-> include `packages/` is a one-word change and is left to whoever owns that script, because
-> it would move the list by more than this one id.
+> `scripts/check-docs-drift.mjs` now sees it (2026-09-02, D-111).** That script's `CODE_DIRS`
+> was `["app", "components", "lib", "scripts"]`, so `packages/` sat outside its walk and
+> SEAM-117 was reported missing from the code however the anchor was written. `packages` was
+> added to the list in a change of its own, and the fear that motivated the deferral did not
+> survive measurement: the widening moved exactly one id, this one, and added nothing in
+> either direction. The list stood at 45 and now stands at **44**, including the two most
+> recent LIVE seams, SEAM-115 and SEAM-116, which carry no anchor at all. The job is
+> `continue-on-error: true` and blocks nothing, so those 44 are still unread by anybody.
+>
+> Two of the 44 are a second blind spot of the same kind and were deliberately left alone:
+> SEAM-19 and SEAM-62 have `TODO(SEAM-xx)` comments only under `tests/`, while their rows
+> here point at product code. Adding `tests` to `CODE_DIRS` would let a test-file comment
+> satisfy a row about a component, which is a weaker guard rather than a wider one. The other
+> 42 have no anchor anywhere in the tree, and about half of those rows say the seam is
+> CROSSED and the anchor was correctly deleted — that is the doc→code rule itself needing
+> work, not a walk that is too narrow.
 
 ## M · The authoring skill and the editor path
 

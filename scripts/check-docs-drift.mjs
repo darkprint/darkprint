@@ -13,14 +13,27 @@ const ROOT = new URL("..", import.meta.url).pathname;
 const ROUTES_DOC = join(ROOT, "docs/architecture/routes.md");
 const SEAMS_DOC = join(ROOT, "docs/architecture/seams.md");
 const APP_DIR = join(ROOT, "app");
-const CODE_DIRS = ["app", "components", "lib", "scripts"];
+// `packages/` is here because it was not here originally, and the omission was never a
+// decision: the list was written when the repository had no `packages/` tree at all, and
+// nobody widened it when the CLI and the MCP server moved in. A checker that walks four
+// of five source trees still prints "in sync" for the fifth, so it reports a clean bill it
+// has not earned, and it reports the opposite too: SEAM-117's anchor lives at
+// `packages/mcp/src/tools.ts:41` and was read as missing for as long as the walk could not
+// reach it. Measured before landing (D-111): widening moves exactly one id, SEAM-117, off
+// the drift list and adds nothing in either direction.
+const CODE_DIRS = ["app", "components", "lib", "packages", "scripts"];
 
 function walk(dir, onFile) {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     const stat = statSync(full);
     if (stat.isDirectory()) {
-      if (entry === "node_modules" || entry === ".next") continue;
+      // `dist` joins the skip list with `packages/`, not before it: `packages/mcp/dist` is
+      // gitignored build output, and a declaration file emitted with comments preserved
+      // carries a copy of every `TODO(SEAM-xx)` in its source. That copy would satisfy a
+      // doc row on a developer machine and vanish in a bare CI checkout, which makes the
+      // checker answer differently depending on whether anyone ran a build.
+      if (entry === "node_modules" || entry === ".next" || entry === "dist") continue;
       walk(full, onFile);
     } else {
       onFile(full);
