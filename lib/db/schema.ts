@@ -256,7 +256,13 @@ export const release = pgTable("release", {
 /* --------------------- card_version (B-04, B-07) --------------------- */
 
 /**
- * One immutable row per `(cardId, version)` (T020). `digest` is `cardDigest` —
+ * One row per `(cardId, version)`, immutable to every write path in `lib/server/**` (T020):
+ * nothing in the product updates `body`, `source` or `digest` after the insert. That is a
+ * property of the writers rather than of the table, and the distinction is not academic.
+ * Commit ed3ae85 updated all 58 rows in place from a migration script, which is how the
+ * embedding tables came to hold vectors for text their subject no longer contained. Read
+ * `releaseEmbedding` before relying on this row's contents being fixed. `digest` is
+ * `cardDigest` —
  * sha256 over the card minus `author`/`provenance` — kept as a plain indexed column
  * rather than a unique one: two different `(id, version)` rows legitimately sharing a
  * digest is the dedup signal T020 reads, not a collision to reject.
@@ -622,13 +628,31 @@ export const apiKey = pgTable("api_key", {
  * and only if** that release has been embedded: *never embedded* is the ABSENCE of a row
  * rather than a null inside one, and the state is representable exactly once. As a column it
  * was a nullable field whose null carried that meaning by convention. Nothing eight merged
- * tasks already `select` from gains a field. And `onDelete: "cascade"` makes a stale vector
- * unrepresentable rather than something a sweep has to remember.
+ * tasks already `select` from gains a field. And `onDelete: "cascade"` keeps a vector from
+ * outliving a DELETED subject, which is narrower than the claim this docblock used to make:
+ * it says nothing about a subject that is UPDATED, and see the paragraph below for the day
+ * that distinction stopped being academic.
  *
- * **AC6's idempotency reads the row's presence and needs no second column.** A `release` row
- * is content-addressed — `digest` is derived from the bytes, so it cannot change — therefore
- * a row here is already a vector for that digest. An `embedded_digest` column would be a
- * second source for one quantity, which is how two sources come to disagree.
+ * **AC6's idempotency USED TO read the row's presence and need no second column, and that
+ * argument has been falsified rather than merely revised.** It ran: a `release` row is
+ * content-addressed, `digest` is derived from the bytes so it cannot change, therefore a row
+ * here is already a vector for that digest. The premise is that the described row is never
+ * rewritten. Commit ed3ae85 rewrote 58 `card_version` rows and 16 `release` rows IN PLACE
+ * under unchanged primary keys, moving `body`, `manifest` and every digest; `onDelete:
+ * "cascade"` could not fire because nothing was deleted, and the 42 card and 7 release
+ * vectors outlived a content change to their subjects. They happened to stay correct only
+ * because that migration moved fields outside `cardText`/`manifestText`, which is a fact
+ * about which fields it touched and not a property anything here guarantees.
+ *
+ * `embedded_input_sha256` (0008) is the second column that failure argued for, and it is
+ * deliberately NOT the `embedded_digest` the paragraph above rejected. That objection was
+ * right and is kept: a column mirroring a CURRENT value can only agree or be a bug, and
+ * `release.digest` is the wrong value twice over, since `bundleDigest` hashes
+ * `{dot, cardDigests}` with no manifest in it while this vector is nothing but manifest
+ * fields. This column records a PAST value, the identity of the exact input handed to the
+ * encoder, so disagreement with today's input is the signal rather than the defect. It is
+ * nullable because a row written before 0008 has no honest value to carry: NULL is
+ * *provenance unknown*, which `reembedRelease` repairs the same way it repairs disagreement.
  *
  * **384 is a decision, not a default:** pgvector refuses an index on a column declared
  * without a dimension, so the width had to be chosen before anything could be indexed, and
@@ -645,6 +669,7 @@ export const releaseEmbedding = pgTable("release_embedding", {
     .references(() => release.id, { onDelete: "cascade" }),
   embedding: vector("embedding", { dimensions: 384 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  embeddedInputSha256: text("embedded_input_sha256"),
 });
 
 /** The card half of T200's vectors. Same shape and same reasons as `releaseEmbedding`. */
@@ -654,6 +679,7 @@ export const cardVersionEmbedding = pgTable("card_version_embedding", {
     .references(() => cardVersion.id, { onDelete: "cascade" }),
   embedding: vector("embedding", { dimensions: 384 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  embeddedInputSha256: text("embedded_input_sha256"),
 });
 
 /* ============================================================
