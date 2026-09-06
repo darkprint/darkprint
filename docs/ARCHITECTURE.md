@@ -15,9 +15,9 @@ contract seams](architecture/seams.md), the matching `TODO(SEAM-xx)` comment in 
 the same change. This document does not get updated speculatively or on a schedule — see
 [12 · Maintenance protocol](#12-maintenance-protocol-and-revision-log).
 
-**Last verified against commit `91a3bb4` (Attractor parity, and a day of owner rulings on the blueprint and card pages) on 2026-09-06.**
+**Last verified against commit `9ddcbb4` (Attractor parity, and a day of owner rulings on the blueprint and card pages) on 2026-09-06.**
 
-**The 2026-09-04, 2026-09-05 and 2026-09-06 waves described in §12's last rows are now COMMITTED, at `91a3bb4`.** They were uncommitted for three days and this line asked whoever committed them to re-stamp it; that is what has happened. Everything those rows claim was measured against the working tree as it stood, and that tree is this commit. The one thing to carry forward rather than assume settled: production is still unmigrated (§11.0 Q1), so deploying this commit against pre-migration rows empties `/blueprints` and `/nodes`.
+**The 2026-09-04, 2026-09-05 and 2026-09-06 waves described in §12's last rows are now COMMITTED, at `9ddcbb4`.** They were uncommitted for three days and this line asked whoever committed them to re-stamp it; that is what has happened. Everything those rows claim was measured against the working tree as it stood, and that tree is this commit. The one thing to carry forward rather than assume settled: production is still unmigrated (§11.0 Q1), so deploying this commit against pre-migration rows empties `/blueprints` and `/nodes`.
 
 **One consequence of that gap is load-bearing and is stated here rather than discovered in a red gate.** `tests/architecture-current.test.ts` resolves what has SHIPPED from the `backend` REF, not from the working tree, and `backend` still carries `app/api/blueprints/[owner]/[slug]/votes/route.ts`. The polarity that helps an addition (a module in a worktree is correctly not owed a row yet) inverts for a DELETION: the sitemap must keep naming a route the working tree no longer serves until the deletion commits. [4 · Sitemap](architecture/routes.md) therefore keeps the `/api/blueprints/{owner}/{slug}/votes` row, struck through and labelled with why, and the same commit that lands the deletion is the one that removes it.
 
