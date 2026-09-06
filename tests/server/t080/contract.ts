@@ -688,7 +688,6 @@ export interface ReleaseOptions {
   autonomy?: unknown;
   security?: unknown;
   phaseCoverage?: unknown;
-  scoredOntologyVersionId?: string;
 }
 
 export interface ReleaseFixture {
@@ -714,7 +713,6 @@ export async function insertRelease(s: Scratch, o: ReleaseOptions): Promise<Rele
     "autonomy",
     "security",
     "phase_coverage",
-    "scored_ontology_version_id",
   ];
   const values: unknown[] = [
     o.bundle.id,
@@ -727,7 +725,6 @@ export async function insertRelease(s: Scratch, o: ReleaseOptions): Promise<Rele
     o.autonomy === undefined ? null : JSON.stringify(o.autonomy),
     o.security === undefined ? null : JSON.stringify(o.security),
     o.phaseCoverage === undefined ? null : JSON.stringify(o.phaseCoverage),
-    o.scoredOntologyVersionId ?? null,
   ];
   if (o.id !== undefined) {
     columns.unshift("id");
@@ -749,27 +746,12 @@ export async function insertRelease(s: Scratch, o: ReleaseOptions): Promise<Rele
   return { id, version: o.version, digest, cardRefs };
 }
 
-export interface OntologyFixture {
-  id: string;
-  version: string;
-  digest: string;
-}
-
-export async function insertOntologyVersion(
-  s: Scratch,
-  version: string,
-  digest: string,
-): Promise<OntologyFixture> {
-  const [row] = await s.query(
-    "insert into ontology_version (version, digest) values ($1, $2) returning id",
-    [version, digest],
-  );
-  const id = row?.id;
-  if (typeof id !== "string") {
-    throw new Error(`Could not insert the ontology version fixture: got ${describe_(id)}.`);
-  }
-  return { id, version, digest };
-}
+/* `OntologyFixture` and `insertOntologyVersion` stood here. They wrote `ontology_version`,
+   which `0009_drop_ontology_versioning` dropped: the vocabulary names what an Attractor node
+   IS, Attractor fixes those shapes in its own spec and carries no vocabulary version, so a
+   DarkPrint-only version on top was a second thing to keep in step with nothing. Callers
+   that stamped a release with the returned id lost `ReleaseOptions.scoredOntologyVersionId`
+   in the same pass, because `release.scored_ontology_version_id` referenced that table. */
 
 /* --------------------- the shapes the contract publishes back --------------------- */
 

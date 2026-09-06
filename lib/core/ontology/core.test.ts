@@ -29,9 +29,16 @@ const childrenOf = (parent: string): string[] =>
    ============================================================ */
 
 describe("CORE_ONTOLOGY identity", () => {
-  it("ships as ontology v0.1.0 with a title (doc 3 §8)", () => {
-    expect(CORE_ONTOLOGY.version).toBe("0.1.0");
+  it("ships with a title", () => {
     expect(CORE_ONTOLOGY.title.length).toBeGreaterThan(0);
+  });
+
+  /* The vocabulary declares no version, and this is the cell that says so rather than a
+     silence anyone could read as an oversight: `version` was a DarkPrint-only semver on a
+     vocabulary whose job is to name what an Attractor node is. */
+  it("declares no version of its own", () => {
+    expect(Object.hasOwn(CORE_ONTOLOGY, "version")).toBe(false);
+    expect(Object.keys(CORE_ONTOLOGY).sort()).toEqual(["terms", "title"]);
   });
 
   it("is frozen so analyzers cannot mutate the shared singleton", () => {
@@ -50,8 +57,11 @@ describe("CORE_ONTOLOGY identity", () => {
     expect(BY_ID.size).toBe(TERMS.length);
   });
 
-  it("declares every term as introduced by this version", () => {
-    const wrong = TERMS.filter((t) => t.since !== CORE_ONTOLOGY.version).map((t) => t.id);
+  /* `since` is no longer a version of anything: the vocabulary has none. It stays as the
+     release each term was published in, and every core term was published in one go, so
+     one value across the whole set is still the fact to assert. */
+  it("declares every core term as introduced in the same release", () => {
+    const wrong = TERMS.filter((t) => t.since !== "0.1.0").map((t) => t.id);
     expect(wrong).toEqual([]);
   });
 
@@ -178,7 +188,7 @@ describe("phase (doc 3 §2)", () => {
    ============================================================ */
 
 describe("node types (doc 3 §3)", () => {
-  it("has the nine concrete types and the three abstract categories, and nothing else", () => {
+  it("has the ten concrete types and the three abstract categories, and nothing else", () => {
     expect(ids("node-type").slice().sort()).toEqual([
       "agent",
       "decision",
@@ -190,6 +200,7 @@ describe("node types (doc 3 §3)", () => {
       "orchestration",
       "parallel",
       "parallel.fan-in",
+      "shell-tool",
       "tool",
       "validation",
     ]);
@@ -207,6 +218,24 @@ describe("node types (doc 3 §3)", () => {
   it("leaves `agent` and `tool` unparented, because doc 3 draws no edge for them", () => {
     expect(BY_ID.get("agent")?.broader).toBeUndefined();
     expect(BY_ID.get("tool")?.broader).toBeUndefined();
+  });
+
+  /**
+   * The one subsumption edge in this dimension doc 3 does not draw, pinned at both ends.
+   *
+   * `shell-tool` is a kind of `tool` so that `isA(type, "tool")`, the question every rule in
+   * the engine actually asks, keeps catching the node that runs a command once
+   * `attractor/emit.ts` gives `tool` the `box` row. Making it a fifth root instead would
+   * split one idea across two unrelated top-level types, and every existing tool rule would
+   * silently stop applying to half of it.
+   */
+  it("subsumes `shell-tool` under `tool`, which is the only concrete type with a child", () => {
+    expect(BY_ID.get("shell-tool")?.kind).toBe("node-type");
+    expect(BY_ID.get("shell-tool")?.broader).toBe("tool");
+    expect(childrenOf("tool")).toEqual(["shell-tool"]);
+    // `agent` is the other type that runs work and it stays a leaf: a shell command is a
+    // deterministic operation, and nothing about it is a kind of model reasoning.
+    expect(childrenOf("agent")).toEqual([]);
   });
 
   it("leaves the three categories unparented, so the type dimension has no invented root", () => {
@@ -273,7 +302,7 @@ describe("node types (doc 3 §3)", () => {
   });
 
   it("leaves the autonomous types unflagged", () => {
-    for (const id of ["agent", "tool", "decision", "validation", "evaluative"]) {
+    for (const id of ["agent", "tool", "shell-tool", "decision", "validation", "evaluative"]) {
       expect(BY_ID.get(id)?.impliesHuman, id).toBeUndefined();
     }
   });
@@ -296,7 +325,7 @@ describe("node types (doc 3 §3)", () => {
   });
 
   it("leaves the types that only do work unflagged", () => {
-    for (const id of ["agent", "tool", "human-input", "human-in-the-loop"]) {
+    for (const id of ["agent", "tool", "shell-tool", "human-input", "human-in-the-loop"]) {
       expect(BY_ID.get(id)?.governsFlow, id).toBeUndefined();
     }
   });

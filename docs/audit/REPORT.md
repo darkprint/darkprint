@@ -33,6 +33,56 @@ The owner answered all five questions below. Executed on that basis:
   as written rather than edited into past tense throughout, since it is the record of
   what the evidence showed *before* action was taken.
 
+## Corrections, 2026-09-06 — measured against `backend`, not against the audit branch
+
+Two rows were acted on above and are marked in place (`minCanvasFor`, WITHDRAWN;
+`outputSubject`, MOOT). Re-reading the rest of the report against the current tree turned up
+one thing larger than either, and it is reported rather than fixed, because fixing it is a
+code pass and this file is a record.
+
+**The Phase 1B outcome list at the top of this document does not describe the `backend`
+branch.** It says *"Deleted: all 7 whole `DEAD` files, all 5 boilerplate SVGs, both dead CSS
+rules, and all 14 `DEAD` in-file functions/consts/types"*. Measured on 2026-09-06 by grepping
+`app/ components/ lib/ scripts/` outside `*.test.*` and by `git log --diff-filter=D`:
+
+* **The whole files and the five SVGs ARE gone**, deleted in `b65846b`. That half landed.
+* **The two CSS rules are STILL THERE**: `.dot-grid` at `app/globals.css:483` and
+  `.grain::after` at `:492`.
+* **Thirteen of the fourteen in-file symbols are STILL THERE.** `kindHref`, `minCanvasFor`,
+  `SuggestedModels`, `HandoverAxis`, `RunLayers` (the function), `PhaseCoverageView`,
+  `EASE_IN_OUT`, `cardId`/`boxProps`/`wireProps`, and
+  `SEED_BLUEPRINTS`/`FEATURED_BLUEPRINTS`/`PLATFORM_STATS` all still resolve. The one
+  exception is `outputSubject`, and it went with its route this week rather than through this
+  pass. `git log -S` on three of them (`minCanvasFor`, `kindHref`, `.dot-grid`) shows one
+  introducing commit each and no deletion at all, so these are not symbols that were removed
+  and later restored.
+
+The likeliest reading is the one this document's own first line offers: the audit ran on
+`chore/audit-cleanup`, and only part of it reached `backend`. **What follows from it is a
+warning about how to read the rest of this file**: the outcome list says these verdicts were
+executed, so a reader who trusts it will not re-check them, while the tables below say
+`delete` in the present tense about symbols that are still live. Two rows are now marked;
+**the other twelve are not, because whether each is still dead was not re-measured here** and
+a row marked from a grep alone would be exactly the shallow read this audit was written to
+avoid. Re-run the pass before acting on any of them, and treat the outcome list as a record of
+what happened on another branch.
+
+**Two smaller staleness notes**, neither changing a verdict:
+
+* The `components/ui/PageContents.tsx` row cites `app/build/page.tsx:195` as one of two
+  places describing it in the past tense. That file no longer exists; `components/spec/sequence.ts:48`,
+  the other citation, does.
+* The `KEEP` list names `components/build/choices.ts` (`STARTER_NODES`, `CAPS`) among the
+  ~30 knip false positives. That file is deleted, so the census is one entry smaller than it
+  reads. `components/spec/sequence.ts` and `lib/starter/variants.ts`, its neighbours in that
+  list, both survive — `lib/starter/**` outlived the route that mounted it and now has no
+  product consumer at all.
+
+**The Routes section is stale for a reason that predates this wave and is left as history**:
+its route list is the pre-T261 shape (`/blueprints/[slug]`, 22 static routes, 165 pages), and
+the canonical blueprint address has been `/blueprints/{owner}/{slug}` since T261.
+[4 · Sitemap](../architecture/routes.md) carries the current count and its own derivation.
+
 **Scope reminder carried through every verdict below:** this repository is the
 frontend-only implementation of darkprint.io. The backend does not exist. Every data
 source is a mock, a fixture or hardcoded content, deliberately, as an executable
@@ -112,9 +162,9 @@ false-positive guard, not listed here.)
 | Path:Line | Symbol | Kind | Evidence | Last commit | Confidence | Proposed action |
 |---|---|---|---|---|---|---|
 | `lib/href.ts:15` | `kindHref` | function | Zero references besides its own declaration; `contentHref`/`nodeHref`/`termHref` in the same file are the ones actually called | 2026-07-28 | high | delete function |
-| `components/graph/framing.ts:490` | `minCanvasFor` | function | Zero callers, including within the same file; `legiblePx` is computed independently elsewhere (`schematic-boxes.ts`) | 2026-08-06 | high | delete function |
+| ~~`components/graph/framing.ts:490`~~ `:580` | `minCanvasFor` | function | **WITHDRAWN 2026-09-06. This row is no longer true and must not be acted on.** The evidence as gathered (*"zero callers, including within the same file"*) was correct on 2026-08-12 and is false today: `components/panes/archive-labels.test.ts` imports it (`:121`) and drives it in two cells. The first (`:450`) asserts `minCanvasFor(extentOf(blueprint)) <= width` per blueprint per viewport and prints both numbers in its own failure message. The second (`:577`) is a **one-pixel boundary probe** and is the load-bearing one: it asserts the width `minCanvasFor` names IS legible and the width one pixel below it is NOT, per blueprint, because at the seven real canvases the check is slack in both directions and taking 20px off the function would redden nothing. It is a cross-check rather than a restatement — the closed form in `framing.ts` on one side, React Flow's own `getViewportForBounds` through `frameSchematic` on the other. That suite is byte-frozen by `tests/server/t261/frozen-tests.test.ts:75`, so the function is not merely called, it is called by a file nobody may edit to un-call it. The cell's own header records the history this row missed: until the full-width graph pass the answer was 1086 against a 729px column, so *"a published number decided nothing and nothing checked it"* — which is exactly the state this row measured, correctly, and which the pass ended. The line number moved 490 → 580 with the graph work of 2026-09-06 and is re-derived here rather than carried. `legiblePx` being computed independently in `schematic-boxes.ts` is still true and is no longer an argument for anything | 2026-08-06 (declaration); caller added by 2026-09-06 | — | **none — keep the function** |
 | `components/blueprint/Requirements.tsx:92` | `SuggestedModels` | function/component | Never rendered as JSX anywhere; `app/blueprints/[slug]/page.tsx`'s own comment states "'Suggested models' stood here and is gone" | 2026-08-05 | high | delete function |
-| `components/build/choices.ts:160` | `outputSubject` | function | Single grep hit repo-wide (its own declaration); no internal or external caller | 2026-08-08 | high | delete function |
+| ~~`components/build/choices.ts:160`~~ | `outputSubject` | function | **MOOT 2026-09-06: the whole file is gone.** The verdict was right and was overtaken — the owner deleted `/build` and `components/build/**` (*"it is not useful and make confusion"*, `docs/DECISIONS.md` D-145), so this symbol left with its module rather than through this list. Recorded rather than struck out entirely, because it is the one row on this table whose subject the tree resolved on its own | 2026-08-08 | — | **none — the file no longer exists** |
 | `components/explain/ConceptFigures.tsx:564` | `HandoverAxis` | function/component | Never rendered as JSX (`<HandoverAxis` — zero hits); every other hit is a prose comment naming it, including three in `app/what-a-blueprint-is/page.tsx` that discuss what it *used to* draw | 2026-08-08 | high | delete function |
 | `components/explain/RunLayers.tsx:388` | `RunLayers` | function/component | Never rendered as JSX; the file's other exports (`BlueprintGraph`, `LAYERS`, `RubricGlyph`, `TONE`) are imported by `RunSystemMap.tsx`, which is the thing actually mounted on `/what-a-blueprint-is` — confirmed by reading `RunSystemMap.tsx`'s import list. The file itself is `KEEP` for its other four exports; only the `RunLayers` function is dead | 2026-08-10 | high | delete function — pending owner Q5 |
 | `components/ui/PhaseCoverage.tsx:66` | `PhaseCoverageView` | type | Zero usages anywhere, including the same file — the components in this file destructure `covered`/`missing` as separate props rather than a value of this shape | 2026-08-12 | high | delete type |

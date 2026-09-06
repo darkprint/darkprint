@@ -244,6 +244,6 @@ export async function cardVersionRowsIn(
 /* There are no ontology readers here any more. `ontologyVersionRows` selected every
    published `(id, version)` so `visible.ts` could pick the newest by semver, and
    `termIdsIn` then asked which of a set of saved term ids that version carried. Both read
-   `ontology_version` / `ontology_term`, which nothing writes now: the vocabulary a save is
-   checked against is `CORE_ONTOLOGY`, in the process, and `visible.ts` asks it directly.
-   The two tables are still declared in `lib/db/schema.ts` and are read by nothing. */
+   `ontology_version` / `ontology_term`: the vocabulary a save is checked against is
+   `CORE_ONTOLOGY`, in the process, and `visible.ts` asks it directly. Both tables were
+   dropped by `0009_drop_ontology_versioning` once nothing read or wrote them. */

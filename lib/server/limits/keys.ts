@@ -51,13 +51,34 @@
    silently trade away: an owner who mistypes a key id is told
    nothing, and a settings UI cannot distinguish "revoked" from
    "no such key". It is reported rather than designed around.
+
+   ── the scope, and the two functions that read it ──
+   Owner ruling 2026-09-05 (ARCHITECTURE §11.0 Q3): a key carries
+   an explicit scope, and every key minted before it is
+   grandfathered read-only so the sentence its holder was shown
+   stays true for that key's whole life. Migration
+   `0010_key_scope` is that grandfathering, as a NOT NULL column
+   defaulting to `read`.
+
+   Two functions read the column and they read it for different
+   reasons. `resolveKey` carries it onto the record so a holder can
+   SEE what their key does. `writeActorFor` reads it AGAIN, off the
+   row, at the moment a write is authorised, and answers an `Actor`
+   only for a live write-scoped key.
+
+   The second read is not redundancy. It is AC4's cache
+   prohibition, one layer up: a record carried forward from an
+   earlier read is a cache with no invalidation, and a brand minted
+   before a revoke must not buy a write after it. The brand proves
+   PROVENANCE, never LIVENESS, and `types.ts` is where that is
+   published.
    ============================================================ */
 
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { schema, type Db } from "@/lib/db";
 import { can, type Actor } from "@/lib/server/policy";
 import { invalidLabelError, notKeyOwnerError } from "./errors";
-import type { ApiKeyRecord, ResolvedKey } from "./types";
+import type { ApiKeyRecord, KeyScope, ResolvedKey } from "./types";
 import { hashSecret, mintSecret, parseSecret } from "./secret";
 import { withStore } from "./store";
 
@@ -137,6 +158,10 @@ function rowToRecord(row: typeof schema.apiKey.$inferSelect): ApiKeyRecord {
     keyId: row.id,
     accountId: row.accountId,
     label: row.label,
+    /* Carried so a holder can SEE what their key does, on the settings list and in the mint
+       response. It is a report of what the row said when it was read and never the warrant
+       for a write: `writeActorFor` reads the column again at the moment it grants. */
+    scope: row.scope,
     createdAt: row.createdAt,
     revokedAt: row.revokedAt,
   };
@@ -157,12 +182,26 @@ function rowToRecord(row: typeof schema.apiKey.$inferSelect): ApiKeyRecord {
  * The insert is what generates `id` and `created_at`, so both come back from `returning`
  * rather than being computed here — a value this module accepts rather than one it
  * supplies, and the database is the authority on both.
+ *
+ * **`scope` is a trailing parameter with a `"read"` default, and the default is the ruling
+ * rather than a convenience.** The owner's 2026-09-05 decision is that a key is read-only
+ * unless somebody asked for more, so the caller that says nothing gets the promise
+ * `ApiKeys.tsx` has always made. Trailing and optional also keeps every existing call site
+ * compiling and correct, which matters because the route that mints keys is another lane's
+ * file: a required parameter would have broken it, and a caller who has not learned about
+ * scopes minting a WRITE key is the one failure this signature must not allow.
+ *
+ * Validated by the type and by the column, not by a check here. `KeyScope` is a union so a
+ * TypeScript caller cannot pass a third value, and `api_key.scope` is an enum so the
+ * database refuses one from anywhere else. A third guard in this body would be a rule with
+ * two more places to disagree with itself.
  */
 export async function issueKey(
   db: Db,
   actor: Actor,
   accountId: string,
   label: string,
+  scope: KeyScope = "read",
 ): Promise<{ record: ApiKeyRecord; secret: string }> {
   return withStore("issueKey", async () => {
     if (!can(actor, "write", { kind: "account", accountId })) throw notKeyOwnerError("issueKey");
@@ -171,7 +210,7 @@ export async function issueKey(
     const secret = mintSecret();
     const [row] = await db
       .insert(schema.apiKey)
-      .values({ accountId, tokenHash: hashSecret(secret), label: label.trim() })
+      .values({ accountId, tokenHash: hashSecret(secret), label: label.trim(), scope })
       .returning();
 
     if (row === undefined) {
@@ -321,5 +360,86 @@ export async function revokeKeysFor(db: Db, accountId: string): Promise<void> {
       .update(schema.apiKey)
       .set({ revokedAt: new Date() })
       .where(and(eq(schema.apiKey.accountId, accountId), isNull(schema.apiKey.revokedAt)));
+  });
+}
+
+/**
+ * The `Actor` a write-scoped key acts as, or `undefined`. The only thing in this module that
+ * turns a key into an identity.
+ *
+ * ── why it takes a `ResolvedKey` and still goes back to the database ──
+ *
+ * The brand and this read answer two different questions and neither can answer the other's.
+ * `ResolvedKey` proves PROVENANCE: `resolveKey` is its only producer, so a caller cannot
+ * hand this function a `keyId` string it made up, or one of `listKeys`' deliberately-included
+ * revoked rows. What it cannot prove is LIVENESS, and `types.ts` says so in as many words.
+ * The record was true when the secret was presented; a revoke or a demotion between that
+ * moment and this one is invisible to it, and a long-lived request or a queued job makes
+ * that gap arbitrarily wide. So the row is read again, here, at the moment authority is
+ * actually granted.
+ *
+ * That is the same argument as AC4's cache prohibition at `resolveKey`, one layer up: **a
+ * revoked key is refused because the next decision reads the row**, and a value carried
+ * forward from an earlier read is a cache with no invalidation, whatever it is called.
+ *
+ * ── the two clauses are in the WHERE, and they are the whole warrant ──
+ *
+ * `scope = 'write'` and `revoked_at IS NULL` are both in the query rather than checked in a
+ * branch below it, which is `resolveKey`'s construction and it is followed rather than
+ * re-argued: a single statement has no path that could answer differently, and the clauses
+ * are what a mutation measures. They defend different things and must be falsified
+ * separately — deleting either one on its own has to red — because a pair of conjuncts in
+ * one `and()` can otherwise mask each other.
+ *
+ * ── `account` is JOINED, for `handle` and for nothing else ──
+ *
+ * `Actor`'s account arm carries `handle: string | null`, and `requireHandle` in
+ * `@/lib/server/accounts` refuses an account actor whose handle is null as *sign-up
+ * unfinished*. Fabricating `handle: null` here would therefore refuse a key holder whose
+ * account has a handle, with a message about a condition that is not true. The handle is a
+ * fact about the account and the account row is where it lives, so it is read rather than
+ * invented.
+ *
+ * The join has a second effect worth naming even though nothing reaches it today: an
+ * `INNER JOIN` means a key whose account row is gone yields no actor. D-120-10 is the same
+ * hazard at `resolveKey`, and it is closed there by `revokeKeysFor` running inside
+ * `deleteAccount`'s transaction; accounts are tombstoned rather than deleted, so the row
+ * survives either way. This is not a second answer to that problem, it is the same answer
+ * failing closed.
+ *
+ * ── `Actor | undefined` rather than a wrapper, and the type is what forces the check ──
+ *
+ * This module's barrel argues that a guard returning a union depends on every caller
+ * checking it, which is why `enforceLimit` is a wrapper. The argument does not reach here:
+ * `can` takes an `Actor`, so a caller who forgets the check cannot pass this result to it
+ * without a compile error. A caller who writes `?? { kind: "anonymous" }` has not bypassed
+ * anything either, because that actor owns nothing and every `can` denies it. The wrapper
+ * shape would also have to own a refusal `Response`, which is transport and not this file's.
+ *
+ * Always `kind: "account"`, never `"operator"`, for D-50-13's reason at the session
+ * constructor: the row carries no `kind`, so no key can mint an operator and `can`'s
+ * operator grant stays unreachable through this door as well as through the other one.
+ */
+export async function writeActorFor(db: Db, key: ResolvedKey): Promise<Actor | undefined> {
+  return withStore("writeActorFor", async () => {
+    const [row] = await db
+      .select({ accountId: schema.apiKey.accountId, handle: schema.account.handle })
+      .from(schema.apiKey)
+      .innerJoin(schema.account, eq(schema.account.id, schema.apiKey.accountId))
+      .where(
+        and(
+          eq(schema.apiKey.id, key.keyId),
+          eq(schema.apiKey.scope, "write"),
+          isNull(schema.apiKey.revokedAt),
+        ),
+      )
+      .limit(1);
+
+    if (row === undefined) return undefined;
+    /* `accountId` off the row rather than off `key`, so every field this grant depends on
+       comes from the read that authorised it. Taking liveness from a fresh row and identity
+       from a stale one would be two reads presented as one, and nothing would compare
+       them. */
+    return { kind: "account", accountId: row.accountId, handle: row.handle };
   });
 }

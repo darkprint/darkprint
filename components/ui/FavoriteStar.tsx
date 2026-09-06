@@ -21,13 +21,34 @@
    with a `200` and then never appear anywhere, with no error at any layer. The
    fix is a `bundleId` on `BlueprintSummary` or a resolver route, both T080's.
 
-   ── The star COUNT beside the button is a different thing and is still seeded ──
-   The button is a private bookmark; the pill next to it is public community
-   support. `toggleStar`/`getSignals` exist in `lib/server/counters`, but
-   **`app/api/signals/**` does not** — D-WAVE-02 dropped `app/api/**` from T150's
-   wave — and a client component cannot import that module, which reaches `pg`
-   through `@/lib/db`. So the count has not become real, the `◐` marker over it
-   stays, and D-78 moves a marker in one direction only (D-262-07).
+   ── Save FOLDED INTO Star, on the owner's instruction (2026-09-05) ──
+   This file used to draw TWO controls side by side wherever a live count was
+   available: a private bookmark, and a public star pill. The owner ruled them
+   one concept — "starring is the gesture, and the saved shelf reads stars" — so
+   a caller that supplies `star` now gets ONE control, `StarControl` below.
+
+   The old sentence *"the button is a private bookmark; the pill next to it is
+   public community support"* is retired rather than merely deleted: the two
+   stores still exist and the star is now the single gesture that moves both. A
+   card star writes the counter through `star.api` AND the account save through
+   `/api/account/saves`, because **the Saved tab reads `save` rows, not the star
+   table** — `lib/server/counters` publishes `getSignals`/`getSignalsMany`, both
+   of which answer about targets the caller names, and nothing there can answer
+   "what has this account starred". Until such a reader exists the save row IS
+   the shelf's index of stars, and writing it is what keeps the owner's ruling
+   true on screen instead of only in the header band.
+
+   A blueprint star moves the counter alone, which is D-262-04's gap unchanged:
+   `save.target_id` holds a bundle id and this component holds a slug.
+
+   ── The seeded count keeps its marker, and folds too ──
+   `count`/`seeded` is a figure a caller has from a fixture rather than from
+   `getSignals`. It used to draw the bookmark plus a read-only pill; it now draws
+   the SAME single star the live branch does, switched off, still carrying `◐`
+   and still saying *"seeded support count; no community backend is connected"*
+   in its title. The fold is about how many controls a reader sees, and D-78
+   moves a marker in one direction only: the figure has not become real on this
+   path, so the marker cannot come off it (D-262-07).
 
    ── Why a sibling, not a nested button ──
    `ContentCard` and `NodeCardSummary` are a whole card wrapped in one `<Link>`. A
@@ -40,17 +61,18 @@
    ============================================================ */
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
-import { compact, cx } from "@/lib/format";
+import { ActionPill } from "@/components/ui/ActionPill";
+import { cx } from "@/lib/format";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // SEAM-62 is LIVE for cards: POST /api/account/saves, DELETE /api/account/saves, body
 // { kind, refId } (D-140-07). Its note that "mapping STORAGE_KEY onto the enum is T262's"
 // is corrected by D-262-04: the card half is mapped here, and the blueprint half assigns a
 // translation with nowhere to put it. SEAM-61 stays PLANNED for blueprints.
-// T280 wires `star`: the count pill reaches lib/server/counters' toggleStar through
-// POST /api/blueprints/{owner}/{slug}/star or /api/cards/{id}/star — see StarPill below.
-// D-262-07's one-direction rule still binds the OTHER pill: a caller with no `star` prop
-// keeps drawing the seeded glyph exactly as before.
+// T280 wires `star`: the control reaches lib/server/counters' toggleStar through
+// POST /api/blueprints/{owner}/{slug}/star or /api/cards/{id}/star — see StarControl below.
+// The fold above makes that one control the save gesture too, so SEAM-62's card write now
+// has TWO callers in this file: the bookmark a tile still draws, and the star.
 
 const STORAGE_KEY = "darkprint:favorites";
 
@@ -294,9 +316,21 @@ function useFavorite(id: string): [boolean, () => void] {
 }
 
 /**
- * The bookmark. `id` is a compound key (`"blueprint:<slug>"`, `"node:<id>@<version>"`) so
- * the two kinds can never collide in the one `localStorage` bucket they share, and so
- * `targetFor` can tell which of them the account is able to hold.
+ * The star, and the bookmark that folded into it.
+ *
+ * `id` is a compound key (`"blueprint:<slug>"`, `"node:<id>@<version>"`) so the two kinds
+ * can never collide in the one `localStorage` bucket they share, and so `targetFor` can
+ * tell which of them the account is able to hold.
+ *
+ * Three renderings, and they are not three concepts:
+ *   - with `star`, ONE control over a live counter (`StarControl`), which is the header's
+ *     and the card page's Star;
+ *   - with `count`, the same pill switched off over a figure that is not live, marker and
+ *     all (`SeededStar`);
+ *   - with neither, the plain bookmark a shelf tile draws in its corner. A tile has no
+ *     owner handle and no signals read behind it, so it cannot address `POST /api/…/star`,
+ *     and leaving it as the save is what keeps a card reachable from the Saved tab while
+ *     the shelf still reads `save` rows.
  */
 export function FavoriteStar({
   id,
@@ -307,14 +341,13 @@ export function FavoriteStar({
 }: {
   id: string;
   className?: string;
-  /** Community support shown beside the save control. Still seeded — see the header. */
+  /** A star figure the caller already holds. Read-only: it has no toggle behind it. */
   count?: number;
-  /** Marks a count that is illustrative rather than read from a live service. */
+  /** Marks a `count` that is illustrative rather than read from a live service. */
   seeded?: boolean;
   /**
-   * T280: the count pill over a real store. When present it wins over `count`/`seeded` —
-   * the two are mutually exclusive readings of the same pixel, one fixture and one live —
-   * and the seeded glyph never renders for a caller that supplies this.
+   * The live counter this control toggles. Present on a surface that has read `getSignals`
+   * for the target; absent on a tile, which has not.
    */
   star?: {
     /** `POST /api/blueprints/{owner}/{slug}/star` or `POST /api/cards/{id}/star`. Toggles. */
@@ -324,16 +357,58 @@ export function FavoriteStar({
     signedIn: boolean;
   };
 }) {
+  if (star !== undefined) return <StarControl id={id} star={star} className={className} />;
+  if (count !== undefined) return <SeededStar count={count} seeded={seeded} className={className} />;
+  return <Bookmark id={id} className={className} />;
+}
+
+/**
+ * A star figure a caller holds from a fixture: the same pill, switched off, with the marker
+ * over the number saying so.
+ *
+ * Disabled rather than absent for `StarControl`'s reason and one more: a reader who cannot
+ * see the control cannot see the marker either, and the marker is the whole point of this
+ * branch.
+ */
+function SeededStar({
+  count,
+  seeded,
+  className,
+}: {
+  count: number;
+  seeded: boolean;
+  className?: string;
+}) {
+  return (
+    <ActionPill
+      glyph="star"
+      label="Star"
+      count={count}
+      disabled
+      ariaLabel={`${count} community stars${seeded ? ", seeded" : ""}`}
+      title={
+        seeded
+          ? "Seeded support count; no community backend is connected"
+          : "Nothing stores a star for this yet"
+      }
+      marker={
+        seeded ? (
+          <span className="text-amber" aria-hidden>
+            ◐
+          </span>
+        ) : undefined
+      }
+      className={className}
+    />
+  );
+}
+
+/** The tile's corner bookmark: the save, unchanged, on the surfaces that have only it. */
+function Bookmark({ id, className }: { id: string; className?: string }) {
   const [favorited, toggle] = useFavorite(id);
   const label = favorited ? "Remove from favorites" : "Add to favorites";
-  /* Whether the bookmark renders beside a pill (seeded count or live star) or alone.
-     `className` belongs on whichever element is this component's own outer box — the
-     wrapping `<div>` when there is a pill, the button itself when there is not — and
-     putting it on both would apply a caller's positioning (`absolute right-2 top-2`,
-     say) to two overlapping elements instead of one. */
-  const hasPill = star !== undefined || count !== undefined;
 
-  const button = (
+  return (
     <button
       type="button"
       onClick={(event) => {
@@ -345,10 +420,9 @@ export function FavoriteStar({
       aria-label={label}
       title={label}
       className={cx(
-        "inline-flex items-center justify-center border border-line bg-surface-2/90 p-1.5 backdrop-blur-sm transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-line-bright hoverable:active:scale-[0.94]",
-        hasPill ? "gap-1.5 rounded-md px-2.5 py-1.5" : "rounded-full",
+        "inline-flex items-center justify-center rounded-full border border-line bg-surface-2/90 p-1.5 backdrop-blur-sm transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-line-bright hoverable:active:scale-[0.94]",
         favorited ? "text-amber" : "text-dim hoverable:hover:text-fg",
-        !hasPill && className,
+        className,
       )}
     >
       <svg
@@ -363,77 +437,58 @@ export function FavoriteStar({
       >
         <path d="M6.75 4.75A1.75 1.75 0 0 1 8.5 3h7a1.75 1.75 0 0 1 1.75 1.75V21L12 17.65 6.75 21V4.75z" />
       </svg>
-      {hasPill && <span className="text-xs font-medium">{favorited ? "Saved" : "Save"}</span>}
     </button>
-  );
-
-  if (star !== undefined) {
-    return (
-      <div className={cx("inline-flex items-stretch gap-2", className)}>
-        {button}
-        <StarPill star={star} />
-      </div>
-    );
-  }
-
-  if (count !== undefined) {
-    return (
-      <div
-        className={cx("inline-flex items-stretch gap-2", className)}
-        title={seeded ? "Seeded support count; no community backend is connected" : undefined}
-      >
-        {button}
-        <span
-          className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 font-mono text-[11px] text-muted"
-          aria-label={`${count} community stars${seeded ? ", seeded" : ""}`}
-        >
-          <svg
-            aria-hidden
-            viewBox="0 0 24 24"
-            width={14}
-            height={14}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.75}
-            strokeLinejoin="round"
-          >
-            <path d="M12 3.5l2.47 5.006 5.53.804-4 3.9.944 5.507L12 16.9l-4.944 2.6.944-5.507-4-3.9 5.53-.804L12 3.5z" />
-          </svg>
-          {compact(count)}
-          {seeded && (
-            <span className="text-amber" aria-hidden>
-              ◐
-            </span>
-          )}
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    button
   );
 }
 
 /**
- * The count pill, live: a second toggle beside the bookmark, over `lib/server/counters`.
+ * Star, over `lib/server/counters` — and, for a card, over the account's saves in the same
+ * click.
  *
- * A star and a save are different acts on this site (the header above says why) and they
- * stay different controls here too — this is not the bookmark reused, it is a sibling with
- * its own `aria-pressed` and its own request. Optimistic for the same reason the bookmark's
- * account path is: a round trip before the pill moves reads as a dropped click.
+ * ── Why one click writes two stores ──
+ * The owner folded Save into Star, and the Saved tab reads `save` rows: `listSaves` is a
+ * per-account query and `lib/server/counters` has no per-account reader at all, only
+ * `getSignals`/`getSignalsMany` over targets the caller already names. So a star that wrote
+ * the counter alone would empty the shelf for every reader, and a shelf that read stars is
+ * a server module this pass may not write. The save write is therefore the star's index,
+ * not a second gesture: it is issued only when `targetFor` resolves (a card), and only when
+ * the account's bookmark disagrees with where the star is going.
  *
- * `!signedIn` disables rather than hides — a reader who is not signed in still learns the
- * count is real and what pressing it would ask of them, which a missing control cannot say.
+ * A star that predates the fold has no save row behind it, so the first toggle is what puts
+ * one there. That self-corrects on use rather than needing a backfill, which is the reason
+ * the sync compares the two states instead of assuming them equal.
+ *
+ * ── Signed out ──
+ * Disabled with a `title`, the same idiom the header's own drawn-and-disabled Watch and
+ * Fork use. A signed-out reader can no longer keep anything, which is the accepted cost of
+ * the fold, and a control that silently did nothing on click would hide it. Nothing is
+ * hidden either: the count is real and readable without an account.
  */
-function StarPill({ star }: { star: NonNullable<FavoriteStarProps["star"]> }) {
+function StarControl({
+  id,
+  star,
+  className,
+}: {
+  id: string;
+  star: NonNullable<FavoriteStarProps["star"]>;
+  className?: string;
+}) {
+  const [favorited, toggleSave] = useFavorite(id);
   const [state, setState] = useState({ count: star.count, starred: star.starred });
   const [pending, setPending] = useState(false);
+  const target = targetFor(id);
 
   const toggle = useCallback(() => {
     if (!star.signedIn || pending) return;
     const wanted = !state.starred;
     const rollback = state;
+
+    /* The shelf half, before the request: `useFavorite` is optimistic and reconciled on its
+       own, so it needs no rollback here — a failed save leaves the star where the counter
+       says it is and the bookmark where the account says it is, which is the honest
+       outcome for two writes that can fail apart. */
+    if (target !== undefined && favorited !== wanted) toggleSave();
+
     setState({ starred: wanted, count: state.count + (wanted ? 1 : -1) });
     setPending(true);
     void (async () => {
@@ -450,7 +505,7 @@ function StarPill({ star }: { star: NonNullable<FavoriteStarProps["star"]> }) {
         setPending(false);
       }
     })();
-  }, [star.api, star.signedIn, pending, state]);
+  }, [star.api, star.signedIn, pending, state, target, favorited, toggleSave]);
 
   const label = star.signedIn
     ? state.starred
@@ -459,35 +514,24 @@ function StarPill({ star }: { star: NonNullable<FavoriteStarProps["star"]> }) {
     : "Sign in to star this";
 
   return (
-    <button
-      type="button"
+    <ActionPill
+      glyph="star"
+      label={state.starred ? "Starred" : "Star"}
+      count={state.count}
+      active={state.starred}
+      pressed={state.starred}
       onClick={toggle}
       disabled={!star.signedIn}
-      aria-pressed={state.starred}
-      aria-label={`${label}. ${state.count} stars.`}
-      title={star.signedIn ? undefined : "Sign in to star this."}
-      className={cx(
-        "inline-flex items-center gap-1.5 rounded-md border px-2.5 font-mono text-[11px] transition-colors duration-[120ms]",
-        state.starred ? "border-cyan/50 bg-cyan/10 text-cyan" : "border-line bg-surface text-muted",
-        star.signedIn ? "hoverable:hover:border-line-bright" : "cursor-not-allowed opacity-70",
-      )}
-    >
-      <svg
-        aria-hidden
-        viewBox="0 0 24 24"
-        width={14}
-        height={14}
-        fill={state.starred ? "currentColor" : "none"}
-        stroke="currentColor"
-        strokeWidth={1.75}
-        strokeLinejoin="round"
-      >
-        <path d="M12 3.5l2.47 5.006 5.53.804-4 3.9.944 5.507L12 16.9l-4.944 2.6.944-5.507-4-3.9 5.53-.804L12 3.5z" />
-      </svg>
-      {compact(state.count)}
-    </button>
+      ariaLabel={`${label}. ${state.count} stars.`}
+      title={
+        star.signedIn
+          ? undefined
+          : "Sign in to star this. A star is also what keeps it on your saved list."
+      }
+      className={className}
+    />
   );
 }
 
-/** Named so `StarPill`'s prop type can be pulled off the exported component's own props. */
+/** Named so `StarControl`'s prop type can be pulled off the exported component's own props. */
 type FavoriteStarProps = Parameters<typeof FavoriteStar>[0];

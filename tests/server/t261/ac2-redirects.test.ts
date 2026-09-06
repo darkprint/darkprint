@@ -1,5 +1,5 @@
 /* ============================================================
-   T261 AC2 — every one of the thirteen existing redirects still
+   T261 AC2 — every one of the fifteen existing redirects still
    resolves, held element-wise BY NAME.
 
    ── why this file exists at all ──
@@ -16,17 +16,62 @@
    `/install`. A parenthetical naming an instrument that does not
    cover what it claims is worse than no instrument, because it
    stops the next person looking — D-263-06's own argument. This
-   file is the thirteen, named individually, so a dropped rule reds
-   with the rule's own name in the message.
+   file names every rule individually, so a dropped rule reds with
+   the rule's own name in the message. It was the thirteen when it
+   was written and it is the fifteen now; the two arrivals since are
+   recorded below, each with what forced it.
 
    ── why BY NAME and never by count ──
    `expect(rules).toHaveLength(13)` is satisfied by deleting
    `/install` and adding anything at all, which is exactly what a
-   URL migration does: it ADDS the fourteenth. A count cannot tell
-   "the fourteenth arrived" from "the fourteenth arrived and
-   `/install` left with it". Every assertion below names a source.
+   URL migration does: it ADDS one. A count cannot tell "a new rule
+   arrived" from "a new rule arrived and `/install` left with it".
+   Every assertion below names a source.
 
-   ── the fourteenth is NOT here, and that is D-261-02 ──
+   ── a real fourteenth arrived on 2026-09-04, and moved on 2026-09-06 ──
+   The author asked `/reading-the-radar` off the site and chose a
+   redirect over an unlisting, so the retired page keeps its URL.
+   `/spec/scoring` had merged into that page and moved with it,
+   REPOINTED rather than chained: a 308 onto a route that itself 308s
+   costs every link written before the merge two hops, which is the
+   cost already recorded here for `/how-to-build-a-dark-factory`.
+   Both rows were added to the table below deliberately, which is what
+   the previous count-arrival case asks of whoever adds one.
+
+   Both landed on `/build` until the owner deleted that route
+   ("it is not useful and make confusion", 2026-09-06). A 308 onto a
+   deleted route is a 308 onto a 404, so the pair moved to
+   `/what-a-blueprint-is` — the Learn sequence's entry point, and
+   already the destination for `/spec` and `/concepts` two rows down.
+   The no-chaining argument above is unchanged and is why they were
+   repointed at the source rather than stacked behind the old target:
+   `/what-a-blueprint-is` is a real page and 308s nowhere.
+
+   ── and a fifteenth on 2026-09-06, which repointed two of the
+      fourteen at the same time ──
+   The owner folded the ontology browser into the spec page and
+   deleted the index: "move the ontology page in the /spec/ontology
+   substituing the "every term" box. Then, you can delete the
+   /ontology page". So `/ontology` becomes a source for the second
+   time in this repository's life — it was one until the accounts
+   pass gave it a page — and `/ontologies` and `/ontologies/:slug`
+   move with it.
+
+   Those two are REPOINTED at `/spec/ontology` rather than left
+   pointing at `/ontology`, which now 308s. That is the no-chaining
+   rule three paragraphs up, applied for the third time, and it is
+   the reason this arrives as one added row and two changed
+   destinations rather than as one added row alone.
+
+   `/ontology/<term>` is untouched and is NOT shadowed by the new
+   rule. A `source` with no parameter compiles to an anchored exact
+   pattern; `next.config.ts` records the check against the matcher
+   Next 16.2.11 ships. The last cell of the first block is the one
+   that would notice a page reappearing at `/ontology` and being
+   silently shadowed by its own redirect, which is the failure mode
+   that direction has.
+
+   ── B-09 is still NOT one of them, and that is D-261-02 ──
    B-09's `/blueprints/{slug}` migration does NOT add a config
    rule. D-261-02 refused the config arm twice over — a static rule
    cannot name an owner that is not in the URL, and
@@ -45,36 +90,45 @@ import { describe, expect, it } from "vitest";
 import nextConfig from "../../../next.config";
 
 /**
- * The thirteen, source -> destination, in `next.config.ts`'s own order.
+ * The fifteen, source -> destination, in `next.config.ts`'s own order.
  *
  * Written out rather than read off the config: a table derived from the subject agrees
  * with the subject by construction and could not fail. This is the independent statement
  * of what the redirect table is FOR, which is the only thing that can disagree with it.
  */
-const THIRTEEN: readonly (readonly [source: string, destination: string])[] = [
+const FIFTEEN: readonly (readonly [source: string, destination: string])[] = [
   ["/gallery", "/blueprints"],
   ["/parts", "/nodes"],
   ["/parts/:slug", "/nodes"],
-  ["/ontologies", "/ontology"],
-  ["/ontologies/:slug", "/ontology"],
+  ["/ontology", "/spec/ontology"],
+  ["/ontologies", "/spec/ontology"],
+  ["/ontologies/:slug", "/spec/ontology"],
   ["/how-to-build-a-dark-factory", "/towards-a-dark-factory"],
   ["/towards-a-dark-factory/the-climb", "/towards-a-dark-factory"],
   ["/which-tasks", "/towards-a-dark-factory"],
   ["/towards-a-dark-factory/which-tasks", "/towards-a-dark-factory"],
   ["/spec", "/what-a-blueprint-is"],
-  ["/spec/scoring", "/reading-the-radar"],
+  ["/spec/scoring", "/what-a-blueprint-is"],
+  ["/reading-the-radar", "/what-a-blueprint-is"],
   ["/concepts", "/what-a-blueprint-is"],
   ["/install", "/skill"],
 ];
 
-/** The five nothing else in the repository checks. Named so the gap cannot silently reopen. */
-const UNCOVERED_ELSEWHERE = new Set([
-  "/gallery",
-  "/parts",
-  "/parts/:slug",
-  "/ontologies/:slug",
-  "/install",
-]);
+/**
+ * The ones nothing else in the repository checks. Named so the gap cannot silently reopen.
+ *
+ * It was five and is four. `/ontologies/:slug` left on 2026-09-06: it had nobody at all
+ * until `components/ontology/canonical-route.test.ts` was rewritten by the ontology fold to
+ * name all three ontology paths one by one, where it had named only `/ontologies` before.
+ * The fifteenth rule, `/ontology`, never enters this set — `nav.test.ts`'s `RENAMED` carries
+ * it, asserting everything this file asserts and adding that no chrome table names it.
+ *
+ * Read off that file rather than assumed: it is another lane's, it was mid-rewrite while
+ * this table was being edited, and a coverage claim about a file somebody else is changing
+ * is exactly the false claim this suite's own header was written about. If that rewrite is
+ * reverted, `/ontologies/:slug` and `/ontologies` both come back here.
+ */
+const UNCOVERED_ELSEWHERE = new Set(["/gallery", "/parts", "/parts/:slug", "/install"]);
 
 async function rules() {
   return (await nextConfig.redirects?.()) ?? [];
@@ -92,10 +146,10 @@ function routeExists(path: string): boolean {
   return existsSync(join(process.cwd(), dir, "page.tsx"));
 }
 
-describe("AC2: the thirteen existing redirects still resolve", () => {
+describe("AC2: the fifteen existing redirects still resolve", () => {
   /*
    * The premise. It fails outside every cell below, because all of them are lookups and a
-   * lookup against an EMPTY table reports "no redirect for X" thirteen times — thirteen
+   * lookup against an EMPTY table reports "no redirect for X" once per named rule — fifteen
    * reds that all say the wrong thing. If `redirects()` is gone or answers nothing, that
    * is one fact and it gets one message.
    */
@@ -108,7 +162,7 @@ describe("AC2: the thirteen existing redirects still resolve", () => {
     expect((await rules()).length, "the redirect table is empty").toBeGreaterThan(0);
   });
 
-  it.each(THIRTEEN)("%s -> %s, permanently, onto a page that exists", async (source, destination) => {
+  it.each(FIFTEEN)("%s -> %s, permanently, onto a page that exists", async (source, destination) => {
     const table = await rules();
     const rule = table.find((entry) => entry.source === source);
 
@@ -135,13 +189,19 @@ describe("AC2: the thirteen existing redirects still resolve", () => {
   });
 
   /*
-   * And that none of the thirteen has quietly become unreachable from the other end.
+   * And that none of the fifteen has quietly become unreachable from the other end.
    *
    * A source that ALSO has a `page.tsx` is shadowed: redirects run before the filesystem,
    * so the page would be silently unreachable rather than loudly wrong. nav.test.ts holds
-   * this for its seven; the other six had nobody.
+   * this for its eight; the other seven had nobody.
+   *
+   * `/ontology` is the live case rather than the hypothetical one. It HAD a page until
+   * 2026-09-06 and the redirect was added in the same wave the page was deleted in, so
+   * until both halves land this cell reds saying the page is back — which is the true
+   * statement, and the repair is the deletion the owner asked for and not an exemption
+   * here.
    */
-  it.each(THIRTEEN.map(([source]) => source))("%s has no page shadowing its redirect", (source) => {
+  it.each(FIFTEEN.map(([source]) => source))("%s has no page shadowing its redirect", (source) => {
     // `:slug` is a pattern rather than a path and cannot have a page of its own.
     if (source.includes(":")) return;
     expect(routeExists(source), `${source} has a page.tsx again, so its redirect is dead`).toBe(false);
@@ -155,25 +215,25 @@ describe("AC2's own instrument", () => {
    * reds, which is loud and fine), or the config growing rules this table never mentions
    * (which is SILENT — and is exactly what a URL migration does).
    */
-  it("names every rule the config actually carries, so a fourteenth cannot arrive unnoticed", async () => {
+  it("names every rule the config actually carries, so a sixteenth cannot arrive unnoticed", async () => {
     const table = await rules();
-    const named = new Set(THIRTEEN.map(([source]) => source));
+    const named = new Set(FIFTEEN.map(([source]) => source));
     const unnamed = table.map((entry) => entry.source).filter((source) => !named.has(source));
 
     expect(
       unnamed,
       `next.config.ts carries redirect rules this suite does not name.\n\n` +
-        `If this is B-09's fourteenth, it is in the WRONG PLACE: D-261-02 refused the config ` +
+        `If this is B-09's rule, it is in the WRONG PLACE: D-261-02 refused the config ` +
         `arm twice over — a static rule cannot name an owner that is not in the URL, and ` +
         `\`/blueprints/:slug\` would also match \`/blueprints/{owner}\` and shadow the ` +
         `filesystem. The redirect is a page-level redirector; see ac1-redirector.test.ts.\n\n` +
-        `If it is a legitimate fourteenth from some other change, add it to THIRTEEN with its ` +
+        `If it is a legitimate sixteenth from some other change, add it to FIFTEEN with its ` +
         `reason — the table is the independent statement, so it has to be updated deliberately.`,
     ).toEqual([]);
   });
 
-  it("counts thirteen, as a floor under the named table rather than instead of it", () => {
-    expect(THIRTEEN).toHaveLength(13);
-    expect(new Set(THIRTEEN.map(([s]) => s)).size, "a duplicated source hides a dropped one").toBe(13);
+  it("counts fifteen, as a floor under the named table rather than instead of it", () => {
+    expect(FIFTEEN).toHaveLength(15);
+    expect(new Set(FIFTEEN.map(([s]) => s)).size, "a duplicated source hides a dropped one").toBe(15);
   });
 });

@@ -14,7 +14,8 @@
    the names Attractor reserves for them, and the runner acts on
    them: `spec` becomes `prompt`, `name` becomes `label`, `model`
    becomes `llm_model`, `params.max_iterations` becomes
-   `max_retries`, and `type` and `phases` become the node's
+   `max_retries`, `params.tool_command` becomes the node attribute
+   of the same name, and `type` and `phases` become the node's
    `class` (prefixed `dp-`), which a `model_stylesheet` selects
    on. Write those fields for a machine that will execute them.
 
@@ -124,9 +125,25 @@ export interface NodeCard {
    * **A default rather than a binding**, and that is the whole of its contract. Engine
    * spec §2.6 reserves `llm_model` as "LLM model identifier. Overridable by stylesheet",
    * and §8 gives the graph a `model_stylesheet` whose rules set the model for every node
-   * matching a shape, a class or an id. An explicit node attribute outranks the sheet, so
-   * `attractor/emit.ts` writing this field onto the node is what makes the downloaded
-   * bundle run on the named model until whoever runs it says otherwise.
+   * matching a shape, a class or an id.
+   *
+   * **An explicit node attribute outranks the sheet**, and the spec says so twice. §8.5
+   * gives the resolution order and puts the explicit node attribute first, above the
+   * matching stylesheet rule, above the graph-level default, above the handler default,
+   * and it gives the mechanism in the same section: the stylesheet is a transform that
+   * "only sets properties that the node does not already have explicitly". §8.3 states the
+   * same rule from the selector side, "Explicit node attributes always override stylesheet
+   * values (highest precedence)", and its specificity table ranks the sheet's own rules
+   * against each other rather than against the node. So `attractor/emit.ts` writing this
+   * field onto the node is what makes the downloaded bundle run on the named model until
+   * whoever runs it says otherwise, and a sheet the recipient adds cannot take it back.
+   *
+   * §2.6 is cited above for the NAME and never for the ranking. Its whole gloss is
+   * "Overridable by stylesheet", which says the sheet can reach a node and says nothing
+   * about what happens when both speak; reading it as a ranking is how four surfaces on
+   * this site came to print the reverse, and `components/spec/rows.test.ts` holds those
+   * four to §8.5 now. This docblock is the fifth carrier of the same claim, and
+   * `schema.test.ts` holds it to the same thing.
    *
    * Absent on most cards, and absence is an answer rather than a hole: the node takes
    * whatever the graph or the runner supplies. Nothing that renders a card may draw the
@@ -163,7 +180,36 @@ export interface NodeCard {
    * instruction, and absence carries no judgement.
    */
   skill?: string;
-  /** Nested configuration, free-form but JSON-serializable. */
+  /**
+   * Nested configuration for the node, free-form but JSON-serializable.
+   *
+   * Free-form is not the same as unread. Two top-level keys are interpreted, and an author
+   * who does not know which they are is one edit away from moving a published score or a
+   * runnable bundle without meaning to:
+   *
+   * `max_iterations`, also spelled `maxIterations` or `max_retries`, is the iteration cap.
+   * `card/iteration-cap.ts` is its one reader and two callers ask it the same question:
+   * `analysis/security.ts` charges doc 3 §4.1's `unbounded-loop` against a cycle no node
+   * of which declares a cap, and `attractor/emit.ts` writes the value onto the exported
+   * node as Attractor's reserved `max_retries`. One key, a security score and a runnable
+   * DOT.
+   *
+   * `tool_command` is the shell command a `shell-tool` node runs, and it is the whole of
+   * that node's instruction. Engine spec §4.10's tool handler reads a node attribute of
+   * that name and FAILs the node outright when it is empty ("No tool_command specified"),
+   * so a `shell-tool` card that omits it describes a node that cannot run: `validate.ts`
+   * says so at warning severity. Carrying it onto the exported node under Attractor's own
+   * name is `attractor/emit.ts`'s half.
+   *
+   * It sits in `params` rather than as a top-level card field on the owner's call. `params`
+   * already carries runner configuration and a command is more of that, so a shell-tool
+   * node costs the wire format no new key and every card written before the term still
+   * parses.
+   *
+   * Every other key travels with the card to whoever runs the graph and is read by nothing
+   * here, which is what the field is for. A third interpreted key belongs in this list on
+   * the day it is added.
+   */
   params: Record<string, JsonValue>;
 
   /* 3.3 interfaces */
@@ -237,21 +283,38 @@ export interface NodeCard {
   /**
    * Semver of the card itself. §4: a published version is never edited in place.
    *
-   * The only version a card declares. There used to be an `ontology_version` here too,
-   * naming the vocabulary the author wrote the card against, and the engine resolved that
-   * string to a stored vocabulary before reading the card. Nothing consumed the
-   * resolution: a published release stores its whole scorecard at publish time, so a score
-   * is a fact written once and never recomputed against an older vocabulary, and the
-   * version it was computed under is recorded on the score itself. The field asked every
-   * author to maintain an answer no reader had a question for, and the two diagnostics it
-   * fed reported disagreement between three copies of one number. `deprecated: {since,
-   * replacedBy}` is what lets the one living vocabulary add and retire terms without any
-   * of that.
+   * The only version anywhere in DarkPrint that names a contract. There used to be an
+   * `ontology_version` here too, naming the vocabulary the author wrote the card against,
+   * and the engine resolved that string to a stored vocabulary before reading the card.
+   * Nothing consumed the resolution, and the field asked every author to maintain an
+   * answer no reader had a question for. The vocabulary has since stopped carrying a
+   * version at all: it names what an Attractor node is, and Attractor's shapes are fixed
+   * by its spec. `deprecated: {since, replacedBy}` is what lets the one living vocabulary add and
+   * retire terms without any of that.
+   *
+   * This one stays, and it is not the same kind of thing: it pins a node to an exact card,
+   * it travels to Attractor as `card="id@version"`, and §4 makes a published version
+   * immutable so the pin means something.
    */
   version: string;
   author?: string;
   provenance?: string;
 }
+
+/**
+ * The `params` key that carries a `shell-tool` node's command (engine spec §4.10).
+ *
+ * Two modules ask the same question of it. `card/validate.ts` warns when a `shell-tool`
+ * card leaves it empty, and `attractor/emit.ts` writes the value onto the exported node
+ * under Attractor's own `tool_command`. They have to spell it the same way and agree on
+ * what counts as empty, or a card is told it is complete and exports without a command, or
+ * told it is incomplete and exports with one. That is the accident `card/iteration-cap.ts`
+ * was extracted to end over the same bag, with three keys instead of one.
+ *
+ * Named here because this file owns the wire vocabulary, so there is one spelling to import
+ * rather than two literals to keep level.
+ */
+export const TOOL_COMMAND_KEY = "tool_command";
 
 /** "id@version" — how a DOT node pins the exact card it instantiates. */
 export type CardRef = string;

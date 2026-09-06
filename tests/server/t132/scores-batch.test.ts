@@ -7,24 +7,25 @@
    `scores.autonomy.isDarkFactory`, so a tile is not even
    FILTERABLE without one" (D-260-21).
 
-   ── the live defect this file must not assert around ──
-   D-260-24: nothing in this product has ever written
-   `release.scored_ontology_version_id`. `publish.ts` writes three
-   fields and `registry/scores.ts:82` requires four, so `scoresOf`
-   answers `undefined` for every blueprint ever published and this
-   reader answers an EMPTY MAP over the whole seeded store. That is
-   a correct reader over a store with a hole in it, and D-132-01 is
-   explicit: "cells must not assert populated scorecards through
-   these readers yet".
+   ── the defect this file was written around, and how it closed ──
+   D-260-24: nothing in this product had ever written
+   `release.scored_ontology_version_id`. `publish.ts` wrote three
+   fields and `registry/scores.ts` required four, so `scoresOf`
+   answered `undefined` for every blueprint ever published and this
+   reader answered an EMPTY MAP over the whole seeded store. That
+   was a correct reader over a store with a hole in it, and
+   D-132-01 was explicit: "cells must not assert populated
+   scorecards through these readers yet".
 
-   So the emptiness is asserted as the criterion it is — over
-   releases written by the real writer, `addRelease`, which is the
-   only honest way to say "every blueprint this product can publish
-   has no scorecard". The populated half needs a fixture that
-   stamps the column by hand, `stampScorecard`, and every cell
-   using it says so in its own name. See that function's docblock:
-   it is more complete than any writer in this product, which is
-   the T200 shape this project has already paid for once.
+   `0009_drop_ontology_versioning` closed it by removing the fourth
+   field rather than by filling it: the column, the
+   `ontology_version` table behind it and `AutonomyResult`'s own
+   stamp are all gone, because the vocabulary names what an
+   Attractor node IS and Attractor carries no vocabulary version.
+   So the emptiness cell inverted into its opposite, and the
+   `stampScorecard` fixture stopped being more complete than any
+   writer. It is kept because it drives payloads the seeded corpus
+   does not, and the cells naming it say "stand-in" as history.
 
    ── the oracle collapsed, and the literals are why that is
       survivable ──
@@ -75,7 +76,7 @@ import {
   scratchDatabase,
   stampScorecard,
 } from "./contract";
-import { bundleBySlug, seedAccount, seedOntology, seedRelease, type SeededAccount } from "../t090/fixtures";
+import { bundleBySlug, seedAccount, seedRelease, type SeededAccount } from "../t090/fixtures";
 
 const gate = new FixtureGate();
 let s: ReturnType<FixtureGate["get"]>;
@@ -88,10 +89,9 @@ let stamped: BundleFixture;
 let plain: BundleFixture;
 
 const STAMP = {
-  /* `ontologyVersion` is part of the payload, because that is where the stamp lives:
-     `computeAutonomy` puts it on `AutonomyResult` and `scores.ts` reads it from there. It
-     used to be a separate uuid column and this literal did not carry it. */
-  autonomy: { autonomyClass: "supervised", level: 2, isDarkFactory: false, ontologyVersion: "0.1.0" },
+  /* No `ontologyVersion`. It was a uuid column, then a member of this payload; 0009 took
+     both, so a literal carrying one would be a shape `computeAutonomy` no longer produces. */
+  autonomy: { autonomyClass: "supervised", level: 2, isDarkFactory: false },
   security: { level: 3, raw: 4, penalties: ["shell"], findings: [], rationale: "4 to 3" },
   phaseCoverage: { covered: ["planning", "build"], missing: ["ship"], byPhase: {}, unphased: [] },
 } as const;
@@ -99,7 +99,6 @@ const STAMP = {
 beforeAll(async () => {
   await gate.build(async () => {
     s = await scratchDatabase("scores");
-    await seedOntology(s.db);
 
     /* Half the store goes in through the writer the product actually uses. Three of the nine
        content bundles is enough to say "every one of them" without paying for all nine. */
@@ -112,7 +111,7 @@ beforeAll(async () => {
     owner = await insertAccount(s, mark("t132-scores").toLowerCase());
     stamped = await insertBundle(s, { owner, slug: "stamped-bundle" });
     plain = await insertBundle(s, { owner, slug: "plain-bundle" });
-    await stampScorecard(s, stamped.releaseId, { ...STAMP, ontologyVersion: "0.1.0" });
+    await stampScorecard(s, stamped.releaseId, STAMP);
     return s;
   });
 }, 120000);
@@ -138,23 +137,22 @@ async function scoresFor(actor: unknown, keys: readonly { ownerHandle: string; s
 /* --------------------- the fixture, asserted rather than assumed --------------------- */
 
 /**
- * A guard on THIS SUITE, green with nothing built, and it is here because the emptiness
- * criterion below is a claim about the STORE as much as about the reader.
+ * A guard on THIS SUITE, green with nothing built, and it is here because the criterion
+ * below is a claim about the STORE as much as about the reader.
  *
- * "`scoresFor` answers nothing for every release a publish can write" is satisfied just as
- * well by a fixture that wrote no releases, or wrote them with no `analysis` at all — and in
- * the blind position every cell in this file reds identically whether the seeding worked or
- * silently did nothing, because the absent member is reported before the fixture is touched.
- * So the premise is measured: three releases, each carrying all three payloads a publish
- * writes, and each with the fourth column NULL exactly as `publish.ts` leaves it.
+ * "`scoresFor` answers for every release a publish can write" is satisfied just as well by a
+ * fixture that wrote no releases — and in the blind position every cell in this file reds
+ * identically whether the seeding worked or silently did nothing, because the absent member
+ * is reported before the fixture is touched. So the premise is measured: three releases,
+ * each carrying all three payloads a publish writes.
  */
 describe("the fixture this file's criteria rest on", () => {
-  it("wrote three releases with a publish's full analysis and no stamp", async () => {
+  it("wrote three releases with a publish's full analysis", async () => {
     const s = gate.get();
     const rows = await query(
       s,
       "select r.autonomy is not null as has_autonomy, r.security is not null as has_security, " +
-        "r.phase_coverage is not null as has_phase, r.scored_ontology_version_id is null as unstamped " +
+        "r.phase_coverage is not null as has_phase " +
         "from release r join bundle b on b.id = r.bundle_id join account a on a.id = b.owner_id " +
         "where a.handle = $1",
       [written[0]?.ownerHandle],
@@ -162,32 +160,34 @@ describe("the fixture this file's criteria rest on", () => {
     expect(
       rows.length,
       `\`seedRelease\` writes through \`addRelease\`, the writer \`publish.ts\` composes. If ` +
-        `these rows are absent the emptiness criterion below is green about an empty table.`,
+        `these rows are absent the criterion below is green about an empty table.`,
     ).toBe(written.length);
     for (const row of rows) {
       expect(row).toEqual({
         has_autonomy: true,
         has_security: true,
         has_phase: true,
-        unstamped: true,
       });
     }
   });
 
-  it("stamped the stand-in release on all four columns", async () => {
+  /* A fourth column, `scored_ontology_version_id`, was read by both cells here: null on the
+     writer-written rows and not null on the stand-in, which is what made the stand-in more
+     complete than any writer. 0009 dropped it, so both reads go and neither claim survives
+     as anything to state. */
+  it("stamped the stand-in release on all three columns", async () => {
     const s = gate.get();
     const [row] = await query(
       s,
-      "select autonomy is not null as a, security is not null as sec, phase_coverage is not null as p, " +
-        "scored_ontology_version_id is not null as stamp from release where id = $1",
+      "select autonomy is not null as a, security is not null as sec, phase_coverage is not null as p " +
+        "from release where id = $1",
       [stamped.releaseId],
     );
     expect(
       row,
-      `The positive control's whole value is that the row is complete in a way no writer in ` +
-        `this product makes it. If the stamp did not land, every "stand-in" cell below would ` +
-        `be measuring the same empty answer as the emptiness cells and agreeing with them.`,
-    ).toEqual({ a: true, sec: true, p: true, stamp: true });
+      `If the stamp did not land, every "stand-in" cell below would be measuring an empty ` +
+        `answer and agreeing with the writer-written cells for the wrong reason.`,
+    ).toEqual({ a: true, sec: true, p: true });
   });
 });
 
@@ -230,7 +230,7 @@ describe("D-132-04 C-A: one call, keyed owner/slug", () => {
     const twins = [stamped.slug];
     for (const tag of ["twin-b", "twin-c", "twin-d", "twin-e"]) {
       const extra = await insertBundle(s, { owner, slug: `stamped-${tag}` });
-      await stampScorecard(s, extra.releaseId, { ...STAMP, ontologyVersion: "0.1.0" });
+      await stampScorecard(s, extra.releaseId, STAMP);
       twins.push(extra.slug);
     }
     const keys = twins.map((slug) => ({ ownerHandle: owner.handle, slug }));
@@ -266,12 +266,11 @@ describe("D-260-24: what a release this product can publish carries", () => {
    * unscored. Its own docblock said it would go green the day D-260-24's fix landed and
    * should then be re-read rather than deleted, because the fix changes what it means.
    *
-   * This is that re-reading, one fix later than expected. `publish.ts` closed the hole by
-   * resolving the version to a row id; removing the vocabulary-version registry took the
-   * resolution away again, and the rule moved instead: the version a score was computed
-   * under is read off the stored `autonomy`, which `addRelease` has always carried. So
-   * these three releases DO have scorecards, and asserting that is what keeps a reader
-   * that answers nothing to everything from passing here.
+   * This is that re-reading, two fixes later than expected. `publish.ts` first closed the
+   * hole by resolving the version to a row id; then `0009_drop_ontology_versioning` removed
+   * the fourth field entirely, column, table and `AutonomyResult` stamp together. So these
+   * three releases DO have scorecards, and asserting that is what keeps a reader that
+   * answers nothing to everything from passing here.
    */
   it("answers an entry for every release written by `addRelease`", async () => {
     const map = await scoresFor(anonymous, written);
@@ -279,7 +278,7 @@ describe("D-260-24: what a release this product can publish carries", () => {
       [...map.keys()].sort(),
       `These three went in through \`addRelease\` with a full \`analysis\`, which is ` +
         `everything a publish writes. An empty answer means the batch reader still wants a ` +
-        `field no writer produces — the shape D-260-24 named, at a different column.`,
+        `field no writer produces — the shape D-260-24 named.`,
     ).toEqual(written.map(keyOf).sort());
   });
 
@@ -305,45 +304,28 @@ describe("the stand-in fixture, which is no longer standing in for anything", ()
    * the row directly. That used to create a state unreachable through `publish.ts` — it wrote
    * a fourth column no writer wrote (D-260-24) — and each cell said so in its own name,
    * because a fixture more complete than any writer is exactly the shape T200's suite was
-   * green about. It writes what a publish writes now, so the label is history rather than a
-   * warning, and the block is kept because it drives values the seeded corpus does not (a
-   * chosen `security` payload, a release with `security` deliberately null).
+   * green about. 0009 dropped that column, so the label is history rather than a warning, and
+   * the block is kept because it drives values the seeded corpus does not (a chosen
+   * `security` payload, a release with `security` deliberately null).
    */
   it("stand-in: returns the stamped scorecard, field for field", async () => {
     const map = await scoresFor(anonymous, [{ ownerHandle: owner.handle, slug: stamped.slug }]);
     const value = map.get(`${owner.handle}/${stamped.slug}`) as Record<string, unknown> | undefined;
     expect(
       value,
-      `The stamped release carries all four of \`autonomy\`, \`security\`, \`phase_coverage\` ` +
-        `and \`scored_ontology_version_id\`. If this is absent while the emptiness cells above ` +
-        `pass, the reader answers nothing to everything and the sweep beside it was vacuous.`,
+      `The stamped release carries all three of \`autonomy\`, \`security\` and ` +
+        `\`phase_coverage\`. If this is absent while the writer-written cells above pass, the ` +
+        `reader is answering off something other than the columns and the sweep beside it ` +
+        `was vacuous.`,
     ).toBeDefined();
     expect(value?.autonomy).toEqual(STAMP.autonomy);
     expect(value?.security).toEqual(STAMP.security);
     expect(value?.phaseCoverage).toEqual(STAMP.phaseCoverage);
   });
 
-  /**
-   * `Scores.ontologyVersion` is the version string the three axes were computed under, read
-   * off the stored `autonomy`. It used to be resolved through
-   * `release.scored_ontology_version_id` — a JOIN, not the column — and a reader projecting
-   * the uuid straight out satisfied "the member is present" while putting a database id on a
-   * page that prints a version. The column is still written by this fixture and still holds
-   * that uuid, so the negative below is still drivable and still worth driving.
-   */
-  it("stand-in: answers the version STRING, never the row id the column still holds", async () => {
-    const map = await scoresFor(anonymous, [{ ownerHandle: owner.handle, slug: stamped.slug }]);
-    const value = map.get(`${owner.handle}/${stamped.slug}`) as Record<string, unknown> | undefined;
-    const [row] = await query(s, "select scored_ontology_version_id as id from release where id = $1", [
-      stamped.releaseId,
-    ]);
-    expect(value?.ontologyVersion).toBe("0.1.0");
-    expect(
-      value?.ontologyVersion,
-      `\`scored_ontology_version_id\` is a UUID FK to \`ontology_version.id\` (D-260-24 states ` +
-        `the shape so it is not re-derived). The published member is the VERSION.`,
-    ).not.toBe(row?.id);
-  });
+  /* A cell holding `Scores.ontologyVersion` to the version STRING and away from the
+     `scored_ontology_version_id` uuid stood here. 0009 dropped both the member and the
+     column, so there is no pair left for it to keep apart. */
 
   it("stand-in: agrees with `scoresOf` on the stamped release too (a tautology against this implementation)", async () => {
     const map = await scoresFor(anonymous, [{ ownerHandle: owner.handle, slug: stamped.slug }]);
@@ -358,14 +340,14 @@ describe("the stand-in fixture, which is no longer standing in for anything", ()
   });
 
   /**
-   * "a half-written scorecard is not a scorecard — all four are required together or the
+   * "a half-written scorecard is not a scorecard — all three are required together or the
    * answer is that there is none" (`registry/scores.ts`). Asserted by taking ONE field away
    * from an otherwise complete row, which is the only construction that separates the
-   * four-field rule from "has a stamp".
+   * all-three rule from "autonomy is present".
    */
-  it("stand-in: omits a release whose stamp is there and whose security is not", async () => {
+  it("stand-in: omits a release whose autonomy is there and whose security is not", async () => {
     const partial = await insertBundle(s, { owner, slug: "partial-bundle" });
-    await stampScorecard(s, partial.releaseId, { ...STAMP, ontologyVersion: "0.1.0" });
+    await stampScorecard(s, partial.releaseId, STAMP);
     await query(s, "update release set security = null where id = $1", [partial.releaseId]);
     const map = await scoresFor(anonymous, [
       { ownerHandle: owner.handle, slug: partial.slug },
@@ -373,8 +355,8 @@ describe("the stand-in fixture, which is no longer standing in for anything", ()
     ]);
     expect(
       map.has(`${owner.handle}/${partial.slug}`),
-      `Four required together. A reader keyed on the stamp alone answers an entry here whose ` +
-        `\`security\` is null, and \`GalleryBrowser\` reads \`security.level\` off it.`,
+      `Three required together. A reader keyed on \`autonomy\` alone answers an entry here ` +
+        `whose \`security\` is null, and \`GalleryBrowser\` reads \`security.level\` off it.`,
     ).toBe(false);
     expect(map.has(`${owner.handle}/${stamped.slug}`)).toBe(true);
   });
@@ -394,7 +376,7 @@ describe("the stand-in fixture, which is no longer standing in for anything", ()
 
   it("stand-in: shows the owner their own private blueprint's scorecard and a stranger nothing", async () => {
     const sealed = await insertBundle(s, { owner, slug: "sealed-scored", visibility: "private" });
-    await stampScorecard(s, sealed.releaseId, { ...STAMP, ontologyVersion: "0.1.0" });
+    await stampScorecard(s, sealed.releaseId, STAMP);
     const stranger = await insertAccount(s, mark("t132-scores-stranger").toLowerCase());
     const key = { ownerHandle: owner.handle, slug: sealed.slug };
     const asOwner = await scoresFor(account(owner.id, owner.handle), [key]);

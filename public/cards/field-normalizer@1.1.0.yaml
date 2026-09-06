@@ -1,0 +1,60 @@
+id: field-normalizer
+name: Field Normalizer
+type: agent
+phase: implementation
+
+action: >-
+  Coerce the extracted fields onto the target shape, units, dates, casing, null spellings, and
+  emit one canonical record per input row, re-folding anything the repair pass has sent back.
+spec: >-
+  Take the field values arriving on `fields`, a JSON object per document or a row per delta,
+  whichever form you are handed, and coerce them onto the canonical record shape: dates to
+  ISO-8601, quantities to the canonical unit, enumerated values to their canonical casing, and
+  every spelling of emptiness (`""`, `-`, `N/A`, `unknown`) to a real null. Resolve ambiguous
+  date and number formats as `en-GB`, so `03/04` is the third of April. Emit exactly one record
+  per input row on `record`, carrying that row's identity through untouched; coerce values, and
+  never invent one to fill a gap. A record arriving on `repaired` is one you have already seen,
+  mended elsewhere: normalize it the same way and emit it the same way, but stop after a record
+  has come back three times and drop it instead of sending it round again.
+model: claude-haiku-4-5
+agent: Normalizer
+tools: []
+mcp: []
+skill: skills/field-normalizer.md
+params:
+  locale: en-GB
+  max_retries: 3
+
+inputs:
+  - name: fields
+    type: structured
+    description: >-
+      Field values as the extractor produced them, in whatever structured form it works in,
+      a JSON object per document or a row per delta.
+  - name: repaired
+    type: json
+    required: false
+    description: A record that failed the schema gate and came back mended, for a second pass.
+outputs:
+  - name: record
+    type: json
+    description: One record in the target shape, ready for the gate to accept or reject.
+dependencies:
+  - extract
+  - repair
+cannot: []
+will_not:
+  - invent a value to fill a gap
+
+risk_markers: []
+notes: >-
+  `fields` is typed `structured` rather than `json` on purpose: the same normalizer takes JSON
+  objects from a document extractor and rows from a SQL delta reader, and those two are siblings
+  in the lattice. `max_retries: 3` caps how many times one record may re-enter from the repair
+  path before it is abandoned, and the number does not move as the key is renamed. Engine spec
+  §2.6 counts the attempts that follow the initial execution, and a re-entry is exactly that: the
+  spec above drops a record that has come back three times, so three retries and four passes over
+  that record is what the sentence and the key now both say.
+
+version: 1.1.0
+author: lupo

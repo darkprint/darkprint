@@ -33,11 +33,16 @@
    second axis.
 
    ── what these cells deliberately do NOT assert ──
-   Nothing scorecard-driven. D-260-24 is live: `scoresOf` answers
-   `undefined` for every blueprint because nothing has ever written
-   `release.scored_ontology_version_id`, and `searchBlueprints` pays
-   for scorecards only when `phase`/`autonomy`/`df` is set. A cell
-   asserting any of it through MCP reds a correct module today.
+   Nothing scorecard-driven. D-260-24 was live when they were
+   written: `scoresOf` answered `undefined` for every blueprint
+   because nothing had ever written
+   `release.scored_ontology_version_id`, and a cell asserting any
+   of it through MCP would have redded a correct module.
+   `0009_drop_ontology_versioning` closed that by dropping the
+   column and the fourth-field rule with it, so the abstention is
+   now a scope choice rather than a workaround: `searchBlueprints`
+   pays for scorecards only when `phase`/`autonomy`/`df` is set,
+   and T132's own suites hold what it answers.
 
    Nothing about WHICH string `author` carries. Charge 1 in the T220
    log: the owner handle is `darkprint` for every seeded blueprint

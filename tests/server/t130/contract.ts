@@ -60,7 +60,6 @@
    task's writer makes every red ambiguous between two modules.
    ============================================================ */
 
-import { randomUUID } from "node:crypto";
 import { readdirSync, type Dirent } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -849,23 +848,6 @@ export async function insertBundle(
   };
 }
 
-export interface OntologyFixture {
-  id: string;
-  version: string;
-}
-
-export async function insertOntologyVersion(s: Scratch, version: string): Promise<OntologyFixture> {
-  const [row] = await s.query(
-    "insert into ontology_version (version, digest) values ($1, $2) returning id",
-    [version, `sha256:${randomUUID().replaceAll("-", "")}`],
-  );
-  const id = row?.id;
-  if (typeof id !== "string") {
-    throw new Error(`Could not insert the ontology version fixture: got ${describe_(id)}.`);
-  }
-  return { id, version };
-}
-
 /**
  * The `OntologyTerm` body a namespaced term carries, in both of the stores below.
  *
@@ -910,31 +892,26 @@ export function storedVocabulary(
 }
 
 /**
- * A term namespaced `<handle>/<name>`, written to BOTH stores that could hold one.
+ * A term namespaced `<handle>/<name>`, on `release.local_vocabulary`.
  *
- * This is the shape of a contract ambiguity handled rather than picked. AC1 counts
- * "namespaced terms" and two stores could answer:
+ * It used to write BOTH stores that could hold one, because AC1's "namespaced terms" did not
+ * choose between them:
  *
  *   (a) `ontology_term` rows whose `term_id` starts with `<handle>/` — except that table's
- *       own docblock says "Core terms only", and core terms belong to nobody, so under this
- *       reading `counts.terms` is zero for every handle and the criterion is vacuous;
+ *       own docblock said "Core terms only", and core terms belong to nobody, so under this
+ *       reading `counts.terms` was zero for every handle and the criterion was vacuous;
  *   (b) the distinct namespaced ids in `release.local_vocabulary` across the handle's
  *       releases — which is where the schema says a namespaced overlay actually lives, and
  *       what `components/profile/load.ts` counts through the merged view.
  *
- * Writing both means every cells' claim — a handle with terms counts more than zero, a
- * handle with none counts zero, adding terms moves the number, a term namespaced to somebody
- * else does not count here — holds under EITHER reading. No cell picks one, and none of them
- * can go green by reading the store I happened to guess.
+ * `0009_drop_ontology_versioning` removed the table behind (a) along with the versions it
+ * was keyed to, so the ambiguity is settled by the schema rather than by this fixture. Every
+ * cell's claim was already true under (b); what is lost is the redundancy, not a claim.
  */
 export async function insertNamespacedTerm(
   s: Scratch,
-  o: { ontology: OntologyFixture; bundle: BundleFixture; termId: string },
+  o: { bundle: BundleFixture; termId: string },
 ): Promise<string> {
-  await s.query(
-    "insert into ontology_term (ontology_version_id, term_id, kind, body) values ($1, $2, $3, $4)",
-    [o.ontology.id, o.termId, "phase", JSON.stringify(namespacedTerm(o.termId))],
-  );
   const [row] = await s.query("select local_vocabulary from release where id = $1", [
     o.bundle.releaseId,
   ]);

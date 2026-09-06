@@ -45,7 +45,6 @@ import { ADMISSIBLE, loadExport, requiredFn as exportFn } from "../t090/contract
 import {
   scratchDatabase,
   seedAccount,
-  seedOntology,
   seedRelease,
   storedVocabulary,
   withoutLocalTerm,
@@ -63,7 +62,6 @@ beforeAll(async () => {
   try {
     const own = await scratchDatabase("t133_readers");
     scratch = own;
-    await seedOntology(own.db);
   } catch (error) {
     setupFailure = error;
   }

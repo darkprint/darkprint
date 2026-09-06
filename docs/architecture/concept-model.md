@@ -138,17 +138,38 @@ point `ResolvedBlueprint.digest` names it.
 | `fromPort` | `Port` | opt | resolved output port on `source`, where it could be resolved |
 | `toPort` | `Port` | opt | resolved input port on `target` |
 | `label` | `string` | opt | |
-| `condition` | `string` | opt | Attractor's edge guard, carried **verbatim and never parsed**. DarkPrint implements no part of Attractor's expression grammar. Lifted out of `attrs` and left in it as well, so no existing reader loses it |
-| `weight` | `string` | opt | Attractor's routing priority, carried verbatim as a **string**, never coerced to a number: `0` and `0.0` are different bytes in a file somebody else's runner reads |
+| `condition` | `string` | opt | Attractor's edge guard, carried **verbatim**, and since 2026-09-04 **parsed for syntax and evaluated by nothing**. The two halves are separate claims and the distinction is the whole of it: `lib/core/attractor/condition.ts` implements §10.2's grammar, so a guard Attractor's own lint would refuse is reported (`attractor/condition-syntax`, warning), and no caller anywhere can ask whether an edge is TAKEN, so the value is still read by no analyzer. §3.3 Step 1 is what evaluates it, at run time, on somebody else's machine. Lifted out of `attrs` and left in it as well, so no existing reader loses it |
+| `weight` | `string` | opt | Attractor's routing priority, carried verbatim as a **string**, never coerced to a number: `0` and `0.0` are different bytes in a file somebody else's runner reads. §3.3 breaks ties on it inside Step 1, among guarded edges whose conditions all evaluate true, and again among unguarded edges; it is not a filter |
 | `attrs` | `DotAttrs` | req | |
 
-**Neither field is read by any DarkPrint analyzer, and that is a rule rather than an
-omission.** A conditional edge counts exactly as much as an unconditional one, in every risk
+**Neither field's VALUE is read by any DarkPrint analyzer, and that is a rule rather than
+an omission.** A conditional edge counts exactly as much as an unconditional one, in every risk
 analysis, always: the guard is evaluated at run time, on another machine, against data
 DarkPrint never sees, so no static reading may treat a guarded edge as maybe-not-taken. The
 improvement is worth precisely what an author gains by writing `condition="false"` on the
 edge that leaks. Held by `lib/core/analysis/analyze.test.ts`, `lib/core/bundle/resolve.test.ts`
 and `lib/content/view.test.ts` — the schematic does not distinguish a guarded edge either.
+
+**Syntax checking does not weaken that rule and the two must not be conflated in a later
+editing pass.** Since 2026-09-04 every guard in the archive is parsed, and a guard §10.2
+refuses raises a warning; security level, findings, autonomy and markers stay byte-identical
+between a guarded bundle and its unguarded twin, which is what `analyze.test.ts`'s `scores
+identically` cell asserts. What a rule-7 finding says is *Attractor would not accept this
+expression*, never *this edge might not be taken*. `lib/core/attractor/condition.ts`'s own
+header states why it exports no `evaluate`: one would put `condition="false"` a single call
+away from deleting an edge out of a security walk.
+
+**What the archive routes on, as of 2026-09-04.** All nine topologies carry guards — 24 over
+12 forks — and every fork is one key against its own negation, because §10 has `=`, `!=` and
+`&&` with no disjunction, so any two-clause arm leaves a state matching neither and §3.2
+step 6 ends such a run silently as SUCCESS. Three keys are load-bearing: **`outcome`**
+(engine-set from the node's status, 7 forks), **`preferred_label`** (handler-set, 3 forks,
+used where the node succeeds either way and status cannot tell the branches apart), and
+**`context.lane`** (2 forks, written by `intent-router`'s `spec` since 2026-09-05, which
+tells the agent to put `lane` in Appendix C's `context_updates` — `docs/ARCHITECTURE.md`
+§11.0 Q17).
+In every pair the negation arm is the safe one, which is also the arm a missing key falls to,
+since §10.4 resolves an absent key to the empty string.
 
 ### `NodeCard`
 
@@ -163,12 +184,12 @@ onto camelCase by `validate.ts`. Status: `LIVE`.
 | `phases` | `phase` | `string[]` | req (may be `[]`) | any number of the five. Wire key is singular and accepts a scalar or a sequence. `[]` is a complete answer, never a hole (`:32-51`) |
 | `action` | `action` | `string` | req | short, machine-readable |
 | `spec` | `spec` | `string` | req | the natural-language instruction handed to the agent. Must be self-sufficient and must respect the graph's isolation rules |
-| `model` | `model` | `string` | opt | a **default**, not a binding; a graph `model_stylesheet` can override it. Priced as a minor bump |
+| `model` | `model` | `string` | opt | a **default**, not a binding: a graph `model_stylesheet` fills it in for nodes that declare none, and an explicit `model` here outranks the sheet (Attractor spec §8.3/§8.5). **This cell stated the precedence backwards until 2026-09-04**, and it was the last surviving copy of the inversion outside another lane's comment; nothing in the repository guarded any of the five surfaces that carried it, because a reversed precedence reads exactly as fluently as the right one. `components/spec/rows.test.ts` now pins the four shipped sentences by literal phrase. Priced as a minor bump |
 | `agent` | `agent` | `string` | opt | |
 | `tools` | `tools` | `string[]` | req (may be `[]`) | `tool` term ids |
 | `mcp` | `mcp` | `string[]` | req (may be `[]`) | **free text by design.** MCP server names as registered on the machine that runs the graph. Deliberately not ontology terms (`:88-100`) |
 | `skill` | `skill` | `string` | opt | a path inside the bundle. Nothing in the engine reads what it points at |
-| `params` | `params` | `Record<string, JsonValue>` | req | free-form, JSON-serializable. `card/bad-type` refuses nesting deeper than 100 |
+| `params` | `params` | `Record<string, JsonValue>` | req | free-form, JSON-serializable; `card/bad-type` refuses nesting deeper than 100. **Free-form is not uninterpreted: two keys are read on the way to a runner.** the iteration cap — `max_iterations`, `maxIterations` or `max_retries`, `ITERATION_CAP_KEYS` in that order — becomes the exported node's `max_retries` and decides whether a cycle counts as uncapped (`lib/core/card/iteration-cap.ts`); `tool_command` is the command a `shell-tool` node runs, emitted onto the node and read back by the importer (`TOOL_COMMAND_KEY`, `lib/core/card/schema.ts:315`). A key DarkPrint does not read on a given type is not a defect and raises nothing, which is what keeps the bag free-form; a `shell-tool` with no command is a node that cannot run and does raise |
 | `inputs` | `inputs` | `Port[]` | req | |
 | `outputs` | `outputs` | `Port[]` | req | |
 | `dependencies` | `dependencies` | `string[]` | req | ids of other cards this one receives data from. May also name a DOT node (`app/nodes/[...id]/page.tsx:778-783`) |
@@ -219,7 +240,7 @@ node collapse onto one digest however their YAML ordered its keys, which is what
 | `description` | `string` | req | may be empty; consumers drop the line rather than print a blank (`app/nodes/page.tsx:74-81`) |
 | `broader` | `string` | opt | parent term id. Subsumption, queried through `isA`. Functional: at most one parent |
 | `deprecated` | `TermDeprecation` | opt | a deprecated term stays valid |
-| `since` | `string` | req | ontology version that introduced it |
+| `since` | `string` | req | **the residue of ontology versioning, and it outlived the thing it names.** It reads *ontology version that introduced the term*; D-131 removed the version on 2026-09-05 and left the field, because removing it reaches `lib/content/ontology-file.ts:76` (the parser makes it a required string), `content/ontology/extensions.yaml:36` and all 54 core terms. Every core term carries `V01`, whose docblock (`core.ts:26`) says outright that it is a release rather than a version. §11.0 Q25 |
 | `defaultWeight` | `number` | opt | **local risk markers only.** No core term carries one; the seven core weights live in `DARKPRINT_CONFIG.security.weights` |
 | `impliesHuman` | `boolean` | opt | set on the two concrete human types. Picks the most specific term to *cite*, never a second membership rule (`lib/core/analysis/autonomy.ts:452-461`) |
 | `governsFlow` | `boolean` | opt | **the control-point membership rule, and unlike `impliesHuman` it IS one.** Set on `evaluative`, `orchestration` and `human-gate`, and INHERITED down `broader`. A flag rather than an `isA` test because the set spans three categories and `human-gate`'s single `broader` slot is already spent on `human-in-the-loop`; no `isA` test can name the set and a second parent per term would change every walk in `resolve.ts` for one metric |
@@ -237,7 +258,7 @@ node collapse onto one digest however their YAML ordered its keys, which is what
 ### `Ontology`
 
 `lib/core/ontology/types.ts:56`. Status: `LIVE`. Two instances exist: `CORE_ONTOLOGY`
-(`lib/core/ontology/core.ts`, version `0.1.0`, **53 terms** — 5 phases, 12 node types, 9 risk markers, 15 data types, 12 tools) and the archive's overlay
+(`lib/core/ontology/core.ts`, version `0.1.0`, **54 terms** — 5 phases, 13 node types, 9 risk markers, 15 data types, 12 tools, each counted off `core.ts` rather than derived from the previous census) and the archive's overlay
 (`content/ontology/extensions.yaml`, 1 term).
 
 | Field | Type | Opt | Notes |
@@ -255,7 +276,7 @@ node collapse onto one digest however their YAML ordered its keys, which is what
 | `username` | `string` | req | **primary key.** The handle in `/u/<username>`, and the value a card's `author` field carries |
 | `displayName` | `string` | req | |
 | `avatarHue` | `number` | req | 0-360, generates a deterministic gradient avatar |
-| `validator` | `boolean` | req | badge. Their votes would carry more weight |
+| `validator` | `boolean` | req | badge. **Their votes WOULD have carried more weight, and there is no vote left to carry it** — the ballot was deleted on 2026-09-05 (§11.0 Q14) |
 | `bio` | `string` | opt | |
 
 `reputation` stood here once and was dropped on 2026-08-13 rather than folded into
@@ -276,7 +297,7 @@ computed fresh from data that is already a field elsewhere) and `Profile.validat
 | `email` | `string` | req | never rendered on a public surface |
 | `joinedAt` | `string` | req | ISO date, rendered at month resolution |
 | `validatorSince` | `string` | opt | absent for a non-validator |
-| `validatorWeight` | `number` | req | the multiplier a validator's vote *would* carry. `3` in the fixture |
+| `validatorWeight` | `number` | req | the multiplier a validator's vote *would* carry. `3` in the fixture, `numeric(6,3) NOT NULL DEFAULT 1` in `account`. **It multiplies nothing since 2026-09-05**: the only arithmetic that ever read it was `lib/server/ballot/aggregate.ts`'s weighted mean, deleted with the ballot, and `/settings` §05 now says so in the open instead of printing `· weight ×N on community metrics`. The badge and the grant date stay; see §11.1's D-160-01 entry for the negative-weight gap that went moot with it |
 | `defaultVisibility` | `"public" \| "private"` | req | what a new bundle defaults to. Per-bundle and overridable |
 | `notifications` | `readonly NotificationSetting[]` | req | |
 
@@ -300,8 +321,8 @@ archive can count (`:9-14`).
 |---|---|---|---|
 | `joinedAt` | `string` | req | ISO date |
 | `watchers` | `number` | req | a shape, not a tally. There is no follow and nothing to notify |
-| `support` | `number` | req | community support for the *person*. No ballot exists |
-| `validated` | `number` | req | how many OTHER accounts' blueprints this handle downloaded, ran, and reported statistics for (SEAM-84), that made it onto that blueprint's own evidence layer. Never asserted by any blueprint's `EvidenceLayers`, which always reads "no verified runs" — see `lib/data/profiles.ts`'s field comment for the full argument |
+| `support` | `number` | req | community support for the *person*. **No ballot exists, and since 2026-09-05 none can**: the route and the write path are deleted, so this is seeded with nothing that could ever replace it |
+| `validated` | `number` | req | how many OTHER accounts' blueprints this handle downloaded, ran, and reported statistics for (SEAM-84), that made it onto that blueprint's own evidence layer. It was never asserted by any blueprint's `EvidenceLayers`, which always read "no verified runs" — see `lib/data/profiles.ts`'s field comment for the full argument. **That panel was deleted on 2026-09-04**, so the figure now stands beside no run surface at all rather than beside one that contradicted it |
 | `pinned` | `readonly PinnedRef[]` | req | at most two, which is what the grid holds |
 
 ### `PinnedRef`
@@ -469,9 +490,9 @@ with one row type. Is a comment polymorphic over `(blueprint | card)`, or two ta
 | `downloads` | `number` | req | |
 | `votes` | `number` | req | also rendered as "support" and as "stars" |
 | `comments` | `Comment[]` | req | |
-| `efficacy` | `number` | req | 0-100, community-voted |
-| `reliability` | `number` | req | 0-100, community-voted |
-| `transparency` | `number` | req | 0-100, community-voted |
+| `efficacy` | `number` | req | 0-100, **seeded, and "community-voted" names a mechanism that no longer exists** — the ballot was deleted 2026-09-05 (§11.0 Q14) |
+| `reliability` | `number` | req | 0-100, same |
+| `transparency` | `number` | req | 0-100, same |
 | `cost` | `number` | req | 0-100, **a seeded stand-in so the radar has six axes.** A shape, not a measurement |
 | `reported` | `ReportedCost` | opt | the real thing. Absent on every row, and absent from the fallback, because it is absent in fact |
 | `featured` | `boolean` | opt | |
@@ -584,7 +605,9 @@ Three separate mechanisms, and the UI relies on all three:
 provenance metadata: who typed the file says nothing about what the node does, and if they
 counted, the same card contributed by two authors would fail to dedup (`:20-23`).
 `version` **is** included. `ontologyVersion` was too, until the field left the card on
-2026-08-30; that removal moved every card digest and every bundle digest in the archive.
+2026-08-30; that removal moved every card digest and every bundle digest in the archive. The
+2026-09-05 removal of ontology versioning (D-131) moved no digest, because by then no card
+and no manifest carried the key.
 
 **2 · A published version is immutable.** `content/cards/` holds one file per
 `id@version`, so the library is append-only by construction. `lib/content/index.ts:103-106`
@@ -603,8 +626,12 @@ prints the engine's verdict on the node page beside the number and the two must 
 contradict each other.
 
 Observed version chains in `content/cards/`: `acceptance-verifier` (1.0.0, 2.0.0),
-`bounded-retry` (1.0.0, 2.0.0), `intent-router` (1.0.0, 2.0.0), `schema-gate` (1.0.0,
-1.1.0). 57 card files, 53 distinct ids.
+`bounded-retry` (1.0.0, 2.0.0), `intent-router` (1.1.0, 2.1.0), `schema-gate` (1.0.0,
+1.1.0). 57 card files, 53 distinct ids. **`intent-router`'s chain starts at 1.1.0 and not at
+1.0.0**: the `context_updates` sentence was a `minor` edit to `spec`, and a published card is
+immutable, so both files were REPUBLISHED at the next number and the originals removed rather
+than kept beside them. A version no topology pins has no user, and `registry.usersOf` holds
+every indexed version to having one.
 
 **Bundle-level versioning is by digest, not by semver.** `bundleDigest` hashes the DOT plus
 the sorted card digests (`digest.ts:58`), and a published bundle's "version" string on the
@@ -631,13 +658,15 @@ never observes a run.
 | `key` | UI label | `source` | Where the value comes from | Who may write it | Status |
 |---|---|---|---|---|---|
 | `autonomy` | Autonomy | `auto` | `round(analysis.autonomy.fraction * 100)` (`view.ts:159`) | **the engine only.** Static graph analysis over the resolved bundle | `LIVE` |
-| `efficacy` | Efficacy | `community` | `community.efficacy` | **a weighted ballot**, validator votes weighted by `Account.validatorWeight` | `MOCK` — no ballot exists |
-| `reliability` | Reliability | `community` | `community.reliability` | same | `MOCK` |
-| `transparency` | Transparency | `community` | `community.transparency` | same | `MOCK` |
+| `efficacy` | Efficacy | `community` | `community.efficacy` | **Nobody, since 2026-09-05.** It was to be a weighted ballot, validator votes weighted by `Account.validatorWeight`; the ballot, the route and the weighted mean were all deleted on the owner's ruling (§11.0 Q14), so the write authority for this axis is nothing at all rather than a party who has not arrived yet | `MOCK` — and MOCK now means *seeded with no producer*, not *seeded until the ballot lands* |
+| `reliability` | Reliability | `community` | `community.reliability` | same | `MOCK`, same reading |
+| `transparency` | Transparency | `community` | `community.transparency` | same | `MOCK`, same reading |
 | `cost` | Cost / time | `reported` | `community.reported?.median ?? community.cost` (`view.ts:196`) | **whoever ran the blueprint**, submitting a run report. The platform never measures it | `MOCK`/`PLANNED` — the fallback is seeded on every row; `reported` is absent everywhere |
 | `security` | Static risk exposure | `auto` | `round(clamp(analysis.security.raw, 0, 4) / 4 * 100)` (`view.ts:206`) | **the engine only** | `LIVE` |
 
 Presentation metadata per source: `METRIC_SOURCE_META` (`lib/format.ts:71-95`) gives each
+
+**`metricsFor`'s community arm is unreachable, which is what makes the three rows above different in kind from the `cost` row below them.** `AssembledViewInput.live.aggregate` is the only input that ever filled them, `app/blueprints/[owner]/[slug]/page.tsx` stopped passing a `live` bag on 2026-09-04, and Q14 deleted the `getAggregate` that produced one, so only the `agg === undefined` arm runs and `bp.metrics` is assembled from `EMPTY_COMMUNITY`'s zeros and rendered by nothing. `cost` keeps a real producer (`reportedCost`, `lib/server/runs`) and a live route (`POST /api/blueprints/{owner}/{slug}/runs`) with no UI submitting to it; the three community axes keep neither.
 one a label (`Static analysis`, `Reported by runners`, `Community vote`), a short form
 (`auto`, `reported`, `voted`) and a colour.
 
@@ -659,7 +688,6 @@ one a label (`Static analysis`, `Reported by runners`, `Community vote`), a shor
 | `totalNodes` | `number` | every node in the graph |
 | `contributions` | `AutonomyContribution[]` | one per node, in graph order |
 | `rationale` | `string` | the threshold rule that produced the level |
-| `ontologyVersion` | `string` | taken from the *view*, not from config |
 | `diagnostics` | `Diagnostic[]` | |
 
 `totalNodes − autonomousNodes` is **not** the human-node count. Three categories exist:
@@ -691,7 +719,6 @@ and no badge moved.
 | `penalties` | `SecurityPenalty[]` | one row per marker present, heaviest first |
 | `findings` | `SecurityFinding[]` | one row per (marker, node) |
 | `rationale` | `string` | e.g. `"4 − 2.00 (criteria-leak) − 1.50 (unbounded-loop) → 1"` |
-| `ontologyVersion` | `string` | |
 | `diagnostics` | `Diagnostic[]` | |
 
 `SecurityPenalty` (`:165`): `marker`, `weight`, `nodeIds: string[]`, `explanation`. **A
@@ -731,7 +758,7 @@ proxy for criteria that only exist at run time.
 **An error-severity diagnostic never reaches a published page.** `lib/content/read.ts:277-287`
 throws and fails the build.
 
-**The union holds 60 codes. Three moved on 2026-08-30:**
+**The union holds 61 codes.** The sixty-first is `attractor/condition-syntax` (2026-09-04), the tenth rule in the `attractor/` namespace and the only one there that reports something a runner REFUSES rather than reads differently: it is graded `warning` here and `approval` in `DIAGNOSTIC_GATE`, and it is in `INFERRED_CODES`, because `gate.ts` rule 4 forbids a DarkPrint inference from refusing anybody's bundle. **Three codes moved on 2026-08-30:**
 
 | Code | Severity | Emitter | Why |
 |---|---|---|---|
@@ -812,7 +839,7 @@ relation the loader checks:
 |---|---|---|
 | Blueprint | `BundleManifest.author` (opt) | `lib/core/bundle/types.ts:26` |
 | Node card | `NodeCard.author` (opt) | `lib/core/card/schema.ts:155` |
-| Ontology term | **no field at all.** Ownership is the namespace prefix of the id | `app/u/[username]/terms/page.tsx:10-17`, `components/profile/load.ts:85-87` |
+| Ontology term | **no field at all.** Ownership is the namespace prefix of the id | ~~`app/u/[username]/terms/page.tsx:10-17`~~ (deleted with the profile's Ontology terms section, owner, 2026-09-06), `components/profile/load.ts`. **The RULE is unchanged and is the point of this row**: a local term is still owned by the handle its id is namespaced under, and nothing about the deletion touches that. What went is the one profile view that read ownership off the prefix. TBD: the surviving citation is now a counted field rather than an ownership test, so this row has no second call site to check the rule against |
 
 An unknown `author` still renders, plainly unknown rather than silently attributed
 (`lib/content/view.ts:258-269`). A published card carries the handle inside its own bytes,
@@ -880,10 +907,12 @@ is working.
 (`lib/core/ontology/resolve.ts:128`) merges a curated core with a local overlay. An
 extension sharing an id replaces the base term **in place**, keeping the shadowed term's
 position, and `validate()` reports the shadowing as `bundle/ontology-mismatch`
-(`:445-456`). The merged view keeps the **base** version (`:125-127`). That used to be what let
-a card declare `ontology_version: 0.1.0` while using local terms; since 2026-08-30 no card
-declares a vocabulary version at all, so the property now only decides which version a *score*
-computed under that view records.
+(`:445-456`). The merged view keeps the **base title** and nothing else of the base's identity
+(`:120-127`). It used to keep a base *version*, which was what let a card declare
+`ontology_version: 0.1.0` while using local terms; no card has declared one since 2026-08-30
+and no vocabulary has carried one since 2026-09-05 (D-131), so an overlay is exactly what it
+looks like — the core terms with the bundle's own layered on — and there is no second thing
+for it to mint.
 
 **Locality is provenance, not spelling.** A term is local because it arrived through the
 extension channel, not because its id has a slash in it (`:150-155`). That is a column, not
@@ -1133,7 +1162,7 @@ erDiagram
         string source FK
         string target FK
         string label "optional"
-        string condition "optional, Attractor's guard, carried verbatim, never parsed"
+        string condition "optional, Attractor's guard: syntax parsed, value never evaluated"
         string weight "optional, Attractor's routing priority, carried as a string"
         json attrs
     }
@@ -1149,14 +1178,14 @@ erDiagram
         string email "never public"
         string joinedAt
         string validatorSince "optional"
-        number validatorWeight "vote multiplier, unapplied"
+        number validatorWeight "vote multiplier, multiplies nothing since 2026-09-05"
         string defaultVisibility "public / private"
     }
     PROFILE {
         string username PK "also FK to AUTHOR"
         string joinedAt
         number watchers "seeded, no follow exists"
-        number support "seeded, no ballot exists"
+        number support "seeded, the ballot was deleted 2026-09-05"
         number validated "seeded, does not touch any blueprint's evidence"
     }
     PRIVATE_CARD {
@@ -1177,9 +1206,9 @@ erDiagram
         string slug PK "also FK to BLUEPRINT"
         number downloads "seeded"
         number votes "seeded, rendered as support and as stars"
-        number efficacy "community vote"
-        number reliability "community vote"
-        number transparency "community vote"
+        number efficacy "seeded, no ballot since 2026-09-05"
+        number reliability "seeded, no ballot since 2026-09-05"
+        number transparency "seeded, no ballot since 2026-09-05"
         number cost "seeded stand-in for the reported axis"
         boolean featured "optional"
         boolean seed "optional"
@@ -1208,13 +1237,11 @@ erDiagram
         number autonomousNodes
         number totalNodes
         string rationale
-        string ontologyVersion
     }
     SECURITY_RESULT {
         number level "1-4, clamped"
         number raw "4 - sum(weights), unclamped"
         string rationale
-        string ontologyVersion
     }
     PHASE_COVERAGE {
         string_array covered "lifecycle order"

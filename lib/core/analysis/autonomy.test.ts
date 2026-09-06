@@ -21,7 +21,7 @@ import { buildGraph } from "../dot/graph";
 import { CORE_ONTOLOGY, CORE_PHASE_IDS } from "../ontology/core";
 import { ontologyView } from "../ontology/resolve";
 import type { OntologyView } from "../ontology/resolve";
-import type { Ontology, OntologyTerm } from "../ontology/types";
+import type { OntologyTerm } from "../ontology/types";
 import { computeAutonomy } from "./autonomy";
 import type { AutonomyClass } from "./autonomy";
 import { computePhaseCoverage } from "./phase-coverage";
@@ -503,60 +503,14 @@ describe("computeAutonomy — the number is a description, not a verdict", () =>
   });
 });
 
-/* --------------------- the ontology version (doc 3 §8) --------------------- */
+/* --------------------- the vocabulary --------------------- */
 
-describe("computeAutonomy — ontology version", () => {
-  it("records the vocabulary the score was computed under", () => {
-    const result = computeAutonomy(makeBlueprint(withHumans(2, 1)));
-
-    expect(result.ontologyVersion).toBe("0.1.0");
-    expect(result.ontologyVersion).toBe(CORE_ONTOLOGY.version);
-    // The shipped config mirrors it, so on the core vocabulary the two agree.
-    expect(result.ontologyVersion).toBe(DARKPRINT_CONFIG.ontologyVersion);
-  });
-
-  it("reports it even when there is nothing to score", () => {
-    expect(computeAutonomy(makeBlueprint([])).ontologyVersion).toBe("0.1.0");
-  });
-
-  it("takes it from the blueprint's own vocabulary, not from the config", () => {
-    // A bundle resolved against an older vocabulary was scored by that vocabulary, and
-    // doc 3 §8 wants the version that actually produced the number.
-    const older: Ontology = {
-      version: "0.0.9",
-      title: "An earlier vocabulary",
-      terms: CORE_ONTOLOGY.terms,
-    };
-    const result = computeAutonomy(
-      makeBlueprint(withHumans(2, 0), { ontology: ontologyView(older) }),
-    );
-
-    expect(result.ontologyVersion).toBe("0.0.9");
-    expect(result.ontologyVersion).not.toBe(DARKPRINT_CONFIG.ontologyVersion);
-  });
-
-  it("is unchanged by a local namespaced extension", () => {
-    // Doc 3 §7 overlays do not mint a vocabulary version — that is what lets a card keep
-    // declaring `ontology_version: 0.1.0` while using local terms.
-    const extension: OntologyTerm[] = [
-      {
-        id: "berti/simulation-node",
-        kind: "node-type",
-        label: "Simulation node",
-        description: "Runs a simulation and reports what it observed.",
-        broader: "agent",
-        since: "0.1.0",
-      },
-    ];
-    const result = computeAutonomy(
-      makeBlueprint([{ id: "sim", card: { type: "berti/simulation-node" } }], {
-        ontology: ontologyView(CORE_ONTOLOGY, extension),
-      }),
-    );
-
-    expect(result.ontologyVersion).toBe("0.1.0");
-  });
-});
+/* There was a `computeAutonomy — ontology version` block here, five cells asserting that
+   the result carried the version of the vocabulary it was read against, that the shipped
+   config mirrored it, and that a §7 overlay did not move it. The vocabulary has no version
+   and the result no longer carries one, so every one of those cells asserted about a
+   departed field. What the overlay cell also demonstrated — that a local namespaced type
+   resolves and is scored — is covered by the local-extension cells further down. */
 
 /* --------------------- the empty graph --------------------- */
 

@@ -12,7 +12,7 @@
    three cards written. `resolveBundle` reports each of the other
    five as `bundle/missing-card`, which is an ERROR — correctly, the
    reference does not resolve — and every surface downstream then
-   said "bundle rejected", "No schematic and no scores" and "blocked
+   said "bundle rejected", "No schematic and no readings" and "blocked
    by 5 errors" at an author who was simply not finished. Doc 2 §1.1
    is about exactly this reading: the site must never make somebody
    feel penalised for the state their graph is honestly in.

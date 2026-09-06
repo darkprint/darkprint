@@ -56,7 +56,7 @@ import { requiresHuman } from "../ontology/resolve";
 import { bumpSatisfies, declaredBump, inferBump, type BumpLevel } from "../version/bump";
 import { compareVersionStrings, formatSemver, parseSemver } from "../version/semver";
 import { formatForFilename, parseDocument, type CardFormat } from "./parse";
-import type { JsonValue, NodeCard, Port } from "./schema";
+import { TOOL_COMMAND_KEY, type JsonValue, type NodeCard, type Port } from "./schema";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // TODO(SEAM-40) (cited at line 844): POST /api/cards/{id}/check-bump — must run at publish time, since a published version can
@@ -258,7 +258,9 @@ export function validateCard(value: unknown, opts: ValidateCardOptions): CardVal
   // here is free text. Defaults to `[]`.
   const mcp = stringList(read(value, "mcp", ds, file), ds, file);
   const skill = optionalString(read(value, "skill", ds, file), ds, file);
-  const params = readParams(read(value, "params", ds, file), ds, file);
+  const paramsField = read(value, "params", ds, file);
+  const params = readParams(paramsField, ds, file);
+  if (type !== undefined) checkToolCommand(type, params, paramsField.key, opts.ontology, ds, file);
 
   /* 3.3 interfaces */
   const inputs = readPorts(read(value, "inputs", ds, file), opts.ontology, ds, file);
@@ -713,6 +715,82 @@ function readPorts(
 }
 
 /* --------------------- params --------------------- */
+
+/**
+ * Doc 3 §3's node types as this codebase extends them: the term for a node whose whole
+ * instruction is a command. Local rather than imported for the same reason
+ * `analysis/security.ts` keeps `VALIDATION_TYPE` local: one module asking one question of
+ * the vocabulary, spelled once where the question is asked.
+ */
+const SHELL_TOOL_TYPE = "shell-tool";
+
+/**
+ * A `shell-tool` card that declares no command to run.
+ *
+ * Engine spec §4.10's tool handler opens by reading `tool_command` and returns FAIL with
+ * "No tool_command specified" when it is empty, so a card of this type carrying no command
+ * describes a node that resolves, scores, exports, and then fails on its first execution.
+ * Moving that earlier is what this file is for.
+ *
+ * `isA` rather than `type === SHELL_TOOL_TYPE`: a local type rooted at it (doc 3 §7) runs
+ * on the same handler and needs the same command, and asking the vocabulary is how every
+ * other type question in the engine is asked.
+ *
+ * A WARNING, on the ground `card/prohibition-misfiled` states. The card is legible and
+ * everything else about it is checkable, and a draft is allowed to be unfinished:
+ * `attractor/import.ts` deliberately writes a card with an empty `spec` for an Attractor
+ * node that carried no `prompt`, so refusing this one would say a card cannot be worked on
+ * until it is done.
+ *
+ * ── Why it borrows a code instead of minting one ──
+ * `DiagnosticCode` is a shared union in `lib/core/diagnostics.ts` and this file does not
+ * own it, so a `card/missing-tool-command` is owed rather than taken here. The two codes
+ * used are the honest readings meanwhile: a `shell-tool` card without the key IS missing a
+ * field its own type requires, and one that spells the key with something that is not a
+ * command has put a value of the wrong type in it. Neither can move `gate.ts`, which
+ * refuses storage on `severity === "error"` alone and narrows both of these codes further
+ * to the two fields that carry a card's address.
+ */
+function checkToolCommand(
+  type: string,
+  params: Readonly<Record<string, JsonValue>>,
+  key: string,
+  ontology: OntologyView,
+  ds: Diagnostic[],
+  file: string | undefined,
+): void {
+  if (!ontology.isA(type, SHELL_TOOL_TYPE)) return;
+  const path = `${key}.${TOOL_COMMAND_KEY}`;
+  // No `hasOwnProperty` dance, unlike `card/iteration-cap.ts` over the same bag: that one
+  // reads a card's raw `params` and this one reads what `readParams` built out of
+  // `Object.keys`, so an inherited key was already dropped and `undefined` here can only
+  // mean the author wrote nothing.
+  if (params[TOOL_COMMAND_KEY] === undefined) {
+    ds.push(
+      warning("card/missing-field", `Field \`${path}\` is missing, and \`type: ${type}\` runs a command.`, {
+        hint: "Write the command the node runs, or declare a `type` whose instruction is the prose in `spec`. Engine spec §4.10 fails a tool node with no `tool_command` before it does anything.",
+        location: at(file, path),
+      }),
+    );
+    return;
+  }
+  const declared = params[TOOL_COMMAND_KEY];
+  // Whitespace is what §4.10 refuses, so a command of spaces is the empty case and not a
+  // command that happens to be short.
+  if (typeof declared === "string" && declared.trim() !== "") return;
+  ds.push(
+    warning(
+      "card/bad-type",
+      typeof declared === "string"
+        ? `Field \`${path}\` is blank, and \`type: ${type}\` runs a command.`
+        : `Field \`${path}\` must be a command string, but it is ${describe(declared)}.`,
+      {
+        hint: "Engine spec §4.10 reads it as the shell command for the node and fails the node when it is empty.",
+        location: at(file, path),
+      },
+    ),
+  );
+}
 
 /** Free-form nested configuration, defaulting to `{}` and required to survive JSON. */
 function readParams(

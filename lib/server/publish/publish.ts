@@ -321,17 +321,14 @@ export async function publish(
          copy would rewrite the author's content, and `text` exists precisely so
          `exportBundle` can re-emit the file byte for byte. */
       ...(input.vocabulary === undefined ? {} : { vocabulary: input.vocabulary }),
-      /* Passed through unmodified. `BlueprintAnalysis` carries a fourth field,
-         `ontologyVersion`, that no column of `release` has room for; every reader takes it
-         off `autonomy`, where `computeAutonomy` stamped the version of the view the score
-         was actually computed against.
-
-         `scoredOntologyVersionId` is NOT set, and cannot be. It named a row in
-         `ontology_version`, a table nothing writes any more: resolving a version STRING to a
-         row id was the last thing the version registry did for anybody, and the registry is
-         gone. The column survives unwritten (dropping it is a migration and a separate
-         decision) and `registry/scores.ts` reads the version off `autonomy` instead, which
-         is the same value one indirection shorter. */
+      /* Passed through unmodified, and these three are now all there is. `BlueprintAnalysis`
+         used to carry a fourth field, `ontologyVersion`, which no column of `release` had
+         room for and which readers took off `autonomy`; `0009_drop_ontology_versioning`
+         removed that stamp along with `release.scored_ontology_version_id` and the
+         `ontology_version` table the column pointed into. The vocabulary names what an
+         Attractor node IS, Attractor fixes those shapes in its own spec and carries no
+         vocabulary version, so a DarkPrint-only version on top was a second thing to keep in
+         step with nothing. */
       analysis: {
         autonomy: analysis.autonomy,
         security: analysis.security,

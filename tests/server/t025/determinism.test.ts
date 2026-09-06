@@ -22,10 +22,9 @@ import {
   asDiagnostics,
   checkDeclaredBump,
   inferBlueprintBump,
-  inferOntologyBump,
   type UnknownFn,
 } from "./contract";
-import { BASE_DOT, BASE_REFS, snapshot, term } from "./fixtures";
+import { BASE_DOT, BASE_REFS, snapshot } from "./fixtures";
 
 const REPEATS = 25;
 
@@ -39,19 +38,10 @@ function otherBlueprintPair() {
   return [snapshot(BASE_DOT, BASE_REFS), snapshot(BASE_DOT, [...BASE_REFS, "reviewer@1.0.0"])] as const;
 }
 
-function ontologyPair() {
-  return [
-    [term("agent"), term("validation")],
-    [term("agent")],
-  ] as const;
-}
-
-function otherOntologyPair() {
-  return [
-    [term("agent"), term("validation")],
-    [term("agent"), term("validation"), term("critic")],
-  ] as const;
-}
+/* The two ontology pairs stood here, and AC-5's ontology arms with them: `inferOntologyBump`
+   was removed on 2026-09-05 when the owner repealed vocabulary versioning (§11.0 Q26). AC-5
+   itself survives whole — it is a claim about the subject being stateless, and it is still
+   held below over the two subjects that remain. */
 
 function repeat(fn: UnknownFn, previous: unknown, next: unknown, where: string): BumpAnalysis[] {
   return Array.from({ length: REPEATS }, () => asBumpAnalysis(fn(previous, next), where));
@@ -62,14 +52,6 @@ describe("AC-5: the same two inputs always infer the same level", () => {
     const fn = await inferBlueprintBump();
     const [previous, next] = blueprintPair();
     const runs = repeat(fn, previous, next, "inferBlueprintBump");
-
-    for (const run of runs) expect(run).toEqual(runs[0]);
-  });
-
-  it("AC-5 answers a repeated ontology comparison identically", async () => {
-    const fn = await inferOntologyBump();
-    const [previous, next] = ontologyPair();
-    const runs = repeat(fn, previous, next, "inferOntologyBump");
 
     for (const run of runs) expect(run).toEqual(runs[0]);
   });
@@ -93,34 +75,22 @@ describe("AC-5: the same two inputs always infer the same level", () => {
     }
   });
 
-  it("AC-5 keeps two interleaved ontology comparisons apart", async () => {
-    const fn = await inferOntologyBump();
-    const alone = asBumpAnalysis(fn(...ontologyPair()), "inferOntologyBump");
-    const otherAlone = asBumpAnalysis(fn(...otherOntologyPair()), "inferOntologyBump");
-
-    for (let i = 0; i < REPEATS; i += 1) {
-      expect(asBumpAnalysis(fn(...ontologyPair()), "inferOntologyBump")).toEqual(alone);
-      expect(asBumpAnalysis(fn(...otherOntologyPair()), "inferOntologyBump")).toEqual(otherAlone);
-    }
-  });
-
   it("AC-5 gives concurrent callers the same answers a lone caller gets", async () => {
     const blueprint = await inferBlueprintBump();
-    const ontology = await inferOntologyBump();
     const blueprintAlone = asBumpAnalysis(blueprint(...blueprintPair()), "inferBlueprintBump");
-    const ontologyAlone = asBumpAnalysis(ontology(...ontologyPair()), "inferOntologyBump");
     const otherAlone = asBumpAnalysis(blueprint(...otherBlueprintPair()), "inferBlueprintBump");
 
+    /* Sixty callers still, over the two pairs that are left rather than the three there
+       were: an accumulator shared between callers is what this cell is looking for, and it
+       needs two DIFFERENT questions in flight to find one, not three. */
     const work = Array.from({ length: 60 }, (_, i) => async () => {
-      if (i % 3 === 0) return { kind: "blueprint", got: asBumpAnalysis(blueprint(...blueprintPair()), "inferBlueprintBump") };
-      if (i % 3 === 1) return { kind: "other", got: asBumpAnalysis(blueprint(...otherBlueprintPair()), "inferBlueprintBump") };
-      return { kind: "ontology", got: asBumpAnalysis(ontology(...ontologyPair()), "inferOntologyBump") };
+      if (i % 2 === 0) return { kind: "blueprint", got: asBumpAnalysis(blueprint(...blueprintPair()), "inferBlueprintBump") };
+      return { kind: "other", got: asBumpAnalysis(blueprint(...otherBlueprintPair()), "inferBlueprintBump") };
     });
 
     const expected: Record<string, BumpAnalysis> = {
       blueprint: blueprintAlone,
       other: otherAlone,
-      ontology: ontologyAlone,
     };
     for (const { kind, got } of await Promise.all(work.map((run) => run()))) {
       expect(got, `a concurrent caller got a different ${kind} answer`).toEqual(expected[kind]);

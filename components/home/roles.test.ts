@@ -16,7 +16,7 @@
    the archive as well, because both are enforced somewhere:
    the absent planner → builder edge against `cannot` on
    `code-builder@1.0.0`, and the loop's cap against
-   `params.max_iterations` on `targeted-debugger@1.0.0`.
+   `params.max_retries` on `targeted-debugger@1.1.0`.
    ============================================================ */
 
 import { readFileSync } from "node:fs";

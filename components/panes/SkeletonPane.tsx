@@ -143,11 +143,12 @@ export function SkeletonPane({
    * and nothing competes with them. No caller sets this to `false` today: `/build`'s stage
    * stopped mounting this pane once it collapsed to a tablist (see `linkToCard`'s own doc
    * comment below, on the prop that recorded the same departure), so the archive is the
-   * only place this renders now and the number is always on. Same standing as
-   * `ChoiceGraphPane.tsx`'s `choice` slot (see its own doc comment): kept rather than
-   * dropped, because a caller that needs the ordinal off — one drawing this pane behind a
-   * tablist that already names it, the way `/build`'s did — has nowhere else to say so. The
-   * id stays either way, because `aria-labelledby` points at it.
+   * only place this renders now and the number is always on. It had the same standing as
+   * `ChoiceGraphPane.tsx`'s `choice` slot, which is no longer readable: that file went with
+   * `/build` and `components/build` when the owner deleted the tree on 2026-09-06. The prop
+   * is kept rather than dropped, because a caller that needs the ordinal off — one drawing
+   * this pane behind a tablist that already names it, the way `/build`'s did — has nowhere
+   * else to say so. The id stays either way, because `aria-labelledby` points at it.
    */
   showNumber?: boolean;
   model: PaneModel;
@@ -169,9 +170,10 @@ export function SkeletonPane({
    * linkable when it is published: `SynchronisedPanes` switches it on for the archive's
    * merged panel, where every card has its own `/nodes/<id>` page, and the default is what
    * any caller drawing cards that are not in the registry needs. `/build` was that caller
-   * until its stage stopped mounting this pane — the cards there are generated in the
+   * until its stage stopped mounting this pane — the cards there were generated in the
    * reader's own browser from three choices and a link would have pointed at a 404 every
-   * time. There is nothing to link to for an absence-focused state either way, `card` being
+   * time. The route was deleted on 2026-09-06, so the default is now unexercised and the
+   * reason for it is recorded here rather than demonstrable by opening a page. There is nothing to link to for an absence-focused state either way, `card` being
    * `undefined` covers that.
    */
   linkToCard?: boolean;

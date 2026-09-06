@@ -30,6 +30,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { checkLimit, enforceLimit } from "./check";
+import { KEY_SCOPES, isKeyScope } from "./types";
 import { DEFAULT_LIMITS, UNCONFIGURED_BACKOFF_MS, limitFor } from "./config";
 import type { LimitConfig } from "./config";
 import { createSlotCounter, type SlotCounter } from "./counter";
@@ -55,6 +56,10 @@ const UNRESOLVED: ApiKeyRecord = {
   keyId: "KEYIDLITERAL-1111-4111-8111-111111111111",
   accountId: "acc-1",
   label: "a listed key",
+  /* `write`, so this record is the most privileged thing `listKeys` could hand back. The
+     compile error the cells below assert is about the BRAND, and a `read` here would let a
+     reader think the scope was doing the refusing. */
+  scope: "write",
   createdAt: new Date(0),
   revokedAt: null,
 };
@@ -250,6 +255,10 @@ describe("T231: the key precondition is a type rather than caller discipline", (
       "DEFAULT_LIMITS",
       "DEFAULT_SLOTS",
       "InvalidLabelError",
+      /* The scope vocabulary, published so a route narrowing `scope` out of a JSON body quotes
+         the union rather than retyping its two literals. A value and not a type, so it has a
+         runtime witness and belongs in this equality. */
+      "KEY_SCOPES",
       "LimitsStoreError",
       "MAX_COUNTER_BYTES",
       "MAX_LABEL_LENGTH",
@@ -265,6 +274,7 @@ describe("T231: the key precondition is a type rather than caller discipline", (
       "checkLimit",
       "createSlotCounter",
       "enforceLimit",
+      "isKeyScope",
       "issueKey",
       "limitFor",
       "listKeys",
@@ -280,6 +290,11 @@ describe("T231: the key precondition is a type rather than caller discipline", (
          sanctioned path. */
       "revokeKeysFor",
       "withLimitsErrors",
+      /* Q3's key-to-actor path, and it belongs in THIS cell rather than beside itself. The
+         claim the equality holds is that nothing on this barrel can construct authority out
+         of a value a caller already has: `writeActorFor` is async and reads the row, which is
+         why it is admissible here where a synchronous `asWriteActor(key)` would not be. */
+      "writeActorFor",
     ]);
   });
 });
@@ -527,5 +542,38 @@ describe("the ruled ceilings, as shipped", () => {
     const { counter } = fixedCounter();
     const anon: LimitSubject = { tier: "anonymous", ip: "203.0.113.7" };
     expect((await checkLimit(anon, "search", { counter })).allowed).toBe(false);
+  });
+});
+
+/* ============================================================
+   `isKeyScope`, the narrowing the mint route leans on.
+
+   Added 2026-09-05. Until then `isKeyScope` appeared in this file only inside the barrel's
+   name equality, which asserts it is EXPORTED and nothing about what it does. That is the
+   shape of coverage that passes against a function returning `true` for everything.
+
+   It matters because of where it is spent. `app/api/account/keys/route.ts` uses it to decide
+   a 400, on a value that arrives as `unknown` off a JSON body, and the route makes the same
+   type-check-here / vocabulary-check-there split its `label` arm makes. A permissive guard
+   would put an unknown string into `issueKey` and leave the store to refuse it later, or not.
+   ============================================================ */
+describe("isKeyScope", () => {
+  it("admits exactly the two scopes, and KEY_SCOPES is the same set", () => {
+    expect(KEY_SCOPES.filter((s) => !isKeyScope(s))).toEqual([]);
+    expect([...KEY_SCOPES].sort()).toEqual(["read", "write"]);
+  });
+
+  it("refuses everything else a JSON body can carry", () => {
+    /* `unknown` is the real parameter type, so the hostile cases are values a body actually
+       produces rather than only strings: the route hands this straight off `readJsonObject`.
+       `"READ"` is here because the column is a Postgres enum and the comparison is
+       case-sensitive at both ends, so an accepted `"READ"` would fail at the insert instead
+       of at the request, which is a 500 for what is plainly a client's mistake. */
+    for (const value of [
+      "READ", "Write", "admin", "", " read", "read ", "readwrite",
+      7, 0, true, false, null, undefined, [], {}, ["read"], { scope: "read" },
+    ]) {
+      expect(isKeyScope(value), JSON.stringify(value) ?? "undefined").toBe(false);
+    }
   });
 });

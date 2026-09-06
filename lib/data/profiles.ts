@@ -48,11 +48,15 @@ export interface Profile {
    * report for (SEAM-84) that made it onto that blueprint's own evidence layer.
    *
    * Seeded, same limit as `support` and `watchers`: SEAM-84 has no submission form and no
-   * endpoint, so nothing here was ever actually run. `EvidenceLayers`' "no verified runs"
-   * state is the truth on every blueprint page regardless of what this figure claims about
-   * an account — the two are not in tension, because this is what an account WOULD have
+   * endpoint, so nothing here was ever actually run. This is what an account WOULD have
    * accrued through a run pipeline that does not exist yet, said with the same `◐` marker
    * as everything else on this account panel.
+   *
+   * The counterweight used to be `EvidenceLayers`' "no verified runs" state, true on every
+   * blueprint page whatever this figure said about an account. That component was deleted
+   * on 2026-09-04 after the owner took the scoring reading off the blueprint page and
+   * nothing mounted it any more, so the `◐` marker and `ProfileShell`'s notice are now the
+   * whole of what tells a reader no run stands behind this count.
    */
   validated: number;
   /** At most two, which is what the two-column grid holds. */
@@ -123,7 +127,11 @@ export const PROFILES: Record<string, Profile> = {
     validated: 1,
     pinned: [
       { kind: "blueprint", slug: "frontline-triage" },
-      { kind: "node", ref: "intent-router@2.0.0" },
+      /* `@2.1.0`, not `@2.0.0`: the card was renamed on 2026-09-05 (§11.0 Q17) and the
+         archive carries no 2.0.0 to pin. The Pinned section reads its card off
+         `allNodeCards()`, one record per id at the NEWEST version, so a pin at any other
+         version renders nothing at all. Derived from `content/cards/`. */
+      { kind: "node", ref: "intent-router@2.1.0" },
     ],
   },
 };

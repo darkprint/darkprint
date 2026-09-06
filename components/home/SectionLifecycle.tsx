@@ -84,7 +84,20 @@ const ACTIONS = [
     href: "/blueprints",
     label: "Search blueprints",
     title: "Find",
-    text: "Search the registry by task, then narrow by shape, checkpoints, tools, and evidence.",
+    /* "…narrow by shape, checkpoints, tools, and evidence" until 2026-09-04. Evidence was
+       the last word and the one that had stopped meaning anything: the panel it named came
+       off the blueprint page with the scoring feature, and `GalleryBrowser`'s filter bar
+       never carried a facet by that name in the first place. Shape, checkpoints and tools
+       were loose in the same direction, so all four are replaced by three controls that are
+       really on `/blueprints`: category, phase covered, and the tag chips.
+
+       Three of the bar's five, not all of them. The other two are the fork stance and the
+       autonomy class, and neither belongs in a one-line beat about finding work: the fork
+       control is a display choice rather than a way to narrow, and putting a class name on
+       the landing would teach the vocabulary of a reading a reader has not met yet. Naming
+       fewer controls than exist is a short sentence. Naming one that does not exist is the
+       defect this row had. */
+    text: "Search the registry by task, then narrow by category, phase and tag.",
     image: "/home/lifecycle/find.webp",
   },
   {
@@ -97,7 +110,12 @@ const ACTIONS = [
   },
   {
     index: "03",
-    href: `${blueprintHref(ARCHIVE_OWNER, "starter-software-factory")}#use-this-blueprint`,
+    /* `#use-this-blueprint` until 2026-09-04. That anchor was the `Exact release` panel, and
+       the owner asked it off the blueprint page in the pass that made that page read like a
+       repository. Its download did not go with it: it moved into the file list's header as a
+       `Code` control, so `#files` is where this beat's own sentence now lands. Repointed rather
+       than left to ride a scroll to nowhere, which is what a fragment with no element does. */
+    href: `${blueprintHref(ARCHIVE_OWNER, "starter-software-factory")}#files`,
     label: "Take the starter",
     title: "Use",
     text: "Plain files you can read. Download a release, adapt it and run it in your own harness.",

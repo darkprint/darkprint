@@ -1,9 +1,12 @@
 /* ============================================================
    DarkPrint backend — shared bump-reason bookkeeping
-   inferBlueprintBump and inferOntologyBump both collect a list of
-   {level, message} reasons and report the strongest, mirroring
-   lib/core/version/bump.ts's inferBump for cards. Factored out so
-   the two do not duplicate the same sort.
+   inferBlueprintBump collects a list of {level, message} reasons
+   and reports the strongest, mirroring lib/core/version/bump.ts's
+   inferBump for cards. Factored out when inferOntologyBump shared
+   the sort; that function went with ontology versioning (§11.0
+   Q26) and this stayed, because the ranking is the one place the
+   order of levels is written down and blueprint-bump.ts is not
+   where a second copy belongs.
    ============================================================ */
 
 import type { BumpAnalysis, BumpLevel } from "@/lib/core";

@@ -208,34 +208,66 @@ export function SynchronisedPanes({
       {/* The pane is the drawing's own size, per blueprint.
           ------------------------------------------------------------
           It used to be 780 at every blueprint, chosen against the Score card's fixed ~746px
-          so that `position: sticky` on the aside beside it had room to move. The author has
-          ruled that every blueprint shows its whole graph, which makes the height a
-          consequence rather than a choice: `graphPaneHeightCss` is the fitted drawing plus
-          the band `FIT_BAND` reserves for edge labels, and nothing else. Score is sticky
-          beside this panel again — in the blueprint page's own right column, not in the
-          `aside` slot below, which still has no caller — and the reason it can be is that a
-          pane sized to its drawing is SHORTER than the Score card at every blueprint, so
-          `position: sticky` has slack to move within where a 780px pane gave it none.
+          so that `position: sticky` on the aside beside it had room to move. NEITHER OF
+          THOSE IS ON THE PAGE ANY MORE: the scoring reading came off the blueprint route on
+          2026-09-04, and on 2026-09-06 the owner moved the graph to the container's full
+          width, which took the two-column body grid and the `<aside>` with it. So there is
+          nothing sticky beside this panel to size it against, and no sentence here should
+          say there is. The `aside` prop below is a separate thing and still has no caller;
+          `archive-labels.test.ts` asserts the blueprint page passes none.
+
+          What decides the height is the author's ruling that every blueprint shows its whole
+          graph, which makes it a consequence rather than a choice: `graphPaneHeightCss` is
+          the fitted drawing plus the band `FIT_BAND` reserves for edge labels, and nothing
+          else.
 
           What 780 cost is visible on a screenshot. `guarded-merge-bot` is six blocks in one
-          row: at 1440 its drawing is 152px tall and it was drawn in a 778px canvas, five
-          times its own height in empty graticule. The heights the arithmetic gives instead,
-          at the 729px canvas the two-thirds column has at 1440, read off the rendered box:
-          240 for that one (the floor), 311 for five of the two-row drawings, 291 for
-          `adversarial-consensus-line` (whose fit reserves room for the bow on
-          `reopen -> vote`), 281 for `checkpoint-resume-runner`, 419 for the three-row
-          `grounded-research-desk`, and 482 for the starter.
-          `components/panes/archive-labels.test.ts` pins all nine.
+          row: at the widest canvas the page has, its drawing is 151px tall and it was drawn
+          in a 778px canvas, five times its own height in empty graticule. What the
+          arithmetic gives instead is one number per blueprint, and THIS COMMENT DOES NOT
+          RESTATE THEM ANY MORE.
+          `components/panes/archive-labels.test.ts` pins all nine against
+          `graphPaneHeight`, per blueprint and per width.
+
+          The reason for the omission is that this paragraph got all nine wrong at once. It
+          carried the two-thirds column's heights for a wave after the owner moved the graph
+          to the container's full width, stated to the pixel and read off a canvas the page
+          had stopped drawing in. A number copied out of a guard goes on being asserted here
+          long after the guard has re-measured it, and a wrong number stated precisely is
+          worse than no number at all.
+
+          The canvas itself is the same trap one level up. It has been 778, then 729, then
+          the container's full width; `framing.ts` then gained `RAIL_WIDTH` and `RAIL_FROM`
+          for the side rail's own 256px track, which the earlier re-derivation of the chain
+          had missed, and that moves the canvas at 1440 again along with every height under
+          it. `canvasWidthAt` is the one expression that computes it and
+          `archive-labels.test.ts` is the one place that checks it against a browser reading.
+          Both are one grep away; neither should be transcribed here.
 
           A CSS length rather than a measured number, because this page is statically
           generated and the site's rule is that content never needs JS to become visible: a
           pane that measured its own canvas and then set its height in an effect would ship
           a layout shift on every load. The height is linear in the canvas width, and the
           canvas width is the box's own — `100cqw` against the `@container` on `GraphPane`'s
-          wrapper — so the browser does the whole thing at layout time, in the column or out
-          of it, with nothing here knowing which. */}
-      <div className={cx("grid gap-4", aside !== undefined && "lg:grid-cols-3")}>
-        <div className={cx("min-w-0", aside !== undefined && "lg:col-span-2")}>
+          wrapper — so the browser does the whole thing at layout time, whether the panel is
+          in a column or at the container's full width, with nothing here knowing which. */}
+      {/* TWO THIRDS AND ONE THIRD, on the owner's instruction, 2026-09-06: "set the panel
+          Jump to a node on the right of the panel The graph... where The graph occupies 2/3
+          of the horizontal space, while Jump to a node occupies the rest 1/3."
+
+          The grid is unconditional now. It was gated on `aside`, a prop no caller has ever
+          passed, so in practice the graph has been at the container's full width since the
+          owner moved it there on 2026-09-06 and this row was a one-column grid. The node
+          index used to sit UNDER the drawing, above the card skeleton it drives; it is the
+          right column instead.
+
+          **This costs the drawing a third of its width and the cost is real.** See
+          `components/graph/framing.ts` for the chain and `components/panes/
+          archive-labels.test.ts` for the measured consequence per blueprint. The skeleton
+          stays below at full width: the owner named one panel, the skeleton is a second one,
+          and it is the tallest thing on the page. */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="min-w-0 lg:col-span-2">
           <GraphPane
             paneNumber={1}
             graph={graph}
@@ -249,18 +281,19 @@ export function SynchronisedPanes({
           />
         </div>
 
-        {aside !== undefined && (
-          <div className="min-w-0 lg:sticky lg:top-20 lg:col-span-1 lg:self-start">
-            {aside}
-          </div>
-        )}
-      </div>
-
-      <div className="flex min-w-0 flex-col gap-2">
+        {/* NOT sticky any more. It was `lg:sticky lg:top-20 lg:self-start` while it held one
+            `<select>`, which is the case sticky is for: a short control that should stay in
+            reach while a reader scrolls a long drawing. The owner put the card skeleton in
+            this column below the index (2026-09-06), and a sticky box taller than the
+            viewport cannot stick — it just pins its own top and then scrolls anyway, which
+            reads as a bug rather than as a feature. */}
+        <div className="flex min-w-0 flex-col gap-2 lg:col-span-1">
         {/* The "Drawn"/"Not drawn" index used to sit under the drawing, as a listbox.
-            It is a dropdown here instead, above the card skeleton it drives — same
-            `selectNode`/`selectAbsence` calls the drawing's own click uses, so there is
-            one selection and not a second state machine beside it. */}
+            It is a dropdown here instead — same `selectNode`/`selectAbsence` calls the
+            drawing's own click uses, so there is one selection and not a second state
+            machine beside it. It is beside the drawing rather than under it since
+            2026-09-06, and what it drives moved under it in the same column later the same
+            day, so the control and its subject are one block again. */}
         <label className="flex flex-col gap-1">
           {/* Amber, on the author's instruction, and consistent with the pane it drives:
               `SkeletonPane` is warm throughout because everything in it is about a node,
@@ -291,6 +324,16 @@ export function SynchronisedPanes({
           </select>
         </label>
 
+        {/* The card skeleton, in the third the index is in and directly under it. Owner,
+            2026-09-06: "The card skeleton panel should be on the 1/3 too below the Jump to a
+            node panel."
+
+            It had the container's full width until now, under the graph. Nothing about the
+            DRAWING moves with it — the graph's box is the other two thirds either way, so no
+            canvas number in `components/graph/framing.ts` or
+            `components/panes/archive-labels.test.ts` changes. What changes is the skeleton's
+            own measure, which is a card's field list and reads as a column rather than a
+            band. */}
         <SkeletonPane
           paneNumber={2}
           model={model}
@@ -299,6 +342,9 @@ export function SynchronisedPanes({
           onSelectAbsence={selectAbsence}
           linkToCard
         />
+
+        {aside}
+        </div>
       </div>
     </section>
   );

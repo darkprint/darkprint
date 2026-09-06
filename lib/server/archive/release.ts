@@ -67,22 +67,6 @@ export interface AddReleaseInput {
     autonomy: AutonomyResult;
     security: SecurityResult;
     phaseCoverage: PhaseCoverage;
-    /**
-     * D-260-24's fourth field, and NO CALLER SETS IT ANY MORE.
-     *
-     * `registry/scores.ts` required it together with the three payloads ("a half-written
-     * scorecard is not a scorecard") and nothing had ever written it, so `scoresOf` answered
-     * `undefined` for every release ever published; `publish.ts` then resolved
-     * `analysis.ontologyVersion` (a version STRING this column has no room for) to its
-     * `ontology_version.id` and closed that. The resolution is gone with the table's only
-     * writer, and the reader takes the version string off the stored `autonomy` instead —
-     * the same value, one indirection shorter.
-     *
-     * The member stays so a caller holding a legacy id can still store it, and because
-     * removing it is a change to this module's published input shape rather than to what
-     * anything reads. It is accepted and written through; it is read by nobody.
-     */
-    scoredOntologyVersionId?: string;
   };
 }
 
@@ -256,7 +240,6 @@ export async function addRelease(db: Db, input: AddReleaseInput): Promise<Releas
         autonomy: input.analysis?.autonomy ?? null,
         security: input.analysis?.security ?? null,
         phaseCoverage: input.analysis?.phaseCoverage ?? null,
-        scoredOntologyVersionId: input.analysis?.scoredOntologyVersionId ?? null,
       })
       .returning();
     return toReleaseRecord(row);

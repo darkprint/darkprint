@@ -42,8 +42,6 @@ import {
   insertAccount,
   insertBundle,
   insertCard,
-  insertOntologyTerm,
-  insertOntologyVersion,
   insertRelease,
   manifest,
   mark,
@@ -51,7 +49,6 @@ import {
   type AccountFixture,
   type BundleFixture,
   type CardFixture,
-  type OntologyFixture,
   type ReleaseFixture,
   type Scratch,
 } from "./fixtures";
@@ -74,8 +71,6 @@ export interface World {
   s3: Shelf;
   /** A published fork of `s1`, so the `forks` key has something to include and exclude. */
   s4: Shelf;
-
-  ontology: OntologyFixture;
 
   cardPlan: CardFixture;
   cardImpl: CardFixture;
@@ -136,11 +131,14 @@ function phaseCoverage(covered: readonly string[]): Record<string, unknown> {
  * A complete `SecurityResult`, present on every release for a reason that is not decoration.
  *
  * `scoresOf` (`lib/server/registry/scores.ts`) answers `undefined` unless `autonomy`,
- * `security`, `phase_coverage` AND `scored_ontology_version_id` are all present — "a
- * half-written scorecard is not a scorecard". A release carrying `autonomy` alone would
- * therefore be invisible to a module that reads the scorecard through T080's published
- * reader, and the `autonomy` and `df` filter cells would have reddened a correct
- * implementation for a hole in this fixture.
+ * `security` and `phase_coverage` are all present — "a half-written scorecard is not a
+ * scorecard". A release carrying `autonomy` alone would therefore be invisible to a module
+ * that reads the scorecard through T080's published reader, and the `autonomy` and `df`
+ * filter cells would have reddened a correct implementation for a hole in this fixture.
+ *
+ * The rule wanted a fourth, `scored_ontology_version_id`, until
+ * `0009_drop_ontology_versioning` dropped that column with the `ontology_version` table it
+ * pointed into.
  */
 function security(level: number): Record<string, unknown> {
   return {
@@ -149,7 +147,6 @@ function security(level: number): Record<string, unknown> {
     penalties: [],
     findings: [],
     rationale: `fixture: level ${level}`,
-    ontologyVersion: "0.1.0",
     diagnostics: [],
   };
 }
@@ -165,7 +162,6 @@ function autonomy(level: number, autonomyClass: string, isDarkFactory: boolean):
     totalNodes: 4,
     contributions: [],
     rationale: `fixture: level ${level}`,
-    ontologyVersion: "0.1.0",
     diagnostics: [],
   };
 }
@@ -240,19 +236,13 @@ export function assertTokensAreDiscriminating(
 }
 
 export async function buildWorld(s: Scratch): Promise<World> {
-  /* The published core vocabulary, seeded as rows rather than assumed.
-     D-200-14 takes `/cards`'s `type` and `risk` facets and `/terms`'s `kind` facet from
-     merged T030's ontology — a vocabulary, not a projection of the hit set — and T030
-     reads them out of `ontology_term`. A version row with no term rows would leave those
-     facets legitimately empty, and the AC3 cells would have reddened a correct module for
-     a hole in this fixture. */
-  const ontology: OntologyFixture = await insertOntologyVersion(s, CORE_ONTOLOGY.version);
-  for (const term of CORE_ONTOLOGY.terms) {
-    await insertOntologyTerm(s, {
-      versionId: ontology.id,
-      term: term as unknown as Record<string, unknown>,
-    });
-  }
+  /* The core vocabulary used to be seeded as rows here. D-200-14 takes `/cards`'s `type`
+     and `risk` facets and `/terms`'s `kind` facet from merged T030's ontology — a
+     vocabulary, not a projection of the hit set — and T030 read them out of `ontology_term`,
+     so a version row with no term rows would have left those facets legitimately empty and
+     reddened a correct module for a hole in this fixture. `0009_drop_ontology_versioning`
+     dropped both tables, and the vocabulary those facets are taken from is `CORE_ONTOLOGY`
+     in the process, merged with each release's `local_vocabulary`. Nothing to seed. */
   const alpha = await insertAccount(s, mark("t200a"));
   const beta = await insertAccount(s, mark("t200b"));
 
@@ -357,7 +347,6 @@ export async function buildWorld(s: Scratch): Promise<World> {
       autonomy: autonomy(o.level, o.autonomyClass, o.isDarkFactory),
       security: security(o.level),
       phaseCoverage: phaseCoverage(o.covered),
-      scoredOntologyVersionId: ontology.id,
     });
     return {
       bundle,
@@ -451,13 +440,11 @@ export async function buildWorld(s: Scratch): Promise<World> {
       cardImpl.ref,
       cardTest.ref,
       cardUnphased.ref,
-      CORE_ONTOLOGY.version,
       ...CORE_ONTOLOGY.terms.map((term) => term.id),
     ],
   );
 
   return {
-    ontology,
     alpha,
     beta,
     s1,

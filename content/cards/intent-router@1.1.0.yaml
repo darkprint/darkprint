@@ -1,0 +1,61 @@
+id: intent-router
+name: Intent Router
+type: decision
+
+action: >-
+  Classify the inbound event against the label set and dispatch it down the matching lane,
+  falling through to the default lane whenever confidence sits below the threshold.
+spec: >-
+  Read the inbound event as it arrived and decide which one of `billing`, `bug-report`,
+  `how-to` or `account-access` it is. Emit the lane you picked on `lane` with the confidence
+  you had in it, and emit the event on `routed` with its label added and payload and metadata
+  otherwise untouched. If your confidence in the best label is below 0.6, route to the
+  `general` lane instead of committing to a guess, every event leaves this node down some
+  lane, because anything unrouted falls on the floor. Record the lane in your status file
+  as well: put `lane` in `context_updates`, set to the value you picked, so a graph
+  downstream can branch on `context.lane`. A run that leaves that key unwritten reads back
+  as the empty string, and no lane name matches it.
+agent: Classifier
+tools: []
+mcp: []
+skill: skills/intent-router.md
+params:
+  labels:
+    - billing
+    - bug-report
+    - how-to
+    - account-access
+  default_lane: general
+  confidence_threshold: 0.6
+
+inputs:
+  - name: event
+    type: json
+    description: The inbound event as it arrived, payload and metadata untouched.
+outputs:
+  - name: lane
+    type: status
+    description: The lane the event was routed to, with the classifier's confidence attached.
+  - name: routed
+    type: json
+    description: The event enriched with its label, ready for whichever branch picks it up.
+dependencies:
+  - ticket
+cannot: []
+will_not:
+  - change the payload it routes
+  - leave an event unrouted
+
+risk_markers: []
+notes: >-
+  The default lane is what stops anything falling on the floor. `labels` is configuration rather
+  than an input port because a taxonomy belongs to the deployment, not to the event.
+  1.1.0 adds one sentence to the spec: the lane also goes into `context_updates`, which is
+  Appendix C's field for a node handing a key to the run context. Until then this node emitted
+  the lane on a port and nothing wrote `context.lane`, so every guard reading it compared the
+  empty string and every fork on it took its negation arm whatever the classifier decided. A
+  `decision` card runs as a no-op under engine spec 4.7 and writes neither a status distinction
+  nor a `preferred_label`, so the spec sentence is the only place this key can come from.
+
+version: 1.1.0
+author: hachi

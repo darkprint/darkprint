@@ -17,17 +17,77 @@ import { AUTONOMY_BLURB, autonomyStatement } from "@/lib/format";
 import { getAuthor } from "@/lib/data/users";
 import type { CommunitySignals } from "@/lib/data/community";
 import { graphForBlueprint, requiredAgents, requiredTools } from "@/lib/graph-seed";
-/* Type-only, so this stays the pure translation layer the module banner promises: none of
-   these three barrels is ever called from here, only named for the shape their functions
-   return. `isolatedModules` erases a type-only import at compile time, so no route file's
-   `@/lib/server/**` boundary check has anything to see and no `node:*` dependency any of
-   the three barrels carries reaches a page that renders this module for a fixture. */
-import type { Aggregate, MetricAggregate } from "@/lib/server/ballot";
+/* Type-only, so this stays the pure translation layer the module banner promises: neither
+   barrel is ever called from here, only named for the shape its functions return.
+   `isolatedModules` erases a type-only import at compile time, so no route file's
+   `@/lib/server/**` boundary check has anything to see and no `node:*` dependency either
+   barrel carries reaches a page that renders this module for a fixture. */
 import type { ReportedCostUnits } from "@/lib/server/runs";
 import type { SignalState } from "@/lib/server/counters";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-74) (cited at line 167): POST /api/blueprints/{slug}/votes
+// No seam is anchored here any more. `TODO(SEAM-74)` named `POST /api/blueprints/{slug}/votes`
+// and cited line 167, and both halves were stale: the route was deleted on 2026-09-05 with the
+// ballot write path (the owner's ruling on §11.0 Q14), and line 167 had already moved onto the
+// analysis rationale.
+
+/* --------------------- the ballot aggregate --------------------- */
+
+/*
+ * These two shapes were `lib/server/ballot`'s, and that folder is gone.
+ *
+ * T160 published five shapes and two functions over them; Q14 deleted the functions and the
+ * route above them, and what was left was a `lib/server` module with no store, no refusal and
+ * no behaviour — two type declarations whose only reader is this file. A folder under
+ * `lib/server` that publishes nothing a server does is a module in name only, and it cost
+ * this pure translation layer an import across the client/server line it otherwise never
+ * crosses. So the declarations moved to their reader.
+ *
+ * They are still here rather than inlined into `LiveSignals` because `communityMetric` is
+ * exported and takes a `MetricAggregate` by name: a caller outside this file needs something
+ * to spell. Nothing produces one today — `live.aggregate` has had no producer since Q14 --
+ * and whether the field survives at all is the owner call D-120 recorded as never put to him.
+ * Deleting the shapes now would decide that question by attrition.
+ */
+
+/**
+ * One metric's standing.
+ *
+ * **A record rather than a bare number, and that was AC3 held by construction.** "An
+ * aggregate never returns without its sample size" — a `number` makes the sample size an
+ * optional second field a caller may omit, where a record makes having the value without it
+ * impossible.
+ */
+export interface MetricAggregate {
+  /**
+   * The weighted mean of the stored votes, on the same 0-100 axis the votes were.
+   *
+   * **Not rounded.** `lib/types.ts`'s `Metric.value` is the display shape and rounding is its
+   * decision; rounding here would make a caller unable to recover what was stored.
+   *
+   * `0` when `sampleSize` is `0`, because the field is required and has no absent form. A
+   * caller branches on `isSample`, never on this being zero: a metric everybody scored `0`
+   * and a metric nobody scored are different states and only `sampleSize` separates them.
+   */
+  value: number;
+  /**
+   * How many accounts voted **on this metric** — a count of ballots, never a sum of weights.
+   *
+   * The threshold was stated in votes, so raising a validator's weight moved `value` and left
+   * this alone. Counting weight here would have let two validators at weight 3 clear a
+   * five-vote bar with two votes.
+   */
+  sampleSize: number;
+  /** `sampleSize < DARKPRINT_CONFIG.telemetry.minRuns`, computed once so no caller recomputes it. */
+  isSample: boolean;
+}
+
+/** All three at once: there is no shape here that carries a value without its sample size. */
+export interface Aggregate {
+  efficacy: MetricAggregate;
+  reliability: MetricAggregate;
+  transparency: MetricAggregate;
+}
 
 /* --------------------- the bridge --------------------- */
 
@@ -47,7 +107,7 @@ import type { SignalState } from "@/lib/server/counters";
  * whole bag off. See `costMetric` below for the branch this produces.
  */
 export interface LiveSignals {
-  /** `lib/server/ballot`'s `getAggregate` — efficacy/reliability/transparency. */
+  /** The three ballot axes. No producer since Q14 deleted `getAggregate`; see `Aggregate` above. */
   aggregate?: Aggregate;
   /** `lib/server/runs`'s `reportedCost` — `undefined` when the digest has no reports. */
   cost?: ReportedCostUnits;
@@ -166,7 +226,8 @@ export function blueprintViewOver(input: AssembledViewInput): Blueprint {
       /* The engine's reading, with exactly one substitution: `rationale` arrives as the
          sentence a surface may print, which is the engine's own less the band ordinal it
          ends on (doc 2 §1.1). Everything else — the class, the counts, the fraction, the
-         per-node contributions, the ontology version — is passed through untouched.
+         per-node contributions — is passed through untouched. The ontology version was in
+         this list until 2026-09-05, when the owner had vocabulary versioning removed in full.
 
          Done here rather than at each call site because `Blueprint` crosses the
          server/client boundary: `GalleryBrowser` and `BlueprintCanvas` are client
@@ -231,9 +292,9 @@ function metricsFor(
       value: Math.round(analysis.autonomy.fraction * 100),
       source: "auto",
       // The engine's sentence, less the band ordinal it ends on: this `detail` is printed
-      // verbatim under the row by `MetricBars` and inside the radar's caption, and doc 2
-      // §1.1 keeps that ordinal off every surface. `autonomyStatement` drops the number
-      // and keeps the arithmetic, so the row still shows its working.
+      // verbatim inside the radar's caption, and doc 2 §1.1 keeps that ordinal off every
+      // surface. `autonomyStatement` drops the number and keeps the arithmetic, so the row
+      // still shows its working.
       detail: autonomyStatement(analysis.autonomy.rationale),
     },
     communityMetric(
@@ -283,7 +344,7 @@ function clamp(value: number, low: number, high: number): number {
  *
  * `agg === undefined` is "no live wiring for this axis" and reproduces the fixture row
  * byte-for-byte — `seededValue`/`seededSentence` are exactly what `metricsFor` used to
- * write inline. `agg` present is `lib/server/ballot`'s own answer, rounded for display the
+ * write inline. `agg` present is a real ballot standing, rounded for display the
  * way `autonomy` and `security` already are (`MetricAggregate.value` itself stays
  * unrounded, on purpose — see its own doc comment — this is the presentation layer's
  * decision, not a second source of truth).
@@ -318,10 +379,9 @@ export function communityMetric(
 
 /**
  * The sentence under a live ballot axis: what it measures, then how many accounts stood
- * behind the number — the same three-way split `reportedDetail` uses for cost, over
- * `lib/server/ballot`'s `MetricAggregate` rather than a run report. `telemetry.minRuns` is
- * the threshold `lib/server/ballot/aggregate.ts`'s own `MIN_SAMPLE` mirrors, consumed here
- * exactly as that module consumes it rather than restated as a second constant.
+ * behind the number — the same three-way split `reportedDetail` uses for cost, over a
+ * `MetricAggregate` rather than a run report. `telemetry.minRuns` is read from the engine's
+ * config rather than restated as a second constant here.
  */
 function ballotDetail(subject: string, agg: MetricAggregate): string {
   if (agg.sampleSize === 0) return `${subject} No ballots cast yet.`;
@@ -342,13 +402,34 @@ function ballotDetail(subject: string, agg: MetricAggregate): string {
  * or without an actual report, and `reportedDetail`'s `community.reported ?? community.cost`
  * precedence (the defect D-180-07 names) survives only in the `live === undefined` branch,
  * where the fixture's own `community.reported` is always absent in this archive and the
- * line is inert. `MetricBars`/`ScoreRadar` read `value === undefined` as "render as text,
- * not a length" — see their own comments for the D-180-01 mechanics.
+ * line is inert.
+ *
+ * ── this function is where the rule is enforced now, and the mechanics live here ──
+ * The convention was `value === undefined` means "render this figure as text, never as a
+ * length". It had three readers. `components/ui/MetricBars.tsx` was deleted on 2026-09-04
+ * and `components/ui/ScoreRadar.tsx` on 2026-09-06, both on the owner's instruction and
+ * both once nothing mounted them, and the radar was the last. **So no renderer reads the
+ * convention today, and the guarantee this function makes is the whole of the rule as it
+ * stands in code**: the live branch sets `value: undefined` unconditionally, so there is
+ * no number on the live cost row for any future chart to give a length to, whatever that
+ * chart decides `undefined` means.
+ *
+ * Why the number cannot have a length, restated here rather than pointed at, because the
+ * comment that carried it is gone: cost and time are reported by whoever ran the
+ * blueprint, on their machine, in their own units, against their own model. There is no
+ * reference model that would put such a figure on a 0–100 interval, so a bar or a spoke
+ * drawn from it would be a comparison the platform is not entitled to make. The figure
+ * itself is not dropped. It goes out in `detail` and, when a report exists, in `reported`
+ * as `{ runs, median, p10, p90 }`, which is a caller's cue to print it in words with its
+ * own unit attached. A caller that wants the number visible has to print it itself, and
+ * that is the intended cost of the rule.
  *
  * `community` takes only the two fields the fixture branch reads, `Pick`ed off
- * `CommunitySignals` rather than the whole shape: the live branch never touches it, and a
- * caller building a live row from scratch — `/reading-the-radar`'s sample chart — has no
- * reason to construct a full fixture-shaped row it will not use.
+ * `CommunitySignals` rather than the whole shape: the live branch never touches it, so a
+ * caller assembling a live row by hand has no reason to construct a full fixture-shaped
+ * row it will not use. The caller this was written for was `/reading-the-radar`'s sample
+ * chart, and that route was deleted on 2026-09-04; the narrow parameter is kept because
+ * the argument for it does not depend on that caller existing.
  */
 export function costMetric(
   community: Pick<CommunitySignals, "reported" | "cost">,

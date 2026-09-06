@@ -45,7 +45,9 @@ describe("community support on detail pages", () => {
         visibility: "public" as const,
         title: bp!.title,
         summary: bp!.summary,
-        watchers: 0,
+        /* `watchers: 0` stood here. The prop is gone: the owner took the Watch pill off the
+           band on 2026-09-06, and the count it printed had no other reader. Nothing this
+           file asserts was about it. */
         forks: 0,
         saveId: `blueprint:${bp!.slug}`,
         star: { api: "/api/blueprints/darkprint/x/star", count: 214, starred: false, signedIn: false },

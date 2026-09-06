@@ -69,11 +69,16 @@ import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
 /**
  * The two registers a cell can be in.
  *
- * `emerald` is the site's "this runs" — the same green the skill's own install line wears
- * wherever it appears. `blueprint` is `--color-blueprint-line`, which is what `/mcp` already
- * sets its install snippet in, on the author's instruction that the command a reader copies
- * there be the site's blue. A reader who follows the band to that page meets the same string
- * in the same colour.
+ * `emerald` is the site's "this runs". `blueprint` is `--color-blueprint-line`, which is
+ * what `/mcp` already sets its install snippet in, on the author's instruction that the
+ * command a reader copies there be the site's blue. A reader who follows the band to that
+ * page meets the same string in the same colour.
+ *
+ * **No cell is emerald as of 2026-09-05** and the key stays defined, because the skill cell
+ * is one edit from taking it back (see `SETUPS`). Neither command runs today: the MCP one
+ * needs a package that is not on npm, and the skill one needs a repository that is not
+ * public. A register that said otherwise would be the claim, in colour, that the ruling
+ * behind that note exists to stop.
  *
  * One field per cell rather than a `built` boolean, because a boolean would now be driving
  * two dots and two text colours and saying nothing about whether the thing is built — see
@@ -98,16 +103,41 @@ const TONE = {
  * verbatim. That is the disclosure this file used to duplicate; it is not the disclosure
  * this file was carrying alone, which is what made the badge safe to drop here.
  *
- * The two cells are told apart by register now rather than by a badge: green for the command
- * that runs today, the site's blue for the one that will.
+ * The two cells were told apart by register: green for the command that ran today, the
+ * site's blue for the one that would.
+ *
+ * ── Neither runs today, and the skill cell says which limit is its own (2026-09-05) ──
+ * Owner ruling §11.0 Q8: DarkPrint's repository is private, `api.github.com` answers 404
+ * unauthenticated, and the `skills` CLI reads the DarkPrint skill out of that repository
+ * over git — so the emerald cell was printing a command no reader could run. Emerald means
+ * "this runs" on this site (`components/hero/Wordmark.tsx` argues it), so leaving it there
+ * was a claim in colour, and the register alone cannot say WHY. Two things change and
+ * nothing else: the cell takes the blue register the MCP cell already wears, and it gains a
+ * `note`, which is the one field on this row carrying the qualification.
+ *
+ * **Not a `ComingSoonBadge`, and this is a constraint rather than a preference.**
+ * `components/hero/Wordmark.test.ts` forbids the string "coming soon" on BOTH cells — the
+ * author took it off the MCP cell on 2026-08-12 and that case was inverted rather than
+ * deleted, so a badge here would red a suite this file does not own. The note also says
+ * more than a badge could: "coming soon" would read as the DarkPrint skill being
+ * unfinished, which is false. It is written; the repository holding it is shut.
+ *
+ * A `note` and not the sentence-per-entry this band refuses. The docblock above rules those
+ * out and the ruling stands: what is banned is a DESCRIPTION of each way in, in smaller
+ * type, competing with the command. This is six words in the label's own register, on the
+ * label's own line, and it exists because the line under it does not work.
+ *
+ * Deleting `note` and putting `tone` back to `emerald` is this file's whole undo the day
+ * the repository is public. `lib/skill.ts`'s header lists the other five surfaces.
  */
 const SETUPS = [
   {
     key: "skill",
     label: "Design your blueprint",
+    note: "fails today · the repository is private",
     command: SKILL_INSTALL_COMMAND,
     href: SKILL_ROUTE,
-    tone: "emerald",
+    tone: "blueprint",
   },
   {
     key: "mcp",
@@ -200,6 +230,20 @@ export function SetupChips() {
                   )}
                 />
                 <span className="label">{setup.label}</span>
+                {/* Amber, and the contract allows exactly this. `app/globals.css` spends
+                    it on `ComingSoonBadge` and `.route-box` and nothing else, and
+                    `app/skill/page.tsx` already paints an UNBUILT row's label in it
+                    outside a badge on the same reading: amber marks a surface describing
+                    something that does not work yet. The note's own words stop it being
+                    read as "the DarkPrint skill is unfinished" — it names the repository,
+                    not the document. #ffb020 on `--color-surface-2` is past AA at this
+                    size; the cell's hover only lightens the ground it sits on.
+
+                    On the label's line and in the label's register, so the band keeps its
+                    shape: one label line, one command line, no sentence per entry. */}
+                {"note" in setup && (
+                  <span className="label text-amber">{setup.note}</span>
+                )}
               </span>
               {/* Never wrapped. A command broken across two lines is a command a reader
                   cannot select in one gesture, and these are the one thing on the page

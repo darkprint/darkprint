@@ -59,7 +59,9 @@ describe("AC1 — the nine archive bundles reproduce the build", () => {
         loaded.analysis.autonomy.autonomyClass,
       );
       expect(result.analysis?.security.level, loaded.slug).toBe(loaded.analysis.security.level);
-      expect(result.analysis?.ontologyVersion, loaded.slug).toBe(loaded.analysis.ontologyVersion);
+      /* A fourth expectation compared `analysis.ontologyVersion` on both sides.
+         `0009_drop_ontology_versioning` withdrew the field, and comparing two `undefined`s
+         is a green that says nothing. The three above are untouched. */
     }
   });
 

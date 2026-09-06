@@ -38,11 +38,14 @@
    run takes the same pair at two weights.
 
    `number` and `bool` used to be `text-amber`, which was a third
-   spelling of a colour the site reserves for "not built yet" and
-   "this box leaves the page", sitting on a card the engine really
-   enforces. They are `text-fg` now: a scalar constant is a value
-   rather than a status, and a neutral is the one thing in a warm
-   register that cannot be mistaken for a signal.
+   spelling of a colour the site then reserved for "not built yet"
+   and "this box leaves the page", sitting on a card the engine
+   really enforces. They are `text-fg` now, and the reason survives
+   the 2026-09-06 ruling that gave amber the card register: a scalar
+   constant is a value rather than a status, and a neutral is the one
+   thing in a warm register that cannot be mistaken for a signal. If
+   this palette is ever repointed onto amber with the sheet under it,
+   these two stay neutral.
    ============================================================ */
 
 import { cx } from "@/lib/format";

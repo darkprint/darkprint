@@ -122,10 +122,9 @@ interface AncestorChain {
  * on top. An extension sharing an id with a base term replaces it in place — the view keeps
  * working, and `validate()` reports the shadowing.
  *
- * The view keeps the *base* version: a local overlay does not mint a new vocabulary version,
- * which is the version every score computed against the merged view is recorded under. It is
- * also what used to let a card declare `ontology_version: 0.1.0` while using local terms,
- * back when a card declared one.
+ * A local overlay does not mint a vocabulary of its own. There is nothing left to mint:
+ * the vocabulary carries no version, so an overlay is exactly what it looks like, the core
+ * terms with the bundle's own terms layered on, and the merged view keeps the base title.
  */
 export function ontologyView(base: Ontology, extensions?: readonly OntologyTerm[]): OntologyView {
   /* ---------- merge (§7) ---------- */
@@ -187,7 +186,6 @@ export function ontologyView(base: Ontology, extensions?: readonly OntologyTerm[
   for (const ofKind of termsByKind.values()) ofKind.sort((a, b) => cmpId(a.id, b.id));
 
   const merged: Ontology = Object.freeze({
-    version: base.version,
     title: base.title,
     terms: Object.freeze(terms.slice()),
   });

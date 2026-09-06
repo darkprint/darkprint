@@ -35,12 +35,58 @@ import { deleteJson, errorMessage, getJson, postJson } from "./live";
 
 const MAX_LABEL_LENGTH = 100;
 
+/**
+ * The two scopes, as literals rather than an import of `KeyScope`.
+ *
+ * `MAX_LABEL_LENGTH`'s reason one line up: this is a client component and
+ * `@/lib/server/limits` reaches `@/lib/db`. The server is the authority either way. Nothing
+ * here decides what a key may do, and every sentence this file renders about a minted key is
+ * chosen from what the server answered rather than from what was asked for.
+ */
+type Scope = "read" | "write";
+
 interface KeyRow {
   keyId: string;
   label: string;
+  scope: Scope;
   createdAt: string;
   revokedAt: string | null;
 }
+
+/**
+ * What each scope means, in the words its holder gets at the one moment they read anything.
+ *
+ * ── the read sentence is UNCHANGED, to the byte ──
+ * It is the promise every key minted before the scope column was issued under, and the
+ * owner's 2026-09-05 ruling is that it holds for those keys for their whole lives. Every one
+ * of them backfilled to `read`, so this is still the sentence shown against every key that
+ * existed before this control did.
+ *
+ * ── the write sentence describes TODAY, and it will go stale ──
+ * A key is read once, when it is minted, so a holder cannot be told later. As this ships,
+ * `writeActorFor` exists and no route calls it: no endpoint accepts a key for a write, and
+ * saying otherwise would be selling a capability that is not there.
+ *
+ * **The day a route does accept one, this sentence is wrong and must change in the same
+ * commit that wires it.** `app/capabilities/page.tsx` carries the same claim ("a key gates no
+ * read and authorises no write") and needs the same edit at the same moment.
+ */
+const SCOPE_COPY: Record<Scope, { name: string; blurb: string }> = {
+  read: {
+    name: "Read",
+    blurb:
+      "It carries no identity, so it signs nothing in and authorizes no write. Anything that " +
+      "changes your account or your bundles still needs your session.",
+  },
+  write: {
+    name: "Write",
+    blurb:
+      "It acts as your account rather than as an anonymous reader. No endpoint accepts a key " +
+      "for a write yet, so today it reaches exactly what a read key reaches. When one does, " +
+      "this key will be able to change your account and your bundles, and revoking it is the " +
+      "only way to take that back.",
+  },
+};
 
 /** `"2026-08-25T12:00:00.000Z"` -> `"Aug 25, 2026"`. `prettyDate` wants a date-only string;
     the wire value is a full timestamp, and the settings surface has never shown finer than a
@@ -71,7 +117,11 @@ function KeyList({
             <span className="flex min-w-0 flex-1 flex-col gap-1">
               <span className="text-sm text-fg">{key.label}</span>
               <span className="font-mono text-[11px] text-dim">
-                created {friendly(key.createdAt)}
+                {/* The scope comes off the record the server answered with, so a row reports
+                    what the key IS rather than what the form asked for. Every key minted
+                    before the column existed reads `read` here, which is the promise it was
+                    issued under showing up where its holder looks for it. */}
+                {key.scope} · created {friendly(key.createdAt)}
                 {revoked && ` · revoked ${friendly(key.revokedAt as string)}`}
               </span>
             </span>
@@ -102,12 +152,15 @@ export function ApiKeys() {
   const [loadError, setLoadError] = useState<string | undefined>(undefined);
 
   const [label, setLabel] = useState("");
+  const [scope, setScope] = useState<Scope>("read");
   const [minting, setMinting] = useState(false);
   const [mintError, setMintError] = useState<string | undefined>(undefined);
   /* The one place the secret ever lives on this page — `record` carries no field for it and
      never will (`lib/server/limits/types.ts`'s own guarantee), so this is a plain `useState`
      that a "Done" press throws away rather than a value derived from `keys`. */
-  const [minted, setMinted] = useState<{ label: string; secret: string } | undefined>(undefined);
+  const [minted, setMinted] = useState<
+    { label: string; secret: string; scope: Scope; asked: Scope } | undefined
+  >(undefined);
 
   const [revokingId, setRevokingId] = useState<string | undefined>(undefined);
   const [revokeError, setRevokeError] = useState<string | undefined>(undefined);
@@ -123,10 +176,15 @@ export function ApiKeys() {
     if (trimmed === "") return;
     setMinting(true);
     setMintError(undefined);
-    postJson<{ record: KeyRow; secret: string }>("/api/account/keys", { label: trimmed })
+    postJson<{ record: KeyRow; secret: string }>("/api/account/keys", { label: trimmed, scope })
       .then(({ record, secret }) => {
         setKeys((rows) => [record, ...(rows ?? [])]);
-        setMinted({ label: record.label, secret });
+        /* `record.scope` and not `scope`. The panel below tells the holder what this key can
+           do, at the one moment they will read it, so the sentence has to come from the
+           server's answer. The requested value is kept beside it only to say when the two
+           disagreed — which is what a route that has not learned to read `scope` yet looks
+           like from here, and it must be visible rather than silently flattering. */
+        setMinted({ label: record.label, secret, scope: record.scope, asked: scope });
         setLabel("");
       })
       .catch((cause: unknown) => setMintError(errorMessage(cause)))
@@ -144,20 +202,37 @@ export function ApiKeys() {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* What is true of EVERY key stays here. What depends on the scope moved next to the
+          picker, because it is no longer one sentence: the read sentence is the promise
+          existing keys were issued under and it is reproduced verbatim in `SCOPE_COPY`. */}
       <p className="text-[13px] leading-relaxed text-muted">
         A key raises the rate ceiling for an agent reading the registry over the MCP
-        endpoints. It carries no identity, so it signs nothing in and authorizes no write.
-        Anything that changes your account or your bundles still needs your session. The
-        key is shown to you once, at the moment you mint it. DarkPrint never stores it and
-        cannot show it to you again. If you lose it, revoke it and mint a new one.
+        endpoints. What else it may do is its scope, which you choose once, when you mint
+        it, and which cannot be changed afterwards. The key itself is shown to you once, at
+        that same moment. DarkPrint never stores it and cannot show it to you again. If you
+        lose it, revoke it and mint a new one.
       </p>
 
       {minted !== undefined && (
         <div className="flex flex-col gap-2 rounded-md border border-cyan/40 bg-cyan/[0.06] p-4">
           <span className="text-sm text-fg">
-            &ldquo;{minted.label}&rdquo; is ready. Copy it now. This is the only time it is
-            shown.
+            &ldquo;{minted.label}&rdquo; is ready, with {minted.scope} scope. Copy it now.
+            This is the only time it is shown.
           </span>
+          <span className="text-[13px] leading-relaxed text-muted">
+            {SCOPE_COPY[minted.scope].blurb}
+          </span>
+          {minted.asked !== minted.scope && (
+            /* Not decoration and not an error state. The scope is decided by the server, and
+               a mismatch means the request for one was not honoured. Saying so is the only
+               thing that keeps the sentence above from reading as a description of the key
+               the holder asked for rather than of the key they got. */
+            <span role="alert" className="text-[13px] leading-relaxed text-signal">
+              You asked for {minted.asked} scope and this key was minted with{" "}
+              {minted.scope} scope. Revoke it and try again, or use it as a {minted.scope}{" "}
+              key.
+            </span>
+          )}
           <code className="overflow-x-auto rounded-md border border-line bg-void px-3 py-2 font-mono text-[13px] text-fg">
             {minted.secret}
           </code>
@@ -190,10 +265,37 @@ export function ApiKeys() {
             className="h-10 w-64 rounded-md border border-line bg-void px-3 text-sm text-fg transition-colors focus:border-cyan"
           />
         </label>
+        {/* A native select inside its own `label`, matching the field beside it. A custom
+            control here would owe keyboard handling and a listbox role for a two-item choice
+            the platform already renders accessibly. `read` is first and is the default, so
+            the affordance agrees with the column: a holder who chooses nothing gets the
+            scope every existing key has. */}
+        <label className="flex flex-col gap-2">
+          <span className="label">Scope</span>
+          <select
+            value={scope}
+            /* The paragraph below is what the choice actually MEANS, and a select announces
+               only its option label. Without this, a screen reader hears "Write" and never
+               the sentence saying what a write key can do today. */
+            aria-describedby="api-key-scope-blurb"
+            onChange={(event) => setScope(event.target.value as Scope)}
+            className="h-10 w-40 rounded-md border border-line bg-void px-3 text-sm text-fg transition-colors focus:border-cyan"
+          >
+            <option value="read">{SCOPE_COPY.read.name}</option>
+            <option value="write">{SCOPE_COPY.write.name}</option>
+          </select>
+        </label>
         <Button disabled={label.trim() === "" || minting} onClick={mint}>
           {minting ? "Minting…" : "Create key"}
         </Button>
       </div>
+      {/* Under the picker rather than inside the option list, because it is a paragraph and
+          an `<option>` renders one line of plain text. It changes as the choice changes, so
+          the sentence a holder reads before minting is the sentence about the key they are
+          about to get. */}
+      <p id="api-key-scope-blurb" className="text-[13px] leading-relaxed text-muted">
+        {SCOPE_COPY[scope].blurb}
+      </p>
       {mintError !== undefined && (
         <p role="alert" className="text-[13px] text-signal">
           {mintError}

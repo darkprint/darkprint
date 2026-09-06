@@ -1471,6 +1471,139 @@ describe("validateCard, params", () => {
 });
 
 /* ============================================================
+   params.tool_command, the one key a type requires
+   ------------------------------------------------------------
+   `shell-tool` is the node whose whole instruction is a command,
+   and engine spec §4.10's tool handler FAILs a node whose
+   `tool_command` is empty before it runs anything. Every cell here
+   is about the card that would resolve, score, export and then
+   fail on its first execution.
+
+   No card in `content/` declares `shell-tool`, so every fixture is
+   written here. That is the point of the term for now: it exists
+   so an imported Attractor `parallelogram` node has a type to be.
+   ============================================================ */
+
+describe("validateCard, params.tool_command", () => {
+  /** The minimal card retyped as the node that runs a command. */
+  function shellTool(params?: Record<string, unknown>): Record<string, unknown> {
+    const doc: Record<string, unknown> = { ...minimal(), type: "shell-tool" };
+    if (params !== undefined) doc.params = params;
+    return doc;
+  }
+
+  it("accepts a shell-tool card that declares a command", () => {
+    const { card, diagnostics } = validateCard(shellTool({ tool_command: "npm test" }), opts);
+    expect(diagnostics).toEqual([]);
+    expect(card?.params).toEqual({ tool_command: "npm test" });
+  });
+
+  it("warns when the card declares no params at all", () => {
+    const { card, diagnostics } = validateCard(shellTool(), opts);
+    // A warning and not an error: the card is legible and still loads, the way a draft
+    // imported with an empty `spec` does.
+    expect(codes(diagnostics)).toEqual(["card/missing-field"]);
+    expect(diagnostics[0].severity).toBe("warning");
+    expect(paths(diagnostics)).toEqual(["params.tool_command"]);
+    expect(card).toBeDefined();
+  });
+
+  it("warns when params are present and the key is not", () => {
+    const { diagnostics } = validateCard(shellTool({ max_iterations: 3 }), opts);
+    expect(codes(diagnostics)).toEqual(["card/missing-field"]);
+    expect(paths(diagnostics)).toEqual(["params.tool_command"]);
+  });
+
+  it("quotes the type back, so the author can see which half to change", () => {
+    const { diagnostics } = validateCard(shellTool(), opts);
+    expect(diagnostics[0].message).toContain("`type: shell-tool`");
+    expect(diagnostics[0].hint).toContain("4.10");
+  });
+
+  it.each(["", "   ", "\n"])("treats a blank command %j as no command", (blank) => {
+    // §4.10 tests the command for emptiness, so whitespace is the empty case rather than
+    // a command that happens to be short.
+    const { card, diagnostics } = validateCard(shellTool({ tool_command: blank }), opts);
+    expect(codes(diagnostics)).toEqual(["card/bad-type"]);
+    expect(diagnostics[0].severity).toBe("warning");
+    expect(diagnostics[0].message).toContain("blank");
+    expect(card).toBeDefined();
+  });
+
+  it.each<[string, unknown]>([
+    ["a number", 3],
+    ["a list", ["npm", "test"]],
+    ["a mapping", { run: "npm test" }],
+    ["null", null],
+    ["false", false],
+  ])("warns when the command is %s rather than a string", (_label, bad) => {
+    const { diagnostics } = validateCard(shellTool({ tool_command: bad }), opts);
+    expect(codes(diagnostics)).toEqual(["card/bad-type"]);
+    expect(paths(diagnostics)).toEqual(["params.tool_command"]);
+  });
+
+  it("asks the vocabulary, so a local type rooted at shell-tool is held to the same rule", () => {
+    // Doc 3 §7: a local type runs on the handler its core ancestor selects, so it needs
+    // the same command. `type === "shell-tool"` would let this card through.
+    const local: OntologyTerm = {
+      id: "berti/npm-script",
+      kind: "node-type",
+      label: "npm script",
+      description: "A shell tool that runs one npm script.",
+      broader: "shell-tool",
+      since: "0.1.0",
+    };
+    const view = ontologyView(CORE_ONTOLOGY, [local]);
+    const { diagnostics } = validateCard(
+      { ...minimal(), type: "berti/npm-script" },
+      { ontology: view },
+    );
+    expect(codes(diagnostics)).toEqual(["card/missing-field"]);
+    expect(diagnostics[0].message).toContain("`type: berti/npm-script`");
+  });
+
+  it("says nothing about a card of any other type, whatever its params hold", () => {
+    // `params` is a free-form bag that travels to whoever runs the graph. A key DarkPrint
+    // does not read on this type is not a defect, and reporting one would make the bag
+    // something other than free-form.
+    for (const type of ["agent", "tool", "validation", "decision", "human-gate"]) {
+      const { diagnostics } = validateCard(
+        { ...minimal(), type, params: { tool_command: "npm test" } },
+        opts,
+      );
+      expect(codes(diagnostics), type).toEqual([]);
+    }
+    for (const type of ["agent", "tool", "validation"]) {
+      const { diagnostics } = validateCard({ ...minimal(), type }, opts);
+      expect(codes(diagnostics), type).toEqual([]);
+    }
+  });
+
+  it("does not read an inherited key as a declared command", () => {
+    // `readParams` copies own keys only, so a prototype's `tool_command` never reaches the
+    // check and the card is one that declared nothing. Asserted from the outside because
+    // that is where the two halves meet: a `readParams` that started passing the raw
+    // mapping through would make this card silently complete.
+    const inherited = Object.create({ tool_command: "npm test" }) as Record<string, unknown>;
+    const { card, diagnostics } = validateCard(shellTool(inherited), opts);
+    expect(card?.params).toEqual({});
+    expect(codes(diagnostics)).toEqual(["card/missing-field"]);
+  });
+
+  it("still reports everything else in the same pass", () => {
+    const doc = shellTool();
+    delete doc.action;
+    const { card, diagnostics } = validateCard(doc, opts);
+    expect(card).toBeUndefined();
+    expect(codes(sortDiagnostics(diagnostics)).sort()).toEqual([
+      "card/missing-field",
+      "card/missing-field",
+    ]);
+    expect(paths(diagnostics).slice().sort()).toEqual(["action", "params.tool_command"]);
+  });
+});
+
+/* ============================================================
    Unknown keys
    ============================================================ */
 

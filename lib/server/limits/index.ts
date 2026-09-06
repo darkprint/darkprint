@@ -82,15 +82,30 @@ export type {
   ApiKeyRecord,
   IssuedKey,
   KeyList,
+  KeyScope,
   LimitSubject,
   LimitVerdict,
   ResolvedKey,
 } from "./types";
+/* The scope vocabulary as values, because a route reading `scope` out of a JSON body has an
+   `unknown` and needs to narrow it. Published for D-50-03's reason at a constant: the
+   alternative is `v === "read" || v === "write"` written at each caller, which is the
+   vocabulary copied to a second place, and the copy that goes stale is the one furthest from
+   the column. */
+export { KEY_SCOPES, isKeyScope } from "./types";
 export type { CheckLimitOptions } from "./check";
 export { checkLimit, enforceLimit } from "./check";
 
 /* --------------------- keys --------------------- */
 export { MAX_LABEL_LENGTH, issueKey, listKeys, resolveKey, revokeKey, revokeKeysFor } from "./keys";
+/* `writeActorFor` is the ONLY published path from a key to an `Actor`, and it is here rather
+   than beside `actorFrom` in `@/lib/server/accounts` because the decision it makes is about
+   this module's row: whether the key is live and whether its scope says write. There is
+   deliberately no synchronous form and no `asWriteActor(key)` that trusts the brand — that
+   would be exactly the affordance the second read exists to remove, the compile error with
+   an escape hatch beside it, which is the reason `types.ts` gives for publishing no
+   `asResolvedKey` either. */
+export { writeActorFor } from "./keys";
 export { SECRET_LENGTH, SECRET_PREFIX } from "./secret";
 
 /* --------------------- D-13's boundary --------------------- */

@@ -43,12 +43,17 @@ const ROOT = process.env.T262_SCAN_ROOT ?? ".";
 const at = (p: string) => (ROOT === "." ? p : join(ROOT, p));
 
 /** D-262-11 takes `dynamicParams`/`generateStaticParams` off these five. */
+/* Four, not five, since 2026-09-06. `app/u/[username]/terms/page.tsx` was deleted on the
+   owner's instruction ("remove the section Ontology terms") together with the `terms` row in
+   `components/profile/tabs.ts`. It is REMOVED here rather than left in place, because
+   `per-request.test.ts`'s premise cell exists precisely to stop absence assertions passing
+   against a file that is not there, and a route left in this list would have turned that
+   guard into the thing it was written to catch. */
 export const PROFILE_ROUTES = [
   "app/u/[username]/page.tsx",
   "app/u/[username]/blueprints/page.tsx",
   "app/u/[username]/cards/page.tsx",
   "app/u/[username]/saved/page.tsx",
-  "app/u/[username]/terms/page.tsx",
 ] as const;
 
 export const SETTINGS_ROUTE = "app/settings/page.tsx";

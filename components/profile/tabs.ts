@@ -38,7 +38,7 @@
    address.
    ============================================================ */
 
-export type ProfileTabId = "blueprints" | "cards" | "saved" | "terms";
+export type ProfileTabId = "blueprints" | "cards" | "saved";
 
 export interface ProfileTab {
   id: ProfileTabId;
@@ -60,10 +60,23 @@ export const PROFILE_TABS: readonly ProfileTab[] = [
   { id: "blueprints", label: "Blueprints", segment: "" },
   { id: "cards", label: "Cards", segment: "cards" },
   { id: "saved", label: "Saved", segment: "saved", ownerOnly: true },
-  /* "Ontology terms" since 2026-08-12, with the nav rows and the browser's count line: one
-     word for the thing across the whole site, on the author's instruction. */
-  { id: "terms", label: "Ontology terms", segment: "terms" },
 ];
+
+/* ── "Ontology terms" was the fourth tab, and it is gone (owner, 2026-09-06) ──
+   It was added 2026-08-12 and spelled with one word for the thing across the whole site.
+   The owner removed it with the profile header's `downloads` and `validated` figures, in
+   the same instruction: "remove the section Ontology terms".
+
+   `app/u/[username]/terms/page.tsx` went with it, and SEAM-60
+   (`GET /api/authors/{handle}/terms`) lost its only anchor in the tree with that file.
+   The vocabulary itself is untouched: a local term is still namespaced by the handle that
+   minted it, `/ontology` still lists local terms as local, and `/spec/ontology` still
+   carries the extension model. What left is one PROFILE VIEW of that data, not the data.
+
+   Note the second consequence, because it is not visible from here. `RESERVED_PROFILE_
+   SEGMENTS` is derived from the table above, so `terms` is no longer a reserved slug and a
+   bundle may now be called it. That is correct rather than incidental — the reservation
+   exists so a slug cannot shadow a tab's route, and there is no such route any more. */
 
 /** Where a tab points, for one handle. */
 export function profileTabHref(username: string, tab: ProfileTab): string {

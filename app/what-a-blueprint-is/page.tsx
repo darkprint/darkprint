@@ -466,7 +466,9 @@ export default function WhatABlueprintIsPage() {
   /* `partitionTerms` and `termLine` stood here: "v0.1.0 · 49 curated terms", printed as the
      vocabulary band's `meta` line. The author asked it out on 2026-08-08, and the count it
      carried is not lost — `VocabularyFigure` beside that band draws every kind with its
-     size, off the same ontology, and the version is in `/ontology`'s own heading now. */
+     size, off the same ontology. The half of that line this note used to send a reader to
+     `/ontology` for is the version, and it is not there either: the owner removed ontology
+     versioning on 2026-09-04. There is one vocabulary and no number to print beside it. */
 
   /* The vocabulary figure draws kinds and how many terms each holds, not a sample.
 
@@ -486,12 +488,11 @@ export default function WhatABlueprintIsPage() {
   const kinds = (["phase", "node-type", "data-type", "risk-marker"] as const).map(
     (kind) => ({ kind, count: view.byKind(kind).length }),
   );
-  /* The version of the vocabulary the figure is COUNTING, read off the same view the
-     counts come from. It used to be the sample card's own `ontology_version` declaration,
-     which was a different number in principle: the version the author wrote against rather
-     than the one these kinds were enumerated from. A card declares no vocabulary version
-     now, and the figure labels what it actually drew. */
-  const ontologyVersion = view.ontology.version;
+  /* A version was read here and handed to the figure, which printed it in the head of the
+     ontology card. The owner removed ontology versioning entirely on 2026-09-04: there is
+     one vocabulary and it answers to the Attractor spec language rather than to a number of
+     its own, so there is nothing left to read and nothing left to label. `VocabularyFigure`
+     lost the prop in the same change rather than being handed a placeholder. */
 
   /* By route rather than by position. The three bands below are hand-written because each
      carries its own figure and its own sentence, and reading the layer out of the list by
@@ -687,7 +688,7 @@ export default function WhatABlueprintIsPage() {
               side="left"
               figure={
                 <FigureFrame caption="Both files spell a term the same way, or the checker says so.">
-                  <VocabularyFigure kinds={kinds} version={ontologyVersion} />
+                  <VocabularyFigure kinds={kinds} />
                 </FigureFrame>
               }
             >
@@ -754,9 +755,10 @@ export default function WhatABlueprintIsPage() {
           seam falls between sections on the same ground: three-parts → the-words, ruled by
           a full-bleed `border-t border-line`. That is the point of the move — they are one
           teaching region, and the rule inside it marks a change of subject rather than a
-          change of chapter. `/reading-the-radar` already ships two such seams, so this is
-          the site's existing practice rather than a new licence. The second one this note
-          used to describe is gone with the band that made it.
+          change of chapter. The precedent cited here was `/reading-the-radar`, which shipped
+          two seams of the same shape; the author took that page off the site on 2026-09-04,
+          so the seam now stands on its own reason rather than on a page a reader can open.
+          The second one this note used to describe is gone with the band that made it.
 
           One paragraph did not travel: the observability correction ("Observability is not
           modelled here at all …"). The author asked for it deleted in the same instruction
@@ -850,24 +852,24 @@ export default function WhatABlueprintIsPage() {
           absent `planner -> builder` edge with its check/cross pair, and the six-axis
           scorecard.
 
-          **The component now has no consumer anywhere on the site.** This page was its
-          only mount — it came here when `/spec` was deleted, and `/spec` had been its only
-          mount before that. The file is deliberately left in the tree rather than deleted
-          with the band, for two reasons worth stating so a later pass does not undo the
-          judgement by accident:
+          **The component was kept in the tree as a deliberate orphan, and it is gone now.**
+          This page was its only mount, and it came here when `/spec` was deleted. It was
+          left standing for one reason: `components/ui/scorecard-glance.test.ts` read its
+          source and held a rule about how `MetricBars` draws with no `audit=` beside it, so
+          deleting the file would have deleted the case rather than satisfied it.
 
-          1. `components/ui/scorecard-glance.test.ts` reads its source and asserts that it
-             mounts `MetricBars` with no `audit=` prop. That is a real rule about how the
-             scorecard is drawn when nothing sits beside it, and deleting the file would
-             delete the case rather than satisfy it;
-          2. it is the site's only worked analyzer run outside a blueprint detail page, and
-             the argument it drew — that the isolation rule lives in the wiring and is
-             checkable because the wiring is a file — is now made on this page only in
-             prose, under "Why the rubric is kept away".
+          That reason expired with the scoring feature. `MetricBars` has no mounts left
+          either and was deleted on 2026-09-04, the nine cells over it came out with it, and
+          `SectionExample` followed. Written down because the note above it reads as an
+          instruction to preserve a file, and the file is not there: a later pass looking for
+          `components/home/SectionExample.tsx` should stop looking rather than restore it.
 
-          So: an orphan on purpose, reported rather than swept. Deleting it is a one-line
-          change plus that test case whenever the author wants it. Nothing else in the tree
-          references it except comments and PROJECT.md's page-weight table.
+          What the band was carrying that this page still needs is the argument, not the
+          drawing: the isolation rule lives in the wiring, and it is checkable because the
+          wiring is a file. That claim is made three bands up, where the topology part says
+          the dashed edge is a rule the resolver enforces, and it is demonstrated for real on
+          `/spec/card`, which runs the analyzer over the starter with one edge added and
+          quotes what the engine says back.
 
           ── What the removal does to the page's ground rhythm ──
           The run was void (header) / surface / surface / void (`SectionExample`) / void /

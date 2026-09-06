@@ -16,18 +16,23 @@ import { useQueryState } from "@/components/ui/useQueryState";
 // TODO(SEAM-15) (cited at line 116): GET /api/ontology/terms?q&kind&origin
 
 /* ============================================================
-   The third registry browser, and the route it needed.
+   The third registry browser, and the routes it has lived on.
 
-   `/ontology` had no index. `app/ontology/[...term]/` is a catch-all, and a catch-all does
-   not match its own parent, so `/ontology` answered 404 — and `next.config.ts` has been
-   308ing `/ontologies` onto it since the section was renamed, which made that redirect a
-   404 with an extra hop. `README.md` describes the route as existing. Nothing failed,
-   because nothing linked it: the chrome had no entry for the vocabulary at all, which is
-   the third of the three problems the nav pass names.
+   It was built for `/ontology`, which had no index: `app/ontology/[...term]/` is a
+   catch-all, a catch-all does not match its own parent, so `/ontology` answered 404 — and
+   `next.config.ts` had been 308ing `/ontologies` onto it since the section was renamed,
+   which made that redirect a 404 with an extra hop. Nothing failed, because nothing linked
+   it: the chrome had no entry for the vocabulary at all, which is the third of the three
+   problems the nav pass names.
 
-   So the browser lands here and the nav row points at it. Search, filter by kind, and a
-   flat list of every term with its ancestry and what it costs — the three questions a
-   reader has about a controlled vocabulary they are about to write a card against.
+   The owner deleted that index on 2026-09-06 and moved this browser onto `/spec/ontology`,
+   into the slot a route box pointed across from. So the chrome's one Ontology row lands on
+   the specification and the listing is a band inside it. What the component does is
+   unchanged and none of its behaviour is route-specific: search, filter by kind, filter by
+   origin, and a flat list of every term with its ancestry and what it costs — the three
+   questions a reader has about a controlled vocabulary they are about to write a card
+   against. `components/ontology/canonical-route.test.ts` carries all three positions this
+   listing has held and asserts which one is current.
 
    ── Two ways to read 50 terms, and only ever one of them on screen ──
    This shipped as a flat list and nothing else, and the author's verdict was that the old
@@ -38,7 +43,7 @@ import { useQueryState } from "@/components/ui/useQueryState";
    one word up.
 
    But it is the right shape for the reader who did arrive holding a word, which is what
-   the route had none of. So both are here and the filter decides which: with nothing
+   the listing had none of. So both are here and the filter decides which: with nothing
    filtered this renders `children`, the catalog exactly as it was, and the moment a
    search or a filter is set it renders the matching rows flat. One enumeration on screen
    at a time, chosen by what the reader just did rather than by a toggle they have to find.
@@ -47,14 +52,24 @@ import { useQueryState } from "@/components/ui/useQueryState";
    and searching one are different tasks, and a page that only does the second makes every
    reader who wanted the first do it with Cmd-F.
 
-   ── What this is not ──
-   It is not `/spec/ontology`, which is the spec document about the format: what a term is,
-   how the local overlay works, what the validator refuses. This is the terms themselves.
-   One route names the format and one lists the words, which is why the nav calls this
-   Vocabulary and that one Ontology.
+   ── What this is not, and the argument that stopped being true ──
+   This said: it is not `/spec/ontology`, which is the spec document about the format —
+   what a term is, how the local overlay works, what the validator refuses — and this is
+   the terms themselves; one route names the format and one lists the words, which is why
+   the nav called this Vocabulary and that one Ontology.
 
-   Every row is read off `getOntologyView()` by the page and handed here as plain data, so
-   this file never touches the engine.
+   That was the whole case for two routes and the owner overruled it on 2026-09-06. The
+   distinction it drew is still a real distinction and the page still makes it, in bands
+   rather than in URLs: the enumeration is its own band with its own heading, between the
+   band that explains the five kinds and the band that gives the overlay rules. What the
+   split cost was a reader holding a term having to pick which of two pages claimed the
+   word. It is kept here rather than deleted so a later pass that wants to split them again
+   knows what it is buying and what it is paying.
+
+   Every row is read off the merged ontology view by the page and handed here as plain
+   data, so this file never touches the engine. That view is registry-backed and read per
+   request, which is why the usage count beside each row is a live figure rather than
+   whatever was on disk at the last deploy.
    ============================================================ */
 
 /**
@@ -86,8 +101,15 @@ export interface VocabularyRow {
   local: boolean;
   /** How many cards in the archive name it. */
   usedBy: number;
-  /** §6.2: a term is never removed, it is signposted at whatever supersedes it. */
-  deprecated?: { since: string; replacedBy?: string };
+  /**
+   * §6.2: a term is never removed, it is signposted at whatever supersedes it.
+   *
+   * The successor and nothing else. This carried `since` — the ontology version the term
+   * was deprecated in — which no row ever printed and which stopped meaning anything when
+   * the vocabulary stopped being versioned (2026-09-05, see `OntologyCatalog`). A pointer
+   * to the current spelling is the whole of what a reader can act on.
+   */
+  deprecated?: { replacedBy?: string };
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -100,12 +122,9 @@ const KIND_LABEL: Record<string, string> = {
 
 export function VocabularyBrowser({
   terms,
-  version,
   children,
 }: {
   terms: readonly VocabularyRow[];
-  /** The vocabulary's own semver, printed with the count. */
-  version: string;
   /**
    * The catalog, rendered on the server and shown whenever nothing is filtered.
    *
@@ -146,104 +165,99 @@ export function VocabularyBrowser({
   const active = [kind, origin].filter((v) => v !== null).length + (search === "" ? 0 : 1);
 
   return (
-    /* `max-w-4xl` on the bar, the count line and the flat list, and nothing on the children.
-       The catalog sets that same 896px on its own panels and deliberately lets the
-       governance band under them run the full container, which is an argument it makes in
-       its own file; clamping it from out here would overrule that silently. So the
-       constraint goes on the three things this component draws, and the effect is one left
-       and one right edge over every term on the page either way it is rendered. A filter
-       bar wider than the list it filters is exactly the stray edge the catalog's own
-       comments spent a pass removing. */
+    /* No width cap anywhere in here, and the wrapper that carried one is gone with it.
+       The bar, the count line and the flat list were held at `max-w-4xl` to match the
+       catalog's own 896px panels, on the rule that a filter bar wider than the list it
+       filters is a stray edge. The rule stands and the number went: the catalog's panels
+       run to `container-page` now (owner, 2026-09-05), so matching them means matching
+       1200px, which is what an uncapped child of the route container already does. */
     <div className="flex flex-col gap-5">
-      <div className="flex max-w-4xl flex-col gap-5">
-        <RegistryFilterBar
-          id="vocabulary-filters"
-          label="Filter the vocabulary"
-          results={results.length}
-          total={terms.length}
-          active={active}
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <SearchField
-              value={search}
-              onChange={(value) => setParam("q", value || null)}
-              placeholder="Search ids, labels, descriptions…"
-              ariaLabel="Search the vocabulary"
-            />
+      <RegistryFilterBar
+        id="vocabulary-filters"
+        label="Filter the vocabulary"
+        results={results.length}
+        total={terms.length}
+        active={active}
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <SearchField
+            value={search}
+            onChange={(value) => setParam("q", value || null)}
+            placeholder="Search ids, labels, descriptions…"
+            ariaLabel="Search the vocabulary"
+          />
 
-            <label className="flex items-center gap-2">
-              <span className="sr-only">Filter by kind</span>
-              <select
-                value={kind ?? ""}
-                onChange={(e) => setParam("kind", e.target.value || null)}
-                aria-label="Filter by kind"
-                className={CONTROL_CLASS}
-              >
-                <option value="">All kinds</option>
-                {kinds.map(([id, count]) => (
-                  <option key={id} value={id}>
-                    {KIND_LABEL[id] ?? id} ({count})
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {/* Doc 3 §7's one real division: a term is curated or it arrived namespaced
-                through the local channel, and which of the two it is decides whether
-                anybody may edit it. */}
-            <label className="flex items-center gap-2">
-              <span className="sr-only">Filter by origin</span>
-              <select
-                value={origin ?? ""}
-                onChange={(e) => setParam("origin", e.target.value || null)}
-                aria-label="Filter by origin"
-                className={CONTROL_CLASS}
-              >
-                <option value="">Core and local</option>
-                <option value="core">Curated core</option>
-                <option value="local">Local namespace</option>
-                <option value="deprecated">Deprecated</option>
-              </select>
-            </label>
-          </div>
-        </RegistryFilterBar>
-
-        <div className="flex items-center justify-between gap-3 font-mono text-xs text-dim">
-          {/* The count line stands over both views, and says which one is below it. Reading
-              "50 of 50" over a set of grouped panels and "9 of 50" over a flat list is how a
-              reader learns the two are the same terms arranged twice, without being told. */}
-          <p role="status" aria-live="polite" aria-atomic="true">
-            <span className="text-fg">{results.length}</span> of {terms.length} term
-            {/* "ontology v", not "vocabulary v", on the author's instruction of 2026-08-12.
-                The version this prints is `OntologyView.ontology.version`, the semver the
-                core file carries and the number every score computed against this view is
-                recorded under. It used to be described as the number a card's own
-                `ontology_version` was checked against; a card declares no version and
-                nothing is checked against this one. */}
-            {terms.length === 1 ? "" : "s"} · ontology v{version}
-            {active === 0 && " · grouped by kind"}
-          </p>
-          {active > 0 && (
-            <button
-              type="button"
-              onClick={() => clear(["q", "kind", "origin"])}
-              className="cursor-pointer text-muted underline-offset-4 transition-colors hoverable:hover:text-cyan hoverable:hover:underline"
+          <label className="flex items-center gap-2">
+            <span className="sr-only">Filter by kind</span>
+            <select
+              value={kind ?? ""}
+              onChange={(e) => setParam("kind", e.target.value || null)}
+              aria-label="Filter by kind"
+              className={CONTROL_CLASS}
             >
-              Clear filters
-            </button>
-          )}
+              <option value="">All kinds</option>
+              {kinds.map(([id, count]) => (
+                <option key={id} value={id}>
+                  {KIND_LABEL[id] ?? id} ({count})
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* Doc 3 §7's one real division: a term is curated or it arrived namespaced
+              through the local channel, and which of the two it is decides whether
+              anybody may edit it. */}
+          <label className="flex items-center gap-2">
+            <span className="sr-only">Filter by origin</span>
+            <select
+              value={origin ?? ""}
+              onChange={(e) => setParam("origin", e.target.value || null)}
+              aria-label="Filter by origin"
+              className={CONTROL_CLASS}
+            >
+              <option value="">Core and local</option>
+              <option value="core">Curated core</option>
+              <option value="local">Local namespace</option>
+              <option value="deprecated">Deprecated</option>
+            </select>
+          </label>
         </div>
+      </RegistryFilterBar>
+
+      <div className="flex items-center justify-between gap-3 font-mono text-xs text-dim">
+        {/* The count line stands over both views, and says which one is below it. Reading
+            "50 of 50" over a set of grouped panels and "9 of 50" over a flat list is how a
+            reader learns the two are the same terms arranged twice, without being told. */}
+        <p role="status" aria-live="polite" aria-atomic="true">
+          {/* This read `… terms · ontology v0.1.0`. The semver came off with the field
+              behind it (owner, 2026-09-05; the reasoning is in `OntologyCatalog`), and
+              nothing takes its place: the line's job is to say how much of the
+              vocabulary is on screen, and a number nobody could compare it against was
+              never part of that. */}
+          <span className="text-fg">{results.length}</span> of {terms.length} term
+          {terms.length === 1 ? "" : "s"}
+          {active === 0 && " · grouped by kind"}
+        </p>
+        {active > 0 && (
+          <button
+            type="button"
+            onClick={() => clear(["q", "kind", "origin"])}
+            className="cursor-pointer text-muted underline-offset-4 transition-colors hoverable:hover:text-cyan hoverable:hover:underline"
+          >
+            Clear filters
+          </button>
+        )}
       </div>
 
       {active === 0 ? (
         children
       ) : results.length === 0 ? (
-        <p className="max-w-4xl rounded-lg border border-dashed border-line bg-surface/40 px-5 py-16 text-center text-sm text-muted">
+        <p className="rounded-lg border border-dashed border-line bg-surface/40 px-5 py-16 text-center text-sm text-muted">
           No term matches. The vocabulary is curated and small on purpose. Doc 3 §6 adds a
           term. A term is not coined at the point of use.
         </p>
       ) : (
-        <ul className="max-w-4xl overflow-hidden rounded-lg border border-line bg-surface">
+        <ul className="overflow-hidden rounded-lg border border-line bg-surface">
           {results.map((term) => (
             <li
               key={term.id}
@@ -301,7 +315,7 @@ export function VocabularyBrowser({
 
               <code className="font-mono text-[11px] text-dim">{term.id}</code>
 
-              <p className="prose-lane text-[13px] leading-relaxed text-muted">
+              <p className="text-[13px] leading-relaxed text-muted">
                 {term.description}
               </p>
 
@@ -319,8 +333,9 @@ export function VocabularyBrowser({
                 )}
                 {/* Only a risk marker has one, and an unpriced marker says so in words:
                     doc 3 §4 moved the core weights into `DARKPRINT_CONFIG`, and a marker
-                    nobody has priced counts `unknownMarkerWeight` and moves no score —
-                    which "0.00" would misreport as a marker worth nothing. */}
+                    nobody has priced counts `unknownMarkerWeight` and moves the security
+                    level not at all — which "0.00" would misreport as a marker worth
+                    nothing. */}
                 {term.kind === "risk-marker" && (
                   <span>
                     <span className="text-muted">weight</span>{" "}

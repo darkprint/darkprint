@@ -2,6 +2,22 @@
    T080 AC7 — "after an ontology release the stored scores carry
    the new version and the old values are gone"
 
+   ── what `0009_drop_ontology_versioning` took out of this file ──
+   The criterion's "new version" was `Scores.ontologyVersion`, a
+   fourth member resolved first through
+   `release.scored_ontology_version_id` and later off the stored
+   `autonomy`. The column, the `ontology_version` table behind it
+   and the stamp on `AutonomyResult` are all gone: the vocabulary
+   names what an Attractor node IS, Attractor fixes those shapes in
+   its own spec and carries no vocabulary version, so a
+   DarkPrint-only version on top was a second thing to keep in step
+   with nothing. What survives here is the half of AC7 that is
+   still checkable — the reader returns the CURRENT release's three
+   axes and none of the superseded release's — and the old
+   vocabulary string is kept as one of the tells, because a legacy
+   `autonomy` jsonb really does still carry it and it is therefore
+   a real fingerprint of the old row.
+
    Two things this test deliberately does not do.
 
    It does not invoke a re-score. "T080 owns the projection and the
@@ -24,17 +40,9 @@
    (D-80-03) and "most recent row" disagree. The old scorecard is
    one join away throughout.
 
-   ── the third ontology version ──
-   `7.3.0` is in the table and nothing references it. A reader that
-   reports the newest ontology row rather than the stamp on the
-   release it projected returns it, and that defect passes both
-   "carries the new values" and "carries a new version" when they
-   are checked separately.
    ============================================================ */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-
-import { CORE_ONTOLOGY } from "@/lib/core";
 
 import {
   type Scratch,
@@ -46,7 +54,6 @@ import {
   insertAccount,
   insertBundle,
   insertCard,
-  insertOntologyVersion,
   insertRelease,
   mark,
   scratchDatabase,
@@ -55,19 +62,14 @@ import {
 const SLUG = "scored-bundle";
 /** A bundle whose release carries `null` in all three score columns. */
 const UNSCORED_SLUG = "unscored-bundle";
-/** Stamped, one axis present, two null — the case a stamp check cannot tell from scored. */
+/** One axis present, two null — the case "autonomy is present" cannot tell from scored. */
 const HALF_SCORED_SLUG = "half-scored-bundle";
-/** All three axes, and an `autonomy` that does not say which vocabulary produced them. */
-const UNSTAMPED_SLUG = "unstamped-bundle";
 
+/* Two vocabulary strings inside the two releases' stored `autonomy`, which is where a
+   pre-0009 row really carries one. Nothing reads them now, so they are here as tells and
+   not as stamps: `7.1.0` reaching a caller means the reader answered off release 1.0.0. */
 const OLD_ONTOLOGY = "7.1.0";
 const NEW_ONTOLOGY = "7.2.0";
-/** In `ontology_version` and referenced by nothing. */
-const UNREFERENCED_ONTOLOGY = "7.3.0";
-/* The stamp is `AutonomyResult.ontologyVersion` on the stored score, not a row id.
-   `release.scored_ontology_version_id` and the `ontology_version` rows below are still
-   written by this fixture and are read by nothing: keeping them is how the cells assert the
-   reader IGNORES them, and `oldTells` carries the old row's id for exactly that. */
 
 let s: Scratch;
 let handle: string;
@@ -80,8 +82,6 @@ let sentinels: {
   newSecurity: string;
   newPhase: string;
 };
-let oldOntologyId: string;
-let newOntologyId: string;
 
 beforeAll(async () => {
   s = await scratchDatabase();
@@ -96,12 +96,6 @@ beforeAll(async () => {
     newSecurity: mark("NEW-SECURITY"),
     newPhase: mark("NEW-PHASE"),
   };
-
-  const oldOntology = await insertOntologyVersion(s, OLD_ONTOLOGY, "sha256:old-ontology");
-  const newOntology = await insertOntologyVersion(s, NEW_ONTOLOGY, "sha256:new-ontology");
-  await insertOntologyVersion(s, UNREFERENCED_ONTOLOGY, "sha256:unreferenced-ontology");
-  oldOntologyId = oldOntology.id;
-  newOntologyId = newOntology.id;
 
   const card = await insertCard(s, { ownerId: owner.id, id: "scored-card" });
   const bundle = await insertBundle(s, { owner, slug: SLUG });
@@ -121,7 +115,6 @@ beforeAll(async () => {
       ontologyVersion: OLD_ONTOLOGY,
     },
     phaseCoverage: { covered: [sentinels.oldPhase], missing: [], byPhase: {}, unphased: [] },
-    scoredOntologyVersionId: oldOntology.id,
   });
 
   await insertRelease(s, {
@@ -139,7 +132,6 @@ beforeAll(async () => {
       ontologyVersion: NEW_ONTOLOGY,
     },
     phaseCoverage: { covered: [sentinels.newPhase], missing: [], byPhase: {}, unphased: [] },
-    scoredOntologyVersionId: newOntology.id,
   });
 
   /* Never scored: `release.autonomy`/`security`/`phase_coverage` are nullable because
@@ -148,36 +140,22 @@ beforeAll(async () => {
   const unscored = await insertBundle(s, { owner, slug: UNSCORED_SLUG });
   await insertRelease(s, { bundle: unscored, version: "1.0.0", cards: [card] });
 
-  /* Half written: one axis present and carrying its version, two null. */
+  /* Half written: one axis present, two null. */
   const half = await insertBundle(s, { owner, slug: HALF_SCORED_SLUG });
   await insertRelease(s, {
     bundle: half,
     version: "1.0.0",
     cards: [card],
     autonomy: { autonomyClass: "supervised", level: 2, ontologyVersion: NEW_ONTOLOGY },
-    scoredOntologyVersionId: newOntology.id,
   });
 
-  /* Three axes, and an `autonomy` that names no vocabulary. */
-  const unstamped = await insertBundle(s, { owner, slug: UNSTAMPED_SLUG });
-  await insertRelease(s, {
-    bundle: unstamped,
-    version: "1.0.0",
-    cards: [card],
-    autonomy: { autonomyClass: "supervised", level: 2 },
-    security: { level: 3, raw: 3, penalties: [], findings: [], rationale: "4 − 1.00 → 3" },
-    phaseCoverage: { covered: [], missing: [], byPhase: {}, unphased: [] },
-  });
-
-  oldTells = [sentinels.oldAutonomy, sentinels.oldSecurity, sentinels.oldPhase, OLD_ONTOLOGY, oldOntology.id];
+  oldTells = [sentinels.oldAutonomy, sentinels.oldSecurity, sentinels.oldPhase, OLD_ONTOLOGY];
 
   assertTellsCannotOverMatch(oldTells, [
     sentinels.newAutonomy,
     sentinels.newSecurity,
     sentinels.newPhase,
     NEW_ONTOLOGY,
-    UNREFERENCED_ONTOLOGY,
-    newOntology.id,
     handle,
     SLUG,
     "scored-card@1.0.0",
@@ -195,18 +173,20 @@ async function scores(): Promise<Record<string, unknown>> {
     throw new Error(
       `scoresOf(${handle}, ${SLUG}) returned ${answered === null ? "null" : typeof answered}; ` +
         `D-80-02b publishes \`interface Scores { autonomy: AutonomyResult; security: ` +
-        `SecurityResult; phaseCoverage: PhaseCoverage; ontologyVersion: string }\` for a ` +
-        `bundle that exists and is scored.`,
+        `SecurityResult; phaseCoverage: PhaseCoverage }\` for a bundle that exists and is ` +
+        `scored — three members since 0009 withdrew the fourth.`,
     );
   }
   return answered as Record<string, unknown>;
 }
 
 describe("AC7 the reader returns the new values", () => {
-  it("publishes the four members of Scores", async () => {
+  it("publishes the three members of Scores", async () => {
+    /* Four until 0009. `ontologyVersion` left the interface with the column, the table and
+       `AutonomyResult`'s own stamp; a member with one possible value cannot tell two
+       scorecards apart. */
     expect(Object.keys(await scores()).sort()).toEqual([
       "autonomy",
-      "ontologyVersion",
       "phaseCoverage",
       "security",
     ]);
@@ -219,23 +199,11 @@ describe("AC7 the reader returns the new values", () => {
     expect(findTokens(found.phaseCoverage, [sentinels.newPhase])).toEqual([sentinels.newPhase]);
   });
 
-  it("stamps the scores with the ontology version the current release was scored under", async () => {
-    const found = await scores();
-    expect(
-      found.ontologyVersion,
-      `B-08: the axes are "stored beside the ontology version they were computed under", and ` +
-        `\`Scores.ontologyVersion\` is declared \`string\` — the semver, as ` +
-        `\`AutonomyResult.ontologyVersion\` carries it on the stored score, not the ` +
-        `\`ontology_version.id\` uuid this release also still carries. ` +
-        `${UNREFERENCED_ONTOLOGY} is the newest row in that table and is referenced by ` +
-        `nothing, so reading "the latest ontology" answers that; \`CORE_ONTOLOGY.version\` ` +
-        `is what reading "the vocabulary this build ships" answers, and neither is the ` +
-        `version this release was scored under.`,
-    ).toBe(NEW_ONTOLOGY);
-    expect(found.ontologyVersion).not.toBe(UNREFERENCED_ONTOLOGY);
-    expect(found.ontologyVersion).not.toBe(newOntologyId);
-    expect(found.ontologyVersion).not.toBe(CORE_ONTOLOGY.version);
-  });
+  /* A cell asserting `Scores.ontologyVersion` was the semver the current release was scored
+     under stood here, with a third `ontology_version` row nothing referenced to catch a
+     reader answering "the newest vocabulary". It is deleted rather than repointed: 0009 took
+     the member, the column and the table, so there is nothing left for it to be wrong
+     about. */
 });
 
 describe("AC7 scoresOf is all four or nothing", () => {
@@ -251,31 +219,23 @@ describe("AC7 scoresOf is all four or nothing", () => {
   });
 
   it("answers nothing for a release stamped with one axis present and two null", async () => {
-    /* The case that distinguishes the rule from a stamp check. A release carrying
-       `scored_ontology_version_id` and one of the three axes looks scored to anything that
-       tests the stamp, or that tests "autonomy is present", and it is exactly the state a
-       re-score interrupted halfway leaves behind. Without this fixture the all-four rule
-       is satisfied by a module that only ever checks one of them. */
+    /* One of the three axes present looks scored to anything that tests "autonomy is
+       present", and it is exactly the state a re-score interrupted halfway leaves behind.
+       Without this fixture the all-three rule is satisfied by a module that only ever
+       checks one of them. */
     const scoresOf = await bind("scoresOf");
     expect(
       await scoresOf(s.db, anonymous, handle, HALF_SCORED_SLUG),
-      `\`${HALF_SCORED_SLUG}\`'s current release carries an \`autonomy\` naming its own ` +
-        `vocabulary version, with \`security\` and \`phase_coverage\` null.`,
+      `\`${HALF_SCORED_SLUG}\`'s current release carries an \`autonomy\`, with ` +
+        `\`security\` and \`phase_coverage\` null.`,
     ).toBeUndefined();
   });
 
-  it("answers nothing for a scorecard with no ontology stamp", async () => {
-    const scoresOf = await bind("scoresOf");
-    expect(
-      await scoresOf(s.db, anonymous, handle, UNSTAMPED_SLUG),
-      `The fourth member is \`ontologyVersion: string\`, and B-08 is explicit that "a score ` +
-        `that does not say which vocabulary produced it is not comparable with any other ` +
-        `score" (lib/core/analysis/security.ts). Three axes whose \`autonomy\` names no ` +
-        `vocabulary is a half-written scorecard in the direction nobody looks — and the one ` +
-        `a reader is most likely to paper over, since substituting the version this build ` +
-        `ships would produce a complete-looking answer that is a guess.`,
-    ).toBeUndefined();
-  });
+  /* A cell holding "three axes whose `autonomy` names no vocabulary is a half-written
+     scorecard" stood here, with the `unstamped-bundle` fixture behind it. Both are deleted.
+     `scoresOf` no longer skips a row for a missing version, and that widening is stated in
+     `registry/scores.ts` rather than hidden: nothing can fail to name a vocabulary when
+     there is one vocabulary and it carries no version. */
 });
 
 describe("AC7 no trace of the old values", () => {
@@ -287,7 +247,7 @@ describe("AC7 no trace of the old values", () => {
       `AC7: "the stored scores carry the new version and the old values are gone". Release ` +
         `1.0.0 still holds them — it is one join away, and it is the *most recent row*, so a ` +
         `reader ordering by \`created_at\` returns exactly this. Leaked: ` +
-        `${JSON.stringify(leaked)}. Old ontology row id was ${oldOntologyId}.`,
+        `${JSON.stringify(leaked)}.`,
     ).toEqual([]);
   });
 

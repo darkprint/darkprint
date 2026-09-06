@@ -259,13 +259,18 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                 deprecated
               </span>
             )}
-            <code className="font-mono text-xs text-dim">since v{term.since}</code>
+            {/* `since v0.1.0` sat here, next to the kind badge. It came off with the
+                vocabulary's version (owner, 2026-09-05; the reasoning is in
+                `components/ontology/OntologyCatalog.tsx`): every term in the core carried
+                the same string, so the chip separated nothing from anything. */}
           </div>
           <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight text-fg">
             {term.label}
           </h1>
           <code className="font-mono text-sm text-cyan">{term.id}</code>
-          <p className="max-w-3xl text-lg leading-relaxed text-muted">
+          {/* No `max-w-3xl`. This is the term's definition and it runs the width of the
+              page it heads, like every other lead on the site. */}
+          <p className="text-lg leading-relaxed text-muted">
             {term.description}
           </p>
         </div>
@@ -302,10 +307,12 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                     </Link>
                   )}
                 </div>
+                {/* This opened "Deprecated in v0.1.0." The vocabulary has no version to
+                    date the deprecation against any more, and what a reader does about
+                    this term is unchanged either way: follow the pointer above. */}
                 <p className="text-sm leading-relaxed text-muted">
-                  Deprecated in v{term.deprecated.since}. The term stays in the
-                  vocabulary and stays valid. A card that names it still resolves. It
-                  still type-checks. It still scores. The resolver follows the pointer
+                  The term stays in the vocabulary and stays valid. A card that names it
+                  still resolves and still type-checks. The resolver follows the pointer
                   once and carries on.
                   {term.deprecated.note !== undefined && ` ${term.deprecated.note}`}
                 </p>
@@ -513,8 +520,8 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                 <p className="text-sm leading-relaxed text-muted">
                   {weight === undefined
                     ? children.length > 0
-                      ? `${term.id} is a category, not a marker a card declares. A rule written about ${children.length === 1 ? "the marker" : "the markers"} underneath it catches ${children.length === 1 ? "it" : "them all"}. It carries no weight and never moves a score. The terms narrower than it carry the weight themselves.`
-                      : `No weight is configured for ${term.id} anywhere, so it counts ${formatWeight(DARKPRINT_CONFIG.security.unknownMarkerWeight)} and does not move a score. A locally namespaced marker must declare a weight, or it documents a risk without pricing it. The author is told this. It is not silently charged a number nobody chose.`
+                      ? `${term.id} is a category, not a marker a card declares. A rule written about ${children.length === 1 ? "the marker" : "the markers"} underneath it catches ${children.length === 1 ? "it" : "them all"}. It carries no weight and never moves the security level. The terms narrower than it carry the weight themselves.`
+                      : `No weight is configured for ${term.id} anywhere, so it counts ${formatWeight(DARKPRINT_CONFIG.security.unknownMarkerWeight)} and does not move the security level. A locally namespaced marker must declare a weight, or it documents a risk without pricing it. The author is told this. It is not silently charged a number nobody chose.`
                     : `A blueprint starts at a clean 4, loses the weight of every marker present, and the result is clamped into 1–4. ${term.id} is charged once for the whole blueprint no matter how many nodes carry it. The explanation still lists every node that established it.`}
                 </p>
 
@@ -533,22 +540,18 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                     paragraphs above the claim that no such number exists here. */}
                 <p className="text-sm leading-relaxed text-muted">
                   {configured
-                    ? "The number lives in the engine's configuration and not in this vocabulary. A recalibration touches one file, so every blueprint is re-scored consistently. A score also records which vocabulary version produced it. Move a weight and two evaluations stop being comparable."
-                    : `The engine's configuration prices the curated markers. It is silent about this one. The number is the ${term.id.includes("/") ? "namespaced" : "local"} term's own declared weight, read from the vocabulary the bundle ships. A score records which vocabulary version produced it. Move a weight and two evaluations stop being comparable.`}{" "}
-                  {/* Lifecycle-scoring spec §4 moved the weight table with `ScoringModel`
-                      off `/spec` onto `/spec/scoring`; the IA pass merged that page into
-                      `/reading-the-radar`. `#weights` is `ScoringModel`'s own id and
-                      travelled with it both times — a fragment never reaches the server,
-                      so the href has to name the route the id actually lives on now
-                      rather than either of the two it used to. */}
-                  <Link
-                    href="/reading-the-radar#weights"
-                    className="text-muted underline decoration-line underline-offset-4 hover:text-cyan"
-                  >
-                    Every weight the engine knows
-                  </Link>
-                  .
+                    ? "The number lives in the engine's configuration and not in this vocabulary. A recalibration touches one file, so every blueprint is charged the same way. Nothing records which calibration an evaluation was made under, so move a weight and two evaluations stop being comparable."
+                    : `The engine's configuration prices the curated markers. It is silent about this one. The number is the ${term.id.includes("/") ? "namespaced" : "local"} term's own declared weight, read from the vocabulary the bundle ships. Nothing records which weight an evaluation was made under, so move it and two evaluations stop being comparable.`}
                 </p>
+                {/* "Every weight the engine knows" hung off the end of that paragraph,
+                    pointing at `#weights` — `ScoringModel`'s own id, which the weight table
+                    carried off `/spec` onto `/spec/scoring` and then into
+                    `/reading-the-radar`. The author asked that page off the site on
+                    2026-09-04, so the link comes out with it rather than riding the 308:
+                    a fragment never reaches the server, and a reader following "every
+                    weight" onto a page that no longer shows any is worse than no link. The
+                    sentence above still says where the number lives, which is what a reader
+                    on a term page needs from this panel. */}
               </div>
             </section>
           )}
@@ -575,7 +578,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                       </span>
                       <span>
                         Nothing in the archive spells it {term.id} any more. A card
-                        that did would still load, type-check and score. The resolver
+                        that did would still load, type-check and resolve. The resolver
                         follows the pointer to{" "}
                         {term.deprecated.replacedBy ?? "its successor"} and carries on.
                         The zero is not a gap. It is what a finished rename looks like.
@@ -668,7 +671,9 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
             <dl className="flex flex-col divide-y divide-line">
               <StatRow label="Kind" value={meta.label} />
               <StatRow label="Id" value={term.id} />
-              <StatRow label="Introduced" value={`v${term.since}`} />
+              {/* An "Introduced v0.1.0" row sat here. It printed the same string on every
+                  core term, and the vocabulary it named a version of no longer has one
+                  (owner, 2026-09-05). */}
               {/* The phases are flat, closed and parentless (doc 3 §2, §7), so "— root"
                   and "0 narrower" would both be true and neither would say anything. What
                   a reader needs there is that the set cannot grow. */}

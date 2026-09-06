@@ -42,11 +42,6 @@ describe("checkDeclaredBump, refused", () => {
     expect(result[0].code).toBe("bundle/version-bump-too-small");
   });
 
-  it("uses the ontology namespace for an ontology version", () => {
-    const result = checkDeclaredBump("ontology", "1.0.0", "1.0.1", MAJOR);
-    expect(result[0].code).toBe("ontology/version-bump-too-small");
-  });
-
   it("suggests the lowest version that would satisfy the requirement", () => {
     const result = checkDeclaredBump("card", "1.2.3", "1.2.4", MAJOR);
     expect(result[0].hint).toMatch(/2\.0\.0/);
@@ -54,7 +49,12 @@ describe("checkDeclaredBump, refused", () => {
 });
 
 describe("checkDeclaredBump, an out-of-union subject", () => {
-  it.each(["blueprint", "", undefined, null, 0])("throws rather than emit a diagnostic with no code, for %s", (subject) => {
+  /* `"ontology"` heads the list because it is the one that CHANGED SIDES. It was a subject
+     until 2026-09-05, when the owner had vocabulary versioning removed (§11.0 Q26), and the
+     cell above asserting it mapped to `ontology/version-bump-too-small` went with it. A name
+     that was accepted yesterday and is refused today is the one an untyped caller is most
+     likely to still be passing, so it is held to throwing rather than dropped in silence. */
+  it.each(["ontology", "blueprint", "", undefined, null, 0])("throws rather than emit a diagnostic with no code, for %s", (subject) => {
     // @ts-expect-error -- exercising a caller that bypassed the closed union at runtime
     expect(() => checkDeclaredBump(subject, "1.0.0", "1.1.0", MAJOR)).toThrow();
   });

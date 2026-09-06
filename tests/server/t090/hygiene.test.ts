@@ -65,7 +65,6 @@ import {
   bundleBySlug,
   scratchDatabase,
   seedAccount,
-  seedOntology,
   seedRelease,
   storedVocabulary,
   withLocalTerm,
@@ -83,7 +82,6 @@ let release: SeededRelease;
 
 beforeAll(async () => {
   scratch = await scratchDatabase("hygiene");
-  await seedOntology(scratch.db);
   owner = await seedAccount(scratch, "hygiene");
   release = await seedRelease(scratch, owner, bundleBySlug(SUBJECT));
 }, 300_000);
@@ -220,7 +218,6 @@ describe("every refusal is sealed, per the governance clause", () => {
   it("seals `…this release's stored vocabulary is not a term list.`", async () => {
     const own = await scratchDatabase("hygiene_badvocab");
     try {
-      await seedOntology(own.db);
       const account = await seedAccount(own, "hygvocab");
       const r = await seedRelease(own, account, withLocalTerm(), {
         rawVocabulary: storedVocabulary()?.terms,
@@ -243,7 +240,6 @@ describe("every refusal is sealed, per the governance clause", () => {
   it("seals `…a card this release pins is unavailable.`", async () => {
     const own = await scratchDatabase("hygiene_privcard");
     try {
-      await seedOntology(own.db);
       const account = await seedAccount(own, "hygpub");
       const cardOwner = await seedAccount(own, "hygcard");
       const r = await seedRelease(own, account, bundleBySlug("nightly-data-janitor"), {
@@ -269,7 +265,6 @@ describe("every refusal is sealed, per the governance clause", () => {
   it("seals `…this release does not resolve.`", async () => {
     const own = await scratchDatabase("hygiene_broken");
     try {
-      await seedOntology(own.db);
       const account = await seedAccount(own, "hygbroken");
       const r = await seedRelease(own, account, bundleBySlug("starter-software-factory"), {
         dot: "this is not DOT at all {{{ -> ->",
@@ -307,7 +302,6 @@ describe("every refusal is sealed, per the governance clause", () => {
      */
     const own = await scratchDatabase("hygiene_driver");
     try {
-      await seedOntology(own.db);
       const account = await seedAccount(own, "hygdriver");
       const r = await seedRelease(own, account, bundleBySlug("guarded-merge-bot"));
 
@@ -427,7 +421,6 @@ describe("every refusal is sealed, per the governance clause", () => {
 
     const own = await scratchDatabase("hygiene_sibling");
     try {
-      await seedOntology(own.db);
       const account = await seedAccount(own, "hygsib");
       const r = await seedRelease(own, account, bundleBySlug("guarded-merge-bot"));
       await own.pool.query('alter table "release" rename to "release_t090_hidden"');

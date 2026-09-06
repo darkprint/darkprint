@@ -11,7 +11,7 @@ steps, see [`../PROJECT.md`](../PROJECT.md).
 | [`website.md`](./website.md) | every route, what it is for, and what moved where |
 | [`blueprint.md`](./blueprint.md) | what a blueprint is: the DOT, the manifest, the bundle |
 | [`node-card.md`](./node-card.md) | what a node is: every field on a card and what checks it |
-| [`ontology.md`](./ontology.md) | the controlled vocabulary, v0.1.0, all 49 terms |
+| [`ontology.md`](./ontology.md) | the controlled vocabulary, v0.1.0, all 54 terms |
 | [`engine.md`](./engine.md) | the analysis pipeline, the diagnostics, the tunable numbers |
 
 ---
@@ -48,6 +48,13 @@ Two mechanical rules that already hold and are worth not breaking:
 1. **The ontology version is part of every card and every bundle.** Adding a term is a MINOR
    bump; removing or renaming one is MAJOR; moving a number in `lib/core/config.ts` is a
    PATCH, because it re-scores every blueprint that already exists.
+
+   > **Superseded 2026-09-05 by D-131 (`docs/DECISIONS.md`), and there is no replacement
+   > rule.** The vocabulary carries no version, so none of the three bumps has a number to
+   > move. The half of this that survives is the *what goes stale* half: removing or
+   > renaming a term still breaks every card using it, and moving a weight still moves every
+   > security reading on the site. Both are in each document's own "What breaks if you change
+   > this" table. Kept verbatim as the record of what was specified.
 2. **Nothing in `lib/core/**` may touch the host.** No `node:fs`, `node:path`, `node:crypto`,
    no `Buffer`, no `Date.now()`, no `Math.random()`. The engine runs unchanged in the browser
    on `/upload`, and that is what lets the site validate a bundle without a server.

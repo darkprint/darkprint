@@ -82,16 +82,35 @@ describe("premise: the partition is real, and it is the cutover's own tree", () 
     ).toBeGreaterThanOrEqual(COMPONENT_FLOOR);
   });
 
-  /* The one file allowed to carry zero imports, by name. T280's fetch helper
+  /* The files allowed to carry zero imports, by name. T280's fetch helper
      (components/settings/live.ts) reads only globals — fetch, Response, JSON — and forcing
      a decorative import into it to satisfy this premise would be the premise gaming the
-     tree. Every OTHER zero-import file still reds as a scanner fact, which is the cell's
-     job. */
-  const IMPORTLESS = new Set(["components/settings/live.ts"]);
+     tree. `components/profile/remove-save.ts` is the second and it arrived the same way:
+     D-132 folded Save into Star on 2026-09-05 and the two-write removal was lifted out of
+     the component so its ORDER and FAILURE ARMS would be drivable, which left a module that
+     declares its own types and calls `fetch`. Verified as a zero-import file rather than an
+     unparseable one — `grep -n "import\|require(" components/profile/remove-save.ts` returns
+     nothing, and `components/profile/remove-save.test.ts` imports and exercises it, so it
+     parses. Every OTHER zero-import file still reds as a scanner fact, which is the cell's
+     job.
+
+     An exemption that merely SKIPS is a hole: a listed file that later grows an import
+     stops being exempt and nothing says so, and the entry sits there covering a file it no
+     longer describes. So the exemption asserts its own premise — exactly zero — and a name
+     that stops belonging here reds until it is taken out. */
+  const IMPORTLESS = new Set(["components/settings/live.ts", "components/profile/remove-save.ts"]);
 
   it.each(scanned())("%s parses and carries imports", (path) => {
-    if (IMPORTLESS.has(path)) return;
     const source = read(path);
+    if (IMPORTLESS.has(path)) {
+      expect(
+        importSpecifiers(source).length,
+        `${path} is named in IMPORTLESS, which claims it reads only globals, and it now ` +
+          `carries an import. Take it off the list: it can meet the premise the ordinary way, ` +
+          `and left on it, it is an absence nothing checks.`,
+      ).toBe(0);
+      return;
+    }
     expect(
       importSpecifiers(source).length,
       `${path} yielded no module specifiers at all. Either it does not parse, or it is not the ` +

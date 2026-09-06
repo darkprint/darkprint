@@ -9,13 +9,17 @@
    `@/lib/server/ontology` (T030), `@/lib/server/naming` (T070),
    `@/lib/server/policy` (T060), `@/lib/server/publish` (T100),
    `@/lib/server/saves` (T140), `@/lib/server/counters` (T150),
-   `@/lib/server/ballot` (T160), `@/lib/server/notes` (T170),
-   `@/lib/server/runs` (T180), `@/lib/server/limits` (T230) and
-   `@/lib/core` are all merged on `backend` at `2992771` and ship
-   in this worktree, so importing them is a real import rather
-   than a compile-time dependency on something unmerged. They are
-   how the state gets into the database. The module under test is
-   loaded dynamically in `contract.ts` and only there.
+   `@/lib/server/notes` (T170), `@/lib/server/runs` (T180),
+   `@/lib/server/limits` (T230) and `@/lib/core` are all merged on
+   `backend` at `2992771` and ship in this worktree, so importing
+   them is a real import rather than a compile-time dependency on
+   something unmerged. They are how the state gets into the
+   database. The module under test is loaded dynamically in
+   `contract.ts` and only there.
+
+   `@/lib/server/ballot` (T160) was on that list until 2026-09-05.
+   Q14 deleted its write path, so the ballot row is seeded at the
+   table now and the reason is at that fixture's own docstring.
 
    D-250-09 is what makes that list legitimate: every one of them
    is a separately-authored reader or writer of the state T120's
@@ -33,12 +37,22 @@
    deletion cell built on the hand-inserted version measures a
    state the product cannot reach.
 
-   Raw SQL survives in exactly two places and both say why at
-   their own docstring: the `account` row itself (there is no
-   published writer that makes an account with a chosen handle
-   without a GitHub sign-in flow), and the CENSUS readers, which
-   have to see rows no published reader returns — that is the
-   whole point of a census.
+   A hand-written INSERT survives in exactly three places and each
+   says why at its own docstring: the `account` row itself (there
+   is no published writer that makes an account with a chosen
+   handle without a GitHub sign-in flow), the CENSUS readers, which
+   have to see rows no published reader returns — that is the whole
+   point of a census — and, since 2026-09-05, the `ballot` row.
+
+   The ballot is the one that was NOT a choice. Q14 deleted
+   `castBallot` and the route that opened it, so there is no
+   published writer left to dispatch to; the `ballot` TABLE stays
+   precisely because `lib/server/lifecycle/**` cascades through it,
+   which is what the cells below measure. The rule this trades
+   against is still the right rule — a hand-inserted row can be a
+   row the product cannot reach — and here the product reaches no
+   ballot row at all, so there is no product-shaped alternative
+   left to prefer.
 
    ── isolation ──
    Each test file creates, migrates, drives and drops
@@ -60,7 +74,7 @@ import { Pool } from "pg";
 
 import { parseCardRef } from "@/lib/core";
 import type { BundleManifest, LoadBundleResult } from "@/lib/core";
-import { createDbClient, migrateUp, type Db, type DbClient } from "@/lib/db";
+import { createDbClient, migrateUp, schema, type Db, type DbClient } from "@/lib/db";
 import { readContent, type LoadedBundle } from "@/lib/content/read";
 import { bundleProgress } from "@/components/upload/progress";
 
@@ -71,7 +85,6 @@ import type { Actor } from "@/lib/server/policy";
 import { publish } from "@/lib/server/publish";
 import { saveTarget } from "@/lib/server/saves";
 import { toggleStar } from "@/lib/server/counters";
-import { METRICS, castBallot } from "@/lib/server/ballot";
 import { postNote } from "@/lib/server/notes";
 import { submitReport } from "@/lib/server/runs";
 import { issueKey } from "@/lib/server/limits";
@@ -501,16 +514,24 @@ export async function note(
 }
 
 /**
- * A community ballot, through T160.
+ * A community ballot, written straight at the table.
+ *
+ * **It went through `castBallot` until 2026-09-05 and there is no longer a writer to go
+ * through.** Q14 deleted `lib/server/ballot`'s write path and the route above it, and left
+ * the TABLE standing for exactly the reason this file needs it: `deletion.ts:141` and `:155`
+ * and `bundle-deletion.ts:96` still cascade through `ballot`, so D-120-13's ruling about it is
+ * live and has to be measured against a row that exists.
  *
  * One metric rather than all three: D-05-02 makes the three columns nullable so a caller may
  * vote on one and not the others, and what this fixture needs is a `ballot` ROW for the
- * account — which is what D-120-13 rules deleted. The metric name is read off T160's own
- * `METRICS` constant rather than typed, so a rename there reds here instead of silently
- * writing a metric nobody reads.
+ * account. Written through drizzle's `schema.ballot` rather than as SQL text, which keeps the
+ * property the deleted `METRICS` constant was here for — a renamed column reds at the
+ * typecheck instead of silently writing a metric nobody reads.
  */
 export async function ballot(scratch: Scratch, who: Account, bundleId: string): Promise<void> {
-  await castBallot(scratch.db, who.actor, bundleId, { [METRICS[0]]: 70 });
+  await scratch.db
+    .insert(schema.ballot)
+    .values({ accountId: who.accountId, bundleId, efficacy: 70 });
 }
 
 /**

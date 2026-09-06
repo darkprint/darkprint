@@ -47,7 +47,6 @@
    the only way to plant one is the column.
    ============================================================ */
 
-import { randomUUID } from "node:crypto";
 import { readFileSync, readdirSync, type Dirent } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -949,22 +948,10 @@ export async function insertRunReport(
   return id;
 }
 
-export interface OntologyFixture {
-  id: string;
-  version: string;
-}
-
-export async function insertOntologyVersion(s: Scratch, version: string): Promise<OntologyFixture> {
-  const [row] = await s.query(
-    "insert into ontology_version (version, digest) values ($1, $2) returning id",
-    [version, `sha256:${randomUUID().replaceAll("-", "")}`],
-  );
-  const id = row?.id;
-  if (typeof id !== "string") {
-    throw new Error(`Could not insert the ontology version fixture: got ${describe_(id)}.`);
-  }
-  return { id, version };
-}
+/* `insertOntologyVersion` stood here, unused by any cell in this suite. It wrote
+   `ontology_version`, dropped by `0009_drop_ontology_versioning`: the vocabulary names what
+   an Attractor node IS, Attractor fixes those shapes in its own spec and carries no
+   vocabulary version, so a DarkPrint-only version on top named nothing. */
 
 /* --------------------- the routes --------------------- */
 
@@ -1398,7 +1385,6 @@ export async function proveInterleaving(s: Scratch): Promise<Interleaving> {
     overlapped: a.started < b.ended && b.started < a.ended,
   };
 }
-
 
 /**
  * The SQLSTATE anywhere in a rejection's `cause` CHAIN, however deep.

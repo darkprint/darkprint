@@ -46,7 +46,7 @@
    of blueprint where those components are used, delete them". They
    did, and they are. `termUsageIndex` stays and is still exported,
    because each term's own page answers "who uses it" in full and
-   the `/ontology` copy still counts how many cards spell a
+   the vocabulary listing still counts how many cards spell a
    deprecated id.
 
    Server components. `Registry`, `OntologyTerm` and
@@ -90,7 +90,7 @@ import { termHref } from "@/lib/href";
  * register and carries no status at all. They read as a legend and spend nothing. They
  * are ordered so the two closest pairs (blueprint-line/the cyan mix, and muted/dim) are
  * never adjacent as the page scrolls: measured with CIEDE2000 against the panel ground,
- * every neighbouring pair on `/ontology` is ≥16 ΔE apart, and the tightest pair anywhere
+ * every neighbouring pair in the catalog is ≥16 ΔE apart, and the tightest pair anywhere
  * in the set is 7.3. Every one of the five clears 5.4:1 on `--color-surface-2`, which no
  * glyph here strictly needs — each is `aria-hidden` beside its own word — but a legend a
  * low-vision reader cannot read is a legend that is not doing its job.
@@ -281,7 +281,7 @@ const CONFIGURED_WEIGHTS: Readonly<Partial<Record<string, number>>> =
  * unset and reading it alone would print no weight for any of them. This is the engine's
  * own lookup order (doc 3 §7): the configuration first, then the term's own
  * `defaultWeight`, which survives for locally namespaced markers. `undefined` means the
- * marker is worth `security.unknownMarkerWeight` and does not move a score — a fact worth
+ * marker is worth `security.unknownMarkerWeight` and does not move the security level — a fact worth
  * saying in words rather than rendering as "0.00", which reads like a priced marker.
  */
 export function markerWeight(term: OntologyTerm): number | undefined {
@@ -326,6 +326,13 @@ export function DeprecationMark({ term }: { term: OntologyTerm }) {
  * characters, which is under the measure the type floor asks for. Below `md` the row
  * stacks instead, and the indent moves from the first cell onto the row, so a subterm
  * still reads as indented when there are no columns left to align.
+ *
+ * Re-checked at the full container after the width caps came off (2026-09-05): only the
+ * `1fr` track grows, from ~590px to ~848px inside a `container-page` panel, and the
+ * longest description the core ships is 155 characters, so the widest a row gets is two
+ * lines and most are one. The 15rem name track is what holds the grid legible and it does
+ * not move, so nothing here needed re-tuning and no fourth column was invented to fill
+ * space — a term row carries what it is called, what it means, and what it costs.
  */
 export const TERM_COLUMNS = "md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]";
 export const TERM_COLUMNS_WEIGHTED =
@@ -427,13 +434,17 @@ export function TermRow({
         </div>
       </div>
 
-      {/* `prose-lane` is the measure, and it belongs here rather than on the grid.
-          The width cap used to sit on the whole table (`max-w-4xl`) with a comment about
-          reading measure, which capped the *object* to protect the *paragraph* — so the
-          table stopped 235px short of its own panel border and nothing on the page shared
-          a right edge. Measure is a property of a line of prose; the grid can now run to
-          the panel's edge and this cell still breaks at 36rem. */}
-      <p className="prose-lane min-w-0 text-[13px] leading-relaxed text-muted">
+      {/* No measure on this cell. It has been through both wrong answers: `max-w-4xl` on
+          the whole table, which capped the *object* to protect the *paragraph* and left
+          the grid 235px short of its own panel border; then `.prose-lane` here, which
+          fixed the right edge of the table and moved the ragged one onto the description
+          column, where it sat under a full-width header rule.
+
+          A column of a table is not body prose. It is read across from the term that owns
+          it, one line at a time, and the thing that keeps it legible is the 15rem cap on
+          the term column beside it, not a measure on itself. It fills its track, the
+          track fills the panel, and the panel fills `container-page` (owner, 2026-09-05). */}
+      <p className="min-w-0 text-[13px] leading-relaxed text-muted">
         {term.description}
       </p>
 
@@ -472,9 +483,10 @@ export function TermRow({
  * `terms` is taken as given rather than re-sorted: the phases have to read in doc 3 §2's
  * lifecycle order, which is not the alphabetical order `byKind` returns.
  *
- * No width of its own. It fills whatever column it is mounted in — see `TermRow`, where
- * the reading measure now sits on the description paragraph, which is the thing that has
- * a measure. `/ontology` sets the width once, on the panel.
+ * No width of its own, and no measure inside it either — see `TermRow`. It fills whatever
+ * column it is mounted in, which is a panel filling `container-page` on the route that
+ * mounts the catalog. That was `/ontology` until 2026-09-06 and is `/spec/ontology` now;
+ * the number never depended on which.
  */
 export function TermTable({
   terms,

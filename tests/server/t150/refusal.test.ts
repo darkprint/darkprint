@@ -217,9 +217,9 @@ describe("no visibility check, which is ruled and is a negative", () => {
      * addition, so a statement that something does not happen never lands on its own and the
      * criterion stays untestable. This is the cell it makes writable.
      *
-     * `refId` here resolves to nothing at all — no `bundle`, no `card_version`, no
-     * `ontology_term` — which is the strongest form of "the module does not look": there is
-     * nothing for a check to have found. `target.ref_id` is free `text` and carries no foreign
+     * `refId` here resolves to nothing at all — no `bundle`, no `card_version`, and no term
+     * in `CORE_ONTOLOGY` — which is the strongest form of "the module does not look": there
+     * is nothing for a check to have found. `target.ref_id` is free `text` and carries no foreign
      * key, so this is a real state and not a contrived one.
      */
     const toggleStar = await bind("toggleStar");

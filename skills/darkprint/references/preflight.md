@@ -55,8 +55,8 @@ before they do: an author surprised by the upload screen has been failed by the 
 - [ ] `required:` only on inputs
 - [ ] every `spec` over 40 characters, and written as an instruction rather than a label —
       *`card/spec-too-thin`*
-- [ ] the card names no vocabulary version. There is one, and a score records the version it
-      was computed under — writing an `ontology_version` key is `card/retired-field`, a
+- [ ] the card names no vocabulary version. There is one vocabulary and every card is read
+      against it, so writing an `ontology_version` key is `card/retired-field`, a
       **warning**, and it is ignored
 - [ ] no key outside the accepted set (`references/card-schema.md`) — a typo is an `info` and
       is **silently ignored**, so check the spelling of `risk_markers` and `will_not` by eye
@@ -107,7 +107,7 @@ before they do: an author surprised by the upload screen has been failed by the 
 - [ ] every node reachable from a source — *`bundle/unreachable-node`*
 - [ ] the graph is not empty — *`analysis/empty-graph`*
 
-## 8. The checks that decide the score
+## 8. The checks that decide the security level
 
 - [ ] **at least one node typed `validation`.** Without it the generator set is empty and the
       criteria check does not run — *`analysis/criteria-leak-unanchored`*, and a 4 is silence
@@ -136,7 +136,7 @@ honest ones:
 
 | warning | when it is fine |
 |---|---|
-| `analysis/criteria-relayed-through-judge` | the fixer sits downstream of the judge that holds the criteria. The engine cannot tell `judge → fixer → judge` from `judge → builder → judge` and declines to decide. Moves no score |
+| `analysis/criteria-relayed-through-judge` | the fixer sits downstream of the judge that holds the criteria. The engine cannot tell `judge → fixer → judge` from `judge → builder → judge` and declines to decide. Charges nothing |
 | `bundle/undeclared-dependency` | never fine. Fix it |
 | `bundle/no-entry` / `bundle/no-exit` | never fine in a first emit. A blueprint with no source and no sink is a loop with no way in |
 | `bundle/port-ambiguous` | never fine. Pin the edge |

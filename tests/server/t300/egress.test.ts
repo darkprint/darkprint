@@ -53,8 +53,6 @@ import net from "node:net";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { CORE_ONTOLOGY } from "@/lib/core";
-
 import { allowedFrom, watchEgress, type Allowed, type Egress } from "./contract";
 import { asResults, bind, type Results } from "../t200/contract";
 import {
@@ -63,8 +61,6 @@ import {
   insertAccount,
   insertBundle,
   insertCard,
-  insertOntologyTerm,
-  insertOntologyVersion,
   insertRelease,
   manifest,
   mark,
@@ -112,10 +108,9 @@ beforeAll(async () => {
     s = await scratchDatabase();
     allow = allowedFrom(s.url);
 
-    const ontology = await insertOntologyVersion(s, CORE_ONTOLOGY.version);
-    for (const term of CORE_ONTOLOGY.terms) {
-      await insertOntologyTerm(s, { versionId: ontology.id, term: term as unknown as Record<string, unknown> });
-    }
+    /* The core vocabulary used to be seeded into `ontology_version` / `ontology_term` here.
+       0009 dropped both: the registry keeps one vocabulary, `CORE_ONTOLOGY` in the process,
+       merged per bundle with `release.local_vocabulary`. Nothing to seed. */
     const owner = await insertAccount(s, mark("t300e"));
     const card = await insertCard(s, {
       ownerId: owner.id,

@@ -411,7 +411,17 @@ export const TRANSCRIBED = {
   functions: ["checkLimit", "issueKey", "revokeKey", "resolveKey", "rateLimited"],
   interfaces: {
     LimitVerdict: ["allowed", "limit", "remaining", "resetAt", "windowMs"],
-    ApiKeyRecord: ["keyId", "accountId", "label", "createdAt", "revokedAt"],
+    /* Six since 2026-09-05, and the sixth is `scope`. The owner ruled on §11.0 Q3 that a key
+       carries an explicit scope and that every key already minted stays read-only, which is
+       what D-114 constrained the write path to require: "keys gain a scope, and no key minted
+       under Settings §06's current promise may gain write power without being reissued."
+       Migration `0010_key_scope` is the column and `lib/server/limits/types.ts` is the type.
+
+       RAISED rather than loosened. The two cells over this list are equalities on the key set
+       because the block makes the secret's absence STRUCTURAL — "in the same way PublicAuthor
+       has no email" — and a superset check would admit exactly the member those cells exist to
+       refuse. So the number moves and the shape of the assertion does not. */
+    ApiKeyRecord: ["keyId", "accountId", "label", "scope", "createdAt", "revokedAt"],
     BucketLimit: ["limit", "windowMs"],
   },
   types: ["Tier", "LimitConfig"],

@@ -134,7 +134,7 @@ describe("AC1: each of the nine bundles hashes to the digest the site prints tod
 });
 
 describe("the plan's shape", () => {
-  it("publishes exactly the four members the block names", async () => {
+  it("publishes exactly the three members the block names", async () => {
     const plan = await planned();
     assertKeys(plan, IMPORT_PLAN_KEYS, "ImportPlan");
   });
@@ -168,19 +168,10 @@ describe("the plan's shape", () => {
     expect(plan.registryHandle).toBe(REGISTRY_HANDLE);
   });
 
-  /**
-   * LABELLED AS NOT DISCRIMINATING, and the label is the point.
-   *
-   * `ImportPlan.ontologyVersion` has two live readings — the overlay's own `version` in
-   * `content/ontology/extensions.yaml`, and the core vocabulary version in `lib/core`. Both are
-   * `"0.1.0"` today, so this cell cannot tell them apart and a green here is not evidence that
-   * the right one was chosen. It is written down rather than dressed up as coverage; the day the
-   * two diverge, this cell acquires a meaning it does not have now.
-   */
-  it("names an ontology version, which two sources agree on today", async () => {
-    const plan = await planned();
-    expect(plan.ontologyVersion).toBe("0.1.0");
-  });
+  /* A cell reading `plan.ontologyVersion` stood here, labelled as NOT discriminating: the
+     member had two live readings, the overlay's own `version` and the core vocabulary's, and
+     both were `"0.1.0"` so the cell could not tell them apart. 0009 removed the member and
+     both readings with it, which settles the ambiguity by deletion rather than by choice. */
 });
 
 describe("AC1's other half: the 57 card files", () => {

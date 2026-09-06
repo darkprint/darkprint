@@ -311,7 +311,14 @@ describe("T100 AC3 — the stored digest is the engine's over the submitted byte
       "AC3: the archive corpus's digest moved. This literal is a change-detector — if the " +
         "change was intended (the bundle, a card, or `bundleDigest` changed), re-pin it; if it " +
         "was not, something is hashing different bytes than it did.",
-    ).toBe("sha256:a1141199e8a69a94a661144e5a2a634f362cca3ebf5ae6c30a4f21491a90e718");
+    /* Moved again on 2026-09-04, and this time from the CONTENT rather than the schema.
+       The starter's `tester` fork gained the two guards that make its loop terminate, and
+       `debugger` was repinned from `targeted-debugger@1.0.0` onto `@1.1.0`, whose cap is
+       spelled `max_retries: 2` instead of `max_iterations: 3`. Both the DOT and a pinned
+       card digest changed, so `bundleDigest` covers both moves. Corroborated the way the
+       note above requires, off an artefact this suite does not produce: the regenerated
+       `public/bundles/starter-software-factory/README.md` reports the identical value. */
+    ).toBe("sha256:121612ae5535c9502ce87f7f9e008a071c8b407b5fecb8c68b9b98765d92f9a1");
   });
 });
 

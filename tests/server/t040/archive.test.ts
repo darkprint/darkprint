@@ -129,9 +129,10 @@ describe("AC1: validateBundle returns what the build computed", () => {
       expect(result.analysis?.security.rationale, `${slug} security rationale`).toBe(
         oracle.securityRationale,
       );
-      /* Doc 3 §8: a score that does not say which vocabulary produced it is not comparable
-         with any other score. Every shipped bundle is read against v0.1.0. */
-      expect(result.analysis?.ontologyVersion, `${slug} ontology version`).toBe("0.1.0");
+      /* A fourth expectation stood here, that `analysis.ontologyVersion` is `0.1.0` on every
+         shipped bundle. `0009_drop_ontology_versioning` withdrew the field: there is one
+         living vocabulary and it carries no version, so the score has nothing to name. The
+         three above are untouched. */
 
       expectSortedLikeCore(result.diagnostics, `validateBundle(${slug})`);
     });
@@ -265,37 +266,24 @@ describe("AC1: the supplied vocabulary is the one in force", () => {
    `analysis.ontologyVersion` is always the shipped core's and
    B-08's re-score against a **stored** version is undrivable."
 
-   So the criterion for `ontology` being real is precisely that
-   `analysis.ontologyVersion` follows it. A module that accepted the
-   parameter and ignored it answers the core's version, which is
-   what the whole rename exists to make impossible, and every other
-   test in this file passes either way.
+   ── the cell that held it is gone, and the gap is stated ──
+   The criterion for `ontology` being real WAS that
+   `analysis.ontologyVersion` followed it: a view built over a base
+   stamped `9.9.9` had to be reported as `9.9.9`, so a module that
+   accepted the parameter and ignored it answered the core's
+   version and reddened. `0009_drop_ontology_versioning` withdrew
+   both the field and `Ontology.version`, and with them the only
+   observable that distinguished the supplied view from the default
+   ONE while the fixture held everything else equal. The cell was
+   deleted rather than repointed at whatever still differs, because
+   a replacement discriminator is a new claim about `validateBundle`
+   and not this change's to make. What survives below is that the
+   default view and the explicitly supplied one agree, which a
+   module ignoring the parameter also passes. That is a real loss
+   of coverage and it is recorded here rather than papered over.
    ============================================================ */
 
 describe("the ontology view a caller supplies is the one scored against", () => {
-  it("reports the supplied view's version rather than the shipped core's", async () => {
-    const validateBundle = await bind("validateBundle");
-    const { input, oracle } = caseFor(VOCABULARY_BUNDLE);
-
-    /* The same terms, layered over a base whose version is one no release will ever carry.
-       Nothing else about the vocabulary changes, so the security level must be unmoved while
-       the version moves — a pair, because a view that changed the score would mean the fixture
-       had changed two things at once and neither assertion would say which. */
-    const stored = ontologyView({ ...CORE_ONTOLOGY, version: "9.9.9" }, input.extensions);
-
-    const result = asLoadBundleResult(
-      returning(
-        () => validateBundle({ ...withoutVocabulary(input), ontology: stored }),
-        "validateBundle(stored ontology)",
-      ),
-      "validateBundle(stored ontology)",
-    );
-
-    expect(result.analysis?.ontologyVersion).toBe("9.9.9");
-    expect(result.analysis?.security.level).toBe(oracle.securityLevel);
-    expect(errorsOf(result.diagnostics)).toEqual([]);
-  });
-
   /* And the default is the one the archive loader uses. `lib/content/read.ts:146` builds
      `ontologyView(CORE_ONTOLOGY, extensions)`, which is what makes AC1 reproducible at all;
      an implementation defaulting to `ontologyView(CORE_ONTOLOGY)` alone drops the extensions

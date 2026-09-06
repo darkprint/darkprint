@@ -48,7 +48,7 @@
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 
-import { CORE_ONTOLOGY, bundleDigest, parseCardRef } from "@/lib/core";
+import { bundleDigest, parseCardRef } from "@/lib/core";
 import type { BundleManifest, LoadBundleResult } from "@/lib/core";
 import { createDbClient, migrateUp, type Db, type DbClient } from "@/lib/db";
 import { addCard, getCard } from "@/lib/server/cards";
@@ -161,8 +161,10 @@ export async function scratchDatabase(tag: string): Promise<Scratch> {
   };
 }
 
-/** The version every scratch database publishes, exported so a cell can name it. */
-export const SEEDED_ONTOLOGY_VERSION = CORE_ONTOLOGY.version;
+/* `SEEDED_ONTOLOGY_VERSION` stood here, exported so a cell could name the version every
+   scratch database published. `0009_drop_ontology_versioning` withdrew `Ontology.version`
+   and no cell in this suite still reads it: the vocabulary names what an Attractor node IS,
+   Attractor fixes those shapes in its own spec and carries no vocabulary version. */
 
 /* --------------------- an owner --------------------- */
 

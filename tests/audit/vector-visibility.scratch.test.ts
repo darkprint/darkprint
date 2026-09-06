@@ -134,7 +134,6 @@ beforeAll(async () => {
         sh.card.body.spec,
       ]),
       w.owner.handle,
-      CORE_ONTOLOGY.version,
       ...CORE_ONTOLOGY.terms.map((t) => t.id),
     ]);
 

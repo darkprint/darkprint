@@ -52,8 +52,10 @@ describe("InstallTabs", () => {
   });
 
   /**
-   * Roving tabindex, the same contract `components/build/WorkspaceStage.tsx`'s own tablist
-   * holds: exactly one tab stop in the whole group, on the active tab. This is as much of
+   * Roving tabindex: exactly one tab stop in the whole group, on the active tab. The
+   * contract was `components/build/WorkspaceStage.tsx`'s first; that file was deleted with
+   * `/build` on 2026-09-06, and `components/capabilities/SurfaceTabs.tsx` is the other
+   * tablist holding the same shape today. This is as much of
    * the keyboard behaviour as static markup can see — there is no jsdom/testing-library
    * in this repo to dispatch a real ArrowRight and observe focus move, so the
    * `onTabKeyDown` handler's logic is verified by reading, not by a rendered assertion.

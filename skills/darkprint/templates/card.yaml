@@ -73,6 +73,6 @@ notes: >-
 # ---- service fields ----
 version: 1.0.0              # full semver. A published version is never edited in place.
 author: your-handle         # optional
-# No ontology_version. There is one vocabulary, every card is read against it, and the
-# version a score was computed under is recorded on the score. Writing the key is
-# card/retired-field, a warning.
+# No ontology_version. There is one vocabulary and every card is read against it. The
+# vocabulary carries no version of its own. Writing the key is card/retired-field, a
+# warning.

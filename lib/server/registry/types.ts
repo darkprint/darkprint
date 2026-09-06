@@ -65,17 +65,20 @@ export interface CardSummary {
 
 /**
  * The stored scorecard (B-08). Read from `release`, never recomputed here: T080 owns the
- * projection and the read, and the re-score belongs to whichever task publishes the
- * ontology release. `ontologyVersion` is the version string the three axes were computed
- * under, read off the stored `autonomy` where `computeAutonomy` stamped it. It used to be
- * resolved through `release.scored_ontology_version_id`, a uuid into a table of published
- * vocabulary versions that nothing writes any more.
+ * projection and the read.
+ *
+ * A FOURTH MEMBER, `ontologyVersion: string`, WAS HERE AND IS GONE. It named the vocabulary
+ * version the three axes were computed under, and there is one vocabulary now — the
+ * Attractor spec language's — so the question it answered has a single answer for every
+ * release and no longer discriminates between them. Both of its sources went with it:
+ * `release.scored_ontology_version_id` was dropped by migration 0009, and
+ * `AutonomyResult.ontologyVersion`, the stamp this interface actually read, is gone from
+ * `lib/core`. A member whose every value is the same constant is not a fact about a score.
  */
 export interface Scores {
   autonomy: AutonomyResult;
   security: SecurityResult;
   phaseCoverage: PhaseCoverage;
-  ontologyVersion: string;
 }
 
 /**

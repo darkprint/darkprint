@@ -52,7 +52,7 @@ const LABEL = "label";
 
 /**
  * What the validator found, and — only when it found nothing fatal — the schematic and
- * the two computed scores it unlocked.
+ * the two computed readings it unlocked.
  *
  * §8.3: the validator is the gate. A bundle carrying an error gets its diagnostics and
  * nothing else, because a score read off a graph the engine could not resolve is a
@@ -274,7 +274,7 @@ export function ValidationReport({
       {!usable && (
         <div className="rounded-lg border border-line bg-surface-2/40 p-5">
           <h3 className="font-display text-xl font-semibold text-fg">
-            {unfinished ? "Not finished. Nothing wrong." : "No schematic and no scores"}
+            {unfinished ? "Not finished. Nothing wrong." : "No schematic and no readings"}
           </h3>
           <p className="prose-lane mt-4 text-sm leading-relaxed text-muted">
             {blueprint === undefined
@@ -297,8 +297,8 @@ export function ValidationReport({
                 Auto-computed from your graph
               </h3>
               <p className="prose-lane mt-2 text-sm leading-relaxed text-muted">
-                Two of the six scores are produced by static analysis of the schematic
-                the moment it validates, no run required.
+                Both of these are produced by static analysis of the schematic the
+                moment it validates, no run required.
               </p>
             </div>
 

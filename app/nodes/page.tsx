@@ -156,7 +156,7 @@ export default async function NodesPage() {
       phases: card.phases.map((id) => ({ id, label: labelOf(id, "phase") })),
       tools: [...card.tools],
       /* Derived from `type` through the vocabulary, the same call `computeAutonomy` makes,
-         so a tile and the blueprint page that scores the same card cannot disagree about
+         so a tile and the blueprint page that resolves the same card cannot disagree about
          where the people are.
 
          `false` when this registry has published no vocabulary at all, and the tile then

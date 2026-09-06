@@ -12,27 +12,26 @@
    and a single stray line on it kills the session (see `rpc.ts`).
    ============================================================ */
 
-import { runCli } from "../../cli/src/index";
+import { CLI_VERBS, NPX_INVOCATION, renderCliUsage, runCli, type CliVerb } from "../../cli/src/index";
 import { optionsFromEnv } from "./registry";
 import { runServer } from "./server";
 
-const USAGE = `darkprint — the DarkPrint registry from your terminal and from an agent.
+/* `mcp` first here and last in `packages/cli/src/run.ts`, which is the one difference between
+   the two help blocks and is deliberate: this shim is the bin of a package NAMED for that
+   subcommand, and it is the line the site's six client configurations already run, so it
+   leads. The verbs themselves come from the table either way, so the orders can differ
+   without the text differing. */
+const MCP_FIRST: readonly CliVerb[] = [
+  ...CLI_VERBS.filter((verb) => verb.name === "mcp"),
+  ...CLI_VERBS.filter((verb) => verb.name !== "mcp"),
+];
 
-  npx -y darkprint mcp                      serve the registry over MCP (stdio)
-  npx -y darkprint clone <owner>/<slug> [--version <v> | --digest <d>] [--out <dir>]
-  npx -y darkprint validate [<dir>]
-  npx -y darkprint export [<dir>] --attractor
-  npx -y darkprint import <pipeline.dot> --as <handle> --out <dir>
-  npx -y darkprint bump [<dir>] --declare <version> --target <owner>/<slug>
-  npx -y darkprint report <run-dir> --target <owner>/<slug> --cost <units>
-
-Environment:
-  DARKPRINT_URL      registry base URL (default https://darkprint.io)
-  DARKPRINT_API_KEY  an API key, which raises the rate limit ceiling
-  DARKPRINT_SESSION  a signed-in session cookie. report is the one verb that
-                     writes, and the route that takes a run report reads a
-                     session: no write route accepts an API key.
-`;
+const USAGE = renderCliUsage(
+  "darkprint — the DarkPrint registry from your terminal and from an agent.",
+  NPX_INVOCATION,
+  MCP_FIRST,
+  true,
+);
 
 export async function main(argv: readonly string[]): Promise<number> {
   const command = argv[0];

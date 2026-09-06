@@ -63,8 +63,6 @@ import {
   insertAccount,
   insertBundle,
   insertCard,
-  insertOntologyTerm,
-  insertOntologyVersion,
   insertRelease,
   manifest,
   mark,
@@ -107,11 +105,13 @@ interface Sealed {
  * A complete scorecard, so the `autonomy`/`df`/`phase` branch of `searchBlueprints` is
  * actually ENTERED by this file's probes.
  *
- * `scoresOf` answers `undefined` unless all four axes and the ontology stamp are present,
- * and the branch that calls it runs only when one of those three keys is set. Without both,
- * that whole path was unreached by every AC4 call here — which the per-call-site mutation
- * sweep made visible: widening the actor on `scoresOf` alone reddened 0 of 229, and one of
- * its two causes was that no probe ever ran the branch.
+ * `scoresOf` answers `undefined` unless all three axes are present, and the branch that
+ * calls it runs only when one of those three keys is set. Without both, that whole path was
+ * unreached by every AC4 call here — which the per-call-site mutation sweep made visible:
+ * widening the actor on `scoresOf` alone reddened 0 of 229, and one of its two causes was
+ * that no probe ever ran the branch.
+ *
+ * It wanted a fourth, the ontology stamp, until `0009_drop_ontology_versioning` withdrew it.
  */
 function scorecard(level: number, cls: string, dark: boolean): Record<string, unknown> {
   return {
@@ -125,7 +125,6 @@ function scorecard(level: number, cls: string, dark: boolean): Record<string, un
       totalNodes: 4,
       contributions: [],
       rationale: `fixture: level ${level}`,
-      ontologyVersion: "0.1.0",
       diagnostics: [],
     },
     security: {
@@ -134,7 +133,6 @@ function scorecard(level: number, cls: string, dark: boolean): Record<string, un
       penalties: [],
       findings: [],
       rationale: `fixture: level ${level}`,
-      ontologyVersion: "0.1.0",
       diagnostics: [],
     },
     phaseCoverage: {
@@ -154,13 +152,9 @@ beforeAll(async () => {
   await setup.run(async () => {
     s = await scratchDatabase();
 
-    const ontology = await insertOntologyVersion(s, CORE_ONTOLOGY.version);
-    for (const term of CORE_ONTOLOGY.terms) {
-      await insertOntologyTerm(s, {
-        versionId: ontology.id,
-        term: term as unknown as Record<string, unknown>,
-      });
-    }
+    /* The core vocabulary used to be seeded into `ontology_version` / `ontology_term` here.
+       0009 dropped both: the registry keeps one vocabulary, `CORE_ONTOLOGY` in the process,
+       merged per bundle with `release.local_vocabulary`. Nothing to seed. */
 
     const owner = await insertAccount(s, mark("t200p"));
     const stranger = await insertAccount(s, mark("t200x"));
@@ -228,7 +222,6 @@ beforeAll(async () => {
           },
         ],
       },
-      scoredOntologyVersionId: ontology.id,
     });
 
     const publicBundle = await insertBundle(s, {
@@ -261,7 +254,6 @@ beforeAll(async () => {
           },
         ],
       },
-      scoredOntologyVersionId: ontology.id,
     });
 
     v = {
@@ -316,7 +308,6 @@ beforeAll(async () => {
       publicCard.rowId,
       publicBundle.id,
       CORE_ONTOLOGY.terms.map((t) => t.id),
-      CORE_ONTOLOGY.version,
       ["planning", "implementation", "testing", "debugging", "deployment"],
     ]);
   });

@@ -1,9 +1,9 @@
 /* ============================================================
-   DarkPrint core — the shipped vocabulary, ontology v0.1.0
+   DarkPrint core — the shipped vocabulary
    Doc 3 (`darkprint-ontology-v0.1.md`) transcribed as data: doc 3
-   §2 (phase), §3 (type), §4 (risk markers), §7 (namespaces),
-   §8 (versioning). Doc 1 §6 says the ontology is the contract and
-   the cards are its instances, so this file is read, never guessed.
+   §2 (phase), §3 (type), §4 (risk markers), §7 (namespaces).
+   Doc 1 §6 says the ontology is the contract and the cards are its
+   instances, so this file is read, never guessed.
 
    Two dimensions here are NOT enumerated by doc 3 and are kept
    because doc 1 requires them: `data-type` (doc 1 §2 rule 3 —
@@ -21,12 +21,13 @@
 import type { Ontology, OntologyTerm } from "./types";
 
 /**
- * Doc 3 §8 — the vocabulary carries its own semver, and every score records which
- * version it was computed under. This is v0.1: the number is doc 3's own, chosen over
- * the `1.0.0` the pre-contract vocabulary shipped with, because that vocabulary was
- * invented before doc 3 existed and never was a published contract anyone wrote cards
- * against. Nothing points equivalence at it (doc 1 §6.2's "non si cancella mai" applies
- * from this version forward, which is why no term here is deprecated).
+ * The `since` every core term carries.
+ *
+ * The vocabulary itself no longer has a version, so this is not one: it is the release
+ * doc 3 was published as, kept as the answer to "when did this term appear" because a
+ * term that predates the whole registry has to say something and "0.1.0" is what every
+ * stored row, every `ontology/extensions.yaml` and the YAML parser already read. It
+ * names no contract and nothing compares against it.
  */
 const V01 = "0.1.0";
 
@@ -89,7 +90,7 @@ export const CORE_PHASE_IDS: readonly string[] = Object.freeze(PHASES.map((p) =>
 
 /* --------------------- node-type (doc 3 §3) --------------------- */
 /**
- * Nine concrete types plus the three abstract categories. `agent` and `tool` sit at the
+ * Ten concrete types plus the three abstract categories. `agent` and `tool` sit at the
  * top with no parent: the subsumption doc 3 draws is exactly four edges, and inventing a
  * common root would assert a relation the contract does not draw.
  *
@@ -121,14 +122,38 @@ export const CORE_PHASE_IDS: readonly string[] = Object.freeze(PHASES.map((p) =>
  * this codebase (`splitTermId` splits on `/` alone) and `/ontology/[...term]` carries it
  * through as one segment.
  *
- * ── The version this branch really arrived in ──
- * Doc 3 §8 makes adding a term a MINOR bump, which `lib/server/versioning/ontology-bump.ts`
- * states as code, so on the letter of the contract these three are v0.2.0 and `since` should
- * say so. `V01` is used anyway and the number is left where it is, because after the ontology
- * version store was removed there is exactly one living vocabulary and no published 0.1.0
- * snapshot for a 0.2.0 to be incompatible with: bumping would re-stamp every score in the
- * archive against a predecessor that exists nowhere. The bump belongs to whoever freezes the
- * vocabulary at launch, and it is an owner call rather than a side effect of this change.
+ * ── `shell-tool`, and the one edge doc 3 does not draw ──
+ * Doc 3 §3's `tool` says what the node does, "a deterministic operation: running tests,
+ * compiling, formatting, calling an API", and says nothing about how it is instructed. All
+ * 25 tool cards in the archive instruct their node with prose in `spec`, so what a tool card
+ * compiles to is Attractor's `codergen` handler and `attractor/emit.ts` gives the type
+ * `shape=box`. Engine spec §4.10 is what makes that load-bearing rather than cosmetic: the
+ * `tool` handler a `parallelogram` selects FAILs a node whose `tool_command` is empty, so
+ * emitting a parallelogram for a card that carries only prose would ship a bundle that
+ * cannot run.
+ *
+ * `shell-tool` is the term for the node that really is a command: `parallelogram`, the
+ * `tool` handler, and the command carried in `params.tool_command`. It is a kind of `tool`, so
+ * `isA(type, "tool")` catches it and every rule already written about a tool node keeps
+ * holding. That is the one subsumption edge in this dimension the contract does not draw,
+ * and it is drawn here because the alternative is two unrelated top-level types for one
+ * idea, which leaves a reader of any rule having to know which of the two it meant.
+ *
+ * No card in the archive declares it, and that is the point of it existing now. Attractor's
+ * `parallelogram` needs a DarkPrint type to import as (`attractor/import.ts`) or a tool node
+ * arriving from outside lands as an `agent` and leaves again as a `box`, with the command it
+ * came in with dropped in between.
+ *
+ * ── Why these four carry the same `since` as the rest ──
+ * Doc 3 §8 priced adding a term as a MINOR bump, and these four (`parallel`,
+ * `parallel.fan-in`, `manager-loop`, `shell-tool`) arrived long after doc 3 was published,
+ * so under that rule they should say `0.2.0`. There is no rule left to obey: the owner had
+ * vocabulary versioning removed on 2026-09-05 (D-131), and `inferOntologyBump`, the function
+ * that stated the pricing as code, went with it (§11.0 Q26). `since` is now the release a
+ * term entered the vocabulary in and nothing compares two of them, so a second value here
+ * would split the set on a distinction no reader can use, and `core.test.ts`'s invariant —
+ * every core term declares the same release — is the honest statement of what these terms
+ * have in common: they are all core, and the core shipped once.
  */
 const NODE_TYPES: readonly OntologyTerm[] = [
   {
@@ -168,6 +193,14 @@ const NODE_TYPES: readonly OntologyTerm[] = [
     kind: "node-type",
     label: "Tool",
     description: "A deterministic operation: running tests, compiling, formatting, calling an API.",
+    since: V01,
+  },
+  {
+    id: "shell-tool",
+    kind: "node-type",
+    label: "Shell tool",
+    description: "A tool node whose instruction is a shell command the runner executes directly.",
+    broader: "tool",
     since: V01,
   },
   {
@@ -240,10 +273,9 @@ const NODE_TYPES: readonly OntologyTerm[] = [
  * The seven markers, plus the two categories doc 3 §4 relates them through. Four markers
  * have no parent: doc 3 draws three subsumption edges and no more.
  *
- * No term here carries `defaultWeight`. Doc 3 §4 keeps the weights in the config file, and
- * doc 3 §8 makes tuning one a PATCH of the ontology version — a number in two places would
- * make that version meaningless. `defaultWeight` survives on the type for local markers
- * only (doc 3 §7).
+ * No term here carries `defaultWeight`. Doc 3 §4 keeps the weights in the config file, so
+ * a number in two places would give a recalibration two answers. `defaultWeight` survives
+ * on the type for local markers only (doc 3 §7).
  *
  * Three of these are also inferred from the graph even when a card does not declare them
  * (doc 3 §4.1): `unbounded-loop`, `unvalidated-external-access`, `criteria-leak`. That is
@@ -566,14 +598,13 @@ const TOOLS: readonly OntologyTerm[] = [
 ];
 
 /**
- * The core vocabulary of ontology v0.1.
+ * The core vocabulary.
  *
  * Frozen because it is a shared singleton: an analyzer that mutated it would silently
- * change every score computed afterwards, and doc 3 §8 makes reproducibility the reason
- * the version number exists at all.
+ * change every reading taken afterwards, and there is no version number left to tell a
+ * reader that the vocabulary under them moved.
  */
 export const CORE_ONTOLOGY: Ontology = Object.freeze({
-  version: V01,
   title: "DarkPrint core vocabulary",
   terms: Object.freeze([...PHASES, ...NODE_TYPES, ...RISK_MARKERS, ...DATA_TYPES, ...TOOLS]),
 });

@@ -31,7 +31,13 @@ import ts from "typescript";
 export const ROUTES = {
   blueprints: "app/blueprints/page.tsx",
   nodes: "app/nodes/page.tsx",
-  ontology: "app/ontology/page.tsx",
+  /* `app/ontology/page.tsx` until 2026-09-06. The owner folded the vocabulary browser into
+     the spec page and deleted the index ("move the ontology page in the /spec/ontology
+     substituing the every term box. Then, you can delete the /ontology page"), so the third
+     shelf is served from a route that also specifies the format. The shelf did not go; its
+     address did, which is why this is a repoint rather than a shelf coming out of the set.
+     One consequence is priced in `cutover.test.ts`'s AC1 archive cell. */
+  ontology: "app/spec/ontology/page.tsx",
 } as const;
 
 /** The client component each route mounts its shelf through. */

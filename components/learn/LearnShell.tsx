@@ -23,7 +23,13 @@ import { SideRail, type SideRailItem } from "@/components/ui/SideRail";
  * The rail was one flat run of seven and a reader saw one course, so somebody who came for
  * DOT syntax was told they were two-sevenths through something. It is now grouped: a
  * **Specification** (the door and the three file formats, with the worked example hanging
- * under the last of them) and **In practice** (how what they describe is graded).
+ * under the last of them) and **In practice** (what a reader does with them).
+ *
+ * The second run was described here as "how what they describe is graded" until 2026-09-04.
+ * It held the grading page then; the owner asked that page off the site and `sequence.ts`
+ * records the removal, so the run is the sandbox and the essay now — turn the dials, then
+ * decide whether the work belonged to an agent at all. A docblock naming a run by a stop it
+ * no longer contains is how the next reader learns the wrong shape of the rail.
  *
  * The grouping is drawn from `page.run` on the same flat list, not from a second structure.
  * One list, one `specNeighbours()` walk, one pager. `heading` on the first row of each run

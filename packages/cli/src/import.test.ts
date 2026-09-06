@@ -36,6 +36,31 @@ afterAll(() => {
 
 const CORPUS = "tests/attractor-corpus";
 
+/**
+ * What `npx -y darkprint --help` actually prints.
+ *
+ * The shim's block is module-private and it is the only one of the two that reaches a real
+ * stream, so it is driven rather than read: `main` is imported (its `require.main === module`
+ * guard is what makes that safe) and `process.stderr.write` is captured around the call.
+ * A dynamic import because this file belongs to the package the shim depends on, and a static
+ * one would put the dependency edge back the other way in the module graph a reader walks.
+ */
+async function renderedShimUsage(): Promise<string> {
+  const { main } = await import("../../mcp/src/cli");
+  const written: string[] = [];
+  const original = process.stderr.write.bind(process.stderr);
+  process.stderr.write = ((chunk: string | Uint8Array) => {
+    written.push(typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8"));
+    return true;
+  }) as typeof process.stderr.write;
+  try {
+    await main(["--help"]);
+  } finally {
+    process.stderr.write = original;
+  }
+  return written.join("");
+}
+
 /** A fresh, absent directory for one cell to write into. */
 function target(name: string): string {
   return join(scratch, name);
@@ -275,10 +300,17 @@ describe("`darkprint import`, as a person runs it", () => {
     const io = collectingIo();
     await runCli(["--help"], io);
     expect(io.stderr.join("")).toContain("darkprint import <pipeline.dot> --as <handle> --out <dir>");
-    /* `packages/mcp/src/cli.ts` holds a second usage block, because it is the only file in
-       either package that touches a real stream. The two drift silently unless something
-       reads both. */
-    const shim = readFileSync("packages/mcp/src/cli.ts", "utf8");
-    expect(shim).toContain("darkprint import <pipeline.dot> --as <handle> --out <dir>");
+    /* `packages/mcp/src/cli.ts` publishes a second usage block, because it is the only file in
+       either package that touches a real stream.
+
+       This read the shim's SOURCE for the same literal, which was the right check while both
+       blocks were hand-typed prose that could drift apart. They are rendered from `CLI_VERBS`
+       now, so the literal is in neither file and a source grep would fail against a shim that
+       prints it correctly. What the cell was always about is the published text, so it drives
+       the shim's own entry point and reads what a person running `npx -y darkprint --help`
+       sees. That is the stronger of the two: a table both blocks read cannot drift, but a
+       renderer that drops a verb still can, and only the output shows it. */
+    const shim = await renderedShimUsage();
+    expect(shim).toContain("npx -y darkprint import <pipeline.dot> --as <handle> --out <dir>");
   });
 });

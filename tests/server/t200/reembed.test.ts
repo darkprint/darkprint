@@ -47,8 +47,6 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { CORE_ONTOLOGY } from "@/lib/core";
-
 import { PUBLISHED, bind } from "./contract";
 import {
   cardVersionEmbeddings,
@@ -56,8 +54,6 @@ import {
   insertAccount,
   insertBundle,
   insertCard,
-  insertOntologyTerm,
-  insertOntologyVersion,
   insertRelease,
   manifest,
   mark,
@@ -90,13 +86,9 @@ const setup = recordedSetup("the T200 re-embedding corpus");
 beforeAll(async () => {
   await setup.run(async () => {
     s = await scratchDatabase();
-    const ontology = await insertOntologyVersion(s, CORE_ONTOLOGY.version);
-    for (const term of CORE_ONTOLOGY.terms) {
-      await insertOntologyTerm(s, {
-        versionId: ontology.id,
-        term: term as unknown as Record<string, unknown>,
-      });
-    }
+    /* The core vocabulary used to be seeded into `ontology_version` / `ontology_term` here.
+       0009 dropped both: the registry keeps one vocabulary, `CORE_ONTOLOGY` in the process,
+       merged per bundle with `release.local_vocabulary`. Nothing to seed. */
     const owner = await insertAccount(s, mark("t200e"));
 
     const cardOne = await insertCard(s, { ownerId: owner.id, id: mark("embed-card-one") });
@@ -107,7 +99,6 @@ beforeAll(async () => {
       version: "1.0.0",
       cards: [cardOne, cardTwo],
       manifest: manifest({ slug: bundleA.slug, title: `Embeddable ${mark("t")}` }),
-      scoredOntologyVersionId: ontology.id,
     });
 
     const ownCard = await insertCard(s, { ownerId: owner.id, id: mark("embed-card-own") });
@@ -119,7 +110,6 @@ beforeAll(async () => {
          present and writes nothing, which is the same rule as the release's own vector. */
       cards: [cardOne, ownCard],
       manifest: manifest({ slug: bundleB.slug, title: `Also embeddable ${mark("t")}` }),
-      scoredOntologyVersionId: ontology.id,
     });
 
     c = {

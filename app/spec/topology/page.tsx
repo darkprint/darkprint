@@ -234,6 +234,21 @@ export default function SpecTopologyPage() {
               <Id>type=</Id> is reported as{" "}
               <Id>attractor/reserved-attribute</Id>.
             </p>
+            {/* The sentence this page owed and did not have. `shape` had been filed under
+                Graphviz layout in `TOPOLOGY_ROWS` beside `rankdir`, which is the reading a
+                reader arrives with and is the wrong way round for the artefact this page
+                tells them to compile: Attractor spec §2.8 makes the shape the handler
+                selector, which is what the `type` paragraph above is an override OF. The
+                two belong next to each other or the paragraph above explains an override
+                of nothing. */}
+            <p>
+              <Id>shape</Id> is what that overrides. Attractor picks the
+              handler that runs a node from the node&rsquo;s shape, so a shape
+              in a runnable file decides what the node does. A topology writes
+              shapes for Graphviz and DarkPrint reads none of them: the export
+              is where it is settled, and it emits every node with the shape
+              its card&rsquo;s type maps to.
+            </p>
           </div>
 
           {/* `downloadName`, which the blueprint pages do not pass: this route has no

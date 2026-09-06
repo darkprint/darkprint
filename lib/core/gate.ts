@@ -203,7 +203,7 @@ export const DIAGNOSTIC_GATE: Readonly<Record<DiagnosticCode, GateClass>> = Obje
   "bundle/legacy-topology-file": "approval",
 
   /* ---------- attractor ---------- */
-  // Nine codes, all `warning` at the point of emission, and all `approval` here. The two
+  // Ten codes, all `warning` at the point of emission, and all `approval` here. The two
   // statements are independent and both are needed: severity says how loudly the linter
   // speaks, this says whether anybody may refuse a bundle on what it said.
   "attractor/strict-graph": "approval",
@@ -215,6 +215,7 @@ export const DIAGNOSTIC_GATE: Readonly<Record<DiagnosticCode, GateClass>> = Obje
   "attractor/hash-comment": "approval",
   "attractor/unsupported-value": "approval",
   "attractor/reserved-attribute": "approval",
+  "attractor/condition-syntax": "approval",
 
   /* ---------- ontology ---------- */
   // Defects in a vocabulary somebody wrote. They change what the terms mean and therefore
@@ -362,6 +363,7 @@ export const INFERRED_CODES: readonly DiagnosticCode[] = Object.freeze([
   "attractor/hash-comment",
   "attractor/unsupported-value",
   "attractor/reserved-attribute",
+  "attractor/condition-syntax",
   "ontology/unknown-term",
   "ontology/cyclic-broader",
   "ontology/dangling-pointer",

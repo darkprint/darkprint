@@ -86,6 +86,31 @@ export function filesFromPaths(paths: readonly string[], at: string): BundleFile
 }
 
 /**
+ * The rows INSIDE `cards/`, for the listing's second level.
+ *
+ * `filesFromPaths` above counts these and collapses them into one `dir` row, which is the
+ * right shape for a folder view and throws the names away. This is the same corpus read the
+ * other way, so the two cannot disagree about what is in the folder: both walk `paths`, and
+ * the count the `dir` row prints is the length of what this returns.
+ *
+ * Every entry is a card the release PINS, so `pinned` is the state for all of them — there
+ * is no per-card variation to carry. `PUBLISHED_FILE_NOTE` is not consulted: it names the
+ * fixed top-level files a bundle always has, and a card file's name is the card's.
+ */
+export function cardFilesFromPaths(paths: readonly string[], at: string): BundleFile[] {
+  return paths
+    .filter((path) => path.startsWith(`${BUNDLE_CARDS_DIR}/`))
+    .map((path) => ({
+      path,
+      kind: "yaml" as const,
+      change: "one card document, pinned at the version the graph names",
+      state: "pinned" as const,
+      at,
+    }))
+    .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+}
+
+/**
  * A one-character stand-in used only to take `blueprintFileHref`'s prefix.
  *
  * The brace expansion has to be appended to the release's base URL, and that base is

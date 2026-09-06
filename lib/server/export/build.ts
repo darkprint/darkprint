@@ -42,7 +42,6 @@
    ============================================================ */
 
 import {
-  CORE_ONTOLOGY,
   emitAttractorDot,
   hasErrors,
   isReleasable,
@@ -200,12 +199,11 @@ async function pinnedCards(
  * quietly answer a different question — what this build of the engine says today — under
  * the same two numbers the site prints elsewhere.
  *
- * `ontologyVersion` comes off `autonomy`, which is where `computeAutonomy` stamped the
- * version of the view the score was actually computed against. It is the only place it has
- * ever been readable from: the manifest used to declare one too, and that copy was the
- * version the AUTHOR wrote against rather than the one the score used. `CORE_ONTOLOGY`'s
- * version is the fallback for a scorecard stored without the field, since that is the
- * vocabulary this build would compute against if it recomputed. `diagnostics` are merged
+ * There is no `ontologyVersion`. It came off `autonomy`, where `computeAutonomy` stamped
+ * the version of the view the score was computed against, and both that stamp and
+ * `Ontology.version` behind it went with `0009_drop_ontology_versioning`: the vocabulary
+ * names what an Attractor node IS, Attractor fixes those shapes in its own spec and carries
+ * no vocabulary version. `README.md` printed it and no longer does. `diagnostics` are merged
  * the way `analyzeBlueprint` merges them: the same fact said once, however many stages
  * noticed it.
  */
@@ -226,7 +224,6 @@ function storedAnalysis(release: ReleaseRecord): BlueprintAnalysis | undefined {
     // `TypeError` out of this module. That reached a route as a 500 for a release whose
     // folder is otherwise perfectly servable, and it is the same class as D-90-A: an
     // unsealed throw escaping where a fact about the release was meant.
-    ontologyVersion: asString(stored.autonomy?.ontologyVersion) ?? CORE_ONTOLOGY.version,
     diagnostics: dedupe([
       ...asDiagnostics(stored.autonomy?.diagnostics),
       ...asDiagnostics(stored.security?.diagnostics),
@@ -237,20 +234,6 @@ function storedAnalysis(release: ReleaseRecord): BlueprintAnalysis | undefined {
 /** A stored `diagnostics` that is absent or not an array reads as none, never as a throw. */
 function asDiagnostics(value: unknown): readonly Diagnostic[] {
   return Array.isArray(value) ? (value as readonly Diagnostic[]) : [];
-}
-
-/**
- * The scored ontology version, when the stored scorecard carries one.
- *
- * The fallback is the version the release **declares**, which is the honest second
- * answer: it is what the manifest says the bundle was written against, and it is what
- * `README.md` already prints. It is not always the version the scores were computed
- * under — a B-08 re-score moves one and not the other, which is a defect the contract
- * records against `bundle-export.ts` and an owner owes — so this fallback is the weaker
- * answer and is only reached when the stronger one was never stored.
- */
-function asString(value: unknown): string | undefined {
-  return typeof value === "string" && value !== "" ? value : undefined;
 }
 
 function dedupe(diagnostics: readonly Diagnostic[]): Diagnostic[] {

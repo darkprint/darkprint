@@ -1,14 +1,20 @@
 slug: grounded-research-desk
 title: Grounded Research Desk
 summary: >-
-  Fans a question across web, vector and code search, synthesizes one answer, and loops back
+  Splits a question across web, vector and code search, synthesizes one answer, and loops back
   through a fact-checker until every claim is grounded.
 description: >-
   A research agent that won't ship an unsupported sentence. The planner splits the question into
-  retrieval strands that run in parallel, web, an internal vector store, and a code index, then
+  three retrieval strands, web, an internal vector store, and a code index, then
   a synthesizer drafts a single grounded answer. The fact-checker verifies each claim against the
   retrieved evidence and bounces anything unsupported back for another pass. Only a
   fully-grounded report reaches the reader.
+
+  The three strands are drawn as a fan-out and a runner takes one of them. `retrieval-planner` is
+  an `agent`, so it compiles to `shape=box` and engine spec 3.3 selects a single outgoing edge,
+  and the fan-out Attractor does define (4.8, from `shape=component`) has no wiring in the spec
+  between the branches it runs and the fan-in that consolidates them. The strands are the design;
+  one strand is what executes.
 category: Knowledge
 tags:
   - research

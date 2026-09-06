@@ -13,9 +13,8 @@
    So: every number in the engine that a real dataset will later
    move lives here, and nowhere else. Each field names the document
    section that left it open. Nothing here is a law; the vocabulary
-   (`ontology/core.ts`) carries meanings, this file carries the
-   tunable numbers, and doc 3 §8 makes moving one of them a PATCH
-   of the ontology version because it re-scores every blueprint.
+   (`ontology/core.ts`) carries meanings and this file carries the
+   tunable numbers.
    ============================================================ */
 
 /**
@@ -112,16 +111,15 @@ export interface TelemetryConfig {
   outlierZScore: number;
 }
 
-/** Everything the engine can be tuned by, in one object. */
+/**
+ * Everything the engine can be tuned by, in one object.
+ *
+ * There is no `ontologyVersion`. It mirrored `CORE_ONTOLOGY.version` and had to be kept
+ * in step with it by a test, and the vocabulary has no version now: DarkPrint's terms
+ * name what an Attractor node is, and Attractor's shapes and handlers are fixed by its
+ * spec rather than by a number DarkPrint moved on its own.
+ */
 export interface DarkprintConfig {
-  /**
-   * The vocabulary version scores are computed under. Doc 3 §8: a score that does not
-   * record it is not comparable with any other score, and reproducibility is the whole
-   * point of doc 1 §4. Mirrors `CORE_ONTOLOGY.version`; the two are checked against each
-   * other in `config.test.ts` rather than one importing the other, so this file stays a
-   * leaf with no dependencies.
-   */
-  ontologyVersion: string;
   autonomy: AutonomyBands;
   security: SecurityConfig;
   criteriaLeak: CriteriaLeakConfig;
@@ -142,9 +140,6 @@ export interface DarkprintConfig {
  * way the exact shape survives to the caller.
  */
 export const DARKPRINT_CONFIG: DarkprintConfig = Object.freeze({
-  /** Doc 3 §8. */
-  ontologyVersion: "0.1.0",
-
   /** Doc 3 §6's starting bands, unchanged from doc 1 §8.1. */
   autonomy: Object.freeze({
     level4: 0.9,

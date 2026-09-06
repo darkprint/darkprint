@@ -91,7 +91,11 @@ export async function promotionThresholds(): Promise<{
   return { distinctAuthors: authors, distinctBlueprints: blueprints };
 }
 
-/** The ontology version every fixture publishes under; the one the seeded archive names. */
+/**
+ * Not a vocabulary version. There is none since `0009_drop_ontology_versioning`. This is the
+ * release doc 3 was published as, which is what a term's `since` reads and what the retired
+ * `ontology_version:` card key carried, so the fixtures below keep spelling it.
+ */
 export const ONTOLOGY_VERSION = "0.1.0";
 
 /* ============================================================

@@ -37,7 +37,7 @@ import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { Pool } from "pg";
 
-import { CORE_ONTOLOGY, parseCardRef } from "@/lib/core";
+import { parseCardRef } from "@/lib/core";
 import type { BlueprintAnalysis, ResolvedBlueprint } from "@/lib/core";
 import { createDbClient, migrateUp, type Db, type DbClient } from "@/lib/db";
 import { addRelease, createBundle } from "@/lib/server/archive";
@@ -326,21 +326,12 @@ export async function seedAccount(scratch: Scratch, marker: string): Promise<See
   return { accountId: id, handle };
 }
 
-/**
- * The version every release in `content/` is scored under.
- *
- * It USED to be a write. `exportRelease` resolves a stored release back into a
- * `ResolvedBlueprint`, which needs an `OntologyView`, which was `openView(db, version,
- * extensions)` — so the version a manifest named had to be a row before any export could
- * run. `openView` merges over `CORE_ONTOLOGY` and reaches no store, so nothing has to be
- * seeded and this returns the version the exports will actually carry. It is kept as a
- * function, and still takes `db`, because every caller reads it as "the version this
- * database's exports are stamped with" and a bare constant would lose that.
- */
-export async function seedOntology(db: Db): Promise<string> {
-  void db;
-  return CORE_ONTOLOGY.version;
-}
+/* `seedOntology(db)` stood here. It had already stopped writing anything — `openView` merges
+   over `CORE_ONTOLOGY` and reaches no store — and it survived only to answer "the version
+   this database's exports are stamped with". `0009_drop_ontology_versioning` withdrew that
+   version: the vocabulary names what an Attractor node IS, Attractor fixes those shapes in
+   its own spec and carries no vocabulary version. With nothing to write and nothing to
+   answer, the calls are gone from the five suites that made them. */
 
 /* --------------------- the archive as a fixture --------------------- */
 
@@ -504,13 +495,29 @@ export function storedVocabulary(text?: string): StoredVocabulary | undefined {
 }
 
 /**
- * The archive's vocabulary with its bytes perturbed in the two ways a re-emitter loses.
+ * The archive's vocabulary with its bytes perturbed in a way a re-emitter loses.
  *
- * A marker comment no serialiser would invent, and the two top-level keys in the other order.
- * Both parse to exactly the terms the shipped file parses to — a comment is not data and YAML
- * mappings are unordered — so this is the same vocabulary, byte-differently spelled, which is
- * the only construction under which "served verbatim" and "re-emitted from the parse" give
- * different answers.
+ * A marker comment no serialiser would invent. It parses to exactly the terms the shipped file
+ * parses to — a comment is not data — so this is the same vocabulary, byte-differently spelled,
+ * which is the only construction under which "served verbatim" and "re-emitted from the parse"
+ * give different answers.
+ *
+ * ── ONE PERTURBATION SINCE 2026-09-05, and it was two ──
+ * The second was key order: `version` moved to the end, on the ground that YAML mappings are
+ * unordered. `content/ontology/extensions.yaml` has no `version` key any more — the owner asked
+ * ontology versioning removed in full, and nothing ever read that line — so `terms` is the only
+ * top-level key and there is no order left to perturb. The axis retired with its subject rather
+ * than being replaced: inventing a substitute here would be this fixture asserting something
+ * about YAML that the served bytes never depended on.
+ *
+ * What remains is the axis that actually discriminates the two implementations. A re-emitter
+ * serialises the parsed terms, and a comment is exactly what a parse does not carry, so the
+ * marker survives only if the stored bytes are handed back untouched. The old key-order half
+ * could have been satisfied by a re-emitter that happened to preserve insertion order.
+ *
+ * The guard below is kept for the same reason its predecessor threw on a missing `version:`
+ * line: a perturbation that is already present in the source is a no-op, and a fixture that
+ * perturbs nothing passes against both implementations.
  */
 export const VOCABULARY_MARKER = "# t090-verbatim-marker: this comment survives or it does not";
 
@@ -520,17 +527,14 @@ export function perturbedVocabularyText(): string {
     throw new Error("content/ontology/extensions.yaml is absent; AC3's verbatim half needs it.");
   }
   const text = vocabulary.text;
-  const versionLine = /^version:.*$/m.exec(text);
-  if (versionLine === null) {
+  if (text.includes(VOCABULARY_MARKER)) {
     throw new Error(
-      "content/ontology/extensions.yaml no longer carries a top-level `version:` line, so the " +
-        "key-order perturbation below would be a no-op and this fixture would stop discriminating.",
+      "content/ontology/extensions.yaml already carries the t090 marker comment, so adding it " +
+        "below is a no-op and this fixture would stop discriminating between bytes served " +
+        "verbatim and bytes re-emitted from the parse.",
     );
   }
-  /* `version` moved to the end and a marker comment at the top. Key order is not data to a YAML
-     parser and a comment is not data at all, so `parseOntologyTerms` returns the same terms. */
-  const withoutVersion = text.replace(/^version:.*$\n?/m, "");
-  return `${VOCABULARY_MARKER}\n${withoutVersion}\n${versionLine[0]}\n`;
+  return `${VOCABULARY_MARKER}\n${text}`;
 }
 
 /**

@@ -4,17 +4,25 @@ digraph nightly_data_janitor {
 
   raw       [card="delta-intake@1.0.0"];
   extract   [card="delta-extractor@1.0.0"];
-  normalize [card="field-normalizer@1.0.0"];
+  normalize [card="field-normalizer@1.1.0"];
   validate  [card="schema-gate@1.0.0"];
-  repair    [card="record-repairer@1.0.0"];
+  repair    [card="record-repairer@1.1.0"];
   store     [card="record-store@1.0.0"];
   publish   [card="warehouse-publisher@1.0.0"];
 
   raw -> extract;
   extract -> normalize;
   normalize -> validate;
-  validate -> repair [label="invalid", style=dashed, out="violations", in="violations"];
+
+  // Unguarded, engine spec §3.3 got as far as step 5 and sent every batch to `repair`,
+  // which sorts before `store`, so valid records went round the repair loop with the
+  // invalid ones and nothing was ever stored. The gate's own status is the discriminator:
+  // §10 admits `=` and `!=` and no disjunction, so one key against its negation is the
+  // only total pair, and it puts `partial_success` on the repair side. That is the right
+  // side for it: a batch that only half cleared the schema has records that still breach
+  // it, and the repair loop is bounded by the caps on both cards it runs through.
+  validate -> repair [label="invalid", style=dashed, out="violations", in="violations", condition="outcome!=success"];
   repair -> normalize [in="repaired"];
-  validate -> store [label="valid", out="accepted"];
+  validate -> store [label="valid", out="accepted", condition="outcome=success"];
   store -> publish;
 }

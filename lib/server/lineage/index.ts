@@ -62,6 +62,9 @@ export { LineageStoreError } from "./errors";
 export type { ForkSource, ForkTarget } from "./fork";
 export { forkBundle } from "./fork";
 
+export type { CardForkSource, CardForkTarget } from "./fork-card";
+export { CARD_FORK_PROVENANCE_PREFIX, forkCard } from "./fork-card";
+
 export { driftOf } from "./drift";
 export { forksOf } from "./forks";
 

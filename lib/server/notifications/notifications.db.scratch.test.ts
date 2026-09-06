@@ -1006,10 +1006,19 @@ describe.skipIf(!hasDb)("lib/server/notifications against Postgres", () => {
         for (const base of ["account", "bundle", "release", "card_version", "audit"]) {
           expect(after.tables, `${base} is base's and this rollback must not touch it`).toContain(base);
         }
+        /* Nothing appears, EXCEPT what a down script above this one puts back on purpose.
+           The loop rolls every migration newer than `0005` off as well, and
+           `0009_drop_ontology_versioning` is reversible in SHAPE — its down recreates the two
+           tables it dropped. Expecting a bare `[]` would charge that restoration to this
+           migration. The expectation is derived from `rolled` rather than hardcoded, so a
+           later reversible drop is a red here until somebody names it. */
+        const restoredByRollback = rolled.includes("0009_drop_ontology_versioning")
+          ? ["ontology_term", "ontology_version"]
+          : [];
         expect(
-          after.tables.filter((t) => !before.tables.includes(t)),
-          "and it added nothing either",
-        ).toEqual([]);
+          after.tables.filter((t) => !before.tables.includes(t)).sort(),
+          "and it added nothing beyond what a rolled-back drop legitimately puts back",
+        ).toEqual(restoredByRollback);
 
         /* Everything that came off goes back on, newest last — the mirror of the loop
            above, and named the same way rather than by count, for the same reason. */

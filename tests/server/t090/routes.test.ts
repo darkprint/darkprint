@@ -38,7 +38,6 @@ import {
   bundleBySlug,
   scratchDatabase,
   seedAccount,
-  seedOntology,
   seedRelease,
   type Scratch,
   type SeededAccount,
@@ -72,7 +71,6 @@ let privateRelease: SeededRelease;
 beforeAll(async () => {
   withRelease = await scratchDatabase("routes");
   empty = await scratchDatabase("routes_empty");
-  await seedOntology(withRelease.db);
   owner = await seedAccount(withRelease, "routes");
   release = await seedRelease(withRelease, owner, bundleBySlug(SUBJECT));
 

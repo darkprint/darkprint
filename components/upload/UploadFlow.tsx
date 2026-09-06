@@ -31,6 +31,13 @@ import {
   type UploadFile,
 } from "./BundleDropzone";
 import { SingleDocDropzone, type SingleDoc } from "./SingleDocDropzone";
+import { AttractorImported, AttractorOffer } from "./AttractorOffer";
+import {
+  detectAttractorPipeline,
+  importSelection,
+  recordApplies,
+  type AttractorImportRecord,
+} from "./attractor";
 import { requiredAgents, requiredTools } from "@/lib/graph-seed";
 import { bundleProgress, type BundleProgress } from "./progress";
 import { ValidationReport, verdictLine } from "./ValidationReport";
@@ -76,9 +83,10 @@ type StepId = 1 | 2 | 3 | 4;
  * heading takes focus on a step change, which puts the scroll position at the top of the
  * new step, announces the step to a screen reader, and gives the panel body the
  * level-two heading its outline never had. `/build` was the sibling wizard and solved the
- * same problem the same way; it is one workspace now
- * (`components/build/BuildWorkspace.tsx`), so this is the last multi-step flow on the site
- * and the only place the pattern still has to hold.
+ * same problem the same way, first as steps and then as one workspace; the owner deleted
+ * that route and its component tree on 2026-09-06 ("it is not useful and make confusion"),
+ * so this is now the only multi-step flow on the site and the only place the pattern has
+ * to hold at all.
  */
 const STEPS: { id: StepId; label: string; heading: string }[] = [
   { id: 1, label: "Upload", heading: "Upload the bundle" },
@@ -198,8 +206,8 @@ function looksLikeSemver(version: string): boolean {
  * It is rebuilt only when the dropped `extensions.yaml` changes. Doc 3 §7's local terms
  * have to be layered over the core here for the same reason the loader layers them at
  * build time: a bundle whose card declares `lupo/pii-handling` and is read against the
- * core alone loses that card to `card/unknown-term` and comes out at different scores,
- * which would mean this page rejecting the folder the blueprint pages hand out.
+ * core alone loses that card to `card/unknown-term` and comes out with a different
+ * reading, which would mean this page rejecting the folder the blueprint pages hand out.
  */
 function viewFor(terms: readonly OntologyTerm[]) {
   return ontologyView(CORE_ONTOLOGY, terms);
@@ -243,9 +251,12 @@ function detailsWithTarget(target: PublishTarget | undefined): BundleDetails {
 /* ------------------------------------------------------------------ */
 
 /**
- * One file as something a browser will save, the way `components/build/DownloadStep.tsx`
- * builds every one of its nine: a `data:` URL over the text, assembled in the tab. There
- * is no server to write a file on request and nothing here needs one.
+ * One file as something a browser will save: a `data:` URL over the text, assembled in the
+ * tab. There is no server to write a file on request and nothing here needs one.
+ *
+ * The construction was taken from `/build`'s download exit, which built all nine of its
+ * files this way. That file went with the route on 2026-09-06, so this is the only copy of
+ * the technique left in the tree and there is nothing to keep it in step with.
  */
 function dataHref(text: string): string {
   return `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`;
@@ -294,9 +305,10 @@ function phaseList(ids: readonly string[], none: string): string {
  * `REPORT.md`: what the engine said about these exact bytes, in a file the reader keeps.
  *
  * The route with the highest effort cost used to end with the lowest payload — a
- * three-line notice and two buttons that both discarded the run. `/build` ends in nine
- * downloadable files; this ends in one, and the one is the only thing this route
- * produces that did not exist before the reader arrived.
+ * three-line notice and two buttons that both discarded the run. `/build` ended in nine
+ * downloadable files and set the bar this had to clear; it was deleted on 2026-09-06, and
+ * this still ends in one file, which is the only thing the route produces that did not
+ * exist before the reader arrived.
  *
  * Every figure below is quoted from `result`, never recomputed and never rounded into a
  * claim the validator did not make. A bundle that did not resolve has no reading to
@@ -404,7 +416,7 @@ function reportMarkdown(args: {
     out.push("## Phase coverage");
     out.push("");
     out.push(
-      "Which of the five lifecycle phases this graph acts in. This describes scope. It is not a score.",
+      "Which of the five lifecycle phases this graph acts in. This describes scope. Nothing is charged for a phase this graph leaves to somebody else.",
     );
     out.push("");
     out.push(
@@ -434,7 +446,7 @@ function reportMarkdown(args: {
   out.push("## What is not in here");
   out.push("");
   out.push(
-    "Two of the six axes are read off the graph, and both are above. Efficacy, reliability and transparency come from weighted community and validator votes. Cost and time are reported by whoever runs the graph. The platform never sees the execution.",
+    "Everything above was read off the files, standing still. Nothing here was measured. Cost and time are reported by whoever runs the graph. The platform never sees the execution.",
   );
   out.push("");
   /* ── D-263-01, and this sentence is the second of the two the ruling rewrote ──
@@ -442,14 +454,24 @@ function reportMarkdown(args: {
      adds its own namespaced terms. The cutover did not close that gap, it MOVED it, and
      saying the old thing now would be wrong in a new way.
 
-     What is true after the cutover: the reading above is the tab's, taken against the
-     shipped core plus whatever `ontology/extensions.yaml` the folder brought. The registry
-     takes its own reading at publish against the ontology version the manifest NAMES
-     (`openView`), which for a bundle declaring an older version is a different vocabulary
-     and can be a different verdict in either direction. The client-side pass stays on
-     purpose — it is the fast one — and the server's is the one that decides. */
+     ── Rewritten again 2026-09-05, §11.0 Q32 ──
+     The version half of it was false three ways at once: no manifest has named an ontology
+     version since D-93, `openView` has taken no version argument since the same day, and
+     D-131 deleted versioning outright. It was pointing a reader at a mechanism with no
+     parts left.
+
+     What the sentence is FOR survives all of that: there are two readings and the
+     registry's decides. The overlay is what still makes them differ. This tab resolves
+     against the shipped core plus the terms `BundleDropzone` could parse out of the
+     folder's `ontology/extensions.yaml`; the registry resolves against the core plus the
+     overlay it stores, which is that file's raw text as `doPublish` sent it, parsed on the
+     server (`lib/server/publish/publish.ts`). So a vocabulary this tab could not read is a
+     real divergence rather than a hypothetical one: `readVocabulary` answers no terms and
+     the reading above falls back to the core alone, while the bytes still go to the
+     registry, which may parse them. The client-side pass stays on purpose, it is the fast
+     one, and the server's is the one that decides. */
   out.push(
-    "This reading was taken in your browser, against the curated core vocabulary plus whatever `ontology/extensions.yaml` came with the folder. The registry takes its own reading when you publish, against the ontology version this bundle's manifest names. A bundle declaring an older version can be judged on different terms there than here. The registry's reading decides.",
+    "This reading was taken in your browser, against the curated core vocabulary plus whatever terms this page could read out of the folder's `ontology/extensions.yaml`. The registry takes its own reading when you publish, against that same core plus the overlay it stores with the bundle, which it parses from the file itself. If this page could not read that file, the terms in it are missing here and may not be missing there. The registry's reading decides.",
   );
   out.push("");
 
@@ -828,6 +850,20 @@ export function UploadFlow({
   const [visibility, setVisibility] = useState<"public" | "private">(
     () => target?.visibility ?? "private",
   );
+  /**
+   * The last Attractor import, if this reader made one (Q20 c).
+   *
+   * Held rather than folded into `files` because an import produces two things and only one
+   * of them is a file: the folder, which goes into the selection and is read from there like
+   * any other drop, and what the import COST — the nodes that arrived with an empty `spec`
+   * and the attributes no card field holds. The second is a fact about a file that is no
+   * longer in the selection, so nothing downstream could re-derive it.
+   *
+   * `recordApplies` decides whether it still describes what is on screen. See `applied`.
+   */
+  const [attractorImport, setAttractorImport] = useState<AttractorImportRecord | undefined>(
+    undefined,
+  );
   const session = useUploadSession();
 
   /* ---------- the whole pipeline, derived ---------- */
@@ -835,25 +871,61 @@ export function UploadFlow({
   const parts = useMemo(() => classifyBundle(files), [files]);
   const bundle = useMemo(() => assembleBundle(parts, details), [parts, details]);
   const ontology = useMemo(() => viewFor(parts.terms), [parts.terms]);
+
+  /* ---------- Q20 (c): an Attractor pipeline, read in this tab ---------- */
+
+  /**
+   * The dropped topology, when it is somebody else's pipeline rather than a DarkPrint
+   * bundle. `undefined` on every ordinary drop, which is what keeps the existing path
+   * untouched — see `detectAttractorPipeline` for the boundary and why `card=` vetoes.
+   *
+   * Asked of `parts.dot` and not of every `.dot` in the selection: `pickTopology` has
+   * already decided which file this wizard is reading, and offering to convert one it is
+   * not reading would be an offer about a chip marked `ignored`.
+   */
+  const attractorCandidate = useMemo(
+    () => (parts.dot === undefined ? undefined : detectAttractorPipeline(parts.dot)),
+    [parts.dot],
+  );
+
+  /**
+   * The import record, but only while it still describes the selection on screen.
+   *
+   * A record whose synthesised topology has been replaced is about a graph nobody is
+   * looking at, and its diagnostics would name nodes that are not in the bundle. The two
+   * panels and the diagnostic merge below all read this rather than the raw state, so
+   * there is one answer to "does this still apply" instead of three.
+   */
+  const applied = useMemo(
+    () => (recordApplies(attractorImport, files) ? attractorImport : undefined),
+    [attractorImport, files],
+  );
   const result: LoadBundleResult | undefined = useMemo(() => {
     if (bundle === undefined) return undefined;
     const loaded = loadBundle(bundle, { ontology });
     // Doc 3 §7: a local term the core does not subsume is "ignorata silenziosamente, che è
-    // il peggior esito possibile" — every card using it validates and every score is
-    // quietly wrong. `loadBundle` deliberately leaves defects in the vocabulary to
+    // il peggior esito possibile" — every card using it validates and the reading taken
+    // over it is quietly wrong. `loadBundle` deliberately leaves defects in the vocabulary to
     // whoever built the view, so the caller that built it reports them, exactly as the
     // build-time loader does with the archive's own.
     const vocabulary = parts.vocabulary === undefined ? [] : ontology.validate();
     // `parts.diagnostics`: problems the classifier itself raised — today, only a legacy
     // `blueprint.dot` demoted in favour of `topology.dot` — merged the same way, since
     // `result.diagnostics` is the one list every surface of this wizard reads.
-    const extra = [...vocabulary, ...parts.diagnostics];
+    /* `applied.diagnostics`: what the Attractor import had to say about the file it read.
+       They belong here and nowhere else. Every one of them is about a source file that is
+       no longer in the selection — the node that carried no `prompt`, the `timeout` no card
+       field holds — so `loadBundle` cannot rediscover them from the folder it was handed,
+       and a reader who reaches the Preview step without them is looking at four errors with
+       no account of where the cards came from. Merged rather than shown only on step 1 so
+       they reach the report the reader downloads, which reads `result.diagnostics`. */
+    const extra = [...vocabulary, ...parts.diagnostics, ...(applied?.diagnostics ?? [])];
     if (extra.length === 0) return loaded;
     return {
       ...loaded,
       diagnostics: sortDiagnostics([...loaded.diagnostics, ...extra]),
     };
-  }, [bundle, ontology, parts.vocabulary, parts.diagnostics]);
+  }, [bundle, ontology, parts.vocabulary, parts.diagnostics, applied]);
 
   const errorCount = result === undefined ? 0 : summarize(result.diagnostics).error;
   /* The publish gate. D-109 makes it `isReleasable` rather than "carries any error": a
@@ -966,6 +1038,34 @@ export function UploadFlow({
     if (doc !== undefined) setDetails((d) => ({ ...d, ...detailsFromManifest(doc) }));
   }, []);
 
+  /**
+   * Q20 (c): read the dropped pipeline, and put what it wrote into the selection.
+   *
+   * Goes through `takeFiles`, which is the same call the drop zone makes, so the manifest
+   * the import synthesised prefills the Details step exactly as a dropped `blueprint.yaml`
+   * would and there is one path into this wizard rather than two.
+   *
+   * `author` comes from the caller because the panel is the surface that read the session
+   * and refused when it had no handle. Passed rather than read again here, so the name the
+   * reader was shown on the button is the name written into the cards.
+   */
+  const runAttractorImport = useCallback(
+    (author: string) => {
+      if (attractorCandidate === undefined) return;
+      const record = importSelection(attractorCandidate, author, files);
+      takeFiles(record.files);
+      setAttractorImport(record);
+    },
+    [attractorCandidate, files, takeFiles],
+  );
+
+  /** The selection as it was before the import, and the record gone with it. */
+  const undoAttractorImport = useCallback(() => {
+    if (applied === undefined) return;
+    takeFiles([...applied.restore]);
+    setAttractorImport(undefined);
+  }, [applied, takeFiles]);
+
   const loadExample = useCallback(() => {
     // Replaces rather than merges: an example dropped on top of a half-made selection
     // is two bundles in a trench coat, and the validator would be right to say so.
@@ -998,6 +1098,7 @@ export function UploadFlow({
     setSingleDoc(undefined);
     setDetails(detailsWithTarget(target));
     setVisibility(target?.visibility ?? "private");
+    setAttractorImport(undefined);
   }
 
   /**
@@ -1014,6 +1115,10 @@ export function UploadFlow({
     setStep(1);
     setFiles([]);
     setSingleDoc(undefined);
+    /* `recordApplies` would already answer false against an empty selection, so this is
+       the state and not the behaviour: a record about a folder nobody can see is a leak
+       waiting for the next drop to accidentally match it. */
+    setAttractorImport(undefined);
   }
 
   /* ---------- navigation ---------- */
@@ -1298,6 +1403,27 @@ export function UploadFlow({
               />
             ) : (
               <SingleDocDropzone doc={singleDoc} onChange={setSingleDoc} kindLabel={KIND_NOUN[kind]} />
+            )}
+
+            {/* ── Q20 (c): the reader dropped an Attractor pipeline ──
+                Under the drop target and above nothing, because it is about the file that
+                is already in the manifest above it and the reader has to see the two
+                together to know which chip it means.
+
+                The two are mutually exclusive by construction rather than by an `else`:
+                the topology the import synthesises pins every node at `card=`, which is
+                `detectAttractorPipeline`'s own veto, so a candidate cannot survive its own
+                import. Written as two independent conditions anyway, so that if that ever
+                stops being true the page shows both facts rather than hiding one. */}
+            {kind === "blueprint" && attractorCandidate !== undefined && (
+              <AttractorOffer
+                candidate={attractorCandidate}
+                session={session}
+                onImport={runAttractorImport}
+              />
+            )}
+            {kind === "blueprint" && applied !== undefined && (
+              <AttractorImported record={applied} onUndo={undoAttractorImport} />
             )}
           </div>
         )}
@@ -1657,8 +1783,10 @@ export function UploadFlow({
                two buttons, both of which threw the run away: one left the route and the
                other called `reset`, which wiped the files, the kind, the manifest and the
                step. So the route with the highest effort cost on the site ended with the
-               lowest payload, while `/build` — where the reader typed nothing — ends in
-               nine downloadable files.
+               lowest payload, while `/build` — where the reader typed nothing — ended in
+               nine downloadable files. That route was deleted on 2026-09-06. The comparison
+               is what forced this screen, so it stays here as the reason; there is no
+               longer a page to go and look at.
 
                What the engine computed stays mounted, and it leaves with the reader as
                `REPORT.md`.
@@ -1919,12 +2047,27 @@ export function UploadFlow({
               </div>
 
               <div className="rounded-lg border border-line bg-surface-2/40 p-4">
+                {/* Q14 reordered this block and cut its first claim. It used to open on the
+                    three community axes coming "from weighted community & validator votes",
+                    which stopped being true when the ballot came off the blueprint page on
+                    2026-09-04 and is now unbuildable: the votes route and the write path
+                    behind it are deleted, so there is no door left for a reader to go and
+                    find. Cost / time leads instead because it is the half that IS still
+                    filled in, by `POST /api/blueprints/{owner}/{slug}/runs`.
+
+                    §11.0 Q28 then took the rest of it (2026-09-05). What was left read
+                    "Efficacy, Reliability and Transparency are filled in by nothing. The
+                    ballot that scored them is gone and no page collects a vote." Naming
+                    three axes of a scorecard no route draws any more sends a reader looking
+                    for a figure that is not on the site, which is the same defect Q14 cut
+                    the first claim for. Cost / time is now the whole paragraph because it
+                    is the whole of what is still filled in later.
+
+                    The execution sentence is load-bearing beyond this paragraph. Q13 removes
+                    the only other place the site says the platform never watches a run, so
+                    after today this is where that promise is made and it stays whole. */}
                 <p className="text-xs leading-relaxed text-muted">
                   <span className="text-fg">Filled in later:</span>{" "}
-                  <span style={{ color: METRIC_SOURCE_META.community.color }}>
-                    Efficacy, Reliability and Transparency
-                  </span>{" "}
-                  come from weighted community &amp; validator votes.{" "}
                   <span style={{ color: METRIC_SOURCE_META.reported.color }}>
                     Cost / time
                   </span>{" "}

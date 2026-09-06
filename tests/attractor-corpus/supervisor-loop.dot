@@ -17,5 +17,5 @@ digraph supervisor_loop {
   supervise -> repair;
   repair -> build;
   build -> supervise [label="result", loop_restart="true"];
-  supervise -> exit [condition="tests_pass"];
+  supervise -> exit [condition="outcome=success"];
 }

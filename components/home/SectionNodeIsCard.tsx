@@ -169,13 +169,24 @@ export function SectionNodeIsCard() {
                 /* The card's own register, on the author's instruction: "colour using the
                    amber colour typical of a node."
 
-                   `copper-line` and NOT `--color-amber`: `app/globals.css` declares the
-                   copper pole for exactly this and writes down why it must never become
-                   amber, which is spent on `ComingSoonBadge` and `.route-box`. A node card
-                   is the most literally-built thing on this site, read off `content/cards/`
-                   at build time with the engine enforcing what it declares. Copper IS the
-                   warm colour a reader means when they point at the card figure. */
-                title={<span className="text-copper-line">Every node is a card</span>}
+                   `--color-amber`, which is what they asked for. This read `copper-line`
+                   from 2026-08-12 until the owner ruled the card register on 2026-09-06
+                   ("the amber should be the dominant color on the cards sections"), and the
+                   note that stood here argued the copper pole existed precisely so a card
+                   could read warm without borrowing amber's two claims. `app/globals.css`
+                   now gives amber a third job and this heading is an instance of it.
+
+                   The FIGURE under this heading is still copper, and that is not an
+                   oversight: `components/home/nodecard/**` draws a sheet with a ground it
+                   mixes for itself (`SHEET_REGISTER.copper`) and a syntax palette measured
+                   against that ground, so moving it is a different change from moving an
+                   accent. The two are neighbours on the wheel — oklch hue 75 against 46 —
+                   so the beat reads as one warm block against the cyan blueprint beat above
+                   it, which is the contrast the ruling is for.
+
+                   #ffb020 on `--color-surface` #0a0c16 reads 10.66:1, up from the 8.35:1
+                   copper read on the same ground. */
+                title={<span className="text-amber">Every node is a card</span>}
                 lead="Open one and it says what it does, the brief it is handed, which model runs it, what arrives, and what must never reach it."
                 align="center"
                 className="mx-auto"
@@ -184,10 +195,14 @@ export function SectionNodeIsCard() {
           />
         </div>
 
-        {/* Copper, on the author's instruction. The whole beat is the card's register —
-            heading, the lit node in the strip, the plate's own tether, the step numbers and
-            line spans down the walk — and the link out of it was the one thing in the block
-            still wearing the site default. */}
+        {/* Copper, on the author's instruction, and the one thing in this beat the
+            2026-09-06 register pass could not move: `BeatCaption`'s `TONE` map offers
+            `cyan` and `copper` and no third entry, and that file is not this pass's to
+            edit. The heading above went amber; this link is the remaining half.
+            TODO: add an `amber` tone to `components/home/BeatCaption.tsx`
+            (`text-amber decoration-amber/40 hoverable:hover:decoration-amber`) and pass it
+            here. Copper is still warm and still not the site default, so the beat does not
+            hand off in the blueprint's colour in the meantime. */}
         <BeatCaption href="/spec/card" cta="Card format reference" tone="copper">
           Each node pins an exact card version: its job, interface, tool reach, and
           prohibitions. Reuse the card in another graph.

@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { cx } from "@/lib/format";
 import { ReachList, ReachRow } from "@/components/ui/ReachList";
 
@@ -166,7 +164,13 @@ export function WhatACardReaches({
       <ReachRow
         field="model"
         value={model}
-        note="Written the way the provider writes it, and overridable. A reader can point the graph at something else."
+        /* "and overridable" left the direction out, and a reader arriving from the DOT
+           side filled it in the wrong way round: a graph-level model_stylesheet looks
+           like the outer scope, so it reads as the thing that wins. Attractor spec §8.5
+           ranks it the other way. The stylesheet supplies a default for nodes that name
+           no model, and this line beats it. Say which outranks which or the row corroborates
+           whatever the reader already believed. */
+        note="Written the way the provider writes it. A stylesheet on the graph is a default for the nodes that name no model; a line here outranks it. A reader can still point the run at something else."
       >
         The model it thinks with. The ceiling on what this step can be trusted to attempt.
       </ReachRow>
@@ -225,19 +229,20 @@ export function WhatACardReaches({
       <ReachRow
         field="risk_markers"
         value={riskMarkers}
-        note={
-          <>
-            Each marker costs the blueprint security points.{" "}
-            <Link
-              href="/reading-the-radar"
-              className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
-            >
-              How a blueprint is graded <span aria-hidden>&rarr;</span>
-            </Link>
-          </>
-        }
+        /* "Each marker costs the blueprint security points" and a link reading "How a
+           blueprint is graded" stood here, pointing at `/reading-the-radar`. The owner
+           asked that page off the site on 2026-09-04 and no blueprint page prints a
+           security number any more, so both halves were promising a surface a reader
+           cannot open: the link 308s to `/build` and would have landed somebody who
+           clicked "how this is graded" in a sandbox about three dials.
+
+           What survives the removal is the only thing this row was ever teaching — a
+           marker is a term out of the ontology and not a sentence, which is what makes a
+           stated blast radius a checked one. That is the same claim the `cannot` row
+           above makes about its own field, and it is still true. */
+        note="Risk-marker terms from the ontology, and nothing else. Writing one here puts the blast radius in the file, where the checker can hold the author to a word the vocabulary defines."
       >
-        The blast radius, priced. The card states what this step could break if it goes
+        The blast radius, declared. The card states what this step could break if it goes
         wrong. A reader does not need to guess.
       </ReachRow>
     </ReachList>
@@ -537,7 +542,7 @@ const OFFLINE: readonly AxisStep[] = [
   },
   {
     step: "checked",
-    note: "the analyzer reads them and scores what it reads",
+    note: "the analyzer reads them and reports what it finds",
     col: "sm:col-start-2",
   },
 ];

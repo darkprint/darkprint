@@ -174,10 +174,11 @@ describe("the published types", () => {
     const created: number = 0 as Result["created"];
     const skipped: number = 0 as Result["skipped"];
     const handle: string = "" as Plan["registryHandle"];
-    const ontologyVersion: string = "" as Plan["ontologyVersion"];
+    /* A fourth binding, `Plan["ontologyVersion"]`, stood beside these. 0009 withdrew the
+       member; a type pin on an absent member is a compile error, not a weaker assertion. */
 
     expect([typeof widens, typeof narrows]).toEqual(["function", "function"]);
-    expect([created, skipped, handle, ontologyVersion]).toEqual([0, 0, "", ""]);
+    expect([created, skipped, handle]).toEqual([0, 0, ""]);
 
     /* Last. Without it every line above is erased and this cell is green against a module that
        does not exist. */

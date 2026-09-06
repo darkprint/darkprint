@@ -29,12 +29,49 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import SkillPage from "@/app/skill/page";
+import SkillPage, { metadata as skillMetadata } from "@/app/skill/page";
+import { DraftLanding } from "@/components/bundle/DraftLanding";
+import { SetupChips } from "@/components/hero/SetupChips";
 import { SKILL_INSTALL_COMMAND, SkillSetup } from "@/components/skill/SkillSetup";
 import { openText, plainText } from "@/components/ui/visible-text";
 
 const SETUP = renderToStaticMarkup(createElement(SkillSetup));
 const PAGE = renderToStaticMarkup(createElement(SkillPage as never));
+
+/* The other two surfaces that print the command, rendered here rather than in two suites,
+   because the claim being held is one claim about one string (see the block below and
+   `lib/skill.ts`'s header). `/capabilities` is the fifth and is rendered by
+   `app/capabilities/honesty.test.ts`, which owns it.
+
+   Three surfaces until 2026-09-06. `AgentHandoff` was the agent-brief exit on `/build`, and
+   the owner deleted that route and its whole component tree ("it is not useful and make
+   confusion"). Its rows below came out with it, under this file's own rule that a case goes
+   when the copy it guards is DELETED. Both sentences it held are still asserted here on
+   live surfaces: the 404 qualification by `SkillSetup.tsx:361` and `DraftLanding.tsx:150`,
+   and the written-not-installable half by the `is written` / `read access` case at the end
+   of this block. Neither claim lost its last reader, which is the only condition under
+   which a row here may be retired. */
+const CHIPS = renderToStaticMarkup(createElement(SetupChips));
+const DRAFT = renderToStaticMarkup(
+  createElement(DraftLanding, {
+    draft: {
+      ownerHandle: "ada",
+      slug: "empty-draft",
+      visibility: "private" as const,
+      createdAt: "2026-09-05T00:00:00.000Z",
+    },
+    owner: {
+      username: "ada",
+      displayName: "Ada",
+      avatarHue: 200,
+      validator: false,
+    },
+    /* The quick-setup panel this suite reads is owner-only: `isOwner: false` renders the
+       four-line visitor branch and every case below would pass over an empty string.
+       `visibilityApi` is left out on purpose, so no live control mounts. */
+    isOwner: true,
+  }),
+);
 
 describe("the install command", () => {
   /**
@@ -59,6 +96,145 @@ describe("the install command", () => {
     // The `aria-label` is the only place the button says what it copies, and a reader on
     // a screen reader hears that and nothing else.
     expect(SETUP).toContain("Copy the command that installs the DarkPrint skill");
+  });
+});
+
+/* ============================================================
+   The command does not run, and the qualification travels with it (§11.0 Q8)
+   ------------------------------------------------------------
+   `api.github.com/repos/Brotherhood94/darkprint` answers 404 unauthenticated: DarkPrint's
+   repository is private, the `skills` CLI reads the DarkPrint skill out of it over git, and
+   the command above therefore fails for every reader except its owner. The owner ruled on
+   2026-09-05 that the repository stays private and the command stays printed, qualified
+   everywhere it renders.
+
+   Six surfaces print it. Five are held here; `/capabilities` is held by
+   `app/capabilities/honesty.test.ts`, which owns that page. **The case one file up is the
+   reason this block has to exist at all**: "is real text on the page, not something a
+   script fills in" passes on a page that prints a command nobody can run and says nothing
+   about it, which is a guard passing over the claim it was written to hold.
+
+   ── Why a phrase per surface and not one shared constant ──
+   `components/site/honesty.test.ts` pins each surface's own words, and this follows it. A
+   band cell has room for six words and `/skill` has room for three sentences, so a single
+   exported sentence would either not fit the band or say almost nothing on `/skill`. What
+   IS shared is the clause naming the cause, asserted separately below, so a surface cannot
+   drop the reason and keep a vague hedge.
+
+   ── The negative matters as much as the positive ──
+   The DarkPrint skill is WRITTEN. A qualification that reads as "unfinished" replaces one
+   false claim with another, which is why the last case holds the two surfaces with room to
+   say so to saying it.
+   ============================================================ */
+
+/** One row per surface, in the order a reader is likeliest to meet them. */
+const QUALIFIED = [
+  {
+    surface: "/skill · step 01, in the column beside the command",
+    html: SETUP,
+    says: "the command does not run yet",
+  },
+  {
+    surface: "the landing band · the skill cell's own note",
+    html: CHIPS,
+    says: "fails today",
+  },
+  {
+    surface: "a draft bundle · the quick-setup panel",
+    html: DRAFT,
+    says: "not runnable yet",
+  },
+] as const;
+
+describe("every surface that prints the install command says it does not run", () => {
+  it.each(QUALIFIED.map((q) => [q.surface, q] as const))("%s", (_name, entry) => {
+    const text = openText(entry.html).toLowerCase();
+    // The premise. A surface that stopped printing the command needs no qualification, and
+    // this case would otherwise pass for that reason rather than for the right one.
+    expect(text, `${entry.surface} no longer prints the command`).toContain(
+      SKILL_INSTALL_COMMAND.toLowerCase(),
+    );
+    expect(text, `${entry.surface} prints the command with no qualification`).toContain(
+      entry.says,
+    );
+  });
+
+  /**
+   * The cause, in the same words on all four, because it is the thing that changes.
+   *
+   * A hedge that says "not yet" and nothing else survives the repository going public: it
+   * stays true-sounding and nobody deletes it. Naming the repository is what makes the
+   * qualification obviously wrong the day it stops applying, which is the property the
+   * owner's ruling is buying — one edit per surface, and the edit is visible.
+   */
+  it.each(QUALIFIED.map((q) => [q.surface, q] as const))(
+    "%s · names the private repository as the cause",
+    (_name, entry) => {
+      expect(openText(entry.html).toLowerCase()).toContain("repository is private");
+    },
+  );
+
+  /**
+   * The reader who never opens the page. `/capabilities` carries the npm limit in its own
+   * description for this reason and `app/skill/page.tsx` argues it in a comment; the first
+   * sentence of this one is "one command puts a blueprint-writing skill in your own agent",
+   * which is the sentence a reader acts on from a search result.
+   *
+   * The T280 refusal is asserted beside it rather than replaced. Two different limits: the
+   * command cannot run at all, and a release cannot be cut from inside the agent even once
+   * it can.
+   */
+  it("says it in the metadata description too, without displacing the T280 refusal", () => {
+    const description = skillMetadata.description ?? "";
+    expect(description).toContain("The command fails today: DarkPrint's repository is private.");
+    expect(description).toContain("Not built yet: releasing straight from your agent");
+  });
+
+  /**
+   * The claim that was actually on the page, held as its own inversion.
+   *
+   * `/build`'s label read "The DarkPrint skill · installs today" and `/skill`'s panel led
+   * with "The DarkPrint skill installs today.", and neither is true while the repository is
+   * private. Removing them is invisible to every case above — a surface can carry the
+   * qualification AND the sentence it contradicts, and that reads worse than either alone.
+   * Measured: reverting the label alone reddened nothing until this case existed.
+   *
+   * Both halves are part of the undo. When the repository goes public, this case comes out
+   * in the same commit that puts "installs today" back, which is the point of asserting the
+   * exact string rather than a paraphrase.
+   */
+  it("no surface still says the DarkPrint skill installs today", () => {
+    for (const [name, html] of [
+      ["/skill · the whole route", PAGE],
+      ["a draft bundle · the quick-setup panel", DRAFT],
+      ["the landing band", CHIPS],
+    ] as const) {
+      expect(openText(html).toLowerCase(), name).not.toContain("installs today");
+    }
+    // The label that carried the replacement wording, "written, not yet installable", was
+    // `AgentHandoff`'s and went with `/build`. The half it protected — that the document
+    // EXISTS and only read access is missing — is asserted directly below, on the two live
+    // surfaces that have room to say it. A negative sweep alone would be satisfied by a
+    // site that stopped mentioning the skill, which is why that positive has to stay.
+  });
+
+  /**
+   * The DarkPrint skill is built. This is the half of the ruling that is easiest to lose in
+   * a later wording pass, because "does not run" and "does not exist" compress to the same
+   * short hedge, and only one of them is true.
+   *
+   * Held on the two surfaces with room for the distinction; the band has six words. This
+   * pair is now the ONLY positive holding it. `AgentHandoff` carried a third rendering of
+   * it and was deleted with `/build` on 2026-09-06, so the sweep above no longer has a
+   * positive of its own and leans on this case instead.
+   */
+  it.each([
+    ["/skill · step 01", SETUP],
+    ["a draft bundle · the quick-setup panel", DRAFT],
+  ] as const)("%s · says the document exists and read access is what is missing", (name, html) => {
+    const text = openText(html).toLowerCase();
+    expect(text, name).toContain("is written");
+    expect(text, name).toContain("read access");
   });
 });
 
@@ -159,7 +335,12 @@ describe("the tutorial covers what a reader is in for", () => {
 describe("the route keeps what ships apart from what does not", () => {
   const page = openText(PAGE);
 
-  it("prints the working command above the rule, and the unbuilt half below it", () => {
+  /* "prints the WORKING command above the rule" until 2026-09-05. The command does not
+     work, and the block above holds every surface to saying so; what this case is really
+     about, and always was, is the page's ORDER — what exists leads, what does not is
+     grouped once below the rule and labelled once. That order is unchanged by Q8: the
+     DarkPrint skill is written, and the registry push below the rule is not. */
+  it("prints the command above the rule, and the unbuilt half below it", () => {
     const command = page.indexOf(SKILL_INSTALL_COMMAND);
     const rule = page.indexOf("Not built yet");
     expect(command, "the command is not on the page").toBeGreaterThan(-1);
@@ -179,7 +360,10 @@ describe("the route keeps what ships apart from what does not", () => {
    *
    * The exact number is still asserted rather than a floor, and the reason is unchanged:
    * "at least one badge below the rule" would pass on the day an unrelated amber pill
-   * appears anywhere on this page, and amber has exactly two sanctioned jobs sitewide. What
+   * appears anywhere on this page. Amber has THREE sanctioned jobs sitewide since
+   * 2026-09-06, when the owner added the card register to the two claims — which makes the
+   * exact count more worth keeping rather than less, since a hue with a third job is a hue
+   * that turns up in more places. This page is not a card and takes none of that. What
    * the case really protects is the POSITION — every badge below the rule and none above
    * it — and that is unchanged by the count, asserted for all of them rather than the first.
    *

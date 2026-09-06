@@ -12,7 +12,7 @@ lib/core/
   diagnostics.ts   the code table
   dot/             lexer, recursive-descent parser, graph model
   card/            schema, parse, validate, iteration-cap
-  ontology/        types, the 49 curated terms, resolve + isA + partitionTerms
+  ontology/        types, the 54 curated terms, resolve + isA + partitionTerms
   bundle/          types, resolve
   analysis/        autonomy, security, phase-coverage, similarity, analyze
   hash/            pure-TS sha256, canonical JSON, digest
@@ -84,6 +84,12 @@ risk markers, then clamps.
 **Open calibration item:** four of nine blueprints floor at security 1. Either the weights are
 too harsh or the scale is too short. Doc 3 §9 left this for tuning against real data; see
 `../PROJECT.md` §3.3. Changing any weight is a PATCH of the ontology version.
+
+> **The last sentence is superseded 2026-09-05 by D-131 (`docs/DECISIONS.md`).** There is no
+> ontology version for a weight change to be a PATCH of. The weights were never versioned in
+> the first place — they live in `DARKPRINT_CONFIG.security.weights`, which no version string
+> ever covered — so the rule could not have made a score reproducible even while a version
+> existed. Kept verbatim as the record of what was specified.
 
 ---
 
@@ -160,7 +166,15 @@ actionable rather than annoying.
 
 `lib/core/archive/`. Content-addressed: canonical JSON → pure-TS sha256 → digest. Card versions
 are **archived side by side**, never edited in place, which is what lets a figure quote
-`targeted-debugger@1.0.0`'s `max_iterations: 3` and know it cannot drift.
+`targeted-debugger@1.1.0`'s `max_retries: 2` and know it cannot drift.
+
+That example used to name `@1.0.0`'s `max_iterations: 3`, and the card it named is no longer
+in `content/`. **The immutability claim is what the change demonstrates rather than what it
+contradicts**: on 2026-09-04 the archive's iteration cap was respelled to mean what Attractor
+§2.6 means by it, and because a published version may not be edited, six cards were bumped
+and renamed instead. `2` and `3` are the same three total attempts under the two spellings;
+`@1.0.0`'s prose said "stop after three attempts" and its number permitted four, which is
+why the version moved rather than the file.
 
 ---
 
@@ -179,6 +193,12 @@ promotion        distinctAuthors 3   distinctBlueprints 5      (unused — no ba
 telemetry        minRuns 5   outlierZScore 3                   (unused — no backend)
 ```
 
+> **The first line is superseded 2026-09-05 by D-131 (`docs/DECISIONS.md`).**
+> `DarkprintConfig` carries no `ontologyVersion`; `lib/core/config.ts:117` records the
+> removal in place of the field. It mirrored `CORE_ONTOLOGY.version`, which is also gone,
+> and two copies of one number are two things to keep in step. The listing is kept verbatim
+> as the record of what the file held.
+
 The last two blocks describe features that **do not exist**. They are design, not behaviour;
 do not let a surface imply otherwise.
 
@@ -188,7 +208,7 @@ do not let a surface imply otherwise.
 
 | change | what goes stale |
 |---|---|
-| **a weight or threshold** | every score on the site, all 9 READMEs, the "4 to 2" demonstration, and the ontology version (PATCH) |
+| **a weight or threshold** | every score on the site, all 9 READMEs, the "4 to 2" demonstration, and ~~the ontology version (PATCH)~~ (D-131, 2026-09-05: there is no ontology version, and the weights were never inside one) |
 | **an autonomy band** | every class shown in the gallery and on every blueprint page |
 | **a diagnostic code** | the check tables on the three `/spec/*` layer pages, any page quoting it, and the fixtures asserting it |
 | **the leak check** | the `/build` switch, `/spec/card`'s quoted diagnostic, and the starter's claim to be the reference clean result. `/what-it-isnt` drew both graphs and was removed |

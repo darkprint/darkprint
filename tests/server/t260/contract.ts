@@ -263,18 +263,30 @@ export async function termTable(): Promise<TermTableModule> {
 export const TERM_TABLE = "components/ontology/TermTable.tsx";
 
 /**
- * The two routes that import from it, both in T260's `Forbidden`.
+ * The routes that import from it, in T260's `Forbidden`.
  *
  * Enumerated mechanically over the whole tree, not from the ruling's own list:
  *
  *     grep -rn 'from "@/components/\(gallery\|ontology\)\|from "@/components/nodes/NodeBrowser' \
  *       app components lib scripts tests --include="*.ts" --include="*.tsx"
  *
- * returns exactly these two lines and nothing else, which is also the evidence that the
- * frozen surface has no third consumer this suite is failing to protect.
+ * returns exactly the lines below and nothing else, which is also the evidence that the
+ * frozen surface has no further consumer this suite is failing to protect.
+ *
+ * TWO UNTIL 2026-09-05, and `app/nodes/[...id]/page.tsx` left by a ruling rather than by
+ * drift. The owner asked three panels off the card page in one instruction: `Risk and
+ * autonomy`, `Identity` and `Card source`. Those were what rendered ontology terms there,
+ * so the route stopped importing from `TermTable` as a consequence of the removal and not
+ * as an edit to a Forbidden file. The derived cell caught it and said, correctly, that
+ * satisfying it by editing the consumer would itself be editing a Forbidden file. This is
+ * the other repair that cell names: the list loses the route that is no longer a consumer.
+ *
+ * The guard keeps a subject. `app/ontology/[...term]/page.tsx` still imports from
+ * `TermTable`, so both cells still measure something, and the pinned-export cell above is
+ * unchanged in force: every name `RULED_FROZEN` names must still be exported. What is gone
+ * is the claim that a route which no longer reads the vocabulary must keep reading it.
  */
 export const FORBIDDEN_CONSUMERS = [
-  "app/nodes/[...id]/page.tsx",
   "app/ontology/[...term]/page.tsx",
 ] as const;
 

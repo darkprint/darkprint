@@ -7,6 +7,8 @@ description: |-
   The hardest part of a multi-agent factory isn't getting work done, it's what happens when two competent agents disagree. This blueprint runs a deliberate adversarial pair: Solver A stays conservative, Solver B explores. A consensus node scores both proposals against the acceptance criteria and, on a genuine conflict, re-opens a bounded debate instead of silently picking one. The loop closes only when the verifier signs off, so no human ever has to arbitrate.
 
   Use it wherever a single model is confidently wrong too often: spec interpretation, refactor strategy, or any judgement call where a second, differently-tuned opinion catches the blind spot.
+
+  One thing this graph draws that a runner will not do. `plan` has two outgoing edges and the design wants both taken, which is a fan-out. Attractor selects the parallel handler from `shape=component`, and a card whose `type` is `agent` compiles to `shape=box`, so `task-decomposer` produces an ordinary stage and engine spec 3.3 picks ONE of the two edges. Retyping the card does not fix it either: 4.8 has the parallel handler execute each branch's subgraph itself, 3.2's traversal then selects an edge from the same node anyway, and the spec carries no worked example of a fan-out and no wiring between 4.8's results and 4.9's fan-in. So the second solver does not run today, and the honest reading of this bundle is one solver and a vote with one candidate. The gap is Attractor's rather than this blueprint's, and it is named here instead of drawn over.
 category: Coordination
 tags:
   - multi-agent

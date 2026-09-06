@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import { cardRef, parseCardRef, type NodeCard } from "./schema";
@@ -142,5 +144,87 @@ describe("NodeCard shape", () => {
     const capabilityOnly: NodeCard = { ...minimal, tools: ["file-io"], mcp: [] };
     expect(serverOnly.tools).toEqual([]);
     expect(capabilityOnly.mcp).toEqual([]);
+  });
+});
+
+/* ============================================================
+   The model-stylesheet precedence, spec §8.5
+   ------------------------------------------------------------
+   `components/spec/rows.test.ts` holds four surfaces to this
+   claim, and it exists because every one of them shipped it
+   backwards: a reversed precedence reads exactly as fluently as
+   the right one and no gate could see it. The `model` docblock
+   below is the FIFTH carrier and it was outside that guard, which
+   matters more than the other four rather than less. It states
+   the contract for the field, `scripts/skill-refs.ts` copies this
+   file verbatim into `skills/darkprint/references/card-schema.md`,
+   and that reference ships to strangers over
+   `npx skills@latest add`, where nothing regenerates it.
+
+   Held over the SOURCE, because a docblock is not a value any
+   suite can import. The extraction takes the one comment attached
+   to `model?: string;` and nothing else, so the paragraph that
+   quotes the wrong reading in order to explain it is inside the
+   guarded text on purpose: it is part of what the docblock says,
+   and a checker that could not see it would be a checker no future
+   correction could be written past.
+
+   `node:fs` here, in `lib/core`. The isomorphic rule is about the
+   modules that ship to the browser on `/upload`; a `.test.ts` is
+   never bundled and vitest runs it under `environment: "node"`.
+   `schema.ts` itself imports nothing and stays isomorphic.
+   ============================================================ */
+
+describe("the `model` docblock, and the direction spec §8.5 gives it", () => {
+  /**
+   * The comment attached to `model?: string;`, read off this file's own directory.
+   *
+   * `(?:(?!\*\/)[\s\S])*?` is what makes the match start at the LAST `/**` before the
+   * field: a plain lazy wildcard would start at the first block comment in the file and
+   * swallow every docblock between, which passes every assertion below on the strength of
+   * paragraphs about other fields.
+   */
+  function modelDocblock(): string {
+    const source = readFileSync(new URL("./schema.ts", import.meta.url), "utf8");
+    const match = /\/\*\*(?:(?!\*\/)[\s\S])*?\*\/\n\s*model\?: string;/.exec(source);
+    if (match === null) throw new Error("no docblock attached to `model?: string;`");
+    return match[0];
+  }
+
+  it("is the model docblock and not the file", () => {
+    // The premise every assertion below rests on. `spec` is the field immediately above
+    // and `agent` the one immediately below, so their sentences appearing here would mean
+    // the extraction had run away in one direction or the other.
+    const text = modelDocblock();
+    expect(text).toContain("llm_model");
+    expect(text).not.toContain("non vede il resto del grafo");
+    expect(text).not.toContain("A label the card's author chose");
+    expect(text.length).toBeLessThan(3000);
+  });
+
+  it("cites §8.5, where the order is settled, and §8.3 beside it", () => {
+    // §2.6's "Overridable by stylesheet" names the field and ranks it against nothing.
+    // Citing it for the ranking is the move that produced the four reversed sentences, so
+    // the sections that settle the question have to be named here.
+    const text = modelDocblock();
+    expect(text).toContain("§8.5");
+    expect(text).toContain("§8.3");
+  });
+
+  it("says the explicit node attribute outranks the sheet", () => {
+    expect(modelDocblock()).toMatch(
+      /\bexplicit node attribute\b[^.]*\boutranks\b[^.]*\bsheet\b/i,
+    );
+  });
+
+  it.each([
+    // "a model_stylesheet outranks the field on the card"
+    [/\b(model_)?stylesheets?\b[^.;]*\boutranks?\b[^.;]*\b(node|card|field|attribute|line)\b/i],
+    // "the stylesheet overrides an explicit node attribute"
+    [/\b(model_)?stylesheets?\b[^.;]*\boverrid\w*\b[^.;]*\b(node|card|field|attribute|line)\b/i],
+    // "the sheet wins" in any of its spellings
+    [/\b(stylesheet|sheet)\b[^.;]*\bwins\b/i],
+  ])("carries no sentence putting the sheet above the node (%s)", (inverted) => {
+    expect(modelDocblock()).not.toMatch(inverted);
   });
 });

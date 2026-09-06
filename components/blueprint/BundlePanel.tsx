@@ -28,7 +28,6 @@ export interface BundleNode {
  */
 export function BundlePanel({
   digest,
-  scoredOntologyVersion,
   nodes,
   pinnedCards,
   diagnostics,
@@ -54,7 +53,6 @@ export function BundlePanel({
    * between two hand-maintained copies of one number rather than between two readings of
    * this blueprint. What is left is the one figure that is a fact about the score.
    */
-  scoredOntologyVersion: string;
   nodes: readonly BundleNode[];
   /** Distinct card refs pinned — lower than the node count when a card is reused. */
   pinnedCards: number;
@@ -141,22 +139,13 @@ export function BundlePanel({
             <dt className="text-sm text-muted">Pinned cards</dt>
             <dd className="font-mono text-sm tabular-nums text-fg">{pinnedCards}</dd>
           </div>
-          <div className="flex items-center justify-between gap-3 py-2.5">
-            <dt className="text-sm text-muted">Scores computed under</dt>
-            <dd className="font-mono text-sm tabular-nums text-violet">
-              v{scoredOntologyVersion}
-            </dd>
-          </div>
         </dl>
 
-        {/* Doc 3 §8. Weights live in the configuration and retuning one is a PATCH of
-            the ontology that still moves every score in the archive, so Autonomy and
-            Security only mean something next to the vocabulary that produced them. This
-            is the claim the row above cannot make on its own, and it is the reason the
-            row is still here. */}
-        <p className="mt-2 text-xs leading-snug text-dim">
-          Two scores from different ontology versions are not comparable.
-        </p>
+        {/* A `Scores computed under vX.Y.Z` row stood here with a note saying two scores
+            from different ontology versions are not comparable. Both went on 2026-09-05:
+            the vocabulary carries no version any more, so there are no two versions to be
+            incomparable between. The claim was true while it stood and it has no subject
+            now, which is why it is removed rather than reworded. */}
       </section>
 
       {/* Warnings are information, not something to tuck away. Measured on the archive as

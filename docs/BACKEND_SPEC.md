@@ -2,6 +2,21 @@
 
 **Last verified against commit `8a9801e388551b83cca70061bcb836f38574dd52` on 2026-08-13.**
 
+**Amended 2026-09-05 against the working tree, for one change only: ontology versioning was
+removed in full (D-131).** Every clause that told a backend implementer to store, stamp or
+resolve a vocabulary version is struck in place with its replacement beside it, rather than
+rewritten away, because the strikes are the record of what this document specified. Nothing
+else was re-verified against the tree at that date.
+
+**Amended again 2026-09-05, for a second change: the community ballot was BUILT and then
+DELETED (§11.0 Q14).** A-18 and A-19 specified an aspect that has since been implemented in
+full (T160, merged; `GET`/`POST /api/blueprints/{owner}/{slug}/votes` at T280) and then
+removed on the owner's ruling, and the two entries are marked in place rather than struck
+out, because *specified, built, then withdrawn* is a different state from *never built* and
+this document has no other way to say it. Nothing else was re-verified against the tree at
+that date; in particular, every A-nn entry outside those two still carries whatever
+`Last verified` above covers.
+
 ## 0 · What this document is, and what it is not
 
 An inventory of everything the DarkPrint backend has to provide, derived by reading
@@ -68,7 +83,7 @@ there is a real one", `lib/data/community.ts:1-9`).
 | [A-15](#a-15--bookmarks-saves) | Bookmarks (saves) | code |
 | [A-16](#a-16--stars-and-support-counts) | Stars and support counts | code |
 | [A-17](#a-17--download-counting) | Download counting | code |
-| [A-18](#a-18--community-ballot-and-vote-weighting) | Community ballot and vote weighting | code + doc |
+| [A-18](#a-18--community-ballot-and-vote-weighting) | Community ballot and vote weighting — **BUILT (T160/T280) then WITHDRAWN 2026-09-05** | code + doc |
 | [A-19](#a-19--validator-role-and-grants) | Validator role and grants | code + doc |
 | [A-20](#a-20--notes-comments-and-note-votes) | Notes (comments) and note votes | code |
 | [A-21](#a-21--run-report-ingestion-and-cost-aggregation) | Run-report ingestion and cost aggregation | code + doc |
@@ -122,9 +137,12 @@ and give them back byte-identically.
 - Stores, per published bundle: manifest fields (`slug`, `title`, `summary`, optional
   `description`, `category`, `author`, `createdAt`, `updatedAt`, required `tags` —
   `lib/core/bundle/types.ts`), the DOT source verbatim, the set of pinned card refs, and the
-  digest. **`ontologyVersion` left the manifest with D-93**: there is one living vocabulary
-  and no historical version to resolve against, so the version survives only as a stamp on a
-  stored score (`release.scoredOntologyVersionId`), never as a field an author types.
+  digest. **`ontologyVersion` left the manifest with D-93** and the concept left the product
+  entirely with **D-131 (2026-09-05)**: there is one living vocabulary, it carries no version,
+  and nothing stores which vocabulary a score was computed under. The stamp this paragraph
+  used to point at is gone in both spellings — `release.scored_ontology_version_id` was
+  dropped by migration `0009_drop_ontology_versioning`, and `AutonomyResult.ontologyVersion`,
+  the jsonb copy every reader actually used, went with it.
 - The digest is computed, never accepted from the client: it is `sha256` over the DOT plus
   the sorted card digests, and card digests are sorted but **not** deduplicated, so a
   bundle pinning one card twice is a different bundle (`digest.ts:61`).
@@ -214,7 +232,9 @@ with a content digest and a checkable version chain, shared across all bundles t
    until publish?
 4. Which wire spelling is canonical over an API — the card's snake_case or the manifest's
    camelCase? **The three fields this question was asked about are all gone**: D-92 withdrew
-   `requires_human` and D-93 withdrew `ontology_version` and `ontologyVersion`. The question
+   `requires_human` and D-93 withdrew `ontology_version` and `ontologyVersion`. Both card
+   spellings stay in `RETIRED_KEYS` (`lib/core/card/validate.ts:160,164`) and raise
+   `card/retired-field` at warning, which is the one place the word survives in behaviour. The question
    itself stands for whatever field is added next, and `will_not` (D-101's prohibition split)
    is the first case decided under it: snake_case on the wire, `willNot` on the model, with
    the camelCase spelling also accepted on input.
@@ -234,7 +254,7 @@ view a bundle is resolved against, and record which version each score was compu
 
 **Evidence**
 
-- `code` — `CORE_ONTOLOGY` (`lib/core/ontology/core.ts`), version `0.1.0`, 49 terms across
+- `code` — `CORE_ONTOLOGY` (`lib/core/ontology/core.ts`), version `0.1.0`, 54 terms across
   five closed kinds; `content/ontology/extensions.yaml` adds one; the merged view keeps the
   base version (`lib/core/ontology/resolve.ts:125-127`).
 - `code` — one shared `OntologyView` per build, memoized, because `isA` memoizes per
@@ -249,10 +269,15 @@ view a bundle is resolved against, and record which version each score was compu
   (`UploadFlow.tsx:142-144`, `:567-581`) and the route discloses three times that the
   wizard resolves against the core alone while the archive resolves against core + overlay
   (`app/upload/page.tsx:195-200`).
-- `code` — `DARKPRINT_CONFIG.ontologyVersion` (`lib/core/config.ts:129`) and every
+- ~~`code` — `DARKPRINT_CONFIG.ontologyVersion` (`lib/core/config.ts:129`) and every
   analysis result carries `ontologyVersion`; the bundle page prints "Scores computed under"
   and "Two scores from different ontology versions are not comparable"
-  (`components/bundle/Aside.tsx:155-172`).
+  (`components/bundle/Aside.tsx:155-172`).~~ **Struck 2026-09-05 (D-131): every one of those
+  four is gone.** `DarkprintConfig` carries no `ontologyVersion` (`lib/core/config.ts:117`
+  records the removal); `AutonomyResult`, `SecurityResult` and `BlueprintAnalysis` carry
+  none; and the panel row plus its comparability disclaimer left with the prop
+  `scoredOntologyVersion`. The disclaimer was removable only because the state it warned
+  about — two vocabulary versions existing at once — is what was deleted.
 - `doc` — `docs/architecture/concept-model.md` §7; `docs/DECISIONS.md` D-24, D-26, D-30.
 
 **Behaviour**
@@ -273,11 +298,17 @@ view a bundle is resolved against, and record which version each score was compu
 **Unknowns**
 
 1. Is a local overlay a versioned, publishable artefact of its own, or always a file inside
-   a bundle? Its own `version` is discarded by the merge today
-   (`concept-model.md` §7 TBD).
-2. Who may publish a core-ontology version, and what happens to already-stored scores when
-   one lands? `docs/DECISIONS.md` D-30 says a weight change is a PATCH of the ontology
-   version and nothing enforces it.
+   a bundle? ~~Its own `version` is discarded by the merge today~~ — **since 2026-09-05
+   there is no `version` key to discard**: `content/ontology/extensions.yaml` lost it with
+   D-131, `lib/content/ontology-file.ts` never parsed it, and `ontologyView` keeps only the
+   base title. The question survives as *may an overlay be published on its own*, which
+   nothing in the code proposes (`concept-model.md` §7).
+2. ~~Who may publish a core-ontology version, and what happens to already-stored scores when
+   one lands?~~ **ANSWERED 2026-09-05 by removal (D-131): nobody, because there are no
+   versions to publish.** D-30's *a weight change is a PATCH of the ontology version* is
+   left in the ledger as history and is now unstateable as well as unenforced. What a stored
+   score may be recomputed against is D-116's rule instead: an operator, outside the product,
+   over the whole corpus, only when the analysis model changed, with a rollback beside it.
 3. Do overlays share one global namespace keyed by handle prefix, or is an overlay scoped to
    the bundle that carries it? Two bundles could then define the same id differently.
 4. Are scores recomputed on an ontology release, or frozen at their stated version?
@@ -471,12 +502,12 @@ description for a resolved bundle, and record what they were computed against.
 
 - `code` — `computeAutonomy` (`lib/core/analysis/autonomy.ts:239`) returns `AutonomyResult`
   (`:120`) with `autonomyClass`, `isDarkFactory` (`:320`), `level`, `label`, `fraction`,
-  `autonomousNodes`, `totalNodes`, `contributions[]`, `rationale`, `ontologyVersion`,
-  `diagnostics`. SEAM-36.
+  `autonomousNodes`, `totalNodes`, `contributions[]`, `rationale`, `diagnostics`
+  (`ontologyVersion` was here and went with D-131). SEAM-36.
 - `code` — `computeSecurity` (`lib/core/analysis/security.ts:441`) returns `SecurityResult`
   (`:178`): `level` 1-4 clamped, `raw` (`4 − Σ weights`), `penalties[]` (a marker charged
   once per blueprint), `findings[]` (one per marker+node, `declared` or `inferred`),
-  `rationale`, `ontologyVersion`. SEAM-37.
+  `rationale` (no `ontologyVersion`, D-131). SEAM-37.
 - `code` — `computePhaseCoverage` (`lib/core/analysis/phase-coverage.ts`) returns sets of
   ids only — `covered`, `missing`, `byPhase`, `unphased` — deliberately no percentage and no
   label. SEAM-38.
@@ -499,7 +530,10 @@ description for a resolved bundle, and record what they were computed against.
 - Emits its own diagnostics as part of the reading: `analysis/empty-graph`,
   `analysis/unresolved-node`, and the three `criteria-leak` non-verdicts that exist so the
   check can never be silently inert.
-- Stamps every result with the ontology version it was computed under.
+- ~~Stamps every result with the ontology version it was computed under.~~ **Withdrawn
+  2026-09-05 (D-131).** There is one vocabulary, it has no version, and no result carries a
+  stamp. A backend built from this document must not add one back: it would be a number
+  nothing else moves with, which is the reason it was removed.
 - Never surfaces the 1-4 autonomy band as a value a client can render or sort on.
 
 **Unknowns**
@@ -876,7 +910,12 @@ they chose to pin, and the summary figures the header prints.
 - `code` — the header's preview line is three figures: `totalDownloads`, `stars` (a sum
   computed fresh from blueprint votes plus card support, not a stored field) and `validated`,
   all marked `◐ seeded`, closing with "No telemetry, ballot, or verified run report is
-  connected" (`components/profile/ProfileHeader.tsx`). SEAM-56.
+  connected" (`components/profile/ProfileHeader.tsx`). SEAM-56. **That sentence is no longer
+  in the tree** — `grep -rn "No telemetry" components app` returns nothing as of 2026-09-05,
+  and T280 replaced the seeded figures behind it with live `getSignalsMany` reads. The only
+  seeded figure left on that header is the per-card `support` pill on a `Pinned` mini-card
+  (`components/profile/load.ts`'s `starsFor`), and the ballot half of the claim is now true
+  by deletion rather than by absence (A-18).
 - `code` — `Watch` is drawn and disabled with `title="Nothing stores a follow yet: there are
   no accounts behind this page."`; the watcher count is seeded. SEAM-57.
 - `code` — counted-vs-seeded is a deliberate split: what the archive can count is counted at
@@ -1042,10 +1081,22 @@ tiles and both detail pages print.
 
 #### A-18 · Community ballot and vote weighting
 
-**Purpose.** Collect and aggregate the three subjective scorecard metrics — efficacy,
-reliability, transparency — with validator votes weighted.
+> **WITHDRAWN 2026-09-05, after being built.** This aspect was implemented as T160 and
+> given a route surface at T280, and the owner then had both deleted (§11.0 Q14):
+> `app/api/blueprints/[owner]/[slug]/votes/**` is gone, `lib/server/ballot` keeps two type
+> declarations and no functions, and `tests/server/t160/**` — eleven files, 3501 lines —
+> went with its subject. **The `ballot` TABLE survives and is not evidence of an intention
+> to return**: `lib/server/lifecycle/bundle-deletion.ts:96` cascades through it, so dropping
+> it would break account and bundle deletion. The entry is kept whole below because the
+> Unknowns it lists were genuine and six of the seven were answered by the implementation
+> before it was removed — a future ballot would be re-deciding them, not deciding them for
+> the first time. What has NOT survived is the premise in the Purpose line: nothing on the
+> site collects a vote in this sense, and `Account.validatorWeight` multiplies nothing.
 
-**Evidence**
+**Purpose.** Collect and aggregate the three subjective scorecard metrics — efficacy,
+reliability, transparency — with validator votes weighted. **Withdrawn; see the note above.**
+
+**Evidence** — as read on 2026-08-13, with what became of each line since
 
 - `code` — the three metrics come straight from the index row and each `detail` string is
   written in the conditional, ending "Seeded, no ballot exists"
@@ -1053,25 +1104,38 @@ reliability, transparency — with validator votes weighted.
 - `code` — `MetricSource` is the write-authority discriminator: `auto` (engine only),
   `community` (the ballot), `reported` (whoever ran it) — `lib/types.ts:36`, and
   `METRIC_SOURCE_META` gives each a label and a colour (`lib/format.ts`).
-- `code` — `EvidenceLayers` column 2 states `insufficient sample` and refuses to close the
-  radar polygon with a placeholder (`components/blueprint/EvidenceLayers.tsx`).
+- ~~`code` — `EvidenceLayers` column 2 states `insufficient sample` and refuses to close the
+  radar polygon with a placeholder (`components/blueprint/EvidenceLayers.tsx`).~~
+  **`EvidenceLayers.tsx` was deleted 2026-09-04** with the scoring reading. The refusal it
+  encoded became real for a while — the column took a `live` prop and stated true
+  sufficiency — and then left with the panel.
 - `code` — the weighting is declared and unapplied: `Account.validatorWeight = 3`
-  (`lib/data/account.ts:88`), and `/settings` §05 says "validator voting is not built, so
-  the three community metrics on every scorecard are seeded and nothing here carries weight
-  over anyone else's reading" (`app/settings/page.tsx:401-405`).
-- `code` — no control exists to cast one of these votes anywhere in the UI.
+  (`lib/data/account.ts:88`). **Still true, and true in a stronger sense now**: it was
+  applied for real between T160 and 2026-09-05, in
+  `lib/server/ballot/aggregate.ts`'s weighted mean, and that file is deleted. `/settings`
+  §05's sentence has been rewritten twice since this line was written and now says the
+  weight multiplies nothing and is not shown.
+- `code` — no control exists to cast one of these votes anywhere in the UI. **True on
+  2026-08-13, false from T280, and true again from 2026-09-04** when `VoteControl` was
+  deleted — the route outlived the control by a day and was deleted on 2026-09-05.
 - `doc` — `docs/architecture/concept-model.md` §4 ("who may write each one").
 
-**Behaviour**
+**Behaviour** — specified here, built at T160, deleted 2026-09-05
 
 - Stores one ballot per `(account, blueprint, metric)` on a 0-100 axis, and serves the
-  aggregate plus the sample size.
+  aggregate plus the sample size. **Built as one ballot per `(account, bundle)` carried
+  across releases**, three nullable metric columns rather than one row per metric, which is
+  what made the sample size per METRIC rather than per ballot (D-05-02).
 - Weights a validator's ballot by their weight at the time of the vote or at aggregation.
+  **Answered: at aggregation**, so raising a weight moved an existing figure with no vote
+  recast (the criterion that forbade a stored aggregate).
 - Publishes the sample size alongside the figure, because the UI already refuses to show an
-  aggregate as a fact without it.
-- Never lets a ballot write an `auto` metric.
+  aggregate as a fact without it. **Built as a record, never a bare number**, so having the
+  value without the count was not expressible.
+- Never lets a ballot write an `auto` metric. **Built into the type**: the write shape had
+  three members and no `autonomy` or `security`, so the rule could not be forgotten.
 
-**Unknowns**
+**Unknowns** — six of the seven were answered by the implementation before it was removed
 
 1. What is the input — a 0-100 slider, a five-point scale, a thumbs pair? No control exists
    to read the shape off.
@@ -1090,7 +1154,18 @@ reliability, transparency — with validator votes weighted.
 
 #### A-19 · Validator role and grants
 
-**Purpose.** Mark an account as a validator, which is what makes its ballot weigh more.
+> **THE PREMISE IS GONE, THE ASPECT IS NOT.** The weight has multiplied nothing since
+> 2026-09-05 (A-18 above), so "what makes its ballot weigh more" no longer describes
+> anything the badge does. The badge itself is real and stayed real: `account.validator`,
+> `.validator_since` and `.validator_weight` are three columns a signed-in reader sees on
+> `/settings` §05. **Nothing on the site now says the badge does anything**, and that is a
+> deliberate position rather than an oversight — a weight asserts an effect on a number and
+> there is no number left, while a badge asserts the registry granted this account a status,
+> which stayed true when the ballot left. Unknown 1 (who grants it, and on what basis) is
+> still completely open and is the same question `backend.md:21080` files against T160.
+
+**Purpose.** Mark an account as a validator. **This line said "which is what makes its
+ballot weigh more" and that clause is withdrawn**; see the note above.
 
 **Evidence**
 
@@ -1109,8 +1184,13 @@ reliability, transparency — with validator votes weighted.
 
 - Stores the flag, the grant date and the weight per account, and serves them on the public
   author record and on the account.
-- Applies the weight wherever a ballot is aggregated
-  ([A-18](#a-18--community-ballot-and-vote-weighting)).
+- ~~Applies the weight wherever a ballot is aggregated
+  ([A-18](#a-18--community-ballot-and-vote-weighting)).~~ **There is nowhere left.** The one
+  aggregation that read the column is deleted, and the negative-weight gap it exposed
+  (D-160-01: weights 1 and −2 over values 100 and 10 answered −80, off the shared 0-100
+  axis) is MOOT rather than fixed — the column still has no positivity constraint, and
+  `docs/ARCHITECTURE.md` §11.1 records that the guard which would have caught the
+  consequence was deleted with the module.
 
 **Unknowns**
 
@@ -1552,8 +1632,9 @@ cost or upload.
 **Behaviour**
 
 - Bounds submission size, file count and validation cost per request and per account.
-- Bounds the community writes (stars, ballots, notes, run reports) per account and per
-  window.
+- Bounds the community writes (stars, ~~ballots~~, notes, run reports) per account and per
+  window. **Ballots left the list on 2026-09-05** with the route that accepted them (A-18);
+  the three that remain all have live routes.
 - Leaves the read surface crawlable rather than defending it.
 
 **Unknowns**
@@ -1782,6 +1863,40 @@ Reported, not resolved. In each case the code is quoted as it stands.
 Every route in the build, and the aspects it depends on. A route listed with only Group I/VI
 aspects needs no write plane. Aspects in **bold** are ones the route is the *primary*
 evidence for.
+
+> **This table is the build at the `Last verified` commit above and it is NOT re-derived
+> here (note added 2026-09-05, §11.0 Q31).** Several of its rows have since stopped
+> describing the tree, and they are named rather than edited, because the table's job is to
+> say which aspects each route was the evidence for and rewriting rows to match a later tree
+> would silently move that evidence.
+>
+> * **`/reading-the-radar` was DELETED on 2026-09-04** (D-121), 308ing to `/build`. Three
+>   rows bolded **A-07** and this was one of them; of the other two, `/blueprints/[slug]`
+>   lost the `Explainability` panel that made it primary in the same change, so `/upload`
+>   is the only row left whose bold on A-07 still describes what the route draws.
+>   `components/spec/ScoringModel.tsx`, which carried the same argument off-route, was
+>   deleted the next day (D-140).
+> * **`/upload`'s row cites A-05 as "the `AGENTS.md` author half", and that file no longer
+>   exists on either side** (owner instruction, 2026-08-25, §11.0 Q10): the DarkPrint skill
+>   stopped writing one and `lib/content/bundle-export.ts` stopped emitting one in the same
+>   commit. `components/upload/BundleDropzone.tsx` still RECOGNISES an `AGENTS.md` a reader
+>   drops from an older folder, which is a different claim from authoring one.
+> * **`/blueprints/[slug]` is `/blueprints/[owner]/[slug]`** since T261 (B-09's two-part
+>   key), with a one-segment redirector beside it. And the row's own aspect list is now two
+>   claims out. **A-18** (the ballot) came off that page on 2026-09-04 with the rest of the
+>   scoring reading, and was deleted outright on 2026-09-05 (the A-18/A-19 amendment at the
+>   top of this document). The `EvidenceLayers` panel this row names as its reason for
+>   citing **A-21** came off in the same change, so the route is no longer evidence for
+>   A-21 at all: `reportedCost` was one of three reads this page made and it went with
+>   the cut, so no run report is read here and no cost row is drawn. A-21's surviving
+>   evidence, whatever it is, is not this route; A-21's own entry was not re-derived here.
+>   `Bundle` and `Releases` came off the same aside on 2026-09-05, and `Explainability`,
+>   which was A-07's working drawn out, went with the scoring reading on 2026-09-04.
+> * **`/settings` still lists A-19**, which is the ballot's other half. See the amendment at
+>   the top of this document for what *specified, built, then withdrawn* means for both.
+>
+> Nothing else in this table was re-checked, and a row not named above should be read as
+> carrying the same age as the rest.
 
 | Route | File | Aspects it depends on |
 |---|---|---|

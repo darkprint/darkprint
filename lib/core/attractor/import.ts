@@ -261,7 +261,7 @@ function quoteDotString(value: string): string | undefined {
  * The DarkPrint type for one node, from its shape and its classes.
  *
  * The shape decides which family; the classes decide which member, and only where the
- * shape carries more than one. `emit.ts` writes `class="dp-validation dp-evaluative …"`, so
+ * shape carries more than one. `emit.ts` writes `class="dp-validation,dp-evaluative,…"`, so
  * a file that came out of DarkPrint disambiguates itself and comes home unchanged.
  *
  * **A foreign file usually cannot.** An Attractor pipeline has no reason to carry a
@@ -512,7 +512,12 @@ function cardFor(
   source: { origin: string },
 ): NodeCard {
   const { id, version, author, ontology, location } = identity;
-  const classes = (unquoted(attrs, "class") ?? "").split(/\s+/).filter((c) => c !== "");
+  /* §2.12: "Classes are comma-separated". Whitespace around a separator is tolerated
+     because a hand-written `class="code, critical"` is what an author types and §8.2's
+     `ClassName ::= [a-z0-9-]+` cannot hold a space anyway, so trimming it can only recover
+     the name the author meant. Splitting on whitespace instead — which this did — read one
+     comma-separated list as a single class nothing matches. */
+  const classes = (unquoted(attrs, "class") ?? "").split(/\s*,\s*/).filter((c) => c !== "");
   const shape = attr(attrs, "shape") ?? "";
   const type = attractorTypeFor(shape, classes);
 
@@ -611,12 +616,20 @@ function phasesFrom(classes: readonly string[], ontology: OntologyView): string[
 }
 
 /**
- * `max_retries` back onto `params.max_iterations`.
+ * The two node attributes that come home as `params`: `max_retries` and `tool_command`.
  *
- * The first of `ITERATION_CAP_KEYS`, so `readIterationCap` finds it and `emit.ts` writes
- * the same number back out. A value that is not a non-negative integer is reported and
- * dropped rather than carried: `readIterationCap` would refuse it anyway, and a params key
- * holding a number nothing reads is a cap an author thinks they have.
+ * `max_retries` becomes `max_iterations`, the first of `ITERATION_CAP_KEYS`, so
+ * `readIterationCap` finds it and `emit.ts` writes the same number back out. A value that
+ * is not a non-negative integer is reported and dropped rather than carried:
+ * `readIterationCap` would refuse it anyway, and a params key holding a number nothing
+ * reads is a cap an author thinks they have.
+ *
+ * `tool_command` keeps its name, because `emit.ts` reads it back under exactly that key —
+ * see `readToolCommand` for why `params` is where a command lives. Carried verbatim apart
+ * from the emptiness test: it is a line somebody else's shell will run, and a §4.10 node
+ * that arrived without one has nothing to keep. Dropping it here instead would lose the
+ * only thing a genuine Attractor tool node carries, on a round trip whose whole claim is
+ * that it loses nothing a runner reads.
  */
 function paramsFrom(
   sourceId: string,
@@ -624,19 +637,26 @@ function paramsFrom(
   ds: Diagnostic[],
   location: DiagnosticLocation,
 ): Record<string, JsonValue> {
+  const params: Record<string, JsonValue> = {};
+
   const raw = attr(attrs, "max_retries");
-  if (raw === undefined) return {};
-  const trimmed = unquoteAttractorString(raw).trim();
-  if (!/^[0-9]+$/.test(trimmed)) {
-    ds.push(
-      warning("dot/unsupported", `Node \`${sourceId}\` has \`max_retries=${raw}\`, which is not a whole number.`, {
-        hint: "Dropped. Write the cap as `params.max_iterations` on the card once you know what it should be.",
-        location,
-      }),
-    );
-    return {};
+  if (raw !== undefined) {
+    const trimmed = unquoteAttractorString(raw).trim();
+    if (/^[0-9]+$/.test(trimmed)) params.max_iterations = Number(trimmed);
+    else {
+      ds.push(
+        warning("dot/unsupported", `Node \`${sourceId}\` has \`max_retries=${raw}\`, which is not a whole number.`, {
+          hint: "Dropped. Write the cap as `params.max_iterations` on the card once you know what it should be.",
+          location,
+        }),
+      );
+    }
   }
-  return { max_iterations: Number(trimmed) };
+
+  const command = unquoted(attrs, "tool_command");
+  if (command !== undefined && command.trim() !== "") params.tool_command = command;
+
+  return params;
 }
 
 /* --------------------- the two documents --------------------- */

@@ -1,5 +1,5 @@
 /* ============================================================
-   DarkPrint backend — publish: the D-260-24 stamp and the
+   DarkPrint backend — publish: the D-260-24 scorecard and the
    D-300-06 F4.2 wiring, witnessed through the PRODUCTION writer.
 
    The orchestrator's one visit to publish.ts (both rulings name
@@ -13,17 +13,19 @@
    `publish()` for all nine bundles: the exact path a real
    publish takes, not a fixture more complete than the writer.
 
-   ── the stamp changed carrier, and the criterion did not ──
+   ── the stamp changed carrier twice, and then went ──
    D-260-24's field was `release.scored_ontology_version_id`, a
-   uuid into `ontology_version`. Removing the vocabulary-version
-   registry took the table's only writer and the only reader that
-   resolved an id back to a semver, so the stamp is now the string
-   on the stored `AutonomyResult`. What D-260-24 was about is
-   unchanged and is still what the first cell measures: `scoresOf`
-   answering a complete scorecard for a release the production
-   writer published. The second cell moved to the new carrier and
-   gained the negative — the column must stay NULL — because a
-   stamp nobody writes must not quietly reappear.
+   uuid into `ontology_version`. Losing the vocabulary-version
+   registry moved the stamp onto the string
+   `AutonomyResult.ontologyVersion`;
+   `0009_drop_ontology_versioning` then withdrew that too, along
+   with the column and both tables. The vocabulary names what an
+   Attractor node IS, Attractor fixes those shapes in its own spec
+   and carries no vocabulary version, so a DarkPrint-only version
+   on top was a second thing to keep in step with nothing. What
+   D-260-24 was about survives in the first cell and is unchanged:
+   `scoresOf` answering a complete scorecard for a release the
+   production writer published.
 
    Falsified at authorship (2026-08-24), both directions:
    removing the stamp spread in publish.ts reds the scoresOf
@@ -72,7 +74,7 @@ afterAll(async () => {
   await testDb?.drop();
 });
 
-describe("D-260-24: a publish stamps the fourth scorecard field", () => {
+describe("D-260-24: a publish writes a scorecard `scoresOf` accepts", () => {
   /**
    * Through the published reader, not the column: `scoresOf` is the party that refuses a
    * three-field scorecard ("a half-written scorecard is not a scorecard"), so its answer
@@ -87,41 +89,17 @@ describe("D-260-24: a publish stamps the fourth scorecard field", () => {
     expect(scores?.phaseCoverage).toBeDefined();
   });
 
-  /**
-   * The stamp names the vocabulary the score was computed against, not merely A version.
-   *
-   * ── it moved, and the move is the point ──
-   * It used to be `release.scored_ontology_version_id`, a uuid pointing at the one
-   * `ontology_version` row `runImport` seeded, and this cell read the column and compared
-   * ids. Nothing writes that table now: resolving a version STRING to a row id was the last
-   * thing the vocabulary-version registry did for anybody, and it went with the registry.
-   * The stamp is the string `computeAutonomy` puts on `AutonomyResult.ontologyVersion`,
-   * which `publish()` stores verbatim in `release.autonomy` and which `scoresOf` reads.
-   *
-   * Asserted through the column as well as through the value, in both directions: the
-   * column must be NULL on every release (a stamp nobody writes must not quietly reappear)
-   * and the string must be present on every one. A cell that only checked the string would
-   * stay green if publish started writing a dangling uuid again.
-   */
-  it("all nine releases carry the vocabulary version on the score, and no row stamp", async () => {
-    const rows = await db
-      .select({
-        stamped: schema.release.scoredOntologyVersionId,
-        autonomy: schema.release.autonomy,
-      })
-      .from(schema.release);
-    expect(rows.length).toBe(9);
-    for (const row of rows) {
-      expect(row.stamped, "`scored_ontology_version_id` is written by nothing").toBeNull();
-      expect((row.autonomy as { ontologyVersion?: unknown } | null)?.ontologyVersion).toBe("0.1.0");
-    }
-    const [version] = await db
-      .select({ id: schema.ontologyVersion.id })
-      .from(schema.ontologyVersion);
-    expect(
-      version,
-      "`ontology_version` is written by nothing either, so a seeded registry holds no rows",
-    ).toBeUndefined();
+  /* A second cell stood here. It held the vocabulary stamp in both directions at once —
+     `release.scored_ontology_version_id` NULL on all nine rows so a stamp nobody writes
+     could not quietly reappear, `AutonomyResult.ontologyVersion` present on all nine, and
+     `ontology_version` empty. 0009 removed the column, the field and both tables, so all
+     three halves lost their subject together and there is nothing left for the cell to be
+     wrong about. The premise it also carried, that `runImport` publishes nine releases, is
+     kept below where the embedding counts state it. */
+
+  it("publishes all nine bundles, so the cells here read a full world", async () => {
+    const rows = await db.select({ id: schema.release.id }).from(schema.release);
+    expect(rows.length, "`runImport` publishes the whole archive; a short world is a broken fixture").toBe(9);
   });
 });
 

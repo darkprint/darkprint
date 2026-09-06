@@ -53,7 +53,7 @@ import {
   query,
   scratchDatabase,
 } from "./contract";
-import { bundleBySlug, seedAccount, seedOntology, seedRelease, type SeededAccount } from "../t090/fixtures";
+import { bundleBySlug, seedAccount, seedRelease, type SeededAccount } from "../t090/fixtures";
 
 const gate = new FixtureGate();
 let s: ReturnType<FixtureGate["get"]>;
@@ -92,7 +92,6 @@ async function seed(entrySlug: string, o: { slug?: string; visibility?: "public"
 beforeAll(async () => {
   await gate.build(async () => {
     s = await scratchDatabase("graphs");
-    await seedOntology(s.db);
     owner = await seedAccount(s as never, mark("t132-graphs"));
     stranger = await seedAccount(s as never, mark("t132-graphs-other"));
 
@@ -162,13 +161,13 @@ describe("the fixture this file's tables rest on", () => {
   });
 
   it("resolves the drawn nodes against a vocabulary that actually has their terms", async () => {
-    /* This used to count `ontology_term` rows. `seedOntology` wrote the core vocabulary
-       through `addOntologyVersion`, and without its TERMS `openView` built a view that
-       resolved nothing and every node fell back to the default kind — the wrong-drawing
-       hazard arriving from the fixture side. There are no term rows and no version rows;
-       `openView` merges over `CORE_ONTOLOGY`, so the hazard is not constructible from the
-       fixture and the premise worth asserting is the one it stood in for: the vocabulary
-       the reader opens really carries the types these cards declare. */
+    /* This used to count `ontology_term` rows. A `seedOntology` fixture wrote the core
+       vocabulary through `addOntologyVersion`, and without its TERMS `openView` built a view
+       that resolved nothing and every node fell back to the default kind — the wrong-drawing
+       hazard arriving from the fixture side. Both tables are gone (0009) and the fixture with
+       them; `openView` merges over `CORE_ONTOLOGY`, so the hazard is not constructible and
+       the premise worth asserting is the one it stood in for: the vocabulary the reader opens
+       really carries the types these cards declare. */
     const s = gate.get();
     const rows = await query(s, "select distinct body ->> 'type' as type from card_version");
     const declared = rows

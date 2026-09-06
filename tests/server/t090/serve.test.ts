@@ -25,7 +25,6 @@ import {
   bundleBySlug,
   scratchDatabase,
   seedAccount,
-  seedOntology,
   seedRelease,
   type Scratch,
   type SeededAccount,
@@ -55,7 +54,6 @@ let rivals: SeededRelease;
 
 beforeAll(async () => {
   scratch = await scratchDatabase("serve");
-  await seedOntology(scratch.db);
   owner = await seedAccount(scratch, "serve");
 
   const entry = bundleBySlug(SUBJECT);

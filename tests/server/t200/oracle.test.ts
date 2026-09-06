@@ -156,9 +156,10 @@ describe("the stored scorecards are what the AC1 and AC2 cells read", () => {
     }
     expect(
       found.map((x) => x === undefined),
-      "`scoresOf` answers `undefined` unless `autonomy`, `security`, `phase_coverage` and " +
-        "`scored_ontology_version_id` are ALL present — a half-written scorecard is not a " +
-        "scorecard. A release carrying `autonomy` alone would be invisible to an " +
+      "`scoresOf` answers `undefined` unless `autonomy`, `security` and `phase_coverage` " +
+        "are ALL present — a half-written scorecard is not a scorecard. It wanted a fourth, " +
+        "`scored_ontology_version_id`, until 0009 dropped that column. A release carrying " +
+        "`autonomy` alone would be invisible to an " +
         "implementation reading the class through T080's reader, and the `autonomy` and " +
         "`df` filter cells would have reddened a correct module for a hole in this fixture.",
     ).toEqual([false, false, false, false]);

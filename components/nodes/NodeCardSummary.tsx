@@ -42,7 +42,7 @@ export interface NodeSummary {
    * DERIVED, and resolved on the server before a tile is built: the card carries a `type`
    * and no boolean beside it, so the answer is `requiresHuman(ontology, card.type)` — the
    * same call `computeAutonomy` makes about a node inside a graph. A tile and the blueprint
-   * page that scores the same card therefore cannot disagree about where the people are,
+   * page that resolves the same card therefore cannot disagree about where the people are,
    * which they could when the card stored the answer twice.
    *
    * `false` also covers "this registry has published no vocabulary to ask", and the tile
@@ -286,15 +286,20 @@ export function NodeCardSummary({
             <span aria-hidden className="text-faint">
               /
             </span>
-            {/* Copper, on the author's instruction (2026-08-12: "in the node cards gallery
-                adopt the orange for highlighting instead of blue"). It was `text-cyan`, on
-                the general rule that cyan marks what a reader can act on — and every tile on
-                this shelf is actionable, so the rule was picking out nothing. Copper is what
-                `app/globals.css` reserves for the node card AS A SUBJECT, which is what a
-                shelf of 53 of them is; the landing's card beat wears it for the same reason
-                one route away. The tile is still a link and still says so, by being a link
-                and by lifting on hover. */}
-            <span className="min-w-0 truncate text-copper-line">{node.id}</span>
+            {/* Amber, on the owner's ruling of 2026-09-06 — "the amber should be the
+                dominant color on the cards sections" — and the third answer this one line
+                has had. It was `text-cyan`, on the general rule that cyan marks what a
+                reader can act on, and every tile on this shelf is actionable, so the rule
+                was picking out nothing. It became copper on 2026-08-12, when the owner
+                asked the gallery to highlight in orange rather than blue. Amber is the same
+                instruction, granted a second time and now with a token behind it: the tile
+                already carried an amber type badge, an amber hover shadow and an amber risk
+                line, so copper on the id was the one thing on this tile still speaking a
+                register of its own. The tile is still a link and still says so, by being a
+                link and by lifting on hover.
+
+                #ffb020 on `--color-surface` #0a0c16 is 10.66:1, up from copper's 8.35:1. */}
+            <span className="min-w-0 truncate text-amber">{node.id}</span>
           </span>
         )}
         {/* Violet, the same second job the accent takes on `DraftRow`'s `Private` pill —
@@ -315,7 +320,9 @@ export function NodeCardSummary({
             wants a different answer: every mount of this component sits inside a group. */}
         <h3
           id={titleId}
-          className="font-display text-base font-semibold leading-snug text-fg group-hover:text-copper-line"
+          /* `group-hover:text-amber`, with the id above it: one register per tile, and
+             `app/globals.css` job 3 makes it the card's. It was copper. */
+          className="font-display text-base font-semibold leading-snug text-fg group-hover:text-amber"
         >
           {node.name}
         </h3>

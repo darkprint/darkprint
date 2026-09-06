@@ -55,7 +55,7 @@ import { getSharedDbClient } from "@/lib/db";
 import { actorFrom } from "@/lib/server/accounts";
 import { withSession } from "@/lib/server/auth";
 import { badRequest, ok } from "@/lib/server/http";
-import { issueKey, listKeys, readJsonObject, withLimitsErrors } from "@/lib/server/limits";
+import { isKeyScope, issueKey, listKeys, readJsonObject, withLimitsErrors } from "@/lib/server/limits";
 
 /**
  * D-230-11's reader. `200 KeyList | 401 500`.
@@ -89,6 +89,20 @@ export async function POST(request: Request): Promise<Response> {
         return badRequest(request, "Expected `label` to be a string.");
       }
 
+      /* `scope` is OPTIONAL and absent means `read`, which is the same grandfathering
+         `0010_key_scope` writes into the column default and for the same reason: a caller
+         that has not learned about scopes mints the least privilege rather than failing, and
+         every key issued before this route learned the word keeps the promise
+         `components/settings/ApiKeys.tsx` made to its holder.
+
+         The type check is the route's and the vocabulary check is the module's, the split
+         the `label` arm above already makes. `isKeyScope` narrows from `unknown`, so an
+         unknown scope is a 400 here rather than a value the store would have to refuse
+         later, and a number is the same 400 as a misspelling instead of a `TypeError`. */
+      if (body.scope !== undefined && !isKeyScope(body.scope)) {
+        return badRequest(request, "Expected `scope` to be `read` or `write`.");
+      }
+
       /* `actorFrom` is CONSUMED from `@/lib/server/accounts` rather than rebuilt here, and
          the three lines it saves are not the reason. Turning a `SessionPayload` into an
          `Actor` is a decision with a ruling attached — D-50-13: always `kind: "account"`,
@@ -106,6 +120,7 @@ export async function POST(request: Request): Promise<Response> {
         actorFrom(session),
         session.accountId,
         body.label,
+        body.scope ?? "read",
       );
 
       return ok({ record, secret }, { status: 201 });

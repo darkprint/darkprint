@@ -44,15 +44,10 @@ import SkillPage, { metadata as skillMetadata } from "@/app/skill/page";
 import UploadPage from "@/app/upload/page";
 import { allBlueprints } from "@/lib/content";
 import { CARD_ROWS } from "@/components/spec/rows";
-import { ScoringModel } from "@/components/spec/ScoringModel";
 import { GuardrailShape } from "@/components/explain/ConceptFigures";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
 import { CloneMenu } from "@/components/blueprint/CloneMenu";
-import { AgentHandoff } from "@/components/build/AgentHandoff";
 import { SectionLifecycle } from "@/components/home/SectionLifecycle";
-import { DownloadStep } from "@/components/build/DownloadStep";
-import { DEFAULT_CHOICES } from "@/components/build/choices";
-import { buildState } from "@/components/build/state";
 import { openText, plainText } from "@/components/ui/visible-text";
 
 /* --------------------- the surfaces --------------------- */
@@ -156,19 +151,12 @@ const UPLOAD_PAGE = renderToStaticMarkup(createElement(UploadPage as never));
    private draft, publishing and the live push; `/mcp` refuses the server in three
    registers; `/upload` refuses all of it again beside the dropzone. Nothing moved to cover
    a gap, because the deletion did not open one. */
-/**
- * The scoring panel `/reading-the-radar` mounts (PROJECT.md §3.4; moved off `/spec` onto
- * `/spec/scoring` by the lifecycle-scoring pass, spec §4, and moved again when the IA
- * pass merged that route into the radar page — `ScoringModel` itself is unchanged through
- * both, and this still renders it directly, so the assertions below hold regardless of
- * which route mounts it. Two route moves and not one edit here is the argument for
- * rendering the component rather than reading a page).
- *
- * It is the first surface on the site to print `minRuns` and `outlierZScore`, and two
- * named filters on cost and time read as a description of something running unless the
- * page says otherwise beside them. That sentence is the claim below.
- */
-const SCORING = renderToStaticMarkup(createElement(ScoringModel));
+/* `SCORING` stood here, rendering `components/spec/ScoringModel.tsx` whole for the one
+   sentence in the product that said the two telemetry filters describe a design rather
+   than a measurement. The owner asked the component and its test deleted on 2026-09-05
+   (§11.0 Q13) and they go in this change, so there is no markup left for a row to read.
+   The row itself is recorded where it stood, under `/reading-the-radar` in the ledger
+   below, because what it cost to remove needs more than a line here. */
 
 /**
  * The guardrail figure on `/what-a-blueprint-is#the-words`, added 2026-08-07.
@@ -187,22 +175,22 @@ const SCORING = renderToStaticMarkup(createElement(ScoringModel));
  */
 const GUARDRAILS = renderToStaticMarkup(createElement(GuardrailShape));
 
-/**
- * `/build`'s two exits (task 5), rendered with the same `DEFAULT_CHOICES` the workspace
- * opens on — real content off `lib/starter/`, not a fixture, exactly like every other
- * surface in this file. Both carry the same "not built yet" sentence about registry
- * retrieval over MCP, and both are asserted below rather than one standing in for the
- * other: a reader who opens only one of the two exits still has to meet the limit.
- */
-const BUILD = buildState(DEFAULT_CHOICES);
-const DOWNLOAD_STEP = renderToStaticMarkup(
-  createElement(DownloadStep, {
-    files: BUILD.files,
-    ...(BUILD.blueprint === undefined ? {} : { digest: BUILD.blueprint.digest }),
-    errors: BUILD.errors.length,
-  }),
-);
-const AGENT_HANDOFF = renderToStaticMarkup(createElement(AgentHandoff));
+/* `/build`'s two exits stood here and are deleted, 2026-09-06.
+   ------------------------------------------------------------
+   `DownloadStep` and `AgentHandoff` were rendered off `buildState(DEFAULT_CHOICES)` — real
+   content out of `lib/starter/`, like every other surface in this file — and both were held
+   to the length floor below. The owner deleted `/build` and `components/build/**` ("it is
+   not useful and make confusion"), so the two components no longer exist and neither does
+   the route that mounted them.
+
+   No entry leaves `CLAIMS` with them, because neither exit was ever named in it: the only
+   thing this file asserted about the pair was that they rendered something. `/what-it-isnt`
+   above is the rule for when a sentence may go, and it is not being exercised here. What
+   IS exercised elsewhere is the same removal one file over — `components/skill/
+   SkillSetup.test.ts` reads `AgentHandoff` for two live claims ("answers 404 for everyone
+   but its owner", "written, not yet installable"), and both of those sentences survive on
+   `/skill` and on the draft bundle's quick-setup panel, which is why they are that file's
+   rows to retire and not this one's. */
 
 /**
  * The landing's fourth beat, where the site first tells a stranger what it is for.
@@ -323,14 +311,47 @@ const CLAIMS: Claim[] = [
     html: SPEC_CARD,
   },
 
-  /* ---- /reading-the-radar ---- */
-  {
-    surface: "/reading-the-radar · cost and time, if they are ever reported",
-    why: "the whole telemetry block is a design nothing implements. `minRuns 5` and `outlierZScore 3` are printed as engine configuration, which is what every other number in that section is, and those two are filters on a pipeline that has never had an input. PROJECT.md §3.5 is the point at which this stops being free, so the sentence has to be beside the numbers rather than behind a disclosure",
-    says: "nothing on this site measures a run. these two filters describe a design",
-    where: "open",
-    html: SCORING,
-  },
+  /* ---- /reading-the-radar — removed 2026-09-05, on the owner's explicit instruction ----
+     The row held "nothing on this site measures a run. these two filters describe a
+     design", `open`, over `renderToStaticMarkup(ScoringModel)`. `ScoringModel.tsx` and
+     `scoring-model.test.ts` are deleted in this same change (§11.0 Q13), so the row has no
+     markup left to read.
+
+     Read the rule this removal does not satisfy before reading the reason for it. The
+     `/what-it-isnt` block above states it: "This is the only reason an entry may leave. An
+     entry does not come out because a length pass wanted the words; it comes out when the
+     claim it guards has nothing left to guard." That test fails here, and this block exists
+     to say so plainly rather than to let the removal read as an application of the rule.
+     The claim still has something to guard. Nothing on this site measures a run: there is
+     no runner, and the runs endpoint accepts a caller's report on well-formedness alone
+     (`lib/server/runs/write.ts:89`), so what a figure describes is something DarkPrint
+     never watched happen. What left is the SURFACE. `/reading-the-radar` was deleted on
+     2026-09-04 and 308s to `/build`, and it was the only route that ever mounted the panel
+     this row rendered.
+
+     So this is the exception the rule names, taken on the owner's instruction of
+     2026-09-05, and `CLAUDE.md` allows an honesty assertion out no other way.
+
+     What stops being said, in these words: "Nothing on this site measures a run. These two
+     filters describe a design." It was written in exactly one place, `ScoringModel.tsx`, at
+     the head of the telemetry paragraph, and no page has printed it since 2026-09-04. The
+     nearest surviving statement is weaker, narrower and on a route a reader can open. It is
+     `/upload`'s, twice: the validation report's own prose says "Cost and time are reported
+     by whoever runs the graph. The platform never sees the execution.", and the metric
+     legend beside the dropzone says "Cost / time is reported by whoever runs it. The
+     platform never sees the execution." Both live in `components/upload/UploadFlow.tsx`,
+     which another lane is instructed to keep. Grep the second sentence rather than trusting
+     a line number: that file is moving in the same wave as this change.
+
+     Keep the failure this row demonstrates, because it is the whole of §11.0 Q29 and it is
+     not fixed by deleting the row. The pin was held over a COMPONENT and not over a route.
+     When the page that published the sentence was deleted the assertion stayed green: for a
+     day it asserted that a claim was readable "in the open" on a surface no reader could
+     reach, and passed. A row that renders something smaller than the route named in its
+     `surface` cannot tell still disclosed from disclosed to nobody, and several rows below
+     are shaped that way.
+
+     If a surface describes cost or time filters again, this row comes back with it. */
 
   /* ---- /what-a-blueprint-is · the guardrail figure ---- */
   {
@@ -417,10 +438,19 @@ const CLAIMS: Claim[] = [
      `/what-it-isnt` above is that a row comes out when the thing it qualified has left the
      site. That is not the case here: beat 2 still draws four runs, four scores and three
      deltas in fixed tabular columns, which is the shape of a readout off a real harness, and
-     DarkPrint still runs nobody's graph — no per-run figure in the product, no runner, no
-     endpoint, and `/reading-the-radar` still says so in the open. The claim is intact and
-     the qualifier is gone, which is the one combination this file was written to prevent,
-     and it is recorded here rather than in a commit message alone for exactly that reason.
+     DarkPrint still runs nobody's graph: no per-run figure in the product and no runner.
+     The claim is intact and the qualifier is gone, which is the one combination this file
+     was written to prevent, and it is recorded here rather than in a commit message alone
+     for exactly that reason.
+
+     Two clauses of that sentence were true when it was written on 2026-08-11 and are not
+     now, and they are corrected here rather than left to read as current. It said "no
+     endpoint": `POST /api/blueprints/{owner}/{slug}/runs` shipped at T280 and takes a
+     caller's report on well-formedness alone, which is a weaker fact than the clause
+     claimed and does not touch the claim above, because a self-report is not a run this
+     site watched. It said "`/reading-the-radar` still says so in the open": that route was
+     deleted on 2026-09-04, and its sentence left the repository entirely on 2026-09-05
+     with `ScoringModel`. The `/reading-the-radar` block above carries that removal.
 
      What survives, and it is weaker: `beats.test.ts` still fails on a PROMISE of measurement
      — `eval`, `we measure`, `we score`, `measure if` — and on the beat losing the sentences
@@ -531,10 +561,13 @@ describe("the surfaces the ledger is read off", () => {
     // A ledger held over an empty string passes every case in it.
     for (const [name, html] of [
       ["/spec/card", SPEC_CARD],
-      ["the scoring panel", SCORING],
+      /* "the scoring panel" stood second here until 2026-09-05. It left with `SCORING`
+         and the row that read it; a floor over a component this file no longer renders
+         would not compile. */
       ["the starter's canvas", STARTER],
-      ["/build · download exit", DOWNLOAD_STEP],
-      ["/build · agent-brief exit", AGENT_HANDOFF],
+      /* "/build · download exit" and "/build · agent-brief exit" stood here until
+         2026-09-06. Both components were deleted with the route; see the note where they
+         used to be rendered. */
       ["/ · the lifecycle beat", LIFECYCLE],
       ["/upload", UPLOAD_PAGE],
     ] as const) {

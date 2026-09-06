@@ -37,8 +37,6 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { CORE_ONTOLOGY } from "@/lib/core";
-
 import { blueprints } from "@/lib/server/registry";
 import type { Db } from "@/lib/db";
 
@@ -49,8 +47,6 @@ import {
   insertAccount,
   insertBundle,
   insertCard,
-  insertOntologyTerm,
-  insertOntologyVersion,
   insertRelease,
   manifest,
   mark,
@@ -78,13 +74,9 @@ const setup = recordedSetup("the T200 record world");
 beforeAll(async () => {
   await setup.run(async () => {
     s = await scratchDatabase();
-    const ontology = await insertOntologyVersion(s, CORE_ONTOLOGY.version);
-    for (const term of CORE_ONTOLOGY.terms) {
-      await insertOntologyTerm(s, {
-        versionId: ontology.id,
-        term: term as unknown as Record<string, unknown>,
-      });
-    }
+    /* The core vocabulary used to be seeded into `ontology_version` / `ontology_term` here.
+       0009 dropped both: the registry keeps one vocabulary, `CORE_ONTOLOGY` in the process,
+       merged per bundle with `release.local_vocabulary`. Nothing to seed. */
 
     const owner = await insertAccount(s, mark("t200r"));
 
@@ -102,7 +94,6 @@ beforeAll(async () => {
       version: "1.0.0",
       cards: [visible, sealed],
       manifest: manifest({ slug, title: `Records ${mark("t")}`, tags: [mark("rec-tag")] }),
-      scoredOntologyVersionId: ontology.id,
     });
 
     /* `release.card_refs` is a `text[]` with no foreign key, so a pin that names nothing
@@ -138,7 +129,6 @@ beforeAll(async () => {
         title: `Unaddressable ${handlelessToken}`,
         summary: `No owner handle, ${handlelessToken}.`,
       }),
-      scoredOntologyVersionId: ontology.id,
     });
 
     r = {

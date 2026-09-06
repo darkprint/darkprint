@@ -7,15 +7,16 @@
 
 # DarkPrint core vocabulary
 
-Ontology version `0.1.0`. 53 terms.
+54 terms. The vocabulary carries no version of its own: it names what an
+Attractor node IS, and Attractor fixes those shapes in its own spec.
 
 Every card field that names a term is resolved against this list. A term that is not
 here is `card/unknown-term` (error). A term of the wrong kind — a `data-type` in the
 `tools` list, a `tool` in `type` — is `card/wrong-term-kind` (error).
 
-A card names no vocabulary version. There is one vocabulary, every card is read against
-it, and the version a SCORE was computed under is recorded on the score. Writing
-`ontology_version:` on a card is `card/retired-field` (warning).
+A card names no vocabulary version either. There is one vocabulary and every card is
+read against it, so writing `ontology_version:` on a card is `card/retired-field`
+(warning).
 
 ## phase — the five, closed
 
@@ -70,6 +71,7 @@ How much runs alone: the share of nodes whose `type` is *not* subsumed by
 | `orchestration` | Orchestration | — | no | yes | The abstract category of nodes that shape the run itself: how many copies of a step exist, when they converge, whether the whole thing repeats. |
 | `parallel` | Parallel | `orchestration` | no | yes | Splits the run into branches that proceed at the same time, producing nothing itself and deciding only how many copies of the work exist. |
 | `parallel.fan-in` | Parallel fan-in | `orchestration` | no | yes | Waits for the branches a parallel node opened and joins them back into one line, deciding when the run continues rather than what it continues with. |
+| `shell-tool` | Shell tool | `tool` | no | no | A tool node whose instruction is a shell command the runner executes directly. |
 | `tool` | Tool | — | no | no | A deterministic operation: running tests, compiling, formatting, calling an API. |
 | `validation` | Validation | `evaluative` | no | yes | Compares an artefact against criteria and produces a verdict with evidence. |
 

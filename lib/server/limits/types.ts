@@ -13,6 +13,14 @@
    the type system would have warned about.
 
    A file with no imports of its own cannot participate in one.
+
+   `KEY_SCOPES` and `isKeyScope` are VALUES in a file of shapes,
+   and that is deliberate rather than drift. They are the scope
+   vocabulary, they have to agree with the `KeyScope` union
+   exactly, and the whole reason this file exists is that it
+   imports nothing — so putting them here cannot start the cycle
+   the header is about, while putting them in `keys.ts` would make
+   a route reach past the barrel for a six-character predicate.
    ============================================================ */
 
 /**
@@ -71,6 +79,14 @@ declare const RESOLVED_KEY: unique symbol;
  * identical to `resolveKey`'s, so before this brand a caller could hand one straight to
  * `checkLimit` and buy the key tier's ceiling with a key that had been revoked. Now that is
  * a compile error, as is a bare `keyId` string that no `resolveKey` ever answered.
+ *
+ * **It does not prove the SCOPE either, and that is the same sentence one step further.**
+ * A value of this type carries `scope` because `ApiKeyRecord` does, and that member records
+ * what the row said at the moment the secret was presented. It is the right thing to count
+ * a request against and the wrong thing to authorise a write with, because a key can be
+ * revoked or demoted between the read that produced this value and the write that spends
+ * it. `writeActorFor` re-reads the row, and it is the only thing in this module that turns
+ * a key into an `Actor`.
  */
 export type ResolvedKey = ApiKeyRecord & { readonly [RESOLVED_KEY]: true };
 
@@ -140,6 +156,45 @@ export interface ApiKeyRecord {
   keyId: string;
   accountId: string;
   label: string;
+  scope: KeyScope;
   createdAt: Date;
   revokedAt: Date | null;
+}
+
+/**
+ * What a key is allowed to do. The owner's 2026-09-05 ruling, as a type.
+ *
+ * `"read"` raises the ceiling and nothing else, which is what every key minted before
+ * `0010_key_scope` was issued under and what the settings copy promised its holder. `"write"`
+ * is the grant that lets a harness call `darkprint report` instead of somebody pasting a
+ * session cookie.
+ *
+ * **It is on the record rather than derived from anything.** The alternative was a boolean
+ * on the row read through a helper, and a boolean's two states have to be named somewhere
+ * anyway; naming them here puts the vocabulary in one place that the column, the route body
+ * and the settings copy all quote.
+ */
+export type KeyScope = "read" | "write";
+
+/**
+ * The scopes, as data, so a caller validating one quantifies over the type rather than over
+ * the two literals whoever wrote the check remembered.
+ *
+ * `KEY_SCOPES` is typed as `readonly KeyScope[]` and not the other way round: the union is
+ * the published shape and this array has to agree with it, so a scope added to the type and
+ * forgotten here is a compile error at `isKeyScope`'s narrowing rather than a value that
+ * silently fails validation.
+ */
+export const KEY_SCOPES: readonly KeyScope[] = ["read", "write"];
+
+/**
+ * Narrows an unknown to a scope, for a route reading one out of a JSON body.
+ *
+ * Published because the alternative is every caller writing `v === "read" || v === "write"`,
+ * which is the vocabulary copied to a second place — and the copy that goes stale is always
+ * the one furthest from the column. Same split `isValidLabel` makes one file over: the TYPE
+ * check is the route's and the VALIDITY check is this module's.
+ */
+export function isKeyScope(value: unknown): value is KeyScope {
+  return typeof value === "string" && (KEY_SCOPES as readonly string[]).includes(value);
 }

@@ -2,23 +2,59 @@ import Link from "next/link";
 
 import type { Release, UpstreamMoved } from "@/lib/data/bundles";
 import { cx, prettyDate } from "@/lib/format";
-import { blueprintHref, nodeHref } from "@/lib/href";
+import { nodeHref } from "@/lib/href";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { MetaPill } from "@/components/ui/MetaPill";
 import { VisibilityControl } from "@/components/bundle/VisibilityControl";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // SEAM-67 LIVE (T280): PATCH /api/bundles/{owner}/{slug}/visibility — `VisibilitySwitch`'s
-// `live` prop.
-// TODO(SEAM-68) (cited at line 328): POST /api/bundles/{owner}/{slug}/releases
-// SEAM-71 LIVE (T280): GET /api/bundles/{owner}/{slug}/forks — the page calls `forksOf`
-// in-process and hands `Forks` the real rows.
-// TODO(SEAM-72) (cited at line 178): GET /api/bundles/{owner}/{slug}/drift
-// TODO(SEAM-73) (cited at line 22): n/a
+// `live` prop. Its only caller is `DraftLanding` as of 2026-09-06; see the header below.
+// TODO(SEAM-68) (cited at line 272): POST /api/bundles/{owner}/{slug}/releases
+// SEAM-71 is no longer anchored here. The `Forks` panel was deleted on 2026-09-05 (§11.0
+// Q30) after the owner took it off the page on 2026-09-04; the seam is still LIVE and the
+// page still reads `forksOf` for the header's fork count, so the route and the filter are
+// unchanged and only this file's stake in them is gone.
+// TODO(SEAM-72) (cited at line 180): GET /api/bundles/{owner}/{slug}/drift
+// TODO(SEAM-73) (cited at line 24): n/a
 
 /* ============================================================
-   The column beside a bundle: what it is not, who can see it, what it hashes to,
+   What was the column beside a bundle: what it is not, who can see it, what it hashes to,
    whether the upstream has moved, and what has been released.
+
+   THERE IS NO SUCH COLUMN ANY MORE, and this header says so rather than describing a layout
+   nothing draws. `/blueprints/[owner]/[slug]` carried it; the owner emptied it one panel at a
+   time (2026-09-04 and 2026-09-05) and on 2026-09-06 took the last one off — "remove the
+   panel visibility from the blueprint card" — so the two-column grid around it went with it
+   and the graph runs the full width instead.
+
+   Where the five exports stand, measured with `grep -rn "<Name" app components --include="*.tsx"`
+   rather than assumed:
+
+     `VisibilitySwitch`      ONE mount, `components/bundle/DraftLanding.tsx`, which hands it
+                             the live SEAM-67 control for a bundle with no release.
+     `PageHolds`             no mount
+     `SeededBundleFacts`     no mount
+     `UpstreamMovedPanel`    no mount
+     `Releases`              no mount, since 2026-09-05
+
+   THE OWED MOUNT HAS LANDED, and the two sentences that said otherwise are gone rather than
+   softened. The owner ruled the switch belongs on the account's own blueprint list ("such
+   option should be visible only on the user account list of the blueprints"), and
+   `components/profile/OwnedBundles.tsx` now draws a `RowVisibility` per row on
+   `/u/[username]`, on both row shapes. So a bundle WITH a release does have a visibility
+   control, and this header claimed the opposite for a wave after it stopped being true.
+
+   That shelf built its own component over `VisibilityControl` rather than mounting
+   `VisibilitySwitch` from here, which is why the census above still reads ONE. This file is
+   not on the path a reader takes to change a visibility any more, and nothing here should
+   suggest the shelf is waiting on it.
+
+   The four unmounted exports are kept rather than deleted because whether an unmounted
+   component survives is the owner's call and §11.0 carries the row. The census was
+   re-measured on 2026-09-06 with a grep for each name's JSX opening tag over `app/` and
+   `components/`; all four came back with nothing. Nothing here should be read as a claim
+   that they are reachable.
    ============================================================ */
 
 /**
@@ -250,64 +286,6 @@ export function UpstreamMovedPanel({
 }
 
 /**
- * Public forks of a published bundle, and the sentence that is the whole panel.
- *
- * **Public only.** A private fork is never announced here and the upstream author is not
- * told it exists — that is the promise `/settings` §04 makes when it recommends Private as
- * the default for a new bundle, and this is the surface where the promise is kept or
- * broken. So the count and the list are both computed over public rows, and the private
- * ones are not counted, not hinted at, and not subtracted from anything.
- *
- * T280: `forksOf` (`lib/server/lineage`) already applies exactly this filter — the module
- * itself answers only `visibility === "public"` rows for every caller, upstream author
- * included (Q1) — so the page hands this component the registry's own answer rather than a
- * fixture standing in for one. Empty is a real and common state (most bundles have no public
- * fork yet), and it renders the same way a bundle with three does: this panel does not know
- * or care which.
- */
-export function Forks({
-  forks,
-}: {
-  forks: readonly { owner: string; slug: string; note: string }[];
-}) {
-  return (
-    <section className="panel p-5">
-      <div className="flex items-center justify-between gap-3">
-        <span className="label">Forks</span>
-        <span className="font-mono text-[11px] text-dim">{forks.length} public</span>
-      </div>
-
-      {forks.length > 0 && (
-        <ul className="mt-3 flex flex-col gap-3">
-          {forks.map((fork) => (
-            <li key={`${fork.owner}/${fork.slug}`} className="flex flex-col gap-1">
-              {/* The CANONICAL bundle URL, not `/u/<owner>/<slug>` (B-09, D-261-08(1)).
-                  That route is becoming a 308 onto this one, and pointing an internal link
-                  at a redirect costs every reader a hop for nothing — the refusal this
-                  repository already records for `/which-tasks` in `next.config.ts`. The
-                  forks themselves stay seeded and out of scope; only where the row POINTS
-                  moves, because a fork is a bundle and a bundle now has one name. */}
-              <Link
-                href={blueprintHref(fork.owner, fork.slug)}
-                className="font-mono text-[12px] text-cyan transition-colors hoverable:hover:text-cyan-bright"
-              >
-                {fork.owner} / {fork.slug}
-              </Link>
-              <span className="text-xs leading-relaxed text-dim">{fork.note}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <p className="mt-3 text-xs leading-relaxed text-dim">
-        Public forks only. A private fork is never announced here, and the author of this
-        blueprint is not told it exists.
-      </p>
-    </section>
-  );
-}
-
-/**
  * The releases, newest first.
  *
  * A release is the folder as it stood, kept at its digest. That is the property the note
@@ -375,7 +353,7 @@ export function Releases({
         A release is the folder as it stood, kept at its digest, so a pin somebody took
         never stops resolving.{" "}
         {fetchable
-          ? "This one is on disk and the command in Get the folder fetches it."
+          ? "This one is on disk and the command under Code, on the file list, fetches it."
           : "None of these is fetchable: the bundle is private, and the sizes and file counts below the version are seeded."}
       </p>
       {!fetchable && publishHref !== undefined && (

@@ -39,6 +39,7 @@ import type { NodeSummary } from "@/components/nodes/NodeCardSummary";
 import { authorFor } from "./author";
 import type { OwnedRow } from "./OwnedBundles";
 import type { PinnedItem } from "./Pinned";
+import { attachStars } from "./remove-save";
 import type { ProfileTabId } from "./tabs";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
@@ -292,6 +293,17 @@ export interface SavedRow {
   kind: "blueprint" | "node card" | "vocabulary term";
   /** What `DELETE /api/account/saves` takes to remove this row. */
   target: { kind: "blueprint" | "card" | "term"; refId: string };
+  /**
+   * The star this save is the index of, for a row that has one.
+   *
+   * `Remove` has to clear both stores or the two disagree — a card leaves the shelf while
+   * its public star stands, which is what §11.0 Q24 recorded. The star route is a TOGGLE,
+   * so the removal needs to know where the star stands before it presses it, and that is
+   * a read this loader already makes for other figures rather than a round trip the
+   * client can afford per row. Absent on a term (no star exists) and on a blueprint (no
+   * save row can be written for one, D-262-04).
+   */
+  star?: { api: string; starred: boolean };
 }
 
 /**
@@ -330,6 +342,35 @@ function saveRowsFor(record: { targetKind: string; refId: string }): SavedRow[] 
     ];
   }
   return [];
+}
+
+/**
+ * The saved rows again, each card row carrying where its star stands.
+ *
+ * One `getSignalsMany` over every card on the shelf rather than one read per row: the
+ * shelf draws as many rows as the account holds, and the alternative is that many
+ * requests for one boolean each. Only cards are asked about — a term has no star, and no
+ * blueprint save exists to ask about (D-262-04) — so a shelf of terms costs no query.
+ *
+ * `starredByCaller` is the reader's own, which is the right question here: the removal
+ * presses a toggle on behalf of this account, not on behalf of the count.
+ */
+async function withStarState(
+  db: Db,
+  actor: Actor,
+  rows: readonly SavedRow[],
+): Promise<SavedRow[]> {
+  const cardRows = rows.filter((row) => row.target.kind === "card");
+  if (cardRows.length === 0) return [...rows];
+
+  const signals = await getSignalsMany(
+    db,
+    actor,
+    cardRows.map((row) => ({ kind: "card" as const, refId: row.target.refId })),
+  );
+  const starred = new Map(cardRows.map((row, i) => [row.target.refId, signals[i].starredByCaller]));
+
+  return attachStars(rows, starred);
 }
 
 /**
@@ -475,7 +516,11 @@ export async function profileView(
      be asking the store a question this page has no business asking. */
   const saves: readonly SavedRow[] =
     owner && viewer !== undefined
-      ? (await listSaves(db, actorFrom(viewer), viewer.accountId)).flatMap(saveRowsFor)
+      ? await withStarState(
+          db,
+          actorFrom(viewer),
+          (await listSaves(db, actorFrom(viewer), viewer.accountId)).flatMap(saveRowsFor),
+        )
       : [];
 
   /* The owner's Blueprints and Cards counts both include the private half and the
@@ -490,7 +535,11 @@ export async function profileView(
        two numbers already agreed in practice; this just removes the second query the
        agreement depended on. */
     cards: ownedCardRows.length,
-    terms: record?.counts.terms ?? terms.length,
+    /* No `terms` count. The tab it fed was removed on the owner's instruction, 2026-09-06
+       ("remove the section Ontology terms"), so `ProfileTabId` no longer admits the key and
+       a count with no tab to render it is a query nobody reads. `terms` itself is still
+       computed above and still returned on the view, because the vocabulary is unchanged
+       and only this one view of it left. */
   };
   if (owner) counts.saved = saves.length;
 

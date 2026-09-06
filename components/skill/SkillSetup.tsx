@@ -11,16 +11,25 @@ import {
 } from "@/lib/content/bundle-export";
 
 /* ============================================================
-   The one thing on `/skill` that works.
+   The written half of `/skill`.
 
    Everything else this route has ever carried is a preview of a
-   server nobody has written. This is the half a reader can run
-   today: one command from the `skills` CLI, an interview their own
-   agent conducts, and a folder that `/upload` reads back with the
-   real engine. It sits ABOVE the rule the page draws, and the MCP
-   preview sits below it, which is beat 4's own order on the
-   landing — what ships leads, what does not is grouped once and
-   labelled once.
+   server nobody has written. This is the half that EXISTS: one
+   command from the `skills` CLI, an interview their own agent
+   conducts, and a folder that `/upload` reads back with the real
+   engine. It sits ABOVE the rule the page draws, and the MCP preview
+   sits below it, which is beat 4's own order on the landing — what
+   is built leads, what does not is grouped once and labelled once.
+
+   This header read "the one thing on `/skill` that works" and "the
+   half a reader can run today" until 2026-09-05, and the distinction
+   that correction turns on is the whole point of the ruling behind
+   it (§11.0 Q8, and `lib/skill.ts`'s header for the measurement).
+   The DarkPrint skill is written and this component describes it
+   accurately; the COMMAND fails, because the repository the `skills`
+   CLI reads it out of is private. Step 01's first paragraph is the
+   only place on this file that says so, and it is the only thing to
+   delete when the repository goes public.
 
    ── Three panels, and why they are numbered ──
    The tutorial is a sequence and the reader is meant to be at one
@@ -251,7 +260,20 @@ function FileListing({ lines }: { lines: readonly (readonly [string, string])[] 
  * Two sentences are also trimmed at the head, because the label now says that part: "what
  * you want done, and…" and "which node does each part of it" lost their opening clauses.
  */
-const QUESTIONS: readonly { label: string; text: string }[] = [
+export interface SkillQuestion {
+  readonly label: string;
+  readonly text: string;
+}
+
+/*
+ * Exported since 2026-09-02, for the same reason `SKILL_INSTALL_COMMAND` is re-exported
+ * above: `/capabilities` lists what the DarkPrint skill asks, and a second hand-written
+ * list of the same five would have been two answers to one question on two routes of one
+ * site. The handoff for that page arrived with six rows, five of them paraphrases of these
+ * and a sixth ("the criteria") that exists nowhere in this array. The array wins, because
+ * this is the surface the author wrote and the one `SkillSetup.test.ts` holds.
+ */
+export const QUESTIONS: readonly SkillQuestion[] = [
   { label: "the outcome", text: "what exists at the end that does not exist now" },
   { label: "the check", text: "the command that exits non-zero when the work is wrong" },
   {
@@ -312,6 +334,33 @@ export function SkillSetup({ className }: { className?: string }) {
               is created — so those two stay in the open beside the command and the
               mechanism goes. `lib/skill.ts` still carries the git-over-CLI detail. */}
           <div className="flex flex-col gap-3">
+            {/* The command does not run today, and this is the one block on this file that
+                says so. Owner ruling 2026-09-05 (§11.0 Q8): the repository stays private
+                and every surface printing the command carries the reason. `lib/skill.ts`'s
+                header holds the full argument and the list of six.
+
+                It leads the column rather than following the two paragraphs below it,
+                because both of those describe what happens AFTER the install and a reader
+                who pastes before reaching them has already spent the attempt.
+
+                Deleting this paragraph is the whole undo for this file the day the
+                repository goes public. Nothing above or below it was softened to make room
+                for it, and no claim about what the DarkPrint skill does was changed: it is
+                written, and read access is the only thing missing.
+
+                Not a `ComingSoonBadge`. The reason has inverted since 2026-08-11 and the
+                conclusion has not: the badge used to be false in the other direction
+                because the install ran, and now it would say the DarkPrint skill is
+                unfinished, which is a different false claim. `SkillSetup.test.ts` also
+                holds this page's rule that every amber marker sits below the rule, and
+                this sits above it. The limit is carried by words, which is
+                `honesty.test.ts`'s doctrine for all of them. */}
+            <p className="text-[15px] leading-relaxed text-muted">
+              The command does not run yet. The skills CLI reads DarkPrint&rsquo;s own
+              repository over git, and that repository is private, so the command answers
+              404 for everyone but its owner. What is missing is read access: the DarkPrint
+              skill is written, and everything below describes a document that exists.
+            </p>
             <p className="text-[15px] leading-relaxed text-muted">
               One skill, added to your own agent. Nothing leaves the machine and no account
               is created.
@@ -329,12 +378,15 @@ export function SkillSetup({ className }: { className?: string }) {
                 shape doc 2 §0.4 warns about: a description of behaviour nobody here checks,
                 read as a guarantee.
 
-                A sentence and not a `ComingSoonBadge`, for two reasons. The badge would be
-                false in the other direction — the command runs and the skill installs, so
-                "coming soon" would be a worse claim than none — and this page's own rule,
-                held by `SkillSetup.test.ts`, is that every amber marker sits below the
-                rule. `honesty.test.ts`'s doctrine is the same one: a badge is a glyph, and
-                the site's limits are carried by words. */}
+                A sentence and not a `ComingSoonBadge`, and the paragraph above it makes
+                the same call for the same reason: this page's own rule, held by
+                `SkillSetup.test.ts`, is that every amber marker sits below the rule, and
+                `honesty.test.ts`'s doctrine is that a badge is a glyph while the site's
+                limits are carried by words. (The second reason recorded here until
+                2026-09-05 — that a badge "would be false in the other direction, the
+                command runs and the skill installs" — was true when it was written and is
+                not now. The install is blocked on a private repository, which the first
+                paragraph of this column states.) */}
             <p className="text-[15px] leading-relaxed text-muted">
               What it does after that is not tested here. The DarkPrint skill is a document
               your agent reads and runs. Everything below describes what it asks for and

@@ -161,9 +161,18 @@ describe("AutonomyMeter is always given the per-node reading", () => {
       }
     }
 
-    // The component's own file declares it and does not call it, so a scan that found
-    // nothing is a scan that is looking in the wrong place.
-    expect(calls.length).toBeGreaterThanOrEqual(3);
+    /* The component's own file declares it and does not call it, so a scan that found
+       nothing is a scan that is looking in the wrong place.
+
+       AMENDED (owner-instructed, the scoring reading comes off the blueprint page): the
+       floor was 3 and the three were the blueprint header, `ContentCard` and `Pinned`. All
+       three mounts are gone with the reading they belonged to. `components/upload/
+       ValidationReport.tsx` is the one surface left that draws the meter, over a graph
+       somebody is about to publish. The floor tracks that count rather than being deleted:
+       it is still the blind-scan premise this cell needs, and the rule it guards — every
+       call site passes `contributions` — is untouched and still applies to every mount a
+       future surface adds. */
+    expect(calls.length).toBeGreaterThanOrEqual(1);
     for (const call of calls) {
       expect(call.tag.includes("contributions"), `${call.path} omits contributions`).toBe(
         true,
@@ -251,14 +260,28 @@ describe("no surface prints a seeded index figure as a fact", () => {
     // counters. The remaining social surfaces must still identify seeded values.
     //
     // `app/u/[username]/page.tsx` read `.downloads` here until the accounts pass folded
-    // Preview signals into the account header: the sum now happens once in
-    // `ProfileShell.tsx` (every profile tab shares it) rather than in the overview page
-    // alone, so that is the file this list names instead — not a weaker check, the same
-    // read followed to where it moved.
+    // Preview signals into the account header: the sum moved once into `ProfileShell.tsx`
+    // (every profile tab shares it) rather than the overview page alone, and this list
+    // followed the read to where it had moved rather than dropping it.
+    //
+    // AMENDED 2026-09-06, owner-instructed: "just show the number of blueprints, cards and
+    // stars, remove downloads and validated". `ProfileShell.tsx` stopped passing
+    // `view.downloads` and `view.validated`, so it no longer matches `SEEDED_READS` at all
+    // and naming it here would demand a read the owner just removed. It is replaced rather
+    // than deleted, and by TWO survivors rather than one, because this list's whole job is
+    // to keep the walk above from going vacuous: if every printer disappeared, the `for`
+    // loop would assert nothing and pass. `Pinned.tsx` keeps a profile-side witness so the
+    // replacement is not a retreat to a different area of the site.
+    //
+    // `LIVE_PRINTERS` deliberately still names both profile files. Neither prints one of
+    // these reads today, so the exemption is inert — but it is an exemption for surfaces
+    // that sum REAL signals, which is still what they do with `stars`, so it stays correct
+    // for the day one of them prints a live sum again rather than being re-earned then.
     expect(printers).toEqual(
       expect.arrayContaining([
         "components/blueprint/Comments.tsx",
-        "components/profile/ProfileShell.tsx",
+        "components/profile/Pinned.tsx",
+        "app/blueprints/[owner]/[slug]/page.tsx",
       ]),
     );
   });

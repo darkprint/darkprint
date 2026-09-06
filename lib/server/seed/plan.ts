@@ -16,7 +16,6 @@
    no plan.
    ============================================================ */
 
-import { CORE_ONTOLOGY } from "@/lib/core";
 import { readContent } from "@/lib/content/read";
 
 /**
@@ -44,7 +43,12 @@ export const SEED_RELEASE_VERSION = "1.0.0";
 export interface ImportPlan {
   bundles: readonly { slug: string; digest: string; releases: number }[];
   cards: readonly { cardId: string; version: string; digest: string; visibility: "public" | "private" }[];
-  ontologyVersion: string;
+  /* `ontologyVersion: string` WAS HERE (D-250-01's four-member shape) AND IS GONE. It named
+     the vocabulary version every release this import would be scored under. The registry
+     keeps one vocabulary now, the Attractor spec language's, so the member reported a
+     constant rather than a property of the plan -- and its source, `CORE_ONTOLOGY.version`,
+     no longer exists. `tests/server/t250/contract.ts` and `surface.test.ts` were the two
+     places that named it from outside; both were amended in the same pass that dropped it. */
   registryHandle: string;
 }
 
@@ -117,17 +121,6 @@ export async function planImport(): Promise<ImportPlan> {
   return {
     bundles,
     cards,
-    /* The vocabulary version every release this import creates will be scored under, and
-       therefore the version stamped on each stored scorecard (`AutonomyResult.ontologyVersion`,
-       read back by `registry/scores.ts` and by the export's README).
-
-       It used to mean something adjacent and stronger: the version `runImport` would
-       PUBLISH into `ontology_version` before any bundle, because `publish` refused a
-       manifest naming a version nobody had published. There is no version registry and no
-       manifest declaration any more, so the number no longer describes a write. It still
-       describes the import, and it is still the core's own version, because the core's own
-       terms are the only vocabulary a release is ever resolved against. */
-    ontologyVersion: CORE_ONTOLOGY.version,
     registryHandle: REGISTRY_HANDLE,
   };
 }

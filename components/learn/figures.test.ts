@@ -6,8 +6,12 @@
    floor, and every time it typechecked, linted and looked right in
    the source:
 
-   - `ScoreRadar` was placed with a hard-coded `render={1000}` and
-     drew its axis names at 3.13 CSS px on a 378px phone.
+   - the scorecard radar was placed with a hard-coded `render={1000}`
+     and drew its axis names at 3.13 CSS px on a 378px phone. That
+     component was deleted on 2026-09-06, on the owner's instruction,
+     so this bullet is why the file was written and not something it
+     still measures. The defect shape is what carries over, and it is
+     the same shape the two below have.
    - `GraphFigure`'s first draft set `fontSize={11.5}`, which is
      8.0 px once the viewBox scale is applied.
    - The same figure's wide placement, dropped onto a phone
@@ -41,7 +45,6 @@ import { describe, expect, it } from "vitest";
 import { allBlueprints } from "@/lib/content";
 import { FLOW } from "@/components/viz/flow";
 import { GraphFigure } from "@/components/learn/PartFigures";
-import { ScoreRadar } from "@/components/ui/ScoreRadar";
 
 const FLOOR = FLOW.frame.legible;
 
@@ -105,26 +108,46 @@ describe("Learn figures", () => {
     });
   }
 
-  /* `ScoreRadar` solves its own geometry against a `render` prop, so the guard is that the
-     solve lands where it claims to rather than that a constant is large enough. Both
-     placements on `/reading-the-radar` are here, and the phone one is the reason: the
-     first draft of that page shipped one desktop solve at both widths. */
-  for (const [label, render] of [
-    ["radar, phone placement", 285],
-    ["radar, plate placement", 480],
-  ] as const) {
-    it(`writes no word below the legibility floor: ${label}`, () => {
-      if (starter === undefined) throw new Error("no starter blueprint");
-      const markup = renderToStaticMarkup(
-        createElement(ScoreRadar, { metrics: starter.metrics, size: 300, render, plate: true }),
-      );
-      const found = typeSizes(markup);
-      expect(found).toHaveLength(1);
-
-      const { viewBox, sizes } = found[0]!;
-      const scale = render / viewBox;
-      const rendered = sizes.map((s) => Math.round(s * scale * 100) / 100);
-      expect(Math.min(...rendered)).toBeGreaterThanOrEqual(FLOOR);
-    });
-  }
 });
+
+/* ============================================================
+   Removed with `components/ui/ScoreRadar.tsx`, 2026-09-06, on the
+   owner's instruction to delete the component.
+
+   Recorded here rather than dropped silently, because this loop
+   held a legibility floor and it is worth knowing what stopped
+   being checked and why nothing re-points at it.
+
+   A second `for` loop stood below the one above, over a one-entry
+   array: `{ size: 460, render: 460, plate: true }`, labelled
+   "radar, score plate in the workspace". It rendered the radar and
+   asserted the same `min(size × render ÷ viewBox) ≥ FLOOR` the
+   graph rows assert. The radar solved its own geometry against a
+   `render` prop, so the guard was that the solve landed where it
+   claimed to rather than that a constant was large enough, which
+   is a property the three rows above do not have and no surviving
+   figure needs.
+
+   ── the array had already shrunk twice, and this is the third ──
+   `/reading-the-radar`'s two placements (285 on a phone, 480 as a
+   plate) left when that page did, 2026-09-04. The blueprint-page
+   row (`size: 280, render: 302`) left when the scoring reading came
+   off `/blueprints/<owner>/<slug>`. Each time, the reason was the
+   rule this file follows: a row measures a placement somebody
+   renders, and a floor measured against a width no reader ever
+   gets reads as coverage to whoever comes next. The workspace plate
+   was the last entry and its mount, `components/build/ScorePanel.tsx`,
+   went with `/build`. So the row was already measuring nothing
+   before the component was deleted.
+
+   ── what is not re-pointed, and why ──
+   Nothing. The floor itself is untouched: `FLOW.frame.legible` and
+   the three `GraphFigure` rows above are unchanged, and
+   `components/viz/scene-labels.test.ts` still walks its own roster
+   in viewBox units. What this file no longer covers is the
+   rendered-pixel half for one figure that no longer exists. If a
+   chart with a width-solved geometry ever ships again, its own
+   `size` / `render` triple belongs back in an array here, and the
+   arithmetic to copy is the `scale = render ÷ viewBox` line the
+   graph rows still run.
+   ============================================================ */

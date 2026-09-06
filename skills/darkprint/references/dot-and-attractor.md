@@ -118,14 +118,15 @@ handed to the agent verbatim.
 | `spec` | `prompt` — the payload the agent actually receives |
 | `name` | `label` |
 | `model` | `llm_model`, Attractor's reserved model identifier |
-| `params.max_iterations` (or `maxIterations`, or `max_retries`) | `max_retries` |
+| `params.max_retries` (or `max_iterations`, or `maxIterations`) | `max_retries` |
 | `type` and `phases` | `class`, every name prefixed `dp-` |
 | `type: agent` | `shape=box` → the `codergen` handler |
 | `type: validation` | `shape=box` → the `codergen` handler |
-| `type: tool` | `shape=parallelogram` → the `tool` handler |
+| `type: tool` | `shape=box` → the `codergen` handler |
 | `type: human-gate` | `shape=hexagon` → the `wait.human` handler |
 | `type: human-input` | `shape=hexagon` → the `wait.human` handler |
 | `type: decision` | `shape=diamond` → the `conditional` handler |
+| `type: shell-tool` | `shape=parallelogram` → the `tool` handler |
 | `type: parallel` | `shape=component` → the `parallel` handler |
 | `type: parallel.fan-in` | `shape=tripleoctagon` → the `parallel.fan_in` handler |
 | `type: manager-loop` | `shape=house` → the `stack.manager_loop` handler |
@@ -152,7 +153,7 @@ whole file.
 The other half is what stops at the DarkPrint boundary. A node's `prompt` is everything the
 runner receives from its card, so ports, dependencies, `cannot` and `risk_markers` are not
 enforced by anything in the compiled file. They are enforced by the engine, at the moment
-the bundle is scored, which is a different moment from the moment the pipeline runs.
+the bundle is validated, which is a different moment from the moment the pipeline runs.
 
 Three consequences for how you write a card:
 
@@ -164,7 +165,7 @@ Three consequences for how you write a card:
    to override it. Absence is still an answer: a card that names no model emits no
    `llm_model` at all, and the node takes whatever the runner supplies.
 3. **The iteration cap has one home.** Write it as a top-level key of `params`. The security
-   analyzer and the exporter read it through the same function, so a cap that scores as
+   analyzer and the exporter read it through the same function, so a cap that reads as
    uncapped would also compile as unbounded.
 
 ---
@@ -181,7 +182,8 @@ backwards, from the same table, so the two directions cannot drift apart.
 | `prompt` | `spec` |
 | `label` | `name` |
 | `llm_model` | `model` |
-| `max_retries` | `params.max_iterations` |
+| `max_retries` | `params.max_retries` |
+| `tool_command` | `params.tool_command`, on a `shell-tool` card |
 | `shape` | `type`, through the table above |
 | `class` | which of a shared shape's two types, and the `phase` list |
 | `card="id@version"` | the card's own `id` and `version` |

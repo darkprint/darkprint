@@ -1,23 +1,65 @@
 name: docs drift
 
-# No GitHub Actions workflow existed in this repository yet, so this check runs on
-# its own rather than being folded into an existing job.
+# `scripts/check-docs-drift.mjs` compares docs/ARCHITECTURE.md's route table and seam
+# table against the tree they describe. It is also runnable by hand as
+# `npm run check:docs-drift`, which is how anyone reads the current list without waiting
+# for a push.
 #
-# Non-blocking for now: `continue-on-error: true` lets the job fail red in the Actions
-# UI without failing the check run or blocking a merge, while docs/ARCHITECTURE.md is
-# still stabilizing and false positives are more costly than a missed drift. Once it
-# has held steady for a while, drop `continue-on-error: true` so a failing check
-# actually blocks the PR.
+# ── the branch filter is gone, and it was the whole problem ──
+# This job used to trigger on `pull_request` plus `push: branches: [main]`. Every line of
+# the backend work happens on `backend`, which pushes trigger neither, so the guard did
+# not run at all for the weeks in which its report grew to 46 drifted ids (§11.0 Q37).
+# A check nobody can see is not a weaker check, it is not a check. Running on every push
+# costs a bare checkout and a few seconds: the script imports nothing outside `node:`
+# builtins, so there is no `npm ci` here.
+#
+# ── continue-on-error, and the condition for dropping it ──
+# The previous version of this comment said to drop it "once it has held steady for a
+# while". That is not a condition anybody can check, which is why it survived every read.
+# The real condition is: **drop `continue-on-error` when §11.0 Q6 reaches DONE.** Q6 is
+# the backlog this job reports — 46 documented seam ids with no anchor in the code, plus
+# `/spec/attractor` missing from the route table — and every one of them is somebody
+# else's document edit. Dropping the flag before Q6 closes turns a backlog into a wall
+# across every unrelated pull request, which is how a guard gets deleted instead of
+# obeyed. Dropping it after Q6 closes costs nothing and is a two-line change: delete the
+# `continue-on-error` line and this paragraph.
+#
+# ── the step summary is not decoration ──
+# With `continue-on-error` the job concludes success, and a red step inside a green job is
+# exactly what nobody clicks into. Writing the report to the run summary puts the list on
+# the run's own page, so the backlog is read rather than merely produced.
 
 on:
   pull_request:
   push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   check-docs-drift:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: node scripts/check-docs-drift.mjs
+      - name: check docs drift
         continue-on-error: true
+        shell: bash
+        run: |
+          # `tee` is deliberately not used: it would replace the script's exit code with
+          # its own, and the exit code is the only thing that turns this step red.
+          set +e
+          report="${RUNNER_TEMP:-.}/drift.txt"
+          node scripts/check-docs-drift.mjs > "$report" 2>&1
+          status=$?
+          {
+            if [ "$status" -eq 0 ]; then
+              echo "## docs drift: in sync"
+            else
+              echo "## docs drift: docs/ARCHITECTURE.md disagrees with the tree"
+              echo
+              echo "Non-blocking while §11.0 Q6 is open. Run \`npm run check:docs-drift\` locally."
+            fi
+            echo
+            echo '```'
+            cat "$report"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $status

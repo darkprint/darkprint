@@ -154,7 +154,7 @@ components/
   gallery/ blueprint/ nodes/ ontology/ upload/ profile/   per-surface UI
   graph/                 React Flow schematic, SVG thumbnail, DOT viewer
   ui/                    design-system primitives (Button, Badge, ScoreRadar,
-                         MetricBars, SourcePanel, DiagnosticList, …)
+                         SourcePanel, DiagnosticList, …)
   site/                  header + footer
 lib/
   core/                  the engine — DOT, cards, ontology, bundle, analysis, registry

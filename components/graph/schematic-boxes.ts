@@ -2,12 +2,29 @@
    Where every node name a schematic draws actually lands, and how much air is left
    around it — for a guard with no browser.
    ------------------------------------------------------------
-   Two pages mount `BlueprintGraph`, and both had a crop defect measured on the running
-   site: `/build`'s stage (spec §1.4 — `ory`, `Python Scr`, `Release Ga`) and the nine
-   archive schematics at `/blueprints/[slug]` (a framing that stranded one block beside
-   134px of empty graticule, 43% of a 314px canvas, which shipped for a whole commit with
-   the suite green). This module is the one measurement both guards call, so a fix that
-   holds one of them cannot quietly stop holding the other.
+   `components/graph/BlueprintGraph` has ONE mount today, `components/panes/GraphPane.tsx`,
+   and two things mount that pane: `components/panes/SynchronisedPanes.tsx` on a blueprint
+   detail page, and `components/upload/ValidationReport.tsx` on `/upload`. Those are the two
+   surfaces this module's arithmetic is about.
+
+   Counted through the pane rather than by grepping the tag, because a bare grep for the JSX
+   opener reports THREE and two of them are a different component:
+   `components/explain/RunLayers.tsx` exports a decorative `BlueprintGraph()` of its own,
+   drawn there and in `RunSystemMap.tsx`. Same name, no relation to this file's subject.
+
+   This header used to say "two pages mount `BlueprintGraph`" and name `/build`'s stage and
+   `/blueprints/[slug]`. Both of those addresses moved: `/build` was deleted on 2026-09-06
+   with the whole of `components/build/`, and the blueprint route is now
+   `/blueprints/[owner]/[slug]`. The two crop defects measured on them are what made this
+   module necessary and are kept as its reason: `/build`'s stage clipped names (spec §1.4
+   — `ory`, `Python Scr`, `Release Ga`), and the nine archive schematics were framed so that
+   one block stood beside 134px of empty graticule, 43% of a 314px canvas, which shipped for
+   a whole commit with the suite green.
+
+   It also used to call itself "the one measurement both guards call". There is ONE guard
+   over it now, `components/panes/archive-labels.test.ts`; the other went with `/build`. And
+   `/upload`'s drawing reaches the same production framing with nothing here measuring it,
+   which is a stated gap rather than coverage.
 
    ── What it now measures, which is the opposite of what it used to ──
    Both of those defects were consequences of a policy the author has since overruled: the
@@ -44,7 +61,8 @@
    against `.react-flow`'s own `offsetWidth` on the running page.
 
    ── Where the numbers come from, and why not from here ──
-   An earlier version of `stage-labels.test.ts` restated `FRAME_MIN_ZOOM`, `MAX_ZOOM` and
+   An earlier version of `stage-labels.test.ts` (itself deleted with `/build`, which is why
+   this paragraph is history and not a pointer) restated `FRAME_MIN_ZOOM`, `MAX_ZOOM` and
    `FIT_PADDING` as local constants and claimed the copy meant they "cannot drift silently".
    That claim was false, and three separate mutations to the real source left the whole suite
    green. So every number this module frames with comes from the module that owns it. Those
@@ -470,7 +488,9 @@ export function columnPitch(nodes: readonly DrawnNode[]): number | undefined {
  * about the top row is drawn OUTSIDE the box the fit was computed from. Nothing told the fit
  * that, and the fraction it had been given happened to cover it by a hair — measured on the
  * mounted `/build` stage, 2.2px at 1440, 1.7px at 1200 and 0.3px at 768, 900 and 1024
- * between `acceptance criteria` and the canvas's own top border.
+ * between `acceptance criteria` and the canvas's own top border. That page was deleted on
+ * 2026-09-06, so the reading cannot be retaken; it is kept because it is the evidence for
+ * why this function exists, not a pointer to somewhere to go and look.
  *
  * ── Why this needs a block's height when the horizontal half does not ──
  * The across answer never needed one while the fit was floored, because a floored fit is at

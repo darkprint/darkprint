@@ -15,6 +15,6 @@ digraph escapes {
   exit  [label="exit", shape=Msquare];
 
   start -> read;
-  read -> quote [label="finding", condition="size > 0"];
+  read -> quote [label="finding", condition="context.size!=0"];
   quote -> exit;
 }

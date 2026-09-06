@@ -182,22 +182,30 @@ async function readAnswer(name: RouteName, path: string): Promise<Answered> {
 }
 
 describe("AC4 — the route set is the one the contract quantifies over", () => {
-  it("the tree serves exactly twenty-one routes under the three owned trees", () => {
+  it("the tree serves exactly twenty routes under the three owned trees", () => {
     /* Eleven were T080/T081's; T280 published ten more under the same trees (star, notes,
        note edit, note vote and votes/runs on blueprints; star, notes, note edit, note vote
        on cards — backend.md §T280). The sweep below still quantifies over T081's own
        eleven, whose readers are the fixture's; the count here keeps refusing a route
-       NOBODY published, which is what it was written for. */
+       NOBODY published, which is what it was written for.
+
+       21 -> 20 on 2026-09-05. §11.0 Q14 deleted `/api/blueprints/{owner}/{slug}/votes`,
+       one of T280's ten, so nine of that ten survive. DERIVED by re-walking the three owned
+       trees rather than by subtracting one from the pinned number: this cell's whole job is
+       to notice a route arriving or leaving, and a count carried through arithmetic is a
+       count nobody measured. `routeTable` keys a Map by pattern before sorting, so what is
+       counted here is PATTERNS; the tree happens to hold 20 of each, because the two
+       `route.scratch.test.ts` files beside a handler do not match `ROUTE_FILE`. */
     const patterns = routeTable().map((r) => r.pattern);
     expect(
       patterns.length,
-      `AC4 says "on all eleven routes", and T280 published ten more. The tree serves ` +
-        `${patterns.length}: ${patterns.join(", ")}.\n` +
+      `AC4 says "on all eleven routes"; T280 published ten more and Q14 deleted one of those. ` +
+        `The tree serves ${patterns.length}: ${patterns.join(", ")}.\n` +
         `  This is a floor over the sweep below rather than an opinion about layout — the ` +
         `paths are discovered, and D-80-07 makes the URLs the contract and the file layout ` +
-        `the implementation's. A twenty-second route is a surface nobody published; a ` +
-        `twentieth is a criterion this file would otherwise sweep without noticing.`,
-    ).toBe(21);
+        `the implementation's. A twenty-first route is a surface nobody published; a ` +
+        `nineteenth is a criterion this file would otherwise sweep without noticing.`,
+    ).toBe(20);
   });
 
   it("every published URL, and every variant of one, resolves through Next's own matcher", () => {

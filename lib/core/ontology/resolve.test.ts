@@ -28,8 +28,8 @@ function term(id: string, extra: Partial<OntologyTerm> = {}): OntologyTerm {
   };
 }
 
-function synth(terms: readonly OntologyTerm[], version = "9.9.9"): Ontology {
-  return { version, title: "Synthetic vocabulary", terms };
+function synth(terms: readonly OntologyTerm[]): Ontology {
+  return { title: "Synthetic vocabulary", terms };
 }
 
 const ids = (terms: readonly OntologyTerm[]): string[] => terms.map((t) => t.id);
@@ -96,8 +96,7 @@ describe("get", () => {
     expect(CORE.get("Agent")).toBeUndefined();
   });
 
-  it("exposes the base version and title unchanged", () => {
-    expect(CORE.ontology.version).toBe(CORE_ONTOLOGY.version);
+  it("exposes the base title unchanged", () => {
     expect(CORE.ontology.title).toBe(CORE_ONTOLOGY.title);
     expect(ids(CORE.ontology.terms)).toEqual(ids(CORE_ONTOLOGY.terms));
   });
@@ -128,6 +127,15 @@ describe("isA over the shipped vocabulary", () => {
     ["parallel", "parallel.fan-in", false],
     ["parallel", "evaluative", false],
     ["manager-loop", "human-in-the-loop", false],
+    // The one node-type edge doc 3 does not draw. A shell command is a deterministic
+    // operation, so every rule that asks `isA(type, "tool")` has to keep catching the node
+    // that runs one after `attractor/emit.ts` stops giving `tool` the `parallelogram` row.
+    ["shell-tool", "tool", true],
+    ["tool", "shell-tool", false],
+    ["shell-tool", "agent", false],
+    ["shell-tool", "human-in-the-loop", false],
+    ["shell-tool", "evaluative", false],
+    ["shell-tool", "orchestration", false],
     // …and the nodes that are emphatically not human. The metric must answer `false` here
     // or every agent in every blueprint would count as a human intervention.
     ["agent", "human-in-the-loop", false],
@@ -166,6 +174,13 @@ describe("isA over the shipped vocabulary", () => {
     ["tool", "tool-capability", false],
     ["shell", "tool", false],
     ["shell", "tool-capability", true],
+    // `shell-tool` and `shell` are the closest two names in the whole vocabulary and they
+    // are of different kinds, so neither subsumes the other in either direction. A card's
+    // `type: shell-tool` says what the node is; `tools: [shell]` says what its host must
+    // let it do, and a node can carry either without the other.
+    ["shell-tool", "shell", false],
+    ["shell", "shell-tool", false],
+    ["shell-tool", "tool-capability", false],
     ["arbitrary-code-execution", "agent", false],
     ["implementation", "agent", false],
     // The data lattice doc 1 §2 rule 3 needs, `acceptance-criteria` included.
@@ -715,9 +730,13 @@ describe("ontologyView with extensions", () => {
     expect(ds.map((d) => d.code)).toEqual(["ontology/local-term-unrooted"]);
   });
 
-  it("keeps the base version even when local terms are layered on", () => {
+  /* An overlay used to be checked for not minting a vocabulary version of its own. There
+     is no version to mint; what has to stay true is that the merged view is still the base
+     vocabulary with terms added, so the title is the surviving witness of that. */
+  it("keeps the base title even when local terms are layered on", () => {
     const view = ontologyView(CORE_ONTOLOGY, [term("berti/local", { broader: "agent" })]);
-    expect(view.ontology.version).toBe(CORE_ONTOLOGY.version);
+    expect(view.ontology.title).toBe(CORE_ONTOLOGY.title);
+    expect(Object.hasOwn(view.ontology, "version")).toBe(false);
   });
 
   it("resolves a deprecation that points from a local term into the core", () => {
@@ -1117,7 +1136,7 @@ describe("requiresHuman", () => {
     expect(requiresHuman(CORE, id)).toBe(true);
   });
 
-  it.each(["agent", "tool", "decision", "validation", "evaluative"])(
+  it.each(["agent", "tool", "shell-tool", "decision", "validation", "evaluative"])(
     "is false for `%s`, which says nothing about people",
     (id) => {
       expect(requiresHuman(CORE, id)).toBe(false);
@@ -1211,7 +1230,6 @@ describe("requiresHuman", () => {
   });
 });
 
-
 /* ============================================================
    isControlPoint / controlCitation — what a node decides
    ------------------------------------------------------------
@@ -1242,7 +1260,7 @@ describe("isControlPoint", () => {
     expect(controlCitation(CORE, "human-gate")).toEqual({ term: "human-gate", via: "self" });
   });
 
-  it.each(["agent", "tool", "human-input", "human-in-the-loop"])(
+  it.each(["agent", "tool", "shell-tool", "human-input", "human-in-the-loop"])(
     "is false for `%s`, which does work or hosts a person but decides nothing",
     (id) => {
       expect(isControlPoint(CORE, id)).toBe(false);

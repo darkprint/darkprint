@@ -87,11 +87,12 @@ export async function runImport(
   const registry = await registryActor(db, plan.registryHandle);
 
   /* There is no vocabulary write before the bundles any more. This function used to open
-     with `addOntologyVersion(db, {version: plan.ontologyVersion, terms: CORE_ONTOLOGY.terms})`,
-     catching the duplicate-version refusal so a second import was a no-op, and it had to:
-     `publish` opened a view by version and refused one nobody had published, so an unseeded
-     registry could not accept a single bundle. `openView` merges over `CORE_ONTOLOGY`
-     directly now, which is the vocabulary that row always held anyway.
+     with `addOntologyVersion(db, {version: ..., terms: CORE_ONTOLOGY.terms})`, catching the
+     duplicate-version refusal so a second import was a no-op, and it had to: `publish`
+     opened a view by version and refused one nobody had published, so an unseeded registry
+     could not accept a single bundle. `openView` merges over `CORE_ONTOLOGY` directly now,
+     which is the vocabulary that row always held anyway, and migration 0009 dropped the
+     table that call wrote to.
 
      The archive's own overlay was never part of that write and still is not. It is a local
      namespace layered over the core per release (`ontology/extensions.yaml`, doc 3 §7), and

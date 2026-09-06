@@ -1,68 +1,32 @@
 /* ============================================================
-   DarkPrint backend — lib/server/ballot public surface
-   `lib/db/index.ts`'s rule, extended to every owned barrel: deep
-   paths are internal and may be rearranged, so nothing outside
-   this folder should reach for one (T000 contract, D-01).
-   Re-exports are written out by name rather than `export *` so
-   this file doubles as the inventory of what the module promises.
+   DarkPrint backend — lib/server/ballot, and nothing in it
 
-   ── What is published beyond the block, and why ──
-   T160's block publishes two functions and three types. Two more
-   names ship here, on the accounts and saves barrels' precedent of
-   publishing what a caller cannot branch on without:
+   This folder holds no code. It is a placeholder with one job:
+   `tests/error-hygiene.test.ts` builds its domain from
+   `git ls-tree -d backend lib/server/` and THROWS on a module that
+   ref lists with no importable barrel, so a folder `backend` still
+   names cannot leave the working tree ahead of the commit that
+   takes it off `backend`. Deleting it early does not fail the
+   equality it is exempt from; it fails with `absent from this
+   checkout: ballot`, which tells every session sharing this tree to
+   merge `backend`, and merging does not fix it.
 
-   * `METRICS` and `MetricKey` — the three writable metrics as a
-     value and as a union. `Aggregate` and `Ballot` each spell the
-     three out, `lib/types.ts:38-45` spells six out, and a caller
-     iterating the three would be the third naming of one set. It
-     widens nothing: both are the block's own members given a name.
+   **Delete this directory in the commit that lands §11.0 Q34.** The
+   equality does not move: T160's two error classes came off at Q14
+   and this barrel has published none since.
 
-   `WeightedVote` is NOT published. It is what the fold consumes,
-   it names a column no published shape carries, and a caller has
-   no use for it.
+   ── What was here ──
+   T160 published five shapes and two functions. Q14 deleted
+   `castBallot`, `getAggregate`, `aggregateFrom`, `withBallotErrors`
+   and both error classes with the route above them, on the owner's
+   ruling that the ballot came off the blueprint page. Two TYPES
+   outlived them, kept only because `lib/content/view.ts` named them
+   for its `live.aggregate` input; they are declared in that file
+   now, beside their one reader (§11.0 Q34).
 
-   ── What is NOT published here ──
-   `withStore` stays internal. It is the boundary, not a service:
-   an exported wrapper is one a caller outside this folder can wrap
-   a foreign statement in and get this module's class on somebody
-   else's fault (T240's barrel gives the same reason).
-
-   No route helper ships. **D-WAVE-02 dropped `app/api/**` from
-   this task's `Owns`** — `seams.md`'s SEAM-74 publishes
-   `POST /api/blueprints/{slug}/votes`, and `slug` alone cannot
-   address a bundle (`bundle_owner_slug_key` is on
-   `(owner_id, slug)`), so the transport shape is unruled and
-   nothing here guesses at it.
-
-   The message literals are not exported. A test importing its
-   expected message from the module under test asserts that the
-   module agrees with itself, and goes on passing the day the
-   wording starts interpolating something it should not.
-
-   `tests/error-hygiene.test.ts` builds its domain by construction
-   over every `lib/server/<module>/index.ts` on `backend`, so both
-   classes below are measured against D-13's hygiene clause from
-   the day this file ships. Its equality moves in the MERGE COMMIT
-   and nowhere else, derived against the tree at that merge rather
-   than carried from here: T150, T170 and T180 are all computing
-   from the same base, and each worktree is blind to the others'
-   modules by construction.
+   The `ballot` TABLE is a separate question and stays:
+   `lib/server/lifecycle/bundle-deletion.ts` and `deletion.ts`
+   cascade through it, so dropping it would break deletion.
    ============================================================ */
 
-export type { Aggregate, Ballot, MetricAggregate, MetricKey } from "./types";
-export { METRICS } from "./types";
-
-/* D-13's boundary. Two classes: one fault, and one refusal carrying the three decisions
-   this module authors. The reasoning, and why neither is consumed from another barrel,
-   are in `errors.ts`. */
-export type { BallotRefusedKind } from "./errors";
-export { BallotRefusedError, BallotStoreError } from "./errors";
-
-export { getAggregate } from "./read";
-export { castBallot } from "./write";
-
-/* T280's wire layer (D-WAVE-02 dropped `app/api/**` from T160's own `Owns`; this wave adds
-   it back). Published from the barrel rather than deep-imported, on `lib/server/profiles`'
-   own precedent for `withProfileErrors`: a route outside this folder may not reach `./http`
-   directly (D-01), so the route consumes this the same way it consumes `castBallot`. */
-export { withBallotErrors } from "./http";
+export {};

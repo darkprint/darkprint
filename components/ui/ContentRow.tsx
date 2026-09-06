@@ -72,8 +72,9 @@ const THUMB = { width: 380, height: 132 } as const;
 
 /**
  * The three-zone grid, exported so a row for something other than a resolved `AnyContent`
- * (see `DraftRow` in `components/profile/OwnedBundles.tsx`) can sit in the same shelf as
- * one of these without copying the column widths and gap by hand. One constant, one place
+ * (see `SummaryRow` in `components/profile/OwnedBundles.tsx`, named `DraftRow` here until
+ * T280 renamed it) can sit in the same shelf as one of these without copying the column
+ * widths and gap by hand. One constant, one place
  * that answers "how wide is a row's zone" — the alternative was two files agreeing on
  * `380px_minmax(0,1fr)_236px` by coincidence.
  */

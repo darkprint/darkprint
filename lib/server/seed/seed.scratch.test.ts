@@ -103,9 +103,12 @@ describe("planImport (AC1, no database)", () => {
      ZERO of nine cells — the suite asserted the module agreed with itself and would have
      passed unchanged whatever the ruling said. The constants are still exported, because a
      caller needs to name them; they are just not this suite's oracle. */
-  it("owns nothing about the database: the handle and the ontology version are named", () => {
+  /* Was "the handle and the ontology version are named". `ImportPlan.ontologyVersion` is
+     gone with ontology versioning, so the handle is the whole of what the plan names about
+     the database. The cell is kept rather than deleted because the handle half was never
+     about the version: it is the one value `runImport` resolves an account from. */
+  it("owns nothing about the database: the handle is named", () => {
     expect(plan.registryHandle).toBe("darkprint");
-    expect(plan.ontologyVersion).toBe("0.1.0");
   });
 });
 
@@ -118,7 +121,6 @@ describe("runImport (AC2, AC4)", () => {
   it("returns the plan it was given alongside what happened", () => {
     expect(first.bundles).toEqual(plan.bundles);
     expect(first.cards).toEqual(plan.cards);
-    expect(first.ontologyVersion).toBe(plan.ontologyVersion);
     expect(first.registryHandle).toBe(plan.registryHandle);
   });
 

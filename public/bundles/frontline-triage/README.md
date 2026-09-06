@@ -4,8 +4,7 @@ Classifies inbound tickets, auto-resolves the simple ones with a KB lookup, QAs 
 
 ```
 blueprint      frontline-triage
-bundle digest  sha256:7569292e411df641caa77edc120b8295764ae089ac2c5b0904a4e36f3e405cf4
-ontology       v0.1.0
+bundle digest  sha256:8e227dd8d30f02dc1f1591cbdc800bc35bf2c4bb459ab78fde5dec6a4d4e5b8c
 nodes          7
 cards pinned   7
 local terms    lupo/pii-handling
@@ -25,10 +24,9 @@ every node, every edge and the card version pinned on it. Each card under `cards
 `spec` that becomes that node's prompt.
 
 To compile these two into a pipeline a graph runner takes, run `darkprint export <dir>
---attractor`. It writes Attractor DOT to stdout, and that file opens with a list of everything
-a DarkPrint blueprint had no way to express, so you can see what the runner falls back to its
-own defaults for. Adapting the result, or building the run yourself from these files instead,
-is your own harness's job.
+--attractor`. It writes Attractor DOT to stdout, and that file opens with the same two lists
+this README carries under *What these files leave to the runner*. Adapting the result, or
+building the run yourself from these files instead, is your own harness's job.
 
 2 of the 7 nodes name the model they run on, in their card's own `model` field. Read it off
 `cards/<ref>.yaml`; whether your harness honours it is yours to decide.
@@ -61,12 +59,42 @@ instruction for that node whatever harness compiles this topology into a running
 skill document adds a capability to one agent; what the blueprint decides is who is wired to
 whom.
 
+## What these files leave to the runner
+
+Attractor reads more attributes than a DarkPrint blueprint has fields to set. Compile these
+files into a pipeline, by the command above or by hand, and the names below are the ones
+nothing in this folder sets. Write them in where your run needs them, and expect a later
+export of this blueprint to overwrite the whole compiled file. Appendix A of the Attractor
+spec tabulates most of them; the rest are named by the retry rules in §3.5, by the handler
+pseudocode in §4, and by §9.7's tool call hooks.
+
+Left out, these fall to the runner and the pipeline still runs. The Attractor spec states a
+value or a behaviour for each one's absence, in Appendix A or in the handler pseudocode that
+reads it, so what you get is a choice nobody in this folder made:
+
+- graph: `model_stylesheet`, `default_max_retries`, `default_max_retry`, `default_fidelity`,
+`retry_target`, `fallback_retry_target`, `stack.child_workdir`, `tool_hooks.pre`,
+`tool_hooks.post`
+- node: `goal_gate`, `retry_target`, `fallback_retry_target`, `fidelity`, `thread_id`,
+`timeout`, `llm_provider`, `reasoning_effort`, `auto_status`, `allow_partial`, `join_policy`,
+`max_parallel`, `manager.poll_interval`, `manager.max_cycles`, `manager.stop_condition`,
+`manager.actions`, `stack.child_autostart`, `tool_hooks.pre`, `tool_hooks.post`
+- edge: `fidelity`, `thread_id`, `loop_restart`
+
+Left out, these have nothing to fall to. The handler a node's shape selects reads each one
+directly, and with no value it refuses or goes round again while the rest of the compiled file
+reads as though the node would run. Read §4's handler section for the shape you are compiling
+before you leave one of these unset:
+
+- graph: `stack.child_dotfile`
+- node: `human.default_choice`
+
 ## The nodes
 
 | node | card | phase |
 | --- | --- | --- |
 | `ticket` | `event-intake@1.0.0` | none declared |
-| `classify` | `intent-router@1.0.0` | none declared |
+| `classify` | `intent-router@1.1.0` | none declared |
 | `autoresolve` | `resolution-composer@1.0.0` | implementation |
 | `kb` | `kb-resolver@1.0.0` | none declared |
 | `qa` | `reply-qa-check@1.0.0` | testing |
@@ -93,7 +121,7 @@ What was charged:
 - Node "Reply QA Check" (qa) declares the risk marker `lupo/pii-handling` (PII handling).
 - Node "Reply Dispatch" (send) declares the risk marker `lupo/pii-handling` (PII handling).
 
-Both were read against ontology v0.1.0 and the local terms these cards declare:
+Both were read against the core vocabulary and the local terms these cards declare:
 `lupo/pii-handling`. Their definitions and the weights that price them are in
 `ontology/extensions.yaml`, in this folder. Score the folder without that file and those ids
 resolve against nothing, the cards carrying them are rejected with them, and both numbers

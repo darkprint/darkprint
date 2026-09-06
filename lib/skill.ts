@@ -7,14 +7,46 @@
    The skill lives in this repository and the skills CLI reads it over git, so there is
    nothing hosted, nothing to zip and no version to keep in step with a download. What a
    reader needs from the site is therefore one line of text, and that line is printed on
-   three routes: the landing's hero chip (`components/hero/Wordmark.tsx`, where it is one
-   of two commands and the only one that runs), `/build`'s second exit
-   (`components/build/AgentHandoff.tsx`, beside the brief it is the durable form of) and
-   `/skill`, which is the only one of the three that explains anything.
+   four surfaces: the landing's band (`components/hero/SetupChips.tsx`, where it is one of
+   two commands), a draft bundle's empty-repo panel (`components/bundle/DraftLanding.tsx`),
+   `/capabilities`' skill section (`app/capabilities/page.tsx`), and `/skill` itself through
+   `components/skill/SkillSetup.tsx`, which is the only one that explains anything.
 
-   Three hand-typed copies of a command a reader retypes into a terminal is the shape that
+   A fifth stood in that list until 2026-09-06: `/build`'s second exit, at
+   `components/build/AgentHandoff.tsx`, which printed the command beside the agent brief it
+   was the durable form of. The owner deleted the route and its component tree that day
+   ("it is not useful and make confusion"), so the exit, its brief and its copy of this
+   line are all gone. The four above are what a grep for the export returns today. The
+   sentence this replaces said "six" and then named five, and which sixth surface it meant
+   could not be recovered, so the number here is a count taken rather than one carried
+   forward. Take it again before trusting it.
+
+   Six hand-typed copies of a command a reader retypes into a terminal is the shape that
    drifts the day the repository moves, and the failure is silent: a wrong command produces
    an error in somebody else's shell, never a red test here. So it is written once.
+
+   ── The command does not run today, and every one of the six says so ──
+   `api.github.com/repos/Brotherhood94/darkprint` answers 404 unauthenticated (measured
+   2026-09-02 and again 2026-09-05), because this repository is private. The skills CLI
+   reads it over git by name, so the one line this module exists to publish fails for every
+   reader except its owner. The owner ruled on 2026-09-05 that the repository stays private
+   and the command stays printed, qualified wherever it renders (§11.0 Q8) — removing it
+   was the alternative and was rejected, because a command that comes back needs the six
+   surfaces rewritten from nothing.
+
+   **The qualification is one block per surface, and each carries a comment naming this
+   paragraph.** The day the repository goes public, delete those six blocks and nothing
+   else: no copy above them was softened to make room, and no claim about what the DarkPrint
+   skill DOES was changed. It is written, it is not unfinished, and what is missing is read
+   access to the repository holding it. A qualification that says otherwise replaces one
+   false claim with a different one.
+
+   The prose is per surface rather than one exported constant, deliberately: a band cell has
+   room for six words and `/skill` has room for three sentences, and the site already writes
+   the npm-package limit per surface for the same reason (`/capabilities`, `CloneMenu`,
+   `DraftLanding`). What is single-sourced is the COMMAND, which is the string that fails
+   silently when it drifts. `components/skill/SkillSetup.test.ts` holds each surface's own
+   wording, in the shape `components/site/honesty.test.ts` uses for a ledger row.
 
    ── The word `skill` is already taken on this site ──
    `lib/core/card/schema.ts` defines `skill?: string` as a per-node behaviour document

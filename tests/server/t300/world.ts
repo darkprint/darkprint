@@ -45,21 +45,16 @@
    "it found all of them".
    ============================================================ */
 
-import { CORE_ONTOLOGY } from "@/lib/core";
-
 import {
   insertAccount,
   insertBundle,
   insertCard,
-  insertOntologyTerm,
-  insertOntologyVersion,
   insertRelease,
   manifest,
   mark,
   type AccountFixture,
   type BundleFixture,
   type CardFixture,
-  type OntologyFixture,
   type ReleaseFixture,
   type Scratch,
 } from "../t200/fixtures";
@@ -80,7 +75,6 @@ export interface Shelf {
 
 export interface World {
   owner: AccountFixture;
-  ontology: OntologyFixture;
 
   /** The paraphrase target, and the only blueprint whose title carries `kitchen`. */
   service: Shelf;
@@ -216,18 +210,12 @@ const QUERIES = {
 } as const;
 
 export async function buildWorld(s: Scratch): Promise<World> {
-  /* The core vocabulary as rows. `phases()`, `categories()` and the card facets read
-     `ontology_term` through merged T030, and a version row with no term rows leaves them
-     legitimately empty — which would red an AC2 facet cell for a hole in this fixture
-     rather than for anything T300 did. T200's world seeds it for the same reason. */
-  const ontology = await insertOntologyVersion(s, CORE_ONTOLOGY.version);
-  for (const term of CORE_ONTOLOGY.terms) {
-    await insertOntologyTerm(s, {
-      versionId: ontology.id,
-      term: term as unknown as Record<string, unknown>,
-    });
-  }
-
+  /* The core vocabulary used to be seeded as rows here. `phases()`, `categories()` and the
+     card facets read `ontology_term` through merged T030, and a version row with no term
+     rows would have left them legitimately empty — redding an AC2 facet cell for a hole in
+     this fixture. 0009 dropped both tables; the one vocabulary is `CORE_ONTOLOGY` in the
+     process, merged per bundle with `release.local_vocabulary`, so there is nothing to seed.
+     T200's world lost the same block for the same reason. */
   const owner = await insertAccount(s, mark("t300o"));
 
   const build = async (key: keyof typeof PROSE, phase: string): Promise<Shelf> => {
@@ -271,7 +259,6 @@ export async function buildWorld(s: Scratch): Promise<World> {
 
   return {
     owner,
-    ontology,
     service,
     household,
     glacier,

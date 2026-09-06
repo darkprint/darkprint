@@ -62,3 +62,12 @@ export {
 export { resolveSession } from "./registry";
 
 export { runCli } from "./run";
+
+/* The verb list and the environment as DATA, published because the help text is not the only
+   place they belong: `/capabilities` renders the reference page from these rows, and
+   `packages/mcp/src/cli.ts` renders its own help from them under `npx -y darkprint`. Three
+   readers, one grammar, and the two prose copies that preceded this had already drifted.
+   `renderCliUsage` is on the surface for the shim: it imports this package through the barrel
+   and nothing else, which is the property this file exists to keep. */
+export type { CliEnvVar, CliVerb } from "./run";
+export { CLI_ENV, CLI_INVOCATION, CLI_VERBS, NPX_INVOCATION, renderCliUsage } from "./run";

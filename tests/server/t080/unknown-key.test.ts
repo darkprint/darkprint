@@ -37,7 +37,6 @@ import {
   insertAccount,
   insertBundle,
   insertCard,
-  insertOntologyVersion,
   insertRelease,
   mark,
   scratchDatabase,
@@ -68,7 +67,6 @@ beforeAll(async () => {
     visibility: "private",
   });
 
-  const ontology = await insertOntologyVersion(s, "0.1.0", "sha256:ontology-fixture");
   const openBundle = await insertBundle(s, { owner, slug: OPEN_SLUG });
   /* Scored, so the 200 control below can assert the published body shape without the
      `scores` half being ambiguous between "absent" and "the columns are null". */
@@ -79,7 +77,6 @@ beforeAll(async () => {
     autonomy: { autonomyClass: "supervised", level: 2, ontologyVersion: "0.1.0" },
     security: { level: 3, raw: 3, penalties: [], findings: [], rationale: "4 − 1.00 → 3", ontologyVersion: "0.1.0" },
     phaseCoverage: { covered: [], missing: [], byPhase: {}, unphased: [] },
-    scoredOntologyVersionId: ontology.id,
   });
 
   const closedBundle = await insertBundle(s, { owner, slug: CLOSED_SLUG, visibility: "private" });

@@ -59,6 +59,31 @@ const STATUSES: Readonly<Record<ForkRefusedError["kind"], number>> = {
   "no-such-release": 404,
   "slug-taken": 409,
   "not-signed-in": 401,
+  /* `forkCard`'s six, on the same three arguments one row down. The pair of 404s is B-03
+     again: an absent card and one private to somebody else are one answer, and the version
+     is named only after the read grant. `card-id-taken` is 409 for `slug-taken`'s reason —
+     the one refusal naming a state the caller can reach by asking differently, here by
+     passing a `name`. `card-id-invalid` is 400 because the name is the caller's own
+     submission and no state of the store would make it legal.
+
+     `no-handle` is the one status this file adds that no bundle kind uses, and it is 403
+     rather than 401 on T050's own precedent (`accounts/http.ts`: "the 403 AC1 describes,
+     which has to stay distinguishable from 401 (no session at all) and from 404 (a resource
+     you may not see)"). The caller IS signed in; what is missing is something only they can
+     supply, and answering 401 would send a signed-in caller back to a sign-in page.
+
+     `unreadable-card` is 409 and it is the one row worth arguing. It is not 404 — the card
+     is there and the caller may read it — and it is not 500, which would blame the server
+     for answering a question it answered correctly: the stored row predates a schema change
+     and no fork of it can be written without inventing fields nobody wrote. 409 is "the
+     state of the target resource prevents this", which is exactly what has happened, and it
+     leaves the caller a real next step, which a 500 does not. */
+  "no-such-card": 404,
+  "no-such-card-version": 404,
+  "card-id-taken": 409,
+  "card-id-invalid": 400,
+  "no-handle": 403,
+  "unreadable-card": 409,
 };
 
 const TITLES: Readonly<Record<ForkRefusedError["kind"], string>> = {
@@ -66,6 +91,12 @@ const TITLES: Readonly<Record<ForkRefusedError["kind"], string>> = {
   "no-such-release": "Not found",
   "slug-taken": "Slug taken",
   "not-signed-in": "Unauthorized",
+  "no-such-card": "Not found",
+  "no-such-card-version": "Not found",
+  "card-id-taken": "Card id taken",
+  "card-id-invalid": "Bad request",
+  "no-handle": "Handle required",
+  "unreadable-card": "Card cannot be forked",
 };
 
 /**

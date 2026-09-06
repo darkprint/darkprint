@@ -9,11 +9,6 @@
    What Fase 1 adds to the result, and why it is here rather than
    inside a metric:
 
-   - `ontologyVersion` (doc 3 §8). "La scheda deve indicare con
-     quale versione dell'ontologia un punteggio è stato calcolato,
-     altrimenti due valutazioni non sono confrontabili." One field
-     for the whole analysis, taken from the same place both metrics
-     take theirs, so the card can print it once.
    - `phaseCoverage` (doc 2 §8, doc 3 §2). Carried through from the
      resolved blueprint rather than recomputed: it is a property of
      the bundle, not a verdict on it, and doc 2 §1.1 keeps it
@@ -40,16 +35,13 @@ export interface BlueprintAnalysis {
    * and not a metric — it sits beside the two metrics because it is read beside them.
    */
   phaseCoverage: PhaseCoverage;
-  /**
-   * Doc 3 §8 — the vocabulary both scores were computed against.
-   *
-   * The view the blueprint was resolved with, which is what `AutonomyResult` and
-   * `SecurityResult` each report too; a bundle scored against an older vocabulary says so
-   * rather than claiming the shipped one. `DARKPRINT_CONFIG.ontologyVersion` is *not* the
-   * source: it names the vocabulary the engine ships with, and would keep saying so while
-   * a caller scored a bundle against a different view. A test asserts all three agree.
+  /*
+   * There is no `ontologyVersion`. It was one string in three places — here and on each
+   * metric — with a test to keep the three agreeing, and it named a version the
+   * vocabulary no longer has. A bundle's own terms still travel with it, in
+   * `ontology/extensions.yaml`; what is gone is the number that pretended the core
+   * vocabulary moved independently of Attractor's spec.
    */
-  ontologyVersion: string;
   /** The two metrics' diagnostics, merged and sorted. Also reachable per metric. */
   diagnostics: Diagnostic[];
 }
@@ -91,7 +83,6 @@ export function analyzeBlueprint(
     // it again here would let the two copies disagree for a caller that built a
     // ResolvedBlueprint by hand, and the blueprint's own field is the older of the two.
     phaseCoverage: bp.phaseCoverage,
-    ontologyVersion: bp.ontology.ontology.version,
     diagnostics: mergeDiagnostics(autonomy.diagnostics, security.diagnostics),
   };
 }

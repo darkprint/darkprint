@@ -15,8 +15,8 @@ digraph conditional_routing {
 
   start -> classify;
   classify -> route;
-  route -> auto   [label="confident", condition="confidence >= 0.8"];
-  route -> person [label="unsure",    condition="confidence < 0.8"];
+  route -> auto   [label="confident", condition="context.confidence=high"];
+  route -> person [label="unsure",    condition="context.confidence!=high"];
   auto -> exit;
   person -> exit;
 }

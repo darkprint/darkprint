@@ -23,23 +23,213 @@ import type { Io } from "./io";
 import { report, RUN_MANIFEST } from "./report";
 import { validate } from "./validate";
 
-const USAGE = `darkprint — the DarkPrint registry from your terminal.
+/* --------------------- the verbs, as a table --------------------- */
 
-  darkprint clone <owner>/<slug> [--version <v> | --digest <d>] [--out <dir>]
-  darkprint validate [<dir>]
-  darkprint export [<dir>] --attractor
-  darkprint import <pipeline.dot> --as <handle> --out <dir>
-  darkprint bump [<dir>] --declare <version> --target <owner>/<slug>
-  darkprint report <run-dir> --target <owner>/<slug> --cost <units>
-  darkprint mcp
+export interface CliVerb {
+  readonly name: string;
+  /** The argument grammar as USAGE prints it, without the leading `darkprint `. */
+  readonly args: string;
+  /** One sentence for a reference page. Present tense, no trailing period omitted. */
+  readonly does: string;
+  /**
+   * A short gloss the shim's help prints beside the verb, in a column.
+   *
+   * Only `mcp` carries one, and only because `packages/mcp/src/cli.ts` printed it before this
+   * table existed. A refactor may not quietly delete a line of published help, so the string
+   * moved here rather than being dropped when its block started rendering from data. Nothing
+   * else needs one: `--help` is a grammar reminder and `/capabilities` is where a reader goes
+   * for what a verb does.
+   */
+  readonly hint?: string;
+  /** Which module's dispatcher actually handles it. */
+  readonly dispatchedBy: "packages/cli/src/run.ts" | "packages/mcp/src/cli.ts";
+}
 
-Environment:
-  DARKPRINT_URL      registry base URL (default https://darkprint.io)
-  DARKPRINT_API_KEY  an API key, which raises the rate limit ceiling
-  DARKPRINT_SESSION  a signed-in session cookie. report is the one verb that
-                     writes, and the route that takes a run report reads a
-                     session: no write route accepts an API key.
-`;
+/**
+ * The seven verbs, in the order `darkprint --help` prints them.
+ *
+ * The list was prose in two places, this file's USAGE and `packages/mcp/src/cli.ts`'s, and the
+ * two copies had already drifted. Both blocks are rendered from this table now and the
+ * `/capabilities` page reads the same rows, so the terminal and the site cannot disagree about
+ * what a verb takes.
+ */
+export const CLI_VERBS: readonly CliVerb[] = [
+  {
+    name: "clone",
+    args: "clone <owner>/<slug> [--version <v> | --digest <d>] [--out <dir>]",
+    does: "Fetches a release into a directory, byte for byte as the registry exported it.",
+    dispatchedBy: "packages/cli/src/run.ts",
+  },
+  {
+    name: "validate",
+    args: "validate [<dir>]",
+    does:
+      "Runs the registry's own bundle checks offline, and exits 1 only when a finding is an " +
+      "error.",
+    dispatchedBy: "packages/cli/src/run.ts",
+  },
+  {
+    name: "export",
+    args: "export [<dir>] --attractor",
+    does:
+      "Writes a bundle as Attractor-compatible DOT on stdout, keeping every finding on stderr " +
+      "so the graph can be redirected into a file.",
+    dispatchedBy: "packages/cli/src/run.ts",
+  },
+  {
+    name: "import",
+    args: "import <pipeline.dot> --as <handle> --out <dir>",
+    does:
+      "Reads an Attractor pipeline into a draft bundle on disk, listing what it wrote on " +
+      "stdout and every finding on stderr.",
+    dispatchedBy: "packages/cli/src/run.ts",
+  },
+  {
+    name: "bump",
+    args: "bump [<dir>] --declare <version> --target <owner>/<slug>",
+    does:
+      "Holds a version you have already declared against what actually changed since the last " +
+      "release, and writes nothing.",
+    dispatchedBy: "packages/cli/src/run.ts",
+  },
+  {
+    name: "report",
+    args: "report <run-dir> --target <owner>/<slug> --cost <units>",
+    does:
+      "Sends a finished Attractor run to the registry, printing what was claimed on stdout and " +
+      "on stderr which manifest key the start time came from and how the nodes ended.",
+    dispatchedBy: "packages/cli/src/run.ts",
+  },
+  {
+    /* The one row whose home is not this file: `runCli`'s switch below has no `case "mcp"`.
+       Serving MCP means owning stdin and stdout for the JSON-RPC wire, and this package
+       renders through `io` and holds no stream (D-270-03(1)), so the shim keeps that branch
+       and delegates every other verb back here. */
+    name: "mcp",
+    args: "mcp",
+    does:
+      "Serves the registry over MCP on stdio, which is the command the six client " +
+      "configurations on the site already run.",
+    hint: "serve the registry over MCP (stdio)",
+    dispatchedBy: "packages/mcp/src/cli.ts",
+  },
+];
+
+/**
+ * How the command is typed, from a checkout and from npm.
+ *
+ * Two constants rather than two literals, because three surfaces write them: this file's
+ * help block, the shim's, and `/capabilities`, which prints both in prose beside the table.
+ * The npm form is derived from the other so a rename is one edit, and it is the form that
+ * fails today: the package has never been published, so `npx -y darkprint` answers 404.
+ */
+export const CLI_INVOCATION = "darkprint";
+export const NPX_INVOCATION = `npx -y ${CLI_INVOCATION}`;
+
+export interface CliEnvVar {
+  readonly name: string;
+  readonly does: string;
+}
+
+/**
+ * The three variables the CLI reads, in the order the help prints them.
+ *
+ * The wording is the help block's, unchanged: `DARKPRINT_SESSION`'s sentence carries D-270-01
+ * C4, and the moment a reader needs it is the moment they try to make `report` work with an
+ * API key.
+ */
+export const CLI_ENV: readonly CliEnvVar[] = [
+  { name: "DARKPRINT_URL", does: "registry base URL (default https://darkprint.io)" },
+  { name: "DARKPRINT_API_KEY", does: "an API key, which raises the rate limit ceiling" },
+  {
+    name: "DARKPRINT_SESSION",
+    does:
+      "a signed-in session cookie. report is the one verb that writes, and the route that " +
+      "takes a run report reads a session: no write route accepts an API key.",
+  },
+];
+
+/** Wide enough for the longest of the three names, which is what puts the prose in a column. */
+const ENV_NAME_WIDTH = 17;
+const ENV_TEXT_COLUMN = 2 + ENV_NAME_WIDTH + 2;
+/** The narrowest terminal anybody still has, and where the hand-written block broke its lines. */
+const USAGE_WIDTH = 80;
+
+/**
+ * The column a verb's `hint` starts in, which is where `packages/mcp/src/cli.ts` had it.
+ *
+ * A number rather than "one space after the longest line", because the longest line is
+ * `clone`'s grammar at 65 characters and aligning to it would push the gloss off an 80-column
+ * terminal. A verb whose own line reaches this column takes a single space instead, so the
+ * text never runs backwards into the grammar.
+ */
+const HINT_COLUMN = 44;
+
+/**
+ * A usage block, rendered from the two tables.
+ *
+ * `packages/mcp/src/cli.ts` prints the same verbs under `npx -y darkprint` and with `mcp` at
+ * the front, so what differs between the two entry points is three arguments rather than a
+ * second copy of the text that can go stale on its own.
+ *
+ * `hints` is off for this file's own block, which has never printed one, and on for the
+ * shim's, which printed exactly one. Passing it rather than always rendering `hint` is what
+ * keeps both blocks the text they already were.
+ */
+export function renderCliUsage(
+  heading: string,
+  invocation: string,
+  verbs: readonly CliVerb[],
+  hints = false,
+): string {
+  const lines = [heading, ""];
+  for (const verb of verbs) {
+    const grammar = `  ${invocation} ${verb.args}`;
+    const hint = hints ? verb.hint : undefined;
+    lines.push(hint === undefined ? grammar : `${grammar.padEnd(HINT_COLUMN - 1)} ${hint}`);
+  }
+  lines.push("", "Environment:");
+  for (const variable of CLI_ENV) lines.push(...renderEnvVar(variable));
+  /* A last empty element, because the block ends in a newline and `io.err` adds none. */
+  lines.push("");
+  return lines.join("\n");
+}
+
+/** One variable, its description wrapped back under its own column. */
+function renderEnvVar(variable: CliEnvVar): string[] {
+  const head = `  ${variable.name.padEnd(ENV_NAME_WIDTH)}  `;
+  return wrapWords(variable.does, USAGE_WIDTH - ENV_TEXT_COLUMN).map((line, index) =>
+    index === 0 ? head + line : " ".repeat(ENV_TEXT_COLUMN) + line,
+  );
+}
+
+/**
+ * Greedy word wrap, single spaces only.
+ *
+ * A word longer than `width` goes on its own long line rather than being broken: the things
+ * being wrapped here are sentences that mention a URL, and a URL split across two lines is
+ * not a URL anybody can copy.
+ */
+function wrapWords(text: string, width: number): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of text.split(" ")) {
+    if (line === "") line = word;
+    else if (line.length + 1 + word.length <= width) line += ` ${word}`;
+    else {
+      lines.push(line);
+      line = word;
+    }
+  }
+  lines.push(line);
+  return lines;
+}
+
+const USAGE = renderCliUsage(
+  "darkprint — the DarkPrint registry from your terminal.",
+  CLI_INVOCATION,
+  CLI_VERBS,
+);
 
 /**
  * Run one command.

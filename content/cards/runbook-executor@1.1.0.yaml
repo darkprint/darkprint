@@ -1,0 +1,58 @@
+id: runbook-executor
+name: Runbook Executor
+type: tool
+phase: deployment
+
+action: >-
+  Run the cleared mitigation's steps against the resolved targets, dry run first, then for real,
+  and return the command log with every exit code in order.
+spec: >-
+  Run the cleared mitigation you are handed on `mitigation` against the target list attached to it
+  and against no other host, whatever the runbook prose says. Execute the whole sequence as a dry
+  run first, compare what it reports it would touch against that target list, and abort before the
+  real run if the two differ by so much as one host. Then run the steps for real, in the order
+  given, stopping at the first non-zero exit code: do not retry a failed step, do not improvise a
+  rollback, and do not run a step the mitigation did not contain. Emit the command log on
+  `execution_log`, every command as issued, its output and its exit code, in the order they ran,
+  including the dry run and including the step that failed. You are done when that log is emitted,
+  whether the mitigation completed or stopped early.
+tools:
+  - shell
+mcp: []
+skill: skills/runbook-executor.md
+params:
+  dry_run_first: true
+  timeout_s: 300
+  max_retries: 0
+
+inputs:
+  - name: mitigation
+    type: json
+    description: The blast-radius-cleared mitigation and the exact targets it may touch.
+outputs:
+  - name: execution_log
+    type: report
+    description: Every command as issued, its output and its exit code, in the order they ran.
+dependencies:
+  - blast-radius-check
+cannot: []
+will_not:
+  - run a step the mitigation does not contain
+  - touch a host outside the resolved target list
+
+risk_markers:
+  - arbitrary-code-execution
+  - secret-access
+notes: >-
+  The highest-privilege node in the gallery and it scores accordingly: runbook steps are code the
+  blueprint did not write, executed under credentials that reach production, `arbitrary-code-execution`
+  and `secret-access` together, and neither is softened. `max_retries: 0` means one execution and no
+  automatic second one, which is what the spec above already says: a failed step stops rather than
+  retrying blind, because re-running a half-applied mitigation is an incident decision. It was
+  written `max_iterations: 1`, and engine spec §2.6 counts the attempts that follow the initial
+  execution, so a runner read that as one run plus one retry and would have re-applied exactly the
+  mitigation this card refuses to re-apply. Zero is a declared cap and not an absent one:
+  Attractor's own default for `max_retries` is 0, and doc 3 §4.1's marker reads it as a bound.
+
+version: 1.1.0
+author: mara-veil

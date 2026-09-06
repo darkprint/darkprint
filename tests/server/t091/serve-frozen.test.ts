@@ -56,7 +56,6 @@ import {
   putRaw,
   scratchDatabase,
   seedAccount,
-  seedOntology,
   seedRelease,
   storage,
   uniqueDot,
@@ -142,7 +141,6 @@ async function seed(
 beforeAll(async () => {
   scratch = await scratchDatabase("serve");
   store = storage();
-  await seedOntology(scratch.db);
 
   owner = await seedAccount(scratch, "t091owner");
   stranger = await seedAccount(scratch, "t091stranger");

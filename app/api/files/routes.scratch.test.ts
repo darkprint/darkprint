@@ -216,9 +216,9 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
      * after the first outage the blueprint route never reached the second, and the
      * assertion labelled "via pinned cards" was still measuring `openView`. Unwrapping
      * the pinned-card catch then reddened **nothing** — a probe that could not reach the
-     * guard, wearing the label of one that could. That shadowing is gone with `openView`'s
-     * database read, and it is exactly why the surviving outages are still isolated one at
-     * a time.
+     * guard, wearing the label of one that could. That shadowing went with `openView`'s
+     * database read, and the table itself went with 0009; it is exactly why the surviving
+     * outages are still isolated one at a time.
      *
      * A rename is reversible, so each site is isolated: break one statement, measure,
      * put it back, and assert the route is 200 again before moving on. That restoration
@@ -229,10 +229,7 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
        * D-091-04. **Every observation in this cell is of the GENERATE path, and under T091's
        * freeze-on-miss a successful serve WRITES the folder it just built** — so each 200
        * this cell asserts arms the NEXT outage to read frozen bytes and answer 200 where a
-       * 500 is required. Each outage is preceded by a 200, so each is exposed. The first of
-       * them no longer asserts a 500 at all: see the `ontology_version` block below, where
-       * the clearing still matters because a 200 read off a frozen folder would satisfy
-       * that assertion for the wrong reason.
+       * 500 is required. Each outage is preceded by a 200, so each is exposed.
        *
        * Clearing here rather than at each call site makes it an invariant of an outage —
        * **an outage begins from an unfrozen subject** — instead of three lines somebody can
@@ -282,18 +279,15 @@ describe.skipIf(!hasDb)("app/api/files routes", () => {
       );
     };
 
-    /* ── the ontology outage is gone, and its absence is asserted rather than dropped ──
+    /* ── the ontology outage is gone, and it can no longer even be staged ──
        This cell used to open by renaming `ontology_version` away and asserting a 500 out of
-       `buildExport`'s `openView`. `openView` merges over `CORE_ONTOLOGY` and issues no
-       statement, so there is no ontology READ left to fail — and the table it read is written
-       by nothing. Asserted in the affirmative, because "an outage I can no longer construct"
-       and "an outage the route now swallows" are the same green otherwise. */
-    await breakTable("ontology_version");
-    expect(
-      (await getFile()).status,
-      "the ontology tables are read by nothing, so their absence is not an outage",
-    ).toBe(200);
-    await fixTable("ontology_version");
+       `buildExport`'s `openView`. When `openView` moved to merging over `CORE_ONTOLOGY` with
+       no statement of its own, the outage stopped being constructible and the block was kept
+       as an affirmative 200 — "an outage I can no longer construct" and "an outage the route
+       now swallows" being the same green otherwise. `0009_drop_ontology_versioning` then
+       dropped the table, so there is nothing left to rename and the affirmative has no
+       subject. The claim it stood for is now held by the schema itself: `tests/server/t005`
+       asserts both tables are absent, which no reader can survive if one existed. */
 
     /* The card read: `serveCard` reaches it directly, `buildExport` through the pinned-card
        loop. Both were unwrapped, and both are separately observed. */

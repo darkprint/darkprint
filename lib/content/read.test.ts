@@ -58,11 +58,10 @@ describe("readContent over content/", () => {
         expect([node.ref, TYPES.includes(node.card.type)]).toEqual([node.ref, true]);
         expect(node.card.spec.trim().length).toBeGreaterThan(40);
       }
-      /* Neither a card nor a manifest declares an ontology version any more, so the two
-         assertions that stood here are gone. What they were reaching for — that the archive
-         is read against v0.1 — is asserted where it is now true, on the analysis the archive
-         actually carries. */
-      expect(bundle.analysis.ontologyVersion).toBe("0.1.0");
+      /* Nothing declares an ontology version any more, the vocabulary included, so the
+         assertions that stood here are gone with the field. That the archive is read against
+         the shipped vocabulary is asserted by identity in the cell below, which is what the
+         version string was standing in for. */
     }
   });
 
@@ -103,8 +102,8 @@ describe("readContent over content/", () => {
     const local = view.get("lupo/pii-handling");
     expect(local?.kind).toBe("risk-marker");
     expect(view.isA("lupo/pii-handling", "isolation-breach")).toBe(true);
-    // A local overlay does not mint a new vocabulary version (doc 3 §8).
-    expect(view.ontology.version).toBe("0.1.0");
+    // An overlay adds terms to the core rather than replacing it, so the core is still there.
+    expect(view.get("agent")?.kind).toBe("node-type");
     // …and the vocabulary itself holds together, which is what the loader checks first.
     expect(contentOntologyDiagnostics()).toEqual([]);
   });
@@ -531,8 +530,8 @@ describe("readContent and the local namespace", () => {
     const view = mod.contentOntology();
     expect(view.get("acme/spooky-action")?.defaultWeight).toBe(0.5);
     expect(view.isA("acme/spooky-action", "isolation-breach")).toBe(true);
-    // The overlay does not mint a vocabulary version of its own (doc 3 §8).
-    expect(view.ontology.version).toBe("0.1.0");
+    // The overlay adds to the core rather than replacing it.
+    expect(view.get("agent")?.kind).toBe("node-type");
     expect(mod.readContent()).toHaveLength(1);
   });
 

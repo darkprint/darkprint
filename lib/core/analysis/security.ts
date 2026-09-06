@@ -186,21 +186,12 @@ export interface SecurityResult {
   findings: SecurityFinding[];
   /** e.g. "4 − 2.00 (criteria-leak) − 1.50 (unbounded-loop) → 1". */
   rationale: string;
-  /**
-   * Doc 3 §8: a score that does not say which vocabulary produced it is not comparable
-   * with any other score.
-   *
-   * Taken from the view this blueprint was resolved against — `bp.ontology.ontology
-   * .version` — and not from `config.ontologyVersion`, which names the vocabulary the
-   * engine *ships* with. The two agree on the default path and diverge only when a caller
-   * scores a bundle against another vocabulary, and there the config would state something
-   * false: the score was computed by querying the view, term by term. Doc 3 §8's rule that
-   * tuning a weight is a PATCH of the ontology version is a discipline on whoever edits
-   * `DARKPRINT_CONFIG.security.weights` — it does not make a constant the right answer to
-   * "which vocabulary produced this number". `AutonomyResult` reads the same field from
-   * the same place, so the two metrics and `BlueprintAnalysis` can never disagree.
+  /*
+   * There is no `ontologyVersion` here, for the reason given on `AutonomyResult`: the
+   * vocabulary has no version to report. Tuning a marker weight is still a real change to
+   * what this reading says, and `DARKPRINT_CONFIG.security.weights` is where a reader is
+   * pointed for the numbers, which is the part the version string was standing in for.
    */
-  ontologyVersion: string;
   diagnostics: Diagnostic[];
 }
 
@@ -248,7 +239,7 @@ const PARAM_SCAN_DEPTH = 6;
 /**
  * The tool capabilities that constitute "accesso a rete, API o risorse esterne" (doc 3 §4).
  *
- * In ontology v0.1 the node types no longer carry a "network access" branch, so the only
+ * The node types carry no "network access" branch, so the only
  * structural evidence a node reaches outside is its `tools[]`. The test is: does this
  * tool's *output* carry content from outside the graph into it? That is the content a
  * validation node exists to check, and doc 3 §4.1 asks the analyzer to notice it even
@@ -443,8 +434,6 @@ export function computeSecurity(
   config: DarkprintConfig = DARKPRINT_CONFIG,
 ): SecurityResult {
   const { graph, ontology } = bp;
-  // Doc 3 §8, and the same source `computeAutonomy` uses: the vocabulary actually queried.
-  const ontologyVersion = ontology.ontology.version;
   const diagnostics: Diagnostic[] = [];
 
   if (graph.ids.length === 0) {
@@ -461,7 +450,6 @@ export function computeSecurity(
       penalties: [],
       findings: [],
       rationale: "4 − 0.00 (empty graph: no node to analyse) → 4",
-      ontologyVersion,
       diagnostics,
     };
   }
@@ -1174,7 +1162,6 @@ export function computeSecurity(
     penalties,
     findings,
     rationale: buildRationale(penalties, level, graph.ids.length),
-    ontologyVersion,
     diagnostics,
   };
 }

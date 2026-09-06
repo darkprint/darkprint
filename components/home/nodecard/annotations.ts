@@ -35,10 +35,15 @@
      warning severity;
    - step 4's `llm_model` is what `lib/core/attractor/emit.ts`
      writes, and `ATTRACTOR_UNEXPRESSED_ATTRIBUTES` is where
-     `model_stylesheet` sits: Attractor spec §8's sheet outranks a
-     node attribute (§8.5), and DarkPrint emits no sheet, so the
-     card's line is what the node runs on until somebody edits the
-     compiled file;
+     `model_stylesheet` sits: Attractor spec §8.5 puts an explicit
+     node attribute above every stylesheet rule, and DarkPrint emits
+     no sheet either way, so the card's line is what the node runs
+     on until somebody edits the compiled file. This shipped the
+     other way round for a release, read off §2.6's one-line gloss
+     on `llm_model`, "Overridable by stylesheet". §2.6 names the
+     field; §8.5 is where the order between the two is settled, and
+     §8.3 says the same thing in a sentence. Cite those and the
+     inversion cannot come back through the gloss again;
    - step 6's "the engine reads nothing at the other end" is
      `lib/core/card/schema.ts` on `skill`, and the missing folder is
      the paragraph `lib/content/bundle-export.ts` puts in every
@@ -107,9 +112,9 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
       // claim is unchanged — the model line really does land in the compiled export and
       // NOT in `topology.dot`, which carries no `model` at all — only the name is gone.
       "The model this agent is instantiated with. The compiled export writes it as " +
-      "`llm_model`. Attractor reads that field. A model stylesheet in the graph would " +
-      "outrank it, and DarkPrint writes none. A card with no such line inherits whatever " +
-      "the run supplies.",
+      "`llm_model`, and Attractor reads that field. Spec §8.5 ranks an explicit node " +
+      "attribute above every model stylesheet rule, and DarkPrint writes none. A card " +
+      "with no such line inherits whatever the run supplies.",
   },
   {
     id: "reach",

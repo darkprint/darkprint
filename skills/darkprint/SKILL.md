@@ -22,7 +22,7 @@ that bundle, by interviewing them. Not by filling in a form for them, and not by
 | Writes | `topology.dot`, `cards/*.yaml`, `README.md` in a directory the author names |
 | Does not write | `factory.dot` or `AGENTS.md`. Neither is part of a published blueprint folder (owner instruction, 2026-08-25); duplicating either here would only give an author a folder that disagrees with `/upload`'s |
 | Does not do | run the graph, run any node, call a model, start a server, publish, or send the bundle anywhere |
-| Cannot do | score the bundle. The engine is not on this machine. The author scores it by dropping the folder on `/upload` |
+| Cannot do | validate the bundle. The engine is not on this machine. The author validates it by dropping the folder on `/upload` |
 
 Say all four of those plainly if the author asks what happens next. Never imply an account,
 a workspace, a sync or a push.
@@ -30,7 +30,7 @@ a workspace, a sync or a push.
 ## Read these when you need them
 
 - `references/ontology.md` — every term the validator resolves against, generated from the
-  engine. The five phases, the twelve node types, the nine risk markers and what each costs,
+  engine. The five phases, the thirteen node types, the nine risk markers and what each costs,
   the fifteen data types and their lattice, the twelve tool capabilities. **Read it before
   you type any card**, and quote term ids from it rather than from memory.
 - `references/card-schema.md` — the wire format, generated from the validator. Every
@@ -140,14 +140,15 @@ Ask it in those words. You map it onto `agent` / `tool` / `human-gate` / `human-
 FOR: `type`. Never type a node with an abstract category (`human-in-the-loop`,
 `evaluative`). This answer is the whole of what says a person acts at the node: there is no
 flag beside it to set, and the autonomy reading, the schematic and the card page all ask this
-one field. Getting it wrong puts a person on a node where nobody is, or scores a staffed node
+one field. Getting it wrong puts a person on a node where nobody is, or reads a staffed node
 as unattended, and nothing else on the card can correct it.
 
 **Q1.4** — *Is this planning, implementation, testing, debugging or deployment — or none of
 them?*
 Offer the five with their meanings, and offer **"none" as a complete answer, not a gap**. An
 intake, a retrieval step and a memory store sit in none of the five, and `phase: []` is
-correct. Coverage is descriptive; nothing scores off it. Never invent a phase to fill a strip.
+correct. Coverage is descriptive; a phase left to somebody else costs nothing. Never invent a
+phase to fill a strip.
 
 **Q1.5** — *Of all these, which one's verdict decides the run is finished?*
 FOR: forcing at least one node typed `validation`. Name the trap while you ask: the ontology
@@ -252,9 +253,17 @@ run, one slice of the acceptance criteria per iteration.
 
 **Q3.6** *(only if a cycle exists — detect it, do not ask whether one exists)* — *How many
 rounds before it stops, and what happens when the cap is spent?*
-FOR: `params.max_iterations` on one member, **top level**, never nested. Without it,
-`unbounded-loop` charges −1.5 on every member of the cycle. The "what happens when it is
+FOR: the iteration cap on one member of the cycle, **top level** in `params`, never nested.
+Without it, `unbounded-loop` charges −1.5 on every member. The "what happens when it is
 spent" half goes in the `spec`, because a topology cannot express it.
+
+**Write `params.max_retries`, and write the number Attractor counts.** The engine accepts
+`max_iterations`, `maxIterations` and `max_retries` and maps all three to Attractor's
+`max_retries`, but §2.6 counts that as attempts AFTER the first, so `max_retries: 2` is three
+attempts in all. Every card in the shipped archive was respelled this way on 2026-09-04, and
+one of them was off by one in the dangerous direction before it: a card whose prose said
+"stop after three attempts" carried `max_iterations: 3` and authorised four. State the total
+in the `spec` and the retry count in `params`, and make them agree.
 
 ---
 
@@ -274,9 +283,9 @@ Per node, fast, yes/no. Look up what you can instead of asking.
 One warning to carry into this phase. The engine's own remediation hint for
 `unvalidated-external-access` is *"insert a validation node between X and its consumers"*.
 Following it blindly can drop a judge onto the criteria path, where it **absorbs** the criteria
-walk: the score improves while the criteria still reach the builder, and the only trace is an
-`analysis/criteria-relayed-through-judge` warning nobody reads. Do not add a validation node to
-silence a marker.
+walk: the security level improves while the criteria still reach the builder, and the only
+trace is an `analysis/criteria-relayed-through-judge` warning nobody reads. Do not add a
+validation node to silence a marker.
 
 ---
 
@@ -370,7 +379,7 @@ codes, and **tell the author in advance exactly what `/upload` will print, warni
 
 > *"You will see one warning, `analysis/criteria-relayed-through-judge`, because your fixer sits
 > downstream of the judge that holds the criteria. That is the endorsed loop and the engine
-> declines to decide between the two shapes. It moves no score."*
+> declines to decide between the two shapes. It charges nothing."*
 
 An author surprised by `/upload` has been failed by this interview.
 
@@ -378,10 +387,11 @@ An author surprised by `/upload` has been failed by this interview.
 
 Tell them, in these terms:
 
-> Drop the whole folder on **http://localhost:3100/upload** — or **darkprint.io/upload** — and
-> you will see the real graph and the six-axis score, computed by the same engine that
-> validated the shipped blueprints. It runs in your browser tab. Nothing is uploaded, nothing
-> is sent anywhere, and there is no server to send it to.
+> Drop the whole folder on **http://localhost:3100/upload** — or **darkprint.io/upload** —
+> and you will see the real graph, every diagnostic, the autonomy class and the static risk
+> ledger, computed by the same engine that validated the shipped blueprints. That reading
+> runs in your browser tab: the folder is not uploaded to take it, and it is not sent
+> anywhere unless you go on to publish it, which is a separate step you choose.
 
 The engine reads the bundle statically. It does not run any node, call any model or execute
 anything the graph describes.

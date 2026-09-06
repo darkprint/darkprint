@@ -14,7 +14,8 @@
      card `name`                | node `label`
      card `model`               | node `llm_model`
      type: agent                | shape=box           → codergen
-     type: tool                 | shape=parallelogram → tool
+     type: tool                 | shape=box           → codergen
+     type: shell-tool           | shape=parallelogram → tool
      type: human-gate           | shape=hexagon       → wait.human
      type: human-input          | shape=hexagon       → wait.human
      type: decision             | shape=diamond       → conditional
@@ -25,6 +26,7 @@
      graph entry (in-degree 0)  | synthesised shape=Mdiamond → start
      graph exit  (out-degree 0) | synthesised shape=Msquare  → exit
      params.max_iterations      | node `max_retries`
+     params.tool_command        | node `tool_command` (shell-tool only)
      card `type` + `phase`      | node `class` (`dp-` prefixed)
      manifest `summary`         | graph `goal`
      edge label                 | edge `label`
@@ -126,9 +128,16 @@
    is opened on a machine that has neither this repository nor its
    documentation, so the disclosure has to travel inside the
    artefact rather than beside it.
+
+   The header prints it as TWO lists, because "falls back to the
+   runner's own default" is false for the few names a handler reads
+   bare — see `ATTRACTOR_REQUIRED_ATTRIBUTES` for which and for the
+   sections that say so. The split is derived from the same three
+   sets, so a name the emitter learns to write leaves both lists on
+   its own.
    ============================================================ */
 
-import type { NodeCard } from "../card/schema";
+import type { JsonValue, NodeCard } from "../card/schema";
 import { readIterationCap } from "../card/iteration-cap";
 import type { ResolvedBlueprint } from "../bundle/types";
 import type { Graph } from "../dot/graph";
@@ -152,9 +161,8 @@ export interface AttractorNodeKind {
 }
 
 /**
- * `type` → shape, exactly the nine rows of the mapping table. Keyed by ontology term id
- * (doc 3 §3), so a local namespaced type resolves through its `broader` chain rather
- * than needing a row of its own.
+ * `type` → shape, keyed by ontology term id (doc 3 §3), so a local namespaced type
+ * resolves through its `broader` chain rather than needing a row of its own.
  *
  * The last three are identity rows: the ontology names them after the Attractor handler
  * they select (`parallel`, `parallel.fan_in`, `stack.manager_loop`) rather than after
@@ -162,12 +170,32 @@ export interface AttractorNodeKind {
  * is the whole reason the terms are spelled the way they are — a mapping whose two columns
  * hold different names for one thing is a mapping somebody has to keep in their head.
  *
- * The first six are translations, and `ATTRACTOR_TRANSLATED_TYPES` grandfathers them by
- * name so the identity rule does not read as pre-violated on the day it was written.
+ * The rest are translations, and `ATTRACTOR_TRANSLATED_TYPES` names each one with its
+ * reason so the identity rule cannot be broken by accident.
+ *
+ * ── why `tool` draws as a box ──
+ * It used to select §4.10's ToolHandler, which reads `tool_command` off the node and
+ * returns FAIL the moment it is empty. A DarkPrint `tool` card carries a prose spec, the
+ * MCP servers it may reach and a skill file; it has never carried a shell command, and
+ * `parallelogram` therefore handed the runner a node that could only fail on sight. 25 of
+ * the archive's 57 cards are typed `tool`, so that was 25 nodes failing at their first
+ * step in every bundle that used one.
+ *
+ * `codergen` is the handler that reads a `prompt` (§4.5), and the prose spec is exactly a
+ * prompt, so the box row is what makes a `tool` card run the thing it was written to run.
+ * The cost is stated rather than hidden: `box` now carries three types, so a foreign
+ * pipeline with no `dp-` class comes home as `agent` where it might have meant `tool` —
+ * see `attractorTypeFor`, which is where that loss is named.
+ *
+ * `shell-tool` is the row a genuine Attractor tool node needs, and it is not decoration:
+ * `ATTRACTOR_SHAPE_TYPES` in `import.ts` is DERIVED from this table, so without it
+ * `parallelogram` would have no reverse row at all and every imported tool node would
+ * silently arrive as an `agent`.
  */
 export const ATTRACTOR_TYPE_SHAPES: Readonly<Record<string, AttractorNodeKind>> = Object.freeze({
   agent: Object.freeze({ shape: "box", handler: "codergen" }),
-  tool: Object.freeze({ shape: "parallelogram", handler: "tool" }),
+  tool: Object.freeze({ shape: "box", handler: "codergen" }),
+  "shell-tool": Object.freeze({ shape: "parallelogram", handler: "tool" }),
   "human-gate": Object.freeze({ shape: "hexagon", handler: "wait.human" }),
   "human-input": Object.freeze({ shape: "hexagon", handler: "wait.human" }),
   decision: Object.freeze({ shape: "diamond", handler: "conditional" }),
@@ -178,22 +206,28 @@ export const ATTRACTOR_TYPE_SHAPES: Readonly<Record<string, AttractorNodeKind>> 
 });
 
 /**
- * The six rows whose term id is a DarkPrint word and whose handler is Attractor's, kept
- * that way deliberately.
+ * The rows the identity rule does not bind: term id is a DarkPrint word, handler is
+ * Attractor's, and each one is here with the reason it stays that way.
  *
- * Doc 3 §3 named these six before this mapping table existed, and each of them names what
- * the node IS in the vocabulary a card author writes in: `validation` is a node that
- * judges work, and `codergen` is the handler that happens to run it — the same handler
- * `agent` selects, which is the tell that the two columns are answering different
- * questions. Renaming them onto their handlers would collapse `agent` and `validation`
- * into one word, move the `type` of every card in the archive, and move every card digest
- * and every bundle digest with it, all to make a table read more tidily.
+ * The identity rule is `term id == handler name`, modulo the `-`/`_` the two grammars
+ * force and Attractor's own `stack.` namespace. Stated as a list rather than as prose
+ * because `emit.test.ts` checks the rule against it: a row added tomorrow has to be an
+ * identity row or be added here with its own reason, and neither happens by accident.
  *
- * So the identity rule (`term id == handler name`, modulo the `-`/`_` the two grammars
- * force and Attractor's own `stack.` namespace) binds terms added FROM the orchestration
- * branch onward, and these six are grandfathered. Stated as a list rather than as prose
- * because `emit.test.ts` checks the rule against it: a tenth row added tomorrow has to be
- * an identity row or be added here with its own reason, and neither happens by accident.
+ * The first six predate the mapping table. Doc 3 §3 named them, and each names what the
+ * node IS in the vocabulary a card author writes in: `validation` is a node that judges
+ * work, and `codergen` is the handler that happens to run it — the same handler `agent`
+ * selects, which is the tell that the two columns are answering different questions.
+ * Renaming them onto their handlers would collapse `agent` and `validation` into one word,
+ * move the `type` of every card in the archive, and move every card digest and every
+ * bundle digest with it, all to make a table read more tidily.
+ *
+ * `shell-tool` is the seventh and its reason is different: the handler is called `tool`
+ * and that word was already spent. It names a DarkPrint node that reaches for an MCP
+ * server or a skill, which is not what §4.10 runs, so the two cannot share a spelling and
+ * the qualifier goes on the row that arrived second. It is a translation of exactly one
+ * hyphen and it is written down here rather than waived, because the alternative is a rule
+ * that reads as satisfied while the table says otherwise.
  */
 export const ATTRACTOR_TRANSLATED_TYPES: readonly string[] = Object.freeze([
   "agent",
@@ -202,6 +236,7 @@ export const ATTRACTOR_TRANSLATED_TYPES: readonly string[] = Object.freeze([
   "human-input",
   "decision",
   "validation",
+  "shell-tool",
 ]);
 
 /** The synthesised entry node. */
@@ -243,7 +278,15 @@ const FALLBACK_KIND: AttractorNodeKind = ATTRACTOR_TYPE_SHAPES.agent;
 export const ATTRACTOR_EMITTED_ATTRIBUTES: Readonly<Record<AttractorScope, readonly string[]>> =
   Object.freeze({
     graph: Object.freeze(["goal", "label"]),
-    node: Object.freeze(["label", "shape", "prompt", "llm_model", "max_retries", "class"]),
+    node: Object.freeze([
+      "label",
+      "shape",
+      "prompt",
+      "llm_model",
+      "max_retries",
+      "tool_command",
+      "class",
+    ]),
     edge: Object.freeze(["label", "condition", "weight"]),
   });
 
@@ -317,6 +360,82 @@ function unexpressedIn(scope: AttractorScope): readonly string[] {
     ...EXPRESSED_AS_SHAPE[scope],
   ]);
   return Object.freeze(ATTRACTOR_RESERVED[scope].filter((name) => !spokenFor.has(name)));
+}
+
+/**
+ * The reserved names a handler reads with **no default of its own**, by scope.
+ *
+ * Every other reserved name has a stated fallback: §4.8 reads `join_policy` as
+ * `get("join_policy", "wait_all")`, §4.11 reads `manager.max_cycles` as `get(…, "1000")`,
+ * Appendix A gives `timeout` and `goal_gate` and the rest theirs. These three are read
+ * bare, and what happens without them is not a default:
+ *
+ *   `tool_command`          §4.10 — `IF command is empty: RETURN Outcome(status=FAIL)`.
+ *                           The node cannot start.
+ *   `human.default_choice`  §4.6, §6.5 — on a timeout with no default the handler returns
+ *                           RETRY, so the gate goes round instead of choosing.
+ *   `stack.child_dotfile`   §4.11 — read off the graph with no default and handed to
+ *                           `start_child_pipeline`. The supervisor watches nothing and
+ *                           runs out at "Max cycles exceeded".
+ *
+ * Declared here rather than inside `disclosureLines`, because it is a claim about the
+ * Attractor spec and not about this file's prose: `emit.test.ts` pins the members against
+ * the sections above and holds every one of them to `isReserved`. It is a transcription,
+ * like `reserved.ts` is, and it is small enough to be checked by a person against three
+ * numbered sections.
+ *
+ * What is DERIVED is which of them the header prints, and where: a name this emitter
+ * learns to write leaves both groups on its own. `tool_command` is already gone that way.
+ */
+export const ATTRACTOR_REQUIRED_ATTRIBUTES: Readonly<Record<AttractorScope, readonly string[]>> =
+  Object.freeze({
+    graph: Object.freeze(["stack.child_dotfile"]),
+    node: Object.freeze(["tool_command", "human.default_choice"]),
+    edge: Object.freeze([]),
+  });
+
+/**
+ * The unexpressed names that really do fall back to a runner default, by scope.
+ *
+ * The first of the two groups the header prints, and the only one the old single-list
+ * disclosure described correctly.
+ */
+export const ATTRACTOR_DEFAULTING_ATTRIBUTES: Readonly<
+  Record<AttractorScope, readonly string[]>
+> = Object.freeze({
+  graph: unexpressedThatDefault("graph"),
+  node: unexpressedThatDefault("node"),
+  edge: unexpressedThatDefault("edge"),
+});
+
+/**
+ * The unexpressed names a handler needs and cannot default, by scope.
+ *
+ * The second group, and the reason the disclosure was split at all: the old header said
+ * every name it listed "falls back to the runner's own default", which was false for
+ * `tool_command` from the day it was listed — §4.10 FAILs on an empty one, so the file was
+ * telling a reader that a node with no command would take a default when what it would do
+ * is refuse to start. A reader on another machine has the file and nothing else, so a
+ * sentence that is wrong about the one attribute that stops a run is worse than no
+ * sentence.
+ */
+export const ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES: Readonly<
+  Record<AttractorScope, readonly string[]>
+> = Object.freeze({
+  graph: unexpressedThatDoNot("graph"),
+  node: unexpressedThatDoNot("node"),
+  edge: unexpressedThatDoNot("edge"),
+});
+
+/** The unexpressed names of one scope, keeping those the handlers can default, or those they cannot. */
+function unexpressedThatDefault(scope: AttractorScope): readonly string[] {
+  const needed = new Set(ATTRACTOR_REQUIRED_ATTRIBUTES[scope]);
+  return Object.freeze(ATTRACTOR_UNEXPRESSED_ATTRIBUTES[scope].filter((n) => !needed.has(n)));
+}
+
+function unexpressedThatDoNot(scope: AttractorScope): readonly string[] {
+  const needed = new Set(ATTRACTOR_REQUIRED_ATTRIBUTES[scope]);
+  return Object.freeze(ATTRACTOR_UNEXPRESSED_ATTRIBUTES[scope].filter((n) => needed.has(n)));
 }
 
 /**
@@ -446,9 +565,9 @@ export function attractorKindFor(type: string, ontology: OntologyView): Attracto
  * That is §2.10's own derivation, applied to a term id rather than to a subgraph label, so
  * the classes DarkPrint writes are spelled the way the classes Attractor derives are
  * spelled. In practice it moves two characters: `/`, doc 3 §7's namespace separator, and
- * `.`, which an Attractor handler name carries (`parallel.fan-in`). The class list is
- * space-separated, which is the other reason nothing but `[a-z0-9-]` may survive: a class
- * carrying a space would silently become two.
+ * `.`, which an Attractor handler name carries (`parallel.fan-in`). §8.2's
+ * `ClassName ::= [a-z0-9-]+` is the other reason nothing else may survive: a name the rule
+ * cannot spell is a name no selector can name either.
  *
  * The collapse is not injective. `berti/simulation` and `berti-simulation` both give
  * `dp-berti-simulation`, and that is accepted rather than escaped: a stylesheet selector
@@ -496,6 +615,33 @@ export function attractorClassesFor(card: NodeCard, ontology: OntologyView): str
     classes.push(name);
   }
   return classes;
+}
+
+/**
+ * The shell command a `shell-tool` node runs, read off the card's `params`.
+ *
+ * `params` and not a new top-level card field, because `params` already carries the
+ * runner configuration a card declares — `params.max_iterations` is the row above this
+ * one in the mapping table — and a command is configuration for one handler rather than a
+ * fact about the node. A new wire-format key would move every card digest in the archive
+ * to hold one string.
+ *
+ * Only a string, and a value that is nothing but whitespace counts as absence: §4.10
+ * returns FAIL on an empty `tool_command`, so writing `tool_command=""` would put the
+ * failure into the artefact where a missing attribute leaves the header free to say the
+ * node has no command yet.
+ *
+ * Not trimmed on the way out, for the same reason `condition` is not: the value is input
+ * to somebody else's shell, and DarkPrint has no standing to decide which of its bytes
+ * are decorative.
+ */
+function readToolCommand(params: Readonly<Record<string, JsonValue>>): string | undefined {
+  // `hasOwnProperty`, not a truthiness check, matching `readIterationCap`: an inherited
+  // member of a plain object from a parsed document is not a value the author wrote.
+  if (!Object.prototype.hasOwnProperty.call(params, "tool_command")) return undefined;
+  const value = params.tool_command;
+  if (typeof value !== "string" || value.trim() === "") return undefined;
+  return value;
 }
 
 /**
@@ -565,21 +711,37 @@ function wrapNames(label: string, names: readonly string[]): string[] {
  * machine with no copy of this repository has the file and nothing else, so the file is
  * where the answer has to be.
  *
- * The attribute names come from `ATTRACTOR_UNEXPRESSED_ATTRIBUTES`, which is derived, so
- * this text cannot fall behind what the emitter writes. The two sentences after the lists
- * are the two things a derived list cannot say: that one reserved name is withheld rather
- * than missing, and that the card's own declarations stop at the DarkPrint boundary.
+ * ── why there are two lists and not one ──
+ * "Falls back to the runner's own default" is true of nearly every unexpressed name and
+ * false of the few a handler reads bare, and the false half is the half that stops a run.
+ * One sentence over both groups reads as reassurance about exactly the attributes a reader
+ * needed to be warned about, so the groups are printed apart with the promise each one can
+ * actually keep. `ATTRACTOR_REQUIRED_ATTRIBUTES` is where the spec facts are, with the
+ * sections that state them.
+ *
+ * Both lists are derived, so this text cannot fall behind what the emitter writes. The two
+ * sentences after them are the two things a derived list cannot say: that one reserved name
+ * is withheld rather than missing, and that the card's own declarations stop at the
+ * DarkPrint boundary.
  */
 function disclosureLines(): string[] {
   return [
     "//",
     "// What this file leaves to the runner. Attractor reads the attributes below and a",
-    "// DarkPrint blueprint has no field that sets any of them, so each one falls back to",
-    "// the runner's own default. Write them in by hand where you need them, and expect a",
-    "// later export to replace the whole file.",
-    ...wrapNames("graph", ATTRACTOR_UNEXPRESSED_ATTRIBUTES.graph),
-    ...wrapNames("node", ATTRACTOR_UNEXPRESSED_ATTRIBUTES.node),
-    ...wrapNames("edge", ATTRACTOR_UNEXPRESSED_ATTRIBUTES.edge),
+    "// DarkPrint blueprint has no field that sets any of them. Write them in by hand where",
+    "// you need them, and expect a later export to replace the whole file.",
+    "//",
+    "// Left out, these take the runner's own default:",
+    ...wrapNames("graph", ATTRACTOR_DEFAULTING_ATTRIBUTES.graph),
+    ...wrapNames("node", ATTRACTOR_DEFAULTING_ATTRIBUTES.node),
+    ...wrapNames("edge", ATTRACTOR_DEFAULTING_ATTRIBUTES.edge),
+    "//",
+    "// Left out, these have no default. The handler a shape selects reads them directly, so",
+    "// a node that reaches one without a value fails or goes round again where the rest of",
+    "// this file reads as though it would run:",
+    ...wrapNames("graph", ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES.graph),
+    ...wrapNames("node", ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES.node),
+    ...wrapNames("edge", ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES.edge),
     "// A node's `type` is held back on purpose: the card's type arrives as that node's",
     "// `shape`, and a `type` here would override the handler the shape already selected.",
     "// A node's `prompt` is all the runner receives from its card. Ports, dependencies,",
@@ -724,9 +886,10 @@ function exitSources(graph: Graph): string[] {
  *   including a node whose card is missing (already reported as `bundle/missing-card`;
  *   dropping it here would quietly emit a different graph);
  * - `label`, `shape` and `prompt` on every node that has a card, plus `llm_model` where
- *   the card names a model, `max_retries` where it declares an iteration cap, and `class`
- *   built from the card's type chain and its phases so a `model_stylesheet` has something
- *   to select on that shape alone cannot express;
+ *   the card names a model, `max_retries` where it declares an iteration cap,
+ *   `tool_command` where the shape selects §4.10's handler and the card's `params` carry
+ *   one, and `class` built from the card's type chain and its phases so a
+ *   `model_stylesheet` has something to select on that shape alone cannot express;
  * - `label` on every edge that carries one, plus `condition` and `weight` verbatim where
  *   the topology declares them — passengers, read by the runner and by nothing here;
  * - `card="id@version"` — *not* a reserved Attractor name, so Attractor ignores it while
@@ -797,8 +960,9 @@ export function emitAttractorDot(bp: ResolvedBlueprint): string {
       attrs.push({ key: "label", value: quoteAttractorString(id) });
       attrs.push({ key: "shape", value: FALLBACK_KIND.shape });
     } else {
+      const kind = attractorKindFor(card.type, ontology);
       attrs.push({ key: "label", value: quoteAttractorString(card.name) });
-      attrs.push({ key: "shape", value: attractorKindFor(card.type, ontology).shape });
+      attrs.push({ key: "shape", value: kind.shape });
       attrs.push({ key: "prompt", value: quoteAttractorString(card.spec) });
       // Spec §2.6's reserved `llm_model`, which is the only reason the card carries the
       // field at all: without this line a bundle names its model in YAML nobody executes,
@@ -816,6 +980,17 @@ export function emitAttractorDot(bp: ResolvedBlueprint): string {
       // capped in the artefact and uncharged in the score, always as one decision.
       const cap = readIterationCap(card.params);
       if (cap !== undefined) attrs.push({ key: "max_retries", value: String(cap) });
+      // Asked of the HANDLER and not of the type, because the handler is what reads the
+      // attribute: §4.10's ToolHandler is the only one that looks at `tool_command`, and a
+      // node whose shape selects any other handler would be carrying a command nothing
+      // runs. That also means a local type subsumed under `shell-tool` gets it for free,
+      // the same way it gets the shape.
+      if (kind.handler === ATTRACTOR_TYPE_SHAPES["shell-tool"].handler) {
+        const command = readToolCommand(card.params);
+        if (command !== undefined) {
+          attrs.push({ key: "tool_command", value: quoteAttractorString(command) });
+        }
+      }
       // Spec §8's `model_stylesheet` selects on shape, class or id, and shape is already
       // spoken for: six of the nine types share three shapes, so a sheet written against
       // shapes cannot tell an `agent` from a `validation` node. The class is what hands a
@@ -824,7 +999,12 @@ export function emitAttractorDot(bp: ResolvedBlueprint): string {
       // any of these classes should run on.
       const classes = attractorClassesFor(card, ontology);
       if (classes.length > 0) {
-        attrs.push({ key: "class", value: quoteAttractorString(classes.join(" ")) });
+        // Comma, not space: §2.12 says "Classes are comma-separated" and its own example
+        // is `class="code,critical"`. A space-joined list is ONE class whose name contains
+        // a space, which §8.2's `ClassName ::= [a-z0-9-]+` cannot spell, so every `.dp-*`
+        // rule a reader writes matches nothing and the model routing this attribute exists
+        // for silently does not happen.
+        attrs.push({ key: "class", value: quoteAttractorString(classes.join(",")) });
       }
       const ref = refByNodeId.get(id);
       if (ref !== undefined) attrs.push({ key: "card", value: quoteAttractorString(ref) });

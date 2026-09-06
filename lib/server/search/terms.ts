@@ -5,13 +5,17 @@
    specification for all three.
 
    ── Both corpora, and why that is not optional (D-200-17) ──
-   The registry's terms live in `ontology_term`; a LOCAL term
-   travels with the release that declares it
+   The registry's terms are `CORE_ONTOLOGY`, in the process; a
+   LOCAL term travels with the release that declares it
    (`release.localVocabulary`), because T030's merged view folds an
-   overlay in per bundle rather than per registry. Reading
-   `ontology_term` alone would leave `origin=local` filtering
-   NOTHING, EVER, on a key the contract says may not change — a
-   criterion made unsatisfiable rather than merely narrow.
+   overlay in per bundle rather than per registry. Reading the core
+   alone would leave `origin=local` filtering NOTHING, EVER, on a
+   key the contract says may not change — a criterion made
+   unsatisfiable rather than merely narrow. The core half was an
+   `ontology_term` read until `0009_drop_ontology_versioning`
+   dropped that table with the versions it was keyed to; what
+   changed is where the core comes from, not that there are two
+   corpora.
 
    ── Which is why AC4 bites hardest here ──
    A local term is NOT a row with a visibility column: it inherits

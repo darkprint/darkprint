@@ -86,9 +86,10 @@ describe.skipIf(!hasDb)("lib/server/saves against Postgres", () => {
    * There is no `makeOntologyVersion` any more, and its absence is the point.
    *
    * It inserted an `ontology_version` row plus its `ontology_term` rows, because a saved
-   * term was listed when the newest published version carried its id. Nothing writes either
-   * table now: `visible.ts` asks `CORE_ONTOLOGY` whether it carries the id, so a term a
-   * fixture invented would read as absent however many rows stood behind it.
+   * term was listed when the newest published version carried its id. Neither table exists
+   * now — `0009_drop_ontology_versioning` dropped both — and `visible.ts` asks
+   * `CORE_ONTOLOGY` whether it carries the id, so a term a fixture invented would read as
+   * absent however many rows could have stood behind it.
    *
    * A term that EXISTS is therefore a real core term id, and a term that does not is any id
    * the vocabulary never had. Both are named rather than generated, so a cell says which of
@@ -119,8 +120,9 @@ describe.skipIf(!hasDb)("lib/server/saves against Postgres", () => {
 
   afterEach(async () => {
     await db.delete(schema.save);
-    await db.delete(schema.ontologyTerm);
-    await db.delete(schema.ontologyVersion);
+    /* `ontology_term` and `ontology_version` were swept here too, until
+       `0009_drop_ontology_versioning` removed both tables. No cell in this file has written
+       one since the term fixtures moved onto `CARRIED_TERMS`. */
     await db.delete(schema.cardVersion);
     await db.delete(schema.bundle);
   });

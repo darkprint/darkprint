@@ -378,10 +378,18 @@ const HEADER_BODY_BARE =
   "One directed graph per bundle, named on the opening line. Every rule the engine " +
   "applies below it reads which way an edge points.";
 
+/* `shape` used to be listed here beside `rankdir` and `style` as one more layout
+   default, and it is the one attribute in the line that is not layout: Attractor spec
+   §2.8 picks the handler that runs a node from its shape. Nothing about the DarkPrint
+   half changed — a topology's shapes are still read by nobody here — but a reader who
+   goes on to compile this file needs the other half of that sentence, because the shape
+   is what decides what each node in the compiled file does. */
 const HEADER_BODY_LAYOUT =
   "One directed graph per bundle, named on the opening line. The statements under it " +
-  "set Graphviz layout defaults: `rankdir`, `shape`, `style`. DarkPrint reads none of " +
-  "them. The drawing above this listing is its own.";
+  "set defaults for the nodes below. `rankdir` and `style` are Graphviz layout and " +
+  "DarkPrint reads neither. `shape` is the attribute Attractor picks a node's handler " +
+  "from, and the export writes it again per node from the card's type. The drawing " +
+  "above this listing is its own.";
 
 /* `grounded-research-desk` is the only blueprint in the archive that opens a
    `subgraph cluster_…`, and without a shape of its own it took the opening line's title
@@ -414,9 +422,15 @@ const EDGE_BODY_DASHED =
   "`style=dashed` is Graphviz layout and says nothing to the engine. The two port types " +
   "still decide what may travel this way.";
 
+/* Both readings, because the row in `TOPOLOGY_ROWS` this restates now carries both.
+   "Compared against nothing" is true of DarkPrint and false of the runner: spec §3.3
+   Step 2 matches a normalized `label` to pick a branch, and the export writes the label
+   straight through, so a caption in this listing is a routing key in the compiled file. */
 const EDGE_BODY_LABEL =
   "`label` is what the author says an edge carries. It is drawn on the schematic and " +
-  "compared against nothing. The two port types decide what actually travels.";
+  "compared against nothing here, and the two port types decide what travels. The " +
+  "compiled file reads it a second way: over the edges that carry no guard, Attractor " +
+  "matches the label, normalized, against the branch a stage asked for (spec §3.3).";
 
 /** `planner, builder → tester`, `tester ⇄ debugger`, or a count when the shape has none. */
 function edgeTitle(edges: readonly Edge[]): string {

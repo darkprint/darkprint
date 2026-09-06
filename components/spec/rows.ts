@@ -74,12 +74,48 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
     },
   },
   {
+    /* Two readings, and the row used to give only the first. `label` really is compared
+       against nothing here. It is a routing key to the runner: Attractor spec §3.3 Step 2
+       matches it, normalized, against the label a stage asks for, and `emit.ts` writes it
+       through to the compiled file. A row that stops at "compared against nothing" is
+       true of this page's subject and false of the artefact this page tells you to
+       compile, which is the worse of the two errors available. */
     name: '[label="acceptance criteria"]',
-    what: "What the author says an edge carries. It is shown on the blueprint page and compared against nothing; the two port types decide what actually travels.",
+    what: "What the author says an edge carries. DarkPrint compares it against nothing, and the two port types decide what may travel here. The compiled file reads it a second way: the export writes the label through, and Attractor spec §3.3 matches it, normalized, against the branch a stage asked for, over the edges that carry no guard.",
   },
   {
-    name: "rankdir, style, shape",
-    what: "Graphviz layout. DarkPrint reads none of it, and the exporter writes its own shapes when it emits a runnable graph.",
+    name: '[condition="outcome=success"]',
+    what: "Attractor's guard on the edge. Carried into the compiled file exactly as the author spelled it, and parsed by nothing here. Spec §3.3 tries the guarded edges out of a node first: when any guard evaluates true the run takes the heaviest of those and never looks at the unguarded ones. Every reading on this site counts a guarded edge as a path that can be taken.",
+  },
+  {
+    name: "[weight=10]",
+    what: "Numeric priority. Higher wins and the default is zero. Spec §3.3 reaches it fourth among the unguarded edges, behind the conditions, the label a stage asked for and the node ids a stage suggested, and it is also what ranks two guards that both evaluate true. DarkPrint carries the number and compares no two of them.",
+  },
+  {
+    /* The surprise worth a row of its own. A fork with no guard is not undefined
+       behaviour and it is not a warning either: §3.3 Step 5 settles it, in silence, on
+       the spelling of the target ids. An author who writes two edges out of one node and
+       expects the runner to ask has already lost, and no diagnostic on this page will
+       tell them so. */
+    name: "a fork with neither",
+    what: "Deterministic, and rarely what the author meant. With no condition, no label the stage asked for and no suggested id, spec §3.3 falls through to weight, and on equal weights Step 5 takes the edge whose target node id comes first lexicographically. Two bare edges out of one node are a branch decided by the spelling of the node names.",
+  },
+  {
+    name: "rankdir, style",
+    what: "Graphviz layout. DarkPrint reads none of it, and none of it reaches the file a runner takes.",
+  },
+  {
+    /* `shape` sat in the layout row above for a release, next to `rankdir`. It is the
+       opposite of decoration: spec §2.8 makes it the handler selector, so it is the
+       attribute that decides what a node in a compiled file DOES.
+
+       No shape-to-handler table here on purpose. The mapping is `ATTRACTOR_TYPE_SHAPES`
+       in `lib/core/attractor/emit.ts`, it moves when a type is added or a shape changes,
+       and a copy of it transcribed into this table would be a second answer that goes
+       stale without anything failing. A table on this page has to RENDER from that
+       constant or say the rule and point at it, and this row says the rule. */
+    name: "shape",
+    what: "The handler selector: what a node in a runnable file does follows from it. Attractor spec §2.8 maps each shape to the handler that executes the node, a node writing no shape is a box, which is the LLM handler, and only an explicit type= outranks it. DarkPrint reads no shape out of a topology, and the exporter writes each node's shape from its card type when it compiles.",
   },
 ];
 
@@ -95,7 +131,7 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
  * diagnostic codes are named anywhere on the site.
  *
  * Two sentences moved rather than shrank, and both moved to a page whose subject they
- * are: "a stylesheet can override `model`" is annotation 02 and the `model` row below,
+ * are: how `model` ranks against a graph's stylesheet is annotation 02 and the `model` row below,
  * so the version-bump row no longer repeats it; "any number of them, including none" is
  * `/spec/ontology`, which owns the phase list.
  */
@@ -181,8 +217,14 @@ export const CARD_ROWS: readonly CheckRow[] = [
     check: { codes: ["card/spec-too-thin"], level: "warning" },
   },
   {
+    /* The direction is the claim. Attractor spec §8.5 lists the explicit node attribute
+       as step 1 and says the stylesheet transform "only sets properties that the node
+       does not already have explicitly"; §8.3 puts it in a sentence. The row said the
+       reverse for a release, off §2.6's gloss "Overridable by stylesheet", which names
+       the field and does not rank it. `components/panes/field-notes.ts` has always had
+       this right and this row now says what it says. */
     name: "model",
-    what: "Written the way the provider writes the identifier. It can be overridden by a stylesheet on the graph.",
+    what: "Written the way the provider writes the identifier. A default rather than a binding: a graph's model_stylesheet sets the model for every node matching a shape, an explicit field here outranks the sheet (Attractor spec §8.5), and whoever runs the bundle outranks both.",
   },
   {
     name: "mcp",
@@ -205,44 +247,18 @@ export const CARD_ROWS: readonly CheckRow[] = [
   },
 ];
 
-/** Layer 03. The vocabulary, and what may be added to it from outside. */
-export const ONTOLOGY_ROWS: readonly CheckRow[] = [
-  {
-    name: "broader on a local term",
-    what: "Which core term subsumes yours. A namespaced term that reaches no curated term is ignored by every analysis. That is the worst outcome available.",
-    check: { codes: ["ontology/local-term-unrooted"], level: "error" },
-  },
-  {
-    name: "a local phase",
-    what: "Refused. The five phases are the one dimension a local namespace may not extend. A sixth phase is a different definition of what these phases describe.",
-    check: { codes: ["ontology/phase-not-extensible"], level: "error" },
-  },
-  {
-    name: "broader chains",
-    what: "The subsumption graph itself: every pointer resolves, and no term is its own ancestor.",
-    check: {
-      codes: ["ontology/dangling-pointer", "ontology/cyclic-broader"],
-      level: "error",
-    },
-  },
-  {
-    name: "defaultWeight on a local marker",
-    what: "What a locally coined risk marker costs. Leave it out and the marker counts zero. Give it a negative one and it would hand points back. That also counts as zero.",
-    check: {
-      codes: [
-        "ontology/local-marker-unweighted",
-        "ontology/local-marker-bad-weight",
-      ],
-      level: "warning",
-    },
-  },
-  {
-    name: "a local id over a core one",
-    what: "An overlay term that reuses a curated id. It works. It changes what that id means for everybody reading the bundle.",
-    check: { codes: ["bundle/ontology-mismatch"], level: "warning" },
-  },
-  {
-    name: "label · description",
-    what: "What a term means, for the person choosing between two of them. Shown on the ontology page and read by no analyzer.",
-  },
-];
+/* ── ONTOLOGY_ROWS was here, and it is gone (owner, 2026-09-06) ──
+   Layer 03's six rows: what the engine checks about the vocabulary itself. Its only mount
+   was the `The checks` band on `/spec/ontology`, which the owner removed earlier the same
+   day (D-154). That left the export with zero importers, and the owner ruled it out rather
+   than kept: "remove it".
+
+   Recorded here because the deletion is a SECOND removal rather than a sweep. The band
+   leaving stopped the site SAYING these things; this stops the repository HOLDING them.
+   Five of the six named a diagnostic the engine still raises about a local overlay, so what
+   went is the prose and never the behaviour: `ontology/local-term-unrooted` and its
+   siblings still fire from `lib/core/ontology/resolve.ts`, and the diagnostic codes there
+   are where a reader has to go now. `docs/ARCHITECTURE.md` §11.0 Q58 carries the gap.
+
+   `TOPOLOGY_ROWS` and `CARD_ROWS` above are untouched and still mounted, on `/spec/topology`
+   and `/spec/card`. This file did not become single-purpose; it lost one layer of three. */

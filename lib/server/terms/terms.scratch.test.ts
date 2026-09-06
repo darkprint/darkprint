@@ -159,9 +159,10 @@ beforeAll(async () => {
   const bobId = await account("bob");
   alice = { kind: "account", accountId: aliceId, handle: "alice" };
 
-  await db
-    .insert(schema.ontologyVersion)
-    .values({ version: "0.1.0", digest: "sha256:onto-1" });
+  /* An `ontology_version` row was written here, so a term lookup had a published version to
+     resolve against. `0009_drop_ontology_versioning` dropped the table: the one living
+     vocabulary is `CORE_ONTOLOGY` in the process, merged per bundle with
+     `release.local_vocabulary`, and neither needs a row. */
 
   /* c1: AC2 ACROSS arrays — the same data-type at the input and the output port. */
   await card(aliceId, {

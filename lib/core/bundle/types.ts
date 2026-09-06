@@ -29,10 +29,10 @@ export interface BundleManifest {
    * bundle was written against, the resolver compared it to the vocabulary it was actually
    * being read against, and each card declared a third copy of the same number. All three
    * copies were maintained by hand and the only thing the comparison could report was that
-   * they had drifted. A release stores its whole scorecard when it is published, so no
-   * score is ever recomputed against a historical vocabulary and nothing needed to name
-   * one. The version a score WAS computed under is on the score, at
-   * `BlueprintAnalysis.ontologyVersion`.
+   * they had drifted. Nothing anywhere declares one now: the vocabulary itself carries no
+   * version, because DarkPrint's terms name what an Attractor node is and Attractor fixes
+   * that by its spec. A bundle's own terms still travel with it, in
+   * `ontology/extensions.yaml`.
    */
   /** ISO date string, supplied by the caller — `lib/core` never reads the clock. */
   createdAt?: string;

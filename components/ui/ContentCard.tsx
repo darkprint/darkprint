@@ -5,7 +5,6 @@ import { blueprintRecordHref } from "@/lib/href";
 import { GraphThumbnail } from "@/components/graph/GraphThumbnail";
 import { Avatar } from "./Avatar";
 import { KindBadge } from "./Badge";
-import { AutonomyMeter } from "./AutonomyMeter";
 import { FavoriteStar } from "./FavoriteStar";
 import { TagPill } from "./TagPill";
 
@@ -203,22 +202,15 @@ export function ContentCard({
 
       {/* body */}
       <div className="flex flex-1 flex-col gap-3 p-4">
-        {/* The class is named and no number is drawn (doc 2 §1.1), and it comes with the
-            engine's own per-node reading so the tile can say how many nodes hand control
-            back to a person rather than how far the graph is from running unattended.
-            `showDarkFactory={false}` (2026-07-29, author's call): the grid is a shelf of
-            designs and a tile carrying the dark-factory token read as one more badge than
-            the grid needed; the blueprint header and upload preview still show it. The
-            grid it sits in offers autonomy as a filter and never as a sort, so nothing
-            here gathers those tiles at the top either way. */}
-        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+        {/* `AutonomyMeter` sat opposite the kind badge here, naming the class and the
+            per-node reading behind it. It came off with the whole scoring reading on the
+            owner's instruction: the detail page no longer draws that reading, and a shelf
+            that classifies what the page it links to will not is a shelf making a claim
+            nobody can follow up. `GalleryBrowser` still filters on autonomy, which is a way
+            into the shelf rather than a statement printed on a tile.
+            `justify-between` goes with it: one badge has nothing to be pushed away from. */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
           <KindBadge kind={item.kind} />
-          <AutonomyMeter
-            autonomy={item.autonomy}
-            contributions={item.analysis.autonomy.contributions}
-            size="sm"
-            showDarkFactory={false}
-          />
         </div>
 
         {/* `flex-1` stays on whatever sits between the badges and the tag row, so tiles

@@ -17,7 +17,7 @@
    divergence shows up the moment the function is called.
    ============================================================ */
 
-import type { NodeCard, OntologyTerm, Port } from "@/lib/core";
+import type { NodeCard, Port } from "@/lib/core";
 import { deepFreeze } from "./contract";
 
 /** Mirrors `interface BlueprintSnapshot { dot: string; cardRefs: readonly string[] }`. */
@@ -76,31 +76,10 @@ export function port(name: string, type: string, extra: Partial<Port> = {}): Por
   return { name, type, ...extra };
 }
 
-/** One vocabulary entry. `since` and the free text are noise to a diff; the id is not. */
-export function term(id: string, overrides: Partial<OntologyTerm> = {}): OntologyTerm {
-  return {
-    id,
-    kind: "node-type",
-    label: id,
-    description: `The ${id} term.`,
-    since: "0.1.0",
-    ...overrides,
-  };
-}
-
-/**
- * A three-term chain: `evaluative` ⊃ `validation` ⊃ `strict-validation`.
- *
- * The shape the `broader` rules need — "narrowing a `broader` chain is major" is only
- * testable against a term that has ancestors to lose.
- */
-export function chainedVocabulary(): OntologyTerm[] {
-  return [
-    term("evaluative"),
-    term("validation", { broader: "evaluative" }),
-    term("strict-validation", { broader: "validation" }),
-  ];
-}
+/* `term()` and `chainedVocabulary()` stood here. Both existed only to feed
+   `inferOntologyBump`, which the owner removed with the rest of vocabulary versioning on
+   2026-09-05 (§11.0 Q26), and neither had another reader in this suite. A vocabulary
+   fixture with nothing left to price is a fixture that outlives its subject. */
 
 /** Deep-frozen copies, for the purity guards. Freezing is how an in-place sort shows up. */
 export function frozen<T>(value: T): T {

@@ -45,9 +45,11 @@
         is a live implementation rather than a hypothetical one.
 
      3. A local namespaced term reaches `card.riskMarkers` only
-        through `publish`'s `vocabulary` parameter. `ontology_term`
-        holds CORE terms; the overlay travels per release on
-        `release.local_vocabulary`. That is why `localVocabulary`
+        through `publish`'s `vocabulary` parameter. The core terms
+        are `CORE_ONTOLOGY`, in the process; the overlay travels
+        per release on `release.local_vocabulary`. (The core half
+        was an `ontology_term` read until
+        `0009_drop_ontology_versioning` dropped that table.) That is why `localVocabulary`
         below is handed to every bundle that names a local term, and
         why AC5 cannot be tested from the seeded archive at all
         (D-210-08: with D-210-05's filter the seed's candidate list

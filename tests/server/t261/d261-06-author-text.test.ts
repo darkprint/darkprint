@@ -106,7 +106,9 @@ function bundleHeader(): string {
       slug: "starter-software-factory",
       visibility: "public",
       summary: "a bundle",
-      watchers: 0,
+      // No `watchers`. The Watch pill left `BundleHeader` on 2026-09-06 with the owner's
+      // header rework, and the prop went with it. Nothing this file asserts was about the
+      // count: it is a profile-link guard, and it reads the avatar and the handle.
       forks: 0,
       saveId: "blueprint:starter-software-factory",
       title: "Starter software factory",

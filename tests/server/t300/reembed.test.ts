@@ -48,8 +48,6 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { CORE_ONTOLOGY } from "@/lib/core";
-
 import { RULED } from "./contract";
 import { bind } from "../t200/contract";
 import {
@@ -58,8 +56,6 @@ import {
   insertAccount,
   insertBundle,
   insertCard,
-  insertOntologyTerm,
-  insertOntologyVersion,
   insertRelease,
   manifest,
   mark,
@@ -99,10 +95,9 @@ const setup = recordedSetup("the T300 re-embedding corpus");
 beforeAll(async () => {
   await setup.run(async () => {
     s = await scratchDatabase();
-    const ontology = await insertOntologyVersion(s, CORE_ONTOLOGY.version);
-    for (const term of CORE_ONTOLOGY.terms) {
-      await insertOntologyTerm(s, { versionId: ontology.id, term: term as unknown as Record<string, unknown> });
-    }
+    /* The core vocabulary used to be seeded into `ontology_version` / `ontology_term` here.
+       0009 dropped both: the registry keeps one vocabulary, `CORE_ONTOLOGY` in the process,
+       merged per bundle with `release.local_vocabulary`. Nothing to seed. */
     const owner = await insertAccount(s, mark("t300r"));
     const card = await insertCard(s, {
       ownerId: owner.id,

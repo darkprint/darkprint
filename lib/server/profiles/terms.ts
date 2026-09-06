@@ -1,12 +1,15 @@
 /* ============================================================
    DarkPrint backend — counting a handle's namespaced terms
    AC1's third figure. A namespaced term is NOT a global row: the
-   `ontology_term` table stores the curated core only, and
-   `lib/db/schema.ts:121-125` says a bundle's own overlay "travels
-   with the release that declares it (`release.localVocabulary`)".
-   So the count is over releases, not over the ontology store —
-   which is why `@/lib/server/ontology` is correctly not a
-   dependency of this task. Measured rather than assumed:
+   `ontology_term` table stored the curated core only, and
+   `lib/db/schema.ts` said a bundle's own overlay "travels with the
+   release that declares it (`release.localVocabulary`)".
+   `0009_drop_ontology_versioning` has since dropped that table
+   altogether, so the overlay is the only place a namespaced term
+   has ever lived and now the only place one can live. The count is
+   over releases, not over an ontology store — which is why
+   `@/lib/server/ontology` is correctly not a dependency of this
+   task. Measured rather than assumed:
    `content/ontology/extensions.yaml:24` is `lupo/pii-handling`,
    handle-namespaced, and it reaches the merged view as a release's
    overlay.

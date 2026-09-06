@@ -25,8 +25,6 @@
    assertion time rather than here.
    ============================================================ */
 
-import { randomUUID } from "node:crypto";
-
 import {
   bundleDigest,
   cardDigest,
@@ -339,7 +337,6 @@ export interface ReleaseOptions {
   phaseCoverage?: unknown;
   /** `StoredVocabulary` — `{ text, terms? }` (lib/server/archive/types.ts:28-33), or omitted. */
   localVocabulary?: { text: string; terms?: readonly unknown[] | null };
-  scoredOntologyVersionId?: string;
   createdAt?: string;
 }
 
@@ -368,7 +365,6 @@ export async function insertRelease(s: Scratch, o: ReleaseOptions): Promise<Rele
     "security",
     "phase_coverage",
     "local_vocabulary",
-    "scored_ontology_version_id",
   ];
   const values: unknown[] = [
     o.bundle.id,
@@ -382,7 +378,6 @@ export async function insertRelease(s: Scratch, o: ReleaseOptions): Promise<Rele
     o.security === undefined ? null : JSON.stringify(o.security),
     o.phaseCoverage === undefined ? null : JSON.stringify(o.phaseCoverage),
     o.localVocabulary === undefined ? null : JSON.stringify(o.localVocabulary),
-    o.scoredOntologyVersionId ?? null,
   ];
   if (o.createdAt !== undefined) {
     columns.push("created_at");
@@ -400,32 +395,16 @@ export async function insertRelease(s: Scratch, o: ReleaseOptions): Promise<Rele
   return { id, bundleId: o.bundle.id, version: o.version, digest, cardRefs };
 }
 
-export interface OntologyFixture {
-  id: string;
-  version: string;
-}
+/* `insertOntologyVersion` and `insertOntologyTerm` stood here, and
+   `ReleaseOptions.scoredOntologyVersionId` above them. All three wrote objects
+   `0009_drop_ontology_versioning` dropped: the vocabulary names what an Attractor node IS,
+   Attractor fixes those shapes in its own spec and carries no vocabulary version, so a
+   DarkPrint-only version on top was a second thing to keep in step with nothing.
+   `ontology_term` went with its parent rather than by choice — its
+   `ontology_version_id` was NOT NULL and referenced it.
 
-export async function insertOntologyVersion(s: Scratch, version: string): Promise<OntologyFixture> {
-  const [row] = await s.query(
-    "insert into ontology_version (version, digest) values ($1, $2) returning id",
-    [version, `sha256:${randomUUID().replaceAll("-", "")}`],
-  );
-  const id = row?.id;
-  if (typeof id !== "string") {
-    throw new Error(`Could not insert the ontology version fixture: got ${describe_(id)}.`);
-  }
-  return { id, version };
-}
-
-export async function insertOntologyTerm(
-  s: Scratch,
-  o: { versionId: string; term: Record<string, unknown> },
-): Promise<void> {
-  await s.query(
-    "insert into ontology_term (ontology_version_id, term_id, kind, body) values ($1, $2, $3, $4)",
-    [o.versionId, o.term.id, o.term.kind, JSON.stringify(o.term)],
-  );
-}
+   A registry-wide term list is `release.local_vocabulary` merged over `CORE_ONTOLOGY` now,
+   which is what `localVocabulary` above writes and what every terms cell reads. */
 
 /* --------------------- reading the embedding tables back --------------------- */
 

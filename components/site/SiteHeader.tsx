@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Logo } from "./Logo";
 import { ButtonLink } from "@/components/ui/Button";
-import { SPEC_SEQUENCE, SANDBOX } from "@/components/spec/sequence";
+import { SPEC_SEQUENCE } from "@/components/spec/sequence";
 import { authorFor, profileHref } from "@/components/profile/author";
 import type { AccountRecord } from "@/lib/server/accounts";
 import { cx } from "@/lib/format";
@@ -20,7 +20,10 @@ import { SIGN_IN_PROVIDERS } from "@/components/auth/SignInButtons";
 // three was built under those names and all three are answered by the routes above.
 
 /* ============================================================
-   Five targets, not seven.
+   Five targets, not seven. Four since the ontology fold, and the count is left in the
+   heading rather than quietly corrected because what this docblock argues is the SHAPE:
+   one row per thing a reader can browse, one menu per thing they can make. The fold took a
+   browsable thing away, so the shape held and the number moved.
 
    The bar was Blueprints · Cards · Create · [Publish] · MCP · | · Learn ▾, and it had three
    problems a reader met before they met a page:
@@ -33,36 +36,46 @@ import { SIGN_IN_PROVIDERS } from "@/components/auth/SignInButtons";
       the registry holds, it has a browser and a profile tab, and the only route to it in
       the nav was the Learn menu's row for the *spec document* about it.
 
-   So: three Browse rows for the three things the registry holds, a Build menu for the three
+   So: one Browse row per thing the registry holds a browser for, a Build menu for the three
    ways to make one, Learn unchanged in mechanism, Publish as the button, and the account
    last, where a reader already looks for identity.
 
-   ── Decision 1: `/ontology` is "Ontology", and the spec row takes its siblings' shape ──
-   The browser and the spec document about it are two routes, and `nav.test.ts` forbids one
-   label on two of them. That constraint was answered for a while by calling the browser
-   "Vocabulary" — the words a blueprint and a card are allowed to use — and leaving
-   "Ontology" to the format.
+   ── Decision 1, and its reversal on 2026-09-06 ──
+   Decision 1 said `/ontology` is "Ontology" and the spec row takes its siblings' shape. The
+   browser and the spec document about it were two routes, and `nav.test.ts` forbids one
+   label on two of them; that constraint was answered for a while by calling the browser
+   "Vocabulary", and the author overruled that on 2026-08-12 ("adopt the term Ontology also
+   for /ontology page … be consistent through all the website"). The collision was resolved
+   at the other end instead: `/spec/ontology` became "Ontology file (YAML)", the shape its
+   two siblings in the same menu already have.
 
-   The author overruled it on 2026-08-12: "adopt the term Ontology also for /ontology page …
-   be consistent through all the website". One concept, one word, everywhere it appears —
-   the route is `/ontology`, the directory in a bundle is `ontology/`, the field a score
-   carries is `ontologyVersion`, and the chrome was the only surface calling it something
-   else. (A card carried an `ontology_version` too when that instruction was given.)
+   The owner collapsed the two routes into one on 2026-09-06: "move the ontology page in the
+   /spec/ontology substituing the "every term" box. Then, you can delete the /ontology page".
+   The browser is a band on the spec page now and the index is a 308, so there is no longer a
+   pair of routes to hold apart — and the Browse row that pointed at the index has nowhere
+   left to point that is not already named one group down.
 
-   So the collision is resolved at the other end, and the fix was available all along:
-   `/spec/ontology` becomes "Ontology file (YAML)", which is the shape its two siblings in
-   the same menu already have — "Blueprint file (DOT)", "Node card (YAML)". Those pages'
-   own `h1`s differ from their nav rows in exactly this way ("The node card, in YAML"), so
-   nothing on the spec page moves. Neither route moves either.
+   So the row is DELETED rather than repointed, and that is a deliberate choice against the
+   obvious one. Repointing it at `/spec/ontology` would put a row called "Ontology" in the
+   bar and a row called "Ontology file" in the Learn menu, both opening the same URL on the
+   same screen, which is defect 1 at the top of this file with new names. The Learn row is
+   not free to rename either: it is stop 03 of `SPEC_SEQUENCE`, sitting between "Topology
+   file (DOT)" and "Node card (YAML)", and `spec-routes.test.ts` pins the pair. One route
+   keeps one name, and that name is the file form the sequence already prints.
+
+   What a reader loses is the word "Ontology" in the bar. What they keep is every way in
+   that carried them there: the Learn menu names the route, the footer's Specification
+   column names it, `/ontology` 308s onto it, and `/ontology/<term>` is untouched.
    ============================================================ */
 
 export const NAV = [
   { href: "/blueprints", label: "Blueprints", group: "browse" },
   { href: "/nodes", label: "Cards", group: "browse" },
-  /* The third thing the registry holds. It had no entry in the chrome at all until this
-     pass, and was called "Vocabulary" until 2026-08-12; see decision 1 in the header
-     docblock for why the word changed and what it cost the spec row below. */
-  { href: "/ontology", label: "Ontology", group: "browse" },
+  /* The third thing the registry holds had a row here from the accounts pass until
+     2026-09-06, when the owner folded its browser into `/spec/ontology` and deleted the
+     index. There is no third browse route to name, and the docs row below already names the
+     surviving one; see the reversal in this file's header docblock for why the row is gone
+     rather than repointed at the spec page. */
   /* MCP first, then the skill. The author set this order in the footer and it holds here
      too: the two are not a sequence, and the one a reader is likelier to be looking for by
      name goes first.
@@ -70,30 +83,38 @@ export const NAV = [
      "Assisted Design" rather than "Create", on the author's instruction, and the page's own
      `h1` and `<title>` moved with it — `nav.test.ts` holds a route to one name everywhere,
      so a rename is three files or it is a bug. What the page is remains what it always was:
-     the authoring skill that interviews you into a bundle. `/build`, the worked sandbox, is
-     not in this menu; it is stop 04 of Learn, where it says what it is. */
+     the authoring skill that interviews you into a bundle. The worked sandbox at `/build`
+     used to be named here as the thing this row is not; the owner deleted that route on
+     2026-09-06 and there is nothing left to tell it apart from. */
   { href: "/mcp", label: "MCP", group: "build" },
   { href: "/skill", label: "Assisted Design", group: "build" },
-  /* `/build` is NOT a row in the Build menu, and the omission is the author's call.
-     It had one for a pass, and it put the sandbox in front of a reader twice — once here
-     and once as the worked example under stop 03 of Learn, which is where it belongs and
-     where it says what it is. The route keeps its name from `SANDBOX.nav` on both surfaces
-     that do draw it (the Learn menu and the footer), so it still cannot end up with two
-     names on one screen. It stays in `NAV` as `docs` for the label table below. */
+  /* Two reference routes, after the two surfaces and in that order. `/capabilities` is an
+     index of what the three surfaces already do, so it reads after them rather than as a
+     fourth one; `/tutorial` is where somebody goes who has read the index and wants to
+     write something, which is the order the menu's blurbs say out loud. */
+  { href: "/capabilities", label: "What you can do", group: "build" },
+  { href: "/tutorial", label: "Write your first blueprint", group: "build" },
+  /* `/build` had a row here, then deliberately did not, and now has no route to point at.
+     The owner deleted it and `components/build/**` on 2026-09-06: "it is not useful and
+     make confusion". Its `docs` row below is gone with it, and so is the import from
+     `sequence.ts` that supplied the label. That import's name is not written here on
+     purpose: `spec-routes.test.ts` reads this file and the footer for it, because a Learn
+     row surviving its route is a 404 the sequence cannot see, and a comment quoting the
+     token it forbids reds a correct file. */
   /* `/upload` stood here as `group: "action"` (the Publish button) until the owner took
      publishing out of the chrome (2026-08-25): a release is cut from the surfaces that
      own one — the profile shelf's New blueprint flow, a draft's own landing, and /skill's
      accounts row — not from a global button. The route stays exempt in `nav.test.ts`'s
      ELSEWHERE for that reason. */
-  { href: SANDBOX.href, label: SANDBOX.nav, group: "docs" },
   { href: "/what-a-blueprint-is", label: "What a blueprint is", group: "docs" },
   { href: "/spec/topology", label: "Topology file (DOT)", group: "docs" },
   { href: "/spec/card", label: "Node card (YAML)", group: "docs" },
-  /* "Ontology file (YAML)" and not "Ontology": the browser one group up took that word on
-     the author's instruction, and this row moves to the shape its two siblings above it
-     already have rather than the browser wearing a synonym. See decision 1. */
+  /* "Ontology file (YAML)" and not "Ontology". The browser one group up took the bare word
+     on the author's instruction and this row moved to the shape its two siblings above it
+     already have; the browser is gone and the label stays, because this row is now the only
+     name the chrome gives the route and the sequence prints the file form beside its two
+     siblings. See the reversal in this file's header docblock. */
   { href: "/spec/ontology", label: "Ontology file (YAML)", group: "docs" },
-  { href: "/reading-the-radar", label: "How a blueprint is graded", group: "docs" },
   /* `/towards-a-dark-factory` stood here as `group: "guides"` and was deleted 2026-08-11.
      `guides` is not one of the groups this file renders (`browse`, `build`, `docs`;
      `action` left with the Publish button) nor one of `MOBILE_GROUPS`, so the row drew
@@ -107,7 +128,7 @@ export const NAV = [
      which is the surface that actually names it. */
 ] as const;
 
-/** The three rows that stand in the bar itself. */
+/** The rows that stand in the bar itself: one per registry shelf a reader can browse. */
 const BROWSE = NAV.filter((item) => item.group === "browse");
 
 /**
@@ -128,6 +149,8 @@ const BUILD = NAV.filter((item) => item.group === "build");
 const BUILD_BLURB: Record<string, string> = {
   "/mcp": "Reach the registry from your own agent",
   "/skill": "Install the authoring skill and name your goal",
+  "/capabilities": "Every operation, from a terminal, an agent or an editor",
+  "/tutorial": "Fill in the keywords of a real one, in your browser",
 };
 
 export const LEARN = SPEC_SEQUENCE.map((page) => ({

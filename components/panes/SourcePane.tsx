@@ -66,14 +66,17 @@ export function SourcePane({
    * Draw the pane's ordinal beside its title.
    *
    * True for the archive's four-pane view, where the numbers are the view's own vocabulary
-   * and nothing competes with them. False on `/build`'s workspace stage
-   * (`WorkspaceStage.tsx`): its outer tablist already names this pane in the open tab's own
-   * label — "DOT" or "Cards" — the same word this pane's own `title` prop repeats a line
-   * down, and only three of the stage's five tab bodies carry a `paneNumber` at all
-   * (`VocabularyPane` and `ScorePanel`, the other two, have no such prop). A number beside a
-   * title the open tab already named would repeat what is already on screen and imply a
-   * numbering two of the five tabs do not share. The id stays either way, because
-   * `aria-labelledby` points at it.
+   * and nothing competes with them. No caller passes `false` today.
+   *
+   * The one that did was `/build`'s workspace stage, whose outer tablist already named this
+   * pane in the open tab's own label — "DOT" or "Cards" — the same word this pane's own
+   * `title` prop repeats a line down, and only three of that stage's five tab bodies carried
+   * a `paneNumber` at all. A number beside a title the open tab already named would repeat
+   * what is on screen and imply a numbering two of the five tabs did not share. The owner
+   * deleted the route and its whole component tree on 2026-09-06, so the stage, its tablist
+   * and the two panes named in that argument are all gone; the prop is kept because the next
+   * caller to draw this pane behind a tablist needs somewhere to say so. The id stays either
+   * way, because `aria-labelledby` points at it.
    */
   showNumber?: boolean;
   title: string;

@@ -54,7 +54,20 @@ export interface LiveNotes {
   /** e.g. `/api/blueprints/{owner}/{slug}/notes` or `/api/cards/{id}/notes`. */
   apiBase: string;
   initial: { notes: NoteView[]; cursor: string | null };
-  viewer: { signedIn: boolean; handle?: string };
+  /**
+   * Who is reading. `handle` marks their own rows (`mine`) and now also draws the mark
+   * beside the compose box, so `displayName` and `avatarHue` are read here too: built
+   * from the handle alone, an account that carries a stored hue would show one colour
+   * next to the box and a different one on the note a second after it posts. Both stay
+   * optional, so a caller holding only the handle still type-checks and degrades to the
+   * handle-derived colour the note rows already fall back to.
+   */
+  viewer: {
+    signedIn: boolean;
+    handle?: string;
+    displayName?: string;
+    avatarHue?: number;
+  };
 }
 
 /** How many notes render immediately, before the rest sit behind "Load more" — fixture mode only. */
@@ -99,7 +112,7 @@ export function Comments({
       {comments.length === 0 ? (
         <div className="panel px-5 py-8 text-center">
           <p className="text-sm text-muted">No notes yet.</p>
-          <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-dim">
+          <p className="mt-1 text-xs leading-relaxed text-dim">
             Notes are seeded rows in the index, and this {subject} has none. There is
             no form on this page and no runner behind it, so posting is not built.
           </p>
@@ -272,7 +285,7 @@ function LiveComments({ live, subject }: { live: LiveNotes; subject: string }) {
       {notes.length === 0 ? (
         <div className="panel px-5 py-8 text-center">
           <p className="text-sm text-muted">No notes yet.</p>
-          <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-dim">
+          <p className="mt-1 text-xs leading-relaxed text-dim">
             {live.viewer.signedIn
               ? `Be the first to say something about this ${subject}.`
               : `Nobody has posted about this ${subject} yet.`}
@@ -301,6 +314,48 @@ function LiveComments({ live, subject }: { live: LiveNotes; subject: string }) {
   );
 }
 
+/**
+ * The mark to the left of the compose box.
+ *
+ * With a handle, it is the viewer's own avatar, through the same `Avatar` at the same
+ * `md` size the posted notes use, so the box lands in the thread's column instead of
+ * starting at its own margin. It does not link: a posted row links because a reader
+ * wants to visit whoever wrote it, while a link on your own box, one tab stop before
+ * your half-typed draft, only offers to navigate away from it.
+ *
+ * With no handle — signed out, or an actor the page could not name — it is an empty
+ * dashed ring. There is no honest face for that slot: the viewer is not any of the
+ * people in the thread, so reusing a commenter's avatar or minting a stand-in person
+ * would put somebody else's identity on an empty textarea. `aria-hidden`, because the
+ * sentence beside it already says who may post and a decorative ring adds nothing to it.
+ */
+function ComposerAvatar({ viewer }: { viewer: LiveNotes["viewer"] }) {
+  if (viewer.handle !== undefined) {
+    return (
+      <Avatar
+        author={{
+          username: viewer.handle,
+          displayName: viewer.displayName ?? viewer.handle,
+          /* The same fallback `LiveNoteRow` applies to a note's author, so an account
+             with no stored hue keeps one colour across the box and the note it posts. */
+          avatarHue: viewer.avatarHue ?? hueFrom(viewer.handle),
+          validator: false,
+        }}
+        size="md"
+      />
+    );
+  }
+  return (
+    <span
+      aria-hidden
+      /* 32px is `Avatar`'s `md`. It is restated here because that scale is private to
+         `components/ui/Avatar.tsx`, and it has to match: this sits in the same column
+         as the avatars on the notes above and any other diameter breaks the line. */
+      className="inline-flex h-8 w-8 shrink-0 rounded-full border border-dashed border-line bg-surface-2"
+    />
+  );
+}
+
 function PostForm({
   apiBase,
   viewer,
@@ -318,9 +373,14 @@ function PostForm({
 
   if (!viewer.signedIn) {
     return (
-      <p className={cx("text-xs leading-relaxed text-dim", className)}>
-        Sign in to post a note.
-      </p>
+      <div className={cx("flex items-start gap-3", className)}>
+        <ComposerAvatar viewer={viewer} />
+        {/* `py-1.5` drops this one line onto the ring's optical centre; the posted rows
+            get the same alignment for free from the height of their name row. */}
+        <p className="min-w-0 flex-1 py-1.5 text-xs leading-relaxed text-dim">
+          Sign in to post a note.
+        </p>
+      </div>
     );
   }
 
@@ -354,19 +414,27 @@ function PostForm({
   };
 
   return (
-    <form onSubmit={submit} className={cx("flex flex-col gap-2", className)}>
-      <textarea
-        value={body}
-        onChange={(event) => setBody(event.target.value)}
-        placeholder="Say something about this blueprint."
-        rows={3}
-        className="w-full resize-y rounded-md border border-line bg-surface-2 p-3 text-sm text-fg placeholder:text-dim focus:border-cyan focus:outline-none"
-      />
-      <div className="flex items-center gap-3">
-        <Button type="submit" size="sm" disabled={posting || body.trim() === ""}>
-          {posting ? "Posting…" : "Post"}
-        </Button>
-        {error !== undefined && <span className="text-xs text-signal">{error}</span>}
+    /* Avatar in a fixed left column, everything else in a `min-w-0 flex-1` beside it:
+       the shape `NoteList` and `LiveNoteRow` already use, inside the same `panel p-4`,
+       so the composer reads as the next row of the thread rather than a form pinned
+       under it. The panel is what puts this avatar on the same vertical line as the
+       ones above, which sit inset by the notes' own padding. */
+    <form onSubmit={submit} className={cx("panel flex items-start gap-3 p-4", className)}>
+      <ComposerAvatar viewer={viewer} />
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <textarea
+          value={body}
+          onChange={(event) => setBody(event.target.value)}
+          placeholder="Say something about this blueprint."
+          rows={3}
+          className="w-full resize-y rounded-md border border-line bg-surface-2 p-3 text-sm text-fg placeholder:text-dim focus:border-cyan focus:outline-none"
+        />
+        <div className="flex items-center gap-3">
+          <Button type="submit" size="sm" disabled={posting || body.trim() === ""}>
+            {posting ? "Posting…" : "Post"}
+          </Button>
+          {error !== undefined && <span className="text-xs text-signal">{error}</span>}
+        </div>
       </div>
     </form>
   );
@@ -415,8 +483,11 @@ function LiveNoteRow({
   const [actionError, setActionError] = useState<string | undefined>(undefined);
   /* Session-local only: `voteNote` has no reader for "did I already vote this note", the
      same gap `lib/server/profiles`'s own header names for follow state (see
-     `components/bundle/WatchButton.tsx`). A second click here is harmless — `insertNoteVote`
-     is idempotent — this flag only stops the optimistic count from moving twice. */
+     `components/profile/SocialControls.tsx`, which discloses the identical missing read for
+     follow and support and starts both controls unpressed on every load; the citation used
+     to point at `components/bundle/WatchButton.tsx`, deleted with the bundle Watch control
+     on 2026-09-06). A second click here is harmless — `insertNoteVote` is idempotent — this
+     flag only stops the optimistic count from moving twice. */
   const [voted, setVoted] = useState(false);
 
   const author = {

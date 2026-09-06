@@ -1,6 +1,5 @@
 /* ============================================================
-   The four spec pages, held against the list they are a sequence
-   in.
+   The spec pages, held against the list they are a sequence in.
 
    Redesign spec §4.1 split one long page into four and asked that
    they "carry next / previous links so the four read as a
@@ -27,7 +26,23 @@
    three children had to keep a parent, a crumb and a rail, so the
    page that already linked all three became the door. And the
    sequence has no fifth stop, because grading merged into
-   `/reading-the-radar`, which is outside this sequence on purpose.
+   `/reading-the-radar`, which was outside this sequence on purpose.
+
+   That page is gone too, on the author's 2026-09-04 instruction, and
+   its stop went with it: the practice run is the worked example and
+   the essay, and the essay is renumbered 05 rather than left at 06
+   over a hole. The three cases below that name a route by hand were
+   edited with the removal instead of being loosened, which is the
+   same discipline the paragraph above describes.
+
+   The insertion of 2026-09-05 is the first move in the other
+   direction since the split, and it is the case this file was
+   written for: `/spec/attractor` is a fourth child under `app/spec`,
+   so the walk below would have failed on it as an orphan until
+   `SPEC_CROSSWALK` was added to the list. It went in at 04, between
+   the last layer and the sandbox, and the two numbered practice
+   stops moved down a rung with it — which is why three cases here
+   name a number, and why they were edited rather than loosened.
 
    So this file walks `app/spec` and holds the two directions
    against each other. The walk is what stops a child reappearing
@@ -55,7 +70,7 @@ import {
   SPEC_LAYERS,
   LEARN_PRACTICE,
   RUNS,
-  SANDBOX,
+  SPEC_CROSSWALK,
   SPEC_OVERVIEW,
   SPEC_SEQUENCE,
   runPosition,
@@ -125,52 +140,51 @@ describe("the sequence and the filesystem agree", () => {
       { step: "01", href: "/spec/topology", run: "specification" },
       { step: "02", href: "/spec/card", run: "specification" },
       { step: "03", href: "/spec/ontology", run: "specification" },
-      { step: "04", href: "/build", run: "practice" },
-      { step: "05", href: "/reading-the-radar", run: "practice" },
-      { step: "06", href: "/towards-a-dark-factory", run: "practice" },
+      { step: "04", href: "/spec/attractor", run: "specification" },
+      { step: "05", href: "/towards-a-dark-factory", run: "practice" },
     ]);
     expect(LEARN_PRACTICE.map((page) => page.href)).toEqual([
-      "/build",
-      "/reading-the-radar",
       "/towards-a-dark-factory",
     ]);
   });
 
   /**
-   * The sandbox is a stop of its own, and it keeps the word that says what kind.
+   * The sandbox is gone, and nothing in Learn points at it.
    *
-   * It spent one pass unnumbered and indented under stop 03, on the argument that an
-   * optional stop is not a stop; the author asked for it back as a row in its own right. So
-   * it has a number and no indent, and `meta` survives the change — the tag is the part of
-   * the old treatment worth keeping, because a number cannot say "worked example".
+   * `SANDBOX` at `/build` was stop 05 and opened the practice run, exported by name so the
+   * header's Learn menu and the footer's Learn column printed one label for it. The owner
+   * deleted the route and its component tree on 2026-09-06 ("it is not useful and make
+   * confusion"), so the export, the stop and both nav rows went in the same change.
    *
-   * It opens the practice run: the specification says what the three files are, and this is
-   * the first stop that does something with them.
+   * Asserted from three directions rather than by the sequence table above alone, because
+   * that table would still pass if the route came back somewhere the sequence does not
+   * reach: no stop points at it, and neither chrome writes a row for it. A Learn menu row
+   * to a deleted route is a 404 the sequence cannot see.
    */
-  it("draws the sandbox as stop 04, opening the practice run", () => {
-    expect(SANDBOX.step).toBe("04");
-    expect(SANDBOX.indent).toBeUndefined();
-    expect(SANDBOX.meta).toBe("worked example");
-    expect(SANDBOX.run).toBe("practice");
-    expect(SPEC_SEQUENCE[SPEC_SEQUENCE.indexOf(SANDBOX) - 1]).toBe(SPEC_LAYERS[2]);
-    expect(runPosition(SANDBOX.href)).toEqual({ run: "practice", position: 1, total: 3 });
+  it("carries no stop at the deleted sandbox, and neither chrome links it", () => {
+    expect(SPEC_SEQUENCE.map((page) => page.href)).not.toContain("/build");
+    expect(() => specNeighbours("/build")).toThrow();
+    for (const path of ["components/site/SiteHeader.tsx", "components/site/SiteFooter.tsx"]) {
+      expect(readFileSync(join(ROOT, path), "utf8"), path).not.toContain("SANDBOX");
+    }
   });
 
   /**
    * The essay is the last stop of the practice run.
    *
    * It left the sequence for one pass, on the hand-off's decision 3, and the author asked
-   * for it back: a reader who has been through the specification and the scorecard is
-   * exactly the reader who then asks which work belongs to an agent at all. Both halves are
-   * asserted, because the round trip broke each of them in turn — the page has to be in the
-   * list AND to draw the pager the list gives it.
+   * for it back: a reader who has been through the specification is exactly the reader who
+   * then asks which work belongs to an agent at all. Both halves are asserted, because the
+   * round trip broke each of them in turn — the page has to be in the list AND to draw the
+   * pager the list gives it.
+   *
+   * It is the whole practice run since 2026-09-06, and its PREVIOUS is the crosswalk: the
+   * sandbox that stood between them went with `/build`.
    */
   it("closes the practice run with the essay", () => {
     expect(SPEC_SEQUENCE.at(-1)?.href).toBe("/towards-a-dark-factory");
     expect(specNeighbours("/towards-a-dark-factory").next).toBeUndefined();
-    expect(specNeighbours("/towards-a-dark-factory").previous?.href).toBe(
-      "/reading-the-radar",
-    );
+    expect(specNeighbours("/towards-a-dark-factory").previous?.href).toBe("/spec/attractor");
     const essay = readFileSync(
       join(ROOT, "app/towards-a-dark-factory/page.tsx"),
       "utf8",
@@ -184,12 +198,12 @@ describe("the sequence and the filesystem agree", () => {
     expect(runPosition("/spec/card")).toEqual({
       run: "specification",
       position: 3,
-      total: 4,
+      total: 5,
     });
-    expect(runPosition("/reading-the-radar")).toEqual({
+    expect(runPosition("/towards-a-dark-factory")).toEqual({
       run: "practice",
-      position: 2,
-      total: 3,
+      position: 1,
+      total: 1,
     });
     expect(Object.keys(RUNS).sort()).toEqual(["practice", "specification"]);
   });
@@ -244,6 +258,12 @@ describe("next and previous", () => {
     // And the chain is a chain rather than two ends with a hole: every stop but the last
     // hands on to the one after it.
     expect(specNeighbours(SPEC_LAYERS[0].href).previous).toBe(SPEC_OVERVIEW);
+    /* The stop the crosswalk was inserted between, from both sides. Inserting into the
+       middle of a list is the one edit that can leave the arrays consistent and the
+       reading order wrong, and neither `position` nor the neighbour loop below would
+       notice: they walk whatever order the list is in. */
+    expect(specNeighbours(SPEC_CROSSWALK.href).previous).toBe(SPEC_LAYERS[2]);
+    expect(specNeighbours(SPEC_CROSSWALK.href).next).toBe(LEARN_PRACTICE[0]);
 
     for (const [i, page] of SPEC_SEQUENCE.entries()) {
       const { position, total, previous, next } = specNeighbours(page.href);

@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { blueprintHref } from "@/lib/href";
-import { Button } from "@/components/ui/Button";
+import { ActionPill } from "@/components/ui/ActionPill";
 
 /* ============================================================
    The header's Fork control, live: POST /api/bundles/[owner]/[slug]/fork
@@ -75,14 +75,18 @@ export function ForkButton({
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <Button
-        variant="outline"
+      {/* No `pressed`: forking is an act, not a state this button can toggle back. The
+          count is the upstream's, so it does not move on a click either — the reader is
+          redirected to their own copy, and the number they left behind is refreshed by
+          the page they come back to rather than guessed at here. */}
+      <ActionPill
+        glyph="fork"
+        label={pending ? "Forking…" : "Fork"}
+        count={forks}
         onClick={fork}
         disabled={!signedIn || pending}
         title={signedIn ? undefined : "Sign in to fork this blueprint."}
-      >
-        {pending ? "Forking…" : "Fork"} <span className="font-mono text-[11px] text-dim">{forks}</span>
-      </Button>
+      />
       {error !== undefined && <span className="text-right text-[11px] text-signal">{error}</span>}
       {done !== undefined && (
         <span role="status" className="text-right text-[11px] text-cyan">

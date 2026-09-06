@@ -59,8 +59,8 @@ export default async function Page({ params }: PageProps<"/u/[username]/saved">)
               title="Nothing saved yet"
               action={{ href: "/blueprints", label: "Browse the registry" }}
             >
-              The bookmark on a node card adds it here. A save is private: nobody else can
-              see this list, and nothing counts it.
+              Starring a node card adds it here. The list is private and nobody else can
+              read it. The star that puts a card on it is public and counted.
             </EmptyState>
           ) : (
             <SavedList saves={view.saves} />
@@ -72,9 +72,9 @@ export default async function Page({ params }: PageProps<"/u/[username]/saved">)
             title="Saves are private"
             action={{ href: `/u/${view.author.username}`, label: "Back to the profile" }}
           >
-            A save is a bookmark, and it belongs to whoever made it. Nobody can read
+            A saved list belongs to whoever starred the things on it. Nobody can read
             {" "}{view.author.displayName}&rsquo;s list, and neither the list nor its size is
-            shown on a public profile.
+            shown on a public profile. The star counts on the cards themselves are public.
           </EmptyState>
         </div>
       )}

@@ -519,7 +519,7 @@ describe("toBlueprintView — autonomy as a class", () => {
       expect(view.analysis.autonomy.level).toBe(r.analysis!.autonomy.level);
       expect(view.analysis.autonomy.fraction).toBe(r.analysis!.autonomy.fraction);
       expect(view.analysis.autonomy.contributions).toEqual(r.analysis!.autonomy.contributions);
-      expect(view.analysis.autonomy.ontologyVersion).toBe(r.analysis!.autonomy.ontologyVersion);
+      expect(view.analysis.autonomy.control).toEqual(r.analysis!.autonomy.control);
     }
   });
 });

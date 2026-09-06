@@ -41,8 +41,10 @@ const nextConfig: NextConfig = {
    * the-climb`; the parent is the 1-5 ladder, which that page never carried. A redirect
    * to a parent index is how a bookmark quietly becomes a shrug.
    *
-   * The last three are the IA pass of 2026-08-07, and all three are content moves rather
-   * than renames, so each lands on the page that now holds what the old one held.
+   * The next three are the IA pass of 2026-08-07, and all three were content moves rather
+   * than renames, so each landed on the page that then held what the old one held. One of
+   * them has since been repointed and one more entry has joined them, both for the reason
+   * two paragraphs down.
    *
    * `/spec` was the overview above three layer pages. It is deleted and the layer pages
    * are not: `/what-a-blueprint-is` is their door now, carrying the three doors' chips,
@@ -51,9 +53,31 @@ const nextConfig: NextConfig = {
    * re-applies the fragment it started with to a `Location` that carries none, so
    * `/spec#card` follows this 308 and still finds `#card` at the other end.
    *
-   * `/spec/scoring` merged into `/reading-the-radar`, which now holds the picture and the
-   * arithmetic in one page under the title every inline link already used for it.
-   * `#weights` survives with it, because `ScoringModel` owns that id and moved whole.
+   * `/spec/scoring` merged into `/reading-the-radar`, and the survivor is gone too. The
+   * author asked the graded page off the site on 2026-09-04 and chose a redirect over an
+   * unlisting, so both paths keep working; `/reading-the-radar` had the chrome, the
+   * footer and every blueprint scorecard pointing at it, and a 404 there would break more
+   * links than the page was worth keeping.
+   *
+   * Both landed on `/build` until 2026-09-06, and both were repointed when the owner
+   * deleted that route ("it is not useful and make confusion"). They are still repointed
+   * rather than chained: a 308 onto a route that itself 308s costs every link written
+   * before the merge two hops, which is the cost already recorded above for
+   * `/how-to-build-a-dark-factory`, and pointing either of these at `/spec` would have
+   * bought exactly that.
+   *
+   * `/what-a-blueprint-is` is the destination for both, and it is a demotion rather than a
+   * shrug. The argument for `/build` was that it was the one place left where a reader
+   * watched a score move; nothing on the site does that now, so no destination can answer
+   * the question either old URL was asking. What survives of it is the vocabulary those
+   * scores were computed over, and `/what-a-blueprint-is` is where the Learn sequence
+   * starts and where that vocabulary is introduced. A reader arriving on a bookmarked
+   * `/reading-the-radar` gets the beginning of the explanation rather than a 404 or a
+   * second hop.
+   *
+   * `#weights` dies with the page. `ScoringModel` owned that id and nothing renders it
+   * any more, and a fragment never reaches the server, so there was never a redirect that
+   * could have carried it.
    *
    * `/concepts` folded into `/what-a-blueprint-is#the-words`. The destination here is the
    * bare route rather than the fragment: a redirect that appends a fragment overrides the
@@ -69,20 +93,40 @@ const nextConfig: NextConfig = {
       { source: "/gallery", destination: "/blueprints", permanent: true },
       { source: "/parts", destination: "/nodes", permanent: true },
       { source: "/parts/:slug", destination: "/nodes", permanent: true },
-      /* Both land on `/ontology` since the accounts pass, and the `/ontology` entry that
-         stood under them is gone: that route is a page again.
+      /* The vocabulary's three retired paths, and the argument that put them here has now
+         been reversed twice by the people who own the decision.
 
-         It was 308'd onto `/spec/ontology` when the vocabulary had nowhere of its own to
-         live and its catalog was a band on the spec page. The accounts pass gives the
-         registry's third shelf a row in the chrome, and a browse target that redirects
-         into a specification document is the "one route, two names" defect from the other
-         end — the header would be sending a reader to Vocabulary and landing them on
-         Ontology. So `/ontology` lists the terms, `/spec/ontology` specifies the format,
-         and a gallery of vocabularies becomes the one vocabulary's browser rather than the
-         document about it. `components/ontology/canonical-route.test.ts` records the
-         reversal and holds both routes in place. */
-      { source: "/ontologies", destination: "/ontology", permanent: true },
-      { source: "/ontologies/:slug", destination: "/ontology", permanent: true },
+         `/ontology` was 308'd onto `/spec/ontology` while the vocabulary had nowhere of its
+         own to live and its catalog was a band on the spec page. The accounts pass gave the
+         registry's third shelf a row in the chrome and a browser of its own, so the entry
+         came out: a browse target that redirects into a specification document is the "one
+         route, two names" defect from the other end, and the header would have been sending
+         a reader to Vocabulary and landing them on Ontology. `/ontologies` and its slug form
+         were repointed onto the browser in the same change, and
+         `components/ontology/canonical-route.test.ts` was written to hold both routes in
+         place "so neither can quietly absorb the other again".
+
+         The owner absorbed one into the other on 2026-09-06: "move the ontology page in the
+         /spec/ontology substituing the "every term" box. Then, you can delete the /ontology
+         page". The browser is a band on the spec page and the index is deleted, so all three
+         paths land there. The argument above is kept rather than replaced because it is
+         still the reason the split existed, and a reader who finds only the outcome cannot
+         tell a decision from a drift.
+
+         REPOINTED, not chained. `/ontologies` could have been left pointing at `/ontology`,
+         which now 308s onto the spec page, and every link written before the §1 rename would
+         pay two hops for it. That is the cost recorded below for
+         `/how-to-build-a-dark-factory`, and it is not paid twice.
+
+         `/ontology/<term>` is NOT shadowed by the first row. A `source` with no parameter in
+         it compiles to an anchored, exact pattern: verified against the matcher Next 16.2.11
+         actually ships (`next/dist/compiled/path-to-regexp`), where `/ontology` tests true
+         for `/ontology` and false for `/ontology/pii-handling` and `/ontology/a/b`. The term
+         detail pages keep their URLs, which is why every card chip and every search hit
+         still resolves. */
+      { source: "/ontology", destination: "/spec/ontology", permanent: true },
+      { source: "/ontologies", destination: "/spec/ontology", permanent: true },
+      { source: "/ontologies/:slug", destination: "/spec/ontology", permanent: true },
       /* Repointed 2026-08-07: this landed on `/towards-a-dark-factory/the-climb` until the
          author deleted that page, and a 308 to a 308 costs every link written before §4.2
          two hops. Both of these now land on the parent, which is the whole route. */
@@ -109,7 +153,12 @@ const nextConfig: NextConfig = {
       { source: "/spec", destination: "/what-a-blueprint-is", permanent: true },
       {
         source: "/spec/scoring",
-        destination: "/reading-the-radar",
+        destination: "/what-a-blueprint-is",
+        permanent: true,
+      },
+      {
+        source: "/reading-the-radar",
+        destination: "/what-a-blueprint-is",
         permanent: true,
       },
       { source: "/concepts", destination: "/what-a-blueprint-is", permanent: true },

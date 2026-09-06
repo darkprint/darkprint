@@ -3,18 +3,45 @@ digraph incident_commander {
   node [shape=box, style=rounded];
 
   ticket      [card="event-intake@1.0.0"];
-  classify    [card="intent-router@2.0.0"];
+  classify    [card="intent-router@2.1.0"];
   autoresolve [card="resolution-composer@1.0.0"];
   kb          [card="runbook-resolver@1.0.0"];
   qa          [card="blast-radius-check@1.0.0"];
-  send        [card="runbook-executor@1.0.0"];
+  send        [card="runbook-executor@1.1.0"];
   escalate    [card="confidence-escalation@1.0.0"];
 
   ticket -> classify [in="event"];
-  classify -> autoresolve [label="simple"];
-  classify -> kb [label="lookup"];
+
+  // Same shape and same guard as `frontline-triage`, on the lane this router names for a
+  // confidence below its own threshold. `intent-router@2.1.0` raises that threshold to
+  // 0.75 and routes what falls under it to `on-call` rather than to a configured default,
+  // and the spec sentence the agent executes says `on-call` in so many words, so that is
+  // the value the guard reads. An alert the classifier could not place has no label to
+  // build a runbook lookup key out of, so it goes to the composer, which states what it
+  // could not ground, and reaches a person through the blast-radius check below.
+  //
+  // Until these conditions existed the fork ran to §3.3's step 5 and `autoresolve` took
+  // every alert on the spelling of its id, so `kb` was unreachable and no incident in this
+  // blueprint ever resolved a runbook. The negation arm is `kb` for the reason it is in
+  // `frontline-triage`: §10.4 resolves a missing key to the empty string, so a run with no
+  // lane written takes the lookup and still reaches the composer through it.
+  //
+  // `intent-router@2.1.0` is what writes the key (§11.0 Q17), through the `context_updates`
+  // sentence in its spec, so this guard reads a lane the run produced rather than always
+  // comparing the empty string. The negation arm does not move: the spec is an instruction
+  // to an agent, and the arm a silent classifier takes still has to be the one that reaches
+  // a person.
+  classify -> autoresolve [label="simple", condition="context.lane=on-call"];
+  classify -> kb [label="lookup", condition="context.lane!=on-call"];
   kb -> autoresolve;
   autoresolve -> qa;
-  qa -> send     [label="confident"];
-  qa -> escalate [label="low conf.", style=dashed, out="risk", in="verdict"];
+
+  // `blast-radius-check` is done when a verdict is on `risk`, "whichever way it went", so
+  // it succeeds on a mitigation it refuses and `outcome` cannot carry this fork. §10 has no
+  // numeric comparison, so neither can the twelve-host limit. The label the node prefers
+  // is the discriminator, and the negation arm is the human gate: `send` is
+  // `runbook-executor`, the highest-privilege node in the gallery, and a check that writes
+  // no label must not be the reason production gets touched.
+  qa -> send     [label="confident", condition="preferred_label=confident"];
+  qa -> escalate [label="low conf.", style=dashed, out="risk", in="verdict", condition="preferred_label!=confident"];
 }

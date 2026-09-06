@@ -98,7 +98,6 @@ import {
   bundleBySlug,
   scratchDatabase,
   seedAccount,
-  seedOntology,
   seedRelease,
   type Scratch,
   type SeededAccount,
@@ -114,7 +113,6 @@ const seeded = new Map<string, SeededRelease>();
 
 beforeAll(async () => {
   scratch = await scratchDatabase("attractor");
-  await seedOntology(scratch.db);
   owner = await seedAccount(scratch, "attractor");
   for (const entry of archive()) {
     seeded.set(entry.slug, await seedRelease(scratch, owner, entry));
@@ -218,7 +216,6 @@ describe("AC4 — the export gate admits every shipped bundle's graph", () => {
      */
     const own = await scratchDatabase("attractor_exponential");
     try {
-      await seedOntology(own.db);
       const account = await seedAccount(own, "exponential");
       const HUGE = 100000000000000000000000; // 1e23; `String()` gives "1e+23"
       const release = await seedRelease(own, account, bundleBySlug("checkpoint-resume-runner"), {
@@ -280,7 +277,6 @@ describe("AC4 — the export gate admits every shipped bundle's graph", () => {
      */
     const own = await scratchDatabase("attractor_broken");
     try {
-      await seedOntology(own.db);
       const account = await seedAccount(own, "broken");
       const release = await seedRelease(own, account, bundleBySlug("starter-software-factory"), {
         dot: "this is not DOT at all {{{ -> ->",
@@ -326,7 +322,6 @@ describe("AC4 — the export gate admits every shipped bundle's graph", () => {
      */
     const own = await scratchDatabase("attractor_degraded");
     try {
-      await seedOntology(own.db);
       const account = await seedAccount(own, "degraded");
       const release = await seedRelease(own, account, bundleBySlug("grounded-research-desk"), {
         dropOneCardRef: true,
@@ -373,7 +368,6 @@ describe("AC4 — the export gate admits every shipped bundle's graph", () => {
      */
     const own = await scratchDatabase("attractor_broken_serve");
     try {
-      await seedOntology(own.db);
       const account = await seedAccount(own, "brokenserve");
       const release = await seedRelease(own, account, bundleBySlug("starter-software-factory"), {
         dot: "this is not DOT at all {{{ -> ->",

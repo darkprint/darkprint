@@ -60,15 +60,30 @@ import {
    has to survive.
    ============================================================ */
 
-/** `backend.md`: "the tables every later task extends". Ten, named by the contract. */
+/**
+ * `backend.md`: "the tables every later task extends". Ten at T000, eight since 2026-09-05.
+ *
+ * `ontology_version` and `ontology_term` were dropped by `0009_drop_ontology_versioning` on
+ * the owner's instruction: DarkPrint's vocabulary names what an Attractor node IS, Attractor
+ * fixes those shapes in its own spec and carries no vocabulary version, so a DarkPrint-only
+ * version on top was a second thing to keep in step with nothing. The term table went with
+ * its parent because `ontology_term.ontology_version_id` is NOT NULL and references it.
+ *
+ * They are REMOVED from this list rather than exempted inside the helpers, and that is the
+ * opposite of the ruling `tests/server/t005/existing.test.ts` took on the same two tables an
+ * hour earlier. The two lists answer different questions and the difference is the reason.
+ * This one is a claim about what a migrated database MUST CONTAIN NOW, so a table that no
+ * longer exists has no business being demanded. T005's `BASE_TABLES` is a claim about what
+ * T000 SHIPPED, which is a historical fact a later deletion cannot edit, so it keeps both
+ * names and licenses their removal cell by cell. Shortening this list loses nothing: the
+ * absence of the two is asserted there, by name, where the freeze can see it.
+ */
 const CONTRACT_TABLES = [
   "account",
   "handle_reservation",
   "bundle",
   "release",
   "card_version",
-  "ontology_version",
-  "ontology_term",
   "target",
   /* Added to the contract on 2026-08-13, raised by the implementer: `target` carries the
      aggregate counters and nothing recorded who acted, so T150's "starring twice yields

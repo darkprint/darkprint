@@ -54,7 +54,7 @@ import { asDiagnostics, bind, errorsOf } from "./contract";
    AC1's pure half: `isReservedSlug`
    ============================================================ */
 
-describe("isReservedSlug: the four segments the profile tabs occupy", () => {
+describe("isReservedSlug: the segments the profile tabs occupy", () => {
   /* Quantified over the set by CONSTRUCTION rather than over four literals. The contract asks
      for exactly this — "read them from that module rather than restating the list, so the
      profile tabs and this guard cannot drift" — so a fifth tab added to `tabs.ts` extends this
@@ -66,13 +66,18 @@ describe("isReservedSlug: the four segments the profile tabs occupy", () => {
     });
   }
 
-  it("covers the three segments backend.md §T070 names, and no others exist to cover", () => {
+  it("covers the two segments backend.md §T070 names, and no others exist to cover", () => {
     /* A check on `components/profile/tabs.ts` rather than on T070: it states what the loop
-       above currently ranges over, so the coverage claim cannot go stale silently. §T070 (T280
-       revision): "The three reserved slugs are `cards`, `saved`, `terms`." Blueprints moved to
-       the segmentless index at T280, so a red here means the tabs changed and §T070's list has
-       to change with them. */
-    expect([...RESERVED_PROFILE_SEGMENTS].sort()).toEqual(["cards", "saved", "terms"]);
+       above currently ranges over, so the coverage claim cannot go stale silently. Blueprints
+       moved to the segmentless index at T280, so a red here means the tabs changed and §T070's
+       list has to change with them.
+
+       That is exactly what happened on 2026-09-06. The owner removed the Ontology terms tab
+       ("remove the section Ontology terms"), `app/u/[username]/terms/page.tsx` was deleted
+       with it, and `terms` stopped being reserved — so a bundle may now be called it. This
+       cell did its job: it red, and §T070 was updated in the same change rather than left
+       naming a slug the registry no longer refuses. */
+    expect([...RESERVED_PROFILE_SEGMENTS].sort()).toEqual(["cards", "saved"]);
   });
 
   it("does not reserve `blueprints`, whose tab has no segment of its own", async () => {

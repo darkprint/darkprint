@@ -7,8 +7,6 @@ import { getBundle } from "@/lib/server/archive";
 import { getPreferences } from "@/lib/server/notifications";
 import { getProfile } from "@/lib/server/profiles";
 import { latestCards, ownedBundles } from "@/lib/server/registry";
-import { monthYear } from "@/lib/format";
-import { Badge } from "@/components/ui/Badge";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SideRail, type SideRailItem } from "@/components/ui/SideRail";
 import { SectionNote, SettingsSection } from "@/components/settings/controls";
@@ -24,9 +22,9 @@ import { SignInButtons } from "@/components/auth/SignInButtons";
 // SEAM-52 / SEAM-111 LIVE: the authored counts, off `@/lib/server/profiles` and
 //   `@/lib/server/registry` rather than a per-handle counts endpoint.
 // SEAM-45, SEAM-46, SEAM-47, SEAM-48 LIVE: see `components/settings/AccountForm.tsx`.
-// SEAM-49 PLANNED: no per-account validator read exists. Ballot CASTING is LIVE since T280,
-//   at POST /api/blueprints/{owner}/{slug}/votes on a blueprint's own page — a different
-//   surface from this one, which only ever displayed the account's badge and weight.
+// SEAM-49 PLANNED: no per-account validator read exists, and since Q14 there is no ballot for
+//   one to weight: GET/POST /api/blueprints/{owner}/{slug}/votes and the write path under it
+//   are deleted. This section displays a badge; nothing anywhere applies a weight.
 // SEAM-50 LIVE: GET /api/account/delete/plan, POST /api/account/delete — see
 //   `components/settings/DangerZone.tsx`.
 // SEAM-51 LIVE: GET /api/transfer/plan, POST /api/transfer — see `DangerZone.tsx`. (SEAM-51's
@@ -64,8 +62,10 @@ import { SignInButtons } from "@/components/auth/SignInButtons";
    What did NOT move: mail delivery. §03's switches save for real,
    and nothing sends because of them — `NotificationDelivery` is a
    published interface with no implementation. §05 validator status
-   stays read-only; ballot casting is real (T280 wires it) but it
-   lives on a blueprint's own page, not this one.
+   stays read-only, and Q14 took away the thing it used to be
+   read-only ABOUT: the ballot route and its write path are gone, so
+   the badge is a label the registry grants rather than a lever on
+   any number.
 
    An Appearance section stood at §06 and was deleted before this
    wave — see the note that used to explain it, now gone with it: it
@@ -76,7 +76,7 @@ import { SignInButtons } from "@/components/auth/SignInButtons";
 export const metadata: Metadata = {
   title: "Settings",
   description:
-    "What the registry knows about you, and what it will never keep. Your profile, handle, email, default visibility, notification preferences and API keys are stored. Casting a ballot happens on a blueprint's own page. No mail goes out yet.",
+    "What the registry knows about you, and what it will never keep. Your profile, handle, email, default visibility, notification preferences and API keys are stored. No mail goes out yet.",
 };
 
 /**
@@ -112,19 +112,14 @@ const SETTINGS_SECTIONS: readonly SideRailItem[] = [
     step: "04",
   },
   {
-    href: "#validator-status",
-    label: "Validator status",
-    step: "05",
-  },
-  {
     href: "#api-keys",
     label: "API keys",
-    step: "06",
+    step: "05",
   },
   {
     href: "#danger-zone",
     label: "Danger zone",
-    step: "07",
+    step: "06",
     tone: "signal",
   },
 ];
@@ -286,49 +281,19 @@ export default async function Page() {
             </div>
           }
         >
-          {/* ---------- 05 ---------- */}
-          <SettingsSection
-            id="validator-status"
-            className="scroll-mt-24"
-            step="05"
-            title="Validator status"
-            tone="amber"
-            note={<SectionNote tone="amber">read-only here</SectionNote>}
-          >
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-wrap items-center gap-5">
-                {account.author.validator ? (
-                  <Badge
-                    color="var(--color-cyan)"
-                    className="border-cyan/40! bg-cyan/10! text-cyan!"
-                  >
-                    ✦ Validator
-                  </Badge>
-                ) : (
-                  <Badge color="var(--color-dim)">Not a validator</Badge>
-                )}
-                <span className="font-mono text-[11px] text-dim">
-                  {account.validatorSince === undefined
-                    ? "not granted"
-                    : `granted ${monthYear(account.validatorSince.toISOString())}`}{" "}
-                  · weight ×{account.validatorWeight} on community metrics
-                </span>
-              </div>
-              {/* T280 rewrites this paragraph rather than leaving it: ballot casting is live
-                  (`POST /api/blueprints/{owner}/{slug}/votes`), and a validator's weight is
-                  applied at read, on every ballot they cast — `lib/server/ballot/aggregate.ts`
-                  joins `account.validator_weight` into the weighted mean unconditionally, so
-                  "validator voting is not built" would be false to say now. What is still true
-                  is narrower: this PAGE has never let you cast one, and does not start here —
-                  a ballot is cast from a blueprint's own scorecard, not from a settings form. */}
-              <p className="text-[13px] leading-relaxed text-muted">
-                The status above is your account&rsquo;s: a real badge and a real weight,
-                both read off it directly. Casting a ballot happens on a blueprint&rsquo;s own
-                page, where your weight (if you have one above the default) already counts
-                toward the three community metrics on its scorecard.
-              </p>
-            </div>
-          </SettingsSection>
+          {/* §05 Validator status stood here and is deleted on the owner's instruction,
+              2026-09-06: "remove 05 · Validator status in the user settings".
+
+              It drew the account's validator badge, the grant date, and a paragraph saying
+              the badge is all it is now — the weight beside it multiplied nothing once the
+              ballot was deleted (Q14). So the section had already been reduced to a status
+              a reader could not act on and a sentence explaining that.
+
+              NOTHING ELSE MOVED. `account.author.validator` and `account.validatorSince` are
+              still read and still stored, and the `✦ validator` mark still renders beside a
+              handle where the profile draws it. What went is the settings VIEW of it, which
+              was read-only by its own note. The steps below renumbered rather than leaving a
+              gap: these are positions in a sequence a reader counts, not stable ids. */}
 
           {/* §06 Appearance stood here once and is deleted on the author's instruction.
               ------------------------------------------------------------
@@ -349,7 +314,7 @@ export default async function Page() {
           <SettingsSection
             id="api-keys"
             className="scroll-mt-24"
-            step="06"
+            step="05"
             title="API keys"
             note={<SectionNote>outside Save changes</SectionNote>}
           >
@@ -360,7 +325,7 @@ export default async function Page() {
           <SettingsSection
             id="danger-zone"
             className="scroll-mt-24"
-            step="07"
+            step="06"
             title="Danger zone"
             tone="signal"
             note={<SectionNote tone="signal">irreversible</SectionNote>}

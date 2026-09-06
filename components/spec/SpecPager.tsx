@@ -33,7 +33,9 @@
    That is not a hypothetical any more in the other direction: the IA
    pass took the sequence back DOWN to four, by deleting `/spec` and
    merging `/spec/scoring` into `/reading-the-radar`, and the label
-   followed on its own.
+   followed on its own. It did the same on 2026-09-04, when the author
+   asked the graded page off the site and the practice run lost a
+   stop. Nothing in this file was edited for either removal.
    ============================================================ */
 
 import Link from "next/link";
@@ -103,7 +105,8 @@ export function SpecCrumb({ href }: { href: string }) {
  * ── The card itself lives in `components/ui/RouteBoxLink.tsx` ──
  * It used to be a class string spelled out here, byte-identical to two other copies in
  * `OnwardRoutes` and `RoutePager`; `/build` was about to write a fourth, so the shape was
- * extracted. Everything above still holds — that file's docblock repeats the shape
+ * extracted. That route is deleted (owner, 2026-09-06) and the extraction outlived it: the
+ * three copies it removed are still three copies removed. Everything above still holds — that file's docblock repeats the shape
  * argument, because that is where the shape now is. What stays here is what only this
  * pager knows: which page is adjacent, which side it sits on, and that `next` is pushed
  * to the end of the row.
@@ -113,7 +116,10 @@ function PagerLink({ page, side }: { page: SpecPage; side: "previous" | "next" }
   /* The run and the step, so a reader stepping out of the specification is told they are
      leaving it. "Next · In practice 04 →" reads differently from "Next →", and the
      difference is the whole point of grouping the rail: a boundary nobody is told about is
-     not a boundary. The sandbox has no number, so it names its run alone. */
+     not a boundary. `step` is filtered rather than assumed present because a stop may carry
+     none: the sandbox at `/build` was the one such stop and is deleted, so today every stop
+     has a number and the filter is what stops the next unnumbered one printing "undefined".
+     */
   const where = [RUNS[page.run], page.step].filter(Boolean).join(" ");
   return (
     <RouteBoxLink

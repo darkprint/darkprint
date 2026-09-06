@@ -161,6 +161,11 @@ export {
   isAttractorKeyword,
   isAttractorBoundaryId,
   isUsableAttractorNodeId,
+  // The revision this compatibility is against. Withheld from the barrel until 2026-09-05
+  // to stop the product branching on when a document was last read, which is still
+  // forbidden. `/spec/attractor` DISPLAYS it, because an undated compatibility claim has
+  // no shelf life, and that is a different act. See the pin's own docblock.
+  ATTRACTOR_SPEC_PIN,
 } from "./attractor/reserved";
 export { lintAttractor } from "./attractor/lint";
 export type { AttractorNodeKind } from "./attractor/emit";
@@ -179,6 +184,16 @@ export {
   // above and the reserved sets, printed into every emitted file's header, and published
   // so a page or a CLI can state the same gap without transcribing it a second time.
   ATTRACTOR_UNEXPRESSED_ATTRIBUTES,
+  /* The two halves that list splits into, published for the same reason the union is: two
+     surfaces render them now, `lib/content/bundle-export.ts`'s README section and
+     `/spec/attractor`, and both reached past this barrel into `attractor/emit` to get them.
+     A deep import is a second door into a module whose surface this file exists to state.
+     They are separate exports rather than a shape because the difference between them is
+     the whole point: one group falls to a runner default and the other has none, which is
+     `tool_command` under spec §4.10 and `human.default_choice` under §4.6. */
+  ATTRACTOR_DEFAULTING_ATTRIBUTES,
+  ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES,
+  ATTRACTOR_REQUIRED_ATTRIBUTES,
   attractorKindFor,
   attractorClassesFor,
   // The `dp-` collapse, published because `attractor/import.ts` reads a class list back

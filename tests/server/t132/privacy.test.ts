@@ -50,7 +50,7 @@ import {
   stampScorecard,
 } from "./contract";
 import { assertTellsCannotOverMatch, collectStrings, findTokens } from "../t080/contract";
-import { bundleBySlug, seedAccount, seedOntology, seedRelease, type SeededAccount } from "../t090/fixtures";
+import { bundleBySlug, seedAccount, seedRelease, type SeededAccount } from "../t090/fixtures";
 
 const gate = new FixtureGate();
 let s: ReturnType<FixtureGate["get"]>;
@@ -76,11 +76,10 @@ const sides: Record<"A" | "B", Side> = {} as Record<"A" | "B", Side>;
  * are not also the public half's — a tell that is a substring of admissible content reds an
  * implementation that leaked nothing (T-04), and here it would do so silently.
  *
- * The scorecards are STAMPED BY HAND. `scoresFor` has nothing to leak otherwise: D-260-24
- * means every release a publish can write has no scorecard at all, so the sweep over that
- * reader would be vacuous in both directions. See `stampScorecard`'s docblock — the state it
- * creates is one no writer in this product can reach, and that is what these cells stand in
- * for rather than what they measure.
+ * The scorecards are STAMPED BY HAND, so the sealed side carries a chosen secret in its
+ * `autonomy` and `security` payloads rather than whatever the seeded corpus happens to
+ * score. `stampScorecard` writes the same three columns a publish writes; a leak sweep needs
+ * a tell it planted, not a plausible one.
  */
 async function buildSide(prefix: string, label: string, openEntry: string, sealedEntry: string): Promise<Side> {
   const owner = await seedAccount(s as never, mark(`t132-priv-${prefix}`));
@@ -99,9 +98,8 @@ async function buildSide(prefix: string, label: string, openEntry: string, seale
   const [sealedRelease] = await query(s, "select id, card_refs from release where bundle_id = $1", [
     sealed.bundleId,
   ]);
-  await stampScorecard(s, openRelease?.id as string, { ontologyVersion: "0.1.0" });
+  await stampScorecard(s, openRelease?.id as string);
   await stampScorecard(s, sealedRelease?.id as string, {
-    ontologyVersion: "0.1.0",
     autonomy: { autonomyClass: secret, level: 4 },
     security: { level: 1, raw: 1, penalties: [], findings: [], rationale: secret },
   });
@@ -146,7 +144,6 @@ async function buildSide(prefix: string, label: string, openEntry: string, seale
 beforeAll(async () => {
   await gate.build(async () => {
     s = await scratchDatabase("privacy");
-    await seedOntology(s.db);
     sides.A = await buildSide("a", "A", "guarded-merge-bot", "starter-software-factory");
     sides.B = await buildSide("b", "B", "grounded-research-desk", "nightly-data-janitor");
 
@@ -376,9 +373,9 @@ describe("AC6 control — each reader does return the public fixture", () => {
     const answered = (await CALLS[1].run(anonymous, sides.A)) as Map<string, unknown>;
     expect(
       answered.has(keyOf(publicKey(sides.A))),
-      `This control depends on \`stampScorecard\`, which writes a column no writer in this ` +
-        `product writes (D-260-24). Without the stand-in there is nothing for \`scoresFor\` to ` +
-        `return about ANY blueprint and the sweep over it measures nothing in either direction.`,
+      `This control depends on \`stampScorecard\`. Without the planted scorecard there is ` +
+        `no chosen tell for \`scoresFor\` to return about ANY blueprint and the sweep over it ` +
+        `measures nothing in either direction.`,
     ).toBe(true);
   });
 

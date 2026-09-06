@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { parse as parseYaml } from "yaml";
 
 import {
+  ATTRACTOR_EMITTED_ATTRIBUTES,
+  ATTRACTOR_UNEXPRESSED_ATTRIBUTES,
   CORE_ONTOLOGY,
   emitAttractorDot,
   hasErrors,
@@ -9,12 +11,22 @@ import {
   loadBundle,
   ontologyView,
   parseDot,
+  type AttractorScope,
 } from "@/lib/core";
+/* The two halves of the third list, deep-imported for the same reason the module under test
+   deep-imports them: `@/lib/core` publishes the union, and the union is the shape whose one
+   sentence was false. Asserting against the union alone could not tell the two groups apart,
+   which is the whole thing these cells are for. */
+import {
+  ATTRACTOR_DEFAULTING_ATTRIBUTES,
+  ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES,
+} from "@/lib/core/attractor/emit";
 
 import {
   BUNDLE_AGENTS,
   BUNDLE_README,
   BUNDLE_VOCABULARY,
+  README_RUNNER_SECTION,
   TOPOLOGY_DOT,
   SITE_ORIGIN,
   bundleDir,
@@ -494,10 +506,11 @@ describe("the README", () => {
       ]);
       expect([slug, text.includes(entry.blueprint.digest)]).toEqual([slug, true]);
       expect([slug, text.includes(`blueprint      ${slug}`)]).toEqual([slug, true]);
-      /* The vocabulary the scores were computed under, off the analysis. It used to be read
-         off the manifest, which declared a version of its own; the README quotes the version
-         the engine actually resolved against, which is the only one a reader can use. */
-      expect([slug, text.includes(`v${entry.analysis.ontologyVersion}`)]).toEqual([slug, true]);
+      /* The README used to carry an `ontology vX.Y.Z` line. The vocabulary has no version,
+         so the line is gone and its absence is the assertion: a reader of the folder is
+         pointed at `ontology/extensions.yaml`, which travels with it, rather than at a number
+         that named nothing they could fetch. */
+      expect([slug, /^ontology\s/m.test(text)]).toEqual([slug, false]);
     }
   });
 
@@ -779,6 +792,174 @@ describe("the README", () => {
   it("is the same text whether it is asked for directly or through exportBundle", () => {
     for (const { input, files } of EXPORTS) {
       expect(fileMap(files).get(BUNDLE_README)).toBe(bundleReadme(input));
+    }
+  });
+});
+
+/* ============================================================
+   The unexpressed-attribute disclosure, in the folder
+
+   `emitAttractorDot` prints it into every file it compiles, and
+   that file is written by `darkprint export`, whose npm package
+   is not published. A reader who downloads this folder from the
+   site therefore met none of it, which is what the owner ruled
+   on (2026-09-04): the disclosure goes into `README.md`, the
+   file the folder already carries.
+
+   Every cell below is anchored to the constants in `emit.ts`
+   rather than to a list written out here. That is the point of
+   the ruling: the day the emitter learns to write one more
+   attribute, a transcribed list keeps telling a reader the
+   folder drops it, and the reader has the file and no way to
+   check it. A cell holding a literal list would drift exactly
+   the same way and would go green while doing it.
+   ============================================================ */
+describe("the README's disclosure of what a runner reads and a blueprint cannot set", () => {
+  const readmes = EXPORTS.map((e) => ({
+    slug: e.slug,
+    text: fileMap(e.files).get(BUNDLE_README) ?? "",
+  }));
+
+  const SCOPES = Object.keys(ATTRACTOR_UNEXPRESSED_ATTRIBUTES) as AttractorScope[];
+
+  /** The heading without its markdown level, which is how the `Run it` paragraph cites it. */
+  const title = README_RUNNER_SECTION.replace(/^#+ /, "");
+
+  /** The section, from its heading to the next one. `""` when the README omits it. */
+  function section(text: string): string {
+    return text.split(README_RUNNER_SECTION)[1]?.split("\n## ")[0] ?? "";
+  }
+
+  /**
+   * The section's two halves, split on the structural marker rather than on either promise.
+   *
+   * Each group opens `Left out, …`. Splitting there pins the shape of the disclosure and
+   * leaves both sentences free to be rewritten, which they have to be: the second one was
+   * rewritten once already, when `emit.ts` split a single false sentence in two.
+   */
+  function groups(text: string): string[] {
+    return section(text).split("Left out,").slice(1);
+  }
+
+  it("carries the section in every published folder", () => {
+    for (const { slug, text } of readmes) {
+      expect([slug, text.includes(README_RUNNER_SECTION)]).toEqual([slug, true]);
+      // Two `Left out,` blocks, because both groups are non-empty against today's emitter.
+      // A day when one of them empties is a day this number moves and somebody re-reads the
+      // prose around it, which is the review this cell exists to force.
+      expect([slug, groups(text).length]).toEqual([slug, 2]);
+    }
+  });
+
+  // The cell the ruling asks for: a name in the unexpressed set that stops appearing in the
+  // README reds here. Driven off the constant, so it keeps biting when the set changes.
+  it("names every unexpressed attribute, in every scope", () => {
+    for (const { slug, text } of readmes) {
+      const body = section(text);
+      for (const scope of SCOPES) {
+        for (const name of ATTRACTOR_UNEXPRESSED_ATTRIBUTES[scope]) {
+          // Backticked on both sides, so `retry_target` is not satisfied by the
+          // `fallback_retry_target` two names along, and `default_max_retry` is not
+          // satisfied by `default_max_retries`.
+          expect([slug, scope, name, body.includes(`\`${name}\``)]).toEqual([
+            slug,
+            scope,
+            name,
+            true,
+          ]);
+        }
+      }
+    }
+  });
+
+  // The other direction, and the failure a one-directional cell cannot see: a name the
+  // emitter writes must never be listed here as one the folder leaves out. A section
+  // claiming `prompt` is unexpressed would be telling a reader to write in by hand the one
+  // attribute every node already carries.
+  it("lists nothing the emitter actually writes", () => {
+    for (const { slug, text } of readmes) {
+      const body = section(text);
+      for (const scope of SCOPES) {
+        for (const name of ATTRACTOR_EMITTED_ATTRIBUTES[scope]) {
+          expect([slug, scope, name, body.includes(`\`${name}\``)]).toEqual([
+            slug,
+            scope,
+            name,
+            false,
+          ]);
+        }
+      }
+    }
+  });
+
+  /* The split is the reason this section is two lists and not one. `emit.ts`'s header said
+     every unexpressed name "falls back to the runner's own default", which is false for the
+     names a handler reads bare: §4.6 returns RETRY at a human gate that times out with no
+     `human.default_choice`, and §4.11 hands whatever it read for `stack.child_dotfile` to
+     `start_child_pipeline` unchecked. A README that put those under one sentence with
+     `join_policy` and `timeout` would reintroduce the falsehood in the artefact a stranger
+     downloads, where it is least checkable. */
+  it("puts a name a handler reads bare in the second group and never the first", () => {
+    for (const { slug, text } of readmes) {
+      const [defaulting, needed] = groups(text);
+      for (const scope of SCOPES) {
+        for (const name of ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES[scope]) {
+          expect([slug, scope, name, needed?.includes(`\`${name}\``)]).toEqual([
+            slug,
+            scope,
+            name,
+            true,
+          ]);
+          expect([slug, scope, name, defaulting?.includes(`\`${name}\``)]).toEqual([
+            slug,
+            scope,
+            name,
+            false,
+          ]);
+        }
+        for (const name of ATTRACTOR_DEFAULTING_ATTRIBUTES[scope]) {
+          expect([slug, scope, name, defaulting?.includes(`\`${name}\``)]).toEqual([
+            slug,
+            scope,
+            name,
+            true,
+          ]);
+        }
+      }
+    }
+  });
+
+  /* The word, not a phrasing of it. Both spellings of the false claim ("takes the runner's
+     own default", "falls back to a default") die on the same token, and a sentence that
+     genuinely needs the word is a sentence about the first group. This is the guard that
+     stops the two lists from being re-merged under one promise by somebody shortening the
+     section, which is how the falsehood got in the first time. */
+  it("promises no default over the group that has none", () => {
+    for (const { slug, text } of readmes) {
+      // The prose, with the names taken out: `human.default_choice` is in this group and
+      // carries the word, so a needle read over the whole block would charge the section for
+      // quoting the very attribute it is warning about.
+      const needed = (groups(text)[1] ?? "").replace(/`[^`]*`/g, "");
+      expect([slug, /default/i.test(needed)]).toEqual([slug, false]);
+      expect([slug, /falls? back/i.test(needed)]).toEqual([slug, false]);
+    }
+  });
+
+  // The paragraph that used to be the only mention of the disclosure, and carried the
+  // single-list claim while doing it. It may point at the section; it may not describe the
+  // compiled header as a list of what the runner defaults for.
+  it("no longer tells a reader the compiled header is one list of runner defaults", () => {
+    for (const { slug, text } of readmes) {
+      expect([slug, text.includes("falls back to its own defaults")]).toEqual([slug, false]);
+      // Whitespace-normalised: the paragraph is wrapped to a column, so the command straddles
+      // a line break in every one of the nine folders and a raw `includes` would be measuring
+      // where `wrap` happened to land rather than whether the command is there.
+      const flowed = text.replace(/\s+/g, " ");
+      expect([slug, flowed.includes("`darkprint export <dir> --attractor`")]).toEqual([slug, true]);
+      expect([
+        slug,
+        flowed.includes(`opens with the same two lists this README carries under *${title}*`),
+      ]).toEqual([slug, true]);
     }
   });
 });

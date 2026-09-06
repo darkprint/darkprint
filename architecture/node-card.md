@@ -73,7 +73,7 @@ Wire keys are `snake_case`; the parsed type is `camelCase`.
 | `phase` / `phases` | `string[]` | **Ontology `phase` terms.** Optional and repeatable — a node may sit in several phases or none. |
 | `version` | semver | Archived side by side, never edited in place. |
 | `author`, `provenance` | `string?` | |
-| `ontology_version` | `string` | Which vocabulary this card was written against. |
+| ~~`ontology_version`~~ | ~~`string`~~ | ~~Which vocabulary this card was written against.~~ **RETIRED. Withdrawn from the schema by D-93 (2026-08-30), and the concept it named was removed entirely by D-131 (2026-09-05).** A card carrying it still loads and raises `card/retired-field` at warning, because every card published before the change carries one and refusing them would turn a schema change into an archive-wide outage. The example above is kept verbatim as the record of what was specified. |
 
 ### What it does
 
@@ -91,12 +91,12 @@ them even when the graph shows no edge. See [`engine.md`](./engine.md).
 
 | field | type | notes |
 |---|---|---|
-| `model` | `string?` | Emitted as Attractor's reserved `llm_model`. **Absent emits nothing** rather than an empty string, so the graph's `model_stylesheet` still decides. |
+| `model` | `string?` | Emitted as Attractor's reserved `llm_model`. **Absent emits nothing** rather than an empty string, so the graph's `model_stylesheet` fills it in. Present, it OUTRANKS the sheet: spec §8.3/§8.5 rank an explicit node attribute above every stylesheet rule, and DarkPrint writes no stylesheet of its own. |
 | `agent` | `string?` | Role name. |
 | `tools` | `string[]` | **Ontology `tool` terms.** Capabilities, checked. |
 | `mcp` | `string[]` | Concrete MCP server names. Free text, deliberately *not* merged with `tools` — they answer different questions. |
 | `skill` | `string?` | Path to the document defining behaviour, e.g. `skills/code-builder.md`. **DarkPrint stores the pointer and reads nothing at the other end.** No skill document travels in a bundle, and the bundle README says so. |
-| `params` | `Record<string, JsonValue>` | Free-form. `max_iterations` here becomes Attractor's `max_retries`. |
+| `params` | `Record<string, JsonValue>` | Free-form, and two keys are read on the way out. The iteration cap — `max_iterations`, `maxIterations` or `max_retries`, in that order — becomes Attractor's `max_retries`; the engine accepts all three spellings, and since 2026-09-04 every card in the archive already writes `max_retries`, so the mapping describes the engine rather than the shipped content. `tool_command` is the command a `shell-tool` node runs, and it is emitted onto the node and read back by the importer. |
 
 ### Its interface
 

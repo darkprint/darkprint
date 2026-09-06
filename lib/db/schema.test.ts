@@ -35,6 +35,10 @@ describe.skipIf(!hasDb)("lib/db/schema", () => {
     await testDb?.drop();
   });
 
+  /* `ontology_version` and `ontology_term` were two of the tables this cell walked, and the
+     release it inserts carried `scoredOntologyVersionId` pointing at the first. Migration
+     0009 dropped all three, so they leave this cell with the schema rather than because the
+     assertion was relaxed: "every table" still means every table `schema.ts` declares. */
   it("round-trips one row through every table, respecting the foreign keys between them", async () => {
     const { db } = client;
 
@@ -46,18 +50,6 @@ describe.skipIf(!hasDb)("lib/db/schema", () => {
     expect(owner.validator).toBe(false);
 
     await db.insert(schema.handleReservation).values({ handle: "berti", accountId: owner.id });
-
-    const [ontologyVersion] = await db
-      .insert(schema.ontologyVersion)
-      .values({ version: "0.1.0", digest: "sha256:ontology" })
-      .returning();
-
-    await db.insert(schema.ontologyTerm).values({
-      ontologyVersionId: ontologyVersion.id,
-      termId: "agent",
-      kind: "node-type",
-      body: { id: "agent", kind: "node-type", label: "Agent", description: "…", since: "0.1.0" },
-    });
 
     const [card] = await db
       .insert(schema.cardVersion)
@@ -86,7 +78,6 @@ describe.skipIf(!hasDb)("lib/db/schema", () => {
         manifest: { slug: "frontline-triage", title: "Frontline triage", summary: "…", tags: [] },
         cardRefs: [`${card.cardId}@${card.version}`],
         cardDigests: [card.digest],
-        scoredOntologyVersionId: ontologyVersion.id,
       })
       .returning();
     expect(release.autonomy).toBeNull();

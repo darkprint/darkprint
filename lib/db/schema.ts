@@ -4,9 +4,12 @@
    index lives here). Covers the ten tables named in T000's
    contract in `backend.md`: account, handle_reservation, bundle,
    release, card_version, ontology_version, ontology_term, target,
-   target_actor, audit. Every later task's `Owns` list excludes this
-   file, so what is not here has to be added by amending T000's
-   contract, not by editing this file from another worktree.
+   target_actor, audit -- of which `ontology_version` and
+   `ontology_term` were dropped by 0009 and are the two this file no
+   longer declares, for the reason kept at their old position below.
+   Every later task's `Owns` list excludes this file, so what is not
+   here has to be added by amending T000's contract, not by editing
+   this file from another worktree.
 
    T005 appends six more at the bottom — save, ballot, note,
    note_vote, run_report, api_key — for five tasks that each have
@@ -107,52 +110,22 @@ export const handleReservation = pgTable("handle_reservation", {
   index("handle_reservation_account_id_idx").on(t.accountId),
 ]);
 
-/* --------------------- ontology_version / ontology_term (B-04, B-07, B-08) --------------------- */
+/* --------------------- ontology_version / ontology_term: DROPPED (0009) --------------------- */
 
-/* ── NOTHING READS OR WRITES THESE TWO TABLES ──
-   They held published versions of the core vocabulary so a release could be resolved
-   against the version its manifest named. Nothing ever consumed that: a release stores its
-   whole scorecard when it is published, so no score is recomputed against a historical
-   vocabulary, and the version a score WAS computed under is on the score
-   (`AutonomyResult.ontologyVersion`, inside `release.autonomy`). The one living vocabulary
-   is `CORE_ONTOLOGY`, in the process, and `deprecated: {since, replacedBy}` is how a term is
-   retired inside it.
+/* ── TWO OF T000's TEN CONTRACT TABLES ARE GONE, AND THIS IS WHERE THEY WERE ──
+   `ontology_version` and `ontology_term` held published versions of the core vocabulary so
+   a release could be resolved against the version its manifest named. Nothing ever consumed
+   that. The registry now keeps ONE vocabulary, the Attractor spec language's, so there is no
+   second version for a row here to name. `CORE_ONTOLOGY` in the process is that vocabulary,
+   and `deprecated: {since, replacedBy}` is how a term is retired inside it.
 
-   The declarations stay and no migration drops them. `release.scored_ontology_version_id`
-   still references `ontology_version`, so dropping the table is a schema change with its own
-   ordering, and it is a separate decision from removing the code. A row here is inert: it is
-   read by nothing, so it can neither help nor mislead. */
+   This note stays although the code it described is gone, because the header of this file
+   still enumerates T000's ten tables by name and a reader who counts them finds eight. It is
+   the divergence that needs explaining, not the absent declarations.
 
-/** One row per published version of the *core*, shared vocabulary. Written by nothing. */
-export const ontologyVersion = pgTable("ontology_version", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  version: text("version").notNull(),
-  digest: text("digest").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [
-  uniqueIndex("ontology_version_version_key").on(t.version),
-]);
-
-/**
- * Core terms only. A bundle's own local/namespaced overlay is not a global row here —
- * it travels with the release that declares it (`release.localVocabulary`), which since
- * D-90-03 is served AS `ontology/extensions.yaml` at export (T090), byte for byte from the
- * stored `text` rather than generated from the parsed terms, and which T030's merged view
- * folds in per bundle rather than per registry. ("generated from" was this line until
- * D-133-02 F1; re-emitting that file from the parse loses comments, key order and
- * formatting, which is the loss D-90-03 exists to prevent.)
- */
-export const ontologyTerm = pgTable("ontology_term", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  ontologyVersionId: uuid("ontology_version_id").notNull().references(() => ontologyVersion.id),
-  termId: text("term_id").notNull(),
-  kind: text("kind", { enum: ["phase", "node-type", "risk-marker", "data-type", "tool"] }).notNull(),
-  /** Full `OntologyTerm` (lib/core/ontology/types.ts) — label, broader, deprecated, etc. */
-  body: jsonb("body").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [
-  uniqueIndex("ontology_term_version_term_key").on(t.ontologyVersionId, t.termId),
-]);
+   `0009_drop_ontology_versioning` is the migration, and its up script carries the reasoning
+   and the ordering the foreign keys forced. Its down script restores the shape and cannot
+   restore the rows; the owner approved that trade having been shown it. */
 
 /* --------------------- bundle / release (B-04, B-06, B-08, B-09) --------------------- */
 
@@ -242,11 +215,6 @@ export const release = pgTable("release", {
   autonomy: jsonb("autonomy"),
   security: jsonb("security"),
   phaseCoverage: jsonb("phase_coverage"),
-  /* Written by nothing and read by nothing. It named the `ontology_version` row a score was
-     computed under, and `registry/scores.ts` resolved it back to a semver string; the string
-     is on `autonomy` and is taken from there. Kept because dropping a column is a migration
-     and a separate decision. */
-  scoredOntologyVersionId: uuid("scored_ontology_version_id").references(() => ontologyVersion.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   uniqueIndex("release_bundle_version_key").on(t.bundleId, t.version),
@@ -588,6 +556,29 @@ export const runReport = pgTable("run_report", {
 /* --------------------- api_key (T230, B-17) --------------------- */
 
 /**
+ * What a key is allowed to do (migration `0010_key_scope`, owner ruling 2026-09-05).
+ *
+ * A type rather than `text` plus a check constraint, following the five enums `0001_init`
+ * declares, and it buys the property this column exists for: an unrecognised scope is
+ * unrepresentable, so no row can carry a value a reader has to decide how to interpret.
+ * That matters here more than anywhere else in this file, because the reader is an
+ * authorization decision.
+ *
+ * `"read"` is FIRST and it is the default, which is the grandfathering rule expressed as a
+ * column property. `ApiKeys.tsx` has told every holder so far that a key "authorizes no
+ * write", and the ruling is that the sentence stays true of every key already minted for
+ * that key's whole life. A default of `"read"` stamps it onto every existing row in the one
+ * statement that adds the column, and it keeps a writer that has not learned about scopes
+ * minting the least privilege rather than raising a NOT NULL violation.
+ *
+ * Two labels, and a third costs two migrations rather than one: `lib/db/migrate.ts` wraps
+ * each migration in BEGIN/COMMIT, and Postgres forbids USING a label added by
+ * `ALTER TYPE ... ADD VALUE` until that transaction commits. Named here because the cost is
+ * paid by whoever adds the third scope, not by this change.
+ */
+export const apiKeyScope = pgEnum("api_key_scope", ["read", "write"]);
+
+/**
  * `token_hash` is the only trace of the secret, which `issueKey` returns exactly once
  * and `ApiKeyRecord` deliberately has no field for. Storing a hash rather than the
  * secret is what makes that structural instead of a rule somebody remembers, and it
@@ -600,6 +591,12 @@ export const runReport = pgTable("run_report", {
  * because "when" is worth keeping and "whether" is derivable from it. Nothing here
  * can deliver T230's AC4 — "a revoked key is refused immediately" is a prohibition on
  * caching `resolveKey`, a property of that module and not of this table.
+ *
+ * `scope` is NOT NULL with a default, so a row cannot be ambiguous about what its key
+ * may do and a row written before `0010_key_scope` reads as `"read"` rather than as
+ * absent. It is the authority on the grant; `revoked_at` is the authority on liveness,
+ * and `writeActorFor` in `lib/server/limits/keys.ts` reads both off this row at the
+ * moment of the write rather than trusting a value read earlier.
  */
 export const apiKey = pgTable("api_key", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -608,6 +605,10 @@ export const apiKey = pgTable("api_key", {
   label: text("label").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  /* Last, matching the physical order `ALTER TABLE ... ADD COLUMN` produced. Postgres has
+     no way to insert a column at an ordinal, so a declaration ordered by what reads well
+     would disagree with every catalogue dump of this table. */
+  scope: apiKeyScope("scope").notNull().default("read"),
 }, (t) => [
   uniqueIndex("api_key_token_hash_key").on(t.tokenHash),
   index("api_key_account_id_idx").on(t.accountId),

@@ -130,7 +130,7 @@ if (!existsSync(join(process.cwd(), "content"))) {
 const plan = await planImport();
 
 console.log(`plan: ${plan.bundles.length} bundles, ${plan.cards.length} cards`);
-console.log(`      ontology ${plan.ontologyVersion}, owner @${plan.registryHandle}`);
+console.log(`      owner @${plan.registryHandle}`);
 for (const bundle of plan.bundles) {
   console.log(`      ${bundle.slug.padEnd(28)} ${bundle.digest}  ${bundle.releases} release`);
 }

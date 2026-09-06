@@ -15,9 +15,9 @@
    hand-written row would skip.
 
    The TARGETS a save points at are seeded by raw SQL, and the
-   difference is deliberate rather than convenient. `bundle`,
-   `card_version` and `ontology_term` carry no cross-column
-   invariant a raw insert could violate — a bundle is
+   difference is deliberate rather than convenient. `bundle` and
+   `card_version` carry no cross-column invariant a raw insert
+   could violate — a bundle is
    `(owner, slug, visibility)` and that is the whole of it — so
    there is no impossible row to manufacture, which is the property
    D-70-22 is actually about. Going through `createBundle`/`addCard`
@@ -44,18 +44,17 @@
    read off the regex, so this fixture cannot quietly manufacture a
    card id production would refuse.
 
-   ── a term that is visible under EVERY reading of "resolve" ──
-   The contract does not say what a `term` refId resolves against:
+   ── a term resolves against one vocabulary, and there is one ──
+   The contract did not say what a `term` refId resolved against:
    `ontology_term` rows, `getLatestOntologyVersion`, or
-   `openView(db, version)` over the merged core view are all live.
-   A CORE term id with no `ontology_term` row discriminates between
-   them, so this suite never uses one. Its visible term is a real
-   `ontology_term` row under the only published `ontology_version`
-   in its scratch database, which resolves under all three; its
-   invisible term is a namespaced id in none of them, which fails to
-   resolve under all three. Choosing fixtures that do not
-   discriminate between two live readings is how a suite asserts
-   only as far as the contract decides.
+   `openView(db, version)` over the merged core view were all live,
+   so this suite chose fixtures that could not discriminate between
+   them. `0009_drop_ontology_versioning` settled it by deletion —
+   both tables are gone and `visible.ts` asks `CORE_ONTOLOGY`
+   directly — so the visible term is a real core term id and the
+   invisible one is a namespaced id the vocabulary never carried.
+   See the D-140-03 note above `seedTerm` for what moved with the
+   meaning of "exists".
    ============================================================ */
 
 import { CORE_ONTOLOGY, cardDigest, type NodeCard } from "@/lib/core";
@@ -153,9 +152,14 @@ export async function deleteBundle(s: Scratch, bundleId: string): Promise<void> 
   }
 }
 
-/* --------------------- ontology version --------------------- */
+/* --------------------- the `since` literal --------------------- */
 
-/** The version cards declare, and the only one this suite publishes into a scratch database. */
+/**
+ * Not a vocabulary version. There is none: `0009_drop_ontology_versioning` withdrew it, and
+ * `lib/core/ontology/core.ts` keeps this string for the same reason — it is the release doc 3
+ * was published as, and it is what every core term's `since` already reads. `seedTerm` hands
+ * it back so a caller that used to be told which version its term came from still compiles.
+ */
 export const ONTOLOGY_VERSION = "0.1.0";
 
 /* --------------------- cards --------------------- */
@@ -288,8 +292,8 @@ export function assertLegalCardId(cardId: string): void {
  * It used to mean EXISTENCE IN THE CURRENT ONTOLOGY VERSION, read out of `ontology_term` rows
  * under the newest `ontology_version` row. So this file seeded term rows, seeded a second
  * version, and drove "published in 0.1.0 and absent from 0.2.0" as AC3's *deleted*. That
- * registry is gone: nothing writes either table, and `visible.ts` asks `CORE_ONTOLOGY` whether
- * it carries the id.
+ * registry is gone, and since `0009_drop_ontology_versioning` so are both tables;
+ * `visible.ts` asks `CORE_ONTOLOGY` whether it carries the id.
  *
  * Two consequences the cells below live with, stated here rather than discovered:
  *
@@ -350,11 +354,12 @@ export function absentTermId(): string {
 
 /*
  * There is deliberately no `deleteTerm` helper here, and its absence is the D-140-03 ruling
- * rather than an omission. A saved term stops being listed when THE CURRENT ONTOLOGY VERSION
- * stops carrying it, not when somebody deletes an `ontology_term` row — versions are append-only
- * and a row deleted out of a published one is a state production does not reach. A helper that
- * offered it would invite a cell driving a state the contract does not describe, which is the
- * impossible-row hazard D-70-22 records, pointed at a fixture nobody would question.
+ * rather than an omission. A saved term stops being listed when THE VOCABULARY stops carrying
+ * it, and the vocabulary is `CORE_ONTOLOGY` in the process — there is no row for a fixture to
+ * delete, and there was none worth deleting before 0009 either, since published versions were
+ * append-only. A helper that offered it would invite a cell driving a state the contract does
+ * not describe, which is the impossible-row hazard D-70-22 records, pointed at a fixture
+ * nobody would question.
  */
 
 /* ============================================================

@@ -240,14 +240,20 @@ function FilterChip({
            `cursor-pointer` is no longer spelled on the live branch — `app/globals.css`
            now sets it on every enabled `<button>`. */
         dead && "cursor-not-allowed border-line text-dim opacity-70",
+        /* The pressed state, in the card register. Amber since 2026-09-06: this is the
+           shelf of node cards and its loudest object was the blueprint's cyan. #ffb020 on
+           `--color-surface` reads 10.66:1 against cyan's 9.10:1, and the 60% edge
+           composites to 4.35:1 where the cyan one sat at 3.87:1. */
         active
-          ? "border-cyan/60 bg-cyan/10 text-cyan"
+          ? "border-amber/60 bg-amber/10 text-amber"
           : !dead && "border-line text-muted hover:border-line-bright hover:text-fg",
       )}
     >
       <span aria-hidden>{glyph}</span>
       {label}
-      <span className={cx("tabular-nums", active ? "text-cyan/70" : "text-dim")}>
+      {/* `amber/70` and not `/60`: `app/globals.css` puts amber's floor for TEXT at 70%
+          (5.4:1) and calls 60% a non-text boundary. */}
+      <span className={cx("tabular-nums", active ? "text-amber/70" : "text-dim")}>
         {count}
       </span>
     </button>
@@ -760,7 +766,7 @@ export function NodeBrowser({
           <button
             type="button"
             onClick={clearFilters}
-            className="cursor-pointer text-muted underline-offset-4 transition-colors hover:text-cyan hover:underline"
+            className="cursor-pointer text-muted underline-offset-4 transition-colors hover:text-amber hover:underline"
           >
             Clear filters
           </button>
@@ -798,11 +804,15 @@ export function NodeBrowser({
           activeId={activeGroup}
           results={results.length}
           total={nodes.length}
-          /* Copper, on the author's instruction and for the reason the tiles took it one
-             commit ago: this shelf's subject is the node card, and `app/globals.css`
-             reserves copper for the node card as a subject. Cyan is the component's default
-             because cyan is the site's "you can act on this", which is the right answer for
-             a shelf with no register of its own. */
+          /* Copper, and it is the ONE accent on this shelf the 2026-09-06 pass could not
+             move. The tiles, the filter chips and the reset link all went amber with the
+             owner's ruling; this pill reads its colour out of `ACCENT` in
+             `components/ui/GroupSpine.tsx`, which offers `cyan` and `copper` and no third
+             entry, and that file is not this pass's to edit. Copper is still warm and still
+             not the blueprint's cyan, so the shelf does not read as a blueprint in the
+             meantime. TODO: add an `amber` entry to `GroupSpine`'s `ACCENT`
+             (`border-amber bg-amber text-void`, 11.06:1 against `--color-void`) and pass it
+             here, so one page stops carrying two card registers. */
           accent="copper"
         />
       )}
@@ -983,7 +993,7 @@ export function NodeBrowser({
             <button
               type="button"
               onClick={clearFilters}
-              className="mt-1 cursor-pointer font-mono text-xs text-cyan underline-offset-4 hover:underline"
+              className="mt-1 cursor-pointer font-mono text-xs text-amber underline-offset-4 hover:underline"
             >
               Reset all filters
             </button>

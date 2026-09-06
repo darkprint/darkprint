@@ -130,12 +130,17 @@ export type PublishedName = keyof typeof PUBLISHED;
 export const PUBLISHED_NAMES = Object.keys(PUBLISHED) as PublishedName[];
 
 /**
- * `interface ImportPlan { bundles; cards; ontologyVersion: string; registryHandle: string }`
+ * `interface ImportPlan { bundles; cards; registryHandle: string }`
  *
- * Compared as a SET against `Object.keys`, never by membership alone. A fifth member is a shape
- * nobody ruled on; a missing fourth puts a criterion out of reach.
+ * Compared as a SET against `Object.keys`, never by membership alone. A fourth member is a
+ * shape nobody ruled on; a missing third puts a criterion out of reach.
+ *
+ * D-250-01 ruled four. `ontologyVersion` was the fourth and
+ * `0009_drop_ontology_versioning` took it: the registry keeps one vocabulary, the Attractor
+ * spec language's, so the member reported a constant rather than a property of the plan, and
+ * its source `CORE_ONTOLOGY.version` no longer exists.
  */
-export const IMPORT_PLAN_KEYS = ["bundles", "cards", "ontologyVersion", "registryHandle"] as const;
+export const IMPORT_PLAN_KEYS = ["bundles", "cards", "registryHandle"] as const;
 
 /** `interface ImportResult extends ImportPlan { created: number; skipped: number }` */
 export const IMPORT_RESULT_KEYS: readonly string[] = [

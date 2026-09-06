@@ -54,6 +54,20 @@ vi.mock("next/headers", () => ({
   cookies: async () => ({ get: () => undefined }),
 }));
 
+/* `CardForkButton`'s live arm reads `useRouter()` at render, and the App Router context
+   only exists inside a Next request, so the page throws on the way in without this. The
+   card fork route landed 2026-09-06 and the page passes the control unconditionally, which
+   is what put a hook in this render path where `ForkAction` had held none.
+
+   Same shape and same reasoning as the `next/headers` stub above, and the same stub
+   `components/profile/owned-visibility.test.ts` uses for `DeleteBundleControl`. It answers
+   the two members this tree calls and nothing else. Nothing below asserts navigation: the
+   four cells read author TEXT and profile links out of the markup, and a router that never
+   moves is the true answer for a render that never clicks. */
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: () => {}, refresh: () => {} }),
+}));
+
 import NodePage from "@/app/nodes/[...id]/page";
 import { latestCards } from "@/lib/server/registry";
 import { schema } from "@/lib/db";

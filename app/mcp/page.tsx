@@ -153,7 +153,7 @@ const OPERATIONS = [
  * taken — the author's own call, in as many words: "that reasoning is the most honest
  * content on the route and I do not want it traded for whitespace." So the label is the
  * mock's and the body is the argument: that a relevance score with no published derivation
- * is the kind of number this site refuses everywhere else, that an excerpt too large becomes
+ * is an order nobody can argue with, that an excerpt too large becomes
  * an unversioned copy of a digest-addressed document, that a card is addressed by id and
  * version while a release is addressed by the digest of every byte. A row can hold two lines.
  * The chrome was the problem.
@@ -163,8 +163,17 @@ const OPERATIONS = [
  */
 const OPEN = [
   {
+    /* The middle sentence read "Everywhere else on this site, a relevance score with no
+       published derivation gets refused", and it was an appeal to a precedent that has been
+       taken off the site: the derivation it pointed at was the weights table behind the
+       scorecard, and the pages that published one are gone. An argument resting on a
+       surface a reader cannot open is worth less than the same argument resting on itself.
+
+       So the rule is stated as this proposal's own rather than as the house's, which is
+       also the stronger form: it says why an underived ranking is bad here instead of
+       telling a reader that somebody else already agreed. */
     label: "ranking",
-    body: "Nothing has been decided about what comes back first. Everywhere else on this site, a relevance score with no published derivation gets refused. So either the ordering is explainable from the archive, or results come back with their evidence and no order at all.",
+    body: "Nothing has been decided about what comes back first. A relevance number with no published derivation is an order a caller cannot argue with, and an archive whose whole claim is that you can read why is the wrong place for one. So either the ordering is explainable from the archive itself, or results come back with what matched and no order at all.",
   },
   {
     label: "excerpt shape",
@@ -376,8 +385,9 @@ export default function McpPage() {
             darkprint export &lt;dir&gt; --attractor
           </code>{" "}
           does in a terminal. It reaches nothing the four operations above do not, and the
-          file it returns opens with a list of everything a DarkPrint blueprint had no way to
-          express, so a reader can see what the runner falls back to its own defaults for.
+          file it returns opens with what a DarkPrint blueprint had no way to express, in two
+          groups: the attributes a runner supplies itself when they are absent, and the ones a
+          handler reads directly, where an absent value is a refusal rather than a default.
         </p>
       </section>
 

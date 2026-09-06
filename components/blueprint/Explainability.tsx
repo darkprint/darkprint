@@ -1194,11 +1194,19 @@ function SecurityPanel({
           weight of every risk marker present". `/reading-the-radar` describes the whole
           scale, every weight and both cuts, and the author's ruling is that it belongs
           there rather than on each of nine blueprint pages. What this panel is for is
-          the ledger underneath, which says what *this* graph was charged. */}
+          the ledger underneath, which says what *this* graph was charged.
+
+          The `#weights` fragment came off the href on 2026-09-04. That id is declared by
+          `components/spec/ScoringModel.tsx`, and since the author asked the graded page
+          off the site no route mounts that component, so the fragment pointed at markup
+          nothing renders — the case `components/site/nav.test.ts` fails on. The path
+          itself stays and still resolves (308 to `/build`), which is what the sibling
+          link in `components/explain/ConceptFigures.tsx` already does with the same
+          sentence. */}
       <p className="mb-3 text-sm leading-relaxed text-muted">
         What this graph was charged, and for what.{" "}
         <Link
-          href="/reading-the-radar#weights"
+          href="/reading-the-radar"
           className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"
         >
           How a blueprint is graded <span aria-hidden>→</span>

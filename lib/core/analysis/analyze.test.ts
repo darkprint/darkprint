@@ -6,7 +6,7 @@
    lexer, parser, card validator, hasher, resolver, the Attractor
    linter and both metrics all run for real.
 
-   All three fixtures were rewritten against ontology v0.1 (doc 3).
+   All three fixtures were rewritten against doc 3's vocabulary.
    The old vocabulary they used — `trigger`, `sink`, `network-
    access`, `code-execution`, `human-control`, `credential-access`
    — does not exist any more, and neither does the security repeat
@@ -24,8 +24,12 @@ import { ontologyView } from "../ontology/resolve";
 import type { OntologyTerm } from "../ontology/types";
 import { analyzeBlueprint, loadBundle } from "./analyze";
 
-/** Read off the vocabulary, so no fixture can drift from the ontology it declares. */
-const ONTOLOGY_VERSION = CORE_ONTOLOGY.version;
+/**
+ * The `since` a locally declared fixture term carries. Read off a core term rather than
+ * written out, so the one fixture below states what the shipped vocabulary states; there is
+ * no vocabulary version left to read it from.
+ */
+const TERM_SINCE = CORE_ONTOLOGY.terms[0].since;
 
 /* ============================================================
    fixture 1 — "adversarial consensus", a healthy blueprint
@@ -622,15 +626,6 @@ describe("loadBundle — the adversarial-consensus blueprint", () => {
     expect(analysis.phaseCoverage).toEqual(bp(result).phaseCoverage);
   });
 
-  it("records the vocabulary both scores were computed under (doc 3 §8)", () => {
-    const analysis = result.analysis;
-    if (analysis === undefined) throw new Error("expected an analysis");
-    expect(analysis.ontologyVersion).toBe(ONTOLOGY_VERSION);
-    // One answer, not three: the facade and both metrics read the same view.
-    expect(analysis.autonomy.ontologyVersion).toBe(analysis.ontologyVersion);
-    expect(analysis.security.ontologyVersion).toBe(analysis.ontologyVersion);
-  });
-
   it("is reproducible: the same bytes in, the same digest and the same scores out", () => {
     const again = loadBundle(consensusBundle());
     expect(again.blueprint?.digest).toBe(result.blueprint?.digest);
@@ -987,7 +982,10 @@ describe("analyzeBlueprint", () => {
 describe("loadBundle — inputs it must survive", () => {
   it("defaults the ontology to the shipped core vocabulary", () => {
     const plain = loadBundle(consensusBundle());
-    expect(plain.analysis?.ontologyVersion).toBe(CORE_ONTOLOGY.version);
+    /* The witness that the default view is the shipped core: every card in this bundle is
+       written in core terms only, so it resolves without an error exactly when the core is
+       what it was read against. */
+    expect(summarize(plain.diagnostics).error).toBe(0);
     expect(plain.analysis?.autonomy.level).toBe(2);
     expect(summarize(plain.diagnostics).error).toBe(0);
 
@@ -996,9 +994,10 @@ describe("loadBundle — inputs it must survive", () => {
        came back — one for the manifest and one for each of the eight cards that then
        disagreed with it. Neither the manifest nor a card declares a vocabulary version now,
        so nothing can disagree with anything and the two diagnostics that reported it are
-       gone. What the cell was actually about survives above and is asserted directly: with no
-       `ontology` option the analysis is stamped with the shipped core's version. The cell
-       below drives the other half, that a SUPPLIED view wins over the shipped one. */
+       gone. What the cell was actually about survives above: with no `ontology` option the
+       bundle is read against the shipped core. The local-extensions cell below drives the
+       other half, that a SUPPLIED view wins over the shipped one — the same card is rejected
+       without it and accepted with it. */
     expect(
       loadBundle(consensusBundle()).diagnostics.filter(
         (d) => d.code === "bundle/ontology-mismatch",
@@ -1015,7 +1014,7 @@ describe("loadBundle — inputs it must survive", () => {
       label: "Patch script",
       description: "A locally defined step that rewrites a script before it is run.",
       broader: "agent",
-      since: ONTOLOGY_VERSION,
+      since: TERM_SINCE,
     };
     const bundle = rogueBundle();
     const withLocalType: Bundle = {
@@ -1040,14 +1039,6 @@ describe("loadBundle — inputs it must survive", () => {
     expect(summarize(known.diagnostics).error).toBe(0);
     expect(known.analysis?.security.level).toBe(1);
     expect(known.analysis?.autonomy.level).toBe(4);
-  });
-
-  it("reports the vocabulary it was handed, not the one it ships with (doc 3 §8)", () => {
-    const older = ontologyView({ ...CORE_ONTOLOGY, version: "0.0.9" });
-    const scored = loadBundle(consensusBundle(), { ontology: older });
-    expect(scored.analysis?.ontologyVersion).toBe("0.0.9");
-    expect(scored.analysis?.security.ontologyVersion).toBe("0.0.9");
-    expect(scored.analysis?.autonomy.ontologyVersion).toBe("0.0.9");
   });
 
   it("withholds the blueprint when the DOT does not parse, and says where", () => {
@@ -1190,8 +1181,24 @@ describe("loadBundle — inputs it must survive", () => {
    on the edge that leaks. It fails here first.
    ============================================================ */
 
-/** Written onto every edge: the guard that claims the branch never runs. */
-const NEVER = 'condition="false", weight=0';
+/**
+ * Written onto every edge: the guard that claims the branch never runs.
+ *
+ * `condition="false"` until 2026-09-04, and the replacement is the same claim spelled in a
+ * grammar that exists. Engine spec §10.2 is `Clause ::= Key Operator Literal` with `Key`
+ * one of `outcome`, `preferred_label` or `context.` Path, so a bare `false` is not an
+ * expression at all, and `attractor/condition-syntax` now says so. That report is correct
+ * and it was landing on the guarded half of every pair below, which is what reddened the
+ * diagnostics cell while the scoring cell stayed green.
+ *
+ * `context.never=1` is still provably never true, which is the whole point of this fixture:
+ * §10.3 says a missing key compares as an empty string and is "never equal to non-empty
+ * values". So the claim under test is unweakened — an edge that CANNOT fire still counts
+ * for everything an unconditional one counts for — and it is now made with a guard a runner
+ * would actually accept, which makes the pair differ in the one property being measured
+ * rather than in two.
+ */
+const NEVER = 'condition="context.never=1", weight=0';
 
 /**
  * Add `NEVER` to every edge statement of a DOT source, into the existing attribute list
@@ -1234,7 +1241,7 @@ describe("a guarded edge counts exactly as much as an unconditional one", () => 
         expect(edges.length).toBe(bp(plain).edges.length);
         expect(edges.length).toBeGreaterThan(0);
         for (const edge of edges) {
-          expect(edge.condition, `${edge.source} -> ${edge.target}`).toBe("false");
+          expect(edge.condition, `${edge.source} -> ${edge.target}`).toBe("context.never=1");
           expect(edge.weight, `${edge.source} -> ${edge.target}`).toBe("0");
         }
         expect(bp(plain).edges.every((e) => e.condition === undefined)).toBe(true);

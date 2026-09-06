@@ -39,7 +39,6 @@ import {
   rowsAdded,
   scratchDatabase,
   seedAccount,
-  seedOntology,
   seedRelease,
   snapshotRows,
   totalRowsAdded,
@@ -59,7 +58,6 @@ let cardRef: string;
 
 beforeAll(async () => {
   scratch = await scratchDatabase("downloads");
-  await seedOntology(scratch.db);
   owner = await seedAccount(scratch, "downloads");
   const entry = bundleBySlug(SUBJECT);
   release = await seedRelease(scratch, owner, entry);

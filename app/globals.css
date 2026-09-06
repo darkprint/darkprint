@@ -23,11 +23,68 @@
    collapses to `p-5`; `p-8` collapses to `p-5` unless the panel is the whole
    content of its section, in which case `p-8` stands.
 
-   Horizontally there is exactly one token, `--measure`, applied through
-   `.prose-lane`. It governs BODY PROSE ONLY. It is never put on a
-   `SectionHeading` lead — the author ruled twice that the lead must reach the
-   right edge of its column, and that ruling stands. Figures, tables, code
-   panes and listings keep the full container width.
+   Horizontally, `--measure` is applied through `.prose-lane`, and it is the
+   EXCEPTION rather than the default. Eight applications, on TWO routes, and
+   nowhere else: `/upload` carries five (`components/upload/UploadFlow.tsx`
+   three, `components/upload/ValidationReport.tsx` two) and `/spec/card`
+   carries three (`app/spec/card/page.tsx`).
+
+   This sentence named "the spec pages and `/what-a-blueprint-is`" for one day
+   and was wrong in both directions, which is why the census is written out
+   above rather than described. Two of the three spec pages apply it nowhere
+   and argue against it in their own comments (`app/spec/topology/page.tsx`
+   says outright "do not restore `.prose-lane` here"; `app/spec/ontology/
+   page.tsx` records where it came off). `/what-a-blueprint-is` applies it
+   nowhere at all, though a comment on that page still says it "governs every
+   other paragraph on the page", which is that file's to correct and not this
+   one's. And `/upload`, which was not named, carries five of the eight.
+
+   Re-derive the list before trusting it, and filter it: a bare
+   `grep -rn "prose-lane" app components` answers roughly four times as many
+   lines as there are applications, this comment among them, and every one of
+   the extras is a COMMENT recording where a cap came off or why one was never
+   put on. Only a class attribute carrying the token is an application, and
+   grepping for the attribute rather than for the word is what produced the
+   eight above. A count taken off the bare grep without separating the two is
+   how this paragraph went wrong in the first place.
+
+   No literal total and no attribute-shaped example is written here, and that
+   is deliberate: a census sentence that spells out the pattern it tells you to
+   grep for becomes one of the hits and makes the next count wrong by one.
+   Measured while writing this paragraph, twice.
+
+   It is never put on a `SectionHeading` lead: the author ruled twice that the
+   lead must reach the right edge of its column, and that ruling stands.
+   Figures, tables, code panes and listings keep the full container width.
+
+   THE DEFAULT IS THE FULL CONTAINER, and new work follows that rather than
+   this token. The author has asked for it six separate times and the cap came
+   off in the same breath each time: the blueprint summary in
+   `components/bundle/BundleHeader.tsx` (it was `max-w-2xl`, 672px inside a
+   1200px band), the release message in `components/bundle/History.tsx`
+   (`62ch`, which wrapped the same sentence at two different widths on one
+   page), every panel in `components/ontology/**` (`max-w-4xl`, so /ontology
+   stopped ~300px short of the band), the glosses in
+   `components/ui/ReachList.tsx` (`74ch`, ten of them on /ontology alone), the
+   `Specification` panel on `/nodes/[...id]` (`max-w-[68ch]`, taken off
+   2026-09-05, which had left the one paragraph that page exists to carry as the
+   narrowest column on a page where every other panel reached the band), and the
+   graph on the blueprint page, 2026-09-06.
+
+   The sixth is the one to read twice, because its cap was never a `max-w-*` at
+   all. The graph sat in a `lg:col-span-2` of a three-column body grid, and the
+   grid came off with it, so `.container-page` is now the whole distance between
+   the viewport and a React Flow canvas. A width cap can be a column, and a
+   column is harder to see: nothing in that page's markup carried a number.
+   `components/ui/Markdown.tsx` and `components/bundle/ReadmePanel.tsx` were
+   built under the rule and say in their own headers that they do not take it.
+
+   This paragraph said the opposite until 2026-09-05: that there was "exactly
+   one token" governing body prose. That was a true description of the site
+   when it was written and a false one by the time anybody read it, which is
+   the failure the author's own §11.0 exists to catch. Corrected rather than
+   resolved: two answers to one question still coexist, and which applies is
+   decided by which pages have been reviewed. §11.0 Q27 records that cost.
 
    ── THE Z LADDER ──
    One ladder, five rungs. A new sticky element picks a rung; it does not
@@ -63,29 +120,119 @@
   --color-blueprint-line: #74b4ff;
   --color-blueprint-ink: #cfe2ff;
 
-  /* --- Copper pole: the node card, and nothing else yet ---
-     The same four jobs the blueprint pole has (ground, frame, line, ink), on
-     the other side of the wheel. The author asked for the node card figure to
-     read orange rather than blue, and a figure whose subject is one card
-     rather than one graph is worth a register of its own: a card is a
-     document, a blueprint is a drawing, and the two now say so before a word
-     is read.
+  /* --- Copper pole: the card's PAPER, and no longer its ink ---
+     Four jobs on the warm side of the wheel, the same four the blueprint pole
+     has (ground, frame, line, ink). Two of them left on 2026-09-06 and two
+     stayed, so read the split before reaching for one of these.
 
-     WHY THIS IS NOT `--color-amber`, and why it must never become it. Amber
-     is spent sitewide on exactly two claims — `ComingSoonBadge` ("not built
-     yet") and `.route-box` ("this box leaves the page"). The node card is the
-     most literally-built thing on the site: it is read off `content/cards/`
-     at build time and the engine enforces what it declares. Painting it in
-     the "not built yet" colour would be the one lie this figure cannot
-     afford. `--color-copper-line` sits at oklch hue 46 against amber's 75, so
-     it is orange where amber is gold, and it is 0.06 darker besides.
+     WHAT STAYED. `--color-copper` and `--color-copper-deep` are the card
+     sheet's paper. `SHEET_REGISTER.copper` in `components/viz/tokens.ts` mixes
+     the deep one 62% into the void for its surface and takes the other as its
+     frame, and `components/home/nodecard/YamlListing.tsx` bands a marked run
+     at a quarter of `--color-copper`. Neither is a colour a reader reads a
+     claim off: they sit at oklch L 0.26 and L 0.35, which is paper, and what
+     tells a reader which KIND of page they are on is the ink drawn on it. So
+     the paper keeps its name and its values, and the ink moved.
 
-     Contrast, measured against the ground this register mixes for itself
-     (`SHEET_REGISTER.copper`, #24140c, and the listing's own #0e0a0d over it):
-     `line` reads 7.6:1 and 8.4:1, `ink` 13.3:1 and 14.7:1, both past AA for
-     body text and AAA at these sizes. `line` at 80% opacity is the floor for
-     text (5.3:1); at 60% it is 3.6:1, which is a non-text boundary and not a
-     word. Do not write `line/70` on a label: it lands at 4.3:1. */
+     WHAT MOVED. `--color-copper-line` and `--color-copper-ink` were the card
+     REGISTER, and the card register is amber from 2026-09-06. The amber block
+     below carries the owner's ruling, what it costs, and the re-measured
+     contrast; nothing about that decision is argued here, because a register
+     is argued once.
+
+     THE TWO THAT MOVED ARE STILL DECLARED, deliberately. Roughly a dozen files
+     outside this pass still name them, and Tailwind emits a `@theme` colour's
+     utilities only while it can see one used: delete the token and every one of
+     those classes stops existing, with no error anywhere, so the words they
+     paint fall back to whatever they inherit. They are deprecated in place. No
+     new surface takes them; the pass that moves the last consumer takes the two
+     tokens with it, and the census below is that pass's worklist.
+
+     ONE HAZARD WHILE BOTH REGISTERS EXIST, and it bites in the order a
+     conversion is most likely to run. `components/learn/PartFigures.tsx` reads
+     `--color-copper-ink` in an SVG `fill`, which is not a utility class and so
+     keeps nothing alive; that variable reaches `:root` only because
+     `YamlListing.tsx` still writes the matching `text-` utility. Convert the
+     figure before the listing, or convert both in one pass. A pass that moves
+     the utility and leaves the `var()` behind paints that id in nothing at all,
+     and an SVG attribute resolving to an invalid value fails silently.
+
+     ── The census, which is now the conversion worklist ──
+     Re-derived 2026-09-06 off `grep -rn "copper" app components`: the landing's
+     card beats
+     (`components/home/nodecard/**`, `SectionNodeCard`, `SectionNodeIsCard`, and
+     `BeatCaption`'s copper tone), the card figures in
+     `components/learn/PartFigures.tsx` and `components/tutorial/**`, the card
+     page itself (`/nodes/[...id]`, its five block titles and every field name
+     under them), the shelf that lists cards (`components/ui/GroupSpine.tsx`
+     fills the "you are here" pill copper on `/nodes`), a quoted `author:` key in
+     `components/settings/AccountForm.tsx`, and the bundle-file list on
+     `/what-a-blueprint-is`. Every one of those is the same subject, which is
+     what the reservation was about and is what the amber register inherits.
+
+     What changed on 2026-09-05 is that the register left the drawing. The card
+     page's download trigger is copper (`components/blueprint/CloneMenu.tsx`,
+     the `node` entry in `TRIGGER`), and so is the save link inside the panel it
+     opens. This is the first pole on the site to paint a control a reader
+     clicks, so it is worth being exact about what that does and does not say:
+     cyan still carries "you can act on this" everywhere, this trigger keeps its
+     affordance from its shape, its height and its hover, and the register on it
+     answers a different question, which is WHICH document the control is about.
+     That argument is about a REGISTER and not about copper, so it transfers to
+     amber whole and the trigger converts with everything else. What does not
+     transfer is the hue argument below, which is the one worth reading twice.
+
+     ── THE ARGUMENT THAT WON ONCE AND THEN LOST, kept because it was good ──
+     This paragraph stood here as a prohibition, in these words: "WHY THIS IS NOT
+     `--color-amber`, and why it must never become it. Amber is spent sitewide on
+     exactly two claims, `ComingSoonBadge` ('not built yet') and `.route-box`
+     ('this box leaves the page'). The node card is the most literally-built
+     thing on the site: it is read off `content/cards/` at build time and the
+     engine enforces what it declares. Painting it in the 'not built yet' colour
+     would be the one lie this figure cannot afford. `--color-copper-line` sits
+     at oklch hue 46 against amber's 75, so it is orange where amber is gold, and
+     it is 0.06 darker besides."
+
+     IT WAS SPENT ON 2026-09-05 AND IT HELD. The owner asked for the card's
+     download control to carry an amber accent. It shipped copper instead, on the
+     strength of those sentences, and `components/blueprint/CloneMenu.tsx` and
+     `components/bundle/bundle-header-actions.test.ts` both record the mismatch
+     beside their own call sites so the next reader meets it there too.
+
+     IT WAS OVERRULED ON 2026-09-06, by the same owner, on a ground it never
+     weighed. Their words: "the amber should be the dominant color on the cards
+     sections. So that an user in a glance can know wheter they are on a
+     blueprint or in a card." Every sentence of the old paragraph is about what
+     amber CLAIMS of the thing it touches. The ruling is about what a reader
+     needs before they have read anything at all, which is which kind of page
+     they are standing on, and no amount of "the card is the most literally-built
+     thing on the site" answers that: a reader who has not started reading cannot
+     yet be misled by a claim. The census on 2026-09-06 is what makes it concrete.
+     The card detail page counted cyan 45, violet 27, copper 11, amber 7, which is
+     the same cyan-led page a blueprint is, while `/nodes` was already painting
+     its listing amber. The site disagreed with itself about the card, and this
+     resolves it towards what the listing had been doing all along.
+
+     The reservation is rewritten below rather than silently replaced, because a
+     rule that changes with no trace of what it used to forbid teaches the next
+     reader nothing, and this one was argued well enough to be worth losing in
+     public. Do not re-litigate it. Both sides of it are on this page.
+
+     ── Contrast, copper, still measured and still true ──
+     Against the ground this pole mixes for itself (`SHEET_REGISTER.copper`,
+     #24140c, and the listing's own ground over it, `bg-surface-2/40` on the
+     void, #090b14): `line` reads 7.6:1 and 8.4:1, `ink` 13.3:1 and 14.7:1, both
+     past AA for body text and AAA at these sizes. `line` at 80% opacity is the
+     floor for text (5.3:1); at 60% it is 3.6:1, which is a non-text boundary and
+     not a word. Do not write `line` at 70% on a label: it lands at 4.4:1.
+
+     Re-measured 2026-09-06 while the amber numbers were taken, and the ratios
+     came back unchanged. The second ground was written here as #0e0a0d, which is
+     not a colour anything in the tree mixes; the two differ by under a tenth of
+     a point on every row above, so the correction changes no decision and is
+     made anyway, because a ratio is only checkable against a ground somebody can
+     recompute. The AMBER floors are different numbers on the same grounds, and
+     they are in the amber block. Never carry one of these across. */
   --color-copper: #5e2b07;
   --color-copper-deep: #3a1c06;
   --color-copper-line: #ff8a4d;
@@ -108,9 +255,100 @@
      before this repaints. */
   --color-cyan: #38bdf8;
   --color-cyan-bright: #7dd3fc;
-  /* Amber is reserved for exactly two jobs and nothing else: `ComingSoonBadge`
-     ("not built yet") and `.route-box` / `.route-label` ("this box leaves the
-     page"). If a third thing wants amber, it wants a different token. */
+  /* Amber has THREE sanctioned jobs and no fourth. Two are claims about a thing
+     and the third is a statement about a place, which is a difference this
+     comment spends most of its length on, because the three now share pages.
+
+       1  CLAIM  `ComingSoonBadge`              "not built yet"
+       2  CLAIM  `.route-box` / `.route-label`  "this box leaves the page"
+       3  PLACE  the card register              "you are on a card, not a
+                                                blueprint"
+
+     The third was added on 2026-09-06 by the owner, over this file's own
+     reservation, in these words: "the amber should be the dominant color on the
+     cards sections. So that an user in a glance can know wheter they are on a
+     blueprint or in a card." The copper pole above carries what that ruling
+     overturned, why it overturned it, and what the copper tokens are for now.
+     Blueprint stays cyan. Card is amber. That pair is the whole point of the
+     third job: a register is only useful if it has something to contrast with.
+
+     The two claims are CLAIMS rather than classes. The three doors at the foot
+     of `/what-a-blueprint-is` take amber on hover without wearing `.route-box`'s
+     shape, and that page argues why in `WhereNext`; they are exits, so they are
+     job 2 and not a fourth. The reverse does not follow. A surface that is
+     neither unbuilt, nor an exit, nor part of a card does not earn amber by
+     resembling one of these.
+
+     ── WHAT THIS COSTS, which is real and is stated rather than hidden ──
+     Amber now means a place and two claims at once, and one of the collisions is
+     live rather than theoretical. `ComingSoonBadge` renders inside
+     `components/blueprint/CloneMenu.tsx`, which is the card's own download panel
+     on `/nodes/[...id]`. So a "not built yet" fence now sits INSIDE a register
+     of its own colour, on the one page the register exists to mark, and hue
+     alone no longer tells the two apart there.
+
+     The second claim is a near miss and is written down as one, because the list
+     of call sites in this file has gone stale twice already. Checked 2026-09-06:
+     `.route-box` is NOT on `/nodes/[...id]`. Its live applications are `SpecPager`
+     at the foot of six pages and one direct mount in `app/spec/ontology`. But
+     `/spec/card` is one of those six and is a page about cards, so the day it
+     takes the register, the exit box collides the same way the badge already
+     does. Re-derive before relying on either half of this paragraph.
+
+     FORM IS WHAT KEEPS THEM APART, and all three have a distinctive one, which is
+     the only reason the price is payable. `ComingSoonBadge` is a small pill,
+     rounded full, filled, uppercase mono with wide tracking, sitting beside the
+     thing it is about. `.route-box` is a full-width rectangle with a 2px rule
+     down its leading edge. The register is neither: it is line weight on a word,
+     a key name, a field label, a graticule, spread across a page rather than
+     bounded in a shape. A pill states a status about its neighbour. A bar with a
+     rule down its edge points away. A register states nothing at all, it is
+     simply the colour the page is in.
+
+     `app/nodes/[...id]/page.tsx` writes the same rule from the other end and in
+     sharper words, and they are worth borrowing: an honesty claim is a FILLED
+     amber shape with the claim written inside it, and an accent is amber on a
+     word. Nothing on that page wears a filled amber ground, so nothing there can
+     be taken for the claim the shape carries.
+
+     Which promotes what is already written under `.route-box` from a good habit
+     to the thing holding this up. That rule's comment says shape must carry the
+     difference, and it said so while hue was still there as a backstop. On a card
+     page the backstop is gone. Do not round the badge into a rectangle, do not
+     put the route box in a pill, and do not give a card page a third filled amber
+     shape without first settling what it is claiming.
+
+     ── Contrast, MEASURED 2026-09-06 for amber, on amber's own grounds ──
+     Against the card sheet (`SHEET_REGISTER.copper`, #24140c) and the listing's
+     ground (`bg-surface-2/40` on the void, #090b14):
+
+       `--color-amber`         9.7:1  and 10.8:1
+       `--color-amber-bright` 11.8:1  and 13.1:1
+       `--color-amber-ink`    13.4:1  and 14.8:1
+
+     All three are past AA for body text and AAA at these sizes. At reduced
+     opacity `--color-amber` reads 6.6:1 and 7.1:1 at 80%, 5.4:1 and 5.6:1 at
+     70%, and 4.3:1 and 4.4:1 at 60%. So the floor for TEXT is 70% here, and 60%
+     is a non-text boundary (past 3:1) and never a word.
+
+     THAT FLOOR IS NOT COPPER'S, and the difference is the reason this file
+     forbids carrying a ratio across a hue change. Copper's floor for text is
+     80%, and copper's own paragraph warns off 70% because it lands at 4.4:1;
+     amber at 70% is 5.4:1 and perfectly legible. Amber is lighter (oklch L 0.81
+     against copper's 0.75) at a hue the eye reads as brighter, so every one of
+     these numbers came out ABOVE the copper number it replaces. Nothing dropped
+     below AA in the move. Re-measure anyway if a ground moves: these are stated
+     against two specific grounds and a third one is a different question.
+
+     READ JOBS 1 AND 2 AS RULES ABOUT WHAT AMBER MAY CLAIM, NOT AS A GREP CENSUS.
+     A grep for the token answers roughly a hundred lines, and the accent maps
+     are most of them: `NODE_KIND_META.retry` in `lib/format.ts`, the node badge
+     in `components/ui/Badge.tsx`, the type accents under `components/graph/**`
+     and `components/tutorial/GraphStrip.tsx`. Those are legend swatches in a
+     colour key, they predate all of this, and they are not a licence. Job 3 is
+     the one that will make a bare grep useless, since a register is meant to be
+     everywhere on the pages it governs; the question to ask of a hit has not
+     changed, and it is whether the surface is a card, an exit, or unbuilt. */
   --color-amber: #ffb020;
   --color-amber-bright: #ffcb5c;
   --color-violet: #a78bfa;
@@ -146,7 +384,9 @@
 
   /* --- Measure ---
      The reading column: 36rem ≈ 84 characters at 15px. Applied through
-     `.prose-lane`, and only ever to body prose. */
+     `.prose-lane`, only ever to body prose, and only on the surfaces the
+     header block above names. It is not the site's default width; the
+     container is. */
   --measure: 36rem;
 
   /* --- Glow ---
@@ -176,9 +416,21 @@
    theme variable it can see a utility using, which is fine for a colour that
    five hundred `text-*` classes already reference and wrong for everything
    below: a duration is meant to be readable from an inline style, a scene, or a
-   hand-written rule, and the two new accents have no consumer at all until
-   later waves re-point their call sites. A token that vanishes when nobody
-   happens to reference it is not a token — it is a comment. */
+   hand-written rule, and the accents beside them had no consumer at all on
+   the day they were declared. `--color-warn` has plenty now: five files under
+   `components/upload/`, `/spec/attractor`, and the deprecation row on
+   `/nodes/[...id]`, and each of those call sites reached for it because amber
+   was reserved for two claims, which is a reserved token doing its work at one
+   remove. Amber has a third job since 2026-09-06 and `--color-warn` keeps every
+   one of those call sites regardless: it was chosen for being a severity that
+   cannot be confused with a badge, and a card register does not make a warning
+   any more amber than it was.
+   `--color-key` still has none, on purpose, and its own comment says why.
+   `--color-amber-ink` is the third here and is the reason the rule is not
+   theoretical: its first consumer reads it through an SVG attribute, which keeps
+   no theme variable alive at all. A
+   token that vanishes when nobody happens to reference it is not a token — it is
+   a comment. */
 @theme static {
   /* MOTION. `--ease-out` and `--ease-in-out` also sit in Tailwind's own
      `--ease-*` namespace, so setting them here re-points the `ease-out` /
@@ -198,17 +450,60 @@
      about a word that cannot be clicked.
 
      NO CONSUMERS TODAY, and that is a decision rather than an oversight. Its two
-     call sites — the five block titles and eighteen field names in "Every field
-     on this card" on `/nodes/[...id]` — moved to `--color-copper-line`, so that
-     page and the landing's node figure name a card's keys in the same register.
+     call sites — the five block titles, and every field name under them, in the
+     panel `/nodes/[...id]` now heads `Card values` — went to
+     `--color-copper-line` and then, on 2026-09-06, to `--color-amber` with the
+     rest of the card register. Both moves were the same decision: name a card's
+     keys in the card's own register, whichever register that is. The field count
+     is `FIELD_ROWS` in `app/nodes/[...id]/page.tsx` and it moves with the card
+     schema: twenty-two on 2026-09-06, over the five blocks in
+     `components/panes/model.ts`. This sentence carried the panel's old title and
+     a literal eighteen until then, and that page's own comment still carries both.
+
      The token stays declared because this `@theme static` block's own rule is
      that a declared-but-unconsumed accent is cheap and a `var()` that silently
      paints nothing is not; the next surface that needs a non-interactive key
-     colour outside the copper register has it waiting, spelled the same way. */
+     colour outside the card register has it waiting, spelled the same way. */
   --color-key: var(--color-cyan-bright);
   /* Warning severity. Darker and less saturated than `--color-amber`, so a
      warning and a "not built yet" badge can never read as the same signal. */
   --color-warn: #d9822b;
+
+  /* The card register's INK: the near-white a card's body text and its YAML
+     strings take, against `--color-amber`'s draw. The blueprint and copper poles
+     each carry an ink for the same reason, and the register that took over the
+     card on 2026-09-06 arrived without one.
+
+     Derived rather than picked. It is `--color-copper-ink`'s lightness and
+     chroma (oklch L 0.906, C 0.045) rotated onto amber's hue, 75, so the ink
+     belongs to the line above it the way the copper ink belonged to the copper
+     line. It measures 13.4:1 on the card sheet (#24140c) and 14.8:1 on the
+     listing's ground (#090b14), within a tenth of a point of the ink it
+     replaces, which is what a rotation at constant lightness should do and is
+     the check that it was done right.
+
+     DECLARED HERE, in the block that is not tree-shaken, and that is the whole
+     reason it is not up in `@theme` with the other three amber values. Its first
+     consumer is `SHEET_REGISTER` in `components/viz/tokens.ts`, which spells
+     every colour as a raw `var()` inside an SVG attribute rather than as a
+     utility class, and Tailwind emits a plain `@theme` variable only when it can
+     see something using it. Declared up there with no class anywhere yet, it
+     would not reach `:root` and the first `fill` that read it would paint
+     nothing, silently. `--color-copper-ink` is one utility away from that same
+     fate today and the copper pole says so.
+
+     THE PLACEMENT WAS FALSIFIED RATHER THAN ASSUMED, and the result is worth
+     more than the placement. Compiling this file through `@tailwindcss/postcss`
+     with a junk colour added to the plain `@theme` block drops it from the
+     output, which is the rule working. Moving THIS token up there did not drop
+     it, and the reason is a trap: the scanner reads the whole project, the day's
+     documentation names `--color-amber-ink` in prose, and a bare mention of the
+     name in any scanned file is enough to keep the variable alive. So a token
+     can be load-bearing and appear safe for as long as some paragraph somewhere
+     happens to spell it. Declaring it in this block makes it independent of
+     that. Do not test a tree-shaking question with a name that is written down
+     anywhere else. */
+  --color-amber-ink: #f2dcc0;
 }
 
 @theme inline {
@@ -309,6 +604,10 @@ body {
    the same element. Six overrides were provably dead: a 2px cyan top rule on
    `/the-climb` computed as a 1px `--color-line` hairline, and four
    `bg-surface-2/40` panels on the upload flow changed nothing at all.
+   `/the-climb` has since been deleted, so half of that evidence is no longer
+   checkable by anybody who did not see it; two of the upload flow's panels still
+   spell `.panel` with `bg-surface-2/40` in `components/upload/UploadFlow.tsx`,
+   and they get it now.
 
    A primitive is a default. A utility at the call site is a decision about one
    element. The decision has to win.
@@ -336,13 +635,35 @@ body {
      16px minor, the same 12%/5% stops — because the node card is drawn on the
      same drafting paper as everything else and only the ink changed. Anything
      that moves in `.bp-grid` moves here too, or the two sheets stop being one
-     family. */
+     family.
+
+     DRAWN IN AMBER SINCE 2026-09-06, and the class name is now a misnomer this
+     file cannot fix on its own. A graticule is ruled paper, so it is drawn from
+     its register's LINE, exactly as `.bp-grid` is drawn from
+     `--color-blueprint-line`; the card register's line is amber now, so this
+     follows it. The paper it is ruled on is still `--color-copper-deep` mixed
+     towards the void, which is the split the copper pole records. The name
+     `copper-grid` is a string in `SHEET_REGISTER` in `components/viz/tokens.ts`
+     and renaming it here alone would leave a sheet asking for a class that does
+     not exist, so the rename is owed by whoever owns that file.
+
+     Free to make today: nothing in the tree mounts a `Sheet` on the copper
+     register. `SHEET_REGISTER.copper` is the only reference to this class and
+     the four `<Sheet>` call sites are all blueprint or dark, so this rule is a
+     dormant primitive and the repaint changes no pixel on any page. It is made
+     now anyway, so the sheet is already correct on the day something mounts it.
+
+     Stops unchanged at 12%/5%. Amber is the lighter hue, so the same stop is
+     marginally brighter over the same paper: the major rule measures 1.27:1
+     against the sheet where copper measured 1.23:1. Both are ground texture
+     rather than a graphical object anything has to read, and the sheet still
+     recedes, which is the one relation the 22/10 to 12/5 drop was about. */
   .copper-grid {
     background-image:
-      linear-gradient(color-mix(in oklab, var(--color-copper-line) 12%, transparent) 1px, transparent 1px),
-      linear-gradient(90deg, color-mix(in oklab, var(--color-copper-line) 12%, transparent) 1px, transparent 1px),
-      linear-gradient(color-mix(in oklab, var(--color-copper-line) 5%, transparent) 1px, transparent 1px),
-      linear-gradient(90deg, color-mix(in oklab, var(--color-copper-line) 5%, transparent) 1px, transparent 1px);
+      linear-gradient(color-mix(in oklab, var(--color-amber) 12%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--color-amber) 12%, transparent) 1px, transparent 1px),
+      linear-gradient(color-mix(in oklab, var(--color-amber) 5%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--color-amber) 5%, transparent) 1px, transparent 1px);
     background-size: 96px 96px, 96px 96px, 16px 16px, 16px 16px;
     background-position: -1px -1px;
   }
@@ -387,20 +708,30 @@ body {
      A stack of `.panel`s is a stack of equals, which is right until one of them is where a
      reader should start. On `/nodes/[...id]` nine identical frames meant `Specification`,
      which says what the node does, looked exactly like `Model, skill and servers`, which
-     is a prerequisite checklist.
+     was a prerequisite checklist. That page carries four `<Panel>`s today and the second
+     of those titles is not one of them, so the sentence above is history; the lead is
+     still `Specification`, and it is still the only one on the page.
 
      A brighter edge and a lifted ground, and nothing else. Not a bigger heading: the
      heading scale on that page is already doing structural work (36 → 20 → 13 → 11) and a
      fourth size spent on emphasis would break the level it just made legible. At most one
      per page — two leads is no lead.
 
+     `components/profile/Pinned.tsx` is the only surface in the tree that reads as two, and
+     it argues in its own header that its two cards are one block and the only lifted ground
+     on the profile. That is the shape an admissible exception has to have: one entry point
+     that happens to come in two halves. Two entry points is the thing this rule forbids,
+     and nothing here licences a third card.
+
      This lives here rather than as Tailwind utilities at the call site because a modifier
      next to what it modifies keeps the two readable as one decision. It used to live here
      for a second reason as well — `.panel` was unlayered, so `border-line-bright` and
      `bg-surface-2/40` on the element resolved to the base `.panel` values and changed
      nothing at all. That is no longer true: this block is layered now, and a utility at a
-     call site wins. Which means the four upload-flow panels that asked for
-     `bg-surface-2/40` and got nothing will start getting it. */
+     call site wins. Which means the upload-flow panels that asked for
+     `bg-surface-2/40` and got nothing started getting it. Two of the four are still
+     spelled that way in `components/upload/UploadFlow.tsx`; the block header at the top
+     of this section carries the same correction and the count. */
   .panel-lead {
     background: color-mix(in oklab, var(--color-surface-2) 70%, transparent);
     border-color: var(--color-line-bright);
@@ -421,8 +752,22 @@ body {
      This site's colours carry meaning: cyan is interactive, violet is where a person
      acts, emerald is a figure read off the engine, signal is a defect, and amber is
      "not built yet". Amber *is* the site's orange, so a wayfinding box and a
-     `ComingSoonBadge` cannot be told apart by hue alone, and on `/spec/scoring` they
-     appear on the same screen.
+     `ComingSoonBadge` cannot be told apart by hue alone. They shared a screen on
+     `/spec/scoring`, which has been a 308 to `/what-a-blueprint-is` since 2026-09-05, and
+     no single page carries both today. That is a fact about this week's sitemap and not a
+     reason to relax anything: the shape is what will keep them apart the next time one
+     page grows one of each, and a rule that holds only while the routes happen to be
+     sparse is not a rule.
+
+     THE SPARSENESS ENDED ON 2026-09-06 in the other direction, and this rule is what is
+     left holding. The owner gave amber a third job that day, the card register, and a
+     register is a whole page rather than one box. `ComingSoonBadge` now renders inside an
+     amber page on `/nodes/[...id]`, through `components/blueprint/CloneMenu.tsx`, and
+     `/spec/card` is a `SpecPager` page that will put this box in one the day it converts.
+     So the sentence above about waiting for a page to grow one of each is no longer
+     hypothetical: the amber block in the theme carries the full cost and the three shapes
+     that separate the claims from the place. Shape is not a backstop here any more. It is
+     the only thing doing the work.
 
      Shape carries the difference. `ComingSoonBadge` is a small uppercase pill with no
      arrow; this is a full-width rectangle with a rule down its leading edge. A pill
@@ -430,16 +775,29 @@ body {
      round this to a pill, and do not put the badge in a rectangle.
 
      ── Where this is used, and one place it is deliberately not ──
-     Both pagers, the three layer doors on `/spec`, and the climb's onward cards. The rule
-     is: a box whose job is to send a reader elsewhere wears this, and nothing else does.
+     Re-derived 2026-09-06, because every call site this paragraph used to name is gone.
+     `components/ui/RouteBoxLink.tsx` is the only live application of the shape: `SpecPager`
+     draws one at the foot of six pages (`/what-a-blueprint-is`, the four `/spec/*` pages,
+     and `/towards-a-dark-factory`), and `app/spec/ontology/page.tsx` mounts a second
+     directly. `.route-label` is worn once without the box, on the node picker in
+     `components/panes/SynchronisedPanes.tsx`. One literal `.route-box` has no caller left
+     at all: `UpstreamMovedPanel` in `components/bundle/Aside.tsx`, which is this rule kept
+     alive by a component nothing mounts. The rule itself is unchanged: a box whose job is
+     to send a reader elsewhere wears this, and nothing else does.
 
-     `components/home/SectionDoors.tsx` is the exception and stays as it is. It draws on
-     `bg-blueprint-deep` in `blueprint-ink`, a register the rest of the site does not use,
-     and amber on that ground fights the palette rather than reading as a signpost. It also
-     does not need the help: a full-bleed section in a register of its own already says "you
-     have left the page's argument", which is the whole job. Consistency is worth having
-     because it makes a language, and a language applied where it makes a block harder to
-     read is not one. */
+     What stood here was "both pagers, the three layer doors on `/spec`, and the climb's
+     onward cards", and all three references died inside two weeks. `RoutePager` went with
+     `/the-climb`; the `/spec` index was deleted and its three doors moved to the foot of
+     `/what-a-blueprint-is`. Grep before trusting a list of call sites in this file. That
+     includes the list above.
+
+     Those doors are the exception worth writing down now, and it runs the other way from
+     the one this paragraph used to carry. They ARE exits, so by the letter of the rule
+     they should wear the shape, and `app/what-a-blueprint-is/page.tsx` argues them out of
+     it: three amber slabs down one column would lay a second rhythm across a page whose
+     alternation is already carrying the argument. They take amber on hover instead, which
+     keeps the claim and drops the slab. `components/home/SectionDoors.tsx`, the exception
+     named here before, was deleted with the home band it belonged to. */
   .route-box {
     background: color-mix(in oklab, var(--color-amber) 5%, transparent);
     border: 1px solid color-mix(in oklab, var(--color-amber) 30%, transparent);
@@ -543,7 +901,47 @@ body {
     border-right: 1px solid;
   }
 
-  /* Page container */
+  /* Page container.
+     ------------------------------------------------------------
+     These two numbers are arithmetic somewhere else now. `components/graph/framing.ts`
+     re-declares them as `CONTAINER_MAX` and `CONTAINER_PAD` and derives the React Flow
+     canvas from them: `bodyWidthAt` takes the smaller of 1200 and the track this rule is
+     laid out in, less 48, and `canvasWidthAt` takes a pane's own 28px of chrome off that.
+
+     THIS RULE IS NOT THE WHOLE DISTANCE BETWEEN THE VIEWPORT AND THE DRAWING, and the pass
+     that removed the blueprint page's body grid on 2026-09-06 wrote here that it was. One
+     link sits further out. `components/ui/SideRail.tsx` wraps every page that mounts it,
+     this one included, in `xl:grid-cols-[16rem_minmax(0,1fr)]`, so at and above a 1280px
+     clientWidth the container is capped by a track 256px narrower than the viewport rather
+     than by the `max-width` below. `framing.ts` carries that as `RAIL_WIDTH` and
+     `RAIL_FROM`, and its `bodyWidthAt` models both caps. The correction belongs in this
+     file because the superseded sentence was written here: a chain re-derived DOWNWARDS
+     from this rule cannot see a grid that is upwards of it.
+
+     So `canvasWidthAt` has breakpoints in it and is not monotonic in the viewport. There are
+     TWO of them since 2026-09-06, when the owner put the node index in a third of the pane
+     row and the graph took the other two thirds ("The graph occupies 2/3 of the horizontal
+     space, while Jump to a node occupies the rest 1/3"). The pane grid splits at `lg` and
+     the rail arrives at `xl`.
+
+     It returns 735 at clientWidths 1920, 1456, 1279 and 1200; 724 at 1440; 675 at 1366;
+     617 at 1280 and again at 1024; then 824, 692, 424 and 314 at 900, 768, 500 and 390.
+     **824 is the largest, and it is a tablet**: 900 is the widest viewport below `lg`, so it
+     is the last one whose pane escapes the column. Widening from 1023 to 1024 costs 330px as
+     the grid splits; widening from 1279 to 1280 costs 118px as the rail appears.
+     `docs/ARCHITECTURE.md` §9.1 carries what that costs a reader, which is every six-column
+     archive drawing: they need 1086px of canvas to clear the 10 CSS px floor and the page no
+     longer offers that at any width.
+
+     Those are the model's numbers, and `components/panes/archive-labels.test.ts` is what
+     holds the page's own markup to them: it re-measures the pane out of the classes the
+     page really carries, so a stray unit of padding on the graph panel shows up there as a
+     canvas that disagrees with this chain rather than as a drawing nobody can read.
+
+     Which means a change to either value below is a change to how large a node label is
+     rendered inside an archive drawing, and that suite measures exactly that against a
+     legibility floor. Move one of these and run it, or hear about it from a reader who
+     could not read a graph. */
   .container-page {
     width: 100%;
     max-width: 1200px;
@@ -553,11 +951,16 @@ body {
 
   /* The reading column.
      ------------------------------------------------------------
-     One token, one class, one number, for every paragraph of body prose on the
-     site — replacing `max-w-3xl`, `max-w-2xl`, `max-w-[62ch]`, `max-w-[74ch]`,
-     `max-w-[68ch]` and `max-w-[52rem]`, which were six answers to one question.
+     One token, one class, one number, wherever a paragraph of body prose takes
+     the measure at all. It replaced `max-w-3xl`, `max-w-2xl`, `max-w-[62ch]`,
+     `max-w-[74ch]`, `max-w-[68ch]` and `max-w-[52rem]`, which were six answers
+     to one question, and it is now applied on two routes and nowhere else. The
+     header block at the top of this file has the census and the grep that
+     re-derives it; this comment said "for every paragraph of body prose on the
+     site" until 2026-09-05, which stopped being true as the caps came off.
+
      Figures, tables, code panes and listings are NOT prose and keep the full
-     container. A `SectionHeading` lead is not prose either — it is a deck, it
+     container. A `SectionHeading` lead is not prose either: it is a deck, it
      reaches the right edge, and that is a standing ruling. */
   .prose-lane {
     max-width: var(--measure);
@@ -621,8 +1024,11 @@ body {
 
    That ordering is the whole point. An entrance written the other way round — hidden by
    default, revealed by script — leaves the content invisible whenever the reveal does not
-   fire, which is exactly what happened to the first version of `LifecycleStrip`. Anything
-   that goes wrong here costs the animation and never the text. */
+   fire, which is exactly what happened to the first version of `LifecycleStrip`, a
+   component no longer in the tree. What wears this today is
+   `components/ui/ReachList.tsx`, `components/explain/WhichTasksGlance.tsx` and
+   `components/explain/ConceptFigures.tsx`, and each of the three restates the contract in
+   its own header. Anything that goes wrong here costs the animation and never the text. */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes strip-in {
     from { opacity: 0; transform: translateY(6px); }

@@ -7,8 +7,11 @@ import { fileURLToPath } from "node:url";
  *
  * `components/**` is in the net for the same reason: what is tested is the
  * plain-TypeScript half that sits beside a component rather than inside it
- * (`components/panes/model.ts`, `components/build/path-state.ts`), or a render through
- * `renderToStaticMarkup`, which needs no DOM either.
+ * (`components/panes/model.ts`, `components/profile/tabs.ts`), or a render through
+ * `renderToStaticMarkup`, which needs no DOM either. The second example read
+ * `components/build/path-state.ts` until the owner deleted `/build` and its component tree
+ * on 2026-09-06; an example a reader cannot open teaches nothing, so it was replaced with
+ * another file of the same shape rather than left as a name.
  *
  * ── `{ts,tsx}`, and why the glob had to widen ──
  * It collected `*.test.ts` only. Three files in this tree are `.test.tsx` —

@@ -1,6 +1,12 @@
 # The ontology
 
-The controlled vocabulary the DOT and the cards both draw from. Version **0.1.0**.
+The controlled vocabulary the DOT and the cards both draw from. **It has no version, and
+this line said `Version 0.1.0` until 2026-09-05** (D-131, §11.0 Q31). The section
+*Versioning the ontology* below was superseded twice and carries the full account; what
+was missed both times is that the number was also in the first sentence of the document,
+where a reader meets it before any of the supersessions. `Ontology` is `{ title, terms }`.
+`files/darkprint-ontology-v0.1.md`, cited below, keeps `v0.1` in its FILENAME and is the
+specification document rather than a version stamp on the vocabulary.
 
 **Source of truth:** `lib/core/ontology/core.ts` (the terms), `types.ts` (the shapes),
 `resolve.ts` (lookup, the lattice, `isA`, `partitionTerms`).
@@ -20,7 +26,7 @@ node --experimental-strip-types -e 'import("./lib/core/ontology/core.ts").then(m
 
 ---
 
-## The 49 curated terms
+## The 54 curated terms
 
 ### `phase` — 5, and the list is closed
 
@@ -122,6 +128,9 @@ Rules:
 Doc 3 §8. The version is stamped on every card (`ontology_version`) and every bundle.
 
 > **Superseded 2026-08-30 by D-93 (`docs/DECISIONS.md`).** The version is stamped on neither. `ontology_version` left the card and `ontologyVersion` left the bundle manifest when the vocabulary-version registry was removed: there is one living vocabulary, so there is nothing to resolve a stamp against. The version survives only on a stored score (`release.scoredOntologyVersionId`), which is where reproducibility actually lives. Kept verbatim as the record of what was specified.
+>
+> **Superseded again 2026-09-05 by D-131, and this whole section with it.** There is no ontology version anywhere: not on a card, not on a manifest, not on a score, not on the vocabulary. `Ontology` is `{ title, terms }`; `release.scored_ontology_version_id` and both `ontology_*` tables were dropped by migration `0009`; `AutonomyResult.ontologyVersion` — the stamp the paragraph above pointed at — is gone. So the bump table below prices a number that does not exist. The mechanism §6.2 actually uses to move the vocabulary is `deprecated`, which retires a term in place and points at its successor. The one surviving trace is `OntologyTerm.since`, which still says *ontology version that introduced the term* and now names nothing.
+
 
 | change | bump |
 |---|---|
@@ -139,7 +148,7 @@ file rather than scattered through the analyzers.
 
 | change | what goes stale |
 |---|---|
-| **add a term** | `/ontology/<term>` page count, the `partitionTerms` total printed on `/what-a-blueprint-is`'s vocabulary band, and the ontology version on every card |
+| **add a term** | `/ontology/<term>` page count, the `partitionTerms` total printed on `/what-a-blueprint-is`'s vocabulary band, and ~~the ontology version on every card~~ (D-131, 2026-09-05: no card carries one and no vocabulary has one; what still goes stale is `OntologyTerm.since`, which every core term sets to the same `V01`) |
 | **remove or rename a term** | every card using it (`card/unknown-term`), every port typed with it, every `cannot` naming it, and every bundle's scores |
 | **change the lattice** (`broader`) | port compatibility across all 9 bundles, and `cannot` enforcement — a widened parent can make a prohibition fire where it did not |
 | **change a weight in `config.ts`** | every security reading on the site and all 9 bundle READMEs. The `/what-it-isnt` demonstration that quoted "4 to 2" is gone with that route; `components/explain/starter-isolation.ts` still derives the figure for `/spec/card` |

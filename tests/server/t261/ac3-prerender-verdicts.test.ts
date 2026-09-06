@@ -82,10 +82,16 @@ const CANONICAL = "/blueprints/[owner]/[slug]";
    on. The control's JOB is unchanged: a route with no data source going per-request is
    still the drift this table reds on. */
 const STAY_STATIC = ["/", "/mcp", "/skill", "/what-a-blueprint-is"] as const;
+/* `/ontology` was here until 2026-09-06. The owner folded the vocabulary browser into
+   `/spec/ontology` and deleted the index, and a DELETED route is absent from both maps —
+   which is exactly how this cell reads "per-request", so the row would have gone on passing
+   while measuring nothing. `/spec/ontology` is the row that carries the claim now: it took
+   the browser, it reads the registry, and it declares `force-dynamic` for that reason. The
+   shelf did not stop being per-request; its address changed. */
 const STAY_DYNAMIC = [
   "/blueprints",
   "/nodes",
-  "/ontology",
+  "/spec/ontology",
   "/settings",
   "/u/[username]",
   "/upload",

@@ -68,9 +68,10 @@
    imports exists.
 
    ── what it deliberately does not do ──
-   It does not touch `ontology_version` / `ontology_term` (written
-   by nothing, read by nothing, and already four terms behind the
-   shipped core). It does not touch `release.dot` or
+   It does not touch `ontology_version` / `ontology_term`, and by
+   now it could not: they were written by nothing and read by
+   nothing, and `0009_drop_ontology_versioning` dropped both. It
+   does not touch `release.dot` or
    `release.card_refs`, both of which are already correct. It does
    not re-embed, does not enqueue notifications, and does not
    write object storage. And unless `--purge-frozen` is passed it
@@ -403,8 +404,9 @@
    expect them to move. `card_version_embedding` and
    `release_embedding` are keyed by row id and their vectors were
    computed from the PRE-migration text, so search results drift
-   silently and re-embedding is a separate decision.
-   `ontology_version` and `ontology_term` are untouched.
+   silently and re-embedding is a separate decision. Nothing here
+   reaches `ontology_version` or `ontology_term`, which 0009
+   dropped.
 
    One consequence to announce rather than let people discover:
    every release digest changes, so every
@@ -794,7 +796,7 @@ if (targetDb !== expectDb) {
 const archive = readContent();
 const ontology = contentOntology();
 const archiveVocabulary = contentVocabulary();
-console.log(`archive   ${archive.length} blueprints, ontology ${ontology.ontology.version}`);
+console.log(`archive   ${archive.length} blueprints, ontology ${ontology.ontology.title}`);
 
 const CARDS_DIR = join(process.cwd(), "content", "cards");
 const errorsIn = (diagnostics: readonly Diagnostic[]): readonly Diagnostic[] => diagnostics.filter((d) => d.severity === "error");

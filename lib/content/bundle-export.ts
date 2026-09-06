@@ -61,10 +61,22 @@
    ============================================================ */
 
 import {
+  type AttractorScope,
   type BlueprintAnalysis,
   type CardRef,
   type OntologyTerm,
   type ResolvedBlueprint,
+} from "@/lib/core";
+/* Deep import, and deliberately not through `@/lib/core`: the barrel publishes the union
+   `ATTRACTOR_UNEXPRESSED_ATTRIBUTES`, and the union is the shape that carried the false
+   sentence this section exists to keep out. `emit.ts` split it into the two groups because
+   "falls back to the runner's own default" is false for the names a handler reads bare, and
+   a README rendering the union would have to re-derive that split from a third copy of the
+   spec facts. Importing the split constants is what makes the folder and the emitted header
+   the same two lists rather than two readings of one list. */
+import {
+  ATTRACTOR_DEFAULTING_ATTRIBUTES,
+  ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES,
 } from "@/lib/core";
 import { autonomyStatement } from "@/lib/format";
 import { ONTOLOGY_EXTENSIONS_FILE } from "./ontology-file";
@@ -479,11 +491,10 @@ export function bundleReadme(input: BundleExportInput): string {
   push("```");
   push(`blueprint      ${manifest.slug}`);
   push(`bundle digest  ${blueprint.digest}`);
-  /* The version the scores below were COMPUTED under, off the analysis, which is where it
-     has always been the true answer. The manifest used to declare a version of its own and
-     this line quoted that one — the number the author typed, not the number the engine
-     read the bundle against. */
-  push(`ontology       v${analysis.ontologyVersion}`);
+  /* There is no `ontology` line. It quoted a version of the core vocabulary, and the
+     vocabulary has none: DarkPrint's terms name what an Attractor node is, and that shape
+     is fixed by Attractor's spec. The `local terms` line below is the part a reader of
+     this folder can act on, because those terms travel in the folder. */
   push(`nodes          ${blueprint.nodes.length}`);
   push(`cards pinned   ${cards.length}`);
   if (local.length > 0) {
@@ -523,13 +534,25 @@ export function bundleReadme(input: BundleExportInput): string {
     ),
     "",
   );
+  /* The compiled file's own header used to be the only place the disclosure existed, and this
+     paragraph pointed at it. It said the header showed "what the runner falls back to its own
+     defaults for", which was the single-list claim `emit.ts` has since split apart because it
+     is false for the names a handler reads bare. The sentence now points at the section below,
+     which carries both groups, and it only promises a section when one is printed. */
+  const disclosure = runnerDisclosureSection();
   push(
     ...wrap(
       "To compile these two into a pipeline a graph runner takes, run `darkprint export <dir> " +
-        "--attractor`. It writes Attractor DOT to stdout, and that file opens with a list of " +
-        "everything a DarkPrint blueprint had no way to express, so you can see what the runner " +
-        "falls back to its own defaults for. Adapting the result, or building the run yourself " +
-        "from these files instead, is your own harness's job.",
+        "--attractor`. It writes Attractor DOT to stdout, " +
+        /* The empty arm is the day the emitter writes every reserved name: there is then no
+           section to point at, and a sentence promising one would send a reader looking for a
+           heading that is not in the file. */
+        (disclosure.length === 0
+          ? "under a header naming what it read this from. "
+          : "and that file opens with the same two lists this README carries under " +
+            `*${README_RUNNER_SECTION.replace(/^#+ /, "")}*. `) +
+        "Adapting the result, or building the run yourself from these files instead, is your " +
+        "own harness's job.",
     ),
     "",
   );
@@ -612,6 +635,14 @@ export function bundleReadme(input: BundleExportInput): string {
     );
   }
 
+  /* ---- what a runner reads and this folder cannot say ---- */
+  /* Next to the skill pointers on purpose: both sections are about what the folder does not
+     resolve, and a reader who has just been told that a `skill` path leads nowhere in here is
+     the reader who needs to know that a compiled copy of this graph is silent about a runner's
+     gates, timeouts and join policies too. Computed above, where the `darkprint export`
+     paragraph decides whether it may point at it. */
+  push(...disclosure);
+
   /* ---- the node table ---- */
   push("## The nodes", "");
   push("| node | card | phase |", "| --- | --- | --- |");
@@ -657,7 +688,7 @@ export function bundleReadme(input: BundleExportInput): string {
     push(
       ...wrap(
         [
-          `Both were read against ontology v${analysis.ontologyVersion} and the local terms these`,
+          "Both were read against the core vocabulary and the local terms these",
           `cards declare: ${local.map((term) => `\`${term.id}\``).join(", ")}.`,
           `Their definitions and the weights that price them are in \`${BUNDLE_VOCABULARY}\`, in this`,
           "folder. Score the folder without that file and those ids resolve against nothing, the",
@@ -701,6 +732,118 @@ export function bundleReadme(input: BundleExportInput): string {
   push(`Exported from ${SITE_ORIGIN}/blueprints/${manifest.slug}`);
 
   return `${out.join("\n")}\n`;
+}
+
+/** The README heading the disclosure lives under, bound so the suite can find the section. */
+export const README_RUNNER_SECTION = "## What these files leave to the runner";
+
+/**
+ * The disclosure, as README prose: what an Attractor runner reads that this folder cannot say.
+ *
+ * ── why it is in the README at all ──
+ * `emitAttractorDot` prints the same two lists into the header of every file it compiles,
+ * which reaches exactly the readers who run `darkprint export`. That CLI is not published,
+ * so a reader who downloads this folder from the site meets none of it. The owner ruled
+ * (2026-09-04) that the disclosure travels in `README.md`, which the folder already carries,
+ * rather than in a fifth file: the 2026-08-25 instruction fixes a published folder at
+ * `topology.dot`, `cards/*.yaml`, `README.md` and `ontology/extensions.yaml`, and adding a
+ * document to carry one section would have broken it for a section this one can hold.
+ *
+ * ── why two lists ──
+ * Both come from `emit.ts` and neither is written here, so this section cannot fall behind
+ * what the emitter learns to write. The split is the whole point: one sentence over both
+ * groups says "the runner has a default for this" about names where the handler has none,
+ * which is reassurance aimed at precisely the attributes a reader needed warning about.
+ * `ATTRACTOR_REQUIRED_ATTRIBUTES` in `emit.ts` is where the spec facts behind the second
+ * group are, with the sections that state them.
+ *
+ * Returns nothing at all when both groups are empty, which is what a day when the emitter
+ * writes every reserved name looks like: a heading over two empty lists would read as a
+ * disclosure and disclose nothing.
+ */
+function runnerDisclosureSection(): string[] {
+  const scopes = Object.keys(ATTRACTOR_DEFAULTING_ATTRIBUTES) as AttractorScope[];
+  const defaulting = scopeLines(scopes, ATTRACTOR_DEFAULTING_ATTRIBUTES);
+  const needed = scopeLines(scopes, ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES);
+  if (defaulting.length === 0 && needed.length === 0) return [];
+
+  const out: string[] = [README_RUNNER_SECTION, ""];
+  out.push(
+    ...wrap(
+      "Attractor reads more attributes than a DarkPrint blueprint has fields to set. Compile " +
+        "these files into a pipeline, by the command above or by hand, and the names below are " +
+        "the ones nothing in this folder sets. Write them in where your run needs them, and " +
+        "expect a later export of this blueprint to overwrite the whole compiled file. Appendix " +
+        "A of the Attractor spec tabulates most of them; the rest are named by the retry rules " +
+        "in §3.5, by the handler pseudocode in §4, and by §9.7's tool call hooks.",
+    ),
+    "",
+  );
+
+  if (defaulting.length > 0) {
+    /* "A value or a behaviour", because Appendix A's Default column is not uniform: some rows
+       give a literal (`goal_gate` false, `manager.max_cycles` 1000 in §4.11), and some give
+       `unset`, `inherited` or `derived`, which is a stated behaviour and not a value. A
+       sentence promising a default for all of them would be checkable and wrong at `timeout`.
+       What holds across the whole group is that the spec says what absence does, and the
+       pipeline runs either way. */
+    out.push(
+      ...wrap(
+        "Left out, these fall to the runner and the pipeline still runs. The Attractor spec " +
+          "states a value or a behaviour for each one's absence, in Appendix A or in the " +
+          "handler pseudocode that reads it, so what you get is a choice nobody in this folder " +
+          "made:",
+      ),
+      "",
+      ...defaulting,
+      "",
+    );
+  }
+
+  if (needed.length > 0) {
+    /* Not a second "takes a default" sentence, which is the falsehood the split in `emit.ts`
+       was made to remove. §4.6 returns RETRY at a human gate that times out with nothing to
+       choose, and §4.11 hands whatever it read to `start_child_pipeline` without checking it,
+       so the empty string Appendix A tabulates for `stack.child_dotfile` is a value the
+       handler acts on rather than a fallback that works. Which names land here is derived, so
+       the sentence stays general: it has to hold for whichever names the split puts in this
+       group, and what every one of them has in common is that some handler reads it with no
+       default of its own. */
+    out.push(
+      ...wrap(
+        "Left out, these have nothing to fall to. The handler a node's shape selects reads " +
+          "each one directly, and with no value it refuses or goes round again while the rest " +
+          "of the compiled file reads as though the node would run. Read §4's handler section " +
+          "for the shape you are compiling before you leave one of these unset:",
+      ),
+      "",
+      ...needed,
+      "",
+    );
+  }
+
+  return out;
+}
+
+/**
+ * One bullet per scope that has names, `graph` before `node` before `edge`.
+ *
+ * A scope with nothing in it is dropped rather than printed empty: `edge` is already empty
+ * in the second group today, and "edge: none" is a line a reader has to read to learn
+ * nothing. Lazy continuation carries a wrapped bullet, so the long `node` row stays one
+ * list item at the column the rest of the file is wrapped to.
+ */
+function scopeLines(
+  scopes: readonly AttractorScope[],
+  by: Readonly<Record<AttractorScope, readonly string[]>>,
+): string[] {
+  const out: string[] = [];
+  for (const scope of scopes) {
+    const names = by[scope];
+    if (names.length === 0) continue;
+    out.push(...wrap(`- ${scope}: ${names.map((name) => `\`${name}\``).join(", ")}`));
+  }
+  return out;
 }
 
 /** One markdown table cell: the only character that can break a row is the separator. */

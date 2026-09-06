@@ -371,8 +371,20 @@ export const FROZEN: Readonly<Record<string, string>> = {
          same two codes from the other direction and one list is reviewable where two are not.
      `publish.ts` is untouched: it reads `progress.state` and the state it reads now answers
      the release question. Both halves of the pair changed, so both digests move. */
+  /* Re-pinned a THIRD time, 2026-09-05, and this is the mildest of the three. The diff is
+     ONE WORD, inside the header comment, and it is a quotation being kept true: the comment
+     quotes the headings a rejected bundle used to show an unfinished author, and
+     `ValidationReport.tsx`'s withheld-state heading moved from "No schematic and no scores"
+     to "No schematic and no readings" when the scoring copy was swept (§11.0 Q28). A comment
+     that quotes a surface and then stops matching it is the drift this repository's own
+     rules exist to catch, so leaving it would have been the defect.
+
+     No exported value, no behaviour and no assertion moved; `progress.test.ts` is
+     byte-identical. This cell's stated job is to make a change here ARRIVE rather than to
+     judge it, and it did. The judgement is recorded here because the ruling says a change
+     to this file comes back to the owner. */
   "components/upload/progress.ts":
-    "87e57c31fc312144dffc7640da997044a231d3bd07d2be0f4fb6abe7f223a6a9",
+    "4b414e3a793524718b84d89cf8a7421033ea2e8eb9e2930b3fbe215473e93504",
   "components/upload/progress.test.ts":
     "8f5d2c72152220876659d88554036f6643728084e3abbc1bed1c2ac365022b73",
 };

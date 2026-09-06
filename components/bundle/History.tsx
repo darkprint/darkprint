@@ -74,7 +74,13 @@ function Entry({
             </span>
           )}
         </div>
-        <p className="max-w-[62ch] border-l border-line pl-4 text-[13px] leading-relaxed text-muted">
+        {/* No width cap. `max-w-[62ch]` stood here, and a release message is the blueprint's
+            own summary, so on the detail page this paragraph broke at 62 characters directly
+            under a header summary that now runs the full band. Two renderings of one sentence
+            wrapping at two different widths is what made the cap visible as a defect rather
+            than as a reading measure. The rule this repository holds is that text runs full
+            width; the left rule and its padding are what group the entry, not the measure. */}
+        <p className="border-l border-line pl-4 text-[13px] leading-relaxed text-muted">
           {entry.message}
         </p>
         <p className="font-mono text-[11px] text-dim">

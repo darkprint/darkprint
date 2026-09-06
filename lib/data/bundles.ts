@@ -393,11 +393,16 @@ export const OWNED_BUNDLES: readonly OwnedBundle[] = [
         /* Real on both sides: `intent-router` is a card in `content/cards/` with two
            published versions, and `frontline-triage` pins the first. So the amber panel
            names a repin a reader can go and read, on the card's own page, instead of a
-           version nobody can check. */
+           version nobody can check.
+
+           Both versions moved a minor on 2026-09-05 (§11.0 Q17): the card was RENAMED
+           1.0.0 -> 1.1.0 and 2.0.0 -> 2.1.0 to carry the `lane` emission, so the archive no
+           longer holds either old number. Read off `content/cards/intent-router@*.yaml` and
+           `content/blueprints/frontline-triage/topology.dot`, which pins `@1.1.0`. */
         upstreamMoved: {
           card: "intent-router",
-          from: "1.0.0",
-          to: "2.0.0",
+          from: "1.1.0",
+          to: "2.1.0",
           at: "2026-07-04",
         },
         changes: 9,

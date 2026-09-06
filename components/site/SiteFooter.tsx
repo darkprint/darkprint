@@ -35,7 +35,11 @@ const LEARN_LABELS: Record<string, string> = {
      "Topology" and "Node card". `nav` keeps the word "file", which is what holds it apart
      from the Browse row called "Ontology". */
   "/spec/ontology": "Ontology file (YAML)",
-  "/reading-the-radar": "How a blueprint is graded",
+  /* The crosswalk names no file, because it is not a fourth layer: `sequence.ts` keeps it
+     out of `SPEC_LAYERS` deliberately, since a blueprint has three documents and this page
+     is about what happens to all three on the way to a runner. So the footer's register
+     gives it the subject instead of a format. */
+  "/spec/attractor": "Reading it as Attractor",
 };
 
 function learnColumn(run: SpecRun) {
@@ -63,10 +67,17 @@ export const COLS = [
     links: [
       { href: "/blueprints", label: "Blueprints" },
       { href: "/nodes", label: "Cards" },
-      /* The third thing the registry holds. It had no row in either the header or the
-         footer until this pass, and was called "Vocabulary" in both until 2026-08-12; see
-         `SiteHeader`'s decision 1. `nav.test.ts` holds this label to the header's. */
-      { href: "/ontology", label: "Ontology" },
+      /* The third thing the registry holds had a row here from the accounts pass until
+         2026-09-06, when the owner folded its browser into `/spec/ontology` and deleted the
+         index. The header's Browse row went in the same change and for the same reason, and
+         `SiteHeader`'s header docblock carries the argument: repointing either row at the
+         spec page would have given one route two names on one screen, which is the defect
+         `nav.test.ts` opens with. The Specification column below names the survivor.
+
+         `nav.test.ts` would have caught a repointing here on its own, and it is worth
+         saying how, because the mechanism is not obvious: `HEADER_LABELS` is a Map keyed by
+         href, so a second `NAV` row at `/spec/ontology` is overwritten by the docs row, and
+         this row's "Ontology" would then be compared against "Ontology file (YAML)". */
     ],
   },
   {
@@ -78,12 +89,20 @@ export const COLS = [
          skill", which was two rows for what a reader does once. The `/build` split merged
          them: the authoring half is on `/skill` now, so the row that sent people to it and
          the row that named the tool are the same destination, and the header's label wins
-         (`nav.test.ts`: a route is called the same thing everywhere). */
+         (`nav.test.ts`: a route is called the same thing everywhere). The sandbox that was
+         left behind at `/build` after that merge is itself deleted since 2026-09-06, so the
+         Learn column below lost its row too — it reads `SPEC_SEQUENCE`, which no longer
+         carries the stop. */
       /* The author's order: the protocol, then the skill, then the ask. Publishing is last
          because it is the thing you do once you have made something, which is the order the
          other two put you in. */
+      /* The two reference routes sit between the surfaces and the ask, because both are
+         things a reader consults while making something rather than a fourth way to make
+         one. `nav.test.ts` holds each label byte-identical to the header's. */
       { href: "/mcp", label: "MCP" },
       { href: "/skill", label: "Assisted Design" },
+      { href: "/capabilities", label: "What you can do" },
+      { href: "/tutorial", label: "Write your first blueprint" },
       { href: "/upload", label: "Publish" },
     ],
   },

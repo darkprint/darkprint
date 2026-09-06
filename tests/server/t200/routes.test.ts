@@ -104,7 +104,6 @@ beforeAll(async () => {
         summary: `Not discoverable, ${sealedToken}.`,
         tags: [sealedTag],
       }),
-      scoredOntologyVersionId: w.ontology.id,
     });
     tells = [sealedSlug, sealedToken, sealedTag, sealedCard.cardId, sealedCard.ref, sealed.id];
 

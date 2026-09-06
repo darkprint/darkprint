@@ -185,22 +185,30 @@ const RETIRED: readonly {
 /* Survivors, by claim. Each `anyOf` member is a substring, so a rewrite that still makes the
    claim passes and only the claim's disappearance reds. */
 const SURVIVORS: readonly { file: string; claim: Claim; ruling: string }[] = [
-  {
-    file: SETTINGS_ROUTE,
-    claim: {
-      claim: "§05 states where a ballot is actually cast",
-      /* AMENDED at T280 (owner-instructed, 2026-08-25). This cell pinned "validator voting
-         is not built" while T160 was `todo`; T160 merged and T280 published its route
-         (POST /api/blueprints/{owner}/{slug}/votes), so the pinned sentence became the
-         false claim D-78 forbids in the OTHER direction. The survivor is now the section's
-         true statement: casting happens on a blueprint's own page, not on /settings. */
-      anyOf: ["asting a ballot happens on a blueprint"],
-    },
-    ruling:
-      "D-262-19 and D-262-15, amended at T280. §05's badge came off when the reads went " +
-      "real; the paragraph moved when the WRITE went real too. The section still refuses " +
-      "to be a voting surface, which is the claim that survives.",
-  },
+  /* §05's SURVIVOR ROW STOOD HERE AND IS REMOVED, 2026-09-06, on the owner's instruction:
+     "remove 05 · Validator status in the user settings".
+
+     The claim it pinned was "nothing on this site collects a vote, so the weight the registry
+     stores beside the badge multiplies nothing", in the forms `collects a vote` and
+     `multiplies nothing`. Its SUBJECT was §05 — the settings view of validator status — and
+     the owner deleted the section, so the sentence went with the surface that made it. That
+     is the one condition under which a row may leave this list.
+
+     WHY IT IS NOT MOVED TO `RETIRED`, and the reason is the file's own: a retirement premise
+     is measured at `BASE_SHA` and both forms occur ZERO times there. Measured rather than
+     assumed — `git show 3f7ea7b:app/settings/page.tsx | grep -c` answers 0 for each. The row
+     immediately above this one records the same refusal for the T280 sentence, for the same
+     reason. A retirement cell whose subject was never in the base is green in every world and
+     looks exactly like coverage.
+
+     WHAT IS STILL TRUE AND IS NOW SAID NOWHERE ON SCREEN: no page collects a vote, and the
+     `validator_weight` column still exists. The claim mattered because §05 once printed the
+     weight beside the badge; Q14 took the NUMBER off that line, and this instruction took the
+     line's whole section. So there is no rendered figure left for the sentence to qualify —
+     `✦ validator` still renders through `BundleHeader`, and a badge on its own asserts a
+     status the registry granted rather than an effect on a score. The claim survives in
+     `components/blueprint/Comments.tsx` and `components/upload/UploadFlow.tsx` as reasoning
+     in comments, which is not a reader surface and is not offered here as one. */
   {
     file: SETTINGS_ROUTE,
     claim: {

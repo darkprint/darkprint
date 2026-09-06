@@ -18,11 +18,19 @@ import { CopyButton } from "@/components/ui/CopyButton";
 
    `BundleHeader` at the top for the same reason the published branch
    uses it — one identity band for a bundle seen from any side — with
-   no `clone` (there is no folder yet, so `Get the folder` draws its
-   own honest disabled state) and no `star`/`watch`/`fork` (a target
-   nothing has released is not a thing this pass wires either of
-   those onto; `lib/server/counters` keys targets by kind, and
+   no `download` (there is no release to fetch, and the band's `note`
+   says so where the control would have been) and no `star`/`fork` (a
+   target nothing has released is not a thing this pass wires either
+   of those onto; `lib/server/counters` keys targets by kind, and
    "blueprint" targets a released bundle's row by convention here).
+
+   THE VISIBILITY SWITCH STAYS HERE, and it is the one route that
+   still draws one. The owner took it off the published page on
+   2026-09-06 and put it on the account's blueprint list instead; a
+   draft is on that list too, so this mount is redundant the day the
+   list grows one. It is kept until then rather than after, because
+   removing it first would leave a bundle created through `/new` with
+   no way at all to be made public.
    ============================================================ */
 
 export interface DraftLandingBundle {
@@ -63,7 +71,6 @@ export function DraftLanding({
         visibility={draft.visibility}
         title={draft.title ?? draft.slug}
         summary={draft.summary ?? "No summary yet."}
-        watchers={0}
         forks={0}
         saveId={`blueprint:${draft.slug}`}
         note="no release yet: this bundle has an owner and a name, and nothing published under them"
@@ -90,8 +97,10 @@ export function DraftLanding({
           <>
             {/* ---------- Quick setup, the GitHub empty-repo panel ----------
                 Three ways in, same as a fresh repository offers: push a release from the
-                wizard, point the skill at this exact draft, or clone the bundle by name
-                (a preview until the CLI ships). None of them is a fallback for another. Owner-only: the
+                wizard, point the blueprint-writing skill at this exact draft (its install
+                command needs a public repository, and each caveat below says which limit
+                it is stating), or clone the bundle by name (a preview until the CLI
+                ships). None of them is a fallback for another. Owner-only: the
                 upload wizard's own prefill only pins a bundle the session owns (B6's
                 contract), so offering this call to action to a visitor would point them at
                 a form that refuses them the moment they submit it. */}
@@ -126,6 +135,21 @@ export function DraftLanding({
                   </code>
                   <CopyButton text={SKILL_INSTALL_COMMAND} ariaLabel="Copy the skill install command" />
                 </div>
+                {/* The same shape, tone and position the clone command's caveat uses below,
+                    because it is the same kind of claim: a line printed as a control that
+                    is not one yet. Added 2026-09-05 on the owner's ruling (§11.0 Q8), and
+                    `lib/skill.ts`'s header holds the measurement.
+
+                    The two limits are NOT the same fact and the wording keeps them apart.
+                    The CLI below does not exist yet; the DarkPrint skill does, and what
+                    blocks it is read access to the repository the skills CLI fetches it
+                    from. Saying "not built" here would be a different false claim from the
+                    one it replaced. Deleting this paragraph is this file's whole undo. */}
+                <p className="mt-2 text-xs leading-relaxed text-dim">
+                  Not runnable yet. DarkPrint&rsquo;s repository is private, so the line
+                  above answers 404 for everyone but its owner. The blueprint-writing skill
+                  it fetches is written; what is missing is read access to it.
+                </p>
               </div>
 
               <div className="border-t border-line pt-5">

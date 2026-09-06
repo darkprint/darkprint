@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useRef, type KeyboardEvent } from "react";
+import { useCallback, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { cx } from "@/lib/format";
 import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { CopyButton } from "@/components/ui/CopyButton";
@@ -56,10 +56,68 @@ import { announceMenuOpened, useCloseWhenAnotherMenuOpens } from "@/components/u
 /** Which page this renders on, so the copy names the right thing. */
 type CloneKind = "blueprint" | "node";
 
+/**
+ * The trigger, per kind, and the two differences between them are both the owner's.
+ *
+ * The label: the owner asked for the node card's header to read "star, fork, Download
+ * Card" (2026-09-05), so on a card this menu IS the download control and wears its name.
+ * A blueprint's header is unchanged.
+ *
+ * The colour: `--color-amber`, on the owner's ruling of 2026-09-06 — "the amber should be
+ * the dominant color on the cards sections. So that an user in a glance can know wheter
+ * they are on a blueprint or in a card."
+ *
+ * ── The argument this replaces, which is worth reading and does not get to win again ──
+ * The `node` pill was copper. `app/globals.css` reserved amber for two claims,
+ * `ComingSoonBadge` ("not built yet") and the box shape that leaves the page, and held
+ * that painting the most literally-built thing on the site in the not-built-yet colour was
+ * the one lie the figure could not afford. That paragraph was spent once, on 2026-09-05,
+ * to answer this same owner asking for this same thing. They have now asked a second time
+ * in their own words, and the shelf this control sits one route away from was already
+ * amber-led. A reservation is a claim about which meanings may spend a hue; which hue
+ * carries a whole register is the owner's call, and they have made it twice.
+ *
+ * ── The collision, and the thing that is NOT allowed to disappear into it ──
+ * The panel this trigger opens fences an unbuilt CLI preview in amber and puts a
+ * `ComingSoonBadge` inside the fence. Both are honesty claims, and CLAUDE.md forbids
+ * weakening one — camouflage weakens one. So the two are separated by FORM rather than by
+ * hue, and the separation is deliberate on both sides:
+ *
+ *   * this trigger carries NO amber ground at rest. Border, label and caret only, with a
+ *     tint arriving on hover. A filled amber rectangle is the honesty shape and stays
+ *     unique to it;
+ *   * the fence below keeps its fill AND gains the heavy leading rule the site's
+ *     leaves-the-page box already uses, so the claim reads as a slab rather than as one
+ *     more accent in the register around it.
+ *
+ * `components/nodes/card-header-controls.test.ts` holds both halves.
+ *
+ * Contrast, measured for this hue rather than carried over from copper's: `--color-amber`
+ * #ffb020 on `--color-surface` #0a0c16 is 10.66:1 against the 8.35:1 copper read, and the
+ * 60% border composites to 4.35:1 where `copper-line/40` sat at 2.19:1 and missed the 3:1
+ * floor WCAG 1.4.11 sets for a non-text boundary. Every number here goes up.
+ *
+ * `h-9` on the card, `h-10` on the blueprint. On a card this trigger stands third in a row
+ * of three beside two `ActionPill`s, which are `h-9`; on a blueprint it does not.
+ */
+const TRIGGER: Record<CloneKind, { label: string; pill: string; caret: string }> = {
+  blueprint: {
+    label: "Get the folder",
+    pill: "h-10 border-line-bright bg-transparent text-fg hoverable:hover:border-cyan hoverable:hover:text-cyan",
+    caret: "text-dim",
+  },
+  node: {
+    label: "Download card",
+    pill: "h-9 border-amber/60 bg-transparent text-amber hoverable:hover:border-amber hoverable:hover:bg-amber/10",
+    caret: "text-amber",
+  },
+};
+
 export function CloneMenu({
   kind,
   command,
   cliCommand,
+  save,
   variant = "menu",
   className,
 }: {
@@ -68,6 +126,18 @@ export function CloneMenu({
   command: string;
   /** What `darkprint clone` would read once there is a `darkprint`. Never runnable. */
   cliCommand: string;
+  /**
+   * The click-to-save control, when the caller has one: a `download` link the reader
+   * presses instead of pasting a command. Rendered first in the panel, because the
+   * panel's order is its argument (see `CloneBody`) and this is the shortest path from
+   * the page to the file on disk.
+   *
+   * A `ReactNode` rather than an href, so it stays SERVER-rendered in the caller. The node
+   * page's link carries the whole card document in a `data:` URI; handed over as a string
+   * it would be serialised into this client component's payload as well as into the
+   * markup, for a button that does not need a client at all.
+   */
+  save?: ReactNode;
   variant?: "menu" | "plain";
   className?: string;
 }) {
@@ -79,7 +149,7 @@ export function CloneMenu({
   }, []);
   useCloseWhenAnotherMenuOpens(id, close);
 
-  const body = <CloneBody kind={kind} command={command} cliCommand={cliCommand} />;
+  const body = <CloneBody kind={kind} command={command} cliCommand={cliCommand} save={save} />;
 
   if (variant === "plain") {
     return (
@@ -112,12 +182,18 @@ export function CloneMenu({
           standalone `scale:` property, which a `transition-property` naming only
           `transform` does not cover (see `components/ui/Button.tsx`). */}
       <summary
-        className="inline-flex h-10 cursor-pointer select-none list-none items-center justify-center gap-2 whitespace-nowrap rounded-md border border-line-bright bg-transparent px-4 text-sm text-fg transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-cyan hoverable:hover:text-cyan hoverable:active:scale-[0.97] [&::-webkit-details-marker]:hidden"
+        className={cx(
+          "inline-flex cursor-pointer select-none list-none items-center justify-center gap-2 whitespace-nowrap rounded-md border px-4 text-sm transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97] [&::-webkit-details-marker]:hidden",
+          TRIGGER[kind].pill,
+        )}
       >
-        {kind === "node" ? "Get the file" : "Get the folder"}
+        {TRIGGER[kind].label}
         <span
           aria-hidden
-          className="inline-block text-dim transition-transform group-open:rotate-180"
+          className={cx(
+            "inline-block transition-transform group-open:rotate-180",
+            TRIGGER[kind].caret,
+          )}
         >
           ▾
         </span>
@@ -146,20 +222,26 @@ export function CloneMenu({
  * The command, what it does not do, and the CLI that would.
  *
  * Order is the argument: the thing that works is first and largest, its limit is directly
- * under it, and the thing that does not exist is last and fenced off in amber. Amber is
- * spent here on exactly the two jobs it is reserved for — `ComingSoonBadge` and the
- * surround around the half of this panel that is not built. The working command, its copy
- * button and the prose around it stay cyan and `text-dim`; tinting a command that runs
- * today to match its neighbour would say the opposite of the truth in this panel.
+ * under it, and the thing that does not exist is last and fenced off in amber.
+ *
+ * Amber now also carries the card's whole accent register (see `TRIGGER`), so the fence can
+ * no longer rely on hue alone to say "this half is not built". It relies on shape: a filled
+ * ground, a heavy leading rule, a badge and the refusal in words. Nothing in the register
+ * around it carries a fill or a leading rule, which is what keeps the claim readable as a
+ * claim. The working command, its copy button and the prose around it stay `text-fg` and
+ * `text-dim`; tinting a command that runs today to match its neighbour would say the
+ * opposite of the truth in this panel.
  */
 function CloneBody({
   kind,
   command,
   cliCommand,
+  save,
 }: {
   kind: CloneKind;
   command: string;
   cliCommand: string;
+  save?: ReactNode;
 }) {
   /** What lands on disk: a directory for a blueprint, one document for a card. */
   const thing = kind === "node" ? "card" : "folder";
@@ -171,6 +253,14 @@ function CloneBody({
       <p className="label-lead text-fg">
         {kind === "node" ? "Take the file" : "Take the whole folder"}
       </p>
+
+      {/* The click-to-save path, above the paste-into-a-terminal one. It used to stand as
+          its own button in the node page's header row; the owner asked that row down to
+          three controls (star, fork, download), so the two download paths are one control
+          with the button inside it rather than one of them being dropped. Ordered first
+          because the panel's order is its argument and this is the one that needs nothing
+          but a click. */}
+      {save}
 
       {/* One unwrapped line in its own horizontal scroller. A `\`-continued multi-line
           form breaks the moment it is pasted into a terminal that eats the backslash, and
@@ -212,8 +302,16 @@ function CloneBody({
       </p>
 
       {/* Not built. No copy button, on purpose — a copy button is an affordance that says
-          "run this", and there is nothing to run. */}
-      <div className="flex flex-col gap-2 rounded-md border border-amber/30 bg-amber/5 p-3">
+          "run this", and there is nothing to run.
+
+          The leading rule is the load-bearing part since the owner made amber the card's
+          register (2026-09-06). `app/globals.css` gives the leaves-the-page box the same
+          shape, a tinted amber ground under a heavy amber edge, and that shape is what
+          separates an honesty claim from an accent now that both are the same hue. The
+          fill went 5% to 8% for the same reason: this block has to read as a slab beside a
+          trigger that is amber line work on nothing. `border-l-2` after the `border`
+          shorthand, which is the order Tailwind emits them in, so the leading edge wins. */}
+      <div className="flex flex-col gap-2 rounded-md border border-amber/30 border-l-2 border-l-amber bg-amber/8 p-3">
         <ComingSoonBadge className="self-start" />
         <code className="block overflow-x-auto font-mono text-[11px] leading-relaxed text-dim select-none">
           {cliCommand}

@@ -144,20 +144,11 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
     return { bundleId: bundle.id, digest };
   }
 
-  async function vocabulary(terms: { id: string; kind: string; label: string }[]): Promise<void> {
-    const [version] = await client.db
-      .insert(schema.ontologyVersion)
-      .values({ version: "0.1.0", digest: "sha256:v" })
-      .returning();
-    for (const term of terms) {
-      await client.db.insert(schema.ontologyTerm).values({
-        ontologyVersionId: version.id,
-        termId: term.id,
-        kind: term.kind as "node-type",
-        body: { ...term, description: `The ${term.label} term.`, since: "0.1.0" },
-      });
-    }
-  }
+  /* A `vocabulary(terms)` helper stood here, writing an `ontology_version` row and its
+     `ontology_term` children. No cell in this file called it, and
+     `0009_drop_ontology_versioning` dropped both tables: the registry keeps one vocabulary,
+     `CORE_ONTOLOGY` in the process, merged per bundle with `release.local_vocabulary`, which
+     is what `PublishOptions.vocabulary` above already writes. */
 
   /* --------------------- AC1, AC3 and the visibility of a vector --------------------- */
 

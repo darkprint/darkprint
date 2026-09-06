@@ -47,11 +47,114 @@ interface Frozen {
 const FROZEN: readonly Frozen[] = [
   {
     path: "components/site/nav.test.ts",
-    /* Third amendment (owner-instructed, 2026-08-25): the Publish button left the chrome,
+    /* Sixth amendment (owner-instructed, 2026-09-06): the owner folded the ontology browser
+       into the spec page and deleted its index. In their own words: "move the ontology page
+       in the /spec/ontology substituing the "every term" box. Then, you can delete the
+       /ontology page".
+
+       This is the THIRD reversal of one decision, and the amendment is worth reading as
+       that rather than as an edit. `/ontology` was a 308 onto `/spec/ontology`; the accounts
+       pass gave it a real page and `components/ontology/canonical-route.test.ts` was written
+       to pin the split "so neither can quietly absorb the other again"; the owner has now
+       absorbed one into the other. A guard written to prevent exactly this is being inverted
+       by the person entitled to invert it, and the reason it was written stays in the tree.
+
+       Three things moved in this file and none of them is a floor being slid.
+
+       `RENAMED` gains `/ontology -> /spec/ontology`, which puts four assertions on the fold
+       at once: the 308 exists and is permanent, the destination is a real page, no page
+       shadows the source, and no chrome table names the retired path. `/ontology/<term>` is
+       deliberately NOT covered by that row, because a `source` with no parameter is an exact
+       anchored pattern and the term detail pages keep their URLs.
+
+       The Decision-1 cell is rewritten for the third time. It asked which of two routes
+       wears the bare word "Ontology"; there is one route now, so the question has no second
+       subject. What survives is the half that still has one — the spec row keeps the file
+       form its two siblings have — and the other half inverts into `HEADER_LABELS` not
+       knowing `/ontology` at all.
+
+       A cell is ADDED: "never puts two labels on one route". It is the converse of the cell
+       above it, it was missing for as long as this file has existed, and the fold is what
+       exposed the hole. `HEADER_LABELS` is a `Map` keyed by href, so two `NAV` rows at one
+       route do not collide, they overwrite, and every label check in the file then reads the
+       survivor.
+
+       Falsified before this pin moved, and NOT with the `zzz-probe` route the amendments
+       below used: that probe exercises a cell this amendment does not touch. The probe here
+       is the repair that was actually rejected. Repointing the Browse row at the spec page
+       (`{ href: "/spec/ontology", label: "Ontology", group: "browse" }` restored to `NAV`,
+       run, removed) reds the new cell by name, with its own message about the Map
+       overwriting, and reds NOTHING ELSE in the file — the pre-existing footer-parity cell
+       stays green because the footer row went in the same change. So the mistake this
+       amendment is guarding against was, before the added cell, completely silent. A second
+       probe restoring a `/ontology` row reds the rewritten Decision-1 cell by name
+       ("a header row points at /ontology, which 308s onto /spec/ontology"), and a third,
+       deleting the new rule from `next.config.ts`, reds the `RENAMED` row ("no redirect for
+       /ontology"). All three were reverted before the digest below was taken.
+
+       The previous pin was
+       `04d541b0ec1a9e0a02bbe750dcbdb857335c0c7afbff2439757ff1b78de6b439`. Like the fourth
+       and fifth, it is a working-copy digest rather than a fetchable one: that state was
+       never committed, so `git show` produces no such bytes and `git diff` on this file
+       prints the fourth, fifth and sixth amendments together.
+
+       Fifth amendment (owner-instructed, 2026-09-06): the owner deleted `/build` and the
+       whole `components/build` tree ("delete /build, it is not useful and make confusion"),
+       and the fourth amendment directly below had, two days earlier, repointed two retired
+       paths ONTO that route. Three things moved and none of them is a floor being slid.
+
+       `RENAMED` now sends `/spec/scoring` and `/reading-the-radar` to
+       `/what-a-blueprint-is`, each as its own row and each in one hop. The fourth
+       amendment's own argument is what forces the shape: chaining a 308 onto a 308 costs
+       every older link two hops, so a destination that is itself retired has to be replaced
+       rather than pointed through. `/reading-the-radar` is a row here for the first time,
+       because until this change it was a destination rather than a source.
+
+       `uploadLabels` was widened to read `NAV` through a
+       `readonly { href: string; label: string }[]`. `NAV` is a `const` array of object
+       literals, so TypeScript infers `href` as the union of the paths actually in it; the
+       workspace row's `href` was the one `string` in that union and widened the whole field.
+       Losing that row turned the cell's `item.href === "/upload"` into a comparison between
+       non-overlapping types, which is a compile error rather than an empty result. Casting
+       the comparison away would have let the compiler prove the cell vacuous, and the cell
+       exists to red on the day a `/upload` row comes back.
+
+       Falsified before this pin moved, the same way the amendments below were: a throwaway
+       `app/zzz-probe/page.tsx` still reds "lists every top-level route in the header" by
+       name, with `expected [ 'zzz-probe' ] to deeply equal []` and 22 of the file's 23 cells
+       passing. The probe was removed and the file re-hashed to the digest below.
+
+       The previous pin was
+       `57291ed4cce24e5c23745ead6958b1c343c8d8cffe8c86d69f24f711dff15bc8`, and no `git show`
+       produces those bytes: the fourth amendment was still uncommitted when this one landed
+       on top of it, so that state was never committed. A sha256 of a working copy is
+       computable without being fetchable, which is the cost this file's header accepts when
+       it chooses a literal over a ref. `git diff components/site/nav.test.ts` compares
+       against the THIRD pin, `784ad4ef…`, whose bytes are the committed ones, so that diff
+       prints the fourth and the fifth amendments together and has to be read as two changes.
+
+       Fourth amendment (owner-instructed, 2026-09-04): the author asked the page "How a
+       blueprint is graded" off the site and chose a redirect over an unlisting, so
+       `/reading-the-radar` left the header nav and this file could not stay both frozen and
+       true. Two cells moved, and neither is a floor being slid. The RENAMED table gains
+       `/reading-the-radar -> /build` and repoints `/spec/scoring` onto `/build` as well,
+       because that path had merged into the retired page and chaining a 308 onto a 308
+       costs every older link two hops. The fragment cell's named link was
+       `/reading-the-radar#weights`, whose id was declared by the deleted page; it is
+       re-pointed at `/what-a-blueprint-is#run`, which is a JSX attribute in a product
+       component and therefore covers the same half of the regex the old one did.
+
+       Falsified before this pin moved, the same way the amendments above were: a throwaway
+       `app/zzz-probe` route still reds "lists every top-level route in the header" by name,
+       so the guard is unchanged in force and only its subject moved.
+
+       The previous pin was `784ad4efb0394cf1936782fc3bf5da50a85c2f18847ec8719955a66b7437cdb4`.
+
+       Third amendment (owner-instructed, 2026-08-25): the Publish button left the chrome,
        so the /upload parity cells inverted — NAV must hold no /upload row and the source
        must carry no /upload href. Falsified before this pin moved: a probe link in the
        header reds the flipped cell by name. */
-    sha256: "784ad4efb0394cf1936782fc3bf5da50a85c2f18847ec8719955a66b7437cdb4",
+    sha256: "fdb11c4401adb34168f77f275b78533578c27d56c00abbe9e617f0f7f4e2e0b9",
     why: "AC5 names it must-pass-unchanged. D-262-06 turns that into a constraint on the cutover: it imports `ACCOUNT_MENU` as a module-scope array and reads `.href` off every row, and a static import of a static array is what a per-request session cannot be. AMENDED ONCE, by ruling (D-262-29, owner-stated 2026-08-25): `/welcome` was added as a route no header may link, its `ELSEWHERE` exemption edited this file, and this pin was moved in the SAME commit. The freeze fired correctly — an author editing a guard so their own change passes is exactly what it watches for — and the amendment is recorded rather than quietly re-baselined. The exemption was falsified before the pin moved: a throwaway top-level route still reds the assertion, so the guard was narrowed by one named route and not blunted. AMENDED AGAIN at T280 (owner-instructed wiring wave, 2026-08-25): `/new` joined `ELSEWHERE` (a creation form reached from the profile shelf's own button, same reasoning as `/upload`), and the same falsification ran before this pin moved — a throwaway `app/zzz-probe` route still reds by name.",
   },
   {
@@ -61,8 +164,8 @@ const FROZEN: readonly Frozen[] = [
   },
   {
     path: "components/profile/tabs.ts",
-    sha256: "6ae570cfce5bb6ff60e1c78652176e38f0449e1340625b89ef9d5569997f6785",
-    why: "D-262-03. `lib/server/naming/reserved.ts:13` imports `RESERVED_PROFILE_SEGMENTS` from it and `isReservedSlug()` is that import and nothing else, so merged T070's slug refusal is decided here. Add a sixth tab and the registry silently refuses a sixth name. AMENDED at T280 (owner-instructed, 2026-08-25): `overview` left the table and `blueprints` took the empty segment, so the reserved set derives to cards/saved/terms — `blueprints` became an allocatable slug and t070's literals moved in the same commit. The freeze fired exactly as designed; the change it caught is the wave's own instruction, not an author dodging a guard.",
+    sha256: "5ffa0e7f5c81b21f25205862094394e6ab435829121586d98e7d7f94c96b0c0b",
+    why: "D-262-03. `lib/server/naming/reserved.ts:13` imports `RESERVED_PROFILE_SEGMENTS` from it and `isReservedSlug()` is that import and nothing else, so merged T070's slug refusal is decided here. Add a sixth tab and the registry silently refuses a sixth name. AMENDED at T280 (owner-instructed, 2026-08-25): `overview` left the table and `blueprints` took the empty segment, so the reserved set derives to cards/saved/terms — `blueprints` became an allocatable slug and t070's literals moved in the same commit. The freeze fired exactly as designed; the change it caught is the wave's own instruction, not an author dodging a guard. AMENDED A SECOND TIME, DELIBERATELY, 2026-09-06, at the owner's instruction: \"remove the section Ontology terms\". The `terms` tab left the table and `app/u/[username]/terms/page.tsx` was deleted with it, so the reserved set derives to cards/saved. This amendment runs the sentence above IN REVERSE — the hazard it names is a tab ARRIVING and a name being silently refused; here a tab LEAVES and `terms` becomes silently ALLOCATABLE, which is the same guard catching the same coupling from the other side. Verified rather than reasoned, with a throwaway probe run against the amended file and then deleted: `RESERVED_PROFILE_SEGMENTS` is exactly [cards, saved], `PROFILE_TABS` is exactly [blueprints, cards, saved], `isReservedSlug(\"terms\")` is false and `isReservedSlug(\"saved\")` is still true, so the set narrowed by one member and did not collapse. `components/profile/tabs.test.ts` needed NO edit and its own pin did not move: it asserts the arity relation (`RESERVED_PROFILE_SEGMENTS.length === PROFILE_TABS.length - 1`) and names only `saved`, so it holds at three tabs exactly as it held at four — which is why a structural assertion outlived the table it was written against. SEAM-60 (`GET /api/authors/{handle}/terms`) lost its only anchor in the tree with the deleted route. The previous pin was `6ae570cfce5bb6ff60e1c78652176e38f0449e1340625b89ef9d5569997f6785`.",
   },
 ];
 

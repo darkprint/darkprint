@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe as suite, expect, it } from "vitest";
 import {
   CONTRACT,
   PUBLISHED,
+  PUBLISHED_COLUMNS,
   PUBLISHED_UNIQUES,
   SQLSTATE,
   UNWRITABLE_METRICS,
@@ -119,6 +120,43 @@ suite("T005 AC5 — the writable metric set and its range are fixed by the schem
         `design satisfies AC1 of T160 by construction. A column here restores exactly the ` +
         `dependence on every future caller remembering, and does it silently.`,
     ).toEqual([]);
+  });
+
+  /**
+   * T160's own AC1 cell, moved here on 2026-09-05 when Q14 deleted the suite it lived in.
+   *
+   * `tests/server/t160/surface.test.ts` asserted this as an equality on the whole column set,
+   * beside a per-axis cell for `autonomy`, `security` AND `cost`. Q14 deleted `castBallot`, so
+   * every other cell in that file lost its subject. This one did not: the subject is the TABLE,
+   * and the table stays because `lib/server/lifecycle/bundle-deletion.ts:96` and `deletion.ts`
+   * cascade through it.
+   *
+   * It is not a duplicate of the substring cell above. That one scans for two names and cannot
+   * see an eighth column called anything else, and `cost` was already outside its reach —
+   * `UNWRITABLE_METRICS` carries autonomy and security only, while cost is `reported` and the
+   * run report's (`run_report.cost_units`, D-05-09). An equality on the whole set says both
+   * things at once: no forbidden axis, and no column nobody published.
+   *
+   * The expected set is derived from the BLOCK and compared against the CATALOGUE, which is
+   * the direction `columns.test.ts` takes and for its reason: deriving both sides from the
+   * schema would make this robust to the schema changing and blind to it disagreeing with the
+   * contract. `id` is written in because the preamble gives it to every table, so the block
+   * does not name it per table.
+   */
+  it("AC5: `ballot` carries the seven published columns and no eighth, so a forbidden axis has nowhere to land", () => {
+    requireT005Shipped(scratch);
+    const expected = ["id", ...PUBLISHED_COLUMNS.ballot.map(([name]) => name)].sort();
+    expect(
+      columnsOf(cat, "ballot")
+        .map((c) => c.name)
+        .sort(),
+      `${CONTRACT.ac5}\n  ${PUBLISHED.ballot}\n  ${PUBLISHED.preamble}\n  An eighth column is ` +
+        `how AC1 stops being satisfied by construction. \`autonomy\` and \`security\` are ` +
+        `\`source: "auto"\` and the engine's alone (\`lib/types.ts:36\`); \`cost\` is ` +
+        `\`reported\` and T180's. None of the three can be written while there is no column to ` +
+        `write it to, and a column added here is not a rule a later caller can forget — it is a ` +
+        `place a value can be stored.`,
+    ).toEqual(expected);
   });
 
   it("AC5: the three metric columns are nullable, so a caller may vote on one metric and not the others", () => {

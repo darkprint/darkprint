@@ -73,12 +73,43 @@ afterAll(async () => {
    consumers silently) does not reach a nullable add, and the cells are enumerated here so
    the NEXT alteration still reports itself by name instead of hiding behind a count. */
 const LICENSED_DELTAS = [
+  /* 0009_drop_ontology_versioning, owner-instructed 2026-09-05. Nineteen cells, and they
+     are the largest delta this guard has ever licensed: a column off `release` and two
+     whole tables. Enumerated one per line for the reason the T280 note above gives, which
+     matters more here than anywhere else in this list. A count would let the NEXT
+     alteration to `release` hide inside a number that already says nineteen, and `release`
+     is the table eight merged tasks query. Every line is a cell somebody can look up in the
+     migration; nothing is grouped and nothing is wildcarded.
+
+     Ordered the way `diff()` emits: it sorts within each kind and the caller concatenates
+     columns, then indexes, then constraints. The order is part of the assertion because
+     `toEqual` over an array is ordered, so a licensed list written table-by-table reds
+     against a correct schema. */
   "added columns bundle.category",
   "added columns bundle.description",
   "added columns bundle.summary",
   "added columns bundle.tags",
   "added columns bundle.title",
   "changed handle_reservation.account_id is_nullable: YES -> NO",
+  "removed columns ontology_term.body",
+  "removed columns ontology_term.created_at",
+  "removed columns ontology_term.id",
+  "removed columns ontology_term.kind",
+  "removed columns ontology_term.ontology_version_id",
+  "removed columns ontology_term.term_id",
+  "removed columns ontology_version.created_at",
+  "removed columns ontology_version.digest",
+  "removed columns ontology_version.id",
+  "removed columns ontology_version.version",
+  "removed columns release.scored_ontology_version_id",
+  "removed indexes ontology_term.ontology_term_pkey",
+  "removed indexes ontology_term.ontology_term_version_term_key",
+  "removed indexes ontology_version.ontology_version_pkey",
+  "removed indexes ontology_version.ontology_version_version_key",
+  "removed constraints ontology_term.ontology_term_ontology_version_id_ontology_version_id_fk",
+  "removed constraints ontology_term.ontology_term_pkey",
+  "removed constraints ontology_version.ontology_version_pkey",
+  "removed constraints release.release_scored_ontology_version_id_ontology_version_id_fk",
 ];
 
 suite("T005 AC7 — the frozen baseline is a measurement", () => {
@@ -124,12 +155,40 @@ suite("T005 AC7 — the frozen baseline is a measurement", () => {
 });
 
 suite("T005 AC7 — the ten tables T000 shipped are untouched but for the licensed cells", () => {
-  it("all ten base tables are still present under their own names", () => {
+  /* Eight of the ten, and the two that left are named rather than subtracted.
+     ------------------------------------------------------------
+     `ontology_version` and `ontology_term` were dropped by `0009_drop_ontology_versioning`
+     on the owner's instruction of 2026-09-05: the vocabulary names what an Attractor node
+     IS, Attractor fixes those shapes in its own spec and carries no vocabulary version, so
+     a DarkPrint-only version on top was a second thing to keep in step with nothing.
+     `ontology_term` went with its parent because `ontology_term.ontology_version_id` is
+     NOT NULL and references it, and the table's only unique key is keyed on that column.
+     Neither had a reader: no module under `lib/server/**` queries either, verified by grep
+     before the migration was written.
+
+     `BASE_TABLES` is deliberately NOT shortened. It is the freeze's subject and it names
+     what T000 shipped, which is a historical fact that a later deletion does not edit; the
+     baseline JSON it is compared against cannot change either. Shortening it would make
+     every removed column vanish from the delta silently, which is the one outcome this
+     suite exists to prevent. So the ten stay listed, the nineteen removed cells are
+     licensed by name below, and the two departed tables get the assertion they would
+     otherwise have escaped: they must be ABSENT, so a later migration cannot quietly
+     recreate them and have this suite call it a return to health. */
+  const DROPPED_BY_0009 = ["ontology_version", "ontology_term"] as const;
+
+  it("the eight surviving base tables are present, and the two dropped in 0009 are gone", () => {
     requireT005Shipped(scratch);
     expect(
-      BASE_TABLES.filter((t) => !cat.tables.includes(t)),
+      BASE_TABLES.filter((t) => !cat.tables.includes(t) && !DROPPED_BY_0009.includes(t as never)),
       `${CONTRACT.ac7}\n  Eight tasks have merged against them.\n  baseline captured from ` +
         `${baseline.capturedFrom}\n  tables present: ${cat.tables.join(", ")}`,
+    ).toEqual([]);
+
+    expect(
+      DROPPED_BY_0009.filter((t) => cat.tables.includes(t)),
+      "0009 dropped these two. A migration that recreates one has undone an owner decision, " +
+        "and the delta cell below would then report their columns as ADDED rather than as the " +
+        "licensed removals they are.",
     ).toEqual([]);
   });
 

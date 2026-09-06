@@ -15,8 +15,8 @@ digraph human_gates {
 
   start -> propose;
   propose -> approve;
-  approve -> land    [label="approved", condition="verdict == 'approve'"];
-  approve -> collect [label="rejected", condition="verdict == 'reject'"];
+  approve -> land    [label="approved", condition="context.verdict=approve"];
+  approve -> collect [label="rejected", condition="context.verdict!=approve"];
   collect -> exit;
   land -> exit;
 }

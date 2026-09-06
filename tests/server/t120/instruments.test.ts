@@ -269,12 +269,18 @@ describe("T120 instruments — the fixtures write what the cells will look for",
     const after = await accountCensus(scratch, stranger.accountId);
 
     /* Each writer named with the table it must have touched. A single "the census grew"
-       assertion would pass with five of the six silently doing nothing. */
+       assertion would pass with five of the six silently doing nothing.
+
+       `ballot` names the fixture rather than a module, and that is a real weakening of this
+       row alone: Q14 deleted `castBallot`, so the row this cell checks for is one `fixtures.ts`
+       inserts directly and not one the product can produce. The cell is kept because what it
+       is a premise FOR is unchanged — D-120-13 rules the ballot row deleted with the account,
+       and `cascade.test.ts` needs the row to be there before it can watch it go. */
     const owed: readonly [string, string][] = [
       ["target_actor.account_id", "toggleStar"],
       ["save.account_id", "saveTarget"],
       ["note.account_id", "postNote"],
-      ["ballot.account_id", "castBallot"],
+      ["ballot.account_id", "fixtures.ballot (no published writer since Q14)"],
       ["run_report.account_id", "submitReport"],
       ["api_key.account_id", "issueKey"],
     ];

@@ -78,7 +78,7 @@ export const TOOLS: readonly Tool[] = [
     description:
       "Find blueprints and cards for a task described in your own words. Prose works better " +
       "than keywords. Each hit carries its kind, its ref, its digest and the evidence for why " +
-      "it matched — `<field>:<token>`, naming the field and the word in the document. The " +
+      "it matched, as `<field>:<token>`, naming the field and the word in the document. The " +
       "response's `ordered` flag is false when the results carry no ranking claim; do not " +
       "read an order into them when it is.",
     inputSchema: {
@@ -92,8 +92,8 @@ export const TOOLS: readonly Tool[] = [
     name: "read_card",
     title: "Read a card",
     description:
-      "Fetch one node card as published, verbatim YAML. `ref` is `id@version` — always " +
-      "pinned, never `latest` — and an id may be namespaced, as in `berti/solver-a@1.2.0`.",
+      "Fetch one node card as published, verbatim YAML. `ref` is `id@version`, always " +
+      "pinned and never `latest`, and an id may be namespaced, as in `berti/solver-a@1.2.0`.",
     inputSchema: {
       type: "object",
       properties: { ref: { type: "string", description: "`id@version`, e.g. `planner@1.0.0`." } },

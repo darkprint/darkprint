@@ -88,31 +88,17 @@ export function OwnedCards({
         ))}
       </div>
 
-      <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface-2/50 px-5 py-4 sm:flex-row sm:gap-5">
-        <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
-          The model
-        </span>
-        <div className="flex flex-col gap-2 text-[13px] leading-relaxed text-muted">
-          <p>
-            A card belongs to an account and is public or private, the same split a
-            blueprint has. Both halves are real rows in the registry now (T132): a private
-            card is not a fixture standing in for one. It is invisible to anyone who is
-            not its owner.
-          </p>
-          {owner ? (
-            <p>
-              Every row here is your own card, public and private together, read live off
-              the registry: name, type, version and the blueprints that pin it, the same
-              figures the count above the shelf comes from.
-            </p>
-          ) : (
-            <p>
-              Every row is a card this account has published. Private cards are never
-              listed here and no count on this page includes one.
-            </p>
-          )}
-        </div>
-      </div>
+      {/* `The model` panel removed on the owner's instruction, 2026-09-06. It explained that
+          a card belongs to an account and is public or private, and then what THIS shelf
+          shows, in a branch per reader.
+
+          One sentence went that the owner never saw, and it is named here rather than left
+          to be missed: the VISITOR branch disclosed that private cards are never listed on
+          this page and that no count on it includes one. The shelf is actor-scoped, so that
+          is still true of the code (`ownedCards(db, actor, handle)` returns public rows only
+          to a stranger) and it is no longer said. The instruction quoted the two paragraphs
+          an owner is shown, which are the two an owner can see; the third went with the
+          panel that held it. Nothing asserted it, so nothing red. */}
     </section>
   );
 }

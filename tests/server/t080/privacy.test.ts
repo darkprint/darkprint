@@ -73,7 +73,6 @@ import {
   insertAccount,
   insertBundle,
   insertCard,
-  insertOntologyVersion,
   insertRelease,
   keyOf,
   manifest,
@@ -187,8 +186,6 @@ async function buildSide(prefix: string, label: string, phase: string): Promise<
     action: `${prefix}-sealed-only-action`,
   });
 
-  const ontology = await insertOntologyVersion(s, `0.${prefix === "a" ? 1 : 2}.0`, `sha256:${prefix}`);
-
   const open = await insertBundle(s, { owner, slug: publicSlug });
   await insertRelease(s, {
     bundle: open,
@@ -198,7 +195,6 @@ async function buildSide(prefix: string, label: string, phase: string): Promise<
     autonomy: { autonomyClass: "supervised", level: 2, ontologyVersion: "0.1.0" },
     security: { level: 3, raw: 3, penalties: [], findings: [], rationale: "4 → 3" },
     phaseCoverage: { covered: [PUBLIC_PHASE], missing: [], byPhase: {}, unphased: [] },
-    scoredOntologyVersionId: ontology.id,
   });
 
   const sealed = await insertBundle(s, { owner, slug: privateSlug, visibility: "private" });
@@ -215,7 +211,6 @@ async function buildSide(prefix: string, label: string, phase: string): Promise<
     autonomy: { autonomyClass: secret, level: 4, ontologyVersion: "0.1.0" },
     security: { level: 1, raw: 1, penalties: [], findings: [], rationale: secret },
     phaseCoverage: { covered: [phase], missing: [], byPhase: {}, unphased: [] },
-    scoredOntologyVersionId: ontology.id,
   });
 
   return {

@@ -22,13 +22,14 @@
    side: a process-level memo also cannot move, so one mutation
    reds both. They are not two axes and are not counted as two.
 
-   ── `counts.terms` is asserted under BOTH readings of "namespaced
-      terms", because the contract does not choose one ──
-   See `insertNamespacedTerm`'s docblock in `contract.ts`. Every
-   fixture writes the term to `ontology_term` AND to the release's
-   `local_vocabulary`, so "more than zero", "exactly zero",
-   "it moved" and "it is not somebody else's" each hold whichever
-   store the module reads. No cell picks.
+   ── `counts.terms` reads `release.local_vocabulary`, and the
+      contract no longer has a second store to mean ──
+   See `insertNamespacedTerm`'s docblock in `contract.ts`. The
+   fixture used to write `ontology_term` as well, because AC1's
+   "namespaced terms" could have meant either store;
+   `0009_drop_ontology_versioning` dropped that table with the
+   versions it was keyed to, so the ambiguity is settled by the
+   schema. Every claim below already held under this reading.
 
    ── what is deliberately not asserted ──
    Whether a bundle with no release counts. `insertBundle` always
@@ -73,16 +74,13 @@ import {
   insertBundle,
   insertCard,
   insertNamespacedTerm,
-  insertOntologyVersion,
   mark,
   scratchDatabase,
   type AccountFixture,
-  type OntologyFixture,
   type Scratch,
 } from "./contract";
 
 let s: Scratch;
-let ontology: OntologyFixture;
 
 async function readCounts(handle: string, actor: unknown = anonymous) {
   const getProfile = await bind("getProfile");
@@ -103,19 +101,16 @@ async function freshAccount(tag: string): Promise<AccountFixture> {
 
 beforeAll(async () => {
   s = await scratchDatabase();
-  ontology = await insertOntologyVersion(s, "0.1.0");
 });
 
 afterAll(async () => {
   await dropScratchDatabases();
 });
 
-
 describe("AC1: a count that no T130 call maintained still moves", () => {
   /* The discriminating cells. Rows arrive and leave through plain SQL, so `lib/server/profiles`
      is never entered between the two reads — a stored counter and a memo are both frozen
      across that gap and a read-time count is not. */
-
 
   it("falls when a blueprint is deleted behind the module's back", async () => {
     const a = await freshAccount("deletion");
@@ -147,7 +142,7 @@ describe("AC1: `counts.terms` is namespaced ownership, under either store", () =
     /* A term with no `<handle>/` prefix. `components/profile/load.ts:163` reads ownership off
        the id prefix precisely because "a term has no author field" (seams.md SEAM-52), so an
        unprefixed term belongs to no handle and must not land on anyone's count. */
-    await insertNamespacedTerm(s, { ontology, bundle, termId: "planning" });
+    await insertNamespacedTerm(s, { bundle, termId: "planning" });
 
     expect((await readCounts(a.handle)).terms).toBe(0);
   });
@@ -155,12 +150,12 @@ describe("AC1: `counts.terms` is namespaced ownership, under either store", () =
   it("counts a term whose prefix is this handle and not one that merely contains it", async () => {
     const a = await freshAccount("prefix");
     const bundle = await insertBundle(s, { owner: a, slug: "prefix", cards: [] });
-    await insertNamespacedTerm(s, { ontology, bundle, termId: `${a.handle}/mine` });
+    await insertNamespacedTerm(s, { bundle, termId: `${a.handle}/mine` });
     /* `<something>-suffix/theirs` CONTAINS this handle and is not namespaced to it. The
        substring reading and the prefix reading differ by exactly this row, and nothing in a
        passing run separates them without it — the `card_version` inside
        `card_version_id_version_key` shape, at an ontology id. */
-    await insertNamespacedTerm(s, { ontology, bundle, termId: `${a.handle}-suffix/theirs` });
+    await insertNamespacedTerm(s, { bundle, termId: `${a.handle}-suffix/theirs` });
 
     expect((await readCounts(a.handle)).terms).toBe(1);
   });

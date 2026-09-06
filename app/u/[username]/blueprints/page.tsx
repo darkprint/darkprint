@@ -12,6 +12,11 @@ import { searchSuffix } from "@/lib/href";
    `app/u/[username]/[slug]/page.tsx` redirects a bundle's own retired address — see that
    file's docblock for the argument this one reuses rather than re-deriving.
 
+   NOTHING HERE IS THE LIST. The path reads like the blueprints shelf and a previous pass
+   spent a whole session in this file looking for one; the shelf is
+   `components/profile/OwnedBundles.tsx`, mounted by the segmentless
+   `app/u/[username]/page.tsx`. This file returns a redirect and renders no markup at all.
+
    ── Why unconditional, with no lookup and no actor ──
    There is nothing to resolve. `username` is already the whole of what the destination
    needs, and a redirector that looked the handle up first would answer differently for a

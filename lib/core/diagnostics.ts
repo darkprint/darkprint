@@ -135,6 +135,10 @@ export type DiagnosticCode =
   | "attractor/hash-comment"
   | "attractor/unsupported-value"
   | "attractor/reserved-attribute"
+  // §7.2 grades `condition_syntax` ERROR and §7.1 makes the engine refuse a pipeline
+  // carrying one, so this is the first `attractor/` code that reports a file a runner
+  // would take and then decline to run, rather than one it would read differently.
+  | "attractor/condition-syntax"
   // ontology/ — defects in a *vocabulary*, reported by `OntologyView.validate()`.
   // `ontology/unknown-term` is declared and deliberately not emitted by any stage today:
   // a term referenced but undefined inside a vocabulary is already
@@ -154,6 +158,15 @@ export type DiagnosticCode =
   | "ontology/local-marker-bad-weight"
   // The same rule for a vocabulary version: removing a term or narrowing a `broader` chain
   // is major, adding one is minor, and a release declaring less than it did is refused.
+  //
+  // RESERVED as of 2026-09-05, and the second name in this union that nothing emits. The
+  // owner had vocabulary versioning removed (§11.0 Q26), which took `inferOntologyBump` and
+  // then `checkDeclaredBump`'s `ontology` subject with it, so there is no longer a declared
+  // vocabulary version for anything to price. Kept rather than deleted for two reasons: the
+  // classification in `gate.ts` is unchanged and correct — a release stored under a version
+  // that does not describe it is still unaddressable — and this name shipped, so freeing it
+  // for reuse would let a later stage give a stored code a second meaning. It comes back if
+  // a vocabulary is ever versioned again. `diagnostics.test.ts` keeps that statement honest.
   | "ontology/version-bump-too-small"
   // analysis/
   | "analysis/empty-graph"

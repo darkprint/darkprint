@@ -151,38 +151,31 @@ async function readScoresFor(
   /* All three or nothing. `autonomy`, `security` and `phase_coverage` are all nullable and
      a half-written scorecard is not a scorecard.
 
-     ── it was four, and the fourth was a foreign key ──
-     `release.scored_ontology_version_id` named a row in `ontology_version`, and this reader
-     required it and then spent a third statement resolving it to a semver string. That
-     table is no longer written by anything: resolving a version string to a row id was the
-     last thing the vocabulary-version registry did for anybody, and it went with the
-     registry. Requiring the column would now make every scorecard in the product
-     unreadable, which is not what a stamp nobody writes should mean.
+     ── it was four, and the fourth is gone entirely ──
+     A `ontologyVersion` member named the vocabulary the three axes were computed under. It
+     was resolved first through `release.scored_ontology_version_id` and later off the
+     stored `autonomy`, and BOTH of those are now gone: migration 0009 dropped the column
+     and the table behind it, and `AutonomyResult` no longer carries the stamp. The registry
+     keeps one vocabulary, so there is no version for a release to have been scored under
+     that differs from any other release's, and a field with one possible value cannot tell
+     two scorecards apart.
 
-     The version is read off `autonomy` instead. It is the SAME value one indirection
-     shorter, and a better one: `computeAutonomy` stamps `AutonomyResult.ontologyVersion`
-     with the version of the view the score was actually computed against, whereas the
-     column was publish-time's lookup of that string in a table. `lib/server/export/build.ts`
-     has always read the stamp from exactly here for exactly that reason.
-
-     A stored `autonomy` without the field is a scorecard whose vocabulary cannot be named,
-     which is the same "there is no scorecard" answer a null column gave — never a partial
-     record. The column itself survives in `lib/db/schema.ts`, unwritten and unread;
-     dropping it is a migration and a separate decision. */
+     The loop below no longer skips a row for a missing version. That is a widening, and it
+     is deliberate rather than incidental: the skip existed to refuse a scorecard whose
+     vocabulary could not be named, and nothing can fail to be named now. Legacy rows still
+     carry `ontologyVersion` inside their stored `autonomy` jsonb; it is read by nobody and
+     passed through as part of the opaque payload. */
   for (const [bundleId, row] of currentByBundle) {
     const key = keyOfBundle.get(bundleId);
     if (key === undefined) continue;
     const { autonomy, security, phaseCoverage } = row;
     if (autonomy === null || security === null || phaseCoverage === null) continue;
-    const ontologyVersion = (autonomy as Partial<AutonomyResult>).ontologyVersion;
-    if (typeof ontologyVersion !== "string" || ontologyVersion === "") continue;
     scored.set(
       key,
       Object.freeze({
         autonomy: autonomy as AutonomyResult,
         security: security as SecurityResult,
         phaseCoverage: phaseCoverage as PhaseCoverage,
-        ontologyVersion,
       }),
     );
   }

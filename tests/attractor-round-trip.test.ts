@@ -152,7 +152,7 @@ describe("a pipeline survives export, import and export again", () => {
       expect(card, `${entry.file}: a class on \`${difference.at}\`, which imported no card`).toBeDefined();
       if (card === undefined) continue;
       expect(difference.to, `${entry.file}: the class on \`${difference.at}\``).toBe(
-        attractorClassesFor(card, ONTOLOGY).join(" "),
+        attractorClassesFor(card, ONTOLOGY).join(","),
       );
     }
   });

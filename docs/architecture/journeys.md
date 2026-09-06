@@ -26,18 +26,20 @@ flowchart TD
   learnMenu["Open the Learn menu"]
   whatIs["/what-a-blueprint-is\n(Learn stop 00)"]
   layers["Open a layer door:\n/spec/topology, /spec/card, /spec/ontology"]
-  darkFactory["/towards-a-dark-factory\n(Learn stop 06)"]
+  crosswalk["/spec/attractor\n(Learn stop 04, the crosswalk)"]
+  darkFactory["/towards-a-dark-factory\n(Learn stop 05)"]
   doors{"Ready to act"}
   findOne["/blueprints"]
-  buildOne["/build"]
+  makeOne["/new"]
 
   visit --> hero --> beats --> curious
-  curious -->|yes| learnMenu --> whatIs --> layers
+  curious -->|yes| learnMenu --> whatIs --> layers --> crosswalk
   whatIs --> darkFactory
   curious -->|not yet| doors
+  crosswalk --> darkFactory
   darkFactory --> doors
   doors -->|"browse one"| findOne
-  doors -->|"make one"| buildOne
+  doors -->|"make one"| makeOne
 ```
 
 ```mermaid
@@ -64,7 +66,25 @@ sequenceDiagram
 
 ---
 
-## 5.2 · Guided onboarding from node template to downloadable factory
+## 5.2 · ~~Guided onboarding from node template to downloadable factory~~ RETIRED
+
+> **RETIRED 2026-09-06: every screen in this journey is deleted.** The owner removed
+> `/build` and `components/build/**` (*"it is not useful and make confusion"*,
+> [`DECISIONS.md`](../DECISIONS.md) D-145), so the entry point, the workspace, the tab
+> diffing, `DownloadStep` and `AgentHandoff` are all gone, and SEAM-99 to SEAM-102 are
+> retired in place in [8 · Seams](seams.md) §N.
+>
+> **The section number and the two diagrams stay**, and neither is tidiness. The numbers
+> are how every citation of this file addresses a journey, and renumbering 5.3 to 5.7
+> would break them all to close one gap. The diagrams are the record of a path this site
+> genuinely offered: a reader could change three controls and watch a real bundle be
+> regenerated, rescored and re-exported in the tab, and **no journey in this document
+> replaces it.** What is left of that shape is `/upload`, which validates a folder the
+> reader already has rather than composing one, and §5.7, which reserves a blueprint and
+> then sends the reader to their own machine to write it.
+>
+> **Read the two diagrams below as history, not as a route.** They describe screens that
+> no longer exist.
 
 ```mermaid
 flowchart TD
@@ -117,7 +137,7 @@ flowchart TD
   open["Open a tile"]
   detail["/blueprints/:slug"]
   panes["Synchronised panes:\ngraph, DOT, card source"]
-  evidence["Requirements, scorecard, EvidenceLayers"]
+  evidence["Requirements, tool scopes,\nAttractor compatibility"]
   download["Download files or copy clone command"]
 
   browse --> filter --> results --> clear
@@ -147,10 +167,25 @@ sequenceDiagram
   API-->>WebUI: Blueprint view model
   WebUI->>API: bundle + card source for the panes [SEAM-04]
   API-->>WebUI: DOT + card text
-  WebUI-->>User: render graph, requirements [SEAM-05], evidence [SEAM-06]
+  WebUI-->>User: render graph, requirements [SEAM-05], Attractor verdict [SEAM-41]
   User->>WebUI: click a file / the clone command
   WebUI-->>Machine: file bytes or curl command [SEAM-19, SEAM-20]
 ```
+
+**This journey lost its scoring stop on 2026-09-04.** The `evidence` node named
+"Requirements, scorecard, `EvidenceLayers`" and the sequence hopped `SEAM-06`; the owner
+asked the whole scoring reading off `/blueprints/{owner}/{slug}`, so the Score panel, the
+ballot, the header autonomy meter, the explainability panel and the evidence layers all
+came off and `EvidenceLayers` was deleted. **There is no longer a stop anywhere in this
+journey that walks a reader from the graph to a score, a ballot or an explainability
+panel.** A reader who wants a scored reading now gets it from a graph they are holding:
+`/upload`'s validation report, and that is **one surface rather than two since 2026-09-06**, when `/build` was deleted (D-145) — the workspace named here was the other one. ~~`SEAM-41`'s Attractor verdict is
+what stayed on the detail page.~~ **It did not stay: `AttractorCompatibility.tsx` was
+unmounted with the rest on 2026-09-04 and DELETED on 2026-09-05** (`docs/ARCHITECTURE.md`
+§11.0 Q30), so nothing on this page renders an engine reading of any kind now. The ballot
+went further the same day — `GET`/`POST /api/blueprints/{owner}/{slug}/votes` and the write
+path under it are deleted (§11.0 Q14), so the missing stop is no longer a stop that could be
+restored by re-mounting a panel.
 
 ---
 
@@ -347,7 +382,8 @@ flowchart TD
   wizard["Steps 1-3: drop the folder or Load an example,\nvalidate in the tab — Details prefilled from the draft"]
   publishStep["Step 4: Publish"]
   detail["/blueprints/:owner/:slug\nblueprint() now resolves — the draft branch is gone"]
-  visibilitySwitch["VisibilitySwitch\n(owner, any time — draft or released)"]
+  rowVisibility["RowVisibility on /u/:handle\n(owner, per row, any time)"]
+  draftSwitch["VisibilitySwitch on DraftLanding\n(owner, while there is no release)"]
 
   myShelf -->|"New bundle"| newPage --> form --> createPost --> draftLanding
   draftLanding --> threeWays
@@ -356,9 +392,23 @@ flowchart TD
   threeWays -->|"start from the printed layout"| handPath --> localBuild
   localBuild -->|"come back with a folder"| uploadPinned
   uploadPinned --> wizard --> publishStep --> detail
-  draftLanding -->|"owner, any time"| visibilitySwitch
-  detail -->|"owner, any time"| visibilitySwitch
+  draftLanding -->|"owner, while it is a draft"| draftSwitch
+  myShelf -->|"owner, per row"| rowVisibility
+  detail -.->|"no control here since 2026-09-06"| myShelf
 ```
+
+**Visibility moved off the blueprint page on 2026-09-06 and this diagram is the record of
+where it went** (owner's instruction, [`DECISIONS.md`](../DECISIONS.md) D-146: *"remove the
+panel visibility from the blueprint card; such option should be visible only on the user
+account list of the blueprints"*). SEAM-67 stays LIVE and the write is the same `PATCH
+/api/bundles/{owner}/{slug}/visibility` it always was; what changed is the surface. There are
+two mounts now and they do not overlap: `RowVisibility` on the shelf, one control per row,
+for a bundle at any stage — and the `VisibilitySwitch` `DraftLanding` still draws, which is
+the only place an owner meets a bundle that has no release yet without going through the
+shelf. **The published detail page now renders the same thing for the owner and for a
+stranger**, which is why the dotted edge above points a reader back to the shelf rather than
+naming a control on the page: `app/blueprints/[owner]/[slug]/page.tsx:324-331` records that
+`isOwner` lost its last reader on that branch in the same edit.
 
 ```mermaid
 sequenceDiagram
@@ -368,7 +418,7 @@ sequenceDiagram
   participant DB as Postgres
   participant Machine as User machine
 
-  User->>WebUI: "New bundle" (profile shelf, or /skill's accounts row)
+  User->>WebUI: "New blueprint" (profile shelf, or /skill's accounts row)
   WebUI-->>User: GET /new
   loop each keystroke in the slug field, debounced 350ms
     WebUI->>API: GET /api/names/slugs/{owner}/{slug}

@@ -97,7 +97,11 @@ describe("T230 issueKey's return, admitted rather than filtered", () => {
     ).toEqual(["record", "secret"]);
   });
 
-  it("the record's members are exactly ApiKeyRecord's five", async () => {
+  /* Five until 2026-09-05. The sixth is `scope`, added to the block and to `TRANSCRIBED` by the
+     owner's ruling on §11.0 Q3 — the reason is at `contract.ts`'s entry. The count in the title
+     is the only thing that moved: this stays an equality, because the member it exists to refuse
+     is one nobody published and a superset check would let that member straight through. */
+  it("the record's members are exactly ApiKeyRecord's six", async () => {
     const issued = await issue();
     const published = [...publishedInterface("ApiKeyRecord").fields].sort();
     expect(
@@ -158,7 +162,7 @@ describe("T230 issueKey's return, admitted rather than filtered", () => {
 });
 
 describe("T230 resolveKey's return carries the same shape and no more", () => {
-  it("the resolved record's members are exactly ApiKeyRecord's five", async () => {
+  it("the resolved record's members are exactly ApiKeyRecord's six", async () => {
     const resolveKey = await requiredFn("resolveKey");
     const issued = await issue();
     const resolved = await resolveKey(scratch.db, issued.secret);

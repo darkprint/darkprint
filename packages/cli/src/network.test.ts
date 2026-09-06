@@ -194,15 +194,21 @@ describe("AC2 — bump refuses a declaration below the inferred one, naming the 
       mkdirp(dest);
       writeFileSync(dest, text);
     }
+    /* `intent-router` is the repin because it is the one card in this bundle the archive
+       carries at two majors. Both numbers moved a minor on 2026-09-05 (§11.0 Q17), when the
+       card was RENAMED 1.0.0 -> 1.1.0 and 2.0.0 -> 2.1.0 to carry the `lane` emission;
+       `content/cards/` holds no 1.0.0 or 2.0.0 of it any more, so the pair is read off the
+       archive rather than restated. `PINNED` is what `frontline-triage` publishes and
+       `REPIN` is the other major, which is what makes the local folder ahead of the
+       release by a MAJOR — the size this AC's refusal is about. */
+    const PINNED = "intent-router@1.1.0";
+    const REPIN = "intent-router@2.1.0";
     const dot = join(dir, "topology.dot");
+    writeFileSync(dot, readFileSync(dot, "utf8").replace(PINNED, REPIN));
+    unlinkSync(join(dir, "cards", `${PINNED}.yaml`));
     writeFileSync(
-      dot,
-      readFileSync(dot, "utf8").replace("intent-router@1.0.0", "intent-router@2.0.0"),
-    );
-    unlinkSync(join(dir, "cards", "intent-router@1.0.0.yaml"));
-    writeFileSync(
-      join(dir, "cards", "intent-router@2.0.0.yaml"),
-      readFileSync("content/cards/intent-router@2.0.0.yaml", "utf8"),
+      join(dir, "cards", `${REPIN}.yaml`),
+      readFileSync(`content/cards/${REPIN}.yaml`, "utf8"),
     );
     return dir;
   }

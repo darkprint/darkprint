@@ -22,6 +22,17 @@ import { cx } from "@/lib/format";
    pager next should pull the string out to one place rather than write it a fourth time."
    `BuildWorkspace` was the fourth. This is that extraction.
 
+   That list is the state at extraction and three quarters of it is now unopenable, which
+   is worth saying here rather than leaving the next reader to grep for files that are not
+   there. `components/howto/RoutePager.tsx` went with `/towards-a-dark-factory/the-climb`
+   on 2026-08-07; `components/ui/OnwardRoutes.tsx` went when the standalone pages lost
+   their tail band; `components/build/BuildWorkspace.tsx` went on 2026-09-06 with `/build`
+   and the whole `components/build` tree, on the owner's instruction ("it is not useful and
+   make confusion"). `components/spec/SpecPager.tsx` is the survivor, and `app/spec/
+   ontology/page.tsx` is a fifth call site added after this file was written. The argument
+   for one definition does not weaken as call sites leave: it is about a reserved colour
+   having one spelling, and the class string below is still the only copy of it.
+
    What is NOT extracted is the sequence each pager walks. `SpecPager` and `RoutePager`
    both refuse to share a sequence — see their docblocks; one pager taking an order as a
    prop would be one more place for two files to disagree about a route — and that
@@ -57,9 +68,10 @@ import { cx } from "@/lib/format";
    `SpecPager` did not, while `OnwardRoutes` and `RoutePager` both claimed in their
    docblocks to be "the same construction as both pagers". Unifying here makes that claim
    true and costs one variant token on the one call site that was missing it — the single
-   rendered difference this extraction introduces outside `/build`, recorded rather than
-   preserved, because preserving it would mean shipping a primitive whose behaviour depends
-   on which file constructed it.
+   rendered difference this extraction introduces outside the workspace, recorded rather
+   than preserved, because preserving it would mean shipping a primitive whose behaviour
+   depends on which file constructed it. (The workspace was `/build`, deleted 2026-09-06;
+   the difference it names was `SpecPager`'s, which is still here.)
 
    A server component: no state, no effects, and nothing here needs a client boundary.
    ============================================================ */

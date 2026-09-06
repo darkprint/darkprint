@@ -121,6 +121,13 @@ describe("the two row shapes the accounts pass added", () => {
    * The second case is the one that keeps the column: the node rail's rows carry a short
    * figure and no step, and stacking those would double the height of six rows to solve a
    * problem they do not have.
+   *
+   * The two fixtures below still say `/build`, a route the owner deleted on 2026-09-06, and
+   * that is deliberate. `href` is inert in both cells: `render` takes a local literal, no
+   * assertion reads the path, and the wrap this test measures is driven by the LABEL width.
+   * Repointing it at a live route would leave a row that never appeared on any rail and
+   * quietly detach the fixture from the regression it records, which was this exact label
+   * beside this exact tag. Read it as the archived row it is.
    */
   it("stacks a numbered row's meta under its label", () => {
     const html = render([

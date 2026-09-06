@@ -274,7 +274,6 @@ export {
   deriveDownloadCounter,
   downloadsFor,
   seedAccount,
-  seedOntology,
   seedRelease,
   type DownloadCounter,
   type SeededAccount,

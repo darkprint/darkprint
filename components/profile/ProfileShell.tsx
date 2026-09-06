@@ -39,12 +39,16 @@ export function ProfileShell({
            included, a visitor's not). */
         blueprints={view.counts.blueprints ?? 0}
         cards={view.counts.cards ?? 0}
-        /* T280: every one of these five is `ProfileView`'s own field now, computed in
-           `load.ts` off `getProfile` (watchers, support, validated) and `getSignalsMany`
-           (downloads, stars) — no fold over a seeded fixture left to run here. */
-        downloads={view.downloads}
+        /* T280: each of these is `ProfileView`'s own field now, computed in `load.ts` off
+           `getProfile` (watchers, support) and `getSignalsMany` (stars) — no fold over a
+           seeded fixture left to run here.
+
+           `downloads` and `validated` are NOT passed any more. The owner cut them from the
+           header on 2026-09-06 ("just show the number of blueprints, cards and stars"), and
+           a prop nothing renders is a prop that goes stale silently. Both are still computed
+           and still on `ProfileView`, so nothing upstream was torn out to satisfy a layout
+           change and a later surface can read them without re-deriving anything. */
         stars={view.stars}
-        validated={view.validated}
         joinedAt={view.joinedAt.toISOString()}
         watchers={view.watchers}
         support={view.support}

@@ -5,7 +5,7 @@
    broken variant is derived from it, so each diagnostic is provably
    caused by the one thing that was changed.
 
-   The card library was rewritten against ontology v0.1 (doc 3): one
+   The card library was rewritten against doc 3's vocabulary: one
    of the five phases and one of the vocabulary node types on every card, a
    `spec` that is a real instruction rather than a placeholder, and
    the vocabulary version the engine actually ships. The old
@@ -28,9 +28,6 @@ import { resolveBundle } from "./resolve";
 import type { Bundle, BundleManifest, ResolvedBlueprint, ResolveResult } from "./types";
 
 const ONTOLOGY = ontologyView(CORE_ONTOLOGY);
-
-/** Read off the vocabulary, so a fixture cannot drift from the ontology it is read against. */
-const ONTOLOGY_VERSION = CORE_ONTOLOGY.version;
 
 /* ------------------------------------------------------------------ */
 /* the card library                                                     */
@@ -1509,7 +1506,7 @@ describe("structural checks", () => {
 /* the declared vocabulary (§6.2)                                       */
 /* ------------------------------------------------------------------ */
 
-describe("ontology version", () => {
+describe("the vocabulary a bundle is read against", () => {
   /*
    * Three cells stood here and all three are gone with what they measured. A manifest
    * declared an `ontologyVersion` and every card declared one too, and `resolveBundle`
@@ -1527,11 +1524,10 @@ describe("ontology version", () => {
     const { blueprint, diagnostics } = resolve(BASE_DOT, CARD_FILES);
     expect(withCode(diagnostics, "bundle/ontology-mismatch")).toEqual([]);
     expect(blueprint).toBeDefined();
-    /* The reading the code used to report on is still recorded, on the analysis, and it comes
-       off the view rather than off anything the author typed. `resolveBundle` does not score,
-       so this cell can only say the view it was handed is the one the caller passed; the
-       stamp itself is `analysis/analyze.test.ts`'s. */
-    expect(blueprint?.ontology.ontology.version).toBe(ONTOLOGY_VERSION);
+    /* The view the caller handed in is the one the blueprint carries. It used to be checked
+       by its version string; the vocabulary has none, so the check is by identity, which is
+       the stronger statement the version was standing in for. */
+    expect(blueprint?.ontology).toBe(ONTOLOGY);
   });
 });
 

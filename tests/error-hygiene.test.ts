@@ -304,7 +304,22 @@ describe("every published error class satisfies D-13's four-part hygiene clause"
        the message below says the equality exists to notice: a floor would have absorbed the
        removal in silence. Derived here by the walk against the tree the removal landed in,
        not carried from a prediction. */
-    ).toBe(47);
+    /* 47 -> 45 at Q14's removal of the ballot: `lib/server/ballot` stops publishing
+       `BallotRefusedError` and `BallotStoreError`. Both named a condition a CAST could reach —
+       a refused ballot and a fault in the ballot store — and `castBallot`, `getAggregate` and
+       the route above them are deleted, so neither condition can occur.
+
+       The barrel is NOT deleted with them and that is deliberate: `lib/content/view.ts` still
+       imports two TYPES from it, and this walk throws on a shipped module with no importable
+       barrel, which would be a louder and less informative red than the equality. `ballot`
+       therefore stays in the domain and contributes zero classes.
+
+       DERIVED at the tree the removal landed in, and by membership rather than by subtracting
+       two: an independent walk over the 28 barrels `git ls-tree -d backend lib/server/` names
+       at `310caad` enumerates 45, and the two absent names are exactly those two. A count that
+       fell by two for some other reason would agree with the arithmetic and disagree with the
+       list. This is the second time the number has gone DOWN. */
+    ).toBe(45);
 
     const rendered: string[] = [];
     const traceless: string[] = [];

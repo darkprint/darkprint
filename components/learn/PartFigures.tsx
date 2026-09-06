@@ -46,9 +46,11 @@ import {
    this compact they land at roughly 7 CSS pixels, under the
    10-pixel floor `components/viz/flow.ts` sets, and they collide
    with the discs either side. So each edge wears a numeral and the
-   five names are listed under the drawing as real DOM text at 11px,
-   which is the same numbered-annotation move `/reading-the-radar`
-   makes with the radar. A plate and its key.
+   five names are listed under the drawing as real DOM text at 11px:
+   a plate and its key. The move was borrowed from `/reading-the-radar`,
+   which annotated its radar the same way; that page came off the site
+   on 2026-09-04 and this figure keeps the treatment on its own
+   arithmetic, which is the paragraph above.
 
    ── One register for a node, site-wide ──
    The graph figure drew every node as a rounded `<rect>` with a
@@ -1035,13 +1037,17 @@ export function CardStackFigure({
  * a sample of terms: two sources, a brace, and the kinds with how many terms each holds.
  * The counts come off the ontology at build time, which `architecture/ontology.md` requires
  * and which also means a term landing tomorrow redraws this without anyone editing it.
+ *
+ * The head read "ontology v0.4.0" until 2026-09-04 and takes no `version` now. The owner
+ * removed ontology versioning outright, on the reading that this project has one vocabulary
+ * and the Attractor spec language is the thing it answers to; a figure printing a number the
+ * vocabulary no longer carries would be labelling the drawing with a field nothing sets.
+ * What the head names is the file, and the file has one name.
  */
 export function VocabularyFigure({
   kinds,
-  version,
 }: {
   kinds: readonly { kind: string; count: number }[];
-  version: string;
 }) {
   return (
     <div className="flex w-full max-w-[21rem] items-center gap-3">
@@ -1073,7 +1079,7 @@ export function VocabularyFigure({
 
       <div className="min-w-0 flex-1 rounded-lg border border-line-bright bg-surface px-3 py-2.5">
         <div className="border-b border-line pb-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-cyan">
-          ontology {version}
+          ontology
         </div>
         <dl className="pt-1.5">
           {kinds.map((k) => (

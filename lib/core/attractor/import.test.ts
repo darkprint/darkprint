@@ -85,9 +85,21 @@ describe("the reverse mapping table", () => {
   });
 
   it("keeps the declaration order inside a shape, which is what the fallback picks", () => {
-    // Six types share three shapes and the first of each pair is what a foreign file gets.
-    expect(ATTRACTOR_SHAPE_TYPES.box).toEqual(["agent", "validation"]);
+    // Five types share two shapes and the first of each row is what a foreign file gets.
+    expect(ATTRACTOR_SHAPE_TYPES.box).toEqual(["agent", "tool", "validation"]);
     expect(ATTRACTOR_SHAPE_TYPES.hexagon).toEqual(["human-gate", "human-input"]);
+  });
+
+  it("gives `parallelogram` a row, so an imported tool node is not silently downgraded", () => {
+    /* The reverse table is DERIVED from `ATTRACTOR_TYPE_SHAPES`, so a shape no forward row
+       emits has no reverse row and `attractorTypeFor` answers `undefined` — which the
+       caller reports and then types as `agent`. `tool` moved to `box` when §4.10 made a
+       parallelogram with no `tool_command` a node that FAILs on sight, and without the
+       `shell-tool` row moving it would have taken `parallelogram` with it: every genuine
+       Attractor tool node would have come in as an agent and gone back out as a box, with
+       the command dropped in between. */
+    expect(ATTRACTOR_SHAPE_TYPES.parallelogram).toEqual(["shell-tool"]);
+    expect(ATTRACTOR_TYPE_SHAPES["shell-tool"].handler).toBe("tool");
   });
 
   it("resolves a shared shape by the class DarkPrint writes, and falls back without one", () => {
@@ -103,7 +115,7 @@ describe("the reverse mapping table", () => {
   it("answers `undefined` for a shape no row emits", () => {
     expect(attractorTypeFor("ellipse", [])).toBeUndefined();
     expect(attractorTypeFor("", [])).toBeUndefined();
-    expect(attractorTypeFor("parallelogram", [])).toBe("tool");
+    expect(attractorTypeFor("parallelogram", [])).toBe("shell-tool");
   });
 });
 
@@ -161,7 +173,7 @@ describe("what a card comes back carrying", () => {
   const result = importing(
     'digraph pipeline {\n' +
       '  goal="Ship the thing.";\n  label="A pipeline";\n' +
-      '  work [label="Do the work", shape=box, prompt="Write the code.", llm_model="claude-opus-5", max_retries=4, class="dp-validation dp-testing"];\n' +
+      '  work [label="Do the work", shape=box, prompt="Write the code.", llm_model="claude-opus-5", max_retries=4, class="dp-validation,dp-testing"];\n' +
       "}\n",
   );
   const card = result.cards[0].card;
@@ -179,6 +191,47 @@ describe("what a card comes back carrying", () => {
     expect(card.params).toEqual({ max_iterations: 4 });
     expect(card.type).toBe("validation");
     expect(card.phases).toEqual(["testing"]);
+  });
+
+  it("reads the class list as §2.12 comma-separates it, spaces around the comma included", () => {
+    /* Both halves matter and they fail differently. A comma-separated list read on
+       whitespace is ONE class named `dp-validation,dp-testing`, which disambiguates
+       nothing — the node comes home as `agent` with no phase. A hand-written
+       `class="a, b"` read on the comma alone leaves ` b`, which §8.2's
+       `ClassName ::= [a-z0-9-]+` cannot spell, so the phase is silently dropped. */
+    const spaced = importing(
+      'digraph p {\n  work [shape=box, prompt="Write the code.", class="dp-validation, dp-testing"];\n}\n',
+    ).cards[0].card;
+    expect(spaced.type).toBe("validation");
+    expect(spaced.phases).toEqual(["testing"]);
+
+    /* A space-SEPARATED list is not a list at all under §2.12, and reading it as one would
+       put the old defect back: this is the cell that reds if the splitter widens to
+       whitespace again. */
+    const invalid = importing(
+      'digraph p {\n  work [shape=box, prompt="Write the code.", class="dp-validation dp-testing"];\n}\n',
+    ).cards[0].card;
+    expect(invalid.type).toBe("agent");
+    expect(invalid.phases).toEqual([]);
+  });
+
+  it("brings a `tool_command` home as `params.tool_command`, under the key `emit.ts` reads", () => {
+    /* The only thing a genuine §4.10 node carries, and the round trip claims to lose
+       nothing a runner reads. `params` and not a top-level field, because that is where
+       `emit.ts` looks for it — the two directions have to agree on the key or the command
+       is dropped on the way back out while the folder still appears to hold it. */
+    const tool = importing(
+      'digraph p {\n  build [label="Build", shape=parallelogram, tool_command="make -j4 test"];\n}\n',
+    ).cards[0].card;
+    expect(tool.type).toBe("shell-tool");
+    expect(tool.action).toBe(ATTRACTOR_TYPE_SHAPES["shell-tool"].handler);
+    expect(tool.params).toEqual({ tool_command: "make -j4 test" });
+
+    // An empty one carries nothing: §4.10 FAILs on it, so there is no command to keep.
+    const empty = importing(
+      'digraph p {\n  build [shape=parallelogram, prompt="Build.", tool_command="  "];\n}\n',
+    ).cards[0].card;
+    expect(empty.params).toEqual({});
   });
 
   it("reads the action off the shape, which is the only thing the pipeline said it does", () => {

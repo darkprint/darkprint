@@ -6,7 +6,7 @@ digraph starter_software_factory {
   planner  [card="spec-planner@1.0.0"];
   builder  [card="code-builder@1.0.0"];
   tester   [card="acceptance-tester@1.0.0"];
-  debugger [card="targeted-debugger@1.0.0"];
+  debugger [card="targeted-debugger@1.1.0"];
   deployer [card="release-gate@1.0.0"];
 
   // The lesson of this blueprint is the edge that is NOT written below.
@@ -20,8 +20,19 @@ digraph starter_software_factory {
   // Doc 2 §5.5, the loop is tester -> debugger -> tester and never returns to the
   // builder: the work already done is preserved, and the builder stays isolated from
   // every fact about the failures for the whole run. The cap lives on the debugger card.
-  tester   -> debugger [label="failure evidence", style=dashed];
+  //
+  // The `condition` on the tester's two exits is what makes that loop terminate. Engine
+  // spec §3.3 resolves a fork on conditions first and on the spelling of the target id
+  // last, so while both edges carried a label and nothing else, `debugger` beat
+  // `deployer` on the fourth character and the factory looped forever without releasing.
+  // `outcome` is the discriminator because the engine sets it from the tester's own
+  // status.json on every pass, where a `preferred_label` is optional and this card is
+  // never told to write one. One key against its own negation is the only shape §10's
+  // grammar can make total: it has `=` and `!=` and no disjunction, so `partial_success`,
+  // `retry`, `fail` and a criterion the tester could not evaluate all land on the arm
+  // that does not ship, and exactly one arm is ever eligible.
+  tester   -> debugger [label="failure evidence", style=dashed, condition="outcome!=success"];
   debugger -> tester   [label="patch"];
 
-  tester   -> deployer [label="approved build"];
+  tester   -> deployer [label="approved build", condition="outcome=success"];
 }

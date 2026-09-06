@@ -126,7 +126,9 @@ const UNBUILT: readonly { label: string; body: React.ReactNode; live?: boolean }
 export const metadata: Metadata = {
   /* "Create", because this route is now the one the header's "Create" points at.
      `components/site/nav.test.ts` holds a page's `h1` and its `<title>` to the label that
-     sends a reader to it, and the label arrived here when `/build` split.
+     sends a reader to it, and the label arrived here when `/build` split. That route was
+     deleted on 2026-09-06 and "Create" stayed pointed here, which is what the split was
+     for.
 
      The description drops "Not built yet: accounts and publishing" here: T280 built both,
      `/new` and `/upload` are real destinations now, and a description repeating a claim the
@@ -143,8 +145,18 @@ export const metadata: Metadata = {
      the other side of the command, which is your own agent interviewing you into a bundle
      rather than you writing one. */
   title: "Assisted Design",
+  /* The private-repository limit is in here as well as on the page, 2026-09-05, and it is
+     the one place this file's rule about a shared-link preview is worth spending twice.
+     The comment above already argues it — "a shared-link preview owes a reader that limit
+     before they open the tab" — and a description whose first sentence is "one command
+     puts a skill in your agent" is the sentence a reader acts on without opening anything.
+     `/capabilities`' own description makes the same trade for the npm package.
+
+     It is one clause, before the pinned refusal rather than replacing it: the two limits
+     are different (the command cannot run at all, and a release cannot be cut from the
+     agent even when it can). Deleting the clause is this field's whole undo. */
   description:
-    "One command puts a blueprint-writing skill in your own agent. It interviews you and builds a folder of topology.dot, one card per node and README.md. Read it back on this site with nothing sent anywhere. Not built yet: releasing straight from your agent.",
+    "One command puts a blueprint-writing skill in your own agent. It interviews you and builds a folder of topology.dot, one card per node and README.md. Read it back on this site with nothing sent anywhere. The command fails today: DarkPrint's repository is private. Not built yet: releasing straight from your agent.",
 };
 
 export default function SkillPage() {
@@ -179,9 +191,11 @@ export default function SkillPage() {
           instead is one spine, install first, which is the order every other setup page on
           this site uses.
 
-          `#create-entry-title` went with it. It was a live anchor `components/spec/
-          sequence.ts` listed under `/build` before the split, and nothing has pointed at it
-          since; grep before assuming that is still true. */}
+          `#create-entry-title` went with it. It was a live anchor that
+          `components/spec/sequence.ts` listed under `/build` before the split, and nothing
+          has pointed at it since; grep before assuming that is still true. `/build` itself
+          was deleted on 2026-09-06 and `SPEC_SEQUENCE` no longer carries the route at all,
+          so the anchor has neither a lister nor a destination. */}
       <SkillSetup className="mt-10" />
 
       {/* One block tier above the rule and one under it, so this reads as a limit the
@@ -222,8 +236,19 @@ export default function SkillPage() {
           <h2 className="font-display text-2xl font-semibold text-fg">Not built yet</h2>
           <ComingSoonBadge />
         </div>
+        {/* "The DarkPrint skill installs today." led this paragraph until 2026-09-05 and
+            is gone, not qualified: the command fails for every reader but the owner,
+            because DarkPrint's repository is private (§11.0 Q8; `lib/skill.ts`'s header
+            carries the measurement). Step 01 above states that limit in full, beside the
+            command a reader would otherwise paste, and this section is about the registry
+            rather than about the install — a second copy of the same sentence 300px below
+            the first is the kind of duplication that drifts.
+
+            So this file's undo is putting the clause back, and nothing else. The three
+            live capabilities and the one refusal below are untouched and are pinned
+            verbatim by `SkillSetup.test.ts` and `components/site/honesty.test.ts`. */}
         <p className="text-[15px] leading-relaxed text-muted">
-          The DarkPrint skill installs today. The registry behind it now runs: an
+          The registry behind the DarkPrint skill now runs: an
           account of your own, a blueprint kept private while it is under construction,
           and publishing one to the registry. Each is live, linked in the rows below. Not
           built yet: pushing a change to it straight from Claude Code as you work.

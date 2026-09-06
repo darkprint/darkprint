@@ -64,8 +64,25 @@
    exactly one job and this is it: the node card. `DotBreakdown` is
    the cyanotype register for the same reason — the two figures are
    two layers of one spec and a reader has to tell them apart at a
-   glance. Never amber, which is `ComingSoonBadge` and `.route-box`
-   and nothing else. Never cyan for the MARKING, which is
+   glance.
+
+   The sentence here used to say "never amber". That is no longer the
+   rule: the owner made amber the card register on 2026-09-06 and the
+   card SURFACES took it — the shelf, the card page, the download
+   controls, the heading over this very beat. This FIGURE did not,
+   and the reason is mechanical rather than a preference. It draws on
+   a sheet whose ground `components/viz/tokens.ts` mixes for itself
+   (`SHEET_REGISTER.copper`), and every ratio in this file and in
+   `YamlListing` is measured against that ground. Moving the ink
+   without moving the paper is exactly the ratio-across-a-hue-change
+   this repo forbids, and moving the paper is a `components/viz`
+   change rather than a card-register one. Amber and copper are
+   neighbours on the wheel, so the beat still reads warm against the
+   cyan blueprint beat above it in the meantime.
+   TODO: repoint the sheet and this palette together, with the whole
+   register re-measured on the new ground.
+
+   Never cyan for the MARKING, which is
    interactive sitewide and would read as "click me" on lines that
    are not clickable; the nine rail buttons are the interactive thing
    here, and they wear the site's own focus ring plus a copper hover

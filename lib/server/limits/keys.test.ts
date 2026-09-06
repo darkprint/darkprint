@@ -43,6 +43,7 @@ function row(overrides: Record<string, unknown> = {}) {
     accountId: OWNER.accountId,
     tokenHash: "a".repeat(64),
     label: "CI",
+    scope: "read" as const,
     createdAt: new Date("2026-08-20T00:00:00.000Z"),
     revokedAt: null,
     ...overrides,
@@ -111,6 +112,7 @@ describe("issueKey", () => {
       "keyId",
       "label",
       "revokedAt",
+      "scope",
     ]);
     expect(secret.startsWith(SECRET_PREFIX)).toBe(true);
     expect(secret).toHaveLength(SECRET_LENGTH);
@@ -124,6 +126,26 @@ describe("issueKey", () => {
        assertion alone would pass an implementation that also wrote the secret to a second
        column. */
     expect(JSON.stringify(written())).not.toContain(secret);
+  });
+
+  it("writes `read` into the insert when no scope is asked for", async () => {
+    /* Stub-observable and worth pinning here rather than only against Postgres: this asserts
+       what `issueKey` SENDS, where the database cell asserts what the column DOES. The column
+       default would mask a missing `scope` in the values object, so the two together are what
+       say the module and the schema agree rather than that one of them is carrying the other. */
+    const { db, written } = stubDb([row()]);
+    await issueKey(db, OWNER, OWNER.accountId, "CI");
+    expect((written() as { scope: string }).scope).toBe("read");
+  });
+
+  it("writes the scope it was given, so the default is a default and not a ceiling", async () => {
+    const { db, written } = stubDb([row({ scope: "write" as const })]);
+    const { record } = await issueKey(db, OWNER, OWNER.accountId, "CI", "write");
+    expect((written() as { scope: string }).scope).toBe("write");
+    /* The record reports the ROW's scope, not the argument's. A projection that echoed the
+       parameter back would agree with this assertion and disagree with the database the
+       moment a column default or a trigger had an opinion. */
+    expect(record.scope).toBe("write");
   });
 
   it("mints a different secret every time", async () => {
@@ -407,6 +429,7 @@ describe("listKeys", () => {
         "keyId",
         "label",
         "revokedAt",
+        "scope",
       ]);
     }
   });

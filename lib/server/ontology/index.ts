@@ -23,11 +23,12 @@
    all, so a resolvable version could not have made a score
    reproducible even in principle.
 
-   The tables are still declared in `lib/db/schema.ts` and are no
-   longer read or written by anything. No migration drops them:
-   `release.scored_ontology_version_id` still references
-   `ontology_version`, and a schema change is a separate decision
-   from this one.
+   The tables are gone as well as unread.
+   `0009_drop_ontology_versioning` dropped `ontology_version`,
+   `ontology_term` and the `release.scored_ontology_version_id`
+   column that referenced the first, in that dependency order.
+   `lib/db/schema.ts` keeps the reasoning where the declarations
+   stood.
    ============================================================ */
 
 /* --------------------- the merged view --------------------- */

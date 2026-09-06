@@ -61,10 +61,12 @@ describe("the three reserved sets", () => {
       "reasoning_effort",
       "auto_status",
       "allow_partial",
-      // Read by handler pseudocode rather than tabulated in Appendix A: §4.8
-      // ParallelHandler, §4.10 ToolHandler, §4.11 ManagerLoopHandler. The compatibility
-      // claim is "attributes not in the reserved list are silently ignored", so a name
-      // Attractor really reads belongs in the list whether or not the table prints it.
+      // Read by handler pseudocode or by §9.7 rather than tabulated in Appendix A: §4.6
+      // WaitForHumanHandler, §4.8 ParallelHandler, §4.10 ToolHandler, §4.11
+      // ManagerLoopHandler, §9.7 tool call hooks. The compatibility claim is "attributes
+      // not in the reserved list are silently ignored", so a name Attractor really reads
+      // belongs in the list whether or not the table prints it.
+      "human.default_choice",
       "join_policy",
       "max_parallel",
       "tool_command",
@@ -73,14 +75,20 @@ describe("the three reserved sets", () => {
       "manager.stop_condition",
       "manager.actions",
       "stack.child_autostart",
+      "tool_hooks.pre",
+      "tool_hooks.post",
     ]);
   });
 
   it("reserves the names the spec's handlers read but Appendix A does not tabulate", () => {
     // The regression this guards: the sets were transcribed from Appendix A alone, so
-    // `isReserved` answered false for nine names Attractor does not ignore.
+    // `isReserved` answered false for names Attractor does not ignore.
     expect(isReserved("graph", "default_max_retry")).toBe(true);
     for (const key of [
+      /* §4.6's timeout branch reads it off the node and §6.5 names it again. A hexagon
+         without one returns RETRY on a timeout, so DarkPrint data parked here would not be
+         ignored — it would pick which edge a stalled gate takes. */
+      "human.default_choice",
       "tool_command",
       "join_policy",
       "max_parallel",
@@ -91,6 +99,22 @@ describe("the three reserved sets", () => {
       "stack.child_autostart",
     ]) {
       expect(isReserved("node", key)).toBe(true);
+    }
+  });
+
+  it("reserves the two tool-call hooks in BOTH scopes, because §9.7 reads them in both", () => {
+    /* "Graph-level or node-level attributes `tool_hooks.pre` and `tool_hooks.post` specify
+       shell commands executed around each LLM tool call". Appendix A tabulates only the
+       graph row, and reserving the graph row alone would have told a caller that a
+       node-level hook is ignored — a shell command per tool call is not something to be
+       wrong about in that direction. The scopes are asserted separately because
+       `isReserved` is per scope: one set holding both names proves nothing about the
+       other. */
+    for (const key of ["tool_hooks.pre", "tool_hooks.post"]) {
+      expect(isReserved("graph", key), `graph \`${key}\``).toBe(true);
+      expect(isReserved("node", key), `node \`${key}\``).toBe(true);
+      // Not on an edge: §9.7 names two scopes and an edge is not one of them.
+      expect(isReserved("edge", key), `edge \`${key}\``).toBe(false);
     }
   });
 

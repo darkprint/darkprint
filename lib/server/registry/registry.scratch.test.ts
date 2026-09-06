@@ -52,8 +52,6 @@ const ANON: Actor = { kind: "anonymous" };
 let testDb: TestDb;
 let db: Db;
 let alice: Actor;
-let ontologyV1 = "";
-let ontologyV2 = "";
 let atlasReleaseId = "";
 let bobReleaseId = "";
 
@@ -91,7 +89,6 @@ function manifest(slug: string, tags: string[], category?: string) {
     summary: "a blueprint",
     tags,
     category,
-    ontologyVersion: "0.1.0",
   };
 }
 
@@ -162,23 +159,6 @@ beforeAll(async () => {
   const bobId = await account("bob");
   alice = { kind: "account", accountId: aliceId, handle: "alice" };
 
-  /* Two `ontology_version` rows, still written, still referenced by
-     `release.scored_ontology_version_id` below. Neither the column nor the table is read by
-     anything any more — `scoresOf` takes the version off the stored `autonomy`, which is
-     where `computeAutonomy` stamps it — so these exist to keep the FK satisfiable and to
-     keep the fixture honest about what a real release row looks like. They are NOT what
-     makes the scorecards below readable; the `ontologyVersion` on each `autonomy` is. */
-  const [v1] = await db
-    .insert(schema.ontologyVersion)
-    .values({ version: "0.1.0", digest: "sha256:onto-1" })
-    .returning({ id: schema.ontologyVersion.id });
-  const [v2] = await db
-    .insert(schema.ontologyVersion)
-    .values({ version: "0.2.0", digest: "sha256:onto-2" })
-    .returning({ id: schema.ontologyVersion.id });
-  ontologyV1 = v1.id;
-  ontologyV2 = v2.id;
-
   // `mirror` says exactly what `solver@1.1.0` says under another name — the dedup pair.
   // `intake` declares no phase, `solver@1.0.0` declares two: AC4's two exhibits.
   await cardVersion(aliceId, "solver", "1.0.0", ["planning", "testing"], "public");
@@ -218,23 +198,23 @@ beforeAll(async () => {
   // A half-written scorecard: one axis present, two null. Added because breaking the
   // all-or-nothing rule reddened nothing without it — every unscored fixture here had every
   // column null, so they were covered by the axis checks alone and the rule was load-bearing
-  // nowhere the suite could see. Its `autonomy` carries a version, so what makes this
-  // incomplete is the two missing axes and not a missing stamp.
+  // nowhere the suite could see. What makes this one incomplete is the two missing axes.
+  //
+  // It used to also carry `scoredOntologyVersionId` and an `ontologyVersion` inside each
+  // `autonomy`, and the comment here had to say the missing stamp was NOT what made it
+  // incomplete. Migration 0009 dropped the column and `AutonomyResult` dropped the stamp, so
+  // the ambiguity the old wording defended against is gone with the second signal.
   await db
     .update(schema.release)
-    .set({
-      autonomy: { level: "assisted", ontologyVersion: "0.1.0" },
-      scoredOntologyVersionId: ontologyV1,
-    })
+    .set({ autonomy: { level: "assisted" } })
     .where(eq(schema.release.id, bobReleaseId));
 
   await db
     .update(schema.release)
     .set({
-      autonomy: { level: "assisted", ontologyVersion: "0.1.0" },
+      autonomy: { level: "assisted" },
       security: { level: "guarded" },
       phaseCoverage: { present: ["planning"] },
-      scoredOntologyVersionId: ontologyV1,
     })
     .where(eq(schema.release.id, atlasReleaseId));
 });
@@ -421,29 +401,31 @@ describe("AC6: nothing private appears in any response", () => {
 });
 
 describe("AC7: the stored scorecard is read, never recomputed", () => {
-  it("returns the stored axes stamped with the ontology version they were computed under", async () => {
+  /* The cell was "returns the stored axes stamped with the ontology version they were
+     computed under". The stamp is gone on both of its sources — migration 0009 dropped
+     `release.scored_ontology_version_id`, and `AutonomyResult` no longer carries
+     `ontologyVersion` — so what survives is the claim that never depended on it: the axes
+     come back as stored, byte for byte, rather than recomputed. */
+  it("returns the stored axes exactly as they were written", async () => {
     const scores = await scoresOf(db, ANON, "alice", "atlas");
-    expect(scores?.ontologyVersion).toBe("0.1.0");
-    expect(scores?.autonomy).toEqual({ level: "assisted", ontologyVersion: "0.1.0" });
+    expect(scores?.autonomy).toEqual({ level: "assisted" });
   });
 
   it("returns the new values and no trace of the old after a re-score", async () => {
     await db
       .update(schema.release)
       .set({
-        autonomy: { level: "supervised", ontologyVersion: "0.2.0" },
+        autonomy: { level: "supervised" },
         security: { level: "hardened" },
         phaseCoverage: { present: ["planning", "testing"] },
-        scoredOntologyVersionId: ontologyV2,
       })
       .where(eq(schema.release.id, atlasReleaseId));
 
     const scores = await scoresOf(db, ANON, "alice", "atlas");
     expect(scores).toEqual({
-      autonomy: { level: "supervised", ontologyVersion: "0.2.0" },
+      autonomy: { level: "supervised" },
       security: { level: "hardened" },
       phaseCoverage: { present: ["planning", "testing"] },
-      ontologyVersion: "0.2.0",
     });
   });
 
@@ -487,7 +469,12 @@ describe("the read API", () => {
     expect(response.status).toBe(200);
     const payload = await response.json();
     expect(payload.blueprint.slug).toBe("atlas");
-    expect(payload.scores.ontologyVersion).toBe("0.2.0");
+    /* Was `payload.scores.ontologyVersion === "0.2.0"`, which witnessed TWO things at once:
+       that the route serves a scorecard, and that it serves the re-scored one written by the
+       cell above rather than the original. The version is gone, so the witness is moved onto
+       a value that still differs between the two writes — `autonomy.level` went
+       "assisted" -> "supervised" — rather than dropped for a weaker existence check. */
+    expect(payload.scores.autonomy).toEqual({ level: "supervised" });
   });
 
   it("AC5: an unknown key and a bundle the caller may not see answer identically", async () => {

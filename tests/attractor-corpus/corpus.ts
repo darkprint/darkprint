@@ -109,7 +109,7 @@ export const CORPUS: readonly CorpusEntry[] = [
         at: "supervise -> <exit>",
         attribute: "condition",
         kind: "dropped",
-        from: "tests_pass",
+        from: "outcome=success",
         why:
           "The boundary is synthesised on export and dropped on import, so an edge that touches " +
           "it is not carried in the topology at all — `entryTargets` and `exitSources` derive the " +

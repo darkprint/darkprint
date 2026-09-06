@@ -18,6 +18,12 @@ content/blueprints/starter-software-factory/
   topology.dot       the topology: which nodes exist, what flows between them
 ```
 
+> **Superseded 2026-08-30 by D-93 and again 2026-09-05 by D-131 (`docs/DECISIONS.md`), on
+> one word.** A manifest carries no ontology version, and neither does anything else: the
+> `ontologyVersion` key left `BundleManifest` with D-93 and the concept left the product
+> with D-131. `blueprint.yaml` is identity, prose, tags and author. The listing and the
+> example below are kept verbatim as the record of what was specified.
+
 Cards are **not** copied in. They live once in `content/cards/` and the DOT pins them by
 `id@version`, which is what lets one card serve many blueprints.
 
@@ -91,7 +97,7 @@ They are the same graph for two different readers.
 | | `topology.dot` | `factory.dot` |
 |---|---|---|
 | for | a person, and DarkPrint | Attractor |
-| nodes | `card="id@version"` | `label`, `shape`, `prompt`, `llm_model`, `max_retries`, and `card` |
+| nodes | `card="id@version"` | `label`, `shape`, `prompt`, `llm_model`, `max_retries`, `class`, `tool_command`, and `card` |
 | entry/exit | implicit | explicit `__start` (`Mdiamond`) and `__exit` (`Msquare`) |
 | the spec | in the card file | **inlined** as `prompt` |
 
@@ -100,8 +106,21 @@ instruction for every node, which is why no skill document needs to travel with 
 
 Attractor **silently ignores unreserved attributes**, which is why `card="id@version"` can
 ride along in a file Attractor executes without confusing it. Reserved attributes DarkPrint
-emits: `prompt`, `llm_model`, `max_retries`, `label`, `shape`, `goal`.
-`lib/core/attractor/{reserved,lint,emit}.ts` owns this.
+emits, by scope, and the list is DATA rather than prose —
+`ATTRACTOR_EMITTED_ATTRIBUTES` in `lib/core/attractor/emit.ts` is what a reader should quote:
+graph `goal`, `label`; node `label`, `shape`, `prompt`, `llm_model`, `max_retries`,
+`tool_command`, `class`; edge `label`, `condition`, `weight`.
+`lib/core/attractor/{reserved,lint,emit,condition}.ts` owns this.
+
+**`shape` is not decoration**: spec §2.8 makes it the handler selector, so the shape written
+for a node's card type is what decides which handler runs it. That is why `tool` maps to
+`box`/`codergen` and the `parallelogram` belongs to the `shell-tool` type alone — §4.10's
+parallelogram handler FAILs with no `tool_command`. **`class` is comma-separated** per §2.12;
+it was emitted space-separated until 2026-09-04, which made every `.dp-*` selector in every
+exported bundle match nothing. **`condition` and `weight` are carried verbatim**: since
+2026-09-04 a guard's SYNTAX is checked against §10.2 and reported as a warning, and its value
+is still evaluated by nothing, so a guarded edge counts exactly as much as an unguarded one in
+every risk reading.
 
 ---
 

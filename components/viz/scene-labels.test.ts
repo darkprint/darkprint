@@ -373,9 +373,12 @@ describe.each(MEASURED)("$name", (entry) => {
    * and it computes it for the two landing placements only — while this file walks a
    * derived roster of every figure on the site and never asked. The two halves sat four
    * files apart long enough for one sweep to find five figures under the floor at once:
-   * `EnforcementFigure` and `SpecLayers` at 6.76, `SectionLevels` at 6.98, `ScoreRadar`
-   * at 7.76, `GraphThumbnail` at 5.69. Every one was clipping-clean and collision-clean,
-   * so every one passed this file.
+   * `EnforcementFigure` and `SpecLayers` at 6.76, `SectionLevels` at 6.98, the scorecard
+   * radar at 7.76, `GraphThumbnail` at 5.69. Every one was clipping-clean and
+   * collision-clean, so every one passed this file. The radar is named without its
+   * symbol because `components/ui/ScoreRadar.tsx` was deleted on 2026-09-06 and a reader
+   * grepping the name would find nothing; the sweep is history, and four of its five
+   * figures still ship.
    *
    * ── What this case checks, and the half it cannot ──
    * It asserts the units, not the rendered pixels: a label below `FLOW.frame.legible`

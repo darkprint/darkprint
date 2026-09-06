@@ -115,8 +115,11 @@ describe("the blueprint-first landing", () => {
   /* The honesty position, held as a test rather than as a comment.
 
      `components/site/honesty.test.ts` pins, in the open, that nothing on this site measures
-     a run, and `/reading-the-radar` says there is no runner and no endpoint. This beat comes
-     nearer that line than anything else on the landing, and it stays on the right side of it
+     a run. The page that carried that sentence for a reader was `/reading-the-radar`, and it
+     came off the site on 2026-09-04, so the row is now pinned over a component no route
+     mounts. This beat comes nearer that line than anything else on the landing, and with the
+     page gone it is the nearest thing to it that a reader actually sees. It stays on the
+     right side of it
      by three specific choices recorded in the spec: the running is the reader's, the verb is
      `attribute`, and the word `eval` never appears. A rewrite that promises a measurement
      fails here, which is the point at which it also needs a limit statement and a ledger row. */
@@ -231,7 +234,7 @@ describe("the blueprint-first landing", () => {
       "/what-a-blueprint-is",
       "/blueprints",
       "/skill",
-      "/blueprints/darkprint/starter-software-factory#use-this-blueprint",
+      "/blueprints/darkprint/starter-software-factory#files",
       "/upload",
     ]) {
       expect(html, `the ${href} panel lost its link`).toContain(`href="${href}"`);

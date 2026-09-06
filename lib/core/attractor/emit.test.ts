@@ -22,6 +22,7 @@ import { parseDot, type DotGraph } from "../dot/parser";
 import { CORE_ONTOLOGY } from "../ontology/core";
 import { ontologyView } from "../ontology/resolve";
 import type { OntologyTerm } from "../ontology/types";
+import { importAttractorDot } from "./import";
 import { lintAttractor } from "./lint";
 import {
   ATTRACTOR_RESERVED,
@@ -30,7 +31,10 @@ import {
   type AttractorScope,
 } from "./reserved";
 import {
+  ATTRACTOR_DEFAULTING_ATTRIBUTES,
   ATTRACTOR_EMITTED_ATTRIBUTES,
+  ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES,
+  ATTRACTOR_REQUIRED_ATTRIBUTES,
   ATTRACTOR_UNEXPRESSED_ATTRIBUTES,
   ATTRACTOR_ENTRY_KIND,
   ATTRACTOR_EXIT_KIND,
@@ -162,6 +166,29 @@ outputs:
 dependencies: [release-gate]
 `,
 };
+
+/**
+ * A card typed `shell-tool`, carrying the command `emit.ts` reads out of `params`.
+ *
+ * The curated vocabulary is where the term comes from, not a local overlay: the row exists
+ * so that a `parallelogram` arriving from a foreign pipeline has a DarkPrint type to be,
+ * and a row only reachable through an overlay would not be that. "every row is a term a
+ * card can declare" is the cell that holds it to it.
+ */
+const SHELL_TOOL_CARD = `id: smoke
+name: Smoke test
+type: shell-tool
+phase: testing
+version: 1.0.0
+action: Run the smoke test
+spec: Run the smoke suite and report whether it passed.
+params:
+  tool_command: npm run smoke -- --ci
+tools: [shell]
+inputs: []
+outputs:
+  - { name: result, type: status }
+`;
 
 const MANIFEST: BundleManifest = {
   slug: "starter-factory",
@@ -331,15 +358,20 @@ describe("the card → node mapping", () => {
     expect(attrsOf(graph, "builder").shape).toBe("box");
     expect(attrsOf(graph, "tester").shape).toBe("box"); // validation → codergen
     expect(attrsOf(graph, "approve").shape).toBe("hexagon"); // human-gate → wait.human
-    expect(attrsOf(graph, "deployer").shape).toBe("parallelogram"); // tool → tool
+    /* `tool` draws as a box and NOT as a parallelogram: §4.10's handler reads a
+       `tool_command` off the node and FAILs on an empty one, and a DarkPrint `tool` card
+       carries a prose spec and its MCP servers instead. The parallelogram row belongs to
+       `shell-tool`, which is the type that does carry a command. */
+    expect(attrsOf(graph, "deployer").shape).toBe("box"); // tool → codergen
     expect(attrsOf(graph, "__start").shape).toBe("Mdiamond");
     expect(attrsOf(graph, "__exit").shape).toBe("Msquare");
   });
 
-  it("transcribes the nine rows of the table exactly", () => {
+  it("transcribes the ten rows of the table exactly", () => {
     expect(ATTRACTOR_TYPE_SHAPES).toEqual({
       agent: { shape: "box", handler: "codergen" },
-      tool: { shape: "parallelogram", handler: "tool" },
+      tool: { shape: "box", handler: "codergen" },
+      "shell-tool": { shape: "parallelogram", handler: "tool" },
       "human-gate": { shape: "hexagon", handler: "wait.human" },
       "human-input": { shape: "hexagon", handler: "wait.human" },
       decision: { shape: "diamond", handler: "conditional" },
@@ -485,7 +517,27 @@ describe("the card → node mapping", () => {
     }
   });
 
-  it("grandfathers exactly the six types that predate the mapping table", () => {
+  /**
+   * A row keyed by a term the curated vocabulary does not carry is a row nothing reaches.
+   *
+   * The table is keyed by ontology term id, and `card/unknown-term` is an ERROR, so a card
+   * declaring a type the core does not know does not load at all: the node loses its card,
+   * `attractorKindFor` falls back to `box`, and the row sits in the table looking like
+   * behaviour while emitting nothing. Asked of the CORE view on purpose — a local overlay
+   * can reach a row for one bundle, and this is the claim that every row is reachable for
+   * every bundle.
+   */
+  it("keys every row on a node-type term a card can actually declare", () => {
+    for (const termId of Object.keys(ATTRACTOR_TYPE_SHAPES)) {
+      expect(
+        ONTOLOGY.get(termId)?.kind,
+        `\`${termId}\` keys a row of ATTRACTOR_TYPE_SHAPES and is not a node-type in the ` +
+          `curated vocabulary, so no card can declare it and the row is unreachable`,
+      ).toBe("node-type");
+    }
+  });
+
+  it("exempts exactly the rows whose term id is not their handler's name", () => {
     expect([...ATTRACTOR_TRANSLATED_TYPES]).toEqual([
       "agent",
       "tool",
@@ -493,6 +545,11 @@ describe("the card → node mapping", () => {
       "human-input",
       "decision",
       "validation",
+      /* The seventh, and the only one not grandfathered by age: §4.10's handler is called
+         `tool` and doc 3 §3 had already spent that word on a node that reaches for an MCP
+         server or a skill. Two names for two things, so the row is a translation of one
+         hyphen and it is written down rather than waived. */
+      "shell-tool",
     ]);
     // A grandfathered name that is not in the table any more is a clause with no subject,
     // and would silently exempt whatever took its place.
@@ -507,9 +564,23 @@ describe("the card → node mapping", () => {
    ============================================================ */
 
 describe("the node class", () => {
+  /**
+   * The class list as ATTRACTOR would read it, not as this emitter happens to write it.
+   *
+   * §2.12 is explicit that "Classes are comma-separated" and §8.2's
+   * `ClassName ::= [a-z0-9-]+` cannot spell a name containing a space, so the separator is
+   * a fact about the format and belongs in the assertion. Reading the value back with
+   * whatever the emitter joined on agrees with any separator it picks — which is how a
+   * space-joined list, one class literally named `dp-agent dp-planning` and matching no
+   * `.dp-*` selector at all, passed every cell in this describe block.
+   */
   const classesOf = (graph: DotGraph, id: string): string[] => {
     const raw = attrsOf(graph, id).class;
-    return raw === undefined ? [] : raw.split(" ");
+    if (raw === undefined) return [];
+    expect(raw, `the raw \`class\` value on \`${id}\`, per §2.12 and §8.2`).toMatch(
+      /^[a-z0-9-]+(,[a-z0-9-]+)*$/,
+    );
+    return raw.split(",");
   };
 
   it("carries the card's type and its phases", () => {
@@ -606,16 +677,22 @@ outputs: []
     expect(attractorClassesFor(card, ONTOLOGY)).toEqual(["dp-berti-mystery", "dp-deployment"]);
   });
 
-  it("lets nothing but `[a-z0-9-]` into a class, the list being space-separated", () => {
-    // A class carrying a space would silently become two, which is a selector matching
-    // nodes nobody aimed at. §2.10's own derivation is a lowercase-and-hyphenate, and this
-    // is the same one applied to a term id.
+  it("lets nothing but `[a-z0-9-]` into a class, per §8.2's `ClassName` rule", () => {
+    // §2.10's own derivation is a lowercase-and-hyphenate, and this is the same one
+    // applied to a term id. A character outside the rule is a name no selector can spell,
+    // and a comma in one would silently become two classes.
     const card: NodeCard = {
       ...STARTER().nodes[0].card,
       type: "Berti/Odd Type.v2",
       phases: [],
     };
     expect(attractorClassesFor(card, ONTOLOGY)).toEqual(["dp-berti-odd-type-v2"]);
+
+    /* The comma is the separator now, so a term id carrying one is the case that would
+       turn a single class into two on the way out. It collapses like every other character
+       outside the rule. */
+    const comma: NodeCard = { ...card, type: "berti/a,b" };
+    expect(attractorClassesFor(comma, ONTOLOGY)).toEqual(["dp-berti-a-b"]);
   });
 
   it("drops the class along with everything else when the card did not load", () => {
@@ -639,11 +716,106 @@ outputs: []
 });
 
 /* ============================================================
+   the shell command, and the one shape that reads it
+   ============================================================ */
+
+describe("the tool command", () => {
+  const shellBundle = (card: string): ResolvedBlueprint =>
+    resolve(
+      bundleOf(`digraph g { smoke [card="smoke@1.0.0"]; }`, { "cards/smoke@1.0.0.yaml": card }),
+    );
+
+  it("writes `params.tool_command` onto the node §4.10 reads it from", () => {
+    const graph = reparse(emitAttractorDot(shellBundle(SHELL_TOOL_CARD)));
+    expect(attrsOf(graph, "smoke").shape).toBe("parallelogram");
+    expect(attrsOf(graph, "smoke").tool_command).toBe("npm run smoke -- --ci");
+  });
+
+  it("is the difference between a node that runs and a node that FAILs on sight", () => {
+    /* §4.10: `IF command is empty: RETURN Outcome(status=FAIL)`. So a parallelogram with
+       no command is not a node taking a default, it is a node that cannot start — which
+       is why the emitter writes the attribute at all and why the header groups it apart
+       from the attributes that do fall back. */
+    const without = SHELL_TOOL_CARD.replace("params:\n  tool_command: npm run smoke -- --ci\n", "");
+    const graph = reparse(emitAttractorDot(shellBundle(without)));
+    expect(attrsOf(graph, "smoke").shape).toBe("parallelogram");
+    expect(attrsOf(graph, "smoke").tool_command).toBeUndefined();
+  });
+
+  it("treats a blank command as no command, rather than writing the failure into the file", () => {
+    const blank = SHELL_TOOL_CARD.replace("tool_command: npm run smoke -- --ci", 'tool_command: "   "');
+    expect(attrsOf(reparse(emitAttractorDot(shellBundle(blank))), "smoke").tool_command).toBeUndefined();
+  });
+
+  it("ignores a `tool_command` that is not a string", () => {
+    // `params` is free-form JSON, so a number or a list can arrive here. Emitting
+    // `tool_command=42` would hand the runner a command nobody wrote.
+    const numeric = SHELL_TOOL_CARD.replace("tool_command: npm run smoke -- --ci", "tool_command: 42");
+    expect(attrsOf(reparse(emitAttractorDot(shellBundle(numeric))), "smoke").tool_command).toBeUndefined();
+  });
+
+  it("keeps the command's own bytes, the way an edge `condition` is kept", () => {
+    // Input to somebody else's shell: trimming it would be DarkPrint deciding which of
+    // its characters are decorative. Only whitespace-ONLY counts as absence.
+    const spaced = SHELL_TOOL_CARD.replace(
+      "tool_command: npm run smoke -- --ci",
+      'tool_command: "  make test  "',
+    );
+    expect(attrsOf(reparse(emitAttractorDot(shellBundle(spaced))), "smoke").tool_command).toBe(
+      "  make test  ",
+    );
+  });
+
+  it("writes nothing on a node whose shape selects another handler", () => {
+    /* The attribute is asked of the HANDLER, not of the presence of the key: every other
+       handler ignores `tool_command`, so a card that parks one on an `agent` would be
+       carrying a command nothing ever runs — and putting it in the file would say the
+       opposite. */
+    const agent = STARTER_CARDS["cards/builder@1.0.0.yaml"].replace(
+      "dependencies: [planner]\n",
+      "params:\n  tool_command: rm -rf /\n",
+    );
+    const bp = resolve(
+      bundleOf(`digraph g { builder [card="builder@1.0.0"]; }`, {
+        "cards/builder@1.0.0.yaml": agent,
+      }),
+    );
+    const graph = reparse(emitAttractorDot(bp));
+    expect(attrsOf(graph, "builder").shape).toBe("box");
+    expect(attrsOf(graph, "builder").tool_command).toBeUndefined();
+  });
+
+  it("comes back through the importer under the key it went out on", () => {
+    /* Driven here rather than in `import.test.ts` because a `shell-tool` card needs the
+       bundle machinery this file already has, and driven at all because the round-trip
+       corpus carries four parallelogram nodes and not one `tool_command` — so the gate
+       that would otherwise cover this cannot see it. Emit and import agreeing on the key
+       is the whole of it: disagree, and the command is dropped on the way back out while
+       the imported folder still appears to hold it. */
+    const emitted = emitAttractorDot(shellBundle(SHELL_TOOL_CARD));
+    const back = importAttractorDot(emitted, { origin: "smoke.dot", author: "corpus-runner" });
+    const card = back.cards.find((c) => c.card.name === "Smoke test")?.card;
+    expect(card?.type).toBe("shell-tool");
+    expect(card?.params).toEqual({ tool_command: "npm run smoke -- --ci" });
+  });
+
+  it("stays lint-clean with the command in place", () => {
+    const emitted = emitAttractorDot(shellBundle(SHELL_TOOL_CARD));
+    expect(lintAttractor(reparse(emitted), emitted)).toEqual([]);
+  });
+});
+
+/* ============================================================
    edge guards, carried and never read
    ============================================================ */
 
 describe("the edge guard and the routing weight", () => {
-  const GUARD = "attempts > 3 && !approved";
+  /* Legal under §10.2 (`Key Operator Literal`, AND-combined, `=` and `!=` only), because
+     one cell below runs the emitted file through `lintAttractor` and a guard using `>` or
+     `!` is one Attractor's own `condition_syntax` rule refuses at ERROR. Verbatim carriage
+     of an expression DarkPrint could not parse is proved by `weird` further down, which is
+     deliberately not lint-clean and deliberately not linted. */
+  const GUARD = "outcome=fail && context.attempts!=0";
 
   const guardedStarter = (): ResolvedBlueprint =>
     resolve(
@@ -733,11 +905,17 @@ describe("the private / runtime-read line", () => {
   "solver-a" [card="planner@1.0.0"];
   builder    [card="builder@1.0.0"];
   debugger   [card="debugger@1.0.0"];
+  smoke      [card="smoke@1.0.0"];
 
   "solver-a" -> builder  [label="plan", condition="attempts > 0", weight=2];
   builder    -> debugger;
+  debugger   -> smoke;
 }`;
 
+  /* `smoke` is here because `tool_command` is the eighth name the emitter can write and
+     the equality below is only as strong as the fixture is wide: without a node whose
+     shape selects §4.10's handler, the declared list would name an attribute no fixture
+     ever produces and the cell would red on the declaration rather than on the emitter. */
   const everything = (): DotGraph =>
     reparse(
       emitAttractorDot(
@@ -746,6 +924,7 @@ describe("the private / runtime-read line", () => {
             "cards/planner@1.0.0.yaml": STARTER_CARDS["cards/planner@1.0.0.yaml"],
             "cards/builder@1.0.0.yaml": STARTER_CARDS["cards/builder@1.0.0.yaml"],
             "cards/debugger@1.0.0.yaml": STARTER_CARDS["cards/debugger@1.0.0.yaml"],
+            "cards/smoke@1.0.0.yaml": SHELL_TOOL_CARD,
           }),
         ),
       ),
@@ -894,7 +1073,16 @@ describe("the unexpressed half", () => {
    * header answers yes for a name the header never lists. That is not hypothetical — it is
    * how the first version of the cell below passed while measuring nothing.
    */
-  const headerNames = (dot: string): Record<AttractorScope, string[]> => {
+  const headerLines = (dot: string): string[] => {
+    const out: string[] = [];
+    for (const line of dot.split("\n")) {
+      if (!line.startsWith("//")) break;
+      out.push(line);
+    }
+    return out;
+  };
+
+  const namesIn = (lines: readonly string[]): Record<AttractorScope, string[]> => {
     const split = (text: string): string[] =>
       text
         .split(",")
@@ -903,8 +1091,7 @@ describe("the unexpressed half", () => {
 
     const found: Record<AttractorScope, string[]> = { graph: [], node: [], edge: [] };
     let scope: AttractorScope | undefined;
-    for (const line of dot.split("\n")) {
-      if (!line.startsWith("//")) break;
+    for (const line of lines) {
       const labelled = /^\/\/ {3}(graph|node|edge): (.*)$/.exec(line);
       if (labelled !== null) {
         scope = labelled[1] as AttractorScope;
@@ -918,6 +1105,26 @@ describe("the unexpressed half", () => {
     return found;
   };
 
+  const headerNames = (dot: string): Record<AttractorScope, string[]> => namesIn(headerLines(dot));
+
+  /**
+   * The two groups separately, cut at the sentence that introduces the second.
+   *
+   * `headerNames` cannot tell them apart — it accumulates every `scope:` line in the
+   * header — and "which sentence is this name printed under" is the whole claim the split
+   * exists to make. The cut is on the sentence itself, so a header that stops carrying two
+   * groups reds here rather than quietly reporting one empty group.
+   */
+  const NO_DEFAULT_SENTENCE = "// Left out, these have no default.";
+  const headerGroups = (
+    dot: string,
+  ): { defaulting: Record<AttractorScope, string[]>; needed: Record<AttractorScope, string[]> } => {
+    const lines = headerLines(dot);
+    const cut = lines.findIndex((line) => line.startsWith(NO_DEFAULT_SENTENCE));
+    expect(cut, "the header does not carry two groups any more").toBeGreaterThan(0);
+    return { defaulting: namesIn(lines.slice(0, cut)), needed: namesIn(lines.slice(cut)) };
+  };
+
   it("reaches the emitted file, every name of it and no other, under its own scope", () => {
     /* The point of the whole exercise: the list is only worth deriving if it is printed
        where the artefact is opened. An equality rather than a subset, so it answers both
@@ -926,8 +1133,92 @@ describe("the unexpressed half", () => {
        reader their `condition` was dropped, which stops them writing guards. */
     const declared = headerNames(emitAttractorDot(STARTER()));
     for (const scope of SCOPES) {
-      expect(declared[scope], scope).toEqual([...ATTRACTOR_UNEXPRESSED_ATTRIBUTES[scope]]);
+      /* The two groups in the order the header prints them. Compared as a set against the
+         undivided list below, so this cell cannot pass by both sides having drifted the
+         same way. */
+      expect(declared[scope], scope).toEqual([
+        ...ATTRACTOR_DEFAULTING_ATTRIBUTES[scope],
+        ...ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES[scope],
+      ]);
+      expect(declared[scope].slice().sort(), scope).toEqual(
+        [...ATTRACTOR_UNEXPRESSED_ATTRIBUTES[scope]].sort(),
+      );
     }
+  });
+
+  it("pins the names a handler reads with no default, against the sections that say so", () => {
+    /* Transcribed here rather than derived, the way `reserved.test.ts` transcribes the
+       reserved sets: "does this handler have a fallback" is a fact about somebody else's
+       document and a derivation of it would be this file agreeing with itself. Each one
+       was read off the pseudocode:
+         §4.10  command = node.attrs.get("tool_command", "")
+                IF command is empty: RETURN Outcome(status=FAIL)
+         §4.6   default_choice = node.attrs["human.default_choice"]
+                IF default_choice exists: -- use default
+                ELSE: RETURN Outcome(status=RETRY, …"human gate timeout, no default")
+         §4.11  child_dotfile = graph.attrs.get("stack.child_dotfile")   -- no second argument
+       Every other reserved name the handlers read carries its fallback in the same call,
+       which is what makes these three different in kind and not merely in importance. */
+    expect(ATTRACTOR_REQUIRED_ATTRIBUTES.graph).toEqual(["stack.child_dotfile"]);
+    expect(ATTRACTOR_REQUIRED_ATTRIBUTES.node).toEqual(["tool_command", "human.default_choice"]);
+    expect(ATTRACTOR_REQUIRED_ATTRIBUTES.edge).toEqual([]);
+    // A name here that Attractor does not reserve would be a warning about nothing.
+    for (const scope of SCOPES) {
+      for (const key of ATTRACTOR_REQUIRED_ATTRIBUTES[scope]) {
+        expect(isReserved(scope, key), `${scope} \`${key}\``).toBe(true);
+      }
+    }
+  });
+
+  it("splits the unexpressed list in two, losing nothing and counting nothing twice", () => {
+    /* The split is only honest if it is a partition: a name in neither group is a gap the
+       header stopped mentioning, and a name in both is a reader told two different things
+       about one attribute in one file. */
+    for (const scope of SCOPES) {
+      const both = [
+        ...ATTRACTOR_DEFAULTING_ATTRIBUTES[scope],
+        ...ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES[scope],
+      ];
+      expect(both.slice().sort(), scope).toEqual([...ATTRACTOR_UNEXPRESSED_ATTRIBUTES[scope]].sort());
+      expect(new Set(both).size, `${scope}: a name is in both groups`).toBe(both.length);
+    }
+  });
+
+  it("drops a required name from the header the moment the emitter starts writing it", () => {
+    /* `tool_command` is the case that forced the split and it is also the case that proves
+       the groups are derived rather than transcribed: it is declared as handler-needed and
+       it is NOT in the header, because the emitter now writes it for a `shell-tool` card.
+       A hand-written second list would still be warning a reader about an attribute the
+       file in front of them carries. */
+    expect(ATTRACTOR_REQUIRED_ATTRIBUTES.node).toContain("tool_command");
+    expect(ATTRACTOR_EMITTED_ATTRIBUTES.node).toContain("tool_command");
+    expect(ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES.node).not.toContain("tool_command");
+    expect(headerNames(emitAttractorDot(STARTER())).node).not.toContain("tool_command");
+  });
+
+  it("prints each group under the sentence that is true of it", () => {
+    /* The point of the whole task. The old header said every name it listed "falls back to
+       the runner's own default", which was false for `tool_command` and is false for these
+       two: a hexagon with no `human.default_choice` goes round again on a timeout, and a
+       `house` with no `stack.child_dotfile` supervises nothing and runs out at "Max cycles
+       exceeded". Reading the name back is not enough — a name under the WRONG sentence is
+       exactly the defect being fixed, so the cell asserts which side it is printed on. */
+    const { defaulting, needed } = headerGroups(emitAttractorDot(STARTER()));
+    for (const scope of SCOPES) {
+      expect(defaulting[scope], `${scope}, under "take the runner's own default"`).toEqual([
+        ...ATTRACTOR_DEFAULTING_ATTRIBUTES[scope],
+      ]);
+      expect(needed[scope], `${scope}, under "have no default"`).toEqual([
+        ...ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES[scope],
+      ]);
+    }
+    expect(needed.graph).toContain("stack.child_dotfile");
+    expect(needed.node).toContain("human.default_choice");
+    expect(defaulting.graph).not.toContain("stack.child_dotfile");
+    expect(defaulting.node).not.toContain("human.default_choice");
+    // And the sentence a reader acts on is still the one that was always true of the rest.
+    expect(defaulting.node).toContain("timeout");
+    expect(defaulting.node).toContain("goal_gate");
   });
 
   it("never lists a name the emitter writes or withholds", () => {
@@ -1136,8 +1427,10 @@ describe("the synthesised boundary", () => {
     // `planner` is the entry, `deployer` the exit. Re-shaping either would have made it
     // a start/exit handler and its prompt would never run.
     expect(attrsOf(graph, "planner").shape).toBe("box");
+    expect(attrsOf(graph, "planner").shape).not.toBe(ATTRACTOR_ENTRY_KIND.shape);
     expect(attrsOf(graph, "planner").prompt).toBeTruthy();
-    expect(attrsOf(graph, "deployer").shape).toBe("parallelogram");
+    expect(attrsOf(graph, "deployer").shape).toBe("box");
+    expect(attrsOf(graph, "deployer").shape).not.toBe(ATTRACTOR_EXIT_KIND.shape);
     expect(attrsOf(graph, "deployer").prompt).toBeTruthy();
   });
 
@@ -1468,13 +1761,17 @@ describe("toAttractorIdentifier", () => {
 });
 
 describe("attractorKindFor", () => {
-  it("answers for each of the six concrete types", () => {
+  it("answers for each of the concrete types", () => {
     expect(attractorKindFor("agent", ONTOLOGY).shape).toBe("box");
-    expect(attractorKindFor("tool", ONTOLOGY).shape).toBe("parallelogram");
+    expect(attractorKindFor("tool", ONTOLOGY).shape).toBe("box");
     expect(attractorKindFor("human-gate", ONTOLOGY).shape).toBe("hexagon");
     expect(attractorKindFor("human-input", ONTOLOGY).shape).toBe("hexagon");
     expect(attractorKindFor("decision", ONTOLOGY).shape).toBe("diamond");
     expect(attractorKindFor("validation", ONTOLOGY).shape).toBe("box");
+    expect(attractorKindFor("shell-tool", ONTOLOGY)).toEqual({
+      shape: "parallelogram",
+      handler: "tool",
+    });
   });
 
   it("resolves a local namespaced type through its `broader` chain", () => {
@@ -1517,10 +1814,11 @@ describe("attractorKindFor", () => {
 
   it("does not confuse the `tool` node type with the `tool` term kind of `tools[]`", () => {
     // Both are spelled `tool`; `attractorKindFor` is asked about a node type, and the
-    // ontology keeps the two apart by `kind`.
+    // ontology keeps the two apart by `kind`. `deployer` declares `tools: [ci]`, so a
+    // lookup that ignored `kind` would resolve the wrong term entirely.
     const bp = STARTER();
     const graph = reparse(emitAttractorDot(bp));
-    expect(attrsOf(graph, "deployer").shape).toBe("parallelogram");
+    expect(attrsOf(graph, "deployer").shape).toBe(ATTRACTOR_TYPE_SHAPES.tool.shape);
   });
 });
 

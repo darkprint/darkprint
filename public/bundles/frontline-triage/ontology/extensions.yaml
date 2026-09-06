@@ -9,18 +9,24 @@
 # weight counts 0 and moves no score. `OntologyView.validate()`
 # enforces all three.
 #
-# `version` is this overlay's own semver (doc 3 §8). It does not
-# mint a new vocabulary version: the merged view keeps the core's,
-# and that is the version every score computed against this overlay
-# records. A card used to declare an `ontology_version` of its own
-# and this paragraph existed to explain how a local term could
-# appear in a card that still declared the core's number. There is
-# one vocabulary and a card declares no version of it, so the
-# question the paragraph answered no longer arises; what the line
-# above still says is that adding a term here does not change what
-# a score is stamped with.
+# A `version` key stood here, described as this overlay's own semver.
+# It went on 2026-09-05 with ontology versioning itself: the owner
+# asked the concept removed, because the vocabulary names what an
+# Attractor node IS, Attractor fixes those shapes in its own spec
+# and carries no vocabulary version, so a DarkPrint-only number on
+# top was a second thing to keep in step with nothing. Nothing read
+# this key even before that — `lib/content/ontology-file.ts` parses
+# `terms` and never the version — so the line was already a claim
+# with no reader, and the paragraph explaining it made two further
+# claims that are false now: that a merged view keeps a version, and
+# that a score is stamped with one.
+#
+# `since:` on a term below is NOT that key coming back. It is the
+# release the term entered the vocabulary in, which is provenance and
+# not a version of anything: nothing compares two of them and no page
+# prints one. The parser still requires it, so a term added here says
+# when it arrived. See `OntologyTerm.since` in `lib/core/ontology/types.ts`.
 # ============================================================
-version: "0.1.0"
 terms:
   # Doc 3 §4 has no marker for personal data, and inventing a core
   # one would extend a curated set from the content side. Rooted at

@@ -28,7 +28,6 @@ import {
   perturbedVocabularyText,
   scratchDatabase,
   seedAccount,
-  seedOntology,
   seedRelease,
   shippedSlugs,
   storedVocabulary,
@@ -47,7 +46,6 @@ const seeded = new Map<string, SeededRelease>();
 
 beforeAll(async () => {
   scratch = await scratchDatabase("export");
-  await seedOntology(scratch.db);
   owner = await seedAccount(scratch, "export");
   for (const entry of archive()) {
     seeded.set(entry.slug, await seedRelease(scratch, owner, entry));
@@ -232,7 +230,6 @@ describe("AC2 — two exports of one release are byte-identical", () => {
     const here = seeded.get("guarded-merge-bot") as SeededRelease;
     const elsewhere = await scratchDatabase("export_second");
     try {
-      await seedOntology(elsewhere.db);
       const otherOwner = await seedAccount(elsewhere, "export2");
       const there = await seedRelease(elsewhere, otherOwner, bundleBySlug("guarded-merge-bot"));
       expect(there.digest, "The same content stored twice produced two digests").toBe(here.digest);
@@ -310,7 +307,6 @@ describe("AC3 — extensions.yaml is served when and only when the bundle's card
 
     const own = await scratchDatabase("export_verbatim");
     try {
-      await seedOntology(own.db);
       const account = await seedAccount(own, "verbatim");
       const release = await seedRelease(own, account, entry, { vocabularyText: perturbed });
       const files = await exportFrom(own.db, release.bundleId, release.digest);
@@ -390,7 +386,6 @@ describe("exportRelease refuses, with the message form the contract published", 
      */
     const own = await scratchDatabase("export_badvocab");
     try {
-      await seedOntology(own.db);
       const account = await seedAccount(own, "badvocab");
       const release = await seedRelease(own, account, withLocalTerm(), {
         rawVocabulary: storedVocabulary()?.terms,
@@ -419,7 +414,6 @@ describe("exportRelease refuses, with the message form the contract published", 
      */
     const own = await scratchDatabase("export_privatecard");
     try {
-      await seedOntology(own.db);
       const account = await seedAccount(own, "pubowner");
       const cardOwner = await seedAccount(own, "cardowner");
       const release = await seedRelease(own, account, bundleBySlug("nightly-data-janitor"), {

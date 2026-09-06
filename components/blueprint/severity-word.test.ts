@@ -73,7 +73,6 @@ function pageHtml(bp: (typeof BLUEPRINTS)[number]): string {
     renderToStaticMarkup(
       createElement(BundlePanel, {
         digest: bp.digest,
-        scoredOntologyVersion: bp.analysis.autonomy.ontologyVersion,
         nodes: bp.graph.nodes.map((n) => ({
           nodeId: n.id,
           label: n.label,

@@ -694,6 +694,19 @@ export function BundleDropzone({
               <span className="font-mono">extensions.yaml</span> along with it when it has
               one: it defines the local terms its cards declare.
             </p>
+            {/* Named at the target, because a person holding an Attractor pipeline has no
+                reason to guess that this box takes one. Until now it did not: a dropped
+                pipeline pins no cards, so the validator answered with one
+                `bundle/missing-card` per node and advice about DarkPrint's own authoring
+                format. `components/upload/attractor.ts` is what changed, and the sentence
+                stops at what the reader can check here — the offer appears, and it names
+                what an import costs before anything is converted. */}
+            <p className="text-xs text-dim">
+              An Attractor pipeline works too. Drop the{" "}
+              <span className="font-mono">.dot</span> on its own and this page offers to
+              read it into a draft bundle, in this tab, saying first what the import cannot
+              carry across.
+            </p>
           </div>
           {picker}
         </div>

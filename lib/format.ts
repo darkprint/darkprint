@@ -59,14 +59,28 @@ export function monthYear(iso: string): string {
  * stay blue and land ΔE2000 5.1 apart, while emerald leaves the blue axis entirely for a
  * warm tan at 34.2 from cyan and 37.1 from violet. That is exactly the separation amber
  * used to provide, which is why amber worked here and why the replacement had to be warm.
- * On the void ground emerald reads 10.52:1, so the axis name it paints still clears AA.
+ * ── The measured clearance for all three, kept here because it lost its last home ──
+ * On the void ground: cyan 9.44:1, emerald 10.52:1, violet 7.43:1. All three clear AA.
+ *
+ * These three numbers were measured together and lived in `components/ui/ScoreRadar.tsx`,
+ * which the owner deleted on 2026-09-06. Only the emerald figure was restated anywhere else,
+ * so cyan's and violet's clearance had no record in the tree at all for the length of that
+ * change. They are claims about a surface that STILL SHIPS — `METRIC_SOURCE_META` below is
+ * what `components/ui/Badge.tsx` paints `meta.color` from, so all three are still drawn on
+ * this ground — which is why they move here rather than going with the chart. A measurement
+ * outlives the component that happened to be measured in.
+ *
+ * The sentence that carried the emerald figure said it clears AA for "the axis name it
+ * paints". It paints no axis name now; the axes were the radar's. It paints a badge pill,
+ * at a smaller size than the axis labels were, so the clearance is unchanged and the
+ * surface it is claimed for is not.
  *
  * It does not say "verified". Emerald is a *provenance* here, and the honesty is carried
- * where it always was: the badge prints the word `reported`, its `title` says the figure
- * is seeded because nothing has run, and the `○ not built` lines on `/reading-the-radar`
- * name
- * the axes. Colour never carries a claim alone on this site — that rule is what makes it
- * safe to reuse a hue for a second, adjacent meaning.
+ * where it always was: the badge prints the word `reported` and its `title` says the figure
+ * is seeded because nothing has run. The third carrier was the `○ not built` axis list on
+ * `/reading-the-radar`, and that route was deleted on 2026-09-04, so the badge and its
+ * `title` are now the whole of it. Colour never carries a claim alone on this site — that
+ * rule is what makes it safe to reuse a hue for a second, adjacent meaning.
  */
 export const METRIC_SOURCE_META: Record<
   MetricSource,

@@ -235,9 +235,12 @@ export default function TowardsPage() {
           route now ends on `WhichTasksGlance`, and it offers a reader no onward link of its
           own. The comment that used to sit here argued the opposite case at length — "a
           filter whose reader has just answered yes four times has to have somewhere to go"
-          — and it was overruled directly. The header and the footer still reach `/build`
-          and `/blueprints` from every page, so nothing is unreachable; what is gone is this
-          page's own exit. */}
+          — and it was overruled directly. The header and the footer still reach
+          `/blueprints` from every page, so nothing is unreachable; what is gone is this
+          page's own exit. (`/build` was named here as the second of the two until
+          2026-09-06, when the owner deleted the route: "it is not useful and make
+          confusion". Nothing replaced it in the chrome, and the argument this note records
+          does not turn on there being two.) */}
 
       {/* ---------- where to next ----------
           Restored 2026-08-08 on the author's instruction: "add section Where to next at the
@@ -246,10 +249,24 @@ export default function TowardsPage() {
 
           The note directly above records the 2026-08-07 removal and the argument it
           overruled, and both stand: what came out was a paragraph and its two links, and
-          what goes back is the band every other route on this site ends with. `/build` and
-          `/blueprints` are still not offered here — the header carries them from every page,
-          and this route's own next step is the scorecard, because the ladder above measures
-          autonomy and `/reading-the-radar` is where that reading is explained. */}
+          what goes back is the band every other route on this site ends with. `/blueprints`
+          is still not offered here as a hand-written link — the header carries it from every
+          page, and `/build`, which stood beside it in this sentence, was deleted on
+          2026-09-06.
+
+          The button that instruction named was the scorecard, and the author asked that page
+          off the site on 2026-09-04. There is nothing hand-written here to repoint, because
+          the band is a `SpecPager` and its PREVIOUS is whatever `SPEC_SEQUENCE` puts before
+          this stop: the arrow reads `/spec/attractor`, the Attractor crosswalk. It read
+          `/build` from 2026-09-04 until that route was deleted on 2026-09-06, and it
+          repointed itself both times, with no edit here either time. That is the argument
+          for deriving the arrow from `SPEC_SEQUENCE` instead of writing it: a hand-written
+          PREVIOUS would have pointed at a deleted page twice in three days.
+
+          The crosswalk is an honest destination going backwards. The ladder above asks
+          which tasks a reader should hand over, and the crosswalk is the page that says
+          what a runner reads out of a card that the blueprint itself never states, which is
+          the same question one step earlier. */}
       {/* No `border-t`, and the same ground as the band above it, since 2026-08-11.
           `SectionLevels` ends on the sources band on `--color-surface`, and 4a puts the
           sources and this pager on one ground with no seam between them — they are the

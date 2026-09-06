@@ -8,8 +8,17 @@
 import type { BumpAnalysis, BumpLevel, Diagnostic, DiagnosticCode } from "@/lib/core";
 import { bumpSatisfies, declaredBump, error, formatSemver, parseSemver } from "@/lib/core";
 
-/** What kind of release is being checked; picks the diagnostic's namespace. */
-export type BumpSubject = "card" | "bundle" | "ontology";
+/**
+ * What kind of release is being checked; picks the diagnostic's namespace.
+ *
+ * There were three. `ontology` went when the owner had vocabulary versioning removed on
+ * 2026-09-05 (§11.0 Q26): a subject is a thing that HAS a declared version to be checked
+ * against an inferred bump, and the vocabulary has none — terms move inside the one
+ * vocabulary through `deprecated`. `ontology/version-bump-too-small` stays reserved in
+ * `@/lib/core`'s `DiagnosticCode` and is now emitted by nothing, which is the state
+ * `lib/core/diagnostics.test.ts` encodes as `null`.
+ */
+export type BumpSubject = "card" | "bundle";
 
 /**
  * `subject`'s mapping to a code, as an exhaustive switch rather than an
@@ -26,8 +35,6 @@ function codeFor(subject: BumpSubject): DiagnosticCode {
       return "card/version-bump-too-small";
     case "bundle":
       return "bundle/version-bump-too-small";
-    case "ontology":
-      return "ontology/version-bump-too-small";
     default: {
       const invalid: never = subject;
       throw new Error(`checkDeclaredBump: "${String(invalid)}" is not a subject this contract names`);

@@ -17,8 +17,7 @@
 
      Explainability  { autonomy, security, phaseCoverage,
                        nodeNames, onHighlight }
-     BundlePanel     { digest, ontologyVersion,
-                       scoredOntologyVersion, nodes, pinnedCards,
+     BundlePanel     { digest, nodes, pinnedCards,
                        diagnostics, explainedNotes }
 
    ── the asymmetry that makes this more than a restatement ──
@@ -76,17 +75,24 @@ const HELD: readonly Held[] = [
   {
     path: "components/blueprint/BundlePanel.tsx",
     component: "BundlePanel",
-    /* `ontologyVersion` was here, between `digest` and `scoredOntologyVersion`, and is gone
-       from both sides in the same edit: the manifest declared a vocabulary version, the panel
-       drew it beside the version the SCORES were computed under, and neither exists now.
+    /* `ontologyVersion` was here, between `digest` and `scoredOntologyVersion`, and went
+       from both sides in one edit: the manifest declared a vocabulary version, the panel drew
+       it beside the version the SCORES were computed under, and neither existed any more.
        D-261-07(8) forbids a rename or a removal that reshapes these props under a frozen
-       caller — this is a removal, and it is admissible only because the caller moved WITH it
-       (`severity-word.test.ts` was re-pinned in the same edit, 0+/1-, cause named in
-       `frozen-tests.test.ts`) rather than being left passing a prop the component dropped.
-       `scoredOntologyVersion` is the one that was ever a fact about the score, and it stays. */
+       caller — a removal is admissible only because the caller moves WITH it in the same
+       edit, re-pinned with the cause named in `frozen-tests.test.ts`, rather than being left
+       passing a prop the component dropped.
+
+       `scoredOntologyVersion` FOLLOWED IT on 2026-09-05, by the same rule and the same
+       procedure. The owner asked ontology versioning removed in full, so there is no version
+       for a score to have been computed under: the panel's `Scores computed under vX.Y.Z` row
+       went, and the sentence under it saying two scores from different ontology versions are
+       not comparable went with it, because that claim has no subject once there is one
+       vocabulary and no versions of it. `severity-word.test.ts` was re-pinned in the same
+       edit, again 0+/1-, again a deletion the compiler forces rather than an assertion being
+       weakened. What is left in this table is what the panel still draws. */
     passed: [
       "digest",
-      "scoredOntologyVersion",
       "nodes",
       "pinnedCards",
       "diagnostics",

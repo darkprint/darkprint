@@ -13,13 +13,29 @@ digraph grounded_research_desk {
   }
 
   synth     [card="evidence-synthesizer@1.0.0"];
-  factcheck [card="claim-verifier@1.0.0"];
+  factcheck [card="claim-verifier@1.1.0"];
   report    [card="report-delivery@1.0.0"];
 
   question -> plan;
+  // No condition on these three. They are a fan-out and not a fork: the three strands are
+  // meant to run together, and engine spec §10 has equality and negation and no way to say
+  // "all of them", so any guard that made these mutually exclusive would pick one strand
+  // and delete the other two. §4.8 fans out to every outgoing edge, but only for a node the
+  // engine runs as `parallel`, and §2.8 selects that handler from `shape=component`, which
+  // `emitAttractorDot` writes for a card whose `type` is `parallel`. `retrieval-planner` is
+  // an `agent`. Changing that is a major bump on the card and a different node, not a guard,
+  // so it is left standing and named here rather than papered over with a condition.
   plan -> web; plan -> vectors; plan -> code;
   web -> synth; vectors -> synth; code -> synth;
   synth -> factcheck;
-  factcheck -> synth  [label="unsupported", style=dashed];
-  factcheck -> report [label="grounded"];
+
+  // The fact-checker's own cap is what ends this loop: its third pass releases whatever is
+  // grounded and carries the outstanding gaps into the report as stated gaps. `outcome`
+  // cannot see that decision, because the releasing pass and a pass that found gaps both
+  // succeed, and a `partial_success` guard would send the release straight back round and
+  // defeat the cap. The label the node prefers is the discriminator. The negation arm is
+  // another synthesis pass, so a check that writes no label never ships an ungrounded
+  // sentence, which is the promise the blueprint's own description makes.
+  factcheck -> synth  [label="unsupported", style=dashed, condition="preferred_label!=grounded"];
+  factcheck -> report [label="grounded", condition="preferred_label=grounded"];
 }

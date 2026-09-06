@@ -561,11 +561,10 @@ export async function insertBundle(
  * the T200 shape this project has paid for once, "a suite passing against seeded data that
  * no writer creates".
  *
- * The fourth column is gone from the rule. The version a score was computed under is on the
- * score, at `AutonomyResult.ontologyVersion`, which `publish.ts` has always written, so a
- * three-payload scorecard IS the complete one and this fixture writes exactly what a publish
- * writes. It still sets the column, because the column still exists and a reader that went
- * back to requiring it must red rather than pass.
+ * The fourth column is not merely out of the rule now, it is out of the database:
+ * `0009_drop_ontology_versioning` dropped it and the `ontology_version` table it referenced,
+ * and `AutonomyResult` lost its own version stamp with them. A three-payload scorecard IS
+ * the complete one and this fixture writes exactly what a publish writes, column for column.
  *
  * The three payloads are the shapes `AddReleaseInput.analysis` declares and `scores.ts` casts
  * back to (D-260-28: the payloads agree on both sides).
@@ -574,48 +573,25 @@ export async function stampScorecard(
   s: Scratch,
   releaseId: string,
   o: {
-    ontologyVersion?: string;
     autonomy?: unknown;
     security?: unknown;
     phaseCoverage?: unknown;
   } = {},
-): Promise<{ ontologyVersionId: string; ontologyVersion: string }> {
-  const version = o.ontologyVersion ?? "0.1.0";
-  const [existing] = await query(s, "select id from ontology_version where version = $1", [version]);
-  let ontologyVersionId = existing?.id;
-  if (typeof ontologyVersionId !== "string") {
-    const [row] = await query(
-      s,
-      "insert into ontology_version (version, digest) values ($1, $2) returning id",
-      [version, `sha256:t132-${version}`],
-    );
-    ontologyVersionId = row?.id as string;
-  }
-  if (typeof ontologyVersionId !== "string") {
-    throw new Error("Could not resolve an ontology_version row for the scorecard stand-in.");
-  }
+): Promise<void> {
   await query(
     s,
-    "update release set autonomy = $1, security = $2, phase_coverage = $3, " +
-      "scored_ontology_version_id = $4 where id = $5",
+    "update release set autonomy = $1, security = $2, phase_coverage = $3 where id = $4",
     [
-      /* The stamp itself, on the payload the reader takes it from. `ontologyVersion` is
-         spread AFTER the caller's `autonomy` so a caller supplying its own does not lose it
-         and a caller supplying none still produces a readable scorecard. */
       JSON.stringify({
         autonomyClass: "supervised",
         level: 2,
         ...(o.autonomy as Record<string, unknown> | undefined),
-        ontologyVersion:
-          (o.autonomy as { ontologyVersion?: string } | undefined)?.ontologyVersion ?? version,
       }),
       JSON.stringify(o.security ?? { level: 3, raw: 3, penalties: [], findings: [], rationale: "4 to 3" }),
       JSON.stringify(o.phaseCoverage ?? { covered: ["planning"], missing: [], byPhase: {}, unphased: [] }),
-      ontologyVersionId,
       releaseId,
     ],
   );
-  return { ontologyVersionId, ontologyVersion: version };
 }
 
 /* --------------------- the shapes the contract publishes back --------------------- */

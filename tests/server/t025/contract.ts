@@ -69,7 +69,7 @@ export function loadVersioning(): Promise<Namespace> {
       throw new Error(
         `${VERSIONING} does not load.\n` +
           `  backend.md §T025 owns \`lib/server/versioning/**\` and publishes ` +
-          `\`inferBlueprintBump\`, \`inferOntologyBump\` and \`checkDeclaredBump\`.\n` +
+          `\`inferBlueprintBump\` and \`checkDeclaredBump\`.\n` +
           `  This is a failed acceptance criterion — the service is absent — and not a ` +
           `broken test. The specifier is a literal so the \`@\` alias resolves; if the ` +
           `barrel is published somewhere else, the contract has to say so.`,
@@ -88,31 +88,38 @@ export function loadVersioning(): Promise<Namespace> {
  * surface. `BumpLevel`, `BumpAnalysis`, `inferBump`, `checkVersionChain`, `parseSemver`
  * and `compareSemver` are **consumed from `@/lib/core`, never reimplemented**, so they are
  * imported statically above and are not looked for here.
+ *
+ * `inferOntologyBump` was the third name this block published and it is gone (§11.0 Q26).
+ * The owner had vocabulary versioning removed on 2026-09-05, so there is no ontology
+ * version for a bump to be a bump OF: terms move inside the one vocabulary through
+ * `deprecated`. The name is struck here rather than left failing, because a contract that
+ * keeps demanding a capability the owner repealed reports a defect in the implementation
+ * for obeying an instruction.
  */
 export const PUBLISHED = {
   inferBlueprintBump:
     "inferBlueprintBump(previous: BlueprintSnapshot, next: BlueprintSnapshot): BumpAnalysis, " +
     "where BlueprintSnapshot is { dot: string; cardRefs: readonly string[] }",
-  inferOntologyBump:
-    "inferOntologyBump(previous: readonly OntologyTerm[], next: readonly OntologyTerm[]): " +
-    "BumpAnalysis",
   checkDeclaredBump:
-    'checkDeclaredBump(subject: "card" | "bundle" | "ontology", previous: string, ' +
+    'checkDeclaredBump(subject: "card" | "bundle", previous: string, ' +
     "declared: string, inferred: BumpAnalysis): Diagnostic[]",
 } as const;
 
 /**
  * "otherwise one diagnostic at **`error`** severity carrying the engine's own `reasons`,
- * with the code mapped from `subject`: `card/`, `bundle/` or `ontology/version-bump-too-small`."
+ * with the code mapped from `subject`: `card/` or `bundle/version-bump-too-small`."
  *
  * The mapping is the function's, not the caller's — that is the whole point of the closed
- * union — so it is asserted here rather than left to whoever calls it. All three codes are
+ * union — so it is asserted here rather than left to whoever calls it. Both codes are
  * in `@/lib/core`'s `DiagnosticCode`.
+ *
+ * The `ontology` subject went with `inferOntologyBump` (§11.0 Q26): it named the third
+ * release kind, and there are two. Removed from the list rather than from the cells, so
+ * every `it.each` over this object below keeps its card and bundle arms.
  */
 export const SUBJECT_CODES = {
   card: "card/version-bump-too-small",
   bundle: "bundle/version-bump-too-small",
-  ontology: "ontology/version-bump-too-small",
 } as const;
 
 export type Subject = keyof typeof SUBJECT_CODES;
@@ -155,13 +162,9 @@ export function requiredFn(mod: Namespace, name: keyof typeof PUBLISHED): Unknow
   return value as UnknownFn;
 }
 
-/** The three bindings, each fetched through the barrel and checked against its clause. */
+/** The two bindings, each fetched through the barrel and checked against its clause. */
 export async function inferBlueprintBump(): Promise<UnknownFn> {
   return requiredFn(await loadVersioning(), "inferBlueprintBump");
-}
-
-export async function inferOntologyBump(): Promise<UnknownFn> {
-  return requiredFn(await loadVersioning(), "inferOntologyBump");
 }
 
 export async function checkDeclaredBump(): Promise<UnknownFn> {

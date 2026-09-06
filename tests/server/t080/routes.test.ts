@@ -35,7 +35,6 @@ import {
   insertAccount,
   insertBundle,
   insertCard,
-  insertOntologyVersion,
   insertRelease,
   manifest,
   mark,
@@ -116,7 +115,6 @@ beforeAll(async () => {
     action: "route-hidden-action",
   });
 
-  const ontology = await insertOntologyVersion(s, "0.1.0", "sha256:route-ontology");
   const bundle = await insertBundle(s, { owner, slug: SLUG });
   await insertRelease(s, {
     bundle,
@@ -126,7 +124,6 @@ beforeAll(async () => {
     autonomy: { autonomyClass: "supervised", level: 2, ontologyVersion: "0.1.0" },
     security: { level: 3, raw: 3, penalties: [], findings: [], rationale: "4 − 1.00 → 3" },
     phaseCoverage: { covered: [PHASE], missing: [], byPhase: {}, unphased: [] },
-    scoredOntologyVersionId: ontology.id,
   });
 
   const sealed = await insertBundle(s, { owner, slug: SEALED_SLUG, visibility: "private" });

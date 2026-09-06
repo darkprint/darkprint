@@ -38,11 +38,15 @@ import { SupportButton, WatchButton } from "./SocialControls";
    create flow at `/new`, which hands back a real bundle. Neither claims to write to an
    account beyond what it says.
 
-   ── `validated`, and why it does not contradict `EvidenceLayers` ──
+   ── `validated`, and what it does not claim ──
    "Blueprints of OTHER accounts this one downloaded, ran, and reported statistics for" is a
-   claim about runs, and a given blueprint's own `Run evidence` panel
-   (`components/blueprint/EvidenceLayers.tsx`) may still say "no verified runs" honestly —
-   the two do not disagree. `validated` is `getProfile`'s own count over `run_report`
+   claim about runs. It used to be read against a given blueprint's own `Run evidence`
+   panel, which said "no verified runs" on every blueprint, and the note here argued the
+   two did not disagree. There is no such panel: the owner took the scoring reading off the
+   blueprint page and `components/blueprint/EvidenceLayers.tsx` was deleted on 2026-09-04
+   once nothing mounted it. So this figure is now the only place either statement is made,
+   which raises rather than lowers what it owes a reader. `validated` is `getProfile`'s own
+   count over `run_report`
    (D-131-06, distinct bundles, public only, third parties only), which is real: T180 wires
    the submission `POST /api/blueprints/[owner]/[slug]/runs` reaches. What is still absent
    is INSTRUMENTATION — nothing here measures an actual execution, only what a caller
@@ -54,9 +58,7 @@ export function ProfileHeader({
   author,
   blueprints,
   cards,
-  downloads,
   stars,
-  validated,
   joinedAt,
   watchers,
   support,
@@ -67,12 +69,8 @@ export function ProfileHeader({
   /** Counted off the archive by the caller. */
   blueprints: number;
   cards: number;
-  /** Summed via `getSignalsMany` over this account's own live bundles (`load.ts`). */
-  downloads: number;
   /** Summed via `getSignalsMany` over this account's own bundles and published cards. */
   stars: number;
-  /** `getProfile`'s own count over `run_report` (T131, D-131-06). */
-  validated: number;
   /** ISO date, rendered at month resolution. */
   joinedAt: string;
   watchers: number;
@@ -124,25 +122,29 @@ export function ProfileHeader({
             </p>
           )}
 
-          {/* Counted, so no marker. The counts are `text-fg` against a `text-dim` line so
-              the figures read first and the nouns second. */}
-          <p className="mt-1 font-mono text-[11px] text-dim">
-            <span className="text-fg">{blueprints}</span> blueprint
-            {blueprints === 1 ? "" : "s"} · <span className="text-fg">{cards}</span> card
-            {cards === 1 ? "" : "s"}
-          </p>
+          {/* One line, three figures, on the owner's instruction (2026-09-06): "just show
+              the number of blueprints, cards and stars, remove downloads and validated".
 
-          {/* Community signals, folded in from the panel that used to sit below the fold
-              on the overview tab alone. Every figure here is a real sum or a real count
-              (`load.ts`'s header has the ledger), so there is no amber marker to carry and
-              no disclaimer to append — and since 2026-08-25 no green tick either, on the
-              owner's instruction: a counted number does not need a badge saying so. */}
+              It was two lines until then, the second carrying `downloads · stars ·
+              validated`. `downloads` and `validated` are DROPPED FROM THE SURFACE ONLY. Both
+              are still counted and still published by `components/profile/load.ts`, and
+              `validated` in particular is `getProfile`'s own count over `run_report`
+              (D-131-06) — so nothing about what the account holds has changed, only what
+              this header says about it. The paragraph above this one used to argue what
+              `validated` did and did not claim; that argument moved to the props below,
+              because a claim nobody renders still governs whoever renders it next.
+
+              Counted, so no marker. The counts are `text-fg` against a `text-dim` line so
+              the figures read first and the nouns second. Each noun agrees with its own
+              figure: the line read "1 stars" until this pass, because `stars` was the one
+              of the three that hard-coded its plural. */}
           <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-dim">
-            <span className="text-fg">{compact(downloads)}</span> downloads
+            <span className="text-fg">{blueprints}</span> blueprint
+            {blueprints === 1 ? "" : "s"}
             <span className="text-faint">·</span>
-            <span className="text-fg">{compact(stars)}</span> stars
+            <span className="text-fg">{cards}</span> card{cards === 1 ? "" : "s"}
             <span className="text-faint">·</span>
-            <span className="text-fg">{compact(validated)}</span> validated
+            <span className="text-fg">{compact(stars)}</span> star{stars === 1 ? "" : "s"}
           </p>
         </div>
 

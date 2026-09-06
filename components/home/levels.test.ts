@@ -151,11 +151,20 @@ describe("the two-scales claim survives the panel that carried it", () => {
    * no number beside it."
    *
    * WHAT DOES NOT GO WITH IT is the constraint. Doc 2 §1.1 says the class is a name and no
-   * number goes beside it, and that is enforced where it can be — in the renderers, not in
-   * a paragraph. `ScoreRadar` filters `autonomy` out of its spokes because the band is not
-   * a length; `MetricBars` refuses to draw it as one; `lib/content/view.ts` keeps the
-   * fraction on the metric only so the six sit on one axis and says so at the field. The
-   * deleted sentences were the site TELLING a reader about a rule it already obeys.
+   * number goes beside it. That used to be enforced in the renderers: `MetricBars` refused
+   * to draw the band as a length, and the scorecard radar filtered `autonomy` out of its
+   * spokes for the same reason. `MetricBars` was deleted on 2026-09-04 and
+   * `components/ui/ScoreRadar.tsx` on 2026-09-06, both once nothing mounted them, so as of
+   * 2026-09-06 the count of renderers enforcing it is ZERO, and stating it that plainly is
+   * the point: the enforcement did not move, the surfaces did. No component ships that
+   * draws any of the six metrics as a length, so there is nothing left for the band to be
+   * drawn wrongly by.
+   *
+   * What still holds the constraint is the data and this file. `lib/content/view.ts` keeps
+   * the fraction on the metric only so the six sit on one axis and says so at the field.
+   * The negative case above is the live guard, and with no renderer left it is the whole
+   * of it, which is a narrower enforcement than the paragraph above described yesterday.
+   * The deleted sentences were the site TELLING a reader about a rule it already obeys.
    *
    * The negative case above survives and is the one that was doing real work: it fails if
    * any surface starts calling the ladder the one numbered thing on the site. A rule worth

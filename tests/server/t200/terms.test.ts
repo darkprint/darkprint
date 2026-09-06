@@ -3,12 +3,15 @@
 
    D-200-17 settled what `searchTerms` quantifies over, and it is
    the answer that makes AC1 satisfiable at all: BOTH corpora. The
-   registry's terms live in `ontology_term`, and a bundle's local
-   overlay "travels with the release that declares it
-   (`release.localVocabulary`)" — `lib/db/schema.ts`'s own words.
-   Reading `ontology_term` alone leaves `origin=local` filtering
-   NOTHING, EVER, for a key the contract says may not change, so
-   AC1 would be dead on a live URL parameter.
+   registry's terms are `CORE_ONTOLOGY`, in the process, and a
+   bundle's local overlay "travels with the release that declares
+   it (`release.localVocabulary`)" — `lib/db/schema.ts`'s own
+   words. Reading the registry half alone leaves `origin=local`
+   filtering NOTHING, EVER, for a key the contract says may not
+   change, so AC1 would be dead on a live URL parameter. The
+   registry half was `ontology_term` until
+   `0009_drop_ontology_versioning` dropped that table; which corpus
+   is which did not move with it.
 
    The other half of that ruling is AC4's, and it is in
    `privacy.test.ts`: a local term is not a row with a visibility
@@ -27,16 +30,12 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { CORE_ONTOLOGY } from "@/lib/core";
-
 import { FACET_KEYS, PARAMS, fingerprint, itemKey, sameSet, search } from "./contract";
 import {
   anonymous,
   dropScratchDatabases,
   insertAccount,
   insertBundle,
-  insertOntologyTerm,
-  insertOntologyVersion,
   insertRelease,
   manifest,
   mark,
@@ -65,13 +64,9 @@ const ORIGINS = ["core", "local", "deprecated"] as const;
 beforeAll(async () => {
   await setup.run(async () => {
     s = await scratchDatabase();
-    const ontology = await insertOntologyVersion(s, CORE_ONTOLOGY.version);
-    for (const term of CORE_ONTOLOGY.terms) {
-      await insertOntologyTerm(s, {
-        versionId: ontology.id,
-        term: term as unknown as Record<string, unknown>,
-      });
-    }
+    /* The core vocabulary used to be seeded into `ontology_version` / `ontology_term` here.
+       0009 dropped both: the registry keeps one vocabulary, `CORE_ONTOLOGY` in the process,
+       merged per bundle with `release.local_vocabulary`. Nothing to seed. */
 
     const owner = await insertAccount(s, mark("t200v"));
 
@@ -83,10 +78,10 @@ beforeAll(async () => {
 
        That row was a state NO WRITER IN THIS PRODUCT PRODUCES, which is the shape this
        project has been charged for before. The registry half of the corpus was always
-       whatever the seed wrote, and the seed writes `CORE_ONTOLOGY.terms`, none of which is
-       deprecated — v0.1.0 is the first version of the vocabulary, so nothing has been
-       superseded yet, and `core.ts`'s own header says so. The registry half is
-       `CORE_ONTOLOGY` itself now, and a fixture cannot add to it.
+       whatever the seed wrote, and the seed wrote `CORE_ONTOLOGY.terms`, none of which is
+       deprecated — nothing in the vocabulary has been superseded yet, and `core.ts`'s own
+       header says so. Since 0009 there is no table to seed at all: the registry half is
+       `CORE_ONTOLOGY` itself, and a fixture cannot add to it.
 
        The other corpus cannot supply one either: `parseOntologyTerms`
        (`lib/content/ontology-file.ts`) reads `id`, `kind`, `label`, `description`, `since`,
@@ -113,11 +108,12 @@ beforeAll(async () => {
             kind: "tool",
             label: `A local tool ${localToken}`,
             description: "Declared by this release and by nothing else.",
-            since: CORE_ONTOLOGY.version,
+            /* The literal `core.ts` gives every core term. It is the release doc 3 was
+               published as, not a vocabulary version: there is no vocabulary version. */
+            since: "0.1.0",
           },
         ],
       },
-      scoredOntologyVersionId: ontology.id,
     });
 
     t = { localTermId, localToken, missToken: mark("no-such-term") };
@@ -141,13 +137,17 @@ describe("D-200-17 `searchTerms` reads both corpora", () => {
     const ids = await termIds({});
     expect(
       ids.length,
-      "the fixture seeds 49 core terms plus one deprecated registry term plus one local term",
+      "the corpus is `CORE_ONTOLOGY`'s terms plus the one local term this fixture declares " +
+        "on a release. It said `49 core terms plus one deprecated registry term plus one " +
+        "local term` while the core half was seeded rows; the floor is unchanged and only " +
+        "the count's source moved.",
     ).toBeGreaterThanOrEqual(50);
     expect(ids, "a core term").toContain("agent");
     expect(
       ids,
-      `the local term, which lives on \`release.localVocabulary\` and in no \`ontology_term\` ` +
-        `row. D-200-17 refused the registry-only reading because it leaves \`origin=local\` ` +
+      `the local term, which lives on \`release.localVocabulary\` and nowhere in ` +
+        `\`CORE_ONTOLOGY\`. D-200-17 refused the registry-only reading because it leaves ` +
+        `\`origin=local\` ` +
         `filtering nothing, ever, for a key the contract says may not change.`,
     ).toContain(t.localTermId);
   });
@@ -186,7 +186,7 @@ describe("AC1 every key on /ontology narrows", () => {
     expect(
       ids,
       "AC1 `origin=core` must exclude a term that travels on a release rather than living " +
-        "in `ontology_term`.",
+        "in `CORE_ONTOLOGY`.",
     ).not.toContain(t.localTermId);
   });
 

@@ -302,14 +302,12 @@ export interface AutonomyResult {
   contributions: AutonomyContribution[];
   /** The threshold rule that produced the level, e.g. "0.80 ≥ 0.70 → level 3". */
   rationale: string;
-  /**
-   * Doc 3 §8 — the vocabulary this score was computed against. Taken from the view the
-   * blueprint was resolved with, not from `config.ontologyVersion`: the honest answer is
-   * the vocabulary the metric actually queried, which for a bundle carrying an older
-   * ontology is that older one. A local §7 overlay does not change it, because
-   * `ontologyView` keeps the base version.
+  /*
+   * There is no `ontologyVersion` here. It named the vocabulary this reading was taken
+   * against, which mattered only while two vocabularies could exist at once. There is one
+   * living vocabulary and it carries no version, so the field could report nothing a
+   * reader could act on and every consumer of it had to carry a string forward for that.
    */
-  ontologyVersion: string;
   diagnostics: Diagnostic[];
 }
 
@@ -362,8 +360,6 @@ export function computeAutonomy(
 ): AutonomyResult {
   const diagnostics: Diagnostic[] = [];
   const contributions = contributionsFor(bp);
-  // Doc 3 §8: whatever else this returns, it says which vocabulary produced it.
-  const ontologyVersion = bp.ontology.ontology.version;
 
   const totalNodes = contributions.length;
   // Three categories, not two. A node counts as unattended only when a card says how it
@@ -396,7 +392,6 @@ export function computeAutonomy(
       totalNodes: 0,
       contributions,
       rationale: `Nothing to score. The fraction defaults to 0.00 < ${fmt(config.autonomy.level2)} → level 1 (${labelForLevel(1)}).`,
-      ontologyVersion,
       diagnostics,
     };
   }
@@ -475,7 +470,6 @@ export function computeAutonomy(
     totalNodes,
     contributions,
     rationale: `${unattendedClause(autonomousNodes, totalNodes)}, ${humanClause(humanNodes)}${unresolvedClause(unresolvedIds.length)}.${controlClause(control)} ${comparison} → level ${level} (${label}).`,
-    ontologyVersion,
     diagnostics,
   };
 }

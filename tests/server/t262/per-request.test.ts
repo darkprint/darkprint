@@ -38,7 +38,7 @@ function read(path: string): Source {
   return source;
 }
 
-describe("premise: the five profile routes are still routes", () => {
+describe("premise: the four profile routes are still routes", () => {
   /*
    * A deleted route satisfies "the token is absent" perfectly. So before any absence is read as
    * evidence, each file has to still be a page: it parses, it imports something, and it has a
@@ -55,11 +55,11 @@ describe("premise: the five profile routes are still routes", () => {
   });
 });
 
-describe("D-262-11: the five profile routes go per-request", () => {
+describe("D-262-11: the four profile routes go per-request", () => {
   /*
    * Scoped per route AND per token — the 2x2 rather than one cell over the union. Both tokens
    * are removed together in the obvious implementation, so a cell asserting "neither appears
-   * anywhere in the five" stays green when one route keeps `dynamicParams` and the check finds
+   * anywhere in the four" stays green when one route keeps `dynamicParams` and the check finds
    * the other four clean. That is the masking shape, and it costs nothing to avoid.
    */
   it.each(PROFILE_ROUTES.flatMap((p) => TOKENS.map((t) => [p, t] as const)))(
@@ -82,13 +82,17 @@ describe("D-262-11: the five profile routes go per-request", () => {
 
 describe("`/settings`' clause of D-262-11 is VACUOUS and is recorded rather than banked", () => {
   /*
-   * D-262-11 says the two tokens come off "all five profile routes and `/settings`". Measured on
+   * D-262-11 says the two tokens come off "all five profile routes and `/settings`". That
+   * ruling's own wording is left QUOTED at five and is not silently updated to four: the
+   * `terms` route was deleted on 2026-09-06 (owner: "remove the section Ontology terms"), so
+   * the ruling now governs one fewer route than it names. A quotation that drifts to match
+   * the tree stops being evidence of what was decided. Measured on
    * the tree this suite was written against, `app/settings/page.tsx` carries NEITHER token: the
-   * five profile routes are 1 and 1 each, `/settings` is 0 and 0.
+   * four surviving profile routes are 1 and 1 each, `/settings` is 0 and 0.
    *
    * So an absence assertion over `/settings` passes today, before any work, and would go on
    * passing if the cutover never happened. It is a cell whose subject's default already agrees
-   * with it. Asserting it silently beside the five real ones would add a green that measures
+   * with it. Asserting it silently beside the four real ones would add a green that measures
    * nothing and read as six routes covered.
    *
    * It is written HERE, once, as an explicit statement that the clause is unfalsifiable from
@@ -102,7 +106,7 @@ describe("`/settings`' clause of D-262-11 is VACUOUS and is recorded rather than
         settings.code.includes(token),
         `\`${SETTINGS_ROUTE}\` now contains \`${token}\`. That INVERTS this cell's reason for ` +
           `existing: the clause was vacuous only because the token was absent to begin with. If ` +
-          `the cutover added it, D-262-11 is being contradicted and the five-route cell above ` +
+          `the cutover added it, D-262-11 is being contradicted and the four-route cell above ` +
           `should be widened to six.`,
       ).toBe(false);
     }
@@ -134,6 +138,7 @@ describe("D-262-11's other door: a route can be pinned static WITHOUT `generateS
    */
   /* Word-boundaried. `export const dynamic` as a plain substring also matches
      `export const dynamicParams`, so the first version of this cell redded all five profile
+     routes as they stood then (four survive; see the quotation note above)
      routes for carrying the token the cell ABOVE already owns — a second cell re-reporting the
      first one's finding, which inflates a count and hides that this clause is really vacuous. */
   const PINS = [

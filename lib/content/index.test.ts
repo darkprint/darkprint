@@ -406,18 +406,27 @@ describe("the registry", () => {
     // list used to say 1.1.0 for all four, which is what an archive looks like when
     // nothing holds it to the rule the site teaches. `cardLibraryProblems` in
     // `lib/content/read.ts` now fails the build on it; this asserts the outcome.
-    const newest: Record<string, string> = {
-      "acceptance-verifier": "2.0.0",
-      "bounded-retry": "2.0.0",
-      "intent-router": "2.0.0",
-      "schema-gate": "1.1.0",
+    //
+    // The OLDEST is named per id too, as of 2026-09-05. It was a shared "1.0.0" and that
+    // was a second claim riding on the first: three of these four still open at 1.0.0, but
+    // `intent-router` was RENAMED 1.0.0 -> 1.1.0 and 2.0.0 -> 2.1.0 when its spec took on
+    // the `lane` emission (§11.0 Q17), so the archive holds no 1.0.0 of it to keep alive.
+    // What this cell is about survives that untouched — `intent-router` still carries two
+    // versions and `frontline-triage` still pins the older of them, which is the whole
+    // claim — so the pair is re-derived from `content/cards/intent-router@*.yaml` rather
+    // than the cell being loosened to stop naming an exact version at either end.
+    const span: Record<string, readonly [newest: string, oldest: string]> = {
+      "acceptance-verifier": ["2.0.0", "1.0.0"],
+      "bounded-retry": ["2.0.0", "1.0.0"],
+      "intent-router": ["2.1.0", "1.1.0"],
+      "schema-gate": ["1.1.0", "1.0.0"],
     };
-    for (const [id, top] of Object.entries(newest)) {
+    for (const [id, [top, bottom]] of Object.entries(span)) {
       const versions = registry.versionsOf(id);
       expect(versions.length).toBeGreaterThanOrEqual(2);
       // Newest first.
       expect([id, versions[0].version]).toEqual([id, top]);
-      expect([id, versions[versions.length - 1].version]).toEqual([id, "1.0.0"]);
+      expect([id, versions[versions.length - 1].version]).toEqual([id, bottom]);
       for (const version of versions) expect(version.usedIn.length).toBeGreaterThan(0);
     }
   });
@@ -465,9 +474,11 @@ describe("the vocabulary", () => {
   it("is structurally sound and is the one every bundle was read against", () => {
     const ontology = getOntologyView();
     expect(ontology.validate()).toEqual([]);
-    // Doc 3 §8. `0.1.0` is doc 3's own number, and the `1.0.0` this assertion used to
-    // carry named the pre-contract vocabulary that was never a published contract.
-    expect(ontology.ontology.version).toBe("0.1.0");
+    /* The version assertion that stood here is gone with the field. What made it worth
+       asserting was that every bundle is read against ONE vocabulary, and that is checked
+       by identity in `read.test.ts`; here the claim left is that the vocabulary is sound
+       and that it is the shipped core with the archive's terms on top. */
+    expect(ontology.get("agent")?.kind).toBe("node-type");
   });
 
   it("carries the archive's one local term, rooted and weighted (doc 3 §7)", () => {
@@ -480,7 +491,7 @@ describe("the vocabulary", () => {
     expect(local?.defaultWeight).toBeGreaterThan(0);
   });
 
-  it("declares exactly the five phases and the nine concrete node types", () => {
+  it("declares exactly the five phases and the ten concrete node types", () => {
     const ontology = getOntologyView();
     expect(ontology.byKind("phase").map((t) => t.id).sort()).toEqual([
       "debugging",
@@ -504,6 +515,7 @@ describe("the vocabulary", () => {
       "manager-loop",
       "parallel",
       "parallel.fan-in",
+      "shell-tool",
       "tool",
       "validation",
     ]);
