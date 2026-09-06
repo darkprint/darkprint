@@ -51,7 +51,7 @@ import { CoverageStrip } from "./PhaseCoverage";
    `lib/types.ts`, so the badge printed one word nine times and distinguished nothing. That
    is a type-level guarantee rather than an observation about today's archive.
 
-   `AutonomyMeter`: the shape line below says what it said, and it was checked against the
+   `AutonomyMeter` (deleted 2026-09-06): the shape line below says what it said, and it was checked against the
    built shelf rather than against its props. The meter can carry three readings — the class,
    how many nodes wait for a person, and how many have NO CARD in the bundle (`resolved:
    false`, which is a different fact from either). Read off all nine rows: seven say "No node
@@ -131,7 +131,7 @@ export function ContentRow({
 }) {
   /* Who waits for a person, by name.
      ------------------------------------------------------------
-     `requiresHuman` and not `total − autonomous`, which is the trap `AutonomyMeter`'s own
+     `requiresHuman` and not `total − autonomous`, which is the trap the deleted `AutonomyMeter`'s
      `partition` documents: a node whose card is missing from the bundle is neither
      unattended nor staffed (`resolved: false`), and subtracting would print a human gate
      where nobody is. Read the flag. */
@@ -216,7 +216,7 @@ export function ContentRow({
             The class is `autonomy.label` from the engine's own `AUTONOMY_CLASS_LABELS` — a
             name, never a level, never a number, never a band (doc 2 §1.1).
 
-            `title` carries the human nodes BY NAME, which is the one thing `AutonomyMeter`
+            `title` carries the human nodes BY NAME, which is the one thing the deleted `AutonomyMeter`
             said that this line does not. See the note where it was removed. */}
         <span
           className="pt-0.5 font-mono text-[11px] text-dim"

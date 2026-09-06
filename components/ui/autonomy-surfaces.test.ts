@@ -74,7 +74,13 @@ describe("the file tree renders something", () => {
   it("found the pages", () => {
     // A scan that silently matched nothing passes every rule below.
     expect(SOURCES.length).toBeGreaterThan(40);
-    expect(SOURCES.map((f) => f.path)).toContain("components/ui/AutonomyMeter.tsx");
+    /* `components/ui/AutonomyMeter.tsx` stood here as the named file, on the argument that a
+       walk which cannot find the one component this suite is about is a walk looking in the
+       wrong place. The owner deleted that component on 2026-09-06 ("about the Autonomy meter:
+       yes, drop") once the upload preview gave up its last mount, so the premise names a
+       surface the rules below still govern instead. `ContentRow` prints the human-presence
+       mark and is read by two of the three sections here. */
+    expect(SOURCES.map((f) => f.path)).toContain("components/ui/ContentRow.tsx");
   });
 });
 
@@ -135,51 +141,35 @@ describe("where a person acts is never painted in the alarm colour", () => {
   });
 });
 
-/* --------------------- 2. the meter's second half --------------------- */
+/* --------------------- 2. the meter's second half, RETIRED --------------------- */
 
-describe("AutonomyMeter is always given the per-node reading", () => {
-  /**
-   * The dark factory token is gated on `isDarkFactory` alone; both counterpart statements
-   * are gated on `contributions !== undefined`. Omit the prop and a closed-loop graph
-   * answers with two tokens while a graph with a person in it answers with one and nothing
-   * in its place, which is the asymmetry the meter exists to avoid and which doc 2 §1.1
-   * makes a product problem rather than a layout one. `/upload` omitted it, on the one
-   * surface where somebody is looking at their own graph.
-   *
-   * Matched on the opening tag rather than on the whole element: the props are all inside
-   * it, self-closing in every call site, and a `>` cannot appear in a JSX attribute name.
-   */
-  it("passes contributions at every call site", () => {
-    const calls: { path: string; tag: string }[] = [];
-    for (const { path, text } of STRIPPED) {
-      let at = text.indexOf("<AutonomyMeter");
-      while (at >= 0) {
-        const close = text.indexOf("/>", at);
-        expect(close, `${path}: unterminated <AutonomyMeter`).toBeGreaterThan(at);
-        calls.push({ path, tag: text.slice(at, close) });
-        at = text.indexOf("<AutonomyMeter", at + 1);
-      }
-    }
+/* `AutonomyMeter is always given the per-node reading` stood here and is retired with its
+   subject, 2026-09-06, on the owner's instruction ("about the Autonomy meter: yes, drop").
 
-    /* The component's own file declares it and does not call it, so a scan that found
-       nothing is a scan that is looking in the wrong place.
+   The rule it enforced: every call site passes `contributions`, because the dark-factory
+   token is gated on `isDarkFactory` alone while both counterpart statements are gated on
+   having the contributions — so omitting the prop made a closed-loop graph answer with two
+   tokens and a graph with a person in it answer with one and nothing in its place. That is
+   the asymmetry doc 2 §1.1 makes a product problem rather than a layout one, and `/upload`
+   committed it once, on the one surface where somebody is looking at their own graph.
 
-       AMENDED (owner-instructed, the scoring reading comes off the blueprint page): the
-       floor was 3 and the three were the blueprint header, `ContentCard` and `Pinned`. All
-       three mounts are gone with the reading they belonged to. `components/upload/
-       ValidationReport.tsx` is the one surface left that draws the meter, over a graph
-       somebody is about to publish. The floor tracks that count rather than being deleted:
-       it is still the blind-scan premise this cell needs, and the rule it guards — every
-       call site passes `contributions` — is untouched and still applies to every mount a
-       future surface adds. */
-    expect(calls.length).toBeGreaterThanOrEqual(1);
-    for (const call of calls) {
-      expect(call.tag.includes("contributions"), `${call.path} omits contributions`).toBe(
-        true,
-      );
-    }
-  });
-});
+   IT IS RETIRED RATHER THAN INVERTED, and the distinction matters. The cell was inverted
+   two hours earlier — the floor of one call site became an assertion of exactly zero — while
+   the component still existed and could have been re-mounted. `components/ui/
+   AutonomyMeter.tsx` is deleted now, so there is no subject to hold and a cell asserting
+   zero mounts of a file that is gone is green in every world.
+
+   WHAT THE COMPONENT'S OWN DOCBLOCK ARGUED, carried here because this is the enforcement
+   site and the argument outlives the file. Doc 2 §1.1 governs how autonomy may be rendered
+   AT ALL, not merely how that one component rendered it: name the class and print no number,
+   because a four-segment gauge reads as two-out-of-four with a gap left to close; carry no
+   class-to-colour ramp, because dim → amber → cyan → emerald is the visual grammar of a
+   warning climbing to a pass, which paints a verdict onto a description; and state
+   `isDarkFactory` in the same chrome as the class it sits beside, the way "acyclic" states a
+   fact about a graph, because neither reading is an award and nothing on this site sorts on
+   either. Sections 1 and 3 below enforce two halves of that against EVERY surface and are
+   untouched; a future component that renders autonomy is held to them without needing to be
+   named here first. */
 
 /* --------------------- 3. what a page asks a visitor to bring --------------------- */
 

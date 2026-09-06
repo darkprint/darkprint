@@ -47,6 +47,70 @@ import {
 /** `TODO(SEAM-<id>)`, built at runtime so the literal never appears in this file. */
 const anchor = (id: number) => "TODO" + `(SEAM-${id})`;
 
+/**
+ * A shipped anchor, `SEAM-<id> LIVE`, and the combined `SEAM-<a>/SEAM-<b> LIVE` form.
+ *
+ * Built at runtime for the same reason `anchor` is, and the reason bit on the first draft:
+ * this suite walks `scripts/`, so a fixture written as a literal IS an anchor in the tree the
+ * checker reads, and `anchors no seam in the tree the checker walks` red on six of them. The
+ * id and the status word are never adjacent in this file's own source.
+ */
+const shipped = (ids: readonly number[], tag = "LIVE") =>
+  ids.map((id) => `SEAM-${id}`).join("/") + " " + tag;
+
+/* ── The two anchor forms the checker could not see until 2026-09-06 ──
+   A seam that has SHIPPED stops being a TODO and is re-marked `SEAM-nn LIVE`, which is the
+   tag `seams.md` uses for a LIVE row. The matcher knew only the TODO form, so all 28 shipped
+   anchors in the tree read as ids that had lost their anchor and the report named 50 drifted
+   seams when the true figure was 22. A checker that over-reports trains its reader to ignore
+   it, which is worse than not running it, and this is the checker committing the failure it
+   exists to catch.
+
+   The list form was found by asking what the ids STILL on the list looked like in the tree
+   rather than trusting the first fix: `app/blueprints/page.tsx:30` opens `SEAM-01/SEAM-02
+   LIVE:` because one read satisfies two rows, and a pattern expecting one id before the
+   status word keeps the last and drops the rest silently. Both are cells here so neither can
+   regress into a number nobody reads. */
+describe("the anchor forms a shipped seam takes", () => {
+  it("counts a LIVE-marked id as an anchor, not a mention", () => {
+    const found = seamIdsIn(`// ${shipped([9101])}: the shelf reads the registry`);
+
+    expect([...found.anchored]).toEqual(["SEAM-9101"]);
+    expect([...found.mentioned]).toEqual([]);
+  });
+
+  it("keeps EVERY id in a combined anchor, not just the one beside the status word", () => {
+    const found = seamIdsIn(`// ${shipped([9102, 9103])}: one read satisfies two rows`);
+
+    expect(
+      [...found.anchored].sort(),
+      "a combined anchor lost an id, which is how a documented seam reads as unanchored",
+    ).toEqual(["SEAM-9102", "SEAM-9103"]);
+  });
+
+  it("reads MOCK and PLANNED the same way, since a doc row may carry either", () => {
+    expect(seamIdsIn(`// ${shipped([9104], "MOCK")}: seeded`).anchored.has("SEAM-9104")).toBe(true);
+    expect(seamIdsIn(`// ${shipped([9105], "PLANNED")}: unbuilt`).anchored.has("SEAM-9105")).toBe(true);
+  });
+
+  /* The control the three cells above need. Quoting has to keep working for the new forms or
+     the use-versus-mention rule holds for one anchor shape and not the other, which is the
+     hole this file was written to close. */
+  it("still answers differently when the only change is the quoting", () => {
+    expect(seamIdsIn(`// ${shipped([9106])}: a real anchor`).anchored.has("SEAM-9106")).toBe(true);
+    expect(seamIdsIn(`// \`${shipped([9106])}\`: quoted`).anchored.has("SEAM-9106")).toBe(false);
+  });
+
+  /* A status word is what separates an anchor from prose. Without this, every sentence that
+     happens to name a seam id becomes an anchor and the drift list empties for the wrong
+     reason — the opposite failure to the one being fixed, and the easier one to ship. */
+  it("does not count a bare id in running prose as an anchor", () => {
+    const found = seamIdsIn(`// SEAM-${9107} is the row this component used to satisfy.`);
+
+    expect([...found.anchored]).toEqual([]);
+  });
+});
+
 describe("use versus mention", () => {
   it("counts a bare token in a comment as an anchor", () => {
     const found = seamIdsIn(`// ${anchor(9001)} (cited at line 12): GET /api/thing`);

@@ -56,7 +56,7 @@ const UNBUILT: readonly { label: string; body: React.ReactNode; live?: boolean }
           href="/upload"
           className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
         >
-          Validate and publish
+          Publish
         </Link>
         , where the topology and its cards land
       </>

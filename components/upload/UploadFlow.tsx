@@ -15,12 +15,12 @@ import {
   type LoadBundleResult,
   type OntologyTerm,
 } from "@/lib/core";
-import { autonomyStatement, cx, METRIC_SOURCE_META } from "@/lib/format";
+import { autonomyStatement, cx } from "@/lib/format";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { KindBadge } from "@/components/ui/Badge";
 import { TagPill } from "@/components/ui/TagPill";
 import { PhaseCoverageBadge } from "@/components/ui/PhaseCoverage";
-import { DiagnosticList, locationLabel } from "@/components/ui/DiagnosticList";
+import { locationLabel } from "@/components/ui/DiagnosticList";
 import {
   BundleDropzone,
   assembleBundle,
@@ -1749,9 +1749,10 @@ export function UploadFlow({
                     </>
                   )}
                 </div>
-                {singleValidation.state === "done" && (
-                  <DiagnosticList diagnostics={singleValidation.diagnostics} title="Validator report" />
-                )}
+                {/* The `Validator report` list came off here on 2026-09-06 with the one in
+                    `ValidationReport.tsx`, on the owner's instruction. The diagnostics are
+                    still computed and still travel in the downloaded report; what left is the
+                    on-screen list. */}
               </div>
             )
           ) : result === undefined ? (
@@ -2066,15 +2067,16 @@ export function UploadFlow({
                     The execution sentence is load-bearing beyond this paragraph. Q13 removes
                     the only other place the site says the platform never watches a run, so
                     after today this is where that promise is made and it stays whole. */}
-                <p className="text-xs leading-relaxed text-muted">
-                  <span className="text-fg">Filled in later:</span>{" "}
-                  <span style={{ color: METRIC_SOURCE_META.reported.color }}>
-                    Cost / time
-                  </span>{" "}
-                  is reported by whoever runs it. The platform never sees the execution.
-                  It arrives with its run count, its spread and the model it was obtained
-                  on.
-                </p>
+                {/* The `Filled in later` paragraph came off here on 2026-09-06, quoted by
+                    the owner in full.
+
+                    IT CARRIED A PROMISE AND THE PROMISE NARROWED RATHER THAN DIED, which is
+                    the part worth knowing. The comment above this one recorded that after
+                    Q13 this was the last place the site said the platform never watches a
+                    run. Measured before cutting: the sentence survives at `:449` of this
+                    file, in the markdown report a reader downloads, and nowhere else that
+                    renders. So it has left the SCREEN and lives only in the exported file.
+                    Every other occurrence in the tree is a code comment. */}
               </div>
 
               <div>

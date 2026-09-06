@@ -247,10 +247,20 @@ describe("a route is called the same thing everywhere", () => {
     ).toEqual([]);
   });
 
+  /* The name is `Publish` since 2026-09-06, on the owner's instruction: "remove Validate and
+     Publish it is only Publish".
+
+     Both halves still asserted, and that is the point of the cell rather than the string in
+     it: the `<h1>` a reader sees and the `metadata.title` a tab and a search result show have
+     to be the SAME name. They drifted apart once, which is why this exists. The route's own
+     docblock records that two HIGH findings in this project were disclaimers lost in a length
+     pass, so the pair is held rather than either one alone. */
   it("titles the upload page under its own name", () => {
     const source = read("app/upload/page.tsx");
-    expect(source).toContain('title="Validate and publish"');
-    expect(source).toContain('title: "Validate and publish",');
+    expect(source).toContain('title="Publish"');
+    expect(source).toContain('title: "Publish",');
+    // And the old name does not survive in either place, so a partial rename reds.
+    expect(source).not.toContain("Validate and publish");
   });
 
   it("never puts one label on two routes", () => {

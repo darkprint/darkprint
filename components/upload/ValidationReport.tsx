@@ -2,11 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { isReleasable, shortDigest, summarize, type LoadBundleResult } from "@/lib/core";
-import { autonomyStatement, cx } from "@/lib/format";
+import { cx } from "@/lib/format";
 import { graphForBlueprint } from "@/lib/graph-seed";
-import { SourceBadge } from "@/components/ui/Badge";
-import { AutonomyMeter } from "@/components/ui/AutonomyMeter";
-import { DiagnosticList } from "@/components/ui/DiagnosticList";
 import { SourcePanel } from "@/components/ui/SourcePanel";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
 import { BLOCK_MAX_HEIGHT, BLOCK_WIDTH } from "@/components/graph/block";
@@ -26,10 +23,6 @@ import { bundleProgress } from "./progress";
  */
 const DOT_FILE = "topology.dot";
 
-function clamp(value: number, low: number, high: number): number {
-  return value < low ? low : value > high ? high : value;
-}
-
 /**
  * "2 errors · 1 warning", or the affirmative form. Words, never a colour alone.
  *
@@ -48,7 +41,6 @@ export function verdictLine(result: LoadBundleResult): string {
   return parts.length === 0 ? "nothing to report" : parts.join(" · ");
 }
 
-const LABEL = "label";
 
 /**
  * What the validator found, and — only when it found nothing fatal — the schematic and
@@ -171,9 +163,6 @@ export function ValidationReport({
      over when something did. */
   const source = blueprint?.dot ?? dot;
 
-  const securityPercent =
-    analysis === undefined ? 0 : Math.round((clamp(analysis.security.raw, 0, 4) / 4) * 100);
-
   return (
     <div className={cx("flex flex-col gap-5", className)}>
       {/* ---------- verdict strip ---------- */}
@@ -286,78 +275,25 @@ export function ValidationReport({
         </div>
       )}
 
-      {/* ---------- every complaint, errors first ---------- */}
-      <DiagnosticList diagnostics={result.diagnostics} title="Validator report" />
+      {/* THREE READINGS CAME OFF THIS PREVIEW, 2026-09-06, on the owner's instruction:
+         "in preview of the upload, remove Validator report, Auto-computed from your graph,
+         Autonomy and static risk sections as we removed that feature."
+
+         `Validator report` was the whole diagnostic list. `Auto-computed from your graph`
+         was the heading over the pair, and the pair was `Autonomy` (the meter and its
+         per-node contributions) and `Static risk exposure`. They were the last mounts of
+         the scoring reading the owner has been taking off the site since 2026-09-04, and
+         this was the surface where it survived longest because it is the one place a reader
+         is looking at their OWN graph rather than somebody else's.
+
+         WHAT STAYS, and it is the reason this is a sub-range cut rather than dropping the
+         `usable` branch whole: `BlueprintCanvas` below is the drawing of the uploaded graph,
+         and the topology panel under it is the file. Neither is a score. An earlier pass
+         nearly deleted `BlueprintCanvas` as dead and it is live only here, so the branch
+         that renders it is load-bearing. */}
 
       {usable && (
         <>
-          <div className="flex flex-col gap-4">
-            <div>
-              <h3 className="font-display text-xl font-semibold text-fg">
-                Auto-computed from your graph
-              </h3>
-              <p className="prose-lane mt-2 text-sm leading-relaxed text-muted">
-                Both of these are produced by static analysis of the schematic the
-                moment it validates, no run required.
-              </p>
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-2">
-              {/* Autonomy */}
-              <div className="panel flex flex-col gap-3 bg-surface-2/40 p-5">
-                <div className="flex items-center justify-between">
-                  <span className={LABEL}>Autonomy</span>
-                  <SourceBadge source="auto" />
-                </div>
-                {/* The per-node reading goes with the class here for the same reason it
-                    does on the gallery tile and the blueprint header: the dark factory
-                    token is gated on the flag alone, while both counterpart statements
-                    are gated on having the contributions. Without them a closed-loop
-                    upload answered with two tokens and a supervised one with a single
-                    token and nothing in its place — on the one surface where somebody is
-                    looking at their own graph, which is exactly where doc 2 §1.1 says the
-                    asymmetry does its damage. */}
-                <AutonomyMeter
-                  autonomy={{
-                    autonomyClass: analysis.autonomy.autonomyClass,
-                    isDarkFactory: analysis.autonomy.isDarkFactory,
-                    level: analysis.autonomy.level,
-                    label: analysis.autonomy.label,
-                    blurb: autonomyStatement(analysis.autonomy.rationale),
-                  }}
-                  contributions={analysis.autonomy.contributions}
-                />
-                <p className="font-mono text-xs text-dim">
-                  {analysis.autonomy.autonomousNodes} of {analysis.autonomy.totalNodes}{" "}
-                  nodes run unattended
-                </p>
-                <p className="text-xs leading-relaxed text-muted">
-                  {autonomyStatement(analysis.autonomy.rationale)}
-                </p>
-              </div>
-
-              {/* Security */}
-              <div className="panel flex flex-col gap-3 bg-surface-2/40 p-5">
-                <div className="flex items-center justify-between">
-                  <span className={LABEL}>Static risk exposure</span>
-                  <SourceBadge source="auto" />
-                </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="font-display text-3xl font-semibold text-cyan tabular-nums">
-                    {securityPercent}
-                  </span>
-                  <span className="font-mono text-xs text-dim">/ 100</span>
-                </div>
-                <p className="font-mono text-xs text-dim">
-                  level {analysis.security.level} · {analysis.security.raw.toFixed(2)} of
-                  4 points kept
-                </p>
-                <p className="text-xs leading-relaxed text-muted">
-                  {analysis.security.rationale}
-                </p>
-              </div>
-            </div>
-          </div>
 
           {/* The ledger the two readings are made of: every contribution and every
               finding, cross-referenced by node. The drawing above is the other half. */}

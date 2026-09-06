@@ -44,9 +44,9 @@ export const metadata: Metadata = {
      editor — and the divergence between the reading taken here and the registry's own.
      Two HIGH findings in this project were disclaimers going missing during a length
      pass. `components/site/nav.test.ts` holds the chrome to this name. */
-  title: "Validate and publish",
+  title: "Publish",
   description:
-    "Validate and publish a blueprint bundle. DarkPrint resolves it in your browser. It names the autonomy class and reports static risk exposure before a release is created.",
+    "Publish a blueprint bundle to the DarkPrint registry. DarkPrint resolves it in your browser and reports what it could not resolve. Publishing needs an account.",
 };
 
 /**
@@ -226,8 +226,8 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
         <SectionHeading
           as="h1"
           className="mt-3"
-          title="Validate and publish"
-          lead="Choose a blueprint bundle and resolve it in your own tab. You get explainable diagnostics and an autonomy class. You also get a bounded static risk-exposure reading before the separate publish step."
+          title="Publish"
+          lead="Choose a blueprint bundle and resolve it in your own tab. You get explainable diagnostics on anything that does not resolve. Publishing a release needs an account."
         />
         {/* ── Where the folder in front of the reader came from ──
             The population arriving here changed. Until now the only person with a bundle

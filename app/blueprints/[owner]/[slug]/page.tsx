@@ -688,6 +688,7 @@ export default async function Page({
 
           It was a `flex-col` of two rows, and neither of them was a deliberate arrangement
           any more. `AutonomyMeter` used to sit beside the kind badge carrying the class and
+          the per-node reading; the component itself was deleted on 2026-09-06, and
           the per-node reading; the owner asked that reading off this page, off the gallery
           tile and off the pinned card in the same pass, so a reader does not meet on a shelf
           what the detail page no longer says. What was left was a row holding one chip,

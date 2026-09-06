@@ -46,7 +46,27 @@ const CODE_DIRS = ["app", "components", "lib", "packages", "scripts"];
 
 // Split so this script's own source does not contain the token it searches for. It walks
 // `scripts/`, so a literal here would anchor a seam in the checker itself.
-const SEAM_TOKEN = new RegExp("TODO" + "\\(SEAM-(\\d+)\\)", "g");
+//
+// TWO FORMS, because the code has always had two and this checker only ever read one.
+// `TODO(SEAM-nn)` marks a seam that is still to be wired. A seam that HAS shipped stops
+// being a TODO and is re-marked `SEAM-nn LIVE`, which is the convention `seams.md` itself
+// uses for a LIVE row — and for as long as this regex knew only the first form, every one
+// of those re-markings read as an anchor that had disappeared. Measured 2026-09-06:
+// 66 ids carry the TODO form, 28 carry the LIVE form, and all 28 were being reported as
+// "in the doc, missing from the code" while sitting in the tree with an anchor on them.
+//
+// That is the failure this checker exists to prevent, committed by the checker: a report
+// that names 50 drifted ids when the real number is far smaller trains its reader to
+// ignore it, which is worse than not running it. The status word is captured so a later
+// pass can hold a doc row's tag against the anchor's; nothing reads it yet.
+const SEAM_TODO = new RegExp("TODO" + "\\(SEAM-(\\d+)\\)", "g");
+// A shipped anchor, and it may name MORE THAN ONE id. `app/blueprints/page.tsx:30` opens
+// `SEAM-01/SEAM-02 LIVE:` because one read satisfies two rows, and a pattern that expects a
+// single id immediately before the status word silently keeps the last of them and drops the
+// rest. Found the same way the LIVE form itself was found: by asking what the ids still on
+// the drift list actually look like in the tree, rather than trusting the first fix.
+const SEAM_SHIPPED = /(SEAM-\d+(?:\s*\/\s*SEAM-\d+)*)\s+(?:LIVE|MOCK|PLANNED)\b/g;
+const SEAM_ID = /SEAM-(\d+)/g;
 
 function walk(dir, onFile) {
   for (const entry of readdirSync(dir)) {
@@ -115,8 +135,12 @@ export function seamIdsIn(text) {
 
   const anchored = new Set();
   const mentioned = new Set();
-  for (const m of text.matchAll(SEAM_TOKEN)) {
+  for (const m of text.matchAll(SEAM_TODO)) {
     (quoted(m.index) ? mentioned : anchored).add(`SEAM-${m[1]}`);
+  }
+  for (const m of text.matchAll(SEAM_SHIPPED)) {
+    const into = quoted(m.index) ? mentioned : anchored;
+    for (const id of m[1].matchAll(SEAM_ID)) into.add(`SEAM-${id[1]}`);
   }
   return { anchored, mentioned };
 }

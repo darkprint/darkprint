@@ -209,8 +209,26 @@ const FROZEN: readonly Frozen[] = [
        Third amendment (owner-instructed, 2026-08-25): the Publish button left the chrome,
        so the /upload parity cells inverted — NAV must hold no /upload row and the source
        must carry no /upload href. Falsified before this pin moved: a probe link in the
-       header reds the flipped cell by name. */
-    sha256: "19031596108e72d7c57e14b5c1e0b6c231f8af61128bd6722b0f63d582e55667",
+       header reds the flipped cell by name.
+
+       Eighth amendment (owner-instructed, 2026-09-06): "remove Validate and Publish it is
+       only Publish". The upload route's `<h1>` and its `metadata.title` both became
+       `Publish`, and this file is where the two are held together because they drifted apart
+       once.
+
+       THE CELL GOT STRICTER RATHER THAN BEING RETARGETED. It asserted both names; it now also
+       asserts the OLD name survives in neither, so a half-done rename reds where before it
+       would have passed on whichever half had been updated. Falsified before this pin moved:
+       renaming only the `<h1>` and leaving `metadata.title` red the cell by name, and
+       `app/upload/page.tsx` was restored from a `cp` copy and verified byte-identical with
+       `diff -q`.
+
+       The owner's other half needed no code and is recorded because a reader will look for
+       it: "only if u are a register user u can publish" is ALREADY TRUE, verified rather than
+       built. `canPublish` requires `session.state === "ready"`, `doPublish` re-checks it
+       before sending, and `components/upload/session.ts` keeps anonymous, no-handle and
+       unreachable apart so each gets its own sentence instead of one dead button. */
+    sha256: "835a906a8d1c3431faa567f43a03702ccc1fe49803e1fedf714df2cffe7edf13",
     why: "AC5 names it must-pass-unchanged. D-262-06 turns that into a constraint on the cutover: it imports `ACCOUNT_MENU` as a module-scope array and reads `.href` off every row, and a static import of a static array is what a per-request session cannot be. AMENDED ONCE, by ruling (D-262-29, owner-stated 2026-08-25): `/welcome` was added as a route no header may link, its `ELSEWHERE` exemption edited this file, and this pin was moved in the SAME commit. The freeze fired correctly — an author editing a guard so their own change passes is exactly what it watches for — and the amendment is recorded rather than quietly re-baselined. The exemption was falsified before the pin moved: a throwaway top-level route still reds the assertion, so the guard was narrowed by one named route and not blunted. AMENDED AGAIN at T280 (owner-instructed wiring wave, 2026-08-25): `/new` joined `ELSEWHERE` (a creation form reached from the profile shelf's own button, same reasoning as `/upload`), and the same falsification ran before this pin moved — a throwaway `app/zzz-probe` route still reds by name.",
   },
   {

@@ -124,9 +124,9 @@ const ACTIONS = [
   {
     index: "04",
     href: "/upload",
-    label: "Validate and publish",
+    label: "Publish",
     title: "Publish",
-    text: "Validation checks the bundle, then one exact version goes back for others to fetch.",
+    text: "The bundle is resolved in your browser, then one exact version goes back for others to fetch.",
     image: "/home/lifecycle/publish.webp",
   },
 ] as const;
