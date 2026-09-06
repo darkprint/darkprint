@@ -114,6 +114,34 @@ T261 merge (`97acee5`) that first re-derived this table at 25/14/0, and two sinc
    before quoting either number, and read note 3's list as naming `/spec/ontology` among
    the prerendered when it is not one any more.
 
+8. **`/spec/ontology` is deleted, the vocabulary folds into `/spec/card`, and the total is
+   25.** The owner asked whether the ontology should exist as a specification at all
+   (*"do we really need the ontology defined in /spec/ontology or we can keep only the
+   attractor?"*), was argued against deleting the vocabulary and for three changes, and
+   answered *"The motivations you provided are sound. Apply them"* (D-156). One of the three
+   is this route. **`find app -name page.tsx | wc -l` answers 25 against the working tree**,
+   walked rather than decremented, which is the eighth consecutive pass to re-derive this
+   number rather than carry arithmetic on the one before it. **One walk in the middle of
+   this pass answered 26 and it was not a real route**: another lane was writing
+   `app/spec/ontology/` at that instant and the file existed for less than a minute. The
+   figure was re-walked three times and answered 25 each time, and `npm run
+   check:docs-drift` reported no route drift on each. **A count taken while a peer lane is
+   editing is a reading of a moment**, and the fix is to walk it more than once rather than
+   to trust the first answer. **`app/ontology/[...term]/page.tsx`
+   survives a second fold and every term URL is unchanged**, which is the same asymmetry note 7
+   records for a different destination: `/ontology` is an exact-path 308 and cannot shadow the
+   catch-all beneath it, and the terms never moved under a `/spec/` prefix in either fold.
+   **The prerendered figure is carried forward for an eighth time and this wave moves the
+   staleness from one page onto another.** Note 7 predicted 13 rather than 14 because
+   `/spec/ontology` had taken `export const dynamic = "force-dynamic"`. That route is gone and
+   `/spec/card` inherits the browser and its segment config, so the static set still loses
+   exactly one member and **13 remains the honest expectation** — arrived at along a different
+   path, over a different route, which is why it is restated rather than carried. **It is an
+   expectation and not a measurement**: the wave is uncommitted, `prebuild` rewrites
+   `public/**`, a dev server owns `.next`, and no build was run. Read note 3's list as naming
+   `/spec/ontology` among the fourteen prerendered when that route no longer exists, and as
+   naming `/spec/card` among them when it is no longer one of them either.
+
 The build's own route table still prints only `○ (Static)` and `ƒ (Dynamic)` — every
 registry-reading page renders per request since T261 and appears in neither manifest
 map, and the `● (SSG)` legend line stays gone because nothing uses
@@ -287,15 +315,14 @@ bundles and ontology-usage routes listed above are outside it and are not in the
 | `/new` | `app/new/page.tsx` | session, per-request | **The GitHub-style "Create repository" verb (0007_drafts, T280).** Three states, not one: no session shows the door in (`SignInButtons`) rather than a form that would 401 on submit; a session with `handle: null` (T050 AC1) is sent to finish signing up rather than shown a form that cannot name an owner; only a complete session sees `CreateBundleForm` — title, a slug derived from the title until touched directly (checked debounced against `GET /api/names/slugs/{owner}/{slug}`), summary, description, category, tags, and a visibility choice that starts on the account's own default (D-100-01). Submits `POST /api/bundles/draft` and on success navigates straight to the reserved bundle's own page, which mounts `DraftLanding` since it has no release yet | LIVE | `ProfileHeader`'s `New blueprint` button (owner view, `SEAM-64`), `/u/[username]`'s empty-state `Start a blueprint` action, `/skill`'s `accounts` row |
 | `/nodes` | `app/nodes/page.tsx:15` | public | Node-card library index, grouped by node type; per-request from `server/registry` since T260 (`force-dynamic`), `NodeBrowser` still filters client-side from the query string | LIVE | header Browse (`SiteHeader.tsx:52`), footer Browse, `/mcp:398` |
 | `/nodes/[...id]` | `app/nodes/[...id]/page.tsx` | public | One node card at its newest version: spec, interfaces, prohibitions, every field, version history. Catch-all so a namespaced id resolves. **Three panels came off on 2026-09-05, on the owner's instruction (D-133)** — `Risk and autonomy` (`#evaluation`), `Identity` (`#identity`) and `Card source` — and the page is a **single full-width column** rather than a `lg:grid-cols-3` with a sidebar, because those two removals emptied the `<aside>`. Five in-page anchors now, not eight: `#specification`, `#interfaces`, `#prohibitions`, `#fields`, `#version-history`; the header's risk chip and a `seeHref` inside the field table both moved from `#evaluation` to `#fields`. The full card digest moved into `VersionHistory` as text rather than going with the panels, because its own comment recorded that it had been taken out of a `title` tooltip for being unreachable by keyboard and touch. The header takes the blueprint page's shape and draws one `Star` pill through `FavoriteStar`; there is no `Watch` and no `Fork`, because a card has no fork route and the site's only watch verb follows a PERSON. **No scoring reading of any kind renders here now** — no autonomy sentence, no risk weights, no priced markers — and the route no longer imports from `components/ontology/TermTable` at all. Per-request off the registry since T261 (`versionsOf`, batched `usersOfMany` history, `latestCards`). **T280 wires the star pill (`getSignals`, `SEAM-76`) and `Comments`' `live` mode (`listNotes`/`postNote`/`voteNote` over the card, `SEAM-80`)**, and card documents render through `serveCardSource` rather than `serveCard` so the page render itself does not count as a download; author links resolve through `getPublicAuthor`, so an accountless handle renders as TEXT with no `/u/` href (D-260-25 end state, the round's F1). **`versionsOf` is still called with a hardcoded `ANONYMOUS` actor** (pre-existing, unchanged by T280) — the card's own content is resolved before `actor` is read at all, so a private card's owner sees the identical 404 a stranger does when reaching this page directly | LIVE | `NodeCardSummary` tiles on `/nodes`, `/u/[username]/cards` (`OwnedCards`, public and private rows), `Pinned`, `SavedList`, `nodeHref` from graph nodes and `components/bundle/Aside.tsx:203` |
-| `/ontology/[...term]` | `app/ontology/[...term]/page.tsx` | public | One term: kind, definition, broader/narrower, weight, which cards name it. Catch-all so `lupo/pii-handling` resolves. **The `since v0.1.0` chip beside the kind badge and the sidebar's `Introduced v0.1.0` row both came off on 2026-09-05 (D-131)**; each printed the same string on every term in the vocabulary. The lead lost its `max-w-3xl` in the same pass (D-135). Per-request off the registry since T261; local terms arrive as extensions via `searchTerms(origin: "local")`, so a LOCAL weight's provenance renders from the served vocabulary (the cell that earned D-261-13's retirement) | LIVE | `termHref` from the vocabulary browser, which is a band on `/spec/ontology` since 2026-09-06 and was `/ontology` before it, and node-card chips (`/u/[username]/terms` was a third and was deleted 2026-09-06). **This route survived the deletion of its own index and its URLs did not move**, so `/ontology/<term>` resolves while `/ontology` 308s to `/spec/ontology`; a redirect `source` is an exact path and cannot shadow the catch-all beneath it |
+| `/ontology/[...term]` | `app/ontology/[...term]/page.tsx` | public | One term: kind, definition, broader/narrower, weight, which cards name it. Catch-all so `lupo/pii-handling` resolves. **The `since v0.1.0` chip beside the kind badge and the sidebar's `Introduced v0.1.0` row both came off on 2026-09-05 (D-131)**; each printed the same string on every term in the vocabulary. The lead lost its `max-w-3xl` in the same pass (D-135). Per-request off the registry since T261; local terms arrive as extensions via `searchTerms(origin: "local")`, so a LOCAL weight's provenance renders from the served vocabulary (the cell that earned D-261-13's retirement) | LIVE | `termHref` from the vocabulary browser, which is a band on `/spec/card` since 2026-09-06 (D-156), was a band on `/spec/ontology` for a few hours earlier that day (D-153), and was `/ontology` before that, and node-card chips (`/u/[username]/terms` was a third and was deleted 2026-09-06). **This route survived the deletion of its own index and its URLs did not move**, so `/ontology/<term>` resolves while `/ontology` 308s to `/spec/card`; a redirect `source` is an exact path and cannot shadow the catch-all beneath it |
 | `/settings` | `app/settings/page.tsx` | session, per-request | **Seven account sections**, one more than before T280: API keys joins as §06 and Danger zone moves to §07. Every section writes a real route now except mail delivery and the validator badge — Public profile, Account & handle, Email & notifications (the three switches PATCH real preferences, D-190-05), Default visibility, API keys (mint/list/revoke) and Danger zone (transfer, delete) are all LIVE; Validator status stays read-only, because nothing in the code proposes a granting process — and since 2026-09-05 it is read-only ABOUT LESS. Q14 deleted the ballot, so §05's `· weight ×N on community metrics` line came off with the number it multiplied and the section now says outright that the weight multiplies nothing and is not shown. **The badge and its grant date stay**: a weight asserts an effect on a number and there is none left, while a badge asserts the registry granted this account a status, which stayed true when the ballot left. §06's mint form gained a scope picker in the same wave (Q3) | LIVE + PLANNED (nothing sends mail even though preferences save for real, `NotificationDelivery` has no implementation; the validator badge has no granting route, and since Q14 no ballot for it to weight either) | account menu (`SiteHeader.tsx:136`), mobile "You" group |
 | `/welcome` | `app/welcome/page.tsx` | session, per-request | **Where sign-in lands when sign-up is unfinished.** T050 AC1's `handle: null` state had no destination until this route existed: the callback sent it to `/` and the reader had to find `/settings` unaided. Three answers, not one page — no session renders the sign-in panel, a session that already holds a handle **307s to `/`** (so the URL is safe to link at any time and the callback can point at it unconditionally), and only the incomplete state renders the form. The handle is required and blocking; the display name is offered. Availability comes from `GET /api/names/handles/{handle}`, never re-derived in the browser | LIVE | `app/api/auth/github/callback/route.ts` on a null-handle account |
 | `/skill` | `app/skill/page.tsx:107` | public | The authoring skill: one install command, **and it does not run for anybody but its owner** (§11.0 Q8, corrected 2026-09-05). `Brotherhood94/darkprint` is PRIVATE and `api.github.com` answers 404 unauthenticated, so `npx skills@latest add Brotherhood94/darkprint` fails for every reader; step 01 of `SkillSetup` says so in words, beside the command. The page's own *"The DarkPrint skill installs today"* was removed rather than qualified, and a new inverted assertion forbids any surface saying it. `metadata.description` was extended for the same reason: it is the sentence a reader acts on from a search result without opening the tab. Of the three things around it that used to be entirely unbuilt, T280 answers one and narrows a second: **accounts** now names real destinations (`/welcome`, `/new`, `/upload`) instead of describing an absence; **the interview reaching into MCP** narrows from "MCP is not built either" to "MCP is live now, and this skill does not call it yet"; **publishing straight from the editor** is still unbuilt, unchanged | **PLANNED (command: written, not installable — the repository is private)** + LIVE (accounts) + PLANNED (`UNBUILT`: publish from the editor; the interview's own MCP call) | header Design menu (`SiteHeader.tsx:67`), footer Design column, `/upload:140`, `/mcp:405`, `/install` 308 |
-| `/spec/topology` | `app/spec/topology/page.tsx` | public | Layer 01: the DOT file and the validator checks over it | LIVE (reads `bundleSource`) | Learn menu stop 01, footer Learn column, `/what-a-blueprint-is` doors |
-| `/spec/card` | `app/spec/card/page.tsx` | public | Layer 02: the node card in YAML, annotated, with the field reference | LIVE (reads `getNodeCard`) | Learn menu stop 02, footer Learn column, `/what-a-blueprint-is` doors |
-| `/spec/ontology` | `app/spec/ontology/page.tsx` | public | Layer 03: the vocabulary format and, since 2026-09-06, the words as well as the format. **The local overlay and the validator checks came off the same day, LATER in it, and the description is shorter than it was this morning**: the owner removed the overlay band (*"Anyone can add a term, in a namespace of their own"*) and the checks band (*"What the engine holds the vocabulary to"*), D-154. What is left is two bands, which is what the page's own header docblock now calls itself: what the vocabulary is and how big it is, the five kinds and their counts inside that one, then every term in it. The owner folded the term browser back into this page (*"move the ontology page in the /spec/ontology substituing the \"every term\" box"*), so `VocabularyBrowser` and `OntologyCatalog` mount here in the slot the `Every term →` route box held, with search, a kind filter, a core-or-local filter and a usage count per term. One route now answers both questions this page and `/ontology` used to split between them | LIVE (reads `getOntologyView` and the browser's own per-request read of `server/ontology` with usage from the registry. **`bundleVocabulary` went with the overlay band on 2026-09-06**: its only consumer on this page was that band's `SourcePanel`, which drew `content/ontology/extensions.yaml` verbatim, so the page stopped reading the archive's own vocabulary file when it stopped printing it) | Learn menu stop 03, footer Specification column, `/what-a-blueprint-is` doors, and the `/ontology`, `/ontologies` and `/ontologies/:slug` 308s. **The chrome's Browse row was DELETED rather than repointed here**, which is the opposite of what this fold's dispatch predicted and is the more careful answer: a row called `Ontology` in the bar and a row called `Ontology file (YAML)` one group down, both opening this URL on the same screen, is the *one route, two names* defect `nav.test.ts` exists for. The Learn row could not be renamed either — it is stop 03 of `SPEC_SEQUENCE` between `Topology file (DOT)` and `Node card (YAML)`, and `spec-routes.test.ts` pins the pair — so one route keeps one name and Browse is two rows now rather than three |
-| `/spec/attractor` | `app/spec/attractor/page.tsx` | public | **Stop 04 of the specification run, added 2026-09-06** on the owner's §11.0 Q20 (b) ruling: which card field becomes which Attractor node attribute, and what a runner reads that a blueprint cannot say. Five sections (`crosswalk`, `shapes`, `classes`, `unexpressed`, `not-a-pipeline`), every table rendered from the constants the exporter itself reads (`ATTRACTOR_TYPE_SHAPES`, `attractorClassesFor`, `ATTRACTOR_UNEXPRESSED_ATTRIBUTES` and the rest), so the page cannot drift from what `darkprint export --attractor` writes. `ATTRACTOR_SPEC_PIN` is PRINTED and never branched on, because a compatibility claim with no revision on it has no shelf life and no other surface names the document these tables were checked against. **It is not a fourth layer**: a blueprint is still three files, the three layer pages still say `Layer 0n of 03`, and the eyebrow reads `Compatibility` for exactly that reason. Taking 04 moved the practice run down a rung, the same treatment the essay took when the graded page was deleted | LIVE (reads `allNodeCards`, `getOntologyView` and the exporter's own constants) | Learn menu stop 04 and Learn rail via `SPEC_CROSSWALK` (`components/spec/sequence.ts:402`), footer Learn column (`components/site/SiteFooter.tsx:42`) |
-| `/towards-a-dark-factory` | `app/towards-a-dark-factory/page.tsx` | public | The 1-to-5 organisational ladder and the argument about which work belongs to an agent | MOCK (hardcoded essay content, no archive read) | Learn menu stop **05** (`sequence.ts:413-414`), footer Learn column — renumbered 06 → 05 when `/reading-the-radar` was deleted (D-121), so `SPEC_SEQUENCE` is six stops, `00` to `05` |
+| `/spec/topology` | `app/spec/topology/page.tsx` | public | Layer 01: the DOT file and the validator checks over it. **Its first band names the dialect since 2026-09-06 (D-156)**: a shipped `topology.dot` carries `card=` on nodes and `in=`/`out=` on edges, and none of the three is in Attractor's Appendix A. `card` names the node card a node pins and travels into the compiled file as an attribute a runner ignores (`DARKPRINT_EMITTED_ATTRIBUTES`); `in`/`out` pin which declared port an edge wires, are read by `lib/core/bundle/resolve.ts:417,563` and reach the compiled file as nothing at all, because `ATTRACTOR_EMITTED_ATTRIBUTES.edge` is `label, condition, weight` | LIVE (reads `bundleSource`) | Learn menu stop **02** (renumbered from 01 on 2026-09-06 when the crosswalk took 01), footer Specification column, `/what-a-blueprint-is` doors |
+| `/spec/card` | `app/spec/card/page.tsx` | public | **`Layers 02 and 03 of 03`, which is the eyebrow the page now prints**: the node card in YAML, annotated, with the field reference. **`/spec/ontology` folded into this page on 2026-09-06 (D-156) and the route it folded out of is deleted**, so the vocabulary is documented beside the fields that consume it: every core term is a legal value of `type`, `phases`, `riskMarkers`, `tools` or a port's `type`, and no term is ever named by the DOT, which names a card, which names terms. `VocabularyBrowser` and `OntologyCatalog` mount here with search, a kind filter, a core-or-local filter and a usage count per term. **This page inherits `export const dynamic = "force-dynamic"` with the browser** (`app/spec/card/page.tsx:287`), because the browser's registry read is per-request and a registry read on a prerendered page is a live read the build hides. The deleted route carried the same constant for the same reason, and note 7's citation into it is left as the dated reading it was | LIVE (reads `getNodeCard`, `getOntologyView`, and the browser's own per-request read of `server/ontology` with usage from the registry) | Learn menu stop **03** (renumbered from 02 on 2026-09-06), footer Specification column (the footer titles its two Learn columns from `RUNS`), `/what-a-blueprint-is` doors, and the `/spec/ontology`, `/ontology`, `/ontologies` and `/ontologies/:slug` 308s |
+| `/spec/attractor` | `app/spec/attractor/page.tsx` | public | **Stop 01 of the specification run since 2026-09-06, and it was stop 04 for the first day of its life.** Added on the owner's §11.0 Q20 (b) ruling: which card field becomes which Attractor node attribute, and what a runner reads that a blueprint cannot say. Five sections (`crosswalk`, `shapes`, `classes`, `unexpressed`, `not-a-pipeline`), every table rendered from the constants the exporter itself reads (`ATTRACTOR_TYPE_SHAPES`, `attractorClassesFor`, `ATTRACTOR_UNEXPRESSED_ATTRIBUTES` and the rest), so the page cannot drift from what `darkprint export --attractor` writes. `ATTRACTOR_SPEC_PIN` is PRINTED and never branched on, because a compatibility claim with no revision on it has no shelf life and no other surface names the document these tables were checked against. **It is not a fourth layer**: a blueprint is still three files and the eyebrow reads `Compatibility` for exactly that reason. **The layer PAGES went from three to two on 2026-09-06 and the layer COUNT did not** (D-156): `/spec/topology` still reads `Layer 01 of 03` and `/spec/card` reads `Layers 02 and 03 of 03`, because the fold merged two documents and no file left a bundle. **The move to 01 is D-156 and its reason is a reader's, not a taxonomy's**: the two attributes a shipped `topology.dot` adds to Attractor DOT were met three documents before the page that explains them. Taking 04 had moved the practice run down a rung; taking 01 moves both layer pages down one instead, and the practice run returns to 04 with the sequence at five stops | LIVE (reads `allNodeCards`, `getOntologyView` and the exporter's own constants) | Learn menu stop 01 and Learn rail via `SPEC_CROSSWALK`, footer Learn column (`components/site/SiteFooter.tsx`) |
+| `/towards-a-dark-factory` | `app/towards-a-dark-factory/page.tsx` | public | The 1-to-5 organisational ladder and the argument about which work belongs to an agent | MOCK (hardcoded essay content, no archive read) | Learn menu stop **04**, footer Learn column. Renumbered 06 → 05 when `/reading-the-radar` was deleted (D-121), then 05 → 04 on 2026-09-06 when `/spec/ontology` folded into `/spec/card` (D-156), so `SPEC_SEQUENCE` is **five** stops, `00` to `04` |
 | `/u/[username]` | `app/u/[username]/page.tsx:58` | session, per-request | **The profile's own index (T280): Blueprints took the segmentless slot.** Pinned above a live shelf of every bundle `username` holds, public and private together for the owner, public only for anyone else — `ownedBundles(db, actor, username)`, actor-scoped by construction, replacing the split owner/visitor row-building the old `/u/[username]/blueprints` route did by hand. A zero-release draft renders as its own row (`OwnedBundles`' `SummaryRow`, "no release yet") rather than being hidden, the GitHub empty-repo state. `Pinned` is unchanged in shape and reads `getProfile`'s real pin list. The old overview's terms teaser did not move down with it — Ontology terms stays its own tab. Owner-only: a `Start a blueprint` / `New blueprint` action opening `/new` | LIVE (`ownedBundles`, `getProfile`'s pins, T131/T280) + MOCK (the pinned mini-cards' own support pill still reads `starsFor`, `lib/data/node-community.ts` — `components/profile/load.ts`'s header names it the one `lib/data` import T280 leaves standing) | account menu (`SiteHeader.tsx:132`), `AuthorChip` on every card and blueprint, `/settings:173`, `ProfileHeader`'s `New blueprint` button (`SEAM-64`) |
 | `/u/[username]/[slug]` | `app/u/[username]/[slug]/page.tsx` | public | **An unconditional 308 redirector** to `/blueprints/{username}/{slug}` (T261): the owned-bundle repository view retired with the URL migration, and its `bundleView` cluster was deleted under D-261-16 | — |
 | `/u/[username]/blueprints` | `app/u/[username]/blueprints/page.tsx` | public | **An unconditional 308 redirector** to `/u/[username]` (T280), the same shape `/u/[username]/[slug]` already uses for a bundle's own retired address. Blueprints moved onto the profile index and this route is only its old one; no lookup and no actor, since `username` is the whole of what the destination needs and a redirector that resolved it first would answer differently for a handle that exists and one that does not (B-03) | — | (nothing links here any more — `profileTabHref` returns `/u/<username>` for the Blueprints tab; kept live only for a bookmarked or shared old URL) |
@@ -312,19 +339,22 @@ bundles and ontology-usage routes listed above are outside it and are not in the
 **None.** Every one of the 26 `page.tsx` routes is reachable from the chrome, from an
 index page, or from a button that hands a reader the URL directly:
 
-- 14 top-level routes have a header entry, a Learn-menu entry, a Design-menu entry or an
+- 13 top-level routes have a header entry, a Learn-menu entry, a Design-menu entry or an
   account-menu entry:
   `/`, `/blueprints`, `/capabilities`, `/mcp`, `/nodes`,
-  `/settings`, `/skill`, the four `/spec/*` pages, `/towards-a-dark-factory`, `/tutorial`,
-  `/what-a-blueprint-is`. **`/ontology` left this list on 2026-09-06** when the owner
-  folded the browser into `/spec/ontology` and deleted the index. **The chrome's Browse
-  row went with it rather than being repointed**, so Browse is two rows and not three;
-  `/spec/ontology` keeps its place in this list through the Learn menu, which named it all
-  along. The reachability count therefore drops by exactly one and the reason is the route,
-  not the chrome. **`/build` left this list on 2026-09-06 and `/spec/attractor`
-  joined it the same day**, which is why the count did not move: the owner deleted the
-  sandbox ("it is not useful and make confusion") and the crosswalk took the Learn slot
-  after the third layer, so `/spec/*` is four pages now rather than three.
+  `/settings`, `/skill`, the three `/spec/*` pages, `/towards-a-dark-factory`, `/tutorial`,
+  `/what-a-blueprint-is`. **`/spec/ontology` left this list on 2026-09-06, later the same
+  day than the two entries below**, when the owner accepted the argument to fold the
+  vocabulary into `/spec/card` and delete the layer page (D-156). It kept no chrome entry of
+  its own to rehome: the Learn menu drops a row, the footer's Specification column drops a
+  row, and the count goes 14 to 13. `/spec/*` is three pages again. **`/ontology` left this
+  list earlier the same day** when the owner folded the browser onto `/spec/ontology` and
+  deleted the index (D-153). **The chrome's Browse row went with it rather than being
+  repointed**, so Browse is two rows and not three, and that removal is untouched by the
+  second fold. **`/build` left this list on 2026-09-06 and `/spec/attractor`
+  joined it the same day**, which is why the count did not move for that pair: the owner
+  deleted the sandbox ("it is not useful and make confusion") and the crosswalk took a Learn
+  slot, which it has held at 04 and now holds at 01.
   **`/reading-the-radar` stood in this list until 2026-09-04**,
   when the owner asked it off the site; `/capabilities` and `/tutorial` joined it on
   2026-09-02 and the count had not been re-derived for them, so 14 was already one short
@@ -339,9 +369,11 @@ index page, or from a button that hands a reader the URL directly:
   Ontology terms tab and `app/u/[username]/terms/page.tsx` with it. **One of the nine no
   longer sits under its index and the justification has to be read differently for it.**
   `/ontology/[...term]` is reached from `termHref` in the vocabulary browser, and that
-  browser is a band on `/spec/ontology` since 2026-09-06, so the index a reader arrives
-  from is not the path segment above the route. That is why the count did not move when
-  `/ontology` was deleted: the door did not close, it moved to another page.
+  browser has moved twice on 2026-09-06: onto `/spec/ontology` (D-153) and then onto
+  `/spec/card` (D-156). The index a reader arrives from is two path segments away from the
+  route now. That is why the count did not move when `/ontology` was deleted and did not
+  move again when `/spec/ontology` was: the door did not close either time, it moved to
+  another page.
 - 3 routes are reached from a button or an inbound link rather than the chrome — the same
   shape, all three named in `nav.test.ts`'s own `ELSEWHERE` set: `/upload` (header/footer
   Publish button), `/welcome` (the OAuth callback's redirect for an unfinished sign-up)
@@ -370,9 +402,10 @@ destination that exists and asserts the old page is gone.
 | `/gallery` | `/blueprints` | section rename; query string survives the redirect |
 | `/parts` | `/nodes` | a part was never a node card |
 | `/parts/:slug` | `/nodes` | no per-id counterpart exists |
-| `/ontology` | `/spec/ontology` | **NEW, 2026-09-06.** The owner folded the browser into the spec page and deleted the index. This 308 existed once before, was removed by the accounts pass when `/ontology` became a page again, and is back for a third and opposite reason: there is one route for the vocabulary rather than two. It is an EXACT path and so does not shadow `/ontology/[...term]`, which is why every term URL survives |
-| `/ontologies` | `/spec/ontology` | one vocabulary, not a gallery of them. **REPOINTED 2026-09-06** from `/ontology`, rather than chained onto the new 308: a redirect to a redirect costs every link written before the §1 rename two hops, which is the precedent `/spec/scoring` and `/how-to-build-a-dark-factory` set twice |
-| `/ontologies/:slug` | `/spec/ontology` | same, and repointed the same day for the same reason |
+| `/spec/ontology` | `/spec/card` | **NEW, 2026-09-06, and it is the route the other three used to land on.** The owner folded the vocabulary into the card page and deleted the layer page (D-156). One hop: this `destination` is not a `source` anywhere in the list |
+| `/ontology` | `/spec/card` | **REPOINTED 2026-09-06**, hours after it was created pointing at `/spec/ontology` (D-153). It is repointed rather than chained onto the new `/spec/ontology` 308, which is the rule this file has now applied five times. It is an EXACT path and so does not shadow `/ontology/[...term]`, which is why every term URL survives both folds |
+| `/ontologies` | `/spec/card` | one vocabulary, and no gallery of them. **REPOINTED TWICE ON 2026-09-06**, first from `/ontology` onto `/spec/ontology` and then onto `/spec/card`, each time to keep it at one hop |
+| `/ontologies/:slug` | `/spec/card` | same, and repointed the same two times for the same reason |
 | `/how-to-build-a-dark-factory` | `/towards-a-dark-factory` | §4.2 rename |
 | `/towards-a-dark-factory/the-climb` | `/towards-a-dark-factory` | child page deleted |
 | `/which-tasks` | `/towards-a-dark-factory` | folded into the parent |
@@ -383,13 +416,15 @@ destination that exists and asserts the old page is gone.
 | `/concepts` | `/what-a-blueprint-is` | folded into `#the-words` |
 | `/install` | `/skill` | split in two; the old page's working command is on `/skill` |
 
-Two clusters, and the second of them is new. Four of the fifteen share one destination:
-`/spec`, `/concepts`, `/spec/scoring` and `/reading-the-radar` all land on
-`/what-a-blueprint-is` since 2026-09-06. Three more share another: `/ontology`,
-`/ontologies` and `/ontologies/:slug` all land on `/spec/ontology` since later the same
-day. **Every one of those three is ONE hop.** None is chained onto another 308, which is
-checkable rather than asserted — no `destination` in `next.config.ts` appears as a
-`source` anywhere in the same list. The rest are distinct.
+Two clusters, and the second of them gained a member and changed address on the same day.
+Four of the **sixteen** share one destination: `/spec`, `/concepts`, `/spec/scoring` and
+`/reading-the-radar` all land on `/what-a-blueprint-is` since 2026-09-06. **Four more share
+another: `/spec/ontology`, `/ontology`, `/ontologies` and `/ontologies/:slug` all land on
+`/spec/card`** since later the same day, and the cluster was three onto `/spec/ontology`
+for the few hours between D-153 and D-156. **Every one of those four is ONE hop**, which is
+checkable rather than asserted: no `destination` in `next.config.ts` appears as a `source`
+anywhere in the same list, and the check is what forced three of the four to be repointed
+instead of chained onto the newest 308. The rest are distinct.
 
 **`#weights` no longer has a declaring surface, and since 2026-09-05 it has no declaring
 FILE either.** The fragment survived every earlier move because `ScoringModel` owned the id
@@ -434,7 +469,6 @@ flowchart TD
   skill["/skill"]
   specTopology["/spec/topology"]
   specCard["/spec/card"]
-  specOntology["/spec/ontology"]
   specAttractor["/spec/attractor"]
   darkFactory["/towards-a-dark-factory"]
   profile["/u/:username"]
@@ -453,7 +487,6 @@ flowchart TD
   chrome --> skill
   chrome --> specTopology
   chrome --> specCard
-  chrome --> specOntology
   chrome --> specAttractor
   chrome --> darkFactory
   chrome --> profile
@@ -469,13 +502,14 @@ flowchart TD
   mcp --> blueprints
   mcp --> nodes
   whatIsBlueprint --> blueprints
+  whatIsBlueprint --> specAttractor
   whatIsBlueprint --> specTopology
   whatIsBlueprint --> specCard
-  whatIsBlueprint --> specOntology
-  %% 2026-09-06: the owner folded the browser into /spec/ontology and deleted /ontology,
-  %% so the node and its three edges are gone and the door to a term hangs here instead.
-  %% /ontology is a redirect now and redirects are not drawn in this graph.
-  specOntology -->|"termHref, in the browser band"| ontologyTerm
+  %% 2026-09-06, twice. The owner first folded the browser into /spec/ontology and deleted
+  %% /ontology; later the same day /spec/ontology folded into /spec/card and was deleted too
+  %% (D-156). So the door to a term has moved twice and hangs here now. Both /ontology and
+  %% /spec/ontology are redirects, and redirects are not drawn in this graph.
+  specCard -->|"termHref, in the browser band"| ontologyTerm
   blueprintSlug -->|"pinned node tiles"| nodeId
   capabilities --> tutorial
   tutorial --> capabilities
@@ -483,7 +517,7 @@ flowchart TD
   %% T280: Blueprints took the segmentless slot — profile's own shelf rows link straight
   %% to blueprintSlug (blueprintHref), and /u/:username/blueprints (the tab's old address)
   %% is a redirect nothing currently links to, so it is not drawn — the same treatment the
-  %% fifteen next.config.ts redirects already get in this graph.
+  %% sixteen next.config.ts redirects already get in this graph.
   profile --> blueprintSlug
   profile -->|"New blueprint"| newBundle
   profile --> profileCards
@@ -491,7 +525,7 @@ flowchart TD
   newBundle -.->|"draft created"| blueprintSlug
   settings --> profile
 
-  class home,blueprints,tutorial,nodes,nodeId,ontologyTerm,whatIsBlueprint,specTopology,specCard,specOntology,specAttractor,profileCards,newBundle live
+  class home,blueprints,tutorial,nodes,nodeId,ontologyTerm,whatIsBlueprint,specTopology,specCard,specAttractor,profileCards,newBundle live
   class capabilities mixed
   class darkFactory,profileSaved mock
   class blueprintSlug,settings,skill,mcp,profile,upload mixed

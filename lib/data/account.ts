@@ -1,18 +1,37 @@
 /* ============================================================
-   DarkPrint data — the signed-in account, seeded
+   DarkPrint data — the account fixture, now a SPECIFICATION and no
+   longer a product surface
 
-   There are no accounts. `PROJECT.md` §2 says so in as many words
-   and `README.md` lists them under "Not built". This module is the
-   row an account would be, so the surfaces that describe one have
-   something real to render instead of a placeholder: the same
-   arrangement `./community.ts` makes for votes and `./users.ts`
-   makes for the author table.
+   ── Read this first: the two sentences below it used to open with
+      are FALSE, and the reason they are kept is the point ──
+   This header said "There are no accounts" and "`/settings` renders
+   these values into an inert form". Both were true when it was
+   written and neither is now. Accounts are real, and
+   `app/settings/page.tsx` reads `getAccount`/`getPreferences` off
+   the backend — `components/settings/AccountForm.tsx:386` records
+   the cutover in place ("This used to come off ACCOUNT.notifications
+   in lib/data/account.ts").
 
-   **Everything here is `◐ seeded`, and every surface reading it
-   says so in place.** Nothing writes back. `/settings` renders these
-   values into an inert form and states, above the first field, that
-   the form is inert — a control that appears to save and does not is
-   the exact failure doc 2 §0.4 exists to prevent.
+   **NOTHING IMPORTS THIS MODULE.** Measured 2026-09-06 by a
+   resolver-based import graph, and it is the reason the file reads
+   as stale: it stopped being product data and nobody rewrote the
+   sentence that said it was.
+
+   ── Why it is not deleted, which is the useful half ──
+   It has become the FROZEN SPECIFICATION five live modules cite BY
+   LINE NUMBER for the shape and the defaults of an account:
+   `lib/db/schema.ts:847`, `lib/server/notifications/defaults.ts:12`,
+   `lib/server/notifications/types.ts:13,33`,
+   `tests/server/t190/preferences.test.ts` and
+   `tests/server/t050/record.test.ts:23`. Deleting it would strand
+   five citations and remove the only written statement of what the
+   notification defaults are supposed to be. So it survives as a
+   fixture that is READ BY PROSE rather than by code, and the marker
+   it carries is about the fixture, not about a rendered figure.
+
+   `◐ seeded` no longer describes a surface, because there is no
+   surface. It describes these values, which are a design's answer
+   and not a query's.
 
    PLAIN DATA, like its two siblings: no `@/lib/content`, no
    filesystem, importable from a client component. `./index.ts` is

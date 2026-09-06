@@ -404,30 +404,47 @@ describe("the nav is a complete map of the routes", () => {
    * siblings' shape.
    *
    * The owner ended the split on 2026-09-06: "move the ontology page in the /spec/ontology
-   * substituing the "every term" box. Then, you can delete the /ontology page". There is
-   * one route now, so the question this case was asking — which of the two wears the bare
-   * word — has no second route to be about, and the case is rewritten rather than deleted
-   * for the third time. What survives is the half that still has a subject: the spec row
-   * keeps the file form its two siblings have (`/spec/topology` is "Topology file (DOT)",
-   * `/spec/card` is "Node card (YAML)"), because a rename reaching for the short form is
-   * still available and would still be wrong.
+   * substituing the "every term" box. Then, you can delete the /ontology page". There was
+   * one route then, so the question this case was asking — which of the two wears the bare
+   * word — had no second route to be about, and the case was rewritten rather than deleted
+   * for the third time: the spec row kept the file form its two siblings have, and the other
+   * half inverted into `/ontology` appearing in no header table at all.
    *
-   * The other half inverts. `/ontology` must appear in NO header table: it is a 308 now,
-   * and a chrome row pointing at a redirect is the two-hop link this file's `RENAMED` block
-   * refuses everywhere else. `RENAMED` carries the route itself, so the redirect, the
-   * deleted page and the absence from the chrome are all asserted; this line is the one
-   * that says the label map specifically does not know the path, which is what would break
-   * first if somebody repointed the Browse row instead of deleting it.
+   * ── The fourth rewrite, hours later, and the last one this question can have ──
+   * The owner accepted the finding that the vocabulary and the Attractor specification read
+   * as two rival standards because of the order a reader meets them in ("The motivations you
+   * provided are sound. Apply them"), so every ontology term is printed beside the card field
+   * that consumes it and `/spec/ontology` folds into `/spec/card`. Neither route exists now,
+   * and the question of which wears the word "Ontology" has no subject at either end.
+   *
+   * So both halves are the same claim, in the same direction, about two paths: a chrome row
+   * pointing at a redirect is the two-hop link this file's `RENAMED` block refuses everywhere
+   * else, and `HEADER_LABELS` must know neither path. That is what would break first if
+   * somebody repointed a row instead of deleting it, which is the repair reached for at both
+   * of the previous two folds. `RENAMED` carries both routes, so the redirects, the deleted
+   * pages and the absence from the chrome are all asserted there as well.
+   *
+   * The positive that survives is the destination. `/spec/card` keeps the file form its
+   * sibling has (`/spec/topology` is "Topology file (DOT)"), because a rename reaching for
+   * the short form is still available and would still be wrong now that this row is the only
+   * name the chrome gives the page that holds the vocabulary.
    */
-  it("gives the spec page its file form, and names the retired browser path nowhere", () => {
-    expect(HEADER_LABELS.get("/spec/ontology")).toBe("Ontology file (YAML)");
-    expect(
-      HEADER_LABELS.has("/ontology"),
-      "a header row points at /ontology, which 308s onto /spec/ontology",
-    ).toBe(false);
+  it("keeps the card row's file form, and names neither retired ontology path", () => {
+    expect(HEADER_LABELS.get("/spec/card")).toBe("Node card (YAML)");
+    for (const retired of ["/ontology", "/spec/ontology"]) {
+      expect(
+        HEADER_LABELS.has(retired),
+        `a header row points at ${retired}, which 308s onto /spec/card`,
+      ).toBe(false);
+    }
   });
 
-  it("uses the shared 00–06 sequence for the Learn dropdown", () => {
+  /* The range came out of this name on 2026-09-06. It read "00-06" over a sequence that had
+     been 00-05 since the sandbox was deleted and became 00-04 when the vocabulary's stop
+     folded into `/spec/card`, so it was a count in a place nothing could hold it true. The
+     assertion never depended on it: it compares the dropdown against `SPEC_SEQUENCE`
+     element-wise, whatever the sequence is. */
+  it("uses the shared sequence for the Learn dropdown", () => {
     expect(LEARN.map(({ href, label, step }) => ({ href, label, step }))).toEqual(
       SPEC_SEQUENCE.map(({ href, nav, step }) => ({ href, label: nav, step })),
     );
@@ -717,23 +734,38 @@ describe("the routes that were retired still answer", () => {
     ["/spec/scoring", "/what-a-blueprint-is"],
     ["/reading-the-radar", "/what-a-blueprint-is"],
     ["/concepts", "/what-a-blueprint-is"],
-    /* The vocabulary's index, retired 2026-09-06 on the owner's instruction: "move the
-       ontology page in the /spec/ontology substituing the "every term" box. Then, you can
-       delete the /ontology page". The browser is a band on the spec page and the index is
-       deleted, so this is the ordinary content-move shape — the destination is the page
-       that now holds what the source held.
+    /* The vocabulary's two retired paths, and both moved in one day.
 
-       Only the index. `/ontology/<term>` keeps its URL and is NOT covered by this row,
-       because a `source` with no parameter in it is an exact anchored pattern: the term
-       detail pages are what every card chip and every search hit resolves to, and moving
-       them would have been a far larger change than the one that was asked for.
+       The index went first, on the owner's instruction: "move the ontology page in the
+       /spec/ontology substituing the "every term" box. Then, you can delete the /ontology
+       page". The browser became a band on the spec page and the index was deleted, so
+       `/ontology` took the ordinary content-move shape and landed on `/spec/ontology`.
 
-       `/ontologies` and `/ontologies/:slug` were repointed onto `/spec/ontology` in the
-       same change rather than left chaining through this row. They are not in this table
+       Then the spec page went too. The owner accepted the finding that the vocabulary and
+       the Attractor specification read as two rival standards because of the order a reader
+       meets them in ("The motivations you provided are sound. Apply them"): every ontology
+       term exists to be a legal value of a card field, so each is printed beside the field
+       that consumes it and the route folds into `/spec/card`.
+
+       Both rows land there in ONE HOP. `/ontology` was repointed rather than left chaining
+       through the row below it, which is the no-chaining argument three entries up applied
+       for the fourth time in three days: a 308 onto a 308 costs every link written before
+       the older move two hops, and `/ontology` had been written into the chrome of every
+       page this site served for months.
+
+       Only the index and the spec page. `/ontology/<term>` keeps its URL and is covered by
+       neither row, because a `source` with no parameter in it is an exact anchored pattern.
+       Verified against the matcher Next 16.2.11 ships rather than assumed: `/ontology` tests
+       true for `/ontology` and false for `/ontology/pii-handling` and `/ontology/a/b`. The
+       term detail pages are what every card chip and every search hit resolves to.
+
+       `/ontologies` and `/ontologies/:slug` were repointed onto `/spec/card` in the same
+       change rather than left chaining through either of these. They are not in this table
        (they never were, and `tests/server/t261/ac2-redirects.test.ts` is where the whole
-       config is held element-wise), but the no-chaining argument three entries up is the
-       one that decided them. */
-    ["/ontology", "/spec/ontology"],
+       config is held element-wise, and where a cell now refuses ANY rule whose destination
+       is another rule's source), but the argument above is the one that decided them. */
+    ["/ontology", "/spec/card"],
+    ["/spec/ontology", "/spec/card"],
   ];
 
   it("redirects every old path, permanently, to a page that exists", async () => {

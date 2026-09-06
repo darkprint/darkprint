@@ -27,18 +27,24 @@ import { RUNS, SPEC_SEQUENCE, type SpecRun } from "@/components/spec/sequence";
 const LEARN_LABELS: Record<string, string> = {
   "/spec/topology": "Topology file (DOT)",
   "/spec/card": "Node card (YAML)",
-  /* The third spec stop joins its two siblings here. It spent one commit carrying the
-     format in `sequence.ts` instead, and the author asked "(YAML)" off the Learn dropdown
-     and the Learn rail — which is what `page.nav` draws. This table is the footer's own
-     register and always was: a footer row stands alone with no run around it to say what
-     kind of document it is, where a dropdown row sits under "Specification" beside
-     "Topology" and "Node card". `nav` keeps the word "file", which is what holds it apart
-     from the Browse row called "Ontology". */
-  "/spec/ontology": "Ontology file (YAML)",
-  /* The crosswalk names no file, because it is not a fourth layer: `sequence.ts` keeps it
-     out of `SPEC_LAYERS` deliberately, since a blueprint has three documents and this page
-     is about what happens to all three on the way to a runner. So the footer's register
-     gives it the subject instead of a format. */
+  /* `/spec/ontology` had a row here reading "Ontology file (YAML)", the third spec stop
+     beside its two siblings. The owner folded that page into `/spec/card` on 2026-09-06 and
+     the route is a 308, so the row is deleted rather than repointed: the card row directly
+     above already names the destination, and two rows opening one URL is what
+     `nav.test.ts`'s first block refuses.
+
+     The register argument the row was carrying is not lost, because it is what the two rows
+     above are FOR. A footer row stands alone with no run heading around it to say what kind
+     of document it is, where a dropdown row sits under "Specification" beside its siblings,
+     so "(DOT)" and "(YAML)" are spelled here and not in `page.nav`. Nothing about the file
+     the card row names changed; what changed is that the same page now also prints the
+     vocabulary, which `components/spec/sequence.ts` records on the stop itself. */
+  /* The crosswalk names no file, because it is not a layer: `sequence.ts` keeps it out of
+     `SPEC_LAYERS` deliberately, since a blueprint has three documents and this page is about
+     what happens to all three on the way to a runner. So the footer's register gives it the
+     subject instead of a format. It is stop 01 since 2026-09-06 and this label is now
+     `SiteHeader`'s docs row as well, byte for byte, which is what puts it inside the parity
+     cell that had never covered it. */
   "/spec/attractor": "Reading it as Attractor",
 };
 

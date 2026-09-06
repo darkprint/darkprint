@@ -54,9 +54,18 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 /* ==================== the props the archive supplies ==================== */
 
 /**
- * The chain and the fan `/spec/ontology` hands the lattice figure, read the way the page
- * reads them. A drawing laid out from `view.ancestors` has to be measured with the terms
- * the vocabulary actually holds, because the widest of them decides the frame.
+ * The chain and the fan a lattice drawing lays out from, read the way a page reads them. A
+ * drawing built out of `view.ancestors` has to be measured with the terms the vocabulary
+ * actually holds, because the widest of them decides the frame.
+ *
+ * NAMED AFTER NO ROUTE SINCE 2026-09-06, and the correction is worth one line. This said
+ * `/spec/ontology`, which is now a redirect source: the owner folded that page into
+ * `/spec/card` so each term sits beside the card field that consumes it. Naming the new
+ * route here would repeat the mistake at a fresh address, because what this reads is the
+ * vocabulary and not a page. `components/spec/LatticeFigure.tsx` itself went earlier, with
+ * `EnforcementFigure` on the same instruction, which is why the roster above carries no
+ * entry for it; the cell at the foot of this file keeps the claim about the SHAPE the
+ * vocabulary still resolves, which is what any such drawing would be laid out from.
  */
 function latticeProps(): { chain: string[]; kin: string[] } {
   const view = getOntologyView();

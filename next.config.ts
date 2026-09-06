@@ -108,15 +108,25 @@ const nextConfig: NextConfig = {
 
          The owner absorbed one into the other on 2026-09-06: "move the ontology page in the
          /spec/ontology substituing the "every term" box. Then, you can delete the /ontology
-         page". The browser is a band on the spec page and the index is deleted, so all three
-         paths land there. The argument above is kept rather than replaced because it is
-         still the reason the split existed, and a reader who finds only the outcome cannot
-         tell a decision from a drift.
+         page". The browser became a band on the spec page and the index was deleted, so all
+         three paths landed there. The argument above is kept rather than replaced because it
+         is still the reason the split existed, and a reader who finds only the outcome
+         cannot tell a decision from a drift.
 
-         REPOINTED, not chained. `/ontologies` could have been left pointing at `/ontology`,
-         which now 308s onto the spec page, and every link written before the §1 rename would
-         pay two hops for it. That is the cost recorded below for
-         `/how-to-build-a-dark-factory`, and it is not paid twice.
+         AND THE SPEC PAGE ITSELF WENT, LATER THE SAME DAY. The owner accepted the finding
+         that the vocabulary and the Attractor specification read as two rival standards
+         because of the order a reader meets them in ("The motivations you provided are
+         sound. Apply them"): every ontology term exists to be a legal value of a card field,
+         so each is printed beside the field that consumes it and `/spec/ontology` folds into
+         `/spec/card`. That is why the three rows below name `/spec/card` and why a fourth
+         one joins them.
+
+         FOUR ROWS, ONE HOP EACH. All three could have been left pointing at
+         `/spec/ontology`, which now 308s itself, and every link written before the §1 rename
+         would pay two hops for it; `/ontologies` would pay three, having already been
+         repointed once this morning. That is the cost recorded below for
+         `/how-to-build-a-dark-factory`, and it is not paid twice. The repoint is the whole
+         reason this arrives as one added row AND three changed destinations.
 
          `/ontology/<term>` is NOT shadowed by the first row. A `source` with no parameter in
          it compiles to an anchored, exact pattern: verified against the matcher Next 16.2.11
@@ -124,9 +134,10 @@ const nextConfig: NextConfig = {
          for `/ontology` and false for `/ontology/pii-handling` and `/ontology/a/b`. The term
          detail pages keep their URLs, which is why every card chip and every search hit
          still resolves. */
-      { source: "/ontology", destination: "/spec/ontology", permanent: true },
-      { source: "/ontologies", destination: "/spec/ontology", permanent: true },
-      { source: "/ontologies/:slug", destination: "/spec/ontology", permanent: true },
+      { source: "/ontology", destination: "/spec/card", permanent: true },
+      { source: "/ontologies", destination: "/spec/card", permanent: true },
+      { source: "/ontologies/:slug", destination: "/spec/card", permanent: true },
+      { source: "/spec/ontology", destination: "/spec/card", permanent: true },
       /* Repointed 2026-08-07: this landed on `/towards-a-dark-factory/the-climb` until the
          author deleted that page, and a 308 to a 308 costs every link written before §4.2
          two hops. Both of these now land on the parent, which is the whole route. */

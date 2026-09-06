@@ -31,13 +31,27 @@ import ts from "typescript";
 export const ROUTES = {
   blueprints: "app/blueprints/page.tsx",
   nodes: "app/nodes/page.tsx",
-  /* `app/ontology/page.tsx` until 2026-09-06. The owner folded the vocabulary browser into
-     the spec page and deleted the index ("move the ontology page in the /spec/ontology
-     substituing the every term box. Then, you can delete the /ontology page"), so the third
-     shelf is served from a route that also specifies the format. The shelf did not go; its
-     address did, which is why this is a repoint rather than a shelf coming out of the set.
-     One consequence is priced in `cutover.test.ts`'s AC1 archive cell. */
-  ontology: "app/spec/ontology/page.tsx",
+  /* `app/ontology/page.tsx` until 2026-09-06, then `app/spec/ontology/page.tsx` for part of
+     the same day. TWO REPOINTS, one instruction apart, and the shelf itself never moved.
+
+     The first: the owner folded the vocabulary browser into the spec page and deleted the
+     index ("move the ontology page in the /spec/ontology substituing the every term box.
+     Then, you can delete the /ontology page"), so the shelf was served from a route that
+     also specified the format.
+
+     The second: the owner asked whether the ontology should exist at all or unify under the
+     Attractor specification, accepted the answer that it should stay and be reframed ("The
+     motivations you provided are sound. Apply them."), and the reframing folds
+     `/spec/ontology` into `/spec/card`. Every term is a legal value of a card FIELD, so each
+     one now sits beside the field that consumes it and there is no separate ontology
+     document to choose between.
+
+     Both times the shelf kept its browser, its query keys and its cleared set, and only its
+     address changed, which is why each is a repoint rather than a shelf coming out of the
+     set. One consequence is priced in `cutover.test.ts`'s AC1 archive cell, and the
+     exemption there had to be rewritten for the second repoint rather than carried across.
+     `components/ontology/canonical-route.test.ts` holds the route question itself. */
+  ontology: "app/spec/card/page.tsx",
 } as const;
 
 /** The client component each route mounts its shelf through. */

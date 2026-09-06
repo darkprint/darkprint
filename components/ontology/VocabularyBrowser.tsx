@@ -25,14 +25,16 @@ import { useQueryState } from "@/components/ui/useQueryState";
    it: the chrome had no entry for the vocabulary at all, which is the third of the three
    problems the nav pass names.
 
-   The owner deleted that index on 2026-09-06 and moved this browser onto `/spec/ontology`,
-   into the slot a route box pointed across from. So the chrome's one Ontology row lands on
-   the specification and the listing is a band inside it. What the component does is
-   unchanged and none of its behaviour is route-specific: search, filter by kind, filter by
-   origin, and a flat list of every term with its ancestry and what it costs — the three
-   questions a reader has about a controlled vocabulary they are about to write a card
-   against. `components/ontology/canonical-route.test.ts` carries all three positions this
-   listing has held and asserts which one is current.
+   The owner deleted that index on 2026-09-06 and moved this browser onto the ontology
+   specification, into the slot a route box pointed across from. Later the same day that
+   specification was itself folded into `/spec/card`, on the ground that every term in the
+   vocabulary exists to be a legal value of a card field, so this listing now closes the
+   page that defines the fields. What the component does is unchanged through all of it and
+   none of its behaviour is route-specific: search, filter by kind, filter by origin, and a
+   flat list of every term with its ancestry and what it costs — the three questions a
+   reader has about a controlled vocabulary they are about to write a card against.
+   `components/ontology/canonical-route.test.ts` carries all four positions this listing has
+   held and asserts which one is current.
 
    ── Two ways to read 50 terms, and only ever one of them on screen ──
    This shipped as a flat list and nothing else, and the author's verdict was that the old
@@ -53,18 +55,18 @@ import { useQueryState } from "@/components/ui/useQueryState";
    reader who wanted the first do it with Cmd-F.
 
    ── What this is not, and the argument that stopped being true ──
-   This said: it is not `/spec/ontology`, which is the spec document about the format —
-   what a term is, how the local overlay works, what the validator refuses — and this is
+   This said: it is not the ontology specification, which is the document about the format
+   — what a term is, how the local overlay works, what the validator refuses — and this is
    the terms themselves; one route names the format and one lists the words, which is why
    the nav called this Vocabulary and that one Ontology.
 
    That was the whole case for two routes and the owner overruled it on 2026-09-06. The
    distinction it drew is still a real distinction and the page still makes it, in bands
-   rather than in URLs: the enumeration is its own band with its own heading, between the
-   band that explains the five kinds and the band that gives the overlay rules. What the
-   split cost was a reader holding a term having to pick which of two pages claimed the
-   word. It is kept here rather than deleted so a later pass that wants to split them again
-   knows what it is buying and what it is paying.
+   rather than in URLs: the enumeration is its own band with its own heading, after the
+   field reference that says which kind of term each card field takes. What the split cost
+   was a reader holding a term having to pick which of two pages claimed the word. It is
+   kept here rather than deleted so a later pass that wants to split them again knows what
+   it is buying and what it is paying.
 
    Every row is read off the merged ontology view by the page and handed here as plain
    data, so this file never touches the engine. That view is registry-backed and read per

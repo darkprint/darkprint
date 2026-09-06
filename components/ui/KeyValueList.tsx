@@ -4,7 +4,8 @@ import { cx } from "@/lib/format";
  * The hairline key/value list: a name in a fixed column, what it means beside it.
  *
  * Four surfaces drew this by hand before it lived anywhere: `components/skill/SkillSetup.tsx`,
- * `app/skill/page.tsx`, `app/mcp/page.tsx` and `app/spec/ontology/page.tsx`. Each spelled
+ * `app/skill/page.tsx`, `app/mcp/page.tsx` and `app/spec/card/page.tsx` (the third was
+ * `app/spec/ontology/page.tsx` until the vocabulary folded into the card spec). Each spelled
  * its own rules, padding and column track, and the tracks had already drifted to 148, 200
  * and 120 for what a reader sees as one figure. The width is the one thing a caller really
  * varies, so it is the one thing the row takes as a prop.

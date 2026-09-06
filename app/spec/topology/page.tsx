@@ -117,7 +117,13 @@ export default function SpecTopologyPage() {
             as="h1"
             eyebrow={page.eyebrow}
             title={page.title}
-            lead="The wiring, in one file. DarkPrint reads a subset of DOT and adds one attribute. That attribute joins a node in the graph to the card that describes it."
+            /* "a few names of its own" and no longer "one attribute", since 2026-09-06. The
+               band below now names three: `card` on a node, `in` and `out` on an edge. A
+               lead counting one over a paragraph naming three is a contradiction a reader
+               meets on one screen, and the count was the only part of the sentence doing no
+               work. The clause after it still narrows to the joining attribute, which is the
+               band's subject and the figure's. */
+            lead="The wiring, in one file. DarkPrint reads a subset of DOT and adds a few names of its own. The one every node carries joins it to the card that describes it."
           />
         </div>
       </header>
@@ -204,6 +210,38 @@ export default function SpecTopologyPage() {
               name outside its own reserved list. That is what lets{" "}
               <Id>card</Id> and <Id>digest</Id> travel inside a file a runner
               still reads.
+            </p>
+            {/* ---------- the dialect, named where a reader meets it ----------
+                The wave of 2026-09-06. The owner asked whether the ontology should exist at
+                all or whether everything should unify under the Attractor specification,
+                because the two read as rival standards, and accepted the finding that they
+                describe different layers and that the friction is the ORDER: this page
+                documents a DOT carrying two attribute names that are in no Attractor
+                document, and the page saying whose they are stood three DarkPrint documents
+                further on. It is stop 01 now, and this paragraph is the other half of the
+                repair. A reader who arrives knowing Attractor should not reach the crosswalk
+                before learning that the first two unfamiliar names they saw are ours.
+
+                Every claim in it is read off `lib/core/attractor/emit.ts` rather than
+                paraphrased. `DARKPRINT_EMITTED_ATTRIBUTES.node` is `["card", "dp_node"]`,
+                which is what "written straight through" means; the four card fields named
+                are four rows of that file's own mapping table; and its edge list is
+                `["label", "condition", "weight"]`, which is why `in` and `out` compile to
+                nothing. Attractor's own edge set is wider (`fidelity`, `thread_id`,
+                `loop_restart` as well), so the sentence says what the exporter WRITES and
+                does not claim a limit on what a runner reads. */}
+            <p>
+              Two of the names in that file are DarkPrint&rsquo;s own and are in no
+              Attractor document: a node&rsquo;s <Id>card</Id>, which pins it to the card
+              that describes it, and an edge&rsquo;s <Id>in</Id> and <Id>out</Id>, which
+              name ports the two cards declare. <Id>card</Id> is written straight through
+              into the compiled file, where the exporter has already spent it (the
+              card&rsquo;s <Id>spec</Id> becomes the node&rsquo;s <Id>prompt</Id>, its{" "}
+              <Id>type</Id> selects the <Id>shape</Id> a handler is chosen from) and the
+              runner ignores what is left. <Id>in</Id> and <Id>out</Id> compile to nothing,
+              because the exporter writes an edge with <Id>label</Id>, <Id>condition</Id>{" "}
+              and <Id>weight</Id> on it and nothing else.{" "}
+              <SpecLink href="/spec/attractor">The crosswalk</SpecLink> is the whole table.
             </p>
             {/* The paragraph this page went without until 2026-08-30, and the reason the
                 metadata above changed with it. The old sentence said Attractor "runs it as

@@ -82,16 +82,32 @@ const CANONICAL = "/blueprints/[owner]/[slug]";
    on. The control's JOB is unchanged: a route with no data source going per-request is
    still the drift this table reds on. */
 const STAY_STATIC = ["/", "/mcp", "/skill", "/what-a-blueprint-is"] as const;
-/* `/ontology` was here until 2026-09-06. The owner folded the vocabulary browser into
-   `/spec/ontology` and deleted the index, and a DELETED route is absent from both maps —
-   which is exactly how this cell reads "per-request", so the row would have gone on passing
-   while measuring nothing. `/spec/ontology` is the row that carries the claim now: it took
-   the browser, it reads the registry, and it declares `force-dynamic` for that reason. The
-   shelf did not stop being per-request; its address changed. */
+/* `/ontology` was here until 2026-09-06, then `/spec/ontology` for part of the same day, and
+   the row moved for the SAME reason both times. A DELETED route is absent from both maps,
+   which is exactly how this cell reads "per-request", so a row left pointing at one goes on
+   passing while measuring nothing. That is the failure mode this table cannot detect from
+   the inside: it does not red, it goes quiet.
+
+   First: the owner folded the vocabulary browser into `/spec/ontology` and deleted the index.
+   Second: the owner accepted that the ontology stays and is reframed rather than unified into
+   the Attractor specification ("The motivations you provided are sound. Apply them."), and the
+   reframing folds `/spec/ontology` into `/spec/card` so each term sits beside the card field
+   that consumes it.
+
+   `/spec/card` is the row that carries the claim now: it took the browser, it reads the
+   registry through `@/lib/server/registry` and `@/lib/server/search`, and it declares
+   `force-dynamic` for that reason. The shelf has never stopped being per-request; its address
+   has changed twice.
+
+   TWICE IN ONE DAY IS THE ARGUMENT FOR CHECKING THIS ROW AGAINST THE ROUTE TREE and not only
+   against the manifest, because the manifest cannot tell a deleted route from a dynamic one.
+   `tests/server/t260/partition.ts` names the same file for the same shelf, and
+   `components/ontology/canonical-route.test.ts` asserts the old page is gone; between them a
+   third repoint reds somewhere loud rather than silently emptying this row. */
 const STAY_DYNAMIC = [
   "/blueprints",
   "/nodes",
-  "/spec/ontology",
+  "/spec/card",
   "/settings",
   "/u/[username]",
   "/upload",
@@ -139,6 +155,26 @@ describe("in-table controls", () => {
   });
 
   it.each(STAY_DYNAMIC)("%s is still per-request", (route) => {
+    /* THE PREMISE THAT MAKES THE ROW CAPABLE OF FAILING, added 2026-09-06 after the ontology
+       shelf had been repointed twice in a day. This assertion is a `not.toContain` over two
+       manifest maps, and a DELETED route is absent from both, so a row left naming one goes on
+       passing while measuring nothing. That is invisible from inside a manifest reading:
+       "never prerendered" and "does not exist" are the same observation.
+
+       The route tree is where they differ, so it is asked first. Every route named here
+       resolves to a real `page.tsx` today, checked at the time of writing for all six, which
+       is what lets a THIRD repoint red here by name instead of quietly emptying the row.
+       Route groups and parallel segments would break the path arithmetic; none of these six
+       uses one, and a route that grows one should be given its file path here rather than
+       having this premise loosened. */
+    expect(
+      existsSync(`app${route}/page.tsx`),
+      `there is no \`app${route}/page.tsx\`, so \`${route}\` is a route that no longer ` +
+        `exists rather than one that renders per request. The cell below is a \`not.toContain\` ` +
+        `over the manifest and a deleted route is absent from it, so this row would go on ` +
+        `passing while measuring nothing. Repoint it at the route that carries the claim now.`,
+    ).toBe(true);
+
     const { routes, dynamicRoutes } = manifest();
     expect(
       [...Object.keys(routes), ...Object.keys(dynamicRoutes)],

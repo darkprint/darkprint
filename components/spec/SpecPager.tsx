@@ -49,8 +49,8 @@ import { RUNS, SPEC_OVERVIEW, SPEC_SEQUENCE, runPosition, specNeighbours, type S
  * The crumb at the top of a child page.
  *
  * It carries the way back and the position, which are the two things a reader who arrived
- * from a search result has no other source for. Rendered on the three layer pages and not
- * on the overview, where both facts would be self-evident.
+ * from a search result has no other source for. Rendered on every child page under `/spec`
+ * and not on the overview, where both facts would be self-evident.
  *
  * Both halves come off `SPEC_OVERVIEW` rather than being typed. They were a hardcoded
  * `href="/spec"` and a hardcoded "The spec language", and the IA pass deleted that route
@@ -91,9 +91,13 @@ export function SpecCrumb({ href }: { href: string }) {
  * seen; at the foot of a page they have just read, the title alone names the next
  * stop, and the extra line was buying a 700px amber rectangle for eight words.
  *
- * The box hugs its content now (`inline-flex`, no column stretch) and caps at 19rem,
- * which is wide enough for the longest title in `SPEC_SEQUENCE` ("The ontology, the
- * vocabulary both draw from") over two lines at the 16px display tier.
+ * The box hugs its content now (`inline-flex`, no column stretch) and caps at 19rem. That
+ * width was measured against the longest title the sequence carried when the cap was set,
+ * "The ontology, the vocabulary both draw from", which is longer than anything in
+ * `SPEC_SEQUENCE` today: the layer titles were shortened to their nav names in 2026-08-08
+ * and the stop that had that one folded into `/spec/card` on 2026-09-06. The cap is left
+ * where it is because a cap is a ceiling rather than a measurement, and lowering it to the
+ * new longest title would only have to move again on the next rename.
  *
  * ── It still cannot be read as a `ComingSoonBadge` ──
  * `app/globals.css` says the two amber surfaces are told apart by shape, not hue, and
@@ -162,10 +166,17 @@ export function SpecPager({
   /**
    * One more signpost, at the right end of the arrow row.
    *
-   * `/spec/ontology` passes the Design box: that page ends the sequence, so it has a
-   * PREVIOUS and no NEXT, and the right end of the row is empty. A forward exit belongs
-   * exactly there — on the row a reader already reads for "where next" — rather than in a
-   * band of its own above it.
+   * NO CALLER SINCE 2026-09-06, and that is recorded rather than removed. `/spec/ontology`
+   * was the one page that passed it, a Design box on the stop that then ended the
+   * specification run: it had a PREVIOUS and no NEXT, so the right end of the row was empty,
+   * and a forward exit belongs on the row a reader already reads for "where next" rather
+   * than in a band of its own above it. That page folded into `/spec/card`, which has a NEXT
+   * of its own and no empty end to fill.
+   *
+   * The prop is kept because the shape it answers recurs on whichever stop ends a run, and
+   * because the argument above is the whole of what it knows. Whether a slot with no caller
+   * earns its place is a call for whoever audits this file next, and they should have the
+   * reason in front of them.
    *
    * Rendered inside the row rather than beside the pager so the two boxes share one
    * baseline and one wrap; a sibling `<div>` puts them on two lines at every width.
@@ -175,9 +186,18 @@ export function SpecPager({
    * Whether to draw the NEXT signpost.
    *
    * True everywhere except `/what-a-blueprint-is`, where the author asked it out on
-   * 2026-08-08. That page ends on `WhereNext`, three cards carrying all three layer pages
-   * in sequence order, and the pager's NEXT is the first of those three a second time,
+   * 2026-08-08. That page ended on `WhereNext`, three cards carrying all three layer pages
+   * in sequence order, and the pager's NEXT was the first of those three a second time,
    * forty pixels below it. Two boxes offering one destination is not a choice.
+   *
+   * ── THAT PREMISE IS FALSE SINCE 2026-09-06, and the flag is still passed ──
+   * The crosswalk moved to stop 01, so the overview's NEXT is `/spec/attractor`, and
+   * `WhereNext` draws the LAYER doors, which no longer include it. The two boxes no longer
+   * offer one destination; they offer different ones, and the flag now hides the only
+   * forward link the door has to the stop that follows it. `app/what-a-blueprint-is` is
+   * where `showNext={false}` is written and it is not this file's to change, so what is
+   * recorded here is that the reason it was written for has gone. The default is unchanged
+   * (`true`), and dropping the prop at the call site is all the repair takes.
    *
    * The rail above it is untouched, so the sequence is still navigable from that page and
    * still announces which stop it is on. PREVIOUS is untouched too; on stop 00 there is

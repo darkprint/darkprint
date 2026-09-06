@@ -109,11 +109,12 @@ describe("AC1 / D-260-05: the shelf is not frozen at the last deploy", () => {
 
     /* ONE EXEMPTION, and it is narrower than the rule rather than a hole in it.
        ------------------------------------------------------------
-       The ontology shelf moved onto `app/spec/ontology/page.tsx` on 2026-09-06 (owner
-       instruction), and that page is two documents now: it LISTS the vocabulary off the
-       registry, and it SPECIFIES the format. The specification half quotes
-       `content/ontology/extensions.yaml` verbatim, as the evidence under the overlay rules,
-       and it reads it through `bundleVocabulary`.
+       The ontology shelf has been repointed twice on 2026-09-06 (`partition.ts` carries both
+       instructions) and it now lives on `app/spec/card/page.tsx`, which is two documents:
+       it LISTS the vocabulary off the registry, and it SPECIFIES the card format. The
+       specification half reads one checked-in node card through `getNodeCard("code-builder")`
+       and draws the reach panel from it, beside the same card `SectionNodeCard` annotates
+       byte for byte.
 
        AC1's reason does not reach that read. The rule exists because `lib/content/read.ts`
        walks `content/` at build time and memoizes, so a REGISTRY figure served through it is
@@ -122,11 +123,19 @@ describe("AC1 / D-260-05: the shelf is not frozen at the last deploy", () => {
        against; a build serving a stale copy of a file that was in that build is not a state
        that exists.
 
-       So the exemption is pinned to the one binding rather than to the module: any other
-       name imported from the archive on this route still reds, and the other two shelves are
+       THE EXEMPTION WAS REWRITTEN RATHER THAN CARRIED ACROSS, which is the whole point of
+       pinning it to a binding. It read `bundleVocabulary` for the previous address, where the
+       page quoted `content/ontology/extensions.yaml` under the overlay rules. That evidence
+       panel went with the overlay band earlier the same day, so by the time of this repoint
+       the old exemption named a binding no route imported and the branch had stopped firing
+       entirely. The new name was not assumed: this cell RED against `[ 'getNodeCard' ]` and
+       said so, which is the exemption reporting a changed read rather than absorbing one.
+
+       So it stays pinned to the one binding rather than to the module: any other name
+       imported from the archive on this route still reds, and the other two shelves are
        untouched. Deleting the panel to satisfy a module-level string check would take the
        page's only piece of evidence with it, which is a worse page and not a cleaner one. */
-    const EXEMPT: Partial<Record<Shelf, readonly string[]>> = { ontology: ["bundleVocabulary"] };
+    const EXEMPT: Partial<Record<Shelf, readonly string[]>> = { ontology: ["getNodeCard"] };
     const allowed = EXEMPT[shelf];
     if (allowed !== undefined && archive.length > 0) {
       expect(

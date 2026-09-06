@@ -203,7 +203,75 @@ const FROZEN: readonly Frozen[] = [
   },
   {
     path: "components/ontology/canonical-route.test.ts",
-    blob: "07f95f61a6be27f01f1051f062b4d5fa2174c0e6" /* re-pinned DELIBERATELY a THIRD time,
+    blob: "aaa434ad1b38a36fc3a02928fc38f87da5eb475d" /* re-pinned DELIBERATELY a FOURTH time,
+      2026-09-06, at the owner's acceptance of the reframing that folds `/spec/ontology` into
+      `/spec/card`: "The motivations you provided are sound. Apply them."
+
+      THE INSTRUCTION ANSWERS A LARGER QUESTION THAN THE ADDRESS, and the answer is the part
+      worth carrying. The owner asked whether the ontology should exist at all or whether
+      everything should unify under the Attractor specification, because two spec documents
+      read as two rival standards. The finding was that they are not rivals: 13 of 54 core
+      terms overlap Attractor and those 13 REFINE it (`agent`, `tool` and `validation` are
+      three DarkPrint node-types Attractor collapses into one `shape=box`), while 41 have no
+      Attractor equivalent at all. Attractor specifies EXECUTION, the ontology specifies
+      DESCRIPTION. So the vocabulary is KEPT and its framing changes: every term exists to be
+      a legal value of a card FIELD, so the terms move beside the fields that consume them
+      and the separate ontology document goes.
+
+      FOURTH POSITION, FOURTH PIN, AND THE FILE IS STILL BIDIRECTIONAL. The tempting repair
+      was to empty a guard that has now been reversed twice in two days by two different
+      rulings. It is the same length, it keeps all four positions in its header as history
+      rather than rewriting the losing ones as mistakes, and every absence still has a
+      positive beside it. What moved: the three cells that read `app/spec/ontology/page.tsx`
+      read `app/spec/card/page.tsx`; the redirect set grew to four sources, all onto
+      `/spec/card`; the chain predicate INVERTED, because `/spec/ontology` was the
+      destination in the third position and is a source in the fourth; a second absence cell
+      covers the newly deleted page, premised on the card route being present first.
+
+      ONE ASSERTION WAS REWRITTEN RATHER THAN MOVED, and it is the correction a carry-across
+      would have got wrong. The checks-band cell matched `<CheckTable`, which on the deleted
+      page could only be the vocabulary's checks band coming back. `/spec/card` mounts a
+      `CheckTable` over `CARD_ROWS` as its own oldest band, so the same matcher at the new
+      address would have red against a correct fold. It matches `ONTOLOGY_ROWS` now, the
+      rows deleted from `components/spec/rows.ts` on the instruction that removed the band,
+      which is one name for one band rather than a shape two bands share.
+
+      FALSIFIED BEFORE THIS PIN MOVED, in four parts, against the post-fold tree.
+      M1, the ruling reversed: `app/spec/ontology/page.tsx` was written back as a four-line
+      stub mounting `<VocabularyBrowser`, the smallest form a fifth pass restoring it could
+      take. Two cells red BY NAME — the absence, printing "the separate ontology
+      specification page is back", and the whole-tree walk, printing two mounts where one is
+      allowed — with the four cells that read other files still green. A guard that only reds
+      when everything is wrong reds on nothing. Stub deleted, suite green again.
+      M2, the redirect predicates, driven in a throwaway suite against the contract array and
+      five mutations of it: the `/spec/ontology` row missing, `permanent: false`, the
+      destination left at the old `/spec/ontology`, a `/spec/card` source added so all four
+      chain, and a `/ontology/:term` source added to shadow term detail. Green on the
+      contract, red on all five. The file was deleted after the run. It had to be driven that
+      way rather than against `next.config.ts`, which belongs to another lane, and the
+      predicates then ran against the real config once that lane landed: the cell red for one
+      pass naming the missing rows and went green when the four arrived, which is the guard
+      stating a requirement and having it met rather than being written to fit.
+      M3, the freeze itself: the newly added absence of `app/spec/ontology/page.tsx` was
+      deleted from the amended file, which is the plausible tidy for an author who reads a
+      second absence beside the first as redundant now that the page is gone anyway. The
+      SUITE STAYED GREEN at 7 of 7 — the cell goes on passing once its own second direction
+      is removed — and this guard red BY NAME with every other pin still passing. That pair
+      of readings is what says the freeze and not the cell catches this weakening. Restored
+      from a `cp` copy and verified byte-identical with `diff -q`, and the pin above is the
+      hash of the restored file rather than of the probe.
+      M4, the retargeted cells against the page they now read, five mutations of
+      `app/spec/card/page.tsx` restored from a `cp` copy and verified byte-identical: the
+      browser unmounted (three cells red, which is the premise doing its job in two of them),
+      `ONTOLOGY_ROWS` referenced, `OVERLAY_RULES` declared, a `<RouteBoxLink>` pointing at
+      the folded page, and `id="fields-heading"` renamed so the premise itself is shown to be
+      live. All five red BY NAME at exactly the cell that owns the claim.
+
+      The previous pin was `07f95f61a6be27f01f1051f062b4d5fa2174c0e6` and it IS readable with
+      `git cat-file -p`: those bytes are `HEAD`'s, unlike the second pin below. The caveat
+      attached to that one does not apply here and is not being carried forward.
+
+      Re-pinned DELIBERATELY a THIRD time,
       2026-09-06, at the owner's instruction to take two bands off the merged specification
       page: "remove "The overlay / Anyone can add a term, in a namespace of their own"
       section as it become false as we remove the versioning od the onotology and also the

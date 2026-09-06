@@ -239,7 +239,6 @@ const EM_DASH_FILES = [
     // shape a tree-based walk misses.
     "components/panes/field-notes.ts",
     "components/panes/SkeletonPane.tsx",
-    "components/panes/SourcePane.tsx",
     "components/panes/SynchronisedPanes.tsx",
     // New copy from this pass inside an otherwise-exempt tree — see the comment on
     // `COPY_TREES` above for why it is named here rather than by widening that list.
@@ -312,7 +311,11 @@ describe("the copy rules the whole site is held to", () => {
     expect(appPages().length).toBeGreaterThan(6);
     for (const path of [
       "app/page.tsx",
-      "app/spec/ontology/page.tsx",
+      /* `app/spec/ontology/page.tsx` until 2026-09-06, when the vocabulary folded into the
+         card spec and that route was deleted. The card page is the one that inherited the
+         prose, so it is the one this cell holds: the point of the four paths below is that
+         the list is not a memory, and a path naming a deleted file proves nothing. */
+      "app/spec/card/page.tsx",
       "components/site/SiteHeader.tsx",
       "components/viz/Sheet.tsx",
     ]) {

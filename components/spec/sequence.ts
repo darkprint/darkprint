@@ -1,5 +1,5 @@
 /* ============================================================
-   The seven Learn routes, as one ordered list.
+   The Learn routes, as one ordered list.
 
    Redesign spec §4.1 splits `/spec` into an overview and three
    layer pages, and asks that they "read as a sequence". A sequence
@@ -54,22 +54,50 @@
    and the practice run moves down a rung, which is the treatment
    this file already applies in the other direction when a stop is
    deleted. It is NOT a fourth entry in `SPEC_LAYERS`: a blueprint is
-   still three files, and the three layer pages still say "Layer 0n
-   of 03". See the constant for the rest of the argument.
+   still three files, and the layer pages still say which of them
+   they specify. (Two pages and three layers since the fold below,
+   which is why the card entry's eyebrow names two.) See the constant
+   for the rest of the argument.
+
+   ── And that route moved to the front, 2026-09-06 ──
+   The owner asked whether the ontology should exist at all, or
+   whether everything should unify under the Attractor spec, because
+   two specification documents read as two rival standards. The
+   finding was that the vocabulary describes a layer Attractor leaves
+   open, and that what makes the two read as rivals is the ORDER a
+   reader meets them in: `/spec/topology` documents a DOT carrying
+   two attributes Attractor's Appendix A does not have, and the page
+   explaining that stood after three DarkPrint documents. The owner:
+   "The motivations you provided are sound. Apply them."
+
+   So `SPEC_CROSSWALK` is stop 01 and the layers move down a rung.
+   The reader who already knows Attractor meets the mapping before
+   the first DarkPrint format rather than after all of them, and the
+   two attributes they will not recognise have been named as ours a
+   page earlier.
+
+   `/spec/ontology` is DELETED in the same change, and it is a fold
+   rather than a deletion of the subject: every term in that document
+   exists to be a legal value of a card field, so each is printed
+   beside the field that consumes it on `/spec/card`. `SPEC_LAYERS`
+   is two entries. What that cost is recorded on the constant itself,
+   because the deleted entry carried two claims the site made nowhere
+   else.
 
    So this file owns the order, the labels and the one-line question
-   each page answers, and every surface reads it: the three doors on
+   each page answers, and every surface reads it: the doors on
    `/what-a-blueprint-is`, each child's crumb, and the previous/next
-   pager at the foot of all four.
+   pager at the foot of every stop.
 
    Plain TypeScript, no JSX and no React, so `spec-routes.test.ts`
    can import it under `environment: "node"` and hold the pages on
    disk against it.
 
-   Nothing dynamic lives here. The ontology door prints a live term
-   count, and that number is read off the engine on the page that
-   renders it rather than frozen into this list, which is the same
-   rule the rest of the site follows about figures it quotes.
+   Nothing dynamic lives here. The ontology door printed a live term
+   count and that number was read off the engine on the page that
+   rendered it rather than frozen into this list; the door is gone
+   with the stop, and the rule it was an instance of still holds for
+   whatever quotes a figure next.
    ============================================================ */
 
 /**
@@ -233,7 +261,7 @@ export interface SpecLayerPage extends SpecPage {
  *
  * Their words: "probably we need a page reporting in details what is the documentation,
  * ie the spec language we use in darkprint. Probably it is the ontology, right?" The
- * overview answers it in one line and hands the reader three doors.
+ * overview answers it in one line and hands the reader a door per layer page.
  *
  * ── Why this is `/what-a-blueprint-is` and no longer `/spec` ──
  * The IA pass deleted `/spec` on the author's instruction and asked that its three
@@ -262,7 +290,57 @@ export const SPEC_OVERVIEW: SpecPage = {
 };
 
 /**
- * The three layers, in the order a reader resolves them: graph, card, vocabulary.
+ * Stop 01: the crosswalk between a bundle and the file a runner takes.
+ *
+ * ── why this is a route and not a column ──
+ * The 2026-09-04 audit asked whether DarkPrint is a file registry a person who already
+ * knows the Attractor specification can use without re-learning anything, and put the owner
+ * two ways to close the gap: append an Attractor clause to each field row on `/spec/card`,
+ * or give the mapping a page. The owner chose the page (§11.0 Q20 b), on two grounds. It is
+ * one URL you can hand a stranger, and a page rendered from the exporter's own constants
+ * cannot drift from what the exporter writes — where a clause per field row is a dozen
+ * sentences that each go stale on their own.
+ *
+ * ── why stop 01, having been stop 04 ──
+ * It arrived as the last question the specification run left open: having read what the
+ * three files are, what does the thing that runs them actually see. The owner reversed that
+ * on 2026-09-06 ("The motivations you provided are sound. Apply them"), on the finding this
+ * file's header records: `/spec/topology` documents a DOT carrying `card=` and `in=`,
+ * neither of which is in Attractor's Appendix A, and the page that says whose they are was
+ * three DarkPrint documents further on. A reader who arrives already knowing Attractor met
+ * two unexplained attributes first and a rival standard second.
+ *
+ * So the question it answers is asked before the formats rather than after them, and every
+ * layer moves down a rung. That is the treatment this file applies whenever a stop is
+ * inserted or removed, and for the reason recorded on the essay below: a sequence with a
+ * hole where a number should be tells a reader they missed a page.
+ *
+ * It is still not a layer. A blueprint is three files and this page adds no format a reader
+ * has to write; `SPEC_LAYERS` is where the layers are, and two pages are left in it.
+ *
+ * `eyebrow` deliberately breaks the layers' "Layer 0n of 03" pattern. Reusing it would have
+ * announced a fourth layer in the one word a reader scanning the header reads first.
+ */
+export const SPEC_CROSSWALK: SpecPage = {
+  href: "/spec/attractor",
+  step: "01",
+  run: "specification",
+  nav: "Attractor crosswalk",
+  eyebrow: "Compatibility",
+  title: "The Attractor crosswalk",
+  question:
+    "Which card field becomes which node attribute, and what a runner reads that a blueprint cannot say.",
+  sections: [
+    { id: "crosswalk-heading", label: "The crosswalk" },
+    { id: "shapes-heading", label: "Types and handlers" },
+    { id: "classes-heading", label: "The class attribute" },
+    { id: "unexpressed-heading", label: "The gap" },
+    { id: "not-a-pipeline-heading", label: "Not a pipeline" },
+  ],
+};
+
+/**
+ * The layer pages, in the order a reader resolves the files: graph, then card.
  *
  * ── `title` is the site's name for the route, not a headline ──
  * Renamed on 2026-08-08. They were "The topology, in DOT", "The node card, in YAML" and
@@ -280,11 +358,33 @@ export const SPEC_OVERVIEW: SpecPage = {
  *
  * `question` is what the old titles were really doing: naming the file is the title's job,
  * saying what the file answers is the question's, and they were sharing the work.
+ *
+ * ── Two entries since 2026-09-06, and what the third one was carrying ──
+ * The vocabulary's page folded into `/spec/card` and `/spec/ontology` was deleted, so the
+ * third entry went with it. A door cannot be repointed at `/spec/card`: `app/what-a-blueprint-is`
+ * draws one band per entry and `WhereNext` one link per entry, so a second entry at that
+ * href would put two names on one route on one screen, which is the defect
+ * `components/site/nav.test.ts` opens with.
+ *
+ * The entry was the only place two claims were written, and both are accounted for rather
+ * than dropped:
+ *
+ * - `file: "ontology/extensions.yaml"`. `tests/server/t260/frozen-tests.test.ts` names it
+ *   the last statement on the site that the local overlay exists at all, the rest having
+ *   been removed on the owner's instruction. It is REHOMED onto the card entry's `file`,
+ *   which is the door to the page that now prints the terms, and the two paths are joined
+ *   the way `source` already joins two modules on the topology entry.
+ * - `anchor: "ontology"`. That id is drawn on `/what-a-blueprint-is` so a bookmark on the
+ *   pre-split `/spec#ontology` still lands on the band about the vocabulary. With no third
+ *   entry there is no third band, and the fragment now lands at the top of the page. It is
+ *   NOT rehomed here, because `anchor` is held to `href` by `spec-routes.test.ts` one entry
+ *   at a time and a second id on the card band is that page's to declare. Recorded as an
+ *   absence so it reads as a cost somebody priced.
  */
 export const SPEC_LAYERS: readonly SpecLayerPage[] = [
   {
     href: "/spec/topology",
-    step: "01",
+    step: "02",
     run: "specification",
     nav: "Topology",
     eyebrow: "Layer 01 of 03",
@@ -302,134 +402,50 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
   },
   {
     href: "/spec/card",
-    step: "02",
+    step: "03",
     run: "specification",
     nav: "Node card",
-    eyebrow: "Layer 02 of 03",
+    /* "Layers 02 and 03 of 03", where the entry above keeps the single-layer form.
+       ------------------------------------------------------------
+       The vocabulary's page folded into this one on 2026-09-06, so this route documents
+       two of a blueprint's three files: the card, and the terms its `type`, `phases`,
+       `riskMarkers`, `tools` and port types have to be drawn from. An eyebrow reading
+       "Layer 02 of 03" over a page that also specifies layer 03 would send a reader looking
+       for a third document that no longer has one, which is what the sequence's own hole
+       rule refuses one level up. The count stays "of 03" because a blueprint is still three
+       files; what changed is how many pages describe them. */
+    eyebrow: "Layers 02 and 03 of 03",
     title: "The node card (YAML)",
     question: "What one node is, in enough detail to instantiate it.",
+    /* Five rows since the fold, and five is what the two stops had between them.
+       ------------------------------------------------------------
+       `/spec/ontology` listed "Core vocabulary" and "Every term"; this page now declares
+       both of those ids, so the rail keeps the same number of ways in and the reader who
+       used to find the vocabulary in the rail still finds it. `every-term-heading` is the
+       catalog band whole. `field-values-heading` is the fold itself, and it is an `h3`
+       inside the field reference rather than a band of its own, which is the one place
+       this list departs from "one row per band": the row is a claim about an id the page
+       declares with `scroll-mt-24`, and dropping it would put the vocabulary further from
+       the rail than it was on its own route. */
     sections: [
       { id: "card-reach", label: "Reach and limits" },
       { id: "node-card", label: "A real card, annotated" },
       { id: "fields-heading", label: "Field reference" },
+      { id: "field-values-heading", label: "What each field may hold" },
+      { id: "every-term-heading", label: "Every term" },
     ],
     format: "YAML, JSON accepted",
-    file: "cards/id@version.yaml",
-    source: "lib/core/card/schema.ts",
+    /* Two paths, joined the way `source` above joins two modules. The second one arrived
+       with the fold: `tests/server/t260/frozen-tests.test.ts` records that this string is
+       the last place on the site the overlay file is named at all, and the entry that used
+       to carry it is deleted. `/what-a-blueprint-is` draws this line under the door, so the
+       claim keeps a reader. */
+    file: "cards/id@version.yaml · ontology/extensions.yaml",
+    source: "lib/core/card/schema.ts · lib/core/ontology/",
     color: "var(--color-copper-line)",
     anchor: "card",
   },
-  {
-    href: "/spec/ontology",
-    step: "03",
-    run: "specification",
-    /* "Ontology file", where the two stops above keep one-word forms.
-       ------------------------------------------------------------
-       It was plain "Ontology" until 2026-08-12, when `/ontology` — the browser — took that
-       word across the whole chrome on the author's instruction. `nav` is what the Learn
-       dropdown, `LearnShell`'s rail and `SpecPager` print, so leaving it there would have
-       put two rows reading "Ontology" in one header pointing at two routes.
-
-       It spent one commit as "Ontology file (YAML)" and the author asked the format off
-       both menus. The parenthetical belongs to the FOOTER's register, where the Learn
-       column spells all three out — "Blueprint file (DOT)", "Node card (YAML)" — because
-       a footer row has no run around it to say what kind of document it is. A dropdown row
-       and a rail row do: they sit under "Specification" among their two siblings, which are
-       "Topology" and "Node card". So the format goes back to `SiteFooter`'s `LEARN_LABELS`,
-       beside the two overrides that were already there for the same reason, and this stays
-       the short name plus the one word that keeps it off the browser's.
-
-       `title` stays "Ontology" — that is the page's own heading, and the thing the document
-       specifies. */
-    nav: "Ontology file",
-    eyebrow: "Layer 03 of 03",
-    title: "Ontology",
-    question: "Which identifiers the first two are allowed to use.",
-    /* Three entries, one per band, since 2026-08-11.
-       ------------------------------------------------------------
-       A fourth stood here — `{ id: "phases", label: "Term catalog" }` — and it had pointed
-       at nothing on this route since the accounts pass. `id="phases"` is declared in
-       `components/ontology/OntologyCatalog.tsx`, which mounts on `/ontology` and not here,
-       so the rail rendered `/spec/ontology#phases` and clicking it scrolled nowhere.
-
-       `components/site/anchors.test.ts` could not catch it and still cannot: it walks the
-       whole tree for a declaring `id="…"` and finds this one, on the other route. Its own
-       docblock is about links written in a table rather than in JSX, which is the shape
-       these are, so the entry was invisible to it twice over. Worth knowing before adding
-       an anchor here again — a cross-route fragment passes that guard whichever way it is
-       written.
-
-       Nothing is lost with the entry, and the rail lists exactly the bands the page has.
-       That has now been true of three different pages in one day, so it is worth saying how
-       it is kept true: a rail row is a LINK, `components/site/anchors.test.ts` walks the
-       tree for a fragment nothing declares, and it is what caught the two rows below when
-       their bands came off. This list is not documentation of the page, it is a set of
-       claims about the page's own ids.
-
-       Two rows left on 2026-09-06. `overlay-heading` ("Local overlay") and
-       `ontology-checks-heading` ("Validator checks") pointed at the two bands the owner
-       removed, and a row pointing at a fragment nothing declares scrolls nowhere. The
-       catalog this stop used to send a reader to through a `.route-box` is on the page
-       itself now, which is what `every-term-heading` names. */
-    sections: [
-      { id: "vocabulary-heading", label: "Core vocabulary" },
-      { id: "every-term-heading", label: "Every term" },
-    ],
-    /* NOT "a versioned term list", which it was until 2026-09-06 and which
-       `app/what-a-blueprint-is/page.tsx` renders in two places. The owner removed ontology
-       versioning on 2026-09-05 ("we do not offer anymore the versioning of the ontology; we
-       just keep the terms from the attractor spec"), so the word described a property the
-       file no longer has. It survived that removal because this field is data here and is
-       drawn on a different route, which is the shape a stale claim usually takes. */
-    format: "a term list",
-    file: "ontology/extensions.yaml",
-    source: "lib/core/ontology/",
-    color: "var(--color-emerald)",
-    anchor: "ontology",
-  },
 ];
-
-/**
- * Stop 04: the crosswalk between a bundle and the file a runner takes.
- *
- * ── why this is a route and not a column ──
- * The 2026-09-04 audit asked whether DarkPrint is a file registry a person who already
- * knows the Attractor specification can use without re-learning anything, and put the owner
- * two ways to close the gap: append an Attractor clause to each field row on `/spec/card`,
- * or give the mapping a page. The owner chose the page (§11.0 Q20 b), on two grounds. It is
- * one URL you can hand a stranger, and a page rendered from the exporter's own constants
- * cannot drift from what the exporter writes — where a clause per field row is a dozen
- * sentences that each go stale on their own.
- *
- * ── why stop 04 of the specification run ──
- * It is not a fourth layer. A blueprint is still three files, the three layer pages still
- * say "Layer 0n of 03", and this page adds no format a reader has to write. It is the last
- * question the specification run leaves open: having read what the three files are, what
- * does the thing that runs them actually see. So it takes the number after the third layer
- * and the practice run moves down a rung — the same treatment the essay took when the
- * graded page was deleted, and for the same reason recorded there: a sequence with a hole
- * where a number should be tells a reader they missed a page.
- *
- * `eyebrow` deliberately breaks the layers' "Layer 0n of 03" pattern. Reusing it would have
- * announced a fourth layer in the one word a reader scanning the header reads first.
- */
-export const SPEC_CROSSWALK: SpecPage = {
-  href: "/spec/attractor",
-  step: "04",
-  run: "specification",
-  nav: "Attractor crosswalk",
-  eyebrow: "Compatibility",
-  title: "The Attractor crosswalk",
-  question:
-    "Which card field becomes which node attribute, and what a runner reads that a blueprint cannot say.",
-  sections: [
-    { id: "crosswalk-heading", label: "The crosswalk" },
-    { id: "shapes-heading", label: "Types and handlers" },
-    { id: "classes-heading", label: "The class attribute" },
-    { id: "unexpressed-heading", label: "The gap" },
-    { id: "not-a-pipeline-heading", label: "Not a pipeline" },
-  ],
-};
 
 /**
  * The second run: what a reading of the specification looks like.
@@ -439,9 +455,10 @@ export const SPEC_CROSSWALK: SpecPage = {
  *
  * It was three until 2026-09-04, when the author asked the grading page off the site, and
  * two until 2026-09-06, when the owner deleted the sandbox at `/build` ("it is not useful
- * and make confusion"). The essay takes 05 the way it took 05 the first time a stop above it
- * was deleted, and for the reason recorded there: a sequence with a hole where a number
- * should be tells a reader they missed a page.
+ * and make confusion"). It reads 04 since the vocabulary's stop folded into `/spec/card`
+ * later the same day, having read 05 through the two deletions before it, and it renumbers
+ * every time for the reason recorded there: a sequence with a hole where a number should be
+ * tells a reader they missed a page.
  *
  * A one-entry constant is still a constant. The rail groups by run and prints "Practice",
  * and inlining this into `SPEC_SEQUENCE` would leave the grouping reading a shape nothing
@@ -459,7 +476,7 @@ export const SPEC_CROSSWALK: SpecPage = {
 export const LEARN_PRACTICE: readonly SpecPage[] = [
   {
     href: "/towards-a-dark-factory",
-    step: "05",
+    step: "04",
     run: "practice",
     nav: "Towards a Dark Factory",
     eyebrow: "The route",
@@ -484,7 +501,7 @@ export const LEARN_PRACTICE: readonly SpecPage[] = [
 ];
 
 /**
- * The reading order: the door, then the three layers in the order a reader resolves them.
+ * The reading order: the door, the crosswalk, then the layers in resolution order.
  *
  * A fifth stop stood here, `SPEC_SCORING` at `/spec/scoring`, for how the engine grades
  * what the three layers describe. The IA pass took it out of the sequence and off the
@@ -497,15 +514,21 @@ export const LEARN_PRACTICE: readonly SpecPage[] = [
  * the owner deleted that route on 2026-09-06, and `next.config.ts` repointed both onto
  * `/what-a-blueprint-is` rather than chaining them through a third redirect.
  *
- * The sequence is six stops: the door, the three layers, the Attractor crosswalk, the
- * essay. The worked example at `/build` was the seventh and went with the route. `SPEC_CROSSWALK` is spread in by name rather than folded into
- * `SPEC_LAYERS`, because the three doors on `/what-a-blueprint-is` and the three "Layer 0n
- * of 03" eyebrows are all read off that constant and a blueprint is still three files.
+ * The sequence is five stops: the door, the Attractor crosswalk, the two layer pages, the
+ * essay. It was six until the vocabulary's stop folded into `/spec/card` on 2026-09-06, and
+ * seven before the worked example at `/build` went with its route.
+ *
+ * `SPEC_CROSSWALK` is spread in by name rather than folded into `SPEC_LAYERS`, and it now
+ * stands BEFORE it. Two reasons, and only the second one is new. The doors on
+ * `/what-a-blueprint-is` are read off `SPEC_LAYERS`, and the crosswalk is not a layer: it
+ * names no file a reader writes. And the mapping is what a reader who already knows
+ * Attractor needs before they meet a DOT with `card=` in it, which is the whole of the
+ * 2026-09-06 reordering recorded at the top of this file.
  */
 export const SPEC_SEQUENCE: readonly SpecPage[] = [
   SPEC_OVERVIEW,
-  ...SPEC_LAYERS,
   SPEC_CROSSWALK,
+  ...SPEC_LAYERS,
   ...LEARN_PRACTICE,
 ];
 

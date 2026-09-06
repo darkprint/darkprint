@@ -58,14 +58,31 @@ import { SIGN_IN_PROVIDERS } from "@/components/auth/SignInButtons";
    So the row is DELETED rather than repointed, and that is a deliberate choice against the
    obvious one. Repointing it at `/spec/ontology` would put a row called "Ontology" in the
    bar and a row called "Ontology file" in the Learn menu, both opening the same URL on the
-   same screen, which is defect 1 at the top of this file with new names. The Learn row is
-   not free to rename either: it is stop 03 of `SPEC_SEQUENCE`, sitting between "Topology
-   file (DOT)" and "Node card (YAML)", and `spec-routes.test.ts` pins the pair. One route
-   keeps one name, and that name is the file form the sequence already prints.
+   same screen, which is defect 1 at the top of this file with new names. The Learn row was
+   not free to rename either: it was a stop of `SPEC_SEQUENCE`, sitting between "Topology
+   file (DOT)" and "Node card (YAML)", and `spec-routes.test.ts` pinned the pair. One route
+   keeps one name.
 
-   What a reader loses is the word "Ontology" in the bar. What they keep is every way in
-   that carried them there: the Learn menu names the route, the footer's Specification
-   column names it, `/ontology` 308s onto it, and `/ontology/<term>` is untouched.
+   ── And the second half of it, later the same day ──
+   `/spec/ontology` is gone as well. The owner accepted the finding that the vocabulary and
+   the Attractor specification read as two rival standards because of the order a reader
+   meets them in ("The motivations you provided are sound. Apply them"), so every ontology
+   term is printed beside the card field that consumes it and the route folds into
+   `/spec/card`. The docs row that named it is deleted for the plainest of the reasons in
+   this file: it pointed at a 308, and a chrome row pointing at a redirect is the two-hop
+   link `nav.test.ts`'s `RENAMED` block refuses everywhere else.
+
+   `/spec/attractor` takes the slot rather than the group dropping to three, and that is an
+   addition on its own merits rather than a seat filled. It is stop 01 of the sequence now,
+   the footer's Specification column has named it since it shipped, and it was the one Learn
+   route with a footer label and no header row to be held against — so the parity cell in
+   `nav.test.ts` could not see it. The label is the footer's, byte for byte, which is what
+   that cell asks of every other row.
+
+   What a reader loses is the word "Ontology" in the chrome. What they keep is every way in
+   that carried them to the vocabulary: the Learn menu and the footer name `/spec/card`,
+   which prints the terms, `/ontology` and `/spec/ontology` both 308 onto it, and
+   `/ontology/<term>` is untouched.
    ============================================================ */
 
 export const NAV = [
@@ -107,14 +124,22 @@ export const NAV = [
      accounts row — not from a global button. The route stays exempt in `nav.test.ts`'s
      ELSEWHERE for that reason. */
   { href: "/what-a-blueprint-is", label: "What a blueprint is", group: "docs" },
+  /* `/spec/ontology` had a row here, labelled "Ontology file (YAML)" to hold it apart from
+     the browser that had taken the bare word. Both routes are gone: the browser's index was
+     deleted on 2026-09-06 and the spec page folded into `/spec/card` the same day, so this
+     row would point at a 308. See the second half of the reversal in this file's header
+     docblock for why the vocabulary's name leaves the chrome rather than moving onto the
+     card row, which already has one.
+
+     `/spec/attractor` is in its place, and the label is `SiteFooter`'s `LEARN_LABELS` entry
+     byte for byte. This group exists to give the footer's Learn rows a header label to be
+     held against, and the crosswalk was the one Learn route the parity cell could not see,
+     because it had a footer label and no row here. The Learn dropdown prints the sequence's
+     own short form ("Attractor crosswalk"), which is a different surface with a run heading
+     over it, the way the three rows above already differ from theirs. */
+  { href: "/spec/attractor", label: "Reading it as Attractor", group: "docs" },
   { href: "/spec/topology", label: "Topology file (DOT)", group: "docs" },
   { href: "/spec/card", label: "Node card (YAML)", group: "docs" },
-  /* "Ontology file (YAML)" and not "Ontology". The browser one group up took the bare word
-     on the author's instruction and this row moved to the shape its two siblings above it
-     already have; the browser is gone and the label stays, because this row is now the only
-     name the chrome gives the route and the sequence prints the file form beside its two
-     siblings. See the reversal in this file's header docblock. */
-  { href: "/spec/ontology", label: "Ontology file (YAML)", group: "docs" },
   /* `/towards-a-dark-factory` stood here as `group: "guides"` and was deleted 2026-08-11.
      `guides` is not one of the groups this file renders (`browse`, `build`, `docs`;
      `action` left with the Publish button) nor one of `MOBILE_GROUPS`, so the row drew

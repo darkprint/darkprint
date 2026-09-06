@@ -494,10 +494,38 @@ export default function WhatABlueprintIsPage() {
      its own, so there is nothing left to read and nothing left to label. `VocabularyFigure`
      lost the prop in the same change rather than being handed a placeholder. */
 
-  /* By route rather than by position. The three bands below are hand-written because each
-     carries its own figure and its own sentence, and reading the layer out of the list by
-     index would make a reorder in `sequence.ts` silently swap two drawings. */
-  const [topology, cardLayer, ontology] = SPEC_LAYERS;
+  /* By route rather than by position. The bands below are hand-written because each carries
+     its own figure and its own sentence, and reading the layer out of the list by index
+     would make a reorder in `sequence.ts` silently swap two drawings. */
+  const [topology, cardLayer] = SPEC_LAYERS;
+
+  /* THE VOCABULARY IS NO LONGER A LAYER, and this band is what that costs here.
+     ------------------------------------------------------------
+     `SPEC_LAYERS` held three entries until 2026-09-06 and holds two. The owner asked why the
+     vocabulary had a spec page of its own when everything should unify under Attractor, and
+     the answer was that it is not a peer of the card spec but its VALUE DOMAIN: every term is
+     a legal value of a card field. So it folded into `/spec/card` and stopped being a layer.
+
+     The BAND stays, and it is not sentimentality. Three things is still the honest count of
+     what a blueprint is made of — a graph, cards, and the words both are written against —
+     and the page's argument is about the thing rather than about how many URLs document it.
+     Two details make the band impossible to drop rather than merely worth keeping:
+
+       - `id="ontology"` is a live landing site. `/spec#ontology` was an in-page anchor, a
+         fragment never reaches the server, and a browser re-applies the fragment it started
+         with to a `Location` that has none — so those bookmarks arrive HERE looking for that
+         id. `components/site/anchors.test.ts` holds the pairing. Deleting the band would
+         strand every one of them silently.
+       - `VocabularyFigure` is drawn off the real ontology and has no other mount.
+
+     So the descriptor is local rather than read off the list. `href` points into the card
+     spec's own vocabulary band rather than at a route that no longer exists, and `step` is
+     the card's because that is the stop a reader is being sent to. */
+  const vocabulary = {
+    ...cardLayer,
+    href: "/spec/card#every-term-heading",
+    anchor: "ontology",
+  };
 
   return (
     <>
@@ -683,7 +711,7 @@ export default function WhatABlueprintIsPage() {
             </Part>
 
             <Part
-              layer={ontology}
+              layer={vocabulary}
               title="The vocabulary"
               side="left"
               figure={

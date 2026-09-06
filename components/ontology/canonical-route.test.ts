@@ -24,9 +24,9 @@ const OVERLAY_TERM = "lupo/pii-handling";
 const UNROOTED = "ontology/local-term-unrooted";
 
 /* ============================================================
-   The vocabulary has ONE route, and it is `/spec/ontology`.
+   The vocabulary has ONE route, and it is `/spec/card`.
 
-   This file has now asserted three different things, and the two
+   This file has now asserted four different things, and the three
    it no longer asserts are kept below because each was right when
    it was written. A guard that flips and throws its argument away
    teaches the next reader nothing except that it flipped.
@@ -51,7 +51,7 @@ const UNROOTED = "ontology/local-term-unrooted";
    to hold that split so neither route could quietly absorb the other
    again.
 
-   ── third position, and it is the one asserted below ──
+   ── third position: one page, both questions ──
    The owner ruled on 2026-09-06, in their own words: "move the
    ontology page in the /spec/ontology substituing the "every term"
    box. Then, you can delete the /ontology page". So the browser
@@ -68,6 +68,45 @@ const UNROOTED = "ontology/local-term-unrooted";
    landing a reader on a document — is paid for instead by the chrome
    pointing its one Ontology row straight at `/spec/ontology`.
 
+   ── fourth position, and it is the one asserted below ──
+   The owner asked a larger question than the address: whether the
+   ontology should exist at all, or whether everything should unify
+   under the Attractor specification, because two spec documents
+   read as two rival standards. The investigation answered keep the
+   vocabulary and fix the framing, and the owner accepted it in
+   their own words: "The motivations you provided are sound. Apply
+   them."
+
+   THE EVIDENCE IS RECORDED HERE SO NO LATER PASS RE-DERIVES IT.
+   13 of the 54 core terms overlap Attractor at all, and those 13
+   REFINE it: `agent`, `tool` and `validation` are three DarkPrint
+   node-types Attractor collapses into one `shape=box`. The other
+   41 have no Attractor equivalent — 15 data-types against an
+   Attractor edge that carries only `label, condition, weight,
+   fidelity, thread_id, loop_restart`, 9 risk-markers, 12 tools, 5
+   phases. Attractor specifies EXECUTION and the ontology specifies
+   DESCRIPTION, which is the layer Attractor leaves open and the
+   thing that makes a registry searchable. So the vocabulary is not
+   a rival standard and it is not being folded into one.
+
+   What IS being folded is the route. Every ontology term exists to
+   be a legal value of a CARD FIELD: `type`, `phases`,
+   `riskMarkers`, `tools`, and a port's `type`. The DOT never
+   references a term, it references a card, and the card references
+   terms. So `/spec/ontology` folds into `/spec/card` and each term
+   sits beside the field that consumes it, which is a reader
+   walking one document instead of choosing between two.
+
+   THAT VOIDS THE THIRD POSITION'S COMPENSATION, and the void is
+   the reason this paragraph exists rather than a rewrite of the
+   one above. What the second position bought was a browse target
+   the chrome could name, and the third position paid for it by
+   pointing the chrome's one Ontology row at `/spec/ontology`. That
+   row's destination is gone. The chrome is another lane's file and
+   `components/site/nav.test.ts` is what holds it; this file asserts
+   only that the route it pointed at is now a redirect source and
+   that nothing chains behind it.
+
    ── what did NOT move, and why it is asserted here ──
    `app/ontology/[...term]/page.tsx`. Term detail keeps its URLs:
    card chips, `termHref` and search all point there, and a redirect
@@ -79,11 +118,11 @@ const UNROOTED = "ontology/local-term-unrooted";
    wearing this ruling as cover, so it is asserted below in its own
    right.
 
-   Every claim here is asserted in both directions, so a fourth pass
+   Every claim here is asserted in both directions, so a fifth pass
    restoring the index cannot do it without this file saying which
    one won.
 
-   ── a second ruling the same day, about the page and not the route ──
+   ── a second ruling on 2026-09-06, about the page and not the route ──
    The owner then removed two of the merged page's bands: "remove
    "The overlay / Anyone can add a term, in a namespace of their own"
    section ... and also the "The checks / What the engine holds the
@@ -97,19 +136,27 @@ const UNROOTED = "ontology/local-term-unrooted";
    ============================================================ */
 describe("the canonical ontology route", () => {
   /**
-   * The merged route, the surviving detail route, the deleted index, and the redirects.
+   * The merged route, the surviving detail route, the two deleted pages, and the redirects.
    *
-   * THE POSITIVES COME FIRST AND THEY ARE THE PREMISE FOR THE ABSENCE.
-   * `app/ontology/page.tsx` is gone, and a cell that only asserts that passes identically
-   * whether the merge deleted one file or whether somebody deleted `app/`. So the parent
-   * directory and the detail route are asserted present before the index is asserted
-   * absent: with those two standing, a missing `page.tsx` can only be the deletion the
-   * owner asked for. `tests/server/t262/per-request.test.ts` raises the same kind of premise
-   * as a `PartitionError` rather than folding it into the assertion it protects.
+   * THE POSITIVES COME FIRST AND THEY ARE THE PREMISE FOR THE ABSENCES.
+   * Two files are gone now rather than one, and a cell that only asserts that passes
+   * identically whether the fold deleted two pages or whether somebody deleted `app/`. So
+   * the route the vocabulary landed on, the parent directory and the detail route are
+   * asserted present first: with those three standing, a missing `page.tsx` under either
+   * path can only be the deletion that was ruled. `tests/server/t262/per-request.test.ts`
+   * raises the same kind of premise as a `PartitionError` rather than folding it into the
+   * assertion it protects.
+   *
+   * THE REDIRECT SET GREW BY ONE AND THE CHAIN CHECK INVERTED. `/spec/ontology` was the
+   * destination in the third position and it is a SOURCE in the fourth, so the predicate
+   * that used to assert it was not a source now asserts that it is, and `/spec/card` takes
+   * the place it vacated. Both directions are kept: a fold that redirected the old spec
+   * route and left `/ontology` pointing at it would cost every old link two hops, which is
+   * the cost `next.config.ts` already records for `/how-to-build-a-dark-factory`.
    */
-  it("puts the vocabulary on the spec route and keeps the term detail pages", async () => {
-    const specPage = statSync(`${ROOT}/app/spec/ontology/page.tsx`, { throwIfNoEntry: false });
-    expect(specPage, "the route the vocabulary was moved ONTO is missing").toBeDefined();
+  it("puts the vocabulary on the card route and keeps the term detail pages", async () => {
+    const cardPage = statSync(`${ROOT}/app/spec/card/page.tsx`, { throwIfNoEntry: false });
+    expect(cardPage, "the route the vocabulary was folded INTO is missing").toBeDefined();
 
     const detailDir = statSync(`${ROOT}/app/ontology`, { throwIfNoEntry: false });
     expect(
@@ -123,38 +170,35 @@ describe("the canonical ontology route", () => {
         "`/ontology/<term>`; moving those URLs is a far larger change than was ruled.",
     ).toBeDefined();
 
-    // Only now is the absence a statement about this ruling rather than about the tree.
+    // Only now are the absences statements about these rulings rather than about the tree.
     expect(
       statSync(`${ROOT}/app/ontology/page.tsx`, { throwIfNoEntry: false }),
       "the index page is back. It was deleted on the owner's instruction of 2026-09-06 and " +
         "`/ontology` is a redirect source now, so a `page.tsx` here is shadowed and " +
         "unreachable rather than loudly wrong.",
     ).toBeUndefined();
+    expect(
+      statSync(`${ROOT}/app/spec/ontology/page.tsx`, { throwIfNoEntry: false }),
+      "the separate ontology specification page is back. The fourth ruling folds it into " +
+        "`/spec/card` so each term sits beside the card field that consumes it, and a page " +
+        "here is the second document the fold exists to remove.",
+    ).toBeUndefined();
 
     const redirects = (await nextConfig.redirects?.()) ?? [];
-    // The index's own path, and the two gallery paths that used to land on it.
-    expect(redirects).toContainEqual({
-      source: "/ontology",
-      destination: "/spec/ontology",
-      permanent: true,
-    });
-    expect(redirects).toContainEqual({
-      source: "/ontologies",
-      destination: "/spec/ontology",
-      permanent: true,
-    });
-    expect(redirects).toContainEqual({
-      source: "/ontologies/:slug",
-      destination: "/spec/ontology",
-      permanent: true,
-    });
+    // The two deleted pages' own paths, and the two gallery paths that used to land on them.
+    for (const source of ["/ontology", "/ontologies", "/ontologies/:slug", "/spec/ontology"]) {
+      expect(
+        redirects,
+        `nothing 308s \`${source}\` onto \`/spec/card\`, so a link that used to reach the ` +
+          `vocabulary now 404s`,
+      ).toContainEqual({ source, destination: "/spec/card", permanent: true });
+    }
 
-    // Nothing chains. A 308 onto a route that itself 308s costs every old link two hops,
-    // which is the cost `next.config.ts` already records for `/how-to-build-a-dark-factory`.
+    // Nothing chains, and the route that used to be the destination is now a source.
     expect(
-      redirects.filter((rule) => rule.source === "/spec/ontology"),
-      "`/spec/ontology` is itself a redirect source, so the two gallery paths and " +
-        "`/ontology` all chain through it and the merged page is shadowed entirely.",
+      redirects.filter((rule) => rule.source === "/spec/card"),
+      "`/spec/card` is itself a redirect source, so all four paths above chain through it " +
+        "and the folded page is shadowed entirely.",
     ).toEqual([]);
 
     // And nothing shadows term detail. A `source` with no path parameter matches literally,
@@ -167,27 +211,34 @@ describe("the canonical ontology route", () => {
   });
 
   /**
-   * One enumeration of the vocabulary, and it is on the spec page now.
+   * One enumeration of the vocabulary, and it is on the card page now.
    *
-   * The rule has survived all three positions and only its address has changed: this site
+   * The rule has survived all four positions and only its address has changed: this site
    * carries ONE exhaustive term listing. The first position put it on the spec page because
    * the index was redirected away, the second moved it to the index because the index came
-   * back, and this one moves it to the spec page again because the index is gone.
+   * back, the third moved it to the spec page again because the index was deleted, and this
+   * one moves it to the card page because the spec page is.
    *
    * `VocabularyBrowser` is the filtered list, on the bar the other two registry browsers
-   * use, over `OntologyCatalog` as its unfiltered view. The catalog travels WITH the
-   * browser rather than being deleted by it: it is the only drawing of the vocabulary that
-   * groups by kind and hangs the subtypes off their parents, and the browser mounts it as
-   * children. Both are named, because "the listing is on the spec page" is only half the
-   * rule and the other half went missing once already.
+   * use, over `OntologyCatalog` as its unfiltered view. The catalog travels WITH the browser
+   * rather than being deleted by it: it is the only drawing of the vocabulary that groups by
+   * kind and hangs the subtypes off their parents, and the browser mounts it as children.
+   * Both are named, because "the listing is on the card page" is only half the rule and the
+   * other half went missing once already.
    *
-   * The reverse is the whole-tree walk. Asserting the spec page has the browser does not
-   * stop a future pass mounting a second copy on a restored index, and that is precisely
-   * the shape this file has been flipped over twice: `app/**` may hold exactly one page
-   * that mounts it.
+   * BOTH NAMES SURVIVED THE FOURTH RULING AND THAT WAS NOT A FOREGONE CONCLUSION. The
+   * instruction is that each term sits beside the CARD FIELD that consumes it, which is a
+   * layout a by-kind grouping could reasonably have been dropped for. The fold kept the
+   * grouping and mounted it exactly as before, so the pair is asserted exactly as before
+   * rather than narrowed to the half nobody could have removed.
+   *
+   * The reverse is the whole-tree walk. Asserting the card page has the browser does not
+   * stop a future pass mounting a second copy on a restored index or a restored spec page,
+   * and that is precisely the shape this file has been flipped over three times: `app/**`
+   * may hold exactly one page that mounts it.
    */
-  it("mounts the one enumeration on the spec page and nowhere else", () => {
-    const spec = readFileSync(`${ROOT}/app/spec/ontology/page.tsx`, "utf8");
+  it("mounts the one enumeration on the card page and nowhere else", () => {
+    const spec = readFileSync(`${ROOT}/app/spec/card/page.tsx`, "utf8");
 
     expect(spec).toContain("VocabularyBrowser");
     expect(spec).toContain("<OntologyCatalog");
@@ -210,11 +261,12 @@ describe("the canonical ontology route", () => {
     /* The premise: the walk found the site. An empty list would satisfy "exactly one" as
        readily as a correct tree if the count were the only thing checked.
 
-       The floor is 10 against 27 pages today, and it is deliberately nowhere near the real
-       number. This is a premise about the INSTRUMENT and not a census: two routes were
-       deleted in the week this was written, so a floor set close to the count would one day
-       red a correct tree with a message saying the walk is broken, which is a red reporting
-       a plausible wrong cause. A walk that has actually stopped working returns 0. */
+       The floor is 10 against a couple of dozen pages, and it is deliberately nowhere near
+       the real number. This is a premise about the INSTRUMENT and not a census: three routes
+       were deleted in the fortnight around this being written, this fold takes a fourth, so
+       a floor set close to the count would one day red a correct tree with a message saying
+       the walk is broken, which is a red reporting a plausible wrong cause. A walk that has
+       actually stopped working returns 0. */
     expect(
       pages.length,
       `the walk over \`app/\` found ${pages.length} pages, so it has stopped seeing the ` +
@@ -227,17 +279,20 @@ describe("the canonical ontology route", () => {
     expect(
       mounts,
       "the vocabulary browser is mounted on more than one route, or on the wrong one. One " +
-        "exhaustive term listing on one page is the rule that outlived all three rulings " +
+        "exhaustive term listing on one page is the rule that outlived all four rulings " +
         "about WHICH page.",
-    ).toEqual(["app/spec/ontology/page.tsx"]);
+    ).toEqual(["app/spec/card/page.tsx"]);
   });
 
   /**
-   * The route box came off, and the page it pointed at is the page it now sits on.
+   * No route box on the card page points at a path that now 308s back to it.
    *
-   * The owner named the box: the vocabulary goes in "substituing the "every term" box". A
-   * merge that mounted the browser and left the box standing would leave the page linking
-   * to a route that 308s back onto itself, one screen above the listing that link promised.
+   * The third ruling named a box: the vocabulary went in "substituing the "every term"
+   * box", and a merge that mounted the browser and left the box standing would leave the
+   * page linking to a route that redirects onto itself, one screen above the listing that
+   * link promised. The fourth ruling inherits the same hazard at a second address, because
+   * `/spec/ontology` is a redirect source now as well. Both are asserted, so a fold that
+   * carried a `Learn the format` box across from the deleted page reds here.
    *
    * ASSERTED ON THE JSX SHAPE AND NOT ON THE BARE HREF, deliberately. This cell greps the
    * page's SOURCE, comments included, and that page's comments quote route paths in
@@ -245,13 +300,16 @@ describe("the canonical ontology route", () => {
    * for its own history and go red against a correct merge, which is the hazard the page
    * warns about at the box's old position for this very file.
    */
-  it("took the route box out of the slot the browser now fills", () => {
-    const spec = readFileSync(`${ROOT}/app/spec/ontology/page.tsx`, "utf8");
-    expect(
-      /<RouteBoxLink[^>]*href="\/ontology"/.test(spec),
-      "the `Every term` route box is still on the page, pointing at a path that now 308s " +
-        "back to this page. The owner asked for the browser to replace it.",
-    ).toBe(false);
+  it("carries no route box pointing at a path that redirects back to it", () => {
+    const spec = readFileSync(`${ROOT}/app/spec/card/page.tsx`, "utf8");
+    for (const path of ["/ontology", "/spec/ontology"]) {
+      expect(
+        new RegExp(`<RouteBoxLink[^>]*href="${path}"`).test(spec),
+        `a route box on the card page points at \`${path}\`, which 308s straight back to ` +
+          `this page. The listing that link promises is on the page the reader is already ` +
+          `looking at.`,
+      ).toBe(false);
+    }
   });
 
   /**
@@ -273,27 +331,41 @@ describe("the canonical ontology route", () => {
    * two above gives, which bites harder here. That page records why each band it has lost
    * went, in prose, naming the components and the copy in backticks as it goes, so a
    * substring match would charge the page for its own history and go red against exactly the
-   * removal it is checking for. It is not hypothetical today: the page names
-   * `components/spec/CheckTable.tsx` in a comment about which component the vocabulary table
-   * should have reused, so a bare `toContain("CheckTable")` reds against the removed band.
-   * No count is given here on purpose, because a census of somebody else's comments is a
-   * sentence that goes stale on their next pass.
+   * removal it is checking for. No count is given here on purpose, because a census of
+   * somebody else's comments is a sentence that goes stale on their next pass.
+   *
+   * AND THE CHECKS HALF IS NOT MATCHED ON `CheckTable` AT ALL SINCE THE FOURTH RULING, which
+   * is the correction the fold forced. On the deleted page a mounted `CheckTable` could only
+   * be the vocabulary's checks band coming back. On `/spec/card` it is the page's own
+   * subject: `CARD_ROWS` through `CheckTable` is the card validation band, pre-existing,
+   * ruled, and nothing to do with the vocabulary. A component name carried across would
+   * therefore have red against a correct fold on the page's oldest band. What identifies the
+   * removed band instead is its rows: `ONTOLOGY_ROWS` was deleted from
+   * `components/spec/rows.ts` in the same instruction, and only a restored band would need
+   * it back. That is one name for one band rather than a shape shared with another.
    *
    * THE POSITIVES ARE THE PREMISE. A page truncated to a stub, or deleted outright,
    * satisfies every absence below. `tests/server/t262/per-request.test.ts` raises that class
    * of premise on its own rather than folding it into the assertion it protects, and the
-   * first cell in this file does the same for the deleted index. So the band that STAYED is
-   * asserted present first: a removal of two sections may not quietly take the rest of the
-   * page with it.
+   * first cell in this file does the same for the deleted pages. So the card page's own
+   * field band and the browser it now carries are asserted present first: a fold may not
+   * quietly satisfy two absences by losing the page they are about.
+   *
+   * READ OFF `/spec/card` SINCE THE FOURTH RULING. The page these two bands were removed
+   * from no longer exists, and an absence measured against a deleted file is the vacuous
+   * pass this whole wave was warned about: it holds whether the fold left the bands behind
+   * or whether somebody restored them at the new address. `/spec/card` is where the
+   * vocabulary lives now, so it is where a returning overlay or checks band would land.
    */
   it("took the overlay and the checks bands off and left the rest of the page standing", () => {
-    const page = readFileSync(`${ROOT}/app/spec/ontology/page.tsx`, "utf8");
+    const page = readFileSync(`${ROOT}/app/spec/card/page.tsx`, "utf8");
 
-    // The premise: this is still the specification page, with the vocabulary band on it.
+    // The premise: this is still the card specification, with the vocabulary folded onto it.
     expect(
-      /<h2[^>]*id="vocabulary-heading"/.test(page),
-      "the core vocabulary band is gone too. The owner named two sections, and a page that " +
-        "has lost this one as well is not the removal that was ruled.",
+      /<h2[^>]*id="fields-heading"/.test(page),
+      "the field reference band is gone. Every ontology term is a legal value of a card " +
+        "field, so a card page without that band is not the fold that was ruled, and the " +
+        "absences below would be facts about a truncated page.",
     ).toBe(true);
     expect(page).toContain("<VocabularyBrowser");
     expect(page).toContain("<OntologyCatalog");
@@ -321,17 +393,20 @@ describe("the canonical ontology route", () => {
       ).toBe(false);
     }
 
-    /* What the two bands rendered, matched where they were rendered rather than by name.
-       `OVERLAY_RULES` was declared in this file and mapped in the band; `CheckTable` was
-       imported and mounted. Either one back is the band back in some form, whatever the
-       heading above it reads. */
+    /* What the two bands rendered, matched by the data each one needed rather than by the
+       component that drew it. `OVERLAY_RULES` was declared on the removed page and mapped in
+       its band; `ONTOLOGY_ROWS` was the vocabulary's check rows and was deleted from
+       `components/spec/rows.ts` on the same instruction. Either one back is the band back in
+       some form, whatever the heading above it reads, and neither collides with a band this
+       page already had. */
     expect(
       /(const OVERLAY_RULES|OVERLAY_RULES\.map\()/.test(page),
       "the overlay rules list is back, so the band it filled is back with it.",
     ).toBe(false);
     expect(
-      /<CheckTable\b/.test(page),
-      "the checks table is mounted again.",
+      /\bONTOLOGY_ROWS\b/.test(page),
+      "the vocabulary's check rows are on the card page, so the checks band is back under " +
+        "some heading. `CARD_ROWS` is this page's own band and is not what this reads.",
     ).toBe(false);
   });
 
@@ -367,7 +442,8 @@ describe("the canonical ontology route", () => {
    *
    * THIS CELL USED TO ASSERT THAT THE EXTENSION MODEL SURVIVED THAT CUT, and that half is
    * what D-144 leaned on: deleting the band could take the MECHANISM with it by accident,
-   * so the surviving statement of it on `/spec/ontology` was pinned here in the same pass.
+   * so the surviving statement of it on the specification page was pinned here in the same
+   * pass.
    * Later the same day the owner removed that statement too. D-144's justification is
    * therefore void as written, and the pair it named is gone: no band on this site now says
    * that anyone may add a term in a namespace of their own, and there is no weaker surviving
@@ -380,12 +456,13 @@ describe("the canonical ontology route", () => {
    * because the product is where it still holds. Reading the two together is the finding:
    * the engine enforces an overlay the site no longer documents.
    *
-   * `#governance` stays asserted absent. A link to a fragment nothing declares scrolls
-   * nowhere, and `components/site/anchors.test.ts` reads the pair from the source.
+   * `#governance` stays asserted absent, at the address the vocabulary now has. A link to a
+   * fragment nothing declares scrolls nowhere, and `components/site/anchors.test.ts` reads
+   * the pair from the source.
    */
   it("dropped the governance band and every band that restated it", () => {
     const catalog = readFileSync(`${ROOT}/components/ontology/OntologyCatalog.tsx`, "utf8");
-    const spec = readFileSync(`${ROOT}/app/spec/ontology/page.tsx`, "utf8");
+    const spec = readFileSync(`${ROOT}/app/spec/card/page.tsx`, "utf8");
 
     /* The premise. Every absence below is green against an emptied file, and two files have
        lost a section apiece today, which is exactly the pass in which one gets emptied by
@@ -396,10 +473,10 @@ describe("the canonical ontology route", () => {
         "that lost its content rather than about the governance band.",
     ).toContain("The five kinds of term");
     expect(
-      /<h2[^>]*id="vocabulary-heading"/.test(spec),
-      "the specification page has lost its vocabulary band too, so the `#governance` " +
-        "absence below says nothing about the rail row it was written for.",
-    ).toBe(true);
+      spec,
+      "the card page does not mount the vocabulary, so the `#governance` absence below is a " +
+        "fact about a page the terms never reached rather than about the removed band.",
+    ).toContain("<VocabularyBrowser");
 
     // The heading and the promotion layer's own copy, neither of which may come back.
     expect(catalog).not.toContain("One curated core, room for local terms");

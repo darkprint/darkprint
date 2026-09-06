@@ -25,22 +25,30 @@ flowchart TD
   curious{"Curious what “dark factory” means?"}
   learnMenu["Open the Learn menu"]
   whatIs["/what-a-blueprint-is\n(Learn stop 00)"]
-  layers["Open a layer door:\n/spec/topology, /spec/card, /spec/ontology"]
-  crosswalk["/spec/attractor\n(Learn stop 04, the crosswalk)"]
-  darkFactory["/towards-a-dark-factory\n(Learn stop 05)"]
+  crosswalk["/spec/attractor\n(Learn stop 01, the crosswalk)"]
+  layers["Open a layer door:\n/spec/topology (02), /spec/card (03)"]
+  darkFactory["/towards-a-dark-factory\n(Learn stop 04)"]
   doors{"Ready to act"}
   findOne["/blueprints"]
   makeOne["/new"]
 
   visit --> hero --> beats --> curious
-  curious -->|yes| learnMenu --> whatIs --> layers --> crosswalk
+  curious -->|yes| learnMenu --> whatIs --> crosswalk --> layers
   whatIs --> darkFactory
   curious -->|not yet| doors
-  crosswalk --> darkFactory
+  layers --> darkFactory
   darkFactory --> doors
   doors -->|"browse one"| findOne
   doors -->|"make one"| makeOne
 ```
+
+**The order of the two middle boxes reversed on 2026-09-06 and the reason is the reader's,
+not the diagram's.** The crosswalk was stop 04, after three DarkPrint documents, and a
+reader who already knew Attractor met `card=` and `in=` in a shipped `topology.dot` three
+pages before anything told them those attributes are DarkPrint's own. Attractor is now the
+first thing the sequence says. The layer doors dropped from three to two in the same change:
+`/spec/ontology` folded into `/spec/card`, because every ontology term exists to be a legal
+value of a card field ([`DECISIONS.md`](../DECISIONS.md) D-156).
 
 ```mermaid
 sequenceDiagram
@@ -58,7 +66,7 @@ sequenceDiagram
   User->>WebUI: open Learn menu, GET /what-a-blueprint-is
   WebUI->>API: blueprint list [SEAM-01], card [SEAM-09/10], ontology view [SEAM-14]
   API-->>WebUI: archive facts
-  WebUI-->>User: render explainer + three layer doors
+  WebUI-->>User: render explainer + two layer doors
   User->>WebUI: GET /towards-a-dark-factory
   Note over WebUI,API: hardcoded essay content — no archive read, MOCK (ROUTES.md)
   WebUI-->>User: render the 1-5 ladder and the dark-factory definition

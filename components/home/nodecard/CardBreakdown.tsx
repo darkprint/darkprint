@@ -202,7 +202,8 @@ export function CardBreakdown({
     if (row !== null && row !== undefined) revealRow(row);
   }, []);
 
-  /* Every part is pickable. Unlike `SourcePane`, whose rows include braces and blank lines
+  /* Every part is pickable. Unlike the deleted `components/panes/SourcePane.tsx` (a four-pane
+     arrangement this product reduced to two), whose rows included braces and blank lines
      that name nothing, an annotation is a run by construction — `resolveAnnotations` drops
      a step whose keys are all absent rather than pointing it at line 1 — so there is
      nothing here for the arrow keys to skip over. */

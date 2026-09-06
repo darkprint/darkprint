@@ -284,8 +284,9 @@ function BranchList({
  * `TermRow`, which stopped putting one on the description cell in the same change. The
  * tree fills whatever column it is mounted in, and that column is `container-page` wide
  * wherever the catalog mounts. The ruling named `/ontology`; that route was deleted on
- * 2026-09-06 and the panels moved to `/spec/ontology` unchanged, so the rule outlived the
- * address it was given at.
+ * 2026-09-06, the panels moved to the ontology specification unchanged, and they moved
+ * again the same day when that specification was folded into `/spec/card`. The rule has
+ * now outlived two of the addresses it was given at.
  */
 export function TermTree({
   kind,

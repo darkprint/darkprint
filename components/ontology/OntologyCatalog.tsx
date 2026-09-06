@@ -55,7 +55,7 @@ function Id({ children }: { children: string }) {
  *
  * `h3`, not `h2`, since 2026-09-06. The catalog was the whole of `/ontology` under that
  * route's `h1`, so a kind panel was a top-level section of the page and `h2` was right.
- * It mounts inside a band on `/spec/ontology` now, under that band's own `h2`, and six
+ * It mounts inside a band on `/spec/card` now, under that band's own `h2`, and six
  * `h2`s sitting beside the heading that introduces them makes the outline claim the five
  * kinds are peers of the enumeration rather than its parts. One level down states the
  * containment, and skips nothing: `h1` page, `h2` band, `h3` panel.
@@ -117,11 +117,14 @@ function KindNotes({ children }: { children: React.ReactNode }) {
    and its own flat result list when something is. One enumeration on screen at a time, and
    the shape a reader who is reading rather than looking one word up actually wants.
 
-   That listing has been on three routes. It was a full-bleed band on `/spec/ontology`, then
-   the browse half of `/ontology` when the accounts pass gave the vocabulary an index, and
-   it is back inside a band on `/spec/ontology` since the owner deleted that index on
-   2026-09-06. `components/ontology/canonical-route.test.ts` carries all three positions and
-   which one is asserted; this file only ever draws the terms.
+   That listing has been on four routes. It was a full-bleed band on the ontology
+   specification, then the browse half of `/ontology` when the accounts pass gave the
+   vocabulary an index, then back inside a band on that specification when the owner deleted
+   the index on 2026-09-06, and it is a band on `/spec/card` since the specification itself
+   was folded into the card schema later the same day. Every term is a legal value of a card
+   field, which is the reason the fold was ruled and the reason this listing keeps landing
+   wherever the fields are. `components/ontology/canonical-route.test.ts` carries all four
+   positions and which one is asserted; this file only ever draws the terms.
 
    It used to carry the page heading and its own `container-page`, because the first of
    those mounts was full-bleed and had to supply both. The route owns them now, so this is

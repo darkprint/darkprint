@@ -243,8 +243,22 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
       {/* ---------- Header ---------- */}
       <header className="flex flex-col gap-5">
         <nav className="font-mono text-xs text-dim" aria-label="Breadcrumb">
-          <Link href="/spec/ontology" className="transition-colors hover:text-cyan">
-            ← Ontology
+          {/* The crumb points at the band that lists every term, on the page that now
+              specifies the vocabulary. `/spec/ontology` was folded into `/spec/card` on
+              2026-09-06 because every term is a legal value of a card field, so the
+              destination is the listing inside that page rather than the top of it: a
+              reader coming back from one term wants the set they picked it out of, and
+              landing them on the card schema's first screen would make them scroll past
+              the whole reference to find it.
+
+              "Vocabulary" and not the page's own title, because the second half of the
+              crumb is a kind plural. "The node card / Data types" would name a document
+              and then a category inside a different one. */}
+          <Link
+            href="/spec/card#every-term-heading"
+            className="transition-colors hover:text-cyan"
+          >
+            ← Vocabulary
           </Link>
           <span className="mx-2 text-faint">/</span>
           <span className="text-muted">{meta.plural}</span>

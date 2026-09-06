@@ -47,7 +47,63 @@ interface Frozen {
 const FROZEN: readonly Frozen[] = [
   {
     path: "components/site/nav.test.ts",
-    /* Sixth amendment (owner-instructed, 2026-09-06): the owner folded the ontology browser
+    /* Seventh amendment (owner-instructed, 2026-09-06): the owner asked whether the ontology
+       should exist at all, or whether everything should unify under the Attractor
+       specification, because two specification documents read as two rival standards. The
+       investigation answered that the vocabulary describes the layer Attractor leaves open
+       and that the friction is the ORDER a reader meets them in, and the owner replied: "The
+       motivations you provided are sound. Apply them."
+
+       So the crosswalk at `/spec/attractor` moves from stop 04 to stop 01, and
+       `/spec/ontology` folds into `/spec/card` — every ontology term exists to be a legal
+       value of a card field, so each is printed beside the field that consumes it. This is
+       the SECOND fold of the same subject in one day, and it lands on the file the sixth
+       amendment directly below had just rewritten for the first one.
+
+       Three things moved and none of them is a floor being slid.
+
+       `RENAMED` repoints `/ontology` onto `/spec/card` and GAINS `/spec/ontology ->
+       /spec/card`. Both in one hop: the sixth amendment left `/ontology` pointing at
+       `/spec/ontology`, and leaving it there would have made it a 308 onto a 308, which is
+       the cost this table's own `/which-tasks` entry records and the fourth time in three
+       days it has been refused. The row puts four assertions on each path at once, which is
+       why it is the whole of the redirect half of this amendment.
+
+       The Decision-1 cell is rewritten for the FOURTH time, and this rewrite ends the
+       question rather than restating it. The cell asked which of two routes wears the bare
+       word "Ontology"; the sixth amendment answered it with one route and one absence, and
+       now neither route exists. So both halves point the same way — `HEADER_LABELS` must
+       know neither `/ontology` nor `/spec/ontology` — and the positive moves to the
+       destination, `/spec/card` keeping the file form its surviving sibling has.
+
+       One test NAME changed, and no assertion with it: "uses the shared 00-06 sequence for
+       the Learn dropdown" became "uses the shared sequence for the Learn dropdown". The
+       range had been wrong since the sandbox was deleted and would have been wrong again
+       today; the cell compares the dropdown against `SPEC_SEQUENCE` element-wise and never
+       read it.
+
+       Falsified before this pin moved, with four probes, each applied, run, and reverted:
+
+         1. a `/spec/ontology` docs row restored to `NAV` reds the rewritten cell by name
+            with its own message ("a header row points at /spec/ontology, which 308s onto
+            /spec/card"), plus three more it should red;
+         2. a `/ontology` Browse row restored reds the same cell with the same message for
+            the other path, which is what makes the two halves independent rather than one
+            claim written twice;
+         3. deleting the new rule from `next.config.ts` reds the `RENAMED` row ("no redirect
+            for /spec/ontology");
+         4. the standing probe the fourth, fifth and sixth amendments used — a throwaway
+            `app/zzz-probe` route — still reds "lists every top-level route in the header" by
+            name, so the parts of this file the amendment did not touch are unchanged in
+            force.
+
+       The previous pin was
+       `fdb11c4401adb34168f77f275b78533578c27d56c00abbe9e617f0f7f4e2e0b9`, and unlike the
+       fourth, fifth and sixth it IS fetchable: that state committed as `69dd106`, so
+       `git show 69dd106:components/site/nav.test.ts | shasum -a 256` reproduces it and
+       `git diff` on this file prints this amendment alone.
+
+       Sixth amendment (owner-instructed, 2026-09-06): the owner folded the ontology browser
        into the spec page and deleted its index. In their own words: "move the ontology page
        in the /spec/ontology substituing the "every term" box. Then, you can delete the
        /ontology page".
@@ -154,7 +210,7 @@ const FROZEN: readonly Frozen[] = [
        so the /upload parity cells inverted — NAV must hold no /upload row and the source
        must carry no /upload href. Falsified before this pin moved: a probe link in the
        header reds the flipped cell by name. */
-    sha256: "fdb11c4401adb34168f77f275b78533578c27d56c00abbe9e617f0f7f4e2e0b9",
+    sha256: "19031596108e72d7c57e14b5c1e0b6c231f8af61128bd6722b0f63d582e55667",
     why: "AC5 names it must-pass-unchanged. D-262-06 turns that into a constraint on the cutover: it imports `ACCOUNT_MENU` as a module-scope array and reads `.href` off every row, and a static import of a static array is what a per-request session cannot be. AMENDED ONCE, by ruling (D-262-29, owner-stated 2026-08-25): `/welcome` was added as a route no header may link, its `ELSEWHERE` exemption edited this file, and this pin was moved in the SAME commit. The freeze fired correctly — an author editing a guard so their own change passes is exactly what it watches for — and the amendment is recorded rather than quietly re-baselined. The exemption was falsified before the pin moved: a throwaway top-level route still reds the assertion, so the guard was narrowed by one named route and not blunted. AMENDED AGAIN at T280 (owner-instructed wiring wave, 2026-08-25): `/new` joined `ELSEWHERE` (a creation form reached from the profile shelf's own button, same reasoning as `/upload`), and the same falsification ran before this pin moved — a throwaway `app/zzz-probe` route still reds by name.",
   },
   {

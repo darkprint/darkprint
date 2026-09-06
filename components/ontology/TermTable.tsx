@@ -485,8 +485,9 @@ export function TermRow({
  *
  * No width of its own, and no measure inside it either — see `TermRow`. It fills whatever
  * column it is mounted in, which is a panel filling `container-page` on the route that
- * mounts the catalog. That was `/ontology` until 2026-09-06 and is `/spec/ontology` now;
- * the number never depended on which.
+ * mounts the catalog. That was `/ontology`, then `/spec/ontology`, and it is `/spec/card`
+ * since the vocabulary was folded into the card schema on 2026-09-06; the number never
+ * depended on which.
  */
 export function TermTable({
   terms,

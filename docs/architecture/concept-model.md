@@ -257,15 +257,34 @@ node collapse onto one digest however their YAML ordered its keys, which is what
 
 ### `Ontology`
 
-`lib/core/ontology/types.ts:56`. Status: `LIVE`. Two instances exist: `CORE_ONTOLOGY`
-(`lib/core/ontology/core.ts`, version `0.1.0`, **54 terms** — 5 phases, 13 node types, 9 risk markers, 15 data types, 12 tools, each counted off `core.ts` rather than derived from the previous census) and the archive's overlay
-(`content/ontology/extensions.yaml`, 1 term).
+`lib/core/ontology/types.ts`. Status: `LIVE`. Two instances exist: `CORE_ONTOLOGY`
+(`lib/core/ontology/core.ts`, **54 terms** — 5 phases, 13 node types, 9 risk markers, 15 data
+types, 12 tools, each counted off `core.ts` rather than derived from the previous census, and
+re-counted again on 2026-09-06 because D-156's argument turns on the split) and the archive's
+overlay (`content/ontology/extensions.yaml`, 1 term).
+
+**This block said `version 0.1.0` and carried a `version` row until 2026-09-06, and both were
+false from 2026-09-05.** D-131 removed vocabulary versioning in full and `lib/core/ontology/types.ts:101`
+now states in place that there is no `version` on an `Ontology`, giving the same reason D-156
+later gives for keeping the vocabulary at all: it names what an Attractor node IS, and Attractor
+has shapes and handlers rather than a versioned vocabulary. The row is deleted rather than struck
+through, because a field table is read as a schema and a struck row in one is an invitation to
+write the field.
 
 | Field | Type | Opt | Notes |
 |---|---|---|---|
-| `version` | `string` | req | semver. A local overlay does **not** mint a new version; the merged view keeps the base's (`lib/core/ontology/resolve.ts:125-127`) |
 | `title` | `string` | req | |
 | `terms` | `readonly OntologyTerm[]` | req | |
+
+**Node types are the only kind that can overlap Attractor, and 10 of the 13 actually do.**
+`ATTRACTOR_TYPE_SHAPES` (`lib/core/attractor/emit.ts`) has ten keys and refines rather than
+restates them: `agent`, `tool` and `validation` all map onto `shape=box` with handler `codergen`.
+The three node types with no row — `human-in-the-loop`, `evaluative`, `orchestration` — are the
+abstract categories the other ten declare as `broader`, and Attractor has no notion of a category
+above a shape, so **44 of the 54 terms have no Attractor counterpart at all**. Those three are
+also what lets a LOCAL type reach a shape: `attractorKindFor` walks ancestors, so
+`berti/simulation-node ⊂ agent` draws as a box without a row of its own. That is the measurement
+D-156 rests on, and it is why the vocabulary survived a question about whether it should exist.
 
 ### `Author`
 

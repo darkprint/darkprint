@@ -213,20 +213,30 @@ describe("the walk finds both halves", () => {
        the way `#weights` did. `components/site/nav.test.ts` named the same anchor for the
        same reason on the same day, having lost the same link.
 
-       `vocabulary-heading` is the third, added 2026-09-06 with the rail widening above, and
-       it is the only one of the three whose link is not written as a link. It is a row in
-       `components/spec/sequence.ts`'s `sections` table, composed into an href by
-       `components/learn/LearnShell.tsx` and landing on a heading in
-       `app/spec/ontology/page.tsx` — a `.ts` table, a `.tsx` composer and a `.tsx` target,
-       which is the shape the walk was blind to in both directions at once. Naming it here is
-       what keeps the third spelling honest: drop the `RAIL_LINKS` import and this cell reds
-       by name rather than the suite quietly shrinking, which is how the second spelling was
-       lost for a while and only noticed afterwards.
+       `crosswalk-heading` is the third, and it is the only one of the three whose link is
+       not written as a link. It is a row in `components/spec/sequence.ts`'s `sections`
+       table, composed into an href by `components/learn/LearnShell.tsx` and landing on a
+       heading in `app/spec/attractor/page.tsx` — a `.ts` table, a `.tsx` composer and a
+       `.tsx` target, which is the shape the walk was blind to in both directions at once.
+       Naming it here is what keeps the third spelling honest: drop the `RAIL_LINKS` import
+       and this cell reds by name rather than the suite quietly shrinking, which is how the
+       second spelling was lost for a while and only noticed afterwards. Nothing else in the
+       tree writes a link to it, which is what makes it load-bearing for that purpose.
 
-       It is deliberately an id from the band the 2026-09-06 removal LEFT standing. The two
-       it took, `#overlay-heading` and `#ontology-checks-heading`, would pin this file to a
-       state of the page rather than to the join it is about. */
-    for (const id of ["security-explained", "run", "vocabulary-heading"]) {
+       IT IS THE SECOND ID TO HOLD THIS SLOT IN ONE DAY, and the replacement is the lesson.
+       `vocabulary-heading` stood here from the rail widening on 2026-09-06, deliberately
+       chosen as an id from the band that day's removal LEFT standing, on the reasoning that
+       the two it took would pin this cell to a state of the page rather than to the join it
+       is about. Later the same day the owner folded `/spec/ontology` into `/spec/card`
+       entirely, and the whole stop went: heading, rail rows and route together. Choosing a
+       surviving band was not enough, because the unit that moves is the ROUTE.
+
+       So the slot goes to a stop this wave does not touch. The Attractor crosswalk moved
+       from last to first in the Learn sequence in the same pass and its content did not
+       change, which is the property this cell needs: an id that exists to be reached from
+       the rail and from nowhere else, on a page whose subject is not the thing being
+       reorganised around it. */
+    for (const id of ["security-explained", "run", "crosswalk-heading"]) {
       expect(ids, `nothing links #${id} any more`).toContain(id);
     }
   });

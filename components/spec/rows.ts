@@ -133,7 +133,7 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
  * Two sentences moved rather than shrank, and both moved to a page whose subject they
  * are: how `model` ranks against a graph's stylesheet is annotation 02 and the `model` row below,
  * so the version-bump row no longer repeats it; "any number of them, including none" is
- * `/spec/ontology`, which owns the phase list.
+ * `/spec/card`, which owns the phase list since the vocabulary folded into it (2026-09-06).
  */
 export const CARD_ROWS: readonly CheckRow[] = [
   {
