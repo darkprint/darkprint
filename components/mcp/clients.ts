@@ -1,7 +1,4 @@
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-87): the MCP connection, served remotely at /api/mcp
-
 /* ============================================================
    What each MCP client's configuration looks like for the remote
    server. Every entry points at the same HTTP endpoint, so nothing

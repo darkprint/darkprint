@@ -8,13 +8,6 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { BUNDLE_CARDS_DIR, BUNDLE_README, TOPOLOGY_DOT } from "@/lib/content/bundle-export";
 import { NPX_INVOCATION } from "@/packages/cli/src/index";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-88): MCP tool
-// TODO(SEAM-89): MCP tool
-// TODO(SEAM-90): MCP tool
-// TODO(SEAM-91): MCP tool
-// TODO(SEAM-92): n/a
-
 /* ============================================================
    /mcp: how a coding agent reads the registry
 

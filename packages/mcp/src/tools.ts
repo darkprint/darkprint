@@ -9,9 +9,6 @@
    the same compiler `darkprint export --attractor` uses.
    ============================================================ */
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-117): export_pipeline reads SEAM-91's release address and SEAM-19's file address
-
 import {
   attractorPipeline,
   fetchFile,
