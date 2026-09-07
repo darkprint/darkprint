@@ -1,0 +1,52 @@
+# cards/<card-id>@<version>.yaml, for a node that IS a command.
+#
+# `type: shell-tool` is a kind of `tool`, so every rule about tool nodes still holds, and it
+# compiles to the Attractor handler that runs `params.tool_command` and fails the node before
+# doing anything else when the command is missing or blank. A missing command is
+# card/missing-field and a blank one is card/bad-type, both warnings, both meaning the node
+# resolves and then fails on its first execution. A node instructed by prose alone is
+# `type: tool`, and takes the skeleton in `card.yaml`.
+#
+# The same YAML trap as every card: quote any value containing ": ".
+
+# ---- identity ----
+id: test-runner
+name: Test Runner
+type: shell-tool
+phase: testing
+
+# ---- behaviour ----
+action: >-
+  Run the project's test suite against the build and emit the runner's own report.
+spec: >-
+  The build arrives on the `build` port as a checked-out tree. Run the command below from
+  its root and capture everything it prints. Emit the whole output on the `report` port,
+  exit status first, with nothing summarised and nothing removed. Do not modify the tree,
+  do not install anything, and do not retry a command that failed.
+tools: [shell]              # the permission the command needs, as a tool term
+params:
+  # The exact line the runner executes. Fixed in advance, so it is not arbitrary code
+  # execution: declare that marker only when the command runs something decided at run
+  # time, such as a script the previous node wrote.
+  tool_command: npm test
+
+# ---- interfaces ----
+inputs:
+  - name: build
+    type: code
+    description: The tree to test, as the builder handed it over.
+outputs:
+  - name: report
+    type: report
+    description: The runner's own output, exit status included.
+dependencies:
+  - code-builder
+cannot: []
+will_not:
+  - modify the tree under test
+
+# ---- evaluation metadata ----
+risk_markers: []
+
+# ---- service fields ----
+version: 1.0.0

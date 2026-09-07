@@ -1,48 +1,22 @@
 /* ============================================================
-   DarkPrint — the authoring skill's reference files, rendered
-   from the engine
-   `skills/darkprint/` is installed on a stranger's machine by
-   `npx skills@latest add Brotherhood94/darkprint`, and the two
-   reference files under it are the only description of the
-   vocabulary and the wire format that stranger will read. A
-   hand-copied ontology is a lie with a shelf life: add a term to
-   `lib/core/ontology/core.ts` and the copy is wrong the same
-   afternoon, with nothing anywhere saying so.
+   The authoring skill's reference files, rendered from the engine.
 
-   So the references are *rendered from the runtime values the
-   validator resolves against*. `references/ontology.md` is
-   `CORE_ONTOLOGY` printed as tables, and `references/card-schema.md`
-   is `CARD_KNOWN_KEYS` plus the verbatim bytes of
-   `lib/core/card/schema.ts`. Neither can drift by construction,
-   and `scripts/generate-skill-refs.test.ts` fails the suite the
-   moment the committed files stop matching what this module
-   renders today.
+   `skills/darkprint/references/ontology.md` and `card-schema.md` are the only description
+   of the vocabulary and the wire format an author installing the skill reads, and a
+   hand-copied ontology is wrong the afternoon a term is added. So both are rendered from
+   the runtime values the validator resolves against: `CORE_ONTOLOGY` printed as tables,
+   and `CARD_KNOWN_KEYS` plus the verbatim bytes of `lib/core/card/schema.ts`.
 
-   ── Why the render functions live apart from the writer ──
-   `scripts/generate-skill-refs.ts` is the thin `main`: it installs
-   the `@/…` resolver hook Node needs to run the engine's
-   TypeScript, then writes what this module returns. This module
-   imports `@/lib/core` statically, which is what lets vitest —
-   whose config already aliases `@/` — import it directly and
-   compare bytes without a filesystem write or a subprocess.
-   Same split, same reason, as `lib/content/bundle-export.ts`
-   deciding *what* a bundle is while `scripts/generate-bundles.ts`
-   decides where it lands.
+   The render functions live here, apart from `scripts/generate-skill-refs.ts`, so vitest
+   can import them through its `@/` alias and compare bytes without a subprocess:
+   `scripts/generate-skill-refs.test.ts` fails the moment the committed files stop
+   matching what this module renders.
 
-   ── Why the output is committed ──
-   The skills CLI does `git clone --depth 1` and reads files off
-   the clone. It never runs npm and never runs `prebuild`. A
-   gitignored reference simply would not exist for anyone
-   installing the skill. Committing generated output is already
-   the house convention (`public/bundles/**`), and this file is
-   deterministic: sorted, newline-normalised, no clock, no random
-   source.
-
-   ── Why this is NOT chained into `prebuild` ──
-   `prebuild` runs inside `next build`. If a reference were stale,
-   CI would silently rewrite it, the deployed site would be fine,
-   and the fix would never land in git. The test is the honest
-   gate; `npm run generate:skill-refs` is the fix.
+   The output is committed rather than produced at build time. `prebuild` packs the
+   committed `skills/darkprint` tree into `public/skill/`, so a reference rewritten only on
+   CI would ship correct and never reach git, and a reader who installs from a clone of
+   the repository would read the stale one. The test is the gate and
+   `npm run generate:skill-refs` is the fix.
    ============================================================ */
 
 import { readFileSync } from "node:fs";
@@ -88,7 +62,7 @@ const SCHEMA_SOURCE = join("lib", "core", "card", "schema.ts");
 function banner(source: string): string {
   return [
     "<!--",
-    "  GENERATED FILE — do not edit by hand.",
+    "  GENERATED FILE. Do not edit by hand.",
     `  Rendered from ${source} by scripts/skill-refs.ts.`,
     "  Regenerate with: npm run generate:skill-refs",
     "  scripts/generate-skill-refs.test.ts fails the suite if this file drifts.",
@@ -222,8 +196,8 @@ export function renderOntologyReference(): string {
     "Attractor node IS, and Attractor fixes those shapes in its own spec.",
     "",
     "Every card field that names a term is resolved against this list. A term that is not",
-    "here is `card/unknown-term` (error). A term of the wrong kind — a `data-type` in the",
-    "`tools` list, a `tool` in `type` — is `card/wrong-term-kind` (error).",
+    "here is `card/unknown-term` (error). A term of the wrong kind, a `data-type` in the",
+    "`tools` list or a `tool` in `type`, is `card/wrong-term-kind` (error).",
     "",
     "A card names no vocabulary version either. There is one vocabulary and every card is",
     "read against it, so writing `ontology_version:` on a card is `card/retired-field`",
@@ -232,10 +206,10 @@ export function renderOntologyReference(): string {
   );
 
   sections.push(
-    "## phase — the five, closed",
+    "## phase: the five, closed",
     "",
-    "Optional and repeatable. A card may declare none, one, or several. `phase: []` — or the",
-    "field omitted entirely — is a **complete and correct answer**, and the validator emits",
+    "Optional and repeatable. A card may declare none, one, or several. `phase: []`, or the",
+    "field omitted entirely, is a **complete and correct answer**, and the validator emits",
     "nothing at all about it: an intake step, a retrieval step and a memory store sit in none",
     "of the five. Phase coverage is descriptive and nothing scores off it, so never invent a",
     "phase to fill a strip.",
@@ -252,7 +226,7 @@ export function renderOntologyReference(): string {
   );
 
   sections.push(
-    "## node-type — what does the job",
+    "## node-type: what does the job",
     "",
     "Exactly one per card, in `type`. Three of these are **abstract categories** and a node",
     "should not be typed with one: they exist so the metrics can ask a subsumption question.",
@@ -299,7 +273,7 @@ export function renderOntologyReference(): string {
   );
 
   sections.push(
-    "## risk-marker — what it costs",
+    "## risk-marker: what it costs",
     "",
     "Declared in `risk_markers`. The security score starts at 4 and each distinct marker",
     "present anywhere in the blueprint is charged **once**, however many nodes carry it:",
@@ -324,16 +298,16 @@ export function renderOntologyReference(): string {
     "",
     "How the three inferred ones are found:",
     "",
-    "- `unbounded-loop` — every strongly connected component in the graph, unless some card",
+    "- `unbounded-loop`: every strongly connected component in the graph, unless some card",
     "  in it declares an iteration cap. The cap is a **top-level** key of `params`, one of",
     `  ${ITERATION_CAP_KEYS.map((k) => `\`${k}\``).join(", ")}, holding a non-negative`,
     "  integer (`0` counts). Nested inside another object it is not read, and the cycle takes",
     "  the charge on every member with no obvious cause.",
-    "- `unvalidated-external-access` — a node whose `tools` include anything subsumed by",
+    "- `unvalidated-external-access`: a node whose `tools` include anything subsumed by",
     "  `web-search`, `http-fetch`, `sql` or `ci`, which has at least one successor, and at",
     "  least one of those successors is not a `validation` node. `messaging`, `git`,",
     "  `vector-store`, `file-io`, `shell` and `python-sandbox` are deliberately excluded.",
-    "- `criteria-leak` — see below. This is the one the whole design is built around.",
+    "- `criteria-leak`: see below. This is the one the whole design is built around.",
     "",
     "### criteria-leak, precisely",
     "",
@@ -342,34 +316,34 @@ export function renderOntologyReference(): string {
     "**generators** are the predecessors of any judge, closed upward through non-judge nodes.",
     `The marker fires, at ${weightOf(term("criteria-leak"))}, when:`,
     "",
-    "- **topological** — walking forward from a producer, absorbing at judges, reaches a",
+    "- **topological**: walking forward from a producer, absorbing at judges, reaches a",
     "  generator. The criteria reach the node whose work is being judged.",
-    "- **declarative** — one node emits both an `acceptance-criteria` port *and* another port",
+    "- **declarative**: one node emits both an `acceptance-criteria` port *and* another port",
     "  a directly connected judge reads as the artefact under judgement. One node writing the",
     "  criteria and the work is structurally illegal, off the declarations alone.",
     "",
     "And it warns without charging when:",
     "",
-    "- **content** — the 3-gram Jaccard similarity between a generator's `spec` and a producer's",
+    "- **content**: the 3-gram Jaccard similarity between a generator's `spec` and a producer's",
     `  exceeds ${DARKPRINT_CONFIG.criteriaLeak.similarityThreshold}`,
     "  (`analysis/criteria-leak-suspected`). An absent edge with the criteria paraphrased into",
     "  the prose is a false isolation, and this is the half that catches it. Specs under three",
     "  words are excluded from the comparison entirely.",
-    "- **relayed** — reachable only by walking *through* a judge",
+    "- **relayed**: reachable only by walking *through* a judge",
     "  (`analysis/criteria-relayed-through-judge`). The engine cannot tell an endorsed",
     "  `judge → fixer → judge` loop from a forbidden `judge → builder → judge` one, so it",
     "  declines to decide and says which it saw.",
-    "- **out of band** — a `params` key matching `/criteri/i` naming something nothing in the",
+    "- **out of band**: a `params` key matching `/criteri/i` naming something nothing in the",
     "  graph produces (`analysis/criteria-out-of-band`). Isolation has stopped being a property",
     "  of the topology for that node.",
-    "- **unanchored** — one of the two legs is missing: producers with no generators, or",
+    "- **unanchored**: one of the two legs is missing: producers with no generators, or",
     "  generators with no producers (`analysis/criteria-leak-unanchored`). **The check did not",
     "  run.** A 4 in this state is silence, not a pass. Both sets empty is silent by design.",
     "",
   );
 
   sections.push(
-    "## data-type — what an edge carries",
+    "## data-type: what an edge carries",
     "",
     "Every port declares one, in `type`. Compatibility along an edge is directional: a source",
     "port fits a target port when the types are equal, when either side is `any`, or when the",
@@ -398,15 +372,15 @@ export function renderOntologyReference(): string {
   );
 
   sections.push(
-    "## tool — what a node is permitted to do",
+    "## tool: what a node is permitted to do",
     "",
     "Declared in `tools`. Note the deliberate id collision: `tool` is both a `node-type` and",
     "the *kind* of these terms. The field a term appears in decides which is meant, so there",
-    "is no ambiguity to resolve — `type: tool` is the node type and `tools: [shell]` is a",
+    "is no ambiguity to resolve: `type: tool` is the node type and `tools: [shell]` is a",
     "capability.",
     "",
     "`tools` says what the node is permitted to do. `mcp` says which installed server supplies",
-    "it, is free text, and is checked against nothing — an MCP server is a process somebody",
+    "it, is free text, and is checked against nothing, because an MCP server is a process somebody",
     "installed and the vocabulary has no term for one. A node can carry either without the other.",
     "",
     table(
@@ -454,6 +428,52 @@ function lattice(kind: TermKind): string[] {
 
 /* --------------------- the card schema reference --------------------- */
 
+/** The three levels `inferBump` can force, in the order the reference prints them. */
+export const BUMP_LEVELS = ["major", "minor", "patch"] as const;
+
+/**
+ * What each kind of edit prices as, in the words the reference prints.
+ *
+ * Data rather than a sentence so `scripts/generate-skill-refs.test.ts` can hold every phrase
+ * against `inferBump` with a card pair that makes exactly that change. The drift test cannot
+ * see a wrong claim in generator prose, because the committed file matches the generator by
+ * construction; this table is what makes the claim checkable.
+ */
+export const BUMP_PRICING: Readonly<Record<(typeof BUMP_LEVELS)[number], readonly string[]>> = {
+  major: [
+    "a port removed or renamed",
+    "a port's `type` changed",
+    "an existing input made required",
+    "a required input added",
+    "`id` changed",
+    "`type` changed",
+    "a `cannot` entry added",
+    "a `will_not` entry withdrawn",
+  ],
+  minor: [
+    "`spec` changed",
+    "`skill` set, repointed or dropped",
+    "`model` set, changed or dropped",
+    "an optional input added",
+    "an output added",
+    "a `tools`, `mcp`, `risk_markers` or `dependencies` entry added",
+    "a `params` key added",
+    "a `cannot` entry withdrawn",
+    "a `will_not` entry stated",
+    "a phase added or dropped",
+  ],
+  patch: [
+    "`name`, `action` or `notes` reworded",
+    "a port `description` changed",
+    "`agent` changed",
+    "a `params` value changed, or a `params` key removed",
+    "an input no longer required",
+    "a `tools`, `mcp`, `risk_markers` or `dependencies` entry withdrawn",
+    "a list reordered",
+  ],
+};
+
+
 /**
  * The wire format, in two byte-derived halves.
  *
@@ -481,7 +501,7 @@ export function renderCardSchemaReference(): string {
       "# The node card, on the wire",
       "",
       "A card is one YAML or JSON document describing one node. The wire format is",
-      "**snake_case** — `risk_markers`, `will_not` — and the validator maps it onto the",
+      "**snake_case** (`risk_markers`, `will_not`), and the validator maps it onto the",
       "camelCase model quoted at the bottom of this file.",
       "",
       "## Every key the validator accepts",
@@ -546,14 +566,14 @@ export function renderCardSchemaReference(): string {
       table(
         ["key", "default", "checked against the ontology?"],
         [
-          ["`phase` / `phases`", "`[]`", "yes — the five, never namespaced"],
-          ["`tools`", "`[]`", "yes — `tool` terms"],
-          ["`mcp`", "`[]`", "**no** — free text, installed server names"],
-          ["`params`", "`{}`", "no — any JSON-serialisable mapping, nesting depth under 100"],
-          ["`dependencies`", "`[]`", "no here — checked against the graph by the resolver"],
-          ["`cannot`", "`[]`", "yes — `data-type` terms, and see below"],
-          ["`will_not`", "`[]`", "**no** — free text, see below"],
-          ["`risk_markers`", "`[]`", "yes — `risk-marker` terms"],
+          ["`phase` / `phases`", "`[]`", "yes: the five, never namespaced"],
+          ["`tools`", "`[]`", "yes: `tool` terms"],
+          ["`mcp`", "`[]`", "**no**: free text, installed server names"],
+          ["`params`", "`{}`", "no: any JSON-serialisable mapping, nesting depth under 100"],
+          ["`dependencies`", "`[]`", "not here: checked against the graph by the resolver"],
+          ["`cannot`", "`[]`", "yes: `data-type` terms, and see below"],
+          ["`will_not`", "`[]`", "**no**: free text, see below"],
+          ["`risk_markers`", "`[]`", "yes: `risk-marker` terms"],
           ["`model`, `agent`, `skill`, `notes`, `author`, `provenance`", "absent", "no"],
         ],
       ),
@@ -572,7 +592,7 @@ export function renderCardSchemaReference(): string {
       "twice. On an edge with no `out=` pin the carriers are **every output of the source card**,",
       "so an edge out of a node that emits the criteria at all is refused. On an edge pinned with",
       "`out=`, the carrier is **that one port**, so pinning the edge to a different port satisfies",
-      "the prohibition. The bundle then loads — and the analyzer charges `criteria-leak` anyway,",
+      "the prohibition. The bundle then loads, and the analyzer charges `criteria-leak` anyway,",
       "because its topological walk reads the graph at node level and does not care which port an",
       "edge carries. `cannot` is the fast tripwire that stops the bundle loading; the analyzer is",
       "the backstop that prices it. Neither replaces the other.",
@@ -594,8 +614,8 @@ export function renderCardSchemaReference(): string {
       "",
       "## Who acts at the node",
       "",
-      "`type`, and nothing else. A `type` subsumed by `human-in-the-loop` — `human-gate`,",
-      "`human-input`, or `human-in-the-loop` itself, since subsumption is reflexive — is a node",
+      "`type`, and nothing else. A `type` subsumed by `human-in-the-loop` (`human-gate`,",
+      "`human-input`, or `human-in-the-loop` itself, since subsumption is reflexive) is a node",
       "where a person acts, and every other type is a node that runs unattended. The autonomy",
       "reading, the schematic and the card page all ask that one question of that one field.",
       "",
@@ -607,7 +627,7 @@ export function renderCardSchemaReference(): string {
       "## Which vocabulary a card is read against",
       "",
       "The one this build ships. A card used to declare `ontology_version`, and the engine read",
-      "it against the vocabulary that string named — but a release stores its whole scorecard at",
+      "it against the vocabulary that string named, but a release stores its whole scorecard at",
       "publish time, so no score is ever recomputed against an older vocabulary and nothing ever",
       "asked for the older one. Terms are added and retired inside the one vocabulary with",
       "`deprecated: {since, replacedBy}`, which is what a card naming a renamed term follows.",
@@ -617,11 +637,19 @@ export function renderCardSchemaReference(): string {
       "## Re-emitting a card",
       "",
       "A published version is never edited in place. Rewriting a card's content while leaving",
-      "the old file beside it is `bundle/digest-mismatch` (error). Bumping too small for what",
-      "changed is `card/version-bump-too-small` (error): a changed `spec` prices as **minor**, a",
-      "changed port, type or param prices as **major**. A card version nothing instantiates is",
-      "`bundle/orphan-card` (warning) — delete the superseded file rather than keep it for",
-      "history.",
+      "the old file beside it is `bundle/digest-mismatch` (error). A card version nothing",
+      "instantiates is `bundle/orphan-card` (warning): delete the superseded file rather than",
+      "keep it for history.",
+      "",
+      "Bumping too small for what changed is `card/version-bump-too-small` (error). The engine",
+      "infers the smallest bump the edit needs, from `lib/core/version/bump.ts`, and the",
+      "declared version has to be at least that. The strongest reason wins when an edit touches",
+      "several rows.",
+      "",
+      table(
+        ["bump", "forced by"],
+        BUMP_LEVELS.flatMap((level) => BUMP_PRICING[level].map((change) => [`**${level}**`, change])),
+      ),
       "",
       `## \`${SCHEMA_SOURCE}\`, verbatim`,
       "",

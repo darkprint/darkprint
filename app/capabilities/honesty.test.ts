@@ -116,7 +116,7 @@ describe("the render carries what the modules define", () => {
     expect(CLI_ENV.length).toBe(3);
     expect(TOOLS.length).toBe(5);
     expect(MCP_CLIENTS.length).toBe(6);
-    expect(QUESTIONS.length).toBe(5);
+    expect(QUESTIONS.length).toBe(6);
   });
 
   it.each(CLI_VERBS.map((verb) => [verb.name, verb] as const))(

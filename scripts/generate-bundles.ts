@@ -1,8 +1,9 @@
 /* ============================================================
-   DarkPrint — the downloadable bundles, generated at build time
-   Doc 2 §11 item 10. `lib/content/bundle-export.ts` decides what a
-   bundle *is* once it leaves the site; this decides *where it
-   lands*, and it is the only part that touches a filesystem.
+   DarkPrint: the downloadable bundles and the authoring skill,
+   generated at build time. `lib/content/bundle-export.ts` decides
+   what a bundle *is* once it leaves the site and `scripts/skill-package.ts`
+   decides what the skill archive is; this decides *where they land*,
+   and it is the only part that touches a filesystem.
 
    ── Why a `prebuild` script and not a module the loader calls ──
    The site is fully static (SSG), so there is no request-time place
@@ -36,20 +37,18 @@
    function` with nothing saying why.
 
    ── What it guarantees ──
-   1. Deterministic. `exportBundle` is pure and sorted, the output
-      directory is cleared before writing, and nothing here reads a
-      clock or a random source. Two builds of the same archive
-      produce byte-identical files.
+   1. Deterministic. `exportBundle` and `packSkill` are pure and
+      sorted, every output directory is cleared before writing, and
+      nothing here reads a clock or a random source. Two builds of
+      the same tree produce byte-identical files.
    2. The build fails if a bundle does not resolve. `readContent()`
       throws on any error-severity diagnostic, and every blueprint's
       graph is then compiled with `emitAttractorDot` and fed back
-      through `parseDot` and `lintAttractor` — the two checks
+      through `parseDot` and `lintAttractor`, the two checks
       Attractor runs before it will execute a pipeline. A graph that
-      would be rejected at the command line never ships, even though
-      (owner instruction, 2026-08-25) the compiled DOT itself is no
-      longer one of the files a bundle folder carries — the check is
-      about the graph a reader's own harness would compile, not
-      about a file this script writes.
+      would be rejected at the command line never ships. The compiled
+      DOT is not one of the files a bundle folder carries; the check
+      is about the graph a reader's own harness would compile.
    ============================================================ */
 
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -57,9 +56,6 @@ import * as nodeModule from "node:module";
 import { existsSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-109) (cited at line 11): replaced by SEAM-19 / SEAM-22 served from a store
 
 /* --------------------- module resolution --------------------- */
 
@@ -157,6 +153,10 @@ const { contentVocabulary, readContent } = await import("@/lib/content/read");
 const { CARD_LIBRARY_DIR, bundleDir, exportBundle } = await import(
   "@/lib/content/bundle-export"
 );
+const { SKILL_ARCHIVE_ROOT, SKILL_PUBLIC_DIR } = await import("@/lib/skill");
+const { SKILL_ARCHIVE_FILE, SKILL_MANIFEST_FILE, packSkill, readSkillTree } = await import(
+  "./skill-package.ts"
+);
 
 /* --------------------- generation --------------------- */
 
@@ -178,7 +178,45 @@ const OUTPUT_ROOT = join(ROOT, "public", "bundles");
  */
 const CARD_LIBRARY_ROOT = join(ROOT, "public", CARD_LIBRARY_DIR);
 
+/**
+ * The authoring skill, served from the site.
+ *
+ * `public/skill/darkprint/**` is the tree file by file, so `SKILL.md` and every reference
+ * are fetchable at a stable URL; `public/skill/darkprint.tgz` is the same tree as one
+ * archive rooted at `skills/darkprint/`, which is what the install line on `/skill` pipes
+ * into `tar -C ~/.claude`; `public/skill/manifest.json` lists every file with its SHA-256
+ * so a reader can check what they unpacked. Written from the committed source tree, so the
+ * drift test over the generated references still guards what is served.
+ */
+function exportSkill(): void {
+  const source = join(ROOT, ...SKILL_ARCHIVE_ROOT.split("/"));
+  const output = join(ROOT, "public", SKILL_PUBLIC_DIR);
+  // Cleared for the reason `OUTPUT_ROOT` is: a reference renamed or a template removed
+  // would otherwise stay served forever.
+  rmSync(output, { recursive: true, force: true });
+
+  const files = readSkillTree(source);
+  if (files.length === 0) throw new Error(`No files under ${SKILL_ARCHIVE_ROOT}. Nothing to serve.`);
+  const { tarball, manifest } = packSkill(files);
+
+  const tree = join(output, manifest.name);
+  for (const file of files) {
+    const path = join(tree, ...file.path.split("/"));
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, file.bytes);
+  }
+  writeFileSync(join(output, SKILL_ARCHIVE_FILE), tarball);
+  writeFileSync(join(output, SKILL_MANIFEST_FILE), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+  console.log(
+    `public/${SKILL_PUBLIC_DIR}/${manifest.name} — ${files.length} files, ` +
+      `${SKILL_ARCHIVE_FILE} ${tarball.length} bytes, ${manifest.archive.sha256.slice(0, 15)}…`,
+  );
+}
+
 function main(): void {
+  exportSkill();
+
   // Cleared rather than merged into: a blueprint removed from the archive, or a card
   // whose pin moved to a new version, would otherwise leave a stale file behind that
   // nothing links to and every later build would keep.
@@ -242,10 +280,9 @@ function main(): void {
     // The second half of the contract, and the only claim in this whole feature that a
     // reader cannot verify from the site alone: the artefact runs from a command line once
     // compiled. Attractor parses and lints before it executes, so a graph that fails either
-    // check would fail on the user's machine, and it fails here instead — compiled with
+    // check would fail on the user's machine, and it fails here instead: compiled with
     // `emitAttractorDot` exactly as a reader's own harness would, not read back out of
-    // `files`, because a compiled `factory.dot` is no longer one of them (owner
-    // instruction, 2026-08-25).
+    // `files`, because a compiled `factory.dot` is not one of them.
     const factory = emitAttractorDot(entry.blueprint);
     const parsed = parseDot(factory, "factory.dot");
     if (parsed.graph === undefined || hasErrors(parsed.diagnostics)) {

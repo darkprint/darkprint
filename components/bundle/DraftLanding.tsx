@@ -9,28 +9,23 @@ import { CopyButton } from "@/components/ui/CopyButton";
 
 /* ============================================================
    The draft branch of `/blueprints/[owner]/[slug]`: a bundle with an
-   account and a name and no release yet — GitHub's empty-repo screen,
-   applied to `draftBundle()` (0007_drafts, T280). The page mounts this
-   INSTEAD of the published-bundle render when `blueprint()` answers
-   undefined and `draftBundle()` answers something (B-03: the same
-   "absent or unreadable, either way" collapse every other reader here
-   makes).
+   account and a name and no release yet, the empty-repository screen
+   applied to `draftBundle()`. The page mounts this instead of the
+   published-bundle render when `blueprint()` answers undefined and
+   `draftBundle()` answers something, the same "absent or unreadable,
+   either way" collapse every other reader here makes.
 
    `BundleHeader` at the top for the same reason the published branch
-   uses it — one identity band for a bundle seen from any side — with
-   no `download` (there is no release to fetch, and the band's `note`
-   says so where the control would have been) and no `star`/`fork` (a
-   target nothing has released is not a thing this pass wires either
-   of those onto; `lib/server/counters` keys targets by kind, and
-   "blueprint" targets a released bundle's row by convention here).
+   uses it, one identity band for a bundle seen from any side, with no
+   `download` (there is no release to fetch, and the band's `note` says
+   so where the control would have been) and no `star`/`fork` (a target
+   nothing has released is not a thing either of those is wired onto).
 
-   THE VISIBILITY SWITCH STAYS HERE, and it is the one route that
-   still draws one. The owner took it off the published page on
-   2026-09-06 and put it on the account's blueprint list instead; a
-   draft is on that list too, so this mount is redundant the day the
-   list grows one. It is kept until then rather than after, because
-   removing it first would leave a bundle created through `/new` with
-   no way at all to be made public.
+   The visibility switch stays here, and this is the one route that
+   still draws one: the published page lost it to the account's
+   blueprint list, and a draft is on that list too, but removing it
+   here first would leave a bundle created through `/new` with no way
+   at all to be made public.
    ============================================================ */
 
 export interface DraftLandingBundle {
@@ -43,9 +38,8 @@ export interface DraftLandingBundle {
   createdAt: string;
 }
 
-/* D-270-07's ruled spelling. The CLI is not on npm (T270 todo), and the line below says
-   so where it renders — the same preview-not-control stance CloneMenu holds on the
-   published branch. */
+/* The CLI's own spelling. The package is not on npm, and the line below says so where it
+   renders, the same preview-not-control stance CloneMenu holds on the published branch. */
 const cloneCommand = (owner: string, slug: string) => `darkprint clone ${owner}/${slug}`;
 
 export function DraftLanding({
@@ -95,15 +89,13 @@ export function DraftLanding({
 
         {isOwner ? (
           <>
-            {/* ---------- Quick setup, the GitHub empty-repo panel ----------
+            {/* ---------- Quick setup, the empty-repository panel ----------
                 Three ways in, same as a fresh repository offers: push a release from the
-                wizard, point the blueprint-writing skill at this exact draft (its install
-                command needs a public repository, and each caveat below says which limit
-                it is stating), or clone the bundle by name (a preview until the CLI
-                ships). None of them is a fallback for another. Owner-only: the
-                upload wizard's own prefill only pins a bundle the session owns (B6's
-                contract), so offering this call to action to a visitor would point them at
-                a form that refuses them the moment they submit it. */}
+                wizard, install the blueprint-writing skill and let it draft the graph, or
+                clone the bundle by name (a preview until the CLI ships). None of them is a
+                fallback for another. Owner-only: the upload wizard's own prefill only pins
+                a bundle the session owns, so offering this call to action to a visitor
+                would point them at a form that refuses them the moment they submit it. */}
             <section className="panel flex flex-col gap-6 p-6">
               <div>
                 <span className="label">Quick setup</span>
@@ -127,7 +119,8 @@ export function DraftLanding({
                     blueprint-writing skill
                   </Link>{" "}
                   at your own goal and let your agent draft the graph before you publish it
-                  here:
+                  here. The line installs it for Claude Code; the skill page has the Codex
+                  form:
                 </p>
                 <div className="mt-2 flex items-center gap-2 rounded-md border border-line bg-void px-3 py-2">
                   <code className="flex-1 overflow-x-auto font-mono text-[12px] text-fg">
@@ -135,21 +128,6 @@ export function DraftLanding({
                   </code>
                   <CopyButton text={SKILL_INSTALL_COMMAND} ariaLabel="Copy the skill install command" />
                 </div>
-                {/* The same shape, tone and position the clone command's caveat uses below,
-                    because it is the same kind of claim: a line printed as a control that
-                    is not one yet. Added 2026-09-05 on the owner's ruling (§11.0 Q8), and
-                    `lib/skill.ts`'s header holds the measurement.
-
-                    The two limits are NOT the same fact and the wording keeps them apart.
-                    The CLI below does not exist yet; the DarkPrint skill does, and what
-                    blocks it is read access to the repository the skills CLI fetches it
-                    from. Saying "not built" here would be a different false claim from the
-                    one it replaced. Deleting this paragraph is this file's whole undo. */}
-                <p className="mt-2 text-xs leading-relaxed text-dim">
-                  Not runnable yet. DarkPrint&rsquo;s repository is private, so the line
-                  above answers 404 for everyone but its owner. The blueprint-writing skill
-                  it fetches is written; what is missing is read access to it.
-                </p>
               </div>
 
               <div className="border-t border-line pt-5">
