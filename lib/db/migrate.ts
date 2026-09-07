@@ -1,10 +1,8 @@
-/* ============================================================
-   DarkPrint backend — migration runner
-   Hand-written SQL pairs (`NNNN_name.up.sql` / `.down.sql`)
-   rather than an ORM-generated one-way migration, because AC2
-   ("rollback returns the schema to the prior state") needs a
-   real down script and drizzle-kit does not generate one.
-   ============================================================ */
+/**
+ * Migration runner over hand-written SQL pairs (`NNNN_name.up.sql` / `.down.sql`). Real
+ * down scripts, because rollback has to return the schema to its prior state and an
+ * ORM-generated one-way migration cannot.
+ */
 
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -16,12 +14,10 @@ const MIGRATIONS_DIR = join(dirname(fileURLToPath(import.meta.url)), "migrations
 const TRACKING_TABLE = `"_migrations"`;
 
 /**
- * D-06: arbitrary constant scoped to this migration runner. `pg_advisory_lock` is
- * database-wide, so every concurrent `migrateUp`/`migrateDown` — even from separate
- * pools — serialises on it rather than racing the tracking table and the DDL that
- * reads it, which is what crashed 3 of 4 concurrent cold-boot runs on
- * `pg_type_typname_nsp_index`. `migrateDown` takes the same key: an up and a down
- * racing each other is the identical hazard.
+ * Arbitrary constant scoped to this runner. `pg_advisory_lock` is database-wide, so
+ * concurrent `migrateUp`/`migrateDown` calls from separate pools serialise on it instead
+ * of racing the tracking table and the DDL that reads it; an up and a down racing each
+ * other is the same hazard, so both take it.
  */
 const MIGRATION_LOCK_KEY = 847_362_951;
 
@@ -29,6 +25,18 @@ interface Migration {
   id: string;
   up: string;
   down: string;
+}
+
+/** Which pending migrations one `migrateUp` call applies. */
+export interface MigrateUpOptions {
+  /** Apply pending migrations in id order up to and including this id, and stop there. */
+  to?: string;
+  /**
+   * Apply exactly this pending migration and nothing else, even when earlier ids are still
+   * pending. For an additive migration that has to land before a deploy while a destructive
+   * one numbered below it waits until after.
+   */
+  only?: string;
 }
 
 function byId(a: { id: string }, b: { id: string }): number {
@@ -73,7 +81,11 @@ async function runInTransaction(client: PoolClient, sql: string, after: () => Pr
   }
 }
 
-/** Holds one client for the caller's whole migration run, locked and released around it. */
+/**
+ * Holds one client for the caller's whole migration run, locked and released around it.
+ * A session-level advisory lock belongs to a connection, which is why this pins one and
+ * why the runner cannot go through a transaction pooler.
+ */
 async function withMigrationLock<T>(pool: Pool, fn: (client: PoolClient) => Promise<T>): Promise<T> {
   const client = await pool.connect();
   try {
@@ -89,10 +101,9 @@ async function withMigrationLock<T>(pool: Pool, fn: (client: PoolClient) => Prom
 }
 
 /**
- * `target` is a pool the caller already owns, or a connection string this run opens
- * and closes itself (T000 contract, D-08 — no zero-argument form reading
- * `DATABASE_URL` implicitly is published; a caller with only a connection string
- * still names it explicitly).
+ * `target` is a pool the caller already owns, or a connection string this run opens and
+ * closes itself. There is no zero-argument form reading `DATABASE_URL` implicitly: two
+ * suites once drove the same database unknowingly and raced each other's teardown.
  */
 async function withTargetPool<T>(target: Pool | string, fn: (pool: Pool) => Promise<T>): Promise<T> {
   if (typeof target !== "string") return fn(target);
@@ -104,18 +115,43 @@ async function withTargetPool<T>(target: Pool | string, fn: (pool: Pool) => Prom
   }
 }
 
+/** The pending migrations one call applies, per `options`; throws on an id that names no file. */
+function selectPending(pending: Migration[], all: Migration[], options: MigrateUpOptions): Migration[] {
+  if (options.only !== undefined && options.to !== undefined) {
+    throw new Error("`to` and `only` are exclusive: one names a stopping point, the other a single migration.");
+  }
+  const known = (id: string): void => {
+    if (!all.some((m) => m.id === id)) {
+      throw new Error(`No migration named "${id}". Known ids: ${all.map((m) => m.id).join(", ")}`);
+    }
+  };
+  if (options.only !== undefined) {
+    known(options.only);
+    return pending.filter((m) => m.id === options.only);
+  }
+  if (options.to !== undefined) {
+    known(options.to);
+    return pending.filter((m) => m.id <= (options.to as string));
+  }
+  return pending;
+}
+
 /**
- * Applies every migration not yet recorded, in id order. Safe to call on an
- * already-current database — returns an empty list rather than re-applying (AC1).
- * Concurrent callers serialise on `MIGRATION_LOCK_KEY` rather than racing the
- * tracking table (AC1, concurrency; D-06).
+ * Applies every migration not yet recorded, in id order, or the subset `options` names.
+ * Safe to call on an already-current database: returns an empty list rather than
+ * re-applying. Concurrent callers serialise on `MIGRATION_LOCK_KEY`.
  */
-export async function migrateUp(target: Pool | string, dir?: string): Promise<string[]> {
+export async function migrateUp(target: Pool | string, dir?: string, options: MigrateUpOptions = {}): Promise<string[]> {
   return withTargetPool(target, (pool) =>
     withMigrationLock(pool, async (client) => {
       await ensureTrackingTable(client);
       const applied = new Set(await appliedIds(client));
-      const pending = loadMigrations(dir).filter((m) => !applied.has(m.id));
+      const all = loadMigrations(dir);
+      const pending = selectPending(
+        all.filter((m) => !applied.has(m.id)),
+        all,
+        options,
+      );
       const ran: string[] = [];
       for (const migration of pending) {
         await runInTransaction(client, migration.up, async () => {
@@ -129,9 +165,9 @@ export async function migrateUp(target: Pool | string, dir?: string): Promise<st
 }
 
 /**
- * Rolls back the `steps` most recently applied migrations, most recent first (AC2).
- * Rolling back everything returns the schema to an empty database, byte-for-byte
- * what `migrateUp` started from.
+ * Rolls back the `steps` most recently applied migrations, most recent first. Rolling
+ * back everything returns the schema to an empty database, byte-for-byte what
+ * `migrateUp` started from.
  */
 export async function migrateDown(target: Pool | string, steps = 1, dir?: string): Promise<string[]> {
   return withTargetPool(target, (pool) =>

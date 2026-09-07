@@ -1,8 +1,7 @@
-/* ============================================================
-   DarkPrint backend — Postgres client factory
-   B-01: the index lives in Postgres, and the host is a
-   connection string — nothing here assumes local infrastructure.
-   ============================================================ */
+/**
+ * Postgres client factory. The index lives in Postgres and the host is a connection
+ * string, so nothing here assumes local infrastructure.
+ */
 
 import { Pool, type PoolConfig, type QueryResult, type QueryResultRow } from "pg";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -23,18 +22,37 @@ export interface DbClient {
 /** Re-exported so a caller can `import { schema } from "@/lib/db/client"` alongside `db`. */
 export { schema };
 
+/** `pg`'s default of 10 per pool multiplies by every warm serverless instance; 3 keeps a burst under a hosted ceiling. */
+const DEFAULT_POOL_MAX = 3;
+
 /**
- * One pool per call — a caller that wants an isolated instance (a test, a script)
- * holds onto the returned `DbClient` itself and closes it when done.
+ * Pool sizing for a runtime where every warm function instance holds a pool of its own.
+ * Idle connections are released after ten seconds so a quiet instance holds none, a
+ * connect that cannot be made in five seconds fails instead of queueing forever, and
+ * `allowExitOnIdle` lets a script's process end without an explicit `close()`.
+ */
+function poolOptions(): Pick<PoolConfig, "max" | "idleTimeoutMillis" | "connectionTimeoutMillis" | "allowExitOnIdle"> {
+  const configured = Number.parseInt(process.env.PG_POOL_MAX ?? "", 10);
+  return {
+    max: Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_POOL_MAX,
+    idleTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 5_000,
+    allowExitOnIdle: true,
+  };
+}
+
+/**
+ * One pool per call. A caller that wants an isolated instance (a test, a script) holds
+ * onto the returned `DbClient` itself and closes it when done. A string target gets the
+ * serverless pool options; a `PoolConfig` is taken as written, so a caller can size its
+ * own pool.
  */
 export function createDbClient(config: string | PoolConfig = requiredEnv("DATABASE_URL")): DbClient {
-  const pool = typeof config === "string" ? new Pool({ connectionString: config }) : new Pool(config);
-  /**
-   * D-05: `pg` documents an idle client's connection dying (a restart, a failover, an
-   * admin `pg_terminate_backend`) as an `'error'` event on the pool. An `EventEmitter`
-   * with no listener for that event crashes the process on the next occurrence — and
-   * `getSharedDbClient` hands this one pool to every route handler in the app.
-   */
+  const pool =
+    typeof config === "string" ? new Pool({ connectionString: config, ...poolOptions() }) : new Pool(config);
+  /* `pg` reports an idle connection dying (a restart, a failover, an admin terminate) as
+     an `'error'` event on the pool, and an EventEmitter with no listener for it crashes the
+     process on the next occurrence. */
   pool.on("error", (err) => {
     console.error("lib/db: idle Postgres client error", err);
   });
@@ -52,9 +70,8 @@ type GlobalWithSharedClient = typeof globalThis & { [SHARED_CLIENT_KEY]?: DbClie
 
 /**
  * The pool a route handler reaches for. Cached on `globalThis` behind a well-known
- * symbol, not module scope, because Next's dev server hot-reloads route modules on
- * every save — a module-scope singleton would be recreated (and its old pool
- * leaked) on each edit, where a `globalThis` slot survives the reload.
+ * symbol rather than at module scope, because Next's dev server hot-reloads route
+ * modules on every save and a module-scope singleton would leak a pool per edit.
  */
 export function getSharedDbClient(): DbClient {
   const withShared = globalThis as GlobalWithSharedClient;

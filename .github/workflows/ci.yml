@@ -1,0 +1,87 @@
+name: ci
+
+# The four gates the repository requires before work is called done, against the same
+# services `compose.yaml` brings up locally. The job env mirrors `.env.example`: every
+# value below is a published placeholder, never a credential.
+#
+# Build runs before typecheck because `tsc` needs the `next-env.d.ts` and `.next/types`
+# that only a build (or `next typegen`) writes; a fresh checkout typechecks phantom
+# route-type errors otherwise.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DATABASE_URL: postgres://darkprint:darkprint@localhost:5432/darkprint
+  S3_ENDPOINT: http://localhost:9000
+  S3_BUCKET: darkprint
+  S3_ACCESS_KEY_ID: darkprint
+  S3_SECRET_ACCESS_KEY: darkprint123
+  GITHUB_CLIENT_ID: dev-github-client-id
+  GITHUB_CLIENT_SECRET: dev-github-client-secret
+  GOOGLE_CLIENT_ID: dev-google-client-id
+  GOOGLE_CLIENT_SECRET: dev-google-client-secret
+  SESSION_SECRET: "0000000000000000000000000000000000000000000000000000000000000000"
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: darkprint
+          POSTGRES_PASSWORD: darkprint
+          POSTGRES_DB: darkprint
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U darkprint -d darkprint"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # A service container cannot be given a command, and the official MinIO image needs
+      # `server /data`, so it is started by hand with the same image, command and bucket
+      # init as `compose.yaml`.
+      - name: start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=darkprint -e MINIO_ROOT_PASSWORD=darkprint123 \
+            minio/minio:latest server /data
+          for _ in $(seq 1 30); do
+            curl -sf http://localhost:9000/minio/health/live && break
+            sleep 2
+          done
+          docker run --rm --network host --entrypoint /bin/sh minio/mc:latest -c \
+            "mc alias set local http://localhost:9000 darkprint darkprint123 && mc mb --ignore-existing local/darkprint"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: build
+        run: npm run build
+
+      - name: typecheck
+        run: npm run typecheck
+
+      - name: lint
+        run: npm run lint
+
+      - name: test
+        run: npx vitest run --maxWorkers=3

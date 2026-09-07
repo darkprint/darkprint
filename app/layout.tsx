@@ -6,6 +6,7 @@ import "@xyflow/react/dist/style.css";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { LearnShell } from "@/components/learn/LearnShell";
+import { SITE_ORIGIN } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,7 +35,8 @@ const spaceGrotesk = Space_Grotesk({
  * a pause, and no verb list padding out the description.
  */
 export const metadata: Metadata = {
-  metadataBase: new URL("https://darkprint.io"),
+  metadataBase: new URL(SITE_ORIGIN),
+  alternates: { canonical: "./" },
   title: {
     default: "DarkPrint · reusable blueprints for agent workflows",
     template: "%s · DarkPrint",

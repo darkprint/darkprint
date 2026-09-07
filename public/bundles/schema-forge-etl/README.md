@@ -134,4 +134,4 @@ endpoint and no client for it in this bundle or on the site.
 
 ---
 
-Exported from https://darkprint.io/blueprints/schema-forge-etl
+Exported from https://www.darkprint.io/blueprints/schema-forge-etl
