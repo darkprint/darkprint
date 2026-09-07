@@ -7,42 +7,33 @@ import { prettyDate } from "@/lib/format";
 import { deleteJson, errorMessage, getJson, postJson } from "./live";
 
 /* ============================================================
-   DarkPrint frontend — §06 API keys, new at T280
+   DarkPrint frontend — settings, the API keys section
    `GET`/`POST /api/account/keys` and `DELETE
-   /api/account/keys/[keyId]` (T230) predate this page's wiring by a
-   wave and are unrelated to the Save/Discard flow above — nothing
-   here reads `AccountForm`'s state and nothing it does marks that
-   form dirty, which is the sense in which this section sits
-   "outside" it.
+   /api/account/keys/[keyId]` serve it. Nothing here reads
+   `AccountForm`'s state and nothing it does marks that form dirty,
+   which is the sense in which this section sits outside the
+   Save/Discard flow above it.
 
-   ── the two record shapes below are NOT `ApiKeyRecord` ──
+   ── the record shape below is NOT `ApiKeyRecord` ──
    `lib/server/limits`'s `ApiKeyRecord` types `createdAt`/`revokedAt`
-   as `Date`, which is exactly right for a value read in-process and
-   exactly wrong for one that crossed `JSON.stringify` — `Date` has
-   no wire form, and what actually lands in `response.json()` is the
-   ISO string `Date.prototype.toJSON` produced. Casting the parsed
-   JSON to the server's own type would let `record.createdAt.toISOString()`
-   compile and throw the moment it ran, on a value that was a string
-   all along. `KeyRow` names what this file really receives.
+   as `Date`, which is right for a value read in-process and wrong
+   for one that crossed `JSON.stringify`: what lands in
+   `response.json()` is the ISO string `Date.prototype.toJSON`
+   produced. Casting the parsed JSON to the server's own type would
+   let `record.createdAt.toISOString()` compile and throw the moment
+   it ran. `KeyRow` names what this file really receives.
 
-   ── `MAX_LABEL_LENGTH` is a literal, not an import ──
-   `PrefixedField`'s reason, in `controls.tsx`: this is a client
-   component, and `@/lib/server/limits` reaches `@/lib/db`. The
-   number is a client cap and not enforcement either way — `issueKey`
+   ── `MAX_LABEL_LENGTH` and the scopes are literals, not imports ──
+   This is a client component, and `@/lib/server/limits` reaches
+   `@/lib/db`. The server is the authority either way: `issueKey`
    refuses a label over 100 characters regardless of what this file
-   sends, which is `isValidLabel`'s job and not this one's.
+   sends, and every sentence rendered about a minted key is chosen
+   from the scope the server answered with rather than the one that
+   was asked for.
    ============================================================ */
 
 const MAX_LABEL_LENGTH = 100;
 
-/**
- * The two scopes, as literals rather than an import of `KeyScope`.
- *
- * `MAX_LABEL_LENGTH`'s reason one line up: this is a client component and
- * `@/lib/server/limits` reaches `@/lib/db`. The server is the authority either way. Nothing
- * here decides what a key may do, and every sentence this file renders about a minted key is
- * chosen from what the server answered rather than from what was asked for.
- */
 type Scope = "read" | "write";
 
 interface KeyRow {
@@ -54,37 +45,36 @@ interface KeyRow {
 }
 
 /**
- * What each scope means, in the words its holder gets at the one moment they read anything.
- *
- * ── the read sentence is UNCHANGED, to the byte ──
- * It is the promise every key minted before the scope column was issued under, and the
- * owner's 2026-09-05 ruling is that it holds for those keys for their whole lives. Every one
- * of them backfilled to `read`, so this is still the sentence shown against every key that
- * existed before this control did.
- *
- * ── the write sentence describes TODAY, and it will go stale ──
- * A key is read once, when it is minted, so a holder cannot be told later. As this ships,
- * `writeActorFor` exists and no route calls it: no endpoint accepts a key for a write, and
- * saying otherwise would be selling a capability that is not there.
- *
- * **The day a route does accept one, this sentence is wrong and must change in the same
- * commit that wires it.** `app/capabilities/page.tsx` carries the same claim ("a key gates no
- * read and authorises no write") and needs the same edit at the same moment.
+ * The publish call a write key unlocks, as the holder will paste it. `publish.json` is the
+ * same JSON the upload page sends: `ownerHandle`, `slug`, `version`, `manifest`, `dot` and
+ * `cardFiles` (filename to YAML text). Exported so the test reads the string the page shows.
  */
-const SCOPE_COPY: Record<Scope, { name: string; blurb: string }> = {
+export const PUBLISH_CURL = [
+  "curl -X POST https://www.darkprint.io/api/bundles \\",
+  '  -H "Authorization: Bearer $DARKPRINT_API_KEY" \\',
+  '  -H "Content-Type: application/json" \\',
+  "  --data @publish.json",
+].join("\n");
+
+/**
+ * What each scope means, in the words its holder gets at the one moment they read anything.
+ * A key is shown once, when it is minted, so a holder cannot be told later; each sentence
+ * has to describe what the routes do today. Exported so the test reads the same strings.
+ */
+export const SCOPE_COPY: Record<Scope, { name: string; blurb: string }> = {
   read: {
     name: "Read",
     blurb:
-      "It carries no identity, so it signs nothing in and authorizes no write. Anything that " +
-      "changes your account or your bundles still needs your session.",
+      "It raises the rate ceiling for reads over the MCP endpoints and authorizes no write. " +
+      "Anything that changes your account or your bundles needs a write key or your session.",
   },
   write: {
     name: "Write",
     blurb:
-      "It acts as your account rather than as an anonymous reader. No endpoint accepts a key " +
-      "for a write yet, so today it reaches exactly what a read key reaches. When one does, " +
-      "this key will be able to change your account and your bundles, and revoking it is the " +
-      "only way to take that back.",
+      "It acts as your account on the two write routes: publishing a release with " +
+      "POST /api/bundles, and posting a run report with POST /api/blueprints/{owner}/{slug}/runs. " +
+      "Send it as a bearer token from a terminal or an agent; no browser session is needed. " +
+      "Revoking it is the only way to take that back.",
   },
 };
 
@@ -94,6 +84,15 @@ const SCOPE_COPY: Record<Scope, { name: string; blurb: string }> = {
     up). */
 function friendly(iso: string): string {
   return prettyDate(iso.slice(0, 10));
+}
+
+/** The curl a write key is for, shown wherever the write sentence is. */
+function PublishExample() {
+  return (
+    <pre className="overflow-x-auto rounded-md border border-line bg-void px-3 py-2 font-mono text-[12px] leading-relaxed text-fg">
+      <code>{PUBLISH_CURL}</code>
+    </pre>
+  );
 }
 
 function KeyList({
@@ -222,6 +221,7 @@ export function ApiKeys() {
           <span className="text-[13px] leading-relaxed text-muted">
             {SCOPE_COPY[minted.scope].blurb}
           </span>
+          {minted.scope === "write" && <PublishExample />}
           {minted.asked !== minted.scope && (
             /* Not decoration and not an error state. The scope is decided by the server, and
                a mismatch means the request for one was not honoured. Saying so is the only
@@ -293,9 +293,10 @@ export function ApiKeys() {
           an `<option>` renders one line of plain text. It changes as the choice changes, so
           the sentence a holder reads before minting is the sentence about the key they are
           about to get. */}
-      <p id="api-key-scope-blurb" className="text-[13px] leading-relaxed text-muted">
-        {SCOPE_COPY[scope].blurb}
-      </p>
+      <div id="api-key-scope-blurb" className="flex flex-col gap-2">
+        <p className="text-[13px] leading-relaxed text-muted">{SCOPE_COPY[scope].blurb}</p>
+        {scope === "write" && <PublishExample />}
+      </div>
       {mintError !== undefined && (
         <p role="alert" className="text-[13px] text-signal">
           {mintError}

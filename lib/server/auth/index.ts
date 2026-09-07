@@ -15,7 +15,7 @@ export {
   sessionCookieHeader,
 } from "./session";
 
-export { withSession } from "./guard";
+export { withSession, withSessionOrWriteKey } from "./guard";
 
 export {
   OAUTH_STATE_COOKIE_NAME,
