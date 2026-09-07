@@ -394,6 +394,8 @@ interface ReleasePlan {
   newVocabulary: unknown;
   newDigest: string;
   newAnalysis: { autonomy: unknown; security: unknown; phaseCoverage: unknown };
+  /** False when `content/blueprints/<slug>/topology.dot` has moved on since this release was seeded. */
+  dotMatchesArchive: boolean;
 }
 
 const client = createDbClient(databaseUrl);
@@ -559,6 +561,7 @@ async function main(): Promise<void> {
   console.log(`rows      ${releaseRows.length} release, ${bundleRows.length} bundle`);
 
   const releases: ReleasePlan[] = [];
+  const dotDiverged: string[] = [];
 
   for (const row of releaseRows) {
     const slug = slugOf.get(row.bundleId) ?? "?";
@@ -572,13 +575,13 @@ async function main(): Promise<void> {
       throw new Error(`${label}: the stored release digest does not describe its own columns. Pre-existing drift; stop and look at it.`);
     }
 
-    /* `dot` is already correct: all 15 archive-backed values are byte-identical to
-       `content/blueprints/<slug>/topology.dot`, and this migration has no business
-       rewriting a DOT source. Asserted rather than assumed. */
+    /* This migration never rewrites a DOT source. A stored `dot` that differs from the
+       archive's current `topology.dot` means the archive moved on after this release was
+       seeded; it is reported, and the README generated from that newer DOT cannot vouch for
+       the release's digest, so it is kept out of the comparison below. */
     const dotFile = join(process.cwd(), "content", "blueprints", slug, "topology.dot");
-    if (existsSync(dotFile) && readFileSync(dotFile, "utf8") !== row.dot) {
-      throw new Error(`${label}: release.dot differs from content/blueprints/${slug}/topology.dot. That is not this migration's to change.`);
-    }
+    const dotMatchesArchive = !existsSync(dotFile) || readFileSync(dotFile, "utf8") === row.dot;
+    if (!dotMatchesArchive) dotDiverged.push(label);
 
     /* Membership BEFORE the map. `bundleDigest` accepts an `undefined` hole without
        throwing: `Array.prototype.sort` moves it to the end without calling the comparator
@@ -661,6 +664,7 @@ async function main(): Promise<void> {
         security: loaded.analysis.security,
         phaseCoverage: loaded.analysis.phaseCoverage,
       },
+      dotMatchesArchive,
     });
   }
 
@@ -670,7 +674,8 @@ async function main(): Promise<void> {
      describes an older card set than the README and is reported, not compared. */
   const published = publishedDigests();
   const originOf = new Map(cards.map((c) => [c.ref, c.origin]));
-  const comparable = (r: ReleasePlan): boolean => published.has(r.slug) && r.cardRefs.every((ref) => originOf.get(ref) === "archive");
+  const comparable = (r: ReleasePlan): boolean =>
+    published.has(r.slug) && r.dotMatchesArchive && r.cardRefs.every((ref) => originOf.get(ref) === "archive");
   const wrong = releases.filter((r) => comparable(r) && published.get(r.slug) !== r.newDigest);
   if (wrong.length > 0) {
     throw new Error(
@@ -694,6 +699,7 @@ async function main(): Promise<void> {
   const databaseOnly = byOrigin("database-only");
   console.log(`          ${databaseOnly.length} with no version under content/, transformed in place${databaseOnly.length > 0 ? `: ${databaseOnly.map((c) => c.ref).join(", ")}` : ""}`);
   console.log(`          notes differing from the archive (confirm these are the shape change's rewrites): ${notesRefs.join(", ") || "(none)"}`);
+  console.log(`          releases whose dot differs from the archive's current topology.dot (left as stored): ${dotDiverged.join(", ") || "(none)"}`);
   console.log("");
   console.log("totals    derived from this target and the plan, held to after the write:");
   console.log(`          ${expected.cardVersions} card_version rows, ${expected.releases} release rows`);
