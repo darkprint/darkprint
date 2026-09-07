@@ -521,6 +521,18 @@ describe("what the restructure had to leave standing", () => {
    */
   it("still draws the version line under the actions", () => {
     expect(SOURCE).toContain("shortDigest(bp.digest)");
-    expect(SOURCE).toContain("prettyDate(bp.createdAt)");
+    expect(SOURCE).toContain("prettyDate(");
+  });
+
+  /*
+   * The card skeleton showed the wrong card on first paint: the page zipped `graph.nodes`,
+   * which is in DOT order, against `summary.cardRefs`, which the registry keeps sorted, so the
+   * first node got whichever card sorted first. The join has to go through the DOT.
+   */
+  it("joins each node to its card through the DOT, never by position", () => {
+    expect(SOURCE).toContain("paneNodesFor(bp.graph.nodes, bp.graph.dot,");
+    expect(SOURCE, "the index join against the sorted ref list is back").not.toContain(
+      "bp.cardRefs[i]",
+    );
   });
 });

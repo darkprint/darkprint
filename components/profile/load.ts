@@ -23,96 +23,36 @@ import {
 } from "@/lib/server/registry";
 import { listSaves } from "@/lib/server/saves";
 import { starsFor } from "@/lib/data/node-community";
-/* `starsFor` is the one `lib/data` import T280 leaves standing, and it feeds exactly one
-   figure: the seeded `support` pill on a node-card tile (Pinned's mini-cards, `NodeTile`
-   generally). It has no column and no counter — `lib/server/counters` counts a CARD's
-   stars fine, but the pill this reads is `starsFor`'s own per-card seed number, a different
-   figure from a live `getSignalsMany` star count, and swapping one for the other silently
-   would be answering a question nobody asked rather than wiring the one that was.
-   Everything else this file used to read off `lib/data/profiles.ts` — watchers, support,
-   validated, pinned, and the join date — is gone from here as of T280: `0004_social` and
-   `0007_drafts` gave every one of them a table, and `getProfile` and `ownedBundles` below
-   read them off it. `lib/data/profiles.ts` and `lib/data/bundles.ts` are untouched and
-   still exist — `tabs.test.ts` still holds their seeded rows against the archive — this
-   file simply stopped being one of their readers. */
 import type { NodeSummary } from "@/components/nodes/NodeCardSummary";
 import { authorFor } from "./author";
 import type { OwnedRow } from "./OwnedBundles";
+import { ownedRowsFor } from "./owned-rows";
 import type { PinnedItem } from "./Pinned";
 import { attachStars } from "./remove-save";
 import type { ProfileTabId } from "./tabs";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-53 LIVE: the identity and the join date, off `@/lib/server/accounts` and
-//   `@/lib/server/profiles` rather than a per-handle endpoint.
-// SEAM-55 LIVE (T280): the pinned selection, off `getProfile`'s own `pinned` — see below.
-// SEAM-56/57 LIVE (T280): watchers, support and the community signals line — see below.
-// SEAM-59 LIVE (T132): the visitor's card shelf, off `cardsOwnedBy` — see below.
-// SEAM-61 LIVE: the Saved tab, off `@/lib/server/saves`.
-// SEAM-63/64 LIVE (T280): the owner's bundle shelf, off `ownedBundles` — see below.
-// SEAM-113 LIVE (T132): the owner's card shelf, public and private together, off
-//   `cardsOwnedBy` — see below. No dedicated `GET /api/authors/{handle}/cards` route was
-//   built or is owed, the same in-process shape SEAM-63/64 settled for bundles.
-
 /* ============================================================
-   Everything the five profile routes read, assembled once.
+   Everything the profile routes read, assembled once.
 
-   SERVER ONLY: this reaches `@/lib/db` and `@/lib/content`. The five pages are server
-   components and each one renders a different slice of this, so the alternative to one
-   loader is the same queries copied five times, drifting the first time one of them
-   changes what "authored by" means.
+   SERVER ONLY: this reaches `@/lib/db` and `@/lib/content`. The profile pages are server
+   components and each renders a different slice of this, so the alternative to one loader
+   is the same queries copied per page, drifting the first time one of them changes what
+   "authored by" means.
 
-   ── Who the owner is ──
-   `owner` is a comparison between the handle in this request's session and the handle in
-   the URL — see `readSession`'s own docblock for why that read has to happen at the
-   client's request rather than at build time.
+   `owner` compares the handle in this request's session with the handle in the URL, which
+   is why the read happens per request rather than at build time.
 
-   ── T280: the shelf, the pins and the community line all cut over to the registry ──
-   Four figures left the seeded fixture in this pass, and each one left because a table now
-   holds it rather than because this file got tidier. A fifth, `ownedCards`, followed in the
-   same wave once the count beside it (`counts.cards`, T132) started reading the registry
-   and the tile list underneath it did not — see the bullet below the four:
+   Two lists answer two different questions and are kept apart on purpose. `owned` is what
+   the account HOLDS, live off the registry (`ownedBundles`, `cardsOwnedBy`), and it is the
+   shelf a reader sees. `blueprints`, `cards` and `terms` are what the handle WROTE, read off
+   `content/` by byline. The seeded archive puts every blueprint under one registry owner
+   while crediting each one's author, so the two lists differ for almost every handle today.
+   The shelf pairs a live row with its archive drawing by slug (`ownedRowsFor`), never by
+   byline, or the owner's own profile draws no graph at all.
 
-   - `owned` used to be `bundlesOwnedBy(username)`, a fixture that invented five private
-     rows per handle and called every public one by hand-copying its slug. It is
-     `ownedBundles(db, actor, username)` now — a live reader over `bundle` itself
-     (`lib/server/registry/owned.ts`), so a zero-release draft renders because it is a real
-     row with no release yet, not because a fixture author decided this handle should have
-     one. `OwnedRow` (`./OwnedBundles`) pairs each live row with the same slug's
-     `content/`-archive entry when there is one, which is what lets a released row draw
-     through the same `ContentRow` `/blueprints` uses.
-   - `pinned` used to resolve `profileFor(username).pinned`, a hand-authored selection
-     nobody's account could change. It resolves `getProfile`'s own `pinned` now — a stored,
-     writable selection (`setPins`, T131) already filtered to what THIS actor may see
-     (D-131-04) — so the archive lookup below is the same shape as before, over a
-     different, live list of refs.
-   - `watchers`, `support` and `validated` used to be `profileFor(username)`'s three
-     other seeded figures. They are `getProfile`'s `watchers`/`support`/`validated` now —
-     each a `count(*)` over a real table (`0004_social`'s `follow` and `account_support`,
-     and `validated` over `run_report`), never a stored counter (T131's own AC1).
-   - `downloads` and `stars`, the community-signals line `ProfileHeader` prints, used to be
-     a fold over `Blueprint.downloads`/`.votes` and `NodeTile.support` — three more seeded
-     fixture numbers, folded rather than read but no less invented for it. `signalsFor`
-     below replaces the fold with one `getSignalsMany` call over the targets this handle's
-     own live bundles and published cards resolve to (T150). Genuinely zero today for most
-     handles, and that is the honest answer: nothing has starred or downloaded anything
-     through the counters this pass wires, so a fold that still printed a seeded three-digit
-     number would be the fiction this whole task exists to retire.
-   - `ownedCards` used to be `cards.map(nodeSummaryFor)` (the archive's author-credited
-     list, below) plus `privateCardsOwnedBy(username)`, a fixture seeded for one handle. It
-     is `cardsOwnedBy(db, actor, username)` now (T132) — the same reader `counts.cards`
-     already read — mapped through `nodeSummaryForOwned` below. Neither old source ever
-     touched the registry, so an account whose card exists only there — published through a
-     real bundle, no matching `content/cards/` file — counted 1 in the tab strip over an
-     empty shelf underneath it. One reader now backs both figures, so they cannot disagree.
-
-   `blueprints`, `cards` and `terms` — the AUTHOR-credited lists, read off `content/` by
-   who wrote the byline — are unchanged, and deliberately so: they answer "what did this
-   handle write", which is a fact about the archive, where `owned` answers "what does this
-   account hold", a fact about the registry. The two questions have different answers for
-   almost every seeded handle today, because B-20 puts the whole fixture archive under one
-   registry owner while crediting each blueprint's author individually — and that gap is
-   not a bug this file can close, only one it has to keep from blurring.
+   `starsFor` is the one seeded figure left here: the support pill on a card tile. It has no
+   column and no counter, and swapping the live star count in for it would answer a
+   different question under the same label.
    ============================================================ */
 
 /** A reader with no session. `Object.freeze` so a caller cannot make it somebody. */
@@ -143,10 +83,10 @@ export interface ProfileView {
   owned: OwnedRow[];
   /**
    * The account's own card shelf, live off `cardsOwnedBy(db, actor, username)` — the same
-   * reader `getProfile` counts `counts.cards` with (T132, D-132-02 reading (a)), so this
+   * reader `getProfile` counts `counts.cards` with, so this
    * list and that count are two views of one query rather than two answers that can drift
    * apart. Already actor-scoped, the same way `owned` above is: everything for the owner,
-   * public rows only for anyone else (D-132-04 C-C) — no owner/visitor branch to write
+   * public rows only for anyone else — no owner/visitor branch to write
    * here, and none in either `/u/[username]/cards` branch that reads this field.
    *
    * Distinct from `cards` above by the same axis `owned`/`blueprints` already split on:
@@ -158,9 +98,9 @@ export interface ProfileView {
   saves: readonly SavedRow[];
   pinned: PinnedItem[];
   counts: Partial<Record<ProfileTabId, number>>;
-  /** Accounts currently following this handle. Real, off `getProfile` (T131). */
+  /** Accounts currently following this handle. Real, off `getProfile`. */
   watchers: number;
-  /** Accounts currently endorsing this handle. Real, off `getProfile` (T131). */
+  /** Accounts currently endorsing this handle. Real, off `getProfile`. */
   support: number;
   /** Other accounts' public blueprints this handle has submitted a run report against. */
   validated: number;
@@ -243,7 +183,7 @@ export function nodeSummaryFor(tile: NodeTile, author: Author | undefined): Node
  *
  * `visibility` is `row.visibility` rather than a constant: unlike every other card this
  * file draws, a row here can be the OWNER's own private card (`cardsOwnedBy` is the one
- * reader that admits it, D-132-04 C-C), so the tile has to be able to say which it is.
+ * reader that admits an owner's own private rows), so the tile has to be able to say which it is.
  */
 function nodeSummaryForOwned(row: CardSummary, author: Author | undefined): NodeSummary {
   const ontology = getOntologyView();
@@ -280,7 +220,7 @@ function nodeSummaryForOwned(row: CardSummary, author: Author | undefined): Node
  * One stored save as the Saved tab draws it.
  *
  * The display shape is defined HERE rather than imported from `lib/data/bundles`, and that
- * is not AC6 bookkeeping: these rows are real now, they come out of `listSaves`, and they
+ * is deliberate: these rows are real now, they come out of `listSaves`, and they
  * carry the one thing the fixture's `Save` could not — the `target` that `Remove` needs to
  * un-save. A display type for live data belongs beside the reader that builds it.
  */
@@ -301,7 +241,7 @@ export interface SavedRow {
    * so the removal needs to know where the star stands before it presses it, and that is
    * a read this loader already makes for other figures rather than a round trip the
    * client can afford per row. Absent on a term (no star exists) and on a blueprint (no
-   * save row can be written for one, D-262-04).
+   * save row can be written for one).
    */
   star?: { api: string; starred: boolean };
 }
@@ -310,9 +250,9 @@ export interface SavedRow {
  * `SaveRecord` is `{ targetKind, refId, savedAt }` and `SavedRow` is a display row, so this
  * is the resolution between them. A target the archive cannot resolve yields `[]` rather
  * than a placeholder row: `listSaves` has already dropped everything the reader may not see
- * (T140 AC3), so what is left here is a target that is visible and simply not in `content/`
+ *, so what is left here is a target that is visible and simply not in `content/`
  * — which is every blueprint save at the moment, because `FavoriteStar` cannot write one
- * (D-262-04) and nothing else does.
+ * and nothing else does.
  */
 function saveRowsFor(record: { targetKind: string; refId: string }): SavedRow[] {
   if (record.targetKind === "card") {
@@ -350,7 +290,7 @@ function saveRowsFor(record: { targetKind: string; refId: string }): SavedRow[] 
  * One `getSignalsMany` over every card on the shelf rather than one read per row: the
  * shelf draws as many rows as the account holds, and the alternative is that many
  * requests for one boolean each. Only cards are asked about — a term has no star, and no
- * blueprint save exists to ask about (D-262-04) — so a shelf of terms costs no query.
+ * blueprint save exists to ask about — so a shelf of terms costs no query.
  *
  * `starredByCaller` is the reader's own, which is the right question here: the removal
  * presses a toggle on behalf of this account, not on behalf of the count.
@@ -437,7 +377,7 @@ async function signalsFor(
  *
  * `undefined` when no account holds this handle — which the routes turn into a 404, and
  * which is also the answer for a handle outside T070's grammar. **`/u/Mara` is a 404 and
- * not a redirect to `/u/mara` (D-262-11):** the grammar admits `[a-z0-9-]` only, so `Mara`
+ * not a redirect to `/u/mara`:** the grammar admits `[a-z0-9-]` only, so `Mara`
  * is not a handle that can exist, and a redirect would assert that the two name one
  * identity — a claim the store never makes.
  */
@@ -449,7 +389,7 @@ export async function profileView(
   /* A signed-out reader is `anonymous` rather than no actor at all. That is what lets
      every read below take the same path for both readers and lets T060 decide what each
      one sees, instead of this file branching on "is there a session" and deciding for
-     itself — which is the second copy of `visibleTo` that D-130-04 exists to prevent. */
+     itself, which would be a second copy of the visibility rule. */
   const actor: Actor = viewer === undefined ? ANONYMOUS : actorFrom(viewer);
 
   const account = await getPublicAuthor(db, username);
@@ -459,10 +399,9 @@ export async function profileView(
   const owner = viewer !== undefined && viewer.handle === username;
 
   /* Per actor, not per handle. An owner's counts include their private rows and a
-     visitor's do not, which is T130's AC2 falling out of the `Actor` rather than out of a
-     branch here — a second owner/visitor test in this file would be the copy that goes
-     stale when the policy changes. Also where `watchers`, `support`, `validated` and
-     `pinned` come from now (T131) — see the file header. */
+     visitor's do not, and that falls out of the `Actor` rather than out of a branch here:
+     a second owner/visitor test in this file would be the copy that goes stale when the
+     policy changes. Also where `watchers`, `support`, `validated` and `pinned` come from. */
   const record = await getProfile(db, actor, username);
 
   const blueprints = allBlueprints().filter((b) => b.author.username === username);
@@ -473,29 +412,18 @@ export async function profileView(
     term.id.startsWith(`${username}/`),
   );
 
-  const bySlug = new Map(blueprints.map((b) => [b.slug, b]));
-
-  /* T280: the account's own bundles, live. `ownedBundles` is already actor-scoped —
-     everything for the owner, public rows only for anyone else — so there is no
-     owner/visitor branch to write here either; see `lib/server/registry/owned.ts`. */
+  /* Both readers are actor-scoped already: everything for the owner, public rows only for
+     anyone else. The shelf pairs each live row with the archive by slug; see `ownedRowsFor`
+     for why never by byline. */
   const liveRows = await ownedBundles(db, actor, username);
-  const owned: OwnedRow[] = liveRows.map((summary) => {
-    const blueprint = bySlug.get(summary.slug);
-    return blueprint === undefined ? { summary } : { summary, blueprint };
-  });
+  const owned = ownedRowsFor(username, liveRows, allBlueprints());
 
-  /* T132/SEAM-113: the account's own card shelf, live. `cardsOwnedBy` is already
-     actor-scoped — everything for the owner, public rows only for anyone else — so there
-     is no owner/visitor branch to write here either, matching `owned` above. This used to
-     be `cards.map(nodeSummaryFor)` (the archive's author-credited list) plus
-     `privateCardsOwnedBy(username)` (a seeded fixture): neither reads the registry, so an
-     account whose card exists only there — published through a real bundle, no matching
-     `content/cards/` file — counted 1 over an empty shelf. One reader now answers both the
-     list and `counts.cards` below, so the two cannot disagree. */
+  /* One reader answers both this list and `counts.cards` below, so the two cannot disagree
+     for an account whose card exists only in the registry. */
   const ownedCardRows = await cardsOwnedBy(db, actor, username);
   const ownedCards: NodeSummary[] = ownedCardRows.map((row) => nodeSummaryForOwned(row, author));
 
-  /* T280/SEAM-55: the stored, actor-filtered selection off `getProfile`, resolved against
+  /* The stored, actor-filtered selection off `getProfile`, resolved against
      the content archive the same way the seeded selection always was — `[]` for a pin the
      archive cannot resolve, rather than a placeholder card. `record` is only ever
      `undefined` on the same race `joinedAt`'s fallback below guards against. */
@@ -509,7 +437,7 @@ export async function profileView(
     return card === undefined ? [] : [{ kind: "node", ...tileFor(card) }];
   });
 
-  /* AC4: the owner's own saves, off the account rather than out of a fixture. A visitor
+  /* The owner's own saves, off the account rather than out of a fixture. A visitor
      gets none — `PROFILE_TABS` marks Saved `ownerOnly`, and a save is a private bookmark,
      so a visitor may not see the list OR the count. Read for the reader's OWN account id,
      never for the profile's: `listSaves` would refuse the second, and asking for it would
@@ -531,13 +459,12 @@ export async function profileView(
     /* `ownedCardRows.length` rather than `record?.counts.cards` — `ownedCards` above is
        built from this exact array, so the count and the tile list are the SAME read
        rather than two reads of the same table that could race apart. `record.counts.cards`
-       is `cardsOwnedBy(db, actor, handle).length` too (T132, D-132-02 reading (a)), so the
+       is `cardsOwnedBy(db, actor, handle).length` too, so the
        two numbers already agreed in practice; this just removes the second query the
        agreement depended on. */
     cards: ownedCardRows.length,
-    /* No `terms` count. The tab it fed was removed on the owner's instruction, 2026-09-06
-       ("remove the section Ontology terms"), so `ProfileTabId` no longer admits the key and
-       a count with no tab to render it is a query nobody reads. `terms` itself is still
+    /* No `terms` count: `ProfileTabId` admits no such tab, and a count with no tab to
+       render it is a query nobody reads. `terms` itself is still
        computed above and still returned on the view, because the vocabulary is unchanged
        and only this one view of it left. */
   };
@@ -587,7 +514,7 @@ export async function profileView(
  * their shadow.
  *
  * No session: metadata is the same for every reader. An owner and a visitor see different
- * PAGES at this URL (AC1) and the same title, which is correct — a `<title>` that changed
+ * PAGES at this URL and the same title, which is correct — a `<title>` that changed
  * with the reader would be a private fact in a shared string.
  */
 export async function profileMetadata(username: string): Promise<Author | undefined> {

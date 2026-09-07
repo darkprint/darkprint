@@ -25,7 +25,7 @@ import { KindBadge } from "@/components/ui/Badge";
 import { TagPill } from "@/components/ui/TagPill";
 import { SideRail, type SideRailItem } from "@/components/ui/SideRail";
 import { absencesFor } from "@/components/panes/absences";
-import { buildPaneModel, type PaneNodeInput } from "@/components/panes/build";
+import { buildPaneModel, paneNodesFor } from "@/components/panes/build";
 import { SynchronisedPanes } from "@/components/panes/SynchronisedPanes";
 import { BundleHeader } from "@/components/bundle/BundleHeader";
 import { DraftLanding, type DraftLandingBundle } from "@/components/bundle/DraftLanding";
@@ -533,16 +533,10 @@ export default async function Page({
     }),
   );
 
-  const paneNodes: PaneNodeInput[] = bp.graph.nodes.map((node, i) => {
-    const ref = bp.cardRefs[i] ?? "";
-    const entry: PaneNodeInput = { nodeId: node.id, label: node.label };
-    if (ref !== "") entry.ref = ref;
-    const parsed = resolved.get(ref);
-    if (parsed !== undefined) entry.card = parsed;
-    const yaml = documents.get(ref);
-    if (yaml !== undefined) entry.yaml = yaml;
-    return entry;
-  });
+  /* Joined through the DOT, never by position: `summary.cardRefs` is sorted and distinct
+     while `bp.graph.nodes` is in DOT order, so an index join showed the first node whichever
+     card sorted first. */
+  const paneNodes = paneNodesFor(bp.graph.nodes, bp.graph.dot, resolved, documents);
   const paneModel = buildPaneModel({
     slug: bp.slug,
     title: bp.title,
