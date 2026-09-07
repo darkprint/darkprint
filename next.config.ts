@@ -25,10 +25,17 @@ const FOREIGN_BINARIES = [
   "./node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**",
   "./node_modules/onnxruntime-node/bin/napi-v6/darwin/**",
   "./node_modules/onnxruntime-node/bin/napi-v6/win32/**",
-  /* Vercel optimises images at its edge, so the function never runs sharp; its native
-     library is the other large file in every trace. */
-  "./node_modules/sharp/**",
-  "./node_modules/@img/**",
+  /* `@huggingface/transformers` imports sharp at load, so sharp stays; only the builds for
+     platforms the function will never run on go. A prebuilt deploy from a Mac carries the
+     linux-x64 pair because the release steps install them alongside the host's. */
+  "./node_modules/@img/sharp-darwin*/**",
+  "./node_modules/@img/sharp-libvips-darwin*/**",
+  "./node_modules/@img/sharp-win32*/**",
+  "./node_modules/@img/sharp-linux-arm*/**",
+  "./node_modules/@img/sharp-libvips-linux-arm*/**",
+  "./node_modules/@img/sharp-linuxmusl*/**",
+  "./node_modules/@img/sharp-libvips-linuxmusl*/**",
+  "./node_modules/@img/sharp-wasm32/**",
 ];
 
 /**
