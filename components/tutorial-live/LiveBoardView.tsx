@@ -212,7 +212,7 @@ export function DraftPanel({ draft, token }: { draft: LiveDraft; token: string }
   return (
     <div className="flex flex-col gap-5">
       {picture.kind === "resolved" ? (
-        <SynchronisedPanes model={picture.model} graph={picture.graph} />
+        <SynchronisedPanes model={picture.model} graph={picture.graph} linkToCard={false} />
       ) : (
         <PartialGraph picture={picture} />
       )}

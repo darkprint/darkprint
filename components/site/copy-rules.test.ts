@@ -123,6 +123,9 @@ const COPY_TREES = [
   // the coverage the single tree had — the split moved files, and moving a file out of a
   // guarded tree into an unguarded one is how a rule quietly stops applying.
   "components/skill",
+  // The live page's board: copy a reader watches for minutes while an interview runs, so
+  // it takes the whole tree rather than one file.
+  "components/tutorial-live",
   "components/mcp",
   // Added with `/settings`, whole rather than file by file, for the same reason
   // `components/skill` went in whole: the directory is new, so there is no pre-existing

@@ -61,19 +61,26 @@ function matchesIfNoneMatch(header: string | null, etag: string): boolean {
 export async function GET(request: Request, context: Context): Promise<Response> {
   return withLimitsErrors(request, () =>
     withTutorialErrors(request, async () => {
-      await spendLiveRead(request);
       const { token } = await context.params;
       if (!isLiveToken(token)) return badRequest(request, MALFORMED_TOKEN);
       const { db } = getSharedDbClient();
       const record = await getLive(db, token);
-      if (record === undefined) return notFound(request, NO_SUCH_PAGE);
-      /* `no-store` because the page polls this and a cached record would be the one thing
-         that makes a live page look stuck; the ETag is what keeps the poll cheap instead. */
-      const headers = { etag: etagFor(record.revision), "cache-control": "no-store" };
-      if (matchesIfNoneMatch(request.headers.get("if-none-match"), headers.etag)) {
-        return new Response(null, { status: 304, headers });
+      if (record !== undefined) {
+        /* `no-store` because the page polls this and a cached record would be the one thing
+           that makes a live page look stuck; the ETag is what keeps the poll cheap instead. */
+        const headers = { etag: etagFor(record.revision), "cache-control": "no-store" };
+        /* A 304 spends nothing. The page polls every two seconds and almost every answer is
+           unchanged, so charging the read bucket per poll would spend an hour's anonymous
+           reads in twenty minutes and turn a quiet page into a 429. A body still costs one. */
+        if (matchesIfNoneMatch(request.headers.get("if-none-match"), headers.etag)) {
+          return new Response(null, { status: 304, headers });
+        }
+        await spendLiveRead(request);
+        return ok(record, { headers });
       }
-      return ok(record, { headers });
+      /* A miss costs a read too, so a token guesser is bounded like any other reader. */
+      await spendLiveRead(request);
+      return notFound(request, NO_SUCH_PAGE);
     }),
   );
 }

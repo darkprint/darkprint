@@ -33,5 +33,5 @@
 export type { ImportPlan } from "./plan";
 export { REGISTRY_HANDLE, SEED_RELEASE_VERSION, planImport } from "./plan";
 
-export type { ImportResult } from "./run";
+export type { ImportOptions, ImportResult } from "./run";
 export { runImport } from "./run";

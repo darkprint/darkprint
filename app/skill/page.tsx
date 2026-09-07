@@ -11,7 +11,7 @@ import { SkillSetup } from "@/components/skill/SkillSetup";
 
    The closing section is not a list of unbuilt features. Everything the registry offers
    around the folder (accounts, drafts, publishing from the browser, publishing with an API
-   key) exists and is linked from the tutorial. What a reader holding a folder still needs
+   key) exists and is linked from the tutorial's last step. What a reader holding a folder still needs
    to know is what the document they just installed will not do on their own machine, and
    that is a design statement about the skill, held by `components/skill/honesty.test.ts`.
 

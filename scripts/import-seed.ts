@@ -11,12 +11,15 @@
    dynamic, because a static import is evaluated before any
    statement runs and the hook has to be in place before that.
 
-   ── What it does not do ──
-   It reads no argument that changes the import. There is no
-   `--root`: `lib/content/read.ts` is fixed to `process.cwd()/content`
+   ── Arguments ──
+   `--plan` stops before the write, so the plan can be read without
+   a database. `--only <slug>` (repeatable) publishes the named
+   bundles alone: a registry whose stored releases have drifted from
+   `content/` refuses each of them as version-not-higher, and that
+   stops a whole-archive run before a new slug is reached. There is
+   no `--root`: `lib/content/read.ts` is fixed to `process.cwd()/content`
    and memoizes, so a second root would return the first root's
-   answer. `--plan` stops before the write, so the plan can be read
-   without a database.
+   answer.
    ============================================================ */
 
 import "./module-hook.ts";
@@ -29,6 +32,9 @@ const { planImport, runImport } = await import("@/lib/server/seed");
 const { createDbClient } = await import("@/lib/db");
 
 const planOnly = process.argv.includes("--plan");
+const only = new Set(
+  process.argv.flatMap((arg, i, all) => (arg === "--only" && all[i + 1] !== undefined ? [all[i + 1]] : [])),
+);
 
 /* `readContent` reads `process.cwd()/content`, so running this from anywhere but the repo
    root reads an archive that is not there and throws from the loader. Said here, once,
@@ -52,7 +58,7 @@ if (planOnly) {
 } else {
   const client = createDbClient();
   try {
-    const result = await runImport(client.db, plan);
+    const result = await runImport(client.db, plan, undefined, only.size === 0 ? {} : { only });
     console.log(`imported: created ${result.created}, skipped ${result.skipped}`);
   } finally {
     await client.close();

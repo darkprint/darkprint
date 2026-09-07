@@ -69,6 +69,16 @@ const REGISTRY_GITHUB_ID = "0";
  * to publish under, and it is returned so `ImportResult` reports what was planned beside
  * what happened.
  */
+export interface ImportOptions {
+  /**
+   * Slugs to publish, when the import is not the whole archive. A registry that already holds
+   * nine releases whose bytes have since moved refuses each of them as version-not-higher, and
+   * that refusal stops a whole-archive run before a new, tenth slug is reached; naming the new
+   * slug publishes it alone and leaves the drift visible for the owner to decide on.
+   */
+  only?: ReadonlySet<string>;
+}
+
 export async function runImport(
   db: Db,
   plan: ImportPlan,
@@ -83,6 +93,8 @@ export async function runImport(
    * once and was charged for it.
    */
   storage: ObjectStorage | undefined = undefined,
+  /* A default for the same reason as `storage`: the published arity stays two. */
+  options: ImportOptions = {},
 ): Promise<ImportResult> {
   const registry = await registryActor(db, plan.registryHandle);
 
@@ -112,6 +124,7 @@ export async function runImport(
   let created = 0;
   let skipped = 0;
   for (const loaded of readContent()) {
+    if (options.only !== undefined && !options.only.has(loaded.slug)) continue;
     try {
       await publish(
         db,

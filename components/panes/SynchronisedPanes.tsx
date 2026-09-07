@@ -47,6 +47,7 @@ export function SynchronisedPanes({
   graph,
   aside,
   className,
+  linkToCard = true,
 }: {
   /** Built at build time by `./build.ts` from a resolved bundle. */
   model: PaneModel;
@@ -55,6 +56,11 @@ export function SynchronisedPanes({
   /** Rendered beside the graph, in the remaining column of row 1, when given. */
   aside?: ReactNode;
   className?: string;
+  /**
+   * Whether the skeleton's header links out to the card's own page. Off for a draft whose
+   * cards are not in the registry yet, where the link would open a 404.
+   */
+  linkToCard?: boolean;
 }) {
   const [selection, setSelection] = useState<PaneSelection>(() => ({
     nodeId: model.nodes[0]?.nodeId ?? "",
@@ -246,7 +252,7 @@ export function SynchronisedPanes({
           focus={focus}
           onSelectField={selectField}
           onSelectAbsence={selectAbsence}
-          linkToCard
+          linkToCard={linkToCard}
         />
 
         {aside}

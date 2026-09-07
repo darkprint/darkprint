@@ -125,13 +125,14 @@ const INTENTS: readonly {
     intent: "Write one from nothing",
     how: (
       <span className="text-muted">
-        <Link href="/tutorial">fill in the blanks</Link>, in your browser, with nothing installed
+        <Link href="/tutorial">follow the tutorial</Link>: the DarkPrint skill interviews you in
+        your agent, and a live page here draws the graph as you answer
       </span>
     ),
     status: "live",
     because:
-      "`/tutorial` needs no server and no install: the folder is assembled, archived and " +
-      "checked in the tab.",
+      "`/tutorial` walks the skill, the live page, MCP and `/upload` in order; the folder is " +
+      "written on the reader's machine and this site draws the draft it posts.",
   },
   {
     intent: "Have your agent write one",
@@ -457,8 +458,8 @@ export default function CapabilitiesPage() {
       <p className="text-sm leading-relaxed text-dim">
         The archive is served by this site, so the command runs for every reader.{" "}
         <Link href={SKILL_ROUTE}>Assisted Design</Link> explains it and gives the Codex form, and{" "}
-        <Link href="/tutorial">the tutorial</Link> writes the same folder by hand with nothing
-        installed.
+        <Link href="/tutorial">the tutorial</Link> walks a first blueprint through it, with a
+        live page here drawing the graph as the interview runs.
       </p>
       <div className="grid gap-8 sm:grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
         <div className="flex min-w-0 flex-col gap-3">

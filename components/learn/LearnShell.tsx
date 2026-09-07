@@ -42,9 +42,13 @@ import { SideRail, type SideRailItem } from "@/components/ui/SideRail";
  */
 export function LearnShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const current = SPEC_SEQUENCE.find(
-    (page) => pathname === page.href || pathname.startsWith(`${page.href}/`),
-  );
+  /* A reader's live page sits under `/tutorial/` in the URL and is not a Learn stop: it is
+     one person's draft, and the rail would announce the tutorial as the page they are on. */
+  const current = pathname.startsWith("/tutorial/live/")
+    ? undefined
+    : SPEC_SEQUENCE.find(
+        (page) => pathname === page.href || pathname.startsWith(`${page.href}/`),
+      );
 
   if (current === undefined) return children;
 

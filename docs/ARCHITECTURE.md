@@ -30,7 +30,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 
 | Path | What it holds |
 | --- | --- |
-| `app/` | 25 pages, 74 API route files, `layout.tsx`, `error.tsx`, `global-error.tsx`, `not-found.tsx`, `sitemap.ts`, `robots.ts`, `manifest.ts`, `opengraph-image.tsx`, `icon.svg`, `globals.css` |
+| `app/` | 26 pages, 76 API route files, `layout.tsx`, `error.tsx`, `global-error.tsx`, `not-found.tsx`, `sitemap.ts`, `robots.ts`, `manifest.ts`, `opengraph-image.tsx`, `icon.svg`, `globals.css` |
 | `components/` | 24 folders: `auth`, `blueprint`, `bundle`, `capabilities`, `explain`, `gallery`, `graph`, `hero`, `home`, `learn`, `mcp`, `nodes`, `ontology`, `panes`, `profile`, `settings`, `site`, `skill`, `spec`, `tutorial`, `ui`, `upload`, `viz`, `welcome` |
 | `lib/core/` | the engine, 33 isomorphic modules: `dot/`, `card/`, `ontology/`, `bundle/`, `analysis/`, `hash/`, `version/`, `attractor/`, `archive/`, `config.ts`, `diagnostics.ts`, `gate.ts` |
 | `lib/content/` | reads `content/` at build time, exports a bundle as files (`bundle-export.ts`), the graph layout, the view models |
@@ -522,7 +522,7 @@ the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transa
 
 1. Read-only preflight first: `npm run preflight:db -- "$D"` prints applied migrations, table
    counts, the shape of stored card bodies and manifests, embedding coverage and whether the
-   URL is a pooler. Expect head `0007_drafts`, pending 0008 to 0010, 9 releases, cards still
+   URL is a pooler. Expect head `0007_drafts`, pending 0008 to 0011, 9 releases, cards still
    carrying `requiresHuman` and none carrying `willNot`.
 2. Confirm in the Vercel dashboard which commit production serves; `vercel env pull
    --environment=production` to a file outside the tree; set `GOOGLE_CLIENT_ID`,
@@ -544,8 +544,15 @@ the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transa
    card page answer 200, `/api/files/cards/spec-planner@1.0.0` carries `will_not` and no
    `requires_human`, and `/api/health` shows `migrationsApplied` 9 with head `0010_key_scope`.
 9. Only after step 8 holds: `MIGRATE_DATABASE_URL="$D" npm run db:migrate` applies
-   `0009_drop_ontology_versioning` (destructive); the preflight then shows 10 applied.
-10. `npm run db:reembed` against `$D` from a machine with `models/`; re-probe the find route.
+   `0009_drop_ontology_versioning` (destructive) and `0011_tutorial_live` (the live tutorial
+   table); the preflight then shows 11 applied.
+10. `DATABASE_URL="$D" npm run seed:import -- --only pipeline-observability` publishes the tenth
+    blueprint, the one the tutorial's enrich step retrieves. The nine already stored refuse a
+    whole-archive import as version-not-higher because their bytes have moved since they were
+    seeded; that refusal is expected, and `--only` is what steps around it.
+11. `npm run db:reembed` against `$D` from a machine with `models/`; re-probe the find route
+    with `task=add observability to a scraping pipeline` and expect `pipeline-observability`
+    first.
 
 Rollback while the old code is still promoted: `psql "$D" -v ON_ERROR_STOP=1 -f rb-prod.sql`,
 then `DATABASE_URL="$D" npm run migrate:stored-cards -- --expect-db postgres --check-manifest

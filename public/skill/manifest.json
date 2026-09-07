@@ -3,14 +3,14 @@
   "archiveRoot": "skills/darkprint",
   "archive": {
     "path": "darkprint.tgz",
-    "bytes": 44104,
-    "sha256": "f0c6ac331877b596d2e6f6bdca971af519247e62d01051effb9104738c38c52c"
+    "bytes": 48745,
+    "sha256": "62d98f4fc15c82809bcd3c17640ed8472e99eaafa4496a49a93411af705075ce"
   },
   "files": [
     {
       "path": "SKILL.md",
-      "bytes": 34304,
-      "sha256": "b84c7e81a6bdf42bac6522fd6a5fae1391ceec92f27d0c082b39104e305c61bd"
+      "bytes": 40394,
+      "sha256": "9de01ff12446a7c77338bafa54345c8fd4165dd22e1e661ab871c53124589539"
     },
     {
       "path": "references/card-schema.md",
@@ -21,6 +21,11 @@
       "path": "references/dot-and-attractor.md",
       "bytes": 16054,
       "sha256": "c4a4836979c445799bd922a97ade23a12f51e845ad481365a90512dc3a0efc6f"
+    },
+    {
+      "path": "references/live-preview.md",
+      "bytes": 5899,
+      "sha256": "f8f14518731527f80563df1f307a8422ec252009f403124ffb7d9e9b04a0d0bf"
     },
     {
       "path": "references/ontology.md",
