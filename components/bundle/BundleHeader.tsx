@@ -247,7 +247,7 @@ export function BundleHeader({
                   label="Star"
                   count={0}
                   disabled
-                  title="Nothing stores a star for this bundle yet."
+                  title="Nothing stores a star for this blueprint yet."
                 />
               )}
               {fork === undefined ? (
@@ -256,7 +256,7 @@ export function BundleHeader({
                   label="Fork"
                   count={forks}
                   disabled
-                  title="Nothing copies this bundle into an account yet. Take the folder from the download beside this instead."
+                  title="Nothing copies this blueprint into an account yet. Download the folder beside this instead."
                 />
               ) : (
                 <ForkButton

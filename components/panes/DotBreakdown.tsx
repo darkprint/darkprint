@@ -382,7 +382,7 @@ export function DotBreakdown({
 
   /* Plain ground and one hairline, the frame `CardWalk` and `/what-a-blueprint-is`'s
      figures use. Not a `.panel`: this band is the page's one figure and a panel frame would
-     file it with `Tool scopes`. */
+     file it with `Tool capabilities`. */
   return (
     <figure
       className={cx(

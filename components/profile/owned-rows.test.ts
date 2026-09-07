@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { allBlueprints } from "@/lib/content";
 import type { OwnedBundleSummary } from "@/lib/server/registry";
+import { blueprintRecordHref } from "@/lib/href";
 
 import { ownedRowsFor } from "./owned-rows";
 
@@ -44,6 +45,15 @@ describe("ownedRowsFor", () => {
     expect(row.blueprint?.ownerHandle).toBe(OWNER);
     // Attribution is untouched: the byline still names who wrote it.
     expect(row.blueprint?.author.username).toBe(credited!.author.username);
+  });
+
+  it("links every paired row at the canonical two-part address", () => {
+    /* The shelf's row builds its href from the record it is handed, and a record without
+       an owner falls back to the one-segment address, a 404 for any slug two accounts hold. */
+    const rows = ownedRowsFor(OWNER, ARCHIVE.map((b) => live(b.slug)), ARCHIVE);
+    for (const row of rows) {
+      expect(blueprintRecordHref(row.blueprint!)).toBe(`/blueprints/${OWNER}/${row.summary.slug}`);
+    }
   });
 
   it("leaves a row the archive has never heard of as a summary alone", () => {

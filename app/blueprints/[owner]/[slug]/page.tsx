@@ -157,34 +157,14 @@ function blueprintSections(hasReadme: boolean): readonly SideRailItem[] {
        the Bundle panel, the shape is the graph two sections down, and the tool-scope count
        is a number over a list `Requirements` prints in full. A panel of pointers at other
        panels is what a page has instead of a first section, not one. */
-    /* The graph opens the reading now, and the rail follows the page rather than leading it.
-       The owner moved it up on 2026-09-06: the long description block that used to sit above
-       the file list came off, and "the graph panel (extend full horizontal length as the
-       other elements)" took its place. The rows below are the page top to bottom, and the
-       step numbers are stamped from that order rather than typed beside it.
-
-       `Tool scopes` is the one section above the graph that has no row. It is a four-line
-       panel directly under the band, in view before a reader has scrolled at all, and a rail
-       row is for a place a reader has to travel to. */
+    /* The rows are the page top to bottom, and the step numbers are stamped from that order
+       rather than typed beside it. The tool capabilities panel has no row: it sits directly
+       under the band, in view before a reader has scrolled, and a rail row is for a place a
+       reader has to travel to. */
     { href: "#blueprint-workspace", label: "Graph and cards" },
     { href: "#files", label: "Files" },
     { href: "#blueprint-readme", label: "Readme" },
-    /* `#evidence` stood here, third. It was `EvidenceLayers`' three-column panel, and it left
-       with the rest of the scoring reading on the owner's instruction to simplify this page.
-       Two of its three columns existed to say what a ballot and a run report could not tell a
-       reader yet, which is an answer only a page carrying a score has the question for. */
     { href: "#history", label: "History" },
-    /* `#use-this-blueprint` stood here, fourth, labelled `Use this release`. The owner asked
-       the panel behind it off the page: "remove ... the Exact release panel". Its download
-       did not leave with it — it is the `Code` control on the file list's own header row now,
-       which is GitHub's shape and the same instruction's other half — so the rail row is not
-       repointed at a second name for `#files`. It is the section that is gone, not the thing
-       it offered.
-
-       `#blueprint-source` stood after it, labelled `Source`: the `topology.dot` breakdown,
-       removed on the same instruction. The file itself is still one click away in the
-       listing above and in the Code menu, and `/spec/topology` still draws the same figure
-       over the same file. */
     { href: "#community-notes", label: "Community notes" },
   ];
   /* Filtered rather than conditionally pushed, so the order above stays readable as the
@@ -734,7 +714,7 @@ export default async function Page({
     </BundleHeader>
 
     <div className="container-page py-10 lg:py-12">
-      {/* ---------- Tool scopes, directly under the band ----------
+      {/* ---------- Tool capabilities, directly under the band ----------
           The owner: "move the tool scopes right below the section attached", the section
           being the identity band — breadcrumb, `owner / slug`, the title, the summary, the
           kind badge and the tags. So it opens the body.
