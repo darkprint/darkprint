@@ -14,6 +14,10 @@ const FOREIGN_BINARIES = [
   "./node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**",
   "./node_modules/onnxruntime-node/bin/napi-v6/darwin/**",
   "./node_modules/onnxruntime-node/bin/napi-v6/win32/**",
+  /* Vercel optimises images at its edge, so the function never runs sharp; its native
+     library is the other large file in every trace. */
+  "./node_modules/sharp/**",
+  "./node_modules/@img/**",
 ];
 
 /**
