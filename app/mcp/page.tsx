@@ -22,7 +22,7 @@ import { NPX_INVOCATION } from "@/packages/cli/src/index";
 
 export const metadata: Metadata = {
   title: "Connect via MCP",
-  description: `Give your coding agent read access to the DarkPrint registry over MCP. One command adds ${MCP_ENDPOINT_URL} to Claude Code, Codex, Cursor or VS Code, with nothing to install. Search by task, read a card, fetch a whole blueprint pinned to its digest.`,
+  description: `Give your coding agent read access to the DarkPrint registry over MCP. One command adds ${MCP_ENDPOINT_URL} to Claude Code, Codex, Cursor or VS Code, with nothing to install. Search by task, then read a card or fetch a whole blueprint pinned to its digest.`,
 };
 
 /** One row per tool, in the order the server lists them. Names are the tool names an agent calls. */
@@ -84,7 +84,7 @@ const NOTES = [
   {
     label: "who is asking",
     body:
-      "Without a key every call reads as anonymous and sees public blueprints and cards only. Send an API key from Settings as a bearer token and get_blueprint, read_card, inspect_provenance and fetch_release also reach your own private blueprints; the two find tools search public blueprints only. A key of either scope raises the rate limit, and none lets this server write anything.",
+      "With a key, get_blueprint, read_card, inspect_provenance and fetch_release reach your own private blueprints; the two find tools search public blueprints only. A key of either scope raises the rate limit, and none lets this server write anything.",
   },
   {
     label: "cards and releases",
@@ -100,7 +100,7 @@ export default function McpPage() {
         as="h1"
         eyebrow="Read-only MCP server"
         title="Connect via MCP"
-        lead="Connect DarkPrint and your agent can search the registry for the task in front of it, by describing the work in its own words. It can then fetch a whole blueprint with the steps to instantiate it, read a card, inspect provenance, or fetch a release by digest, so the bytes it read are the bytes it gets."
+        lead="Connect DarkPrint and your agent can search the registry by describing the task in its own words. It can then fetch a whole blueprint with the steps to instantiate it, read a card, inspect provenance, or fetch a release by digest."
       />
 
       {/* ---------- 1. Connect a client ---------- */}
@@ -120,8 +120,8 @@ export default function McpPage() {
         <p className="text-sm leading-relaxed text-dim">
           The same server also runs on your own machine over stdio, as{" "}
           <code className="font-mono text-[13px] text-blueprint-ink">{NPX_INVOCATION} mcp</code>,
-          after the darkprint package is published to npm. It is not published to npm yet, so
-          use the remote address above.
+          once the darkprint package is on npm. It is not published to npm yet, so use the
+          remote address above.
         </p>
         <p className="text-sm leading-relaxed text-dim">
           The server can only read. Without a key every call reads as anonymous and sees public
@@ -215,8 +215,7 @@ export default function McpPage() {
         <p className="text-[15px] leading-relaxed text-muted">
           <code className="font-mono text-[13px] text-blueprint-ink">export_pipeline</code> is
           the one tool that is not a registry read. It takes the files of one release and
-          compiles them into a pipeline for Attractor, the runner DarkPrint compiles to, which is
-          what{" "}
+          compiles them into a pipeline for Attractor, which is what{" "}
           <code className="font-mono text-[13px] text-blueprint-ink">
             darkprint export &lt;dir&gt; --attractor
           </code>{" "}
@@ -236,9 +235,6 @@ export default function McpPage() {
         <h2 id="results-title" className="font-display text-2xl font-semibold text-fg">
           3. How to read the results
         </h2>
-        <p className="text-[15px] leading-relaxed text-muted">
-          Two things about what a search returns, and two limits of the server.
-        </p>
         <ol className="flex min-w-0 flex-col border-t border-line">
           {NOTES.map((item) => (
             <li

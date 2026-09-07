@@ -144,10 +144,10 @@ export function SkillSetup({ className }: { className?: string }) {
 
           <div className="flex flex-col gap-3">
             <p className="text-[15px] leading-relaxed text-muted">
-              Both lines fetch one archive from this site and unpack it as{" "}
+              Each line unpacks one archive from this site as{" "}
               <code className="font-mono text-[13px] text-fg">skills/darkprint</code> under
-              the folder they name, which is where each agent reads its own skills. Nothing
-              else is installed and no account is created. When you ask it to, the DarkPrint
+              the folder it names, where that agent reads its skills. Nothing else is
+              installed and no account is created. When you ask it to, the DarkPrint
               skill can post your draft to a live page on this site while it interviews you,
               and it does nothing of the kind otherwise.
             </p>
@@ -165,7 +165,7 @@ export function SkillSetup({ className }: { className?: string }) {
             <p className="text-[15px] leading-relaxed text-muted">
               If you have access to the repository, the skills CLI works too:{" "}
               <code className="font-mono text-[13px] text-fg">{SKILL_INSTALL_FROM_REPOSITORY}</code>
-              . The repository is private, so that line is for its collaborators.
+              . The repository is private.
             </p>
           </div>
         </div>
@@ -234,14 +234,14 @@ export function SkillSetup({ className }: { className?: string }) {
             />
 
             <p className="text-[15px] leading-relaxed text-muted">
-              Plain text on your disk, checked before you see it: the DarkPrint skill runs
-              the registry&rsquo;s own validator over the folder, with the darkprint CLI when
-              it is installed and through this site&rsquo;s API when you say yes, and reads
-              every warning back to you. Publish it on{" "}
+              Before you see the folder, the DarkPrint skill runs the registry&rsquo;s own
+              validator over it, with the darkprint CLI when it is installed and through this
+              site&rsquo;s API when you say yes, and reads every warning back to you. Drop the
+              folder on{" "}
               <Link href="/upload" className={LINK}>
-                Upload
+                Publish
               </Link>
-              , or from your terminal with a write-scoped API key from{" "}
+              , or publish it from your terminal with a write-scoped API key from{" "}
               <Link href="/settings" className={LINK}>
                 Settings
               </Link>
