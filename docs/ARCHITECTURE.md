@@ -460,19 +460,39 @@ and never blocks.
 ## 15. Deploy
 
 The Vercel project is `darkprint` on the Hobby plan and deploys are CLI-driven: no git source
-is attached, so a push deploys nothing. `npx vercel@latest deploy --yes` builds a preview and
-`npx vercel@latest deploy --prod --yes` promotes to production (the globally installed Vercel
-CLI 59.7 answers "Not authorized"; the latest release works). Previews are protected: probe
-them with `npx vercel@latest curl <preview-url>/api/health`. Functions run on linux/x64. The
-Hobby plan caps a deployment at 12 functions and Vercel groups Next routes into few functions
-only while their traces agree, so `next.config.ts` traces the encoder files (`models/**` and
-`onnxruntime-node`'s linux/x64 binding) into every route with one global key and excludes the
-other platforms' binaries, `sharp` and `@img`. `/api/health` reports `db` (latency,
-`migrationsHead`, `migrationsApplied`), `encoder` (`present` or `absent`, with
-`encoderFailure`), `storage`, `auth.providers`, `auth.sessionSecret` (`set`, `example` or
-`missing`) and `commit`. Measured through a preview's health route, production holds
-`migrationsHead` `0007_drafts` with 7 applied, the preview environment has no OAuth provider
-configured, and the session secret must be set before anyone can sign in.
+is attached, so a push deploys nothing. The globally installed Vercel CLI 59.7 answers "Not
+authorized"; `npx vercel@latest` works with the same login. Previews are protected: probe them
+with `npx vercel@latest curl <preview-url>/api/health`.
+
+The Hobby plan caps a deployment at 12 functions. Vercel groups Next routes into two functions
+normally, and a build made on Vercel's machines splits the app past the cap whenever a route's
+trace carries the encoder's native library, whatever route keys or excludes are used. The same
+tree built locally with Vercel's builder packs into four functions and is accepted, so the
+release path is prebuilt:
+
+```
+npm install --no-save --os=linux --cpu=arm64 --libc=glibc sharp@$(node -p "require('./node_modules/sharp/package.json').version")
+npx vercel@latest pull --environment=production --yes
+npx vercel@latest build --prod --yes
+npx vercel@latest deploy --prebuilt --prod --yes
+npm ci    # restores the macOS sharp packages the first line replaced
+```
+
+(Drop `--prod` from the last three lines for a preview.) A prebuilt deployment's functions run
+on linux/arm64, so `next.config.ts` traces `models/**`, `onnxruntime-node`'s linux/arm64
+binding and sharp's linux-arm64 packages into the seven routes that embed (the two searchers,
+the MCP endpoint and its two find routes, publish and health) and excludes every other
+platform's binaries. A build made on Vercel's machines runs x64 instead; `/api/health` names
+the missing file when the two disagree.
+
+`/api/health` reports `db` (latency, `migrationsHead`, `migrationsApplied`), `encoder`
+(`present` or `absent`, with `encoderFailure`), `storage`, `auth.providers`,
+`auth.sessionSecret` (`set`, `example` or `missing`) and `commit`. Measured through a
+preview's health route, production holds `migrationsHead` `0007_drafts` with 7 applied, the
+preview environment has no OAuth provider configured, and the session secret must be set before
+anyone can sign in. On the last preview the encoder was still `absent`: sharp's linux-arm64
+build refused to load even when traced, so search on Vercel ranks by words until that is
+resolved (see Known gaps).
 
 Production migration runbook. `$D` is the direct connection (`db.<ref>.supabase.co:5432` or
 the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transaction pooler.
@@ -486,8 +506,9 @@ the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transa
    `GOOGLE_CLIENT_SECRET` and a fresh `SESSION_SECRET` in the production environment.
 3. `pg_dump "$D" --no-owner --no-privileges -f pre.sql`, restore it into a throwaway database
    to prove it restores, and keep it somewhere durable: after step 9 it is the only way back.
-4. `npx vercel@latest deploy --yes`; when Ready, probe `/api/health` for `encoder: present`
-   and `/api/mcp/blueprints/find?task=<a sentence>` for ranked hits.
+4. Build and deploy a preview with the prebuilt commands above; when Ready, probe `/api/health`
+   and `/api/mcp/blueprints/find?task=<a sentence>` for ranked hits. `encoder: present` is the
+   goal and is not reached yet; the hits still come back, ranked by words.
 5. Open a read-only window: block `POST /api/bundles` and the fork route (a firewall rule or
    a temporary 503).
 6. Card bodies: `DATABASE_URL="$D" npm run migrate:stored-cards -- --expect-db postgres` as a
@@ -496,7 +517,7 @@ the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transa
    itself refuse a pooler, and refuses a dirty `content/` or `public/bundles/`.
 7. Additive schema: `MIGRATE_DATABASE_URL="$D" npm run db:migrate -- --to 0008_embedding_input`,
    then `-- --only 0010_key_scope`. The old code tolerates both.
-8. `npx vercel@latest deploy --prod --yes`. Verify `/blueprints` lists 9, a blueprint page and a
+8. Promote with the prebuilt commands above (`--prod`). Verify `/blueprints` lists 9, a blueprint page and a
    card page answer 200, `/api/files/cards/spec-planner@1.0.0` carries `will_not` and no
    `requires_human`, and `/api/health` shows `migrationsApplied` 9 with head `0010_key_scope`.
 9. Only after step 8 holds: `MIGRATE_DATABASE_URL="$D" npm run db:migrate` applies
@@ -511,6 +532,13 @@ keyed by row id and refreshed by step 10.
 
 ## 16. Known gaps
 
+- The sentence encoder does not load on Vercel yet. A prebuilt deployment carries the model, the
+  arm64 onnxruntime binding and sharp's linux-arm64 packages, and sharp still answers "Could not
+  load the sharp module using the linux-arm64 runtime"; `@huggingface/transformers` imports
+  sharp at load, so the whole encoder is absent and search ranks by words. Two ways out: a hosted
+  embedding provider (Vercel AI Gateway, `openai/text-embedding-3-small` at 384 dimensions, which
+  keeps the `vector(384)` columns), or the Pro plan, where a build made on Vercel's machines with
+  the x64 binaries is not subject to the 12-function cap.
 - The `darkprint` npm package is unpublished; `npx -y darkprint` answers 404.
 - The `write` and `upload` buckets are spent by nothing; the key-based publish and run-report
   paths have no rate limit.
