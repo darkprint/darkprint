@@ -108,8 +108,7 @@ export function StartLiveView({ token, pending, error, onStart }: StartLiveViewP
             {pending ? "Opening your page" : "Open my live page"}
           </Button>
           <p className="text-sm leading-relaxed text-muted">
-            One page with a token in its address, kept for 24 hours and refreshed every time
-            your agent posts to it.
+            A page with a token in its address, kept for 24 hours after the last post.
           </p>
         </div>
       ) : (

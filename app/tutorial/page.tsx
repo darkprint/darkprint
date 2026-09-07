@@ -31,7 +31,7 @@ import { SKILL_INSTALL_COMMAND, SKILL_INSTALL_COMMAND_CODEX, SKILL_TREE_PATH } f
 export const metadata: Metadata = {
   title: "Write your first blueprint",
   description:
-    "Write a blueprint in your own agent with the blueprint-writing skill while a live page on this site draws the graph as the interview runs. Then enrich it from the registry over MCP and keep it on your account.",
+    "Write a blueprint in your own agent while a live page here draws the graph, then enrich it over MCP and keep it on your account.",
 };
 
 /** The last stop of the Learn sequence; the pager at the foot reads the list. */
@@ -97,14 +97,14 @@ export default function TutorialPage() {
         as="h1"
         eyebrow="Tutorial"
         title="Write your first blueprint"
-        lead="A small pipeline that watches a few card prices every morning, written in your own agent by the blueprint-writing skill. Open a live page here first, and the graph appears on it as you answer the interview."
+        lead="Write a small pipeline that checks a few card prices every morning. The DarkPrint skill interviews you in your own agent, and a live page here draws the graph as you answer."
       />
 
       <ol className="mt-14 flex flex-col gap-14">
         {/* ---------- 1 · install ---------- */}
         <li>
           <section id="install" className="flex min-w-0 scroll-mt-24 flex-col gap-4">
-            <StepHeading index={1} title="Install the blueprint-writing skill" />
+            <StepHeading index={1} title="Install the DarkPrint skill" />
             <div className="grid gap-6 md:grid-cols-2 md:items-start">
               <div className="flex min-w-0 flex-col gap-4">
                 <CommandLine
@@ -122,17 +122,17 @@ export default function TutorialPage() {
               </div>
               <div className="flex flex-col gap-3">
                 <p className={P}>
-                  Either line fetches one archive from this site and unpacks it as{" "}
-                  <code className="font-mono text-[13px] text-fg">skills/darkprint</code> under
-                  the folder your agent reads its skills from. Nothing else is installed and no
-                  account is created.
+                  Either line unpacks one archive from this site into{" "}
+                  <code className="font-mono text-[13px] text-fg">skills/darkprint</code>, where
+                  your agent reads its skills. Nothing else is installed and no account is
+                  created.
                 </p>
                 <p className={P}>
-                  The archive is served file by file if you want to read it first:{" "}
+                  To read it first, open{" "}
                   <a href={`${SKILL_TREE_PATH}/SKILL.md`} className={LINK}>
                     SKILL.md
-                  </a>{" "}
-                  is the interview the DarkPrint skill runs, and{" "}
+                  </a>
+                  , the interview it runs.{" "}
                   <Link href="/skill" className={LINK}>
                     Assisted Design
                   </Link>{" "}
@@ -148,12 +148,10 @@ export default function TutorialPage() {
           <section id="open-live" className="flex min-w-0 scroll-mt-24 flex-col gap-4">
             <StepHeading index={2} title="Open your live page" />
             <p className={P}>
-              The interview happens in your terminal, and this page is how you watch it. Opening
-              a live page gives you an address with a token in it; the blueprint-writing skill
-              posts its draft there after every phase. The page lists the nodes and edges as
-              they are named, and once every node has its card it draws the graph in the same
-              panel a published blueprint uses. Nothing runs on this site: it shows what your
-              agent posts.
+              The interview runs in your terminal. The live page is where you watch it: the
+              DarkPrint skill posts its draft there after every phase, the page lists the nodes
+              and edges as they are named, and once every node has its card it draws the graph.
+              Nothing runs on this site. It shows what your agent posts.
             </p>
             <StartLive />
           </section>
@@ -162,18 +160,17 @@ export default function TutorialPage() {
         {/* ---------- 3 · the task ---------- */}
         <li>
           <section id="design" className="flex min-w-0 scroll-mt-24 flex-col gap-4">
-            <StepHeading index={3} title="Describe the task in your agent" />
+            <StepHeading index={3} title="Describe the task" />
             <p className={P}>
-              Paste this into Claude Code or Codex with the DarkPrint skill installed. The task is
-              small on purpose, so the interview stays short.
+              Paste this into Claude Code or Codex. The task is small on purpose, so the interview
+              stays short.
             </p>
             <LivePrompt name="design" />
             <p className={P}>
-              The interview starts one question per turn: what exists at the end, and which
-              command fails when the work is wrong. It then searches the registry for a piece
-              of it on its own, and asks the node, port and isolation questions in numbered
-              rounds. After each phase the draft lands on your live page and the graph grows a
-              node or an edge, so keep that tab open while you answer.
+              The first questions come one per turn: what exists at the end, and which command
+              fails when the work is wrong. Then the DarkPrint skill searches the registry on its
+              own and asks about nodes, ports and isolation in numbered rounds. Keep the live tab
+              open. The graph grows after each phase.
             </p>
           </section>
         </li>
@@ -183,10 +180,10 @@ export default function TutorialPage() {
           <section id="enrich" className="flex min-w-0 scroll-mt-24 flex-col gap-4">
             <StepHeading index={4} title="Enrich it through MCP" />
             <p className={P}>
-              Once the folder is written, connect your agent to this registry. The server is
-              remote, so the line below installs nothing;{" "}
+              Once the folder is written, connect your agent to the registry. The server is
+              remote, so the line installs nothing.{" "}
               <Link href="/mcp" className={LINK}>
-                the MCP page
+                The MCP page
               </Link>{" "}
               has the same entry for Cursor, VS Code, Gemini CLI and Claude Desktop.
             </p>
@@ -209,14 +206,14 @@ export default function TutorialPage() {
                 </div>
               ))}
             </div>
-            <p className={P}>Then ask for the observability layer by what it does, and let the search find it.</p>
+            <p className={P}>Then ask for observability by what it does, and let the search find it.</p>
             <LivePrompt name="enrich" />
             <p className={P}>
               Your agent calls <code className="font-mono text-[13px] text-fg">find_blueprints</code>,
-              which searches the registry by meaning, and fetches the hit with{" "}
-              <code className="font-mono text-[13px] text-fg">get_blueprint</code>; the DarkPrint
-              skill&rsquo;s enrich mode merges it into your folder. The live page lists the hits
-              the search returned and draws the grown graph.
+              which searches by meaning, fetches the hit with{" "}
+              <code className="font-mono text-[13px] text-fg">get_blueprint</code>, and merges it
+              into your folder in the DarkPrint skill&rsquo;s enrich mode. The live page lists the
+              hits and draws the grown graph.
             </p>
           </section>
         </li>
@@ -234,8 +231,8 @@ export default function TutorialPage() {
               <Link href="/upload" className={LINK}>
                 Publish
               </Link>
-              , where visibility defaults to private. An account gives you private blueprints,
-              releases by version, and an API key for publishing from the terminal.
+              , where visibility defaults to private. An account also gives you releases by
+              version and an API key for publishing from the terminal.
             </p>
           </section>
         </li>
