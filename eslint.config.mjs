@@ -49,6 +49,10 @@ const eslintConfig = defineConfig([
     // want naming: the installer writes the pair, not either one alone.
     ".agents/**",
     ".claude/skills/**",
+    // Agent worktrees are whole checkouts of this repository nested under `.claude/`, each
+    // with its own copy of every file above; linting the parent would report each finding
+    // once per worktree and typecheck would follow every nested tsconfig.
+    ".claude/worktrees/**",
   ]),
 ]);
 
