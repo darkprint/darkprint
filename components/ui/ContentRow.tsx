@@ -227,10 +227,10 @@ export function ContentRow({
           {item.graph.edges.length} edge{item.graph.edges.length === 1 ? "" : "s"}
           {" · "}
           {humanNames.length === 0
-            ? "no human gate"
-            : `${humanNames.length} human gate${humanNames.length === 1 ? "" : "s"}`}
+            ? "nobody in the loop"
+            : `a person acts at ${humanNames.length} node${humanNames.length === 1 ? "" : "s"}`}
           {" · "}
-          {item.autonomy.label}
+          <span title={item.autonomy.blurb}>{item.autonomy.label}</span>
         </span>
       </div>
 
@@ -252,7 +252,12 @@ export function ContentRow({
             </>
           )}
           {" · "}
-          <span className="text-emerald">✓ resolved</span>
+          <span
+            className="text-emerald"
+            title="Every card this graph pins was found in the registry."
+          >
+            ✓ resolved
+          </span>
         </span>
       </div>
     </article>

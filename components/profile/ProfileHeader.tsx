@@ -96,7 +96,7 @@ export function ProfileHeader({
             </h1>
             {author.validator && (
               <span
-                title="Preview badge; validator voting is not built"
+                title="Validator: a label granted by the registry. It changes no score."
                 className="inline-flex"
               >
                 <Badge

@@ -33,15 +33,15 @@ import { readSession } from "@/components/profile/session";
 export const metadata: Metadata = {
   title: "Create a blueprint",
   description:
-    "Name a blueprint under your account and choose who can see it. The topology and its cards come next, on the upload step.",
+    "Name a blueprint under your account and choose whether it is public or private. Its graph and cards come next, on the Publish page.",
 };
 
 function SignedOut() {
   return (
     <div className="mt-10 flex flex-col gap-5 rounded-xl border border-line bg-surface-2/50 px-6 py-7 sm:max-w-md">
       <p className="text-sm leading-relaxed text-muted">
-        A blueprint is created under your account, so DarkPrint needs to know who you are
-        first.
+        A blueprint is created under your account as an empty draft, a name and a
+        visibility with no files yet, so DarkPrint needs to know who you are first.
       </p>
       <SignInButtons />
     </div>
@@ -52,8 +52,8 @@ function HandleRequired() {
   return (
     <div className="mt-10 flex flex-col gap-3 rounded-xl border border-line bg-surface-2/50 px-6 py-7 sm:max-w-md">
       <p className="text-sm leading-relaxed text-muted">
-        Your account has not chosen the handle a blueprint is published under yet, and a
-        new one is stored beneath it.
+        Your account has no handle yet. A blueprint is published under your handle, so
+        choose one before creating one.
       </p>
       <Link
         href="/welcome"

@@ -35,8 +35,8 @@ export function SupportPill({ count }: { count: number }) {
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-0.5 font-mono text-[11px] text-muted"
-      title="Seeded support count; no community backend is connected"
-      aria-label={`${count} community stars, seeded`}
+      title="Seeded placeholder; nothing counts it yet"
+      aria-label={`${count} stars, seeded`}
     >
       <svg
         aria-hidden

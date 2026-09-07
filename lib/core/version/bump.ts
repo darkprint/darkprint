@@ -266,11 +266,11 @@ function compareWillNot(
   const before = new Set(previous);
   const after = new Set(next);
   for (const entry of next) {
-    if (!before.has(entry)) push("minor", `undertaking \`${entry}\` was stated`);
+    if (!before.has(entry)) push("minor", `promise \`${entry}\` was added`);
   }
   for (const entry of previous) {
     if (!after.has(entry)) {
-      push("major", `undertaking \`${entry}\` was withdrawn, and no check will tell a reader it is gone`);
+      push("major", `promise \`${entry}\` was withdrawn (nothing checks this automatically)`);
     }
   }
 

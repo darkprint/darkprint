@@ -84,7 +84,7 @@ export function submitBlocked(state: {
 function refusalSentence(reason: Availability["reason"]): string {
   if (reason === "reserved") return "That handle is reserved.";
   if (reason === "illegal") {
-    return "Letters, digits and single hyphens, starting and ending with a letter or digit.";
+    return "Lowercase letters, digits and single hyphens, starting and ending with a letter or digit.";
   }
   return "That handle is taken.";
 }
@@ -215,7 +215,7 @@ export function WelcomeForm({ suggestedHandle }: { suggestedHandle: string }) {
       <Field
         id="handle"
         label="Handle"
-        hint="Your address on the registry, and the author line inside every card you publish. It is reserved to you permanently, so it cannot be handed to somebody else later."
+        hint="Lowercase letters, digits and single hyphens, up to 32 characters, starting and ending with a letter or digit. It is reserved to you permanently; if you rename later, the old handle stays reserved too."
       >
         <PrefixedField
           id="handle"

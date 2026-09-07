@@ -34,7 +34,7 @@ import type { Author, Blueprint, BlueprintAnalysisView } from "@/lib/types";
 export const metadata: Metadata = {
   title: "Blueprints",
   description:
-    "Browse the DarkPrint registry of AI blueprints. Filter by tag, category and autonomy class. Read each pipeline as a graph. Take the folder away.",
+    "Browse published blueprints for agent workflows. Filter by category, lifecycle phase and autonomy class, read each one as a graph, and download the folder.",
 };
 
 /** Who is asking, and it is nobody (D-260-13). Frozen so nothing may widen it in place. */
@@ -239,8 +239,9 @@ export default async function BlueprintsPage() {
         title="Blueprints"
         lead={
           <>
-            Every one is a folder of text. Read the graph here. Take it away. Run it
-            with your own tools.{" "}
+            A blueprint is a folder of plain text: one graph file plus one card per node.
+            DarkPrint draws the graph and checks the files; running them is done with your
+            own tools.{" "}
             <Link
               href="/what-a-blueprint-is"
               className="text-amber underline decoration-amber/40 underline-offset-4 transition-colors hover:text-amber-bright"

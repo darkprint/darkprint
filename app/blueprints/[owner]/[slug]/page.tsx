@@ -33,7 +33,11 @@ import { CodeMenu } from "@/components/bundle/CodeMenu";
 import { FileTree } from "@/components/bundle/FileTree";
 import { History } from "@/components/bundle/History";
 import { ReadmePanel } from "@/components/bundle/ReadmePanel";
-import { cardFilesFromPaths, filesFromPaths } from "@/components/bundle/load";
+import {
+  cardFilesFromPaths,
+  filesFromPaths,
+  releaseDownloadCommand,
+} from "@/components/bundle/load";
 import { Comments, type NoteView } from "@/components/blueprint/Comments";
 import { ToolScopes } from "@/components/blueprint/Requirements";
 
@@ -95,9 +99,22 @@ async function actorNow(): Promise<Actor> {
 export async function generateMetadata({ params }: PageProps<"/blueprints/[owner]/[slug]">) {
   const { owner, slug } = await params;
   const { db } = getSharedDbClient();
-  const summary = await blueprint(db, await actorNow(), owner, slug);
+  const actor = await actorNow();
+  const summary = await blueprint(db, actor, owner, slug);
   if (summary === undefined) return { title: "Blueprint not found" };
-  return { title: summary.manifest.title, description: summary.manifest.summary };
+  /* Two more reads for the description's prefix. A search result needs to say what kind
+     of page this is; the node count and the autonomy class are what tell one blueprint
+     from another in a list of titles. */
+  const [drawings, scorecard] = await Promise.all([
+    graphsOf(db, actor, [{ ownerHandle: owner, slug }]),
+    scoresOf(db, actor, owner, slug),
+  ]);
+  const drawing = drawings.get(`${owner}/${slug}`);
+  const shape =
+    drawing === undefined || scorecard === undefined
+      ? "Blueprint"
+      : `Blueprint (${drawing.graph.nodes.length} node${drawing.graph.nodes.length === 1 ? "" : "s"}, ${scorecard.autonomy.label})`;
+  return { title: summary.manifest.title, description: `${shape}: ${summary.manifest.summary}` };
 }
 
 /**
@@ -177,13 +194,9 @@ function blueprintSections(hasReadme: boolean): readonly SideRailItem[] {
     .map((row, index) => ({ ...row, step: String(index + 1).padStart(2, "0") }));
 }
 
-/** Small mono heading for the in-page panels. */
-function PanelLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
-      {children}
-    </span>
-  );
+/** The calendar day of a timestamp, which is the shape `prettyDate` formats. */
+function isoDay(at: Date): string {
+  return at.toISOString().slice(0, 10);
 }
 
 /**
@@ -440,7 +453,7 @@ export default async function Page({
      it. A sentence written here would reach a reader as the bundle author's. */
   const readme = folder?.readme;
 
-  const updatedAt = (current?.createdAt ?? record?.updatedAt ?? new Date()).toISOString();
+  const updatedAt = isoDay(current?.createdAt ?? record?.updatedAt ?? new Date());
   const shortened = `${summary.digest.slice(0, 13)}…`;
   /* THE FOLDER THE READER ASKED FOR, GitHub's way (owner, 2026-09-06: "the cards folder is
      not clickable. Make it clickable and once click, it show the list of the cards inside").
@@ -492,7 +505,7 @@ export default async function Page({
         ...(release.digest === summary.digest ? { tag: "latest" as const } : {}),
         message: release.manifest.summary,
         author: release.manifest.author ?? owner,
-        at: release.createdAt.toISOString(),
+        at: isoDay(release.createdAt),
       })),
     /* `releases` was mapped here into per-release rows for the `Releases` panel, which
        came off on 2026-09-05. The RAW `releases` list is untouched and still read three
@@ -650,7 +663,8 @@ export default async function Page({
       download={
         folder === undefined ? undefined : (
           <CodeMenu
-            command={`darkprint clone ${owner}/${slug} --version ${folder.version}`}
+            command={releaseDownloadCommand(owner, slug, { digest: folder.digest }, paths)}
+            cliCommand={`darkprint clone ${owner}/${slug} --version ${folder.version}`}
             files={codeFiles}
           />
         )
@@ -671,9 +685,16 @@ export default async function Page({
            published. It belongs beside the digest, which is the other half of the same
            question, how old is what I am about to take. */
         <span className="font-mono text-[11px] text-dim">
-          version <span className="text-fg">{shortDigest(bp.digest)}</span> ·{" "}
-          {releases.length} release{releases.length === 1 ? "" : "s"} · published{" "}
-          {prettyDate(bp.createdAt)}
+          {current !== undefined && (
+            <>
+              release <span className="text-fg">{current.version}</span> ·{" "}
+            </>
+          )}
+          digest {shortDigest(bp.digest)} · {releases.length} release
+          {releases.length === 1 ? "" : "s"}
+          {/* The release's own date, never the manifest's: the two differed by months on one
+              page. Omitted rather than invented when no release resolves. */}
+          {current !== undefined && <> · published {prettyDate(isoDay(current.createdAt))}</>}
         </span>
       }
     >
@@ -731,7 +752,6 @@ export default async function Page({
           already is — `model` is a Behaviour row in the card skeleton the graph below opens,
           per node, read off the card it belongs to. */}
       <section className="panel flex flex-col gap-3 p-5">
-        <PanelLabel>Tool scopes</PanelLabel>
         <ToolScopes tools={bp.requiredTools} />
       </section>
 

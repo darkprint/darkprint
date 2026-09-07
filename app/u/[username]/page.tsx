@@ -7,7 +7,7 @@ import { Pinned } from "@/components/profile/Pinned";
 import { VisibilityFilter } from "@/components/profile/VisibilityFilter";
 import { SortControl } from "@/components/profile/SortControl";
 import { EmptyState, SectionTitle, ShelfToolbar } from "@/components/profile/parts";
-import { profileMetadata, profileView } from "@/components/profile/load";
+import { profileCounts, profileMetadata, profileView } from "@/components/profile/load";
 import { readSession } from "@/components/profile/session";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
@@ -51,8 +51,14 @@ import { readSession } from "@/components/profile/session";
 export async function generateMetadata({ params }: PageProps<"/u/[username]">) {
   const { username } = await params;
   const author = await profileMetadata(username);
-  if (author === undefined) return { title: "Builder not found" };
-  return { title: author.displayName, ...(author.bio === undefined ? {} : { description: author.bio }) };
+  if (author === undefined) return { title: "Profile not found" };
+  const counts = await profileCounts(username);
+  return {
+    title: `${author.displayName} (@${author.username})`,
+    description:
+      author.bio ??
+      `${author.displayName} on DarkPrint: ${counts.blueprints} public blueprint${counts.blueprints === 1 ? "" : "s"} and ${counts.cards} card${counts.cards === 1 ? "" : "s"}.`,
+  };
 }
 
 export default async function Page({ params }: PageProps<"/u/[username]">) {
@@ -83,12 +89,12 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
             action={
               owner
                 ? { href: "/new", label: "Start a blueprint" }
-                : { href: "/blueprints", label: "Browse the registry" }
+                : { href: "/blueprints", label: "Browse blueprints" }
             }
           >
             {owner
               ? "Nothing pinned and nothing published or drafted yet. New blueprint starts one."
-              : `${author.displayName} has not published a blueprint to the registry so far. Private bundles are never listed here.`}
+              : `${author.displayName} has not published a blueprint yet. Private blueprints are not listed here.`}
           </EmptyState>
         </div>
       ) : (

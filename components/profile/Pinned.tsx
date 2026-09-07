@@ -174,8 +174,7 @@ export function Pinned({ items }: { items: readonly PinnedItem[] }) {
           the meter printing it came off these cards. The star is the one number here that is
           not counted, so the qualifier sits under them rather than being left to a glyph. */}
       <p className="font-mono text-[11px] text-dim">
-        Read off the archive at build time. The star figure beside each one is seeded
-        community support. There is no ballot, and no scorecard reads it.
+        The star figure beside each one is a seeded placeholder. It feeds no score.
       </p>
     </div>
   );

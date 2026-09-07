@@ -496,32 +496,33 @@ export function NodeBrowser({
   }, [results, sort]);
 
   /**
-   * Each type's place in the vocabulary and its one-line definition, by id.
+   * Each type's place among the types that have cards, and its one-line definition, by id.
    *
-   * Sorted by label HERE rather than on the server, deliberately: `results` is ordered by
-   * `byText(a.typeLabel, b.typeLabel)` twenty lines up and `groups` walks it in that order,
-   * so the index a header prints and the order the grid draws are the same rule applied to
-   * the same comparator. Sorting the prop in `page.tsx` would put half of that agreement in
-   * another file, where a change to one side would typecheck.
-   *
-   * 1-based and padded to two digits, because it is read as a position in a run of eight
-   * rather than as a quantity. A type the prop does not carry gets no chrome at all — the
-   * header falls back to the label and the count, which is what a card declaring a type
-   * outside the vocabulary would produce, and the validator already refuses those.
+   * Sorted by label HERE rather than on the server: `results` is ordered by the same
+   * comparator and `groups` walks it in that order, so the index a header prints and the
+   * order the grid draws are one rule. The index counts only types with at least one card,
+   * because a reader who sees 01, 02, 04 looks for the missing sections; a type with none
+   * gets a label and a definition and no number.
    */
   const typeChrome = useMemo(() => {
     const ordered = [...types].sort((a, b) => byText(a.label, b.label));
-    return new Map(
-      ordered.map((term, i) => [
-        term.id,
-        {
-          index: String(i + 1).padStart(2, "0"),
-          label: term.label,
-          description: term.description,
-        },
-      ]),
+    const withCards = ordered.filter(
+      (term) => (typeFacets.find((facet) => facet.id === term.id)?.count ?? 0) > 0,
     );
-  }, [types]);
+    return new Map(
+      ordered.map((term) => {
+        const position = withCards.indexOf(term);
+        return [
+          term.id,
+          {
+            index: position === -1 ? undefined : String(position + 1).padStart(2, "0"),
+            label: term.label,
+            description: term.description,
+          },
+        ];
+      }),
+    );
+  }, [types, typeFacets]);
 
   /**
    * Which panel the reader is inside, from one observer over all of them.
@@ -623,13 +624,16 @@ export function NodeBrowser({
    * `deadReason` is rebuilt every render anyway, so a memo would need every filter in its
    * dependency list to buy nothing.
    */
-  const spineItems: GroupSpineItem[] = [...typeChrome.entries()].map(([id, chrome]) => ({
-    id,
-    label: chrome.label,
-    count: typeFacets.find((t) => t.id === id)?.count ?? 0,
-    href: `#type-${id}`,
-    deadReason: deadReason("type"),
-  }));
+  const spineItems: GroupSpineItem[] = [...typeChrome.entries()]
+    .map(([id, chrome]) => ({
+      id,
+      label: chrome.label,
+      count: typeFacets.find((t) => t.id === id)?.count ?? 0,
+      href: `#type-${id}`,
+      deadReason: deadReason("type"),
+    }))
+    /* A zero pill is kept only while it is the active filter, so the reader can clear it. */
+    .filter((item) => item.count > 0 || item.id === type);
 
   /**
    * Which row the spine fills, resolved at render rather than kept in sync by an effect.
@@ -670,14 +674,14 @@ export function NodeBrowser({
           />
 
           <label className="flex items-center gap-2">
-            <span className="sr-only">Filter by card type</span>
+            <span className="sr-only">Filter by type</span>
             <select
               value={type ?? ""}
               onChange={(e) => setParam("type", e.target.value || null)}
-              aria-label="Filter by card type"
+              aria-label="Filter by type"
               className={controlClass}
             >
-              <option value="">All node types</option>
+              <option value="">All types</option>
               {typeFacets.map((t) => (
                 /* Disabled rather than hidden: a reader who has narrowed to one phase
                    should be able to see that `human-gate` exists and simply has nothing
@@ -781,9 +785,9 @@ export function NodeBrowser({
           supposed to claim. */}
       {phase === UNPHASED && (
         <p className="border-l border-line-bright pl-4 text-sm leading-relaxed text-muted">
-          These cards name no phase. That is a complete answer. The five phases
-          describe the shape of a blueprint, not every node in it. Intake, retrieval,
-          routing and hand-off are real work. None of the five phases name them.
+          These cards declare no lifecycle phase, and that is a valid answer: the five
+          phases describe a blueprint&rsquo;s shape rather than every node in it. Intake,
+          retrieval, routing and hand-off are real work that none of the five names.
         </p>
       )}
 

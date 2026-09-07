@@ -103,8 +103,11 @@ export async function generateMetadata({ params }: PageProps<"/nodes/[...id]">) 
   const { id } = await params;
   const { db } = getSharedDbClient();
   const record = (await versionsOf(db, ANONYMOUS, id.join("/")))[0];
-  if (!record) return { title: "Node card not found" };
-  return { title: record.card.name, description: record.card.action };
+  if (!record) return { title: "Card not found" };
+  return {
+    title: `${record.card.name} (node card)`,
+    description: `Node card ${record.ref}: ${record.card.action}`,
+  };
 }
 
 /* --------------------- small local furniture --------------------- */
@@ -393,7 +396,7 @@ const FIELD_ROWS: readonly FieldRow[] = [
     block: "identity",
     name: "phases",
     wire: "phase",
-    read: (_c, v) => list(v.phases.map((p) => p.label), "outside the five"),
+    read: (_c, v) => list(v.phases.map((p) => p.label), "none declared"),
     /* The empty case used to be spelled out here — "the phases describe a blueprint's
        shape, not every node in one" — and it is now the shared note, which says it for
        the skeleton pane too. What is left is the half that is about *these* phases. */
@@ -578,16 +581,16 @@ const FIELD_ROWS: readonly FieldRow[] = [
        a card with an empty `cannot` and a full `will_not` refuses plenty. */
     block: "interfaces",
     name: "will_not",
-    read: (c) => list(c.willNot, "nothing is undertaken"),
+    read: (c) => list(c.willNot, "nothing is promised"),
     detail: (c) =>
       c.willNot.length === 0 ? undefined : (
         <div className="flex flex-col gap-2">
           {c.willNot.map((entry) => (
             <Detail key={entry}>
               <code className="font-mono text-[12px] text-fg">{entry}</code> is the
-              card&rsquo;s own sentence. No check reads it, and no topology could answer it. It is
-              addressed to whoever runs the node, and the agent is handed the specification
-              at the top of this page.
+              author&rsquo;s own promise. Nothing checks it automatically. It is addressed to
+              whoever runs the node, and to the agent, which is handed the specification at
+              the top of this page.
             </Detail>
           ))}
         </div>
@@ -626,12 +629,12 @@ const FIELD_ROWS: readonly FieldRow[] = [
   {
     block: "evaluation",
     name: "notes",
-    /* The commentary, clamped. No `detail`: it used to reprint the notes inside the open
-       row, and the same paragraph is already set at 15px under "Notes from the author" at
-       the foot of this very panel. Three copies of one paragraph in one panel is one more
-       than the two the clamp already justifies. */
+    /* Clamped here and printed in full under "Notes from the author" at the foot of this
+       panel, so the row points there rather than repeating the paragraph. */
     read: (c) => prose(c.notes),
     measure: (c) => wordCount(c.notes),
+    seeHref: "#author-notes",
+    seeLabel: "in full below",
   },
 
   { block: "service", name: "version", read: (c) => one(c.version) },
@@ -1075,7 +1078,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
       meta:
         prohibitions.length === 0 && card.willNot.length === 0
           ? "none"
-          : `${prohibitions.length} enforced · ${card.willNot.length} undertaken`,
+          : `${prohibitions.length} checked · ${card.willNot.length} promised`,
     },
     {
       href: "#fields",
@@ -1124,7 +1127,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             {/* Amber on hover, not cyan: the card's register since 2026-09-06, and this
                 link goes back to the shelf of cards rather than out to a blueprint. */}
             <Link href="/nodes" className="transition-colors hoverable:hover:text-amber">
-              ← Nodes
+              ← Cards
             </Link>
             {/* `--color-faint` is 1.83:1 and `globals.css` allows it on decorative
                 separators only, always `aria-hidden`. The `<nav>` and its two entries
@@ -1387,13 +1390,13 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             {prohibitions.length > 0 && (
               <a href="#prohibitions" className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}>
                 <span className="text-muted">cannot ·</span>
-                {prohibitions.length} enforced
+                {prohibitions.length} checked
               </a>
             )}
             {card.willNot.length > 0 && (
               <a href="#prohibitions" className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}>
                 <span className="text-muted">will_not ·</span>
-                {card.willNot.length} undertaken
+                {card.willNot.length} promised
               </a>
             )}
             {/* Risk, in the header, which is the one fact a reader deciding whether to
@@ -1558,7 +1561,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           meta={
             prohibitions.length === 0 && card.willNot.length === 0
               ? "none declared"
-              : `${prohibitions.length} enforced · ${card.willNot.length} undertaken`
+              : `${prohibitions.length} checked · ${card.willNot.length} promised`
           }
         >
           {prohibitions.length === 0 && card.willNot.length === 0 ? (
@@ -1584,13 +1587,13 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   id="prohibitions-enforced"
                   className="label inline-flex items-center gap-1.5 text-emerald"
                 >
-                  <span aria-hidden>⊘</span> cannot receive · the resolver checks every
-                  edge against these
+                  <span aria-hidden>⊘</span> cannot receive · checked automatically on
+                  every incoming edge
                 </h3>
                 {prohibitions.length === 0 ? (
                   <p className="text-[15px] leading-relaxed text-muted">
-                    No type is refused. Every edge the graph draws into this node
-                    resolves as far as this card is concerned.
+                    No type is refused. Every edge the graph draws into this node passes
+                    this card&rsquo;s check.
                   </p>
                 ) : (
                   <ul className="flex flex-col gap-2.5">
@@ -1649,12 +1652,12 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   id="prohibitions-undertaken"
                   className="label inline-flex items-center gap-1.5"
                 >
-                  <span aria-hidden>◌</span> will not · the card&rsquo;s own undertaking,
-                  which no check reads
+                  <span aria-hidden>◌</span> will not · the author&rsquo;s promise, which
+                  nothing checks automatically
                 </h3>
                 {card.willNot.length === 0 ? (
                   <p className="text-[15px] leading-relaxed text-muted">
-                    Nothing is undertaken. This card states no rule beyond the type it
+                    Nothing is promised. This card states no rule beyond the type it
                     refuses above.
                   </p>
                 ) : (
@@ -1677,11 +1680,10 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                   file says as much about `ForkAction.tsx`. This sentence was written in
                   this pass, so it follows the rule the guard cannot see it break. */}
               <p className="text-xs leading-relaxed text-dim">
-                Only a data type can be enforced, because only a data type travels on an
-                edge. The sentences in the second group are unchecked because no topology
-                answers them. That does not mean nothing acts on them. They are addressed
-                to whoever runs the node, and the agent reads the specification at the
-                top of this page.
+                Only a data type can be checked automatically, because a data type is the
+                only thing an edge carries. The promises in the second group cannot be read
+                off a graph. They are addressed to whoever runs the node and to the agent,
+                which receives the specification at the top of this page.
               </p>
             </div>
           )}
@@ -1719,7 +1721,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           id="fields"
           className="scroll-mt-24"
           label="Card values"
-          meta={`${declared} declared · definitions in the reference`}
+          meta={`${declared} declared · each field is defined in the card spec, linked below`}
         >
           <div className="flex flex-col gap-5">
             {CARD_BLOCKS.map((block) => {
@@ -1778,7 +1780,12 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                       13px `<h2>` were claiming a level the type never drew. */}
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
                     <span className="label-lead text-amber">{block.label}</span>
-                    <span className="label">{block.ref}</span>
+                    <Link
+                      href={block.ref.href}
+                      className="label underline-offset-4 transition-colors hoverable:hover:text-amber hoverable:hover:underline"
+                    >
+                      {block.ref.label} →
+                    </Link>
                   </div>
                   <p className="text-[13px] leading-relaxed text-dim">{block.purpose}</p>
 
@@ -1919,7 +1926,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           </div>
 
           <p className="mt-4 border-t border-line pt-3 text-xs leading-relaxed text-dim">
-            What each of these fields is for, once rather than on every card:{" "}
+            What each of these fields is for:{" "}
             {/* Amber, the card register, since the owner ruled it on 2026-09-06. This
                 line used to argue the opposite — that amber marks a BOX which leaves the
                 page, never an inline sentence link. The shape half of that argument
@@ -1939,10 +1946,9 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             /* Kept, and kept out of the table. Everything above is a field and a value;
                this is a paragraph the author wrote, and folding it into a `dd` would
                make one row twenty times the height of the others. */
-            <div className="mt-5 flex flex-col gap-2 border-t border-line pt-5">
-              {/* A caption, not a heading. It labels one paragraph inside a section
-                  that already has its `<h2>`, and an `<h3>` here put a third outline
-                  level on the page that the type never drew. */}
+            <div id="author-notes" className="mt-5 flex scroll-mt-24 flex-col gap-2 border-t border-line pt-5">
+              {/* A caption rather than a heading: it labels one paragraph inside a section
+                  that already has its `<h2>`. */}
               <span className="label">Notes from the author</span>
               <p className="border-l-2 border-line-bright pl-4 text-[15px] leading-relaxed text-muted">
                 <Ticked text={card.notes} />

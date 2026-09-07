@@ -336,7 +336,7 @@ function fieldValue(
       // here: `FIELD_NOTE.will_not` carries the claim about who reads it, in one place,
       // the way `FIELD_NOTE.notes` does for `notes`. A gloss on the value would be this
       // slot answering with a description of itself.
-      return list(card.willNot, "nothing is undertaken");
+      return list(card.willNot, "nothing is promised");
     case "risk_markers":
       return list(card.riskMarkers, "none declared");
     case "notes":

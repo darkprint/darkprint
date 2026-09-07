@@ -6,6 +6,13 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import type { SavedRow } from "./load";
+
+/** The row's kind, in the one word the rest of the tab uses for each. */
+const KIND_LABEL: Record<SavedRow["kind"], string> = {
+  blueprint: "blueprint",
+  "node card": "card",
+  "vocabulary term": "term",
+};
 import { removeSavedRow } from "./remove-save";
 
 /* ============================================================
@@ -93,7 +100,7 @@ function Row({ save, onRemoved }: { save: SavedRow; onRemoved: () => void }) {
         {save.path}
       </Link>
       <span className="min-w-0 flex-1 truncate text-[13px] text-muted">{save.summary}</span>
-      <span className="shrink-0 font-mono text-[11px] text-dim">{save.kind}</span>
+      <span className="shrink-0 font-mono text-[11px] text-dim">{KIND_LABEL[save.kind]}</span>
       <Button
         size="sm"
         variant="outline"
@@ -127,20 +134,22 @@ export function SavedList({ saves }: { saves: readonly SavedRow[] }) {
         />
       ))}
 
-      <p className="px-5 py-4 text-xs leading-relaxed text-dim">
-        This list is tied to your account. It follows you between machines, and nobody else
-        can read it. Starring is what puts a card here, so the count beside the card moves
-        when this list does: the list is private and the star on it is public. Removing a
-        row here takes your star off the card as well, so the public count moves down with
-        it; if that star cannot be removed the row stays where it is and nothing changes.
-        {" "}Two things are still owed. A{" "}
-        <span className="text-fg">blueprint</span> star reaches the public count and never
-        this list, because nothing maps the slug the control holds onto the bundle id a
-        save row takes; the bookmark on a blueprint tile writes to this browser&rsquo;s{" "}
-        <span className="font-mono text-muted">localStorage</span> instead. And a card you
-        starred before the two controls became one joins this list the next time you star
-        it.
-      </p>
+      <div className="flex flex-col gap-2 px-5 py-4 text-xs leading-relaxed text-dim">
+        <p>
+          This list is private to your account and follows you between devices. Starring a
+          card saves it here and raises the card&rsquo;s public star count; removing a card
+          here removes your star as well.
+        </p>
+        <p>Three limits today:</p>
+        <ul className="flex list-disc flex-col gap-1 pl-5">
+          <li>Starring a blueprint changes its public count but does not add it to this list.</li>
+          <li>Saving a blueprint from its tile keeps the save in this browser only.</li>
+          <li>
+            A card you starred before starring and saving became one action joins the list
+            the next time you star it.
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

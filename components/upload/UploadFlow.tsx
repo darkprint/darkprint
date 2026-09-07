@@ -89,9 +89,9 @@ type StepId = 1 | 2 | 3 | 4;
  * to hold at all.
  */
 const STEPS: { id: StepId; label: string; heading: string }[] = [
-  { id: 1, label: "Upload", heading: "Upload the bundle" },
+  { id: 1, label: "Upload", heading: "Drop the folder" },
   { id: 2, label: "Details", heading: "Describe it" },
-  { id: 3, label: "Preview", heading: "What the validator found" },
+  { id: 3, label: "Preview", heading: "What the check found" },
   { id: 4, label: "Publish", heading: "The registry entry" },
 ];
 
@@ -114,21 +114,21 @@ const KINDS: {
   {
     key: "blueprint",
     label: "Blueprint",
-    hint: "Full blueprint graph",
+    hint: "A whole graph with its cards",
     color: "var(--color-cyan)",
     ready: true,
   },
   {
     key: "node",
-    label: "Node",
-    hint: "One reusable node card",
+    label: "Card",
+    hint: "One node card on its own",
     color: "var(--color-amber)",
     ready: true,
   },
   {
     key: "ontology",
     label: "Ontology",
-    hint: "Typed vocabulary",
+    hint: "A vocabulary file (extensions.yaml)",
     color: "var(--color-violet)",
     ready: true,
   },
@@ -1377,8 +1377,8 @@ export function UploadFlow({
               <p className="max-w-xl text-xs leading-relaxed text-dim">
                 {kind === "blueprint" ? (
                   <>
-                    The validator joins a DOT to the cards it pins, so it reads a whole
-                    bundle.
+                    The check reads the graph and the cards it names together, so drop the
+                    whole folder.
                   </>
                 ) : (
                   <>
@@ -1665,7 +1665,7 @@ export function UploadFlow({
                   </div>
                   <p className="max-w-xl text-[11px] leading-relaxed text-dim">
                     Private is the starting choice. You can publish a private release and
-                    keep working. A reader of the archive sees only what you make public.
+                    keep working. Other people see only what you make public.
                   </p>
                 </fieldset>
               )}
@@ -1673,9 +1673,10 @@ export function UploadFlow({
 
             <div className="flex flex-col gap-5 border-t border-line pt-5">
               <p className="max-w-xl text-sm leading-relaxed text-muted">
-                <span className="text-fg">Read off your cards.</span> The graph needs a
-                property of the nodes it instantiates. You do not declare it by hand. The
-                registry computes it.
+                <span className="text-fg">Read off your cards.</span> The agents and tools
+                listed below are what your cards declare, so a reader knows what the graph
+                needs before running it. You do not type them here; the registry derives them
+                from the cards.
               </p>
 
               <DerivedChips
@@ -2168,13 +2169,13 @@ export function UploadFlow({
                     <>Sending the bundle to the registry. This can take a moment.</>
                   ) : (
                     <>
-                      This sends the bundle to the registry and creates{" "}
+                      This sends the folder to the registry and creates{" "}
                       <span className="font-mono text-cyan">
                         {session.handle}/{slug}
                       </span>{" "}
                       release <span className="font-mono text-cyan">{declaredVersion}</span>,{" "}
-                      {visibility === "public" ? "public" : "private"}. The registry
-                      resolves it again on its side, and its reading is the one that decides.
+                      {visibility === "public" ? "public" : "private"}. The registry runs
+                      the same check on its side, and its reading is the one that decides.
                     </>
                   )}
                 </p>

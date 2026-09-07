@@ -29,9 +29,11 @@ import { readSession } from "@/components/profile/session";
 export async function generateMetadata({ params }: PageProps<"/u/[username]/saved">) {
   const { username } = await params;
   const author = await profileMetadata(username);
-  if (author === undefined) return { title: "Builder not found" };
+  if (author === undefined) return { title: "Profile not found" };
   return {
- title: `${author.displayName} · saved`, description: "A private bookmark list." };
+    title: `${author.displayName} · saved`,
+    description: "Cards this account has saved. Visible to the account owner only.",
+  };
 }
 
 export default async function Page({ params }: PageProps<"/u/[username]/saved">) {
@@ -51,16 +53,13 @@ export default async function Page({ params }: PageProps<"/u/[username]/saved">)
                 blueprint gap that survives is stated where it bites, at the foot of the
                 list, rather than as a marker over rows that are not affected by it. */}
             <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-emerald">
-              ✓ on your account
+              ✓ synced to your account
             </span>
           </div>
           {view.saves.length === 0 ? (
-            <EmptyState
-              title="Nothing saved yet"
-              action={{ href: "/blueprints", label: "Browse the registry" }}
-            >
-              Starring a node card adds it here. The list is private and nobody else can
-              read it. The star that puts a card on it is public and counted.
+            <EmptyState title="Nothing saved yet" action={{ href: "/nodes", label: "Browse cards" }}>
+              Star a card to save it here. The list is private; the star itself is public
+              and counted on the card.
             </EmptyState>
           ) : (
             <SavedList saves={view.saves} />
@@ -72,9 +71,9 @@ export default async function Page({ params }: PageProps<"/u/[username]/saved">)
             title="Saves are private"
             action={{ href: `/u/${view.author.username}`, label: "Back to the profile" }}
           >
-            A saved list belongs to whoever starred the things on it. Nobody can read
-            {" "}{view.author.displayName}&rsquo;s list, and neither the list nor its size is
-            shown on a public profile. The star counts on the cards themselves are public.
+            Only {view.author.displayName} can see this list. Saved lists and their size
+            never appear on a public profile; the star counts on the cards themselves are
+            public.
           </EmptyState>
         </div>
       )}

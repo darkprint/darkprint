@@ -43,19 +43,19 @@ const BUMP_META: Record<BumpLevel, { word: string; glyph: string; color: string;
       word: "major",
       glyph: "▲",
       color: "var(--color-signal)",
-      gloss: "breaks something a blueprint had pinned",
+      gloss: "moving a pin to this version may break a blueprint that resolved against the old one",
     },
     minor: {
       word: "minor",
       glyph: "▴",
       color: "var(--color-amber)",
-      gloss: "the declared surface grew",
+      gloss: "something was added; old pins still resolve",
     },
     patch: {
       word: "patch",
       glyph: "▪",
       color: "var(--color-cyan)",
-      gloss: "wording and values, nothing wired",
+      gloss: "wording or values changed; nothing wired changed",
     },
     none: {
       word: "none",
@@ -226,7 +226,7 @@ export function VersionHistory({
                     <>
                       <span>pinned by</span>
                       {entry.usedIn.map((blueprint, index) => (
-                        <span key={blueprint.slug}>
+                        <span key={`${blueprint.ownerHandle ?? ""}/${blueprint.slug}`}>
                           <Link
                             href={blueprintRecordHref(blueprint)}
                             /* Cyan on hover, and deliberately NOT the card register the
@@ -238,6 +238,13 @@ export function VersionHistory({
                           >
                             {blueprint.title}
                           </Link>
+                          {/* Two owners can hold one slug with one title, so the owner is
+                              what tells two rows apart. */}
+                          {blueprint.ownerHandle !== undefined && (
+                            <code className="ml-1.5 text-dim">
+                              {blueprint.ownerHandle}/{blueprint.slug}
+                            </code>
+                          )}
                           {/* Inherits the paragraph's `text-dim`: the comma is what
                               separates two blueprint names, so it has to be legible. */}
                           {index < entry.usedIn.length - 1 && <span>,</span>}
@@ -261,9 +268,9 @@ export function VersionHistory({
           off; the sentences are about the digests, so they moved to where the digests
           are rather than going with the YAML. */}
       <p className="border-t border-line px-4 py-3 text-xs leading-relaxed text-dim sm:px-5">
-        A digest is hashed over the card&apos;s content, leaving author and provenance out.
-        The same node from two people lands on the same digest, and any edit lands on a
-        different one.
+        A digest is a fingerprint (SHA-256) of the card&apos;s content, computed without the
+        author and provenance fields. The same card from two people gets the same digest;
+        any edit gets a new one.
       </p>
 
       {sole && (
@@ -273,10 +280,9 @@ export function VersionHistory({
             ✓
           </span>
           <span>
-            First published version. There is nothing to compare it against yet.
-            A version is never edited in place. The next change arrives as a new
-            version. The diff between them shows up here, worked out from the two
-            documents.
+            First published version, so there is nothing to compare yet. Versions are
+            never edited in place: the next change arrives as a new version, and the
+            differences between the two documents are listed here.
           </span>
         </p>
       )}

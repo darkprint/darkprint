@@ -20,9 +20,9 @@ import type { Author } from "@/lib/types";
 // component, and the first paint is what this page is for.
 
 export const metadata: Metadata = {
-  title: "Nodes",
+  title: "Node cards",
   description:
-    "The DarkPrint node-card library lists every reusable node in the registry. Each entry shows its ontology type, the lifecycle phases it stands in, declared interface, tools and risk markers. Filter by type, phase, human involvement or risk.",
+    "Every node card in the DarkPrint registry: the reusable steps blueprints are built from, grouped by type. Each card shows its type, lifecycle phases, inputs and outputs, tools and risk markers. Filter by type, phase, human involvement or risk.",
 };
 
 /**
@@ -182,19 +182,10 @@ export default async function NodesPage() {
    * one-line definition. Resolving it in the browser would mean shipping the ontology to the
    * client to answer eight questions that are settled the moment the page renders.
    *
-   * Every node type the vocabulary carries, not the five the card library happens to use,
-   * and that is load bearing rather than generous. The group header prints its type's INDEX,
-   * and an index is a position in a complete list — `Tool` is `11` because it is the
-   * eleventh of the vocabulary's twelve node types in label order, and it would be `04`
-   * counted against the five types that currently have cards. A number that moves when
-   * somebody publishes the first `human-input` card is not an index, it is a rank.
-   *
-   * The count moves when the VOCABULARY grows, which is correct and has happened: this
-   * paragraph read "eight types" and called `Tool` `07` until D-94 added `parallel`,
-   * `parallel.fan-in` and `manager-loop`. The numbers are worked here rather than derived
-   * because the point is the reasoning, not the arithmetic — but they are read off
-   * `byKind("node-type")` sorted by label, so anyone can check them and should when the
-   * vocabulary next moves.
+   * Every node type the vocabulary carries, not only the ones the card library happens to
+   * use: the type filter lists them all so a reader can see that a type exists and has no
+   * card yet. The browser numbers the group headers over the types that have cards, so the
+   * numbers a reader sees run without gaps.
    *
    * `byKind` returns them sorted by id; the browser re-sorts by label, next to the rule that
    * says the grid is ordered that way, so the two orders cannot come apart.
@@ -234,7 +225,7 @@ export default async function NodesPage() {
            both of these were interpolated rather than typed; the author's point is the one
            the rule does not cover — a reader on the shelf is about to see how many there
            are, and two numbers in the deck are the page counting itself out loud. */
-        lead="The cards the registry's blueprints are assembled from, grouped by what kind of step they are."
+        lead="A node card describes one step of a blueprint: what it does, what it takes in and sends out, and what it refuses. These are all the cards in the registry, grouped by the kind of step they are."
         className="mb-10"
       />
       {/* No `Suspense`, and no `useSearchParams` behind it — see `NodeBrowser`.

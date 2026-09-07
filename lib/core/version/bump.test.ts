@@ -375,7 +375,7 @@ describe("inferBump, `will_not`, which breaks in the opposite direction from `ca
   it("is minor when an undertaking is stated", () => {
     const analysis = inferBump(BASE, next({ willNot: ["never opens a shell"] }));
     expect(analysis.level).toBe("minor");
-    expect(analysis.reasons).toEqual(["undertaking `never opens a shell` was stated"]);
+    expect(analysis.reasons).toEqual(["promise `never opens a shell` was added"]);
   });
 
   it("is major when an undertaking is withdrawn, since nothing else reports the loss", () => {
@@ -383,7 +383,7 @@ describe("inferBump, `will_not`, which breaks in the opposite direction from `ca
     const analysis = inferBump(before, BASE);
     expect(analysis.level).toBe("major");
     expect(analysis.reasons).toEqual([
-      "undertaking `never opens a shell` was withdrawn, and no check will tell a reader it is gone",
+      "promise `never opens a shell` was withdrawn (nothing checks this automatically)",
     ]);
   });
 

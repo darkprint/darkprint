@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     template: "%s · DarkPrint",
   },
   description:
-    "Find, inspect, and publish reusable agent-workflow blueprints. DarkPrint stores and statically checks version-pinned files; your own harness adapts and runs them locally.",
+    "Find, inspect and publish reusable blueprints for agent workflows. DarkPrint stores and statically checks version-pinned files; your own agent runs them on your machine.",
   keywords: [
     "AI agents",
     "agent orchestration",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DarkPrint",
     description:
-      "Reusable blueprints for agent workflows. Inspect the graph, take the files, and adapt them on your machine.",
+      "Reusable blueprints for agent workflows. Inspect the graph, download the files and adapt them on your machine.",
     type: "website",
   },
 };

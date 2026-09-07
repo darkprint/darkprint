@@ -151,7 +151,7 @@ export function SiteFooter() {
       <div className="border-t border-line/60">
         <div className="container-page flex flex-col items-center justify-between gap-2 py-5 text-xs text-dim sm:flex-row">
           <span>© 2026 DarkPrint · darkprint.io</span>
-          <span className="font-mono">version-pinned · statically checked · locally run</span>
+          <span className="font-mono">version-pinned · statically checked · run on your machine</span>
         </div>
       </div>
     </footer>

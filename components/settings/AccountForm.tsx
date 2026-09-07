@@ -215,21 +215,14 @@ export function AccountForm({
         className="scroll-mt-24"
         step="02"
         title="Account & handle"
-        note={<SectionNote>identity</SectionNote>}
+        note={<SectionNote>who you are on the registry</SectionNote>}
       >
         <div className="flex flex-col gap-5">
           <Field
             id="handle"
             label="Handle"
             className="max-w-[36rem]"
-            hint={
-              <>
-                Your handle is the author field on every card you publish. Changing it
-                would leave every pinned{" "}
-                <span className="text-copper-line">author:</span> line pointing at a name
-                nobody owns, so a rename keeps the old handle reserved.
-              </>
-            }
+            hint="Your handle is written into every card you publish as its author. If you rename, the old handle stays reserved: nobody else can ever take it, and only you can claim it back."
           >
             {/* D-70-15's product bound, 32. Written as a literal and NOT imported from
                 `@/lib/server/naming`: this is a client component, and that barrel reaches
@@ -273,7 +266,7 @@ export function AccountForm({
             id="email"
             label="Email"
             className="max-w-[36rem]"
-            hint="Never shown on your profile. It is the only field here a reader could not already see."
+            hint="Never shown on your profile or on anything you publish."
           >
             <TextField id="email" value={email} onChange={setEmail} type="email" mono />
           </Field>
@@ -325,7 +318,7 @@ export function AccountForm({
         className="scroll-mt-24"
         step="04"
         title="Default visibility for new blueprints"
-        note={<SectionNote>per bundle, overridable</SectionNote>}
+        note={<SectionNote>per blueprint, changeable later</SectionNote>}
       >
         <fieldset className="flex flex-col gap-4">
           <legend className="sr-only">Default visibility for new blueprints</legend>
@@ -338,9 +331,9 @@ export function AccountForm({
               selected={visibility === "private"}
               onSelect={() => setVisibility("private")}
             >
-              A new bundle is yours until you decide otherwise. It is listed on your
-              profile for you alone, and if you started it from somebody else&rsquo;s,
-              that author is not told it exists.
+              A new blueprint is visible to you alone. It appears on your profile only
+              while you are signed in, and if it is a fork of somebody else&rsquo;s, that
+              author is not told.
             </ChoiceCard>
             <ChoiceCard
               name="default-visibility"
@@ -349,18 +342,13 @@ export function AccountForm({
               selected={visibility === "public"}
               onSelect={() => setVisibility("public")}
             >
-              Every new bundle is listed on your profile the moment you make it, and if
-              it came from somebody else&rsquo;s, on theirs too, with the lineage stated.
+              Every new blueprint appears on your public profile as soon as you create
+              it, and a fork says which blueprint it came from.
             </ChoiceCard>
           </div>
-          {/* A fork is a fact about a bundle, not a kind of bundle, and this paragraph is
-              where the page says so: the setting is about bundles, and lineage is one
-              field recorded on one of them. */}
           <p className="text-xs leading-relaxed text-dim">
-            Visibility is a property of every bundle. A published bundle is a blueprint
-            like any other. It is statically checked, scored from its own graph, and
-            pinned to the card versions it actually carries. Whether it started as a copy
-            is recorded on it as a fact, not treated as a different kind of thing.
+            Visibility is set per blueprint and you can change it later from your profile.
+            Public and private blueprints are checked the same way.
           </p>
         </fieldset>
       </SettingsSection>
@@ -394,13 +382,13 @@ export function AccountForm({
 const NOTIFICATIONS: readonly { id: EventKind; title: string; note: string }[] = [
   {
     id: "repin",
-    title: "A card you pinned publishes a new version",
-    note: "The one notification a version-pinned registry genuinely needs.",
+    title: "A card one of your blueprints uses publishes a new version",
+    note: "The one notification a version-pinned registry needs.",
   },
   {
     id: "fork",
     title: "Somebody forks a blueprint you published",
-    note: "Public forks only: a private fork is never announced to its upstream author.",
+    note: "Public forks only: a private fork is never announced to the author it was forked from.",
   },
   {
     id: "deprecation",
@@ -409,7 +397,7 @@ const NOTIFICATIONS: readonly { id: EventKind; title: string; note: string }[] =
   },
   {
     id: "digest",
-    title: "A weekly digest of what changed in the registry",
+    title: "A weekly summary of what changed in the registry",
     note: "Off by default. Nothing on this site is urgent enough to arrive uninvited.",
   },
 ];
@@ -450,7 +438,7 @@ function SettingsFooter({
           Discard
         </Button>
         <span className="font-mono text-[11px] text-dim sm:ml-auto">
-          A change here applies to your account. It never applies to anything you have
+          Changes here update your account. They never rewrite the files you have
           published.
         </span>
       </div>

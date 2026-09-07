@@ -119,7 +119,7 @@ export function SupportButton({
       type="button"
       disabled={!signedIn || busy}
       aria-pressed={state.supporting}
-      aria-label={`${state.supporting ? "Withdraw support from" : "Support"} @${handle}, ${state.support} community stars`}
+      aria-label={`${state.supporting ? "Withdraw support from" : "Support"} @${handle}, ${state.support} supporter${state.support === 1 ? "" : "s"}`}
       title={signedIn ? undefined : "Sign in to support this account."}
       onClick={() => void toggle()}
       className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1.5 font-mono text-[11px] text-muted transition-colors hoverable:hover:border-cyan/40 hoverable:hover:text-fg disabled:cursor-not-allowed disabled:opacity-60"
@@ -137,7 +137,7 @@ export function SupportButton({
       >
         <path d="M12 3.5l2.47 5.006 5.53.804-4 3.9.944 5.507L12 16.9l-4.944 2.6.944-5.507-4-3.9 5.53-.804L12 3.5z" />
       </svg>
-      {compact(state.support)}
+      Support {compact(state.support)}
     </button>
   );
 }

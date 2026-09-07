@@ -15,7 +15,7 @@ import { ApiKeys } from "@/components/settings/ApiKeys";
 import { DangerZone, type TransferableBundle } from "@/components/settings/DangerZone";
 import { readSession } from "@/components/profile/session";
 import { profileHref } from "@/components/profile/author";
-import { SignInButtons } from "@/components/auth/SignInButtons";
+import { SIGN_IN_PRIVACY_NOTE, SignInButtons } from "@/components/auth/SignInButtons";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // SEAM-43 LIVE: GET /api/account, read in-process here rather than over HTTP.
@@ -76,7 +76,7 @@ import { SignInButtons } from "@/components/auth/SignInButtons";
 export const metadata: Metadata = {
   title: "Settings",
   description:
-    "What the registry knows about you, and what it will never keep. Your profile, handle, email, default visibility, notification preferences and API keys are stored. No mail goes out yet.",
+    "Your DarkPrint account: public profile, handle, email, default visibility for new blueprints, notification preferences (no mail goes out yet) and API keys. Sign in to open it.",
 };
 
 /**
@@ -132,18 +132,15 @@ function SignedOut() {
         as="h1"
         eyebrow="Account"
         title="Settings"
-        lead="What the registry knows about you, and what it will never keep."
+        lead="What DarkPrint stores about your account, and what each setting changes."
       />
       <div className="flex flex-col items-start gap-4 rounded-lg border border-line bg-surface-2/50 px-6 py-6">
         <p className="text-[15px] leading-relaxed text-muted">
-          This page is your account, so it needs to know who you are. Sign in with GitHub
-          and it opens on your own profile, handle, email and default visibility.
+          Settings belong to an account, so sign in first. The page then shows your
+          profile, handle, email, default visibility and API keys.
         </p>
         <SignInButtons />
-        <p className="font-mono text-[11px] leading-relaxed text-dim">
-          DarkPrint reads your GitHub handle and nothing else. Everything you publish here
-          stays here.
-        </p>
+        <p className="font-mono text-[11px] leading-relaxed text-dim">{SIGN_IN_PRIVACY_NOTE}</p>
       </div>
     </div>
   );
@@ -239,7 +236,7 @@ export default async function Page() {
           as="h1"
           eyebrow="Account"
           title="Settings"
-          lead="What the registry knows about you, and what it will never keep."
+          lead="What DarkPrint stores about your account, and what each setting changes."
         />
 
         {/* The "What saves" strip stood here and came off on the owner's instruction
@@ -266,17 +263,15 @@ export default async function Page() {
                   {(profile?.counts.blueprints ?? 0) === 1 ? "" : "s"}
                 </span>
                 <span>
-                  {cards} node card{cards === 1 ? "" : "s"}
+                  {cards} card{cards === 1 ? "" : "s"}
                 </span>
                 <span>
-                  {profile?.counts.terms ?? 0} vocabulary term
+                  {profile?.counts.terms ?? 0} ontology term
                   {(profile?.counts.terms ?? 0) === 1 ? "" : "s"}
                 </span>
               </div>
               <p className="text-[13px] leading-relaxed text-muted">
-                Counted from the registry when this page was asked for. A published card
-                carries the handle inside its own bytes, which is why the old one stays
-                reserved.
+                Counted from the registry each time this page loads.
               </p>
             </div>
           }
@@ -316,7 +311,7 @@ export default async function Page() {
             className="scroll-mt-24"
             step="05"
             title="API keys"
-            note={<SectionNote>outside Save changes</SectionNote>}
+            note={<SectionNote>applies immediately</SectionNote>}
           >
             <ApiKeys />
           </SettingsSection>

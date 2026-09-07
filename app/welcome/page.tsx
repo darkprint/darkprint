@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { WelcomeForm } from "@/components/welcome/WelcomeForm";
-import { SignInButtons } from "@/components/auth/SignInButtons";
+import { SIGN_IN_PRIVACY_NOTE, SignInButtons } from "@/components/auth/SignInButtons";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { readSession } from "@/components/profile/session";
 
@@ -37,9 +37,8 @@ import { readSession } from "@/components/profile/session";
    ============================================================ */
 
 export const metadata: Metadata = {
-  title: "Finish signing up",
-  description:
-    "Choose the handle the registry will reserve for you, and the name shown beside what you publish.",
+  title: "Sign in",
+  description: "Sign in with GitHub or Google, then choose the handle DarkPrint reserves for you.",
 };
 
 /**
@@ -70,8 +69,7 @@ function SignedOut() {
             between. Side by side in a 26rem column the second one wraps anyway. */}
         <SignInButtons block />
         <p className="text-center font-mono text-[11px] leading-relaxed text-dim">
-          DarkPrint reads your handle and nothing else. Everything you publish here stays
-          here.
+          {SIGN_IN_PRIVACY_NOTE}
         </p>
       </div>
     </AuthShell>
@@ -95,7 +93,7 @@ export default async function WelcomePage() {
         align="center"
         eyebrow="One step left"
         title="Choose your handle"
-        lead="It is your address on the registry, and it goes inside every card you publish, so it is reserved to you for good."
+        lead="Your handle is your address on DarkPrint and the author name on every card you publish. Once chosen it is yours for good."
       />
       {/* Empty rather than seeded from the GitHub login: nothing published exposes that
           field, and inventing a reader to pre-fill one input would put a second source on

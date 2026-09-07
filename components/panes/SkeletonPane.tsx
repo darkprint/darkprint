@@ -261,8 +261,8 @@ export function SkeletonPane({
         <p className="px-4 py-6 text-sm leading-relaxed text-muted">
           The DOT pins a card for{" "}
           <code className="font-mono text-[12px] text-fg">{focus.node.nodeId}</code> that
-          this bundle does not carry. There is no document to lay over the slots. The
-          resolver reports it against the line that pins it.
+          this blueprint does not carry. There is no document to lay over the slots. The
+          check reports it against the line that pins it.
         </p>
       ) : (
         <>
@@ -275,7 +275,7 @@ export function SkeletonPane({
               // header carries the doc reference and the block's purpose, and a screen
               // reader announcing all of that on entry, once per block, buries the one
               // word that says where the reader is.
-              <div key={block.id} role="group" aria-label={`${block.label}, ${block.ref}`}>
+              <div key={block.id} role="group" aria-label={block.label}>
                 <div
                   role="presentation"
                   className={cx(
@@ -286,7 +286,12 @@ export function SkeletonPane({
                   <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-copper-line">
                     {block.label}
                   </span>
-                  <span className="font-mono text-[11px] text-dim">{block.ref}</span>
+                  <Link
+                    href={block.ref.href}
+                    className="font-mono text-[11px] text-dim underline-offset-4 transition-colors hover:text-amber hover:underline"
+                  >
+                    {block.ref.label} →
+                  </Link>
                   <span className="w-full text-[11px] leading-snug text-dim">
                     {block.purpose}
                   </span>
@@ -455,13 +460,14 @@ export function SkeletonPane({
             <span className="font-mono text-copper-line" aria-hidden>
               ▪
             </span>{" "}
-            the card writes a value,{" "}
+            filled,{" "}
             <span className="font-mono" aria-hidden>
               ◌
             </span>{" "}
-            or it does not. Either way counts as an answer. Each row shows what its
-            field is for. A value cut off at two lines ends there. Pinned
-            by <Pins model={model} ref_={card.ref} />.
+            left empty; both are valid. The skeleton is the card&rsquo;s fields with what
+            each one is for: open a row to read it. Long values are cut at two lines until
+            the row is opened. This card is pinned by{" "}
+            <Pins model={model} ref_={card.ref} />.
           </p>
         </>
       )}
@@ -487,7 +493,7 @@ function Pins({ model, ref_ }: { model: PaneModel; ref_: string }) {
           {i > 0 && ", "}
           <span className="font-mono text-muted">{node.nodeId}</span>
           {node.dotLine !== undefined && (
-            <span className="font-mono text-dim"> at DOT line {node.dotLine}</span>
+            <span className="font-mono text-dim"> at {model.dotFile} line {node.dotLine}</span>
           )}
         </Fragment>
       ))}

@@ -6,6 +6,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { FavoriteStar } from "@/components/ui/FavoriteStar";
 import { TagPill } from "@/components/ui/TagPill";
+import { Ticked } from "@/components/ui/Ticked";
 
 /**
  * One node card at library altitude — enough to decide whether to open it, and
@@ -330,7 +331,7 @@ export function NodeCardSummary({
             cut mid-word at two. The tile's height is set by the footer row below, so the
             third line is room the card already had. */}
         <p className="mt-1 line-clamp-3 text-sm leading-snug text-muted">
-          {node.action}
+          <Ticked text={node.action} />
         </p>
       </div>
 

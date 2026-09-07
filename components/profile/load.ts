@@ -522,3 +522,15 @@ export async function profileMetadata(username: string): Promise<Author | undefi
   const account = await getPublicAuthor(db, username);
   return account === undefined ? undefined : authorFor(account);
 }
+
+/**
+ * The two public counts a profile's description quotes, read as a visitor so the shared
+ * string never carries a private figure.
+ */
+export async function profileCounts(
+  username: string,
+): Promise<{ blueprints: number; cards: number }> {
+  const { db } = getSharedDbClient();
+  const record = await getProfile(db, ANONYMOUS, username);
+  return { blueprints: record?.counts.blueprints ?? 0, cards: record?.counts.cards ?? 0 };
+}
