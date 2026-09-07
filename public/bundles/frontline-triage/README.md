@@ -145,4 +145,4 @@ endpoint and no client for it in this bundle or on the site.
 
 ---
 
-Exported from https://darkprint.io/blueprints/frontline-triage
+Exported from https://www.darkprint.io/blueprints/frontline-triage

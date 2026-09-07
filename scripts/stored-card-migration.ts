@@ -1,41 +1,20 @@
-/* ============================================================
-   DarkPrint — the pure half of the stored-card migration
-   D-92 retired `requires_human`, D-93 removed `ontologyVersion`
-   from the bundle manifest, and D-101 split the single `cannot`
-   list into an ENFORCED half (`cannot`, ontology `data-type` ids
-   the resolver holds every incoming edge to) and a STATED half
-   (`will_not`, free sentences). `content/` was migrated. The
-   registry rows were not: on 2026-09-01 all 58 `card_version`
-   rows still carried `requiresHuman` and `ontologyVersion` in
-   `body`, none carried `willNot`, and 85 of the 87 entries in
-   their `cannot` lists were prose sentences that `loadCard`
-   refuses at ERROR severity as `card/unknown-term`. Every stored
-   YAML source is therefore unreadable by the engine that wrote
-   it, which takes down `/blueprints`, `/nodes` and every export.
-
-   ── Why this module exists apart from the runner ──
-   Same split, same reason, as `scripts/skill-refs.ts` beside
-   `scripts/generate-skill-refs.ts`: this module decides WHAT the
-   transform is and imports `@/lib/core` statically, which is what
-   lets vitest — whose config already aliases `@/` — exercise it
-   directly with no database, no filesystem and no subprocess.
-   `scripts/migrate-stored-cards.ts` is the thin half that
-   installs Node's resolver hook, reads rows, and writes.
-
-   ── Why the YAML is edited as LINES and not re-serialised ──
-   `card_version.source` is served verbatim by `lib/server/export/
-   build.ts` (`source`, not `body`, so the folder hashes to the
-   digest its README prints). Re-emitting it through a YAML writer
-   would reflow every folded scalar and rewrite every blank line,
-   producing bytes that differ from `content/cards/` everywhere
-   rather than only where D-101 moved something — and the
-   migration's own cross-check is "does the mechanical transform
-   land on the archive". So the edit is the smallest textual one
-   that expresses the three rules, and anything it does not
-   recognise is REFUSED rather than repaired. A migration that
-   guesses at a shape it has not seen is how 85 sentences ended up
-   in a field typed as a vocabulary in the first place.
-   ============================================================ */
+/**
+ * The pure half of the stored-card migration: the card shape retired `requires_human` and
+ * the manifest's `ontologyVersion`, and split the single `cannot` list into an enforced
+ * half (`cannot`, ontology `data-type` ids the resolver holds every incoming edge to) and a
+ * stated half (`will_not`, free sentences). A registry seeded before that change holds
+ * rows the engine now refuses, which empties `/blueprints`, `/nodes` and every export.
+ *
+ * Kept apart from the runner so vitest, whose config aliases `@/`, can exercise the
+ * transform with no database, no filesystem and no subprocess; `migrate-stored-cards.ts`
+ * installs Node's resolver hook, reads rows and writes.
+ *
+ * The YAML is edited as lines and never re-serialised: `card_version.source` is served
+ * verbatim, so the folder a reader downloads hashes to the digest its README prints, and a
+ * YAML writer would reflow every folded scalar. The edit is the smallest textual one that
+ * expresses the three rules, and any shape it does not recognise is refused rather than
+ * repaired.
+ */
 
 import type { NodeCard, OntologyView } from "@/lib/core";
 
@@ -325,41 +304,12 @@ export function censusOf(body: unknown): ProhibitionCensus {
 }
 
 /**
- * The five cards whose archive `notes` differ from the stored `notes` beyond the mechanical
- * transform, pinned as a literal.
- *
- * The migration re-derives the 57 archive-backed cards from `content/cards/` rather than
- * transforming their stored bytes, because the same wave that split `cannot` also rewrote
- * the prose that described the retired fields as live: `maintainer-approval@1.0.0` said "the
- * `requires_human` flag is redundant with the node type and set anyway" and now says "the
- * `human-gate` type is the whole of what says so". `notes` is inside `cardDigest`, and these
- * five are pinned by 10 of the 16 releases, so transforming instead of re-deriving would
- * publish release digests that disagree with the ones each committed
- * `public/bundles/<slug>/README.md` already prints.
- *
- * Pinned so that a SIXTH divergence, or a divergence in any other field, aborts the run.
- * Without it the cross-check would silently absorb an unrelated edit to `content/`.
- */
-export const NOTES_REWRITTEN_BY_THE_WAVE: readonly string[] = Object.freeze([
-  "acceptance-verifier@2.0.0",
-  "bounded-retry@2.0.0",
-  "confidence-escalation@1.0.0",
-  "intent-router@2.0.0",
-  "maintainer-approval@1.0.0",
-]);
-
-/**
- * The one card with no counterpart under `content/`, and the four values its migrated form
- * must produce.
- *
- * `alessandro-smoke-checker@1.0.0` is database-only, so it gets the mechanical transform
- * applied to its own bytes and has no archive to be checked against. The obvious oracle —
- * "the release it belongs to resolves and its blueprint digest equals the digest we
- * computed" — is VACUOUS for it: both sides derive from the same new source bytes. Measured:
- * deleting the card's one prose refusal outright instead of moving it also loads with zero
- * diagnostics and also produces a perfectly self-consistent pair of digests
- * (`sha256:7a422c9f…` / `sha256:71608079…`). So the expected digests are pinned here as
- * literals computed and recorded before the run, and the runner asserts them.
+ * The development registry's one database-only card, and the values its migrated form must
+ * produce when it is present. The obvious oracle for a card with no archive file ("the
+ * release resolves and its digest equals the one computed") is vacuous, since both sides
+ * derive from the same new bytes: deleting its one prose refusal instead of moving it also
+ * loads cleanly and also produces a self-consistent pair of digests. So the expected values
+ * are pinned as literals computed before the run. A registry without this ref skips them.
  */
 export const SMOKE_CHECKER_REF = "alessandro-smoke-checker@1.0.0";
 export const SMOKE_CHECKER_EXPECTED = Object.freeze({
@@ -369,26 +319,78 @@ export const SMOKE_CHECKER_EXPECTED = Object.freeze({
   willNotEntries: 1,
 });
 
-/**
- * The corpus-wide totals the migration must land on, taken from the ARCHIVE census and never
- * recomputed from the migration's own output.
- *
- * 84 `will_not` entries across the 57 archive cards, plus the smoke-checker's 1, is 85; the
- * 2 surviving `cannot` entries are both `acceptance-criteria`, on `code-builder@1.0.0` and
- * `targeted-debugger@1.0.0`. These two numbers are the ONLY checks that distinguish "moved
- * the 85 sentences into `willNot`" from "deleted them": a migration that deletes them
- * satisfies every digest and every shape check, and its digests are self-consistent.
- */
-export const EXPECTED_TOTALS = Object.freeze({
-  cardVersions: 58,
-  releases: 16,
-  cannotEntries: 2,
-  willNotEntries: 85,
-});
-
 /** Convenience for the runner's reports: `id@version` from a row. */
 export function refOf(cardId: string, version: string): string {
   return `${cardId}@${version}`;
+}
+
+/** The card id half of `id@version`. */
+export function cardIdOf(ref: string): string {
+  const at = ref.lastIndexOf("@");
+  return at === -1 ? ref : ref.slice(0, at);
+}
+
+/**
+ * How a stored ref relates to `content/cards/`.
+ *
+ * `archive`: the exact ref has a file, so the archive is the source of truth and the
+ * mechanical transform is its cross-check. `superseded`: no file for this version, but the
+ * archive carries a later version of the same card, which is what a version bump after the
+ * registry was seeded looks like. `database-only`: no version of the id at all. The last
+ * two are transformed in place from their own stored bytes and reported, since a stored
+ * release still pins them by exact version and a re-derivation from a different version
+ * would change the card it names.
+ */
+export type StoredRefOrigin = "archive" | "superseded" | "database-only";
+
+export function classifyStoredRef(ref: string, archiveRefs: ReadonlySet<string>): StoredRefOrigin {
+  if (archiveRefs.has(ref)) return "archive";
+  const id = cardIdOf(ref);
+  for (const candidate of archiveRefs) {
+    if (cardIdOf(candidate) === id) return "superseded";
+  }
+  return "database-only";
+}
+
+/**
+ * Nothing dropped: the old `cannot` list and the new `cannot` plus `willNot` are the same
+ * multiset. This is the per-card check that separates "moved the sentences" from "deleted
+ * them", which every digest and shape check is blind to.
+ */
+export function prohibitionsConserved(oldBody: unknown, newBody: unknown): boolean {
+  const list = (body: unknown, key: string): string[] => {
+    const row = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>;
+    const value = row[key];
+    return Array.isArray(value) ? value.filter((e): e is string => typeof e === "string") : [];
+  };
+  const before = list(oldBody, "cannot").sort();
+  const after = [...list(newBody, "cannot"), ...list(newBody, "willNot")].sort();
+  return before.length === after.length && before.every((entry, i) => entry === after[i]);
+}
+
+/** What the acceptance battery holds the database to after the write. */
+export interface ExpectedTotals {
+  cardVersions: number;
+  releases: number;
+  cannotEntries: number;
+  willNotEntries: number;
+}
+
+/**
+ * Derived from the plan rather than typed in: the row counts from the pre-state read, and
+ * the two entry counts from the bodies about to be written, each of which is either the
+ * archive's own file or a transform `prohibitionsConserved` has already vouched for. The
+ * runner prints them for the operator before anything is written.
+ */
+export function expectedTotalsFrom(plan: readonly { newBody: unknown }[], releases: number): ExpectedTotals {
+  let cannotEntries = 0;
+  let willNotEntries = 0;
+  for (const card of plan) {
+    const census = censusOf(card.newBody);
+    cannotEntries += census.cannotEntries;
+    willNotEntries += census.willNotEntries;
+  }
+  return { cardVersions: plan.length, releases, cannotEntries, willNotEntries };
 }
 
 /** The fields of a `NodeCard` compared field-by-field by the mechanical cross-check. */

@@ -217,4 +217,46 @@ describe.skipIf(!hasDb)("lib/db/migrate", () => {
       await cleanup.end();
     }
   });
+
+  it("`to` stops at the named id and `only` applies one migration out of order", async () => {
+    const baseUrl = process.env.DATABASE_URL as string;
+    const dbName = `darkprint_migrate_partial_${process.pid}_${Math.trunc(performance.now())}`;
+
+    const admin = new Pool({ connectionString: baseUrl });
+    await admin.query(`CREATE DATABASE "${dbName}"`);
+    await admin.end();
+
+    const url = withDatabase(baseUrl, dbName);
+    const ids = migrationIds();
+    /* The deploy sequence this exists for: everything up to the additive embedding column,
+       then the key-scope column ahead of the destructive drop between them. */
+    const stopAt = "0008_embedding_input";
+    const skipped = "0009_drop_ontology_versioning";
+    const single = "0010_key_scope";
+    expect(ids).toEqual(expect.arrayContaining([stopAt, skipped, single]));
+    try {
+      expect(await migrateUp(url, undefined, { to: stopAt })).toEqual(ids.filter((id) => id <= stopAt));
+      expect(await migrateUp(url, undefined, { to: stopAt })).toEqual([]);
+
+      expect(await migrateUp(url, undefined, { only: single })).toEqual([single]);
+      const pool = new Pool({ connectionString: url });
+      try {
+        const applied = (await pool.query<{ id: string }>(`select id from "_migrations" order by id`)).rows.map((r) => r.id);
+        expect(applied).toEqual([...ids.filter((id) => id <= stopAt), single]);
+        expect(applied).not.toContain(skipped);
+      } finally {
+        await pool.end();
+      }
+
+      // A plain run afterwards applies exactly what was stepped over, and nothing twice.
+      expect(await migrateUp(url)).toEqual(ids.filter((id) => id > stopAt && id !== single));
+
+      await expect(migrateUp(url, undefined, { to: "9999_nothing" })).rejects.toThrow(/No migration named "9999_nothing"/);
+      await expect(migrateUp(url, undefined, { to: stopAt, only: single })).rejects.toThrow(/exclusive/);
+    } finally {
+      const cleanup = new Pool({ connectionString: baseUrl });
+      await cleanup.query(`DROP DATABASE IF EXISTS "${dbName}"`);
+      await cleanup.end();
+    }
+  });
 });

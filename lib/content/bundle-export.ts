@@ -79,6 +79,7 @@ import {
   ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES,
 } from "@/lib/core";
 import { autonomyStatement } from "@/lib/format";
+import { SITE_ORIGIN } from "@/lib/site";
 import { ONTOLOGY_EXTENSIONS_FILE } from "./ontology-file";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
@@ -142,15 +143,11 @@ export function bundleHref(slug: string, file: string): string {
 }
 
 /**
- * Where this site is served from, with no trailing slash.
- *
- * It was a bare literal inside `bundleReadme`'s "Exported from" line, which was the only
- * place a bundle named its own origin. It is now also the origin printed in the download
- * command `components/blueprint/CloneMenu.tsx` hands a reader to paste into a terminal,
- * and those two must be the same host or the folder a reader fetches is not the folder
- * the README inside it claims to have come from.
+ * Where this site is served from, with no trailing slash. Re-exported from `lib/site` so
+ * the README's "Exported from" line and the download command a reader pastes print the
+ * same host, or the folder a reader fetches is not the folder its README claims.
  */
-export const SITE_ORIGIN = "https://darkprint.io";
+export { SITE_ORIGIN };
 
 /**
  * Where the card library's copies live under `public/`, relative to it.

@@ -249,8 +249,10 @@ export function pickOptional(mod: Namespace, candidates: readonly string[]): unk
 /* --------------------- the environment contract --------------------- */
 
 /**
- * The eight variables `backend.md` publishes so the implementer and this file agree
- * without seeing each other. Read directly, never through a helper on the other branch.
+ * Every variable the app requires at runtime. Optional ones (`PG_POOL_MAX`,
+ * `MIGRATE_DATABASE_URL`, `NEXT_PUBLIC_SITE_ORIGIN`) are documented in `.env.example` as
+ * commented lines and deliberately not listed: the environment test requires each name
+ * here to be set.
  */
 export const ENVIRONMENT_VARIABLES = [
   "DATABASE_URL",
@@ -260,6 +262,8 @@ export const ENVIRONMENT_VARIABLES = [
   "S3_SECRET_ACCESS_KEY",
   "GITHUB_CLIENT_ID",
   "GITHUB_CLIENT_SECRET",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
   "SESSION_SECRET",
 ] as const;
 

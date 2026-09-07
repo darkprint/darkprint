@@ -5,7 +5,7 @@ import {
   BUNDLE_VOCABULARY,
   TOPOLOGY_DOT,
 } from "@/lib/content/bundle-export";
-import { SITE_ORIGIN } from "@/lib/content/bundle-export";
+import { SITE_ORIGIN } from "@/lib/site";
 import { blueprintFileHref, cardFileHref } from "@/lib/href";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
@@ -138,8 +138,7 @@ const PATH_PROBE = "x";
  * `#1` is `curl`'s own back-reference to the expansion, so each file lands under its own
  * name inside a folder that resolves as a bundle, and `--fail-early` means a folder is
  * never written half-fetched. It lives here rather than in `lib/href.ts` because a shell
- * command is not an href, and because `SITE_ORIGIN` would otherwise pull `lib/content`
- * into every client bundle that imports a link builder.
+ * command is not an href.
  */
 export function releaseDownloadCommand(
   ownerHandle: string,
