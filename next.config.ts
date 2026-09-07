@@ -10,7 +10,13 @@ import type { NextConfig } from "next";
  * every platform's binaries unless they are excluded, and that surplus alone pushed the
  * deployment past the Hobby plan's function grouping.
  */
-const ENCODER_FILES = ["./models/**", "./node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**"];
+const ENCODER_FILES = [
+  "./models/**",
+  "./node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**",
+  /* sharp resolves its platform package through a template string the tracer cannot follow. */
+  "./node_modules/@img/sharp-linux-arm64/**",
+  "./node_modules/@img/sharp-libvips-linux-arm64/**",
+];
 /** The route paths whose functions load the encoder: the two searchers, the MCP find tools and endpoint, publish (which re-embeds), and the health probe. */
 const ENCODER_ROUTES = [
   "/api/search/blueprints",
