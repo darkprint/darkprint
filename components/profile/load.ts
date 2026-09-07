@@ -49,9 +49,8 @@ import type { ProfileTabId } from "./tabs";
    The shelf pairs a live row with its archive drawing by slug (`ownedRowsFor`), never by
    byline, or the owner's own profile draws no graph at all.
 
-   `starsFor` is the one seeded figure left here: the support pill on a card tile. It has no
-   column and no counter, and swapping the live star count in for it would answer a
-   different question under the same label.
+   A card tile prints its live star count; a pinned blueprint keeps the seeded support
+   figure, because no counter exists for it yet.
    ============================================================ */
 
 /** A reader with no session. `Object.freeze` so a caller cannot make it somebody. */
