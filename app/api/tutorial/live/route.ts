@@ -26,6 +26,11 @@ import { openLive, spendLiveWrite, withTutorialErrors } from "@/lib/server/tutor
 export async function POST(request: Request): Promise<Response> {
   return withLimitsErrors(request, () =>
     withTutorialErrors(request, async () => {
+      /* A JSON content type is required although the body is ignored: a cross-site form can
+         send a simple POST but not this header, so another page cannot open live pages
+         against a visitor's address and spend their bucket. Both real callers send it. */
+      const type = request.headers.get("content-type") ?? "";
+      if (!type.toLowerCase().startsWith("application/json")) return unsupportedMediaType(request);
       await spendLiveWrite(request);
       const { db } = getSharedDbClient();
       return ok(await openLive(db, { origin: SITE_ORIGIN }));
@@ -34,6 +39,15 @@ export async function POST(request: Request): Promise<Response> {
 }
 
 /** 405 with the one method this address takes, as a problem document. */
+function unsupportedMediaType(request: Request): Response {
+  return problem(request, {
+    type: `${PROBLEM_TYPE_BASE}/unsupported-media-type`,
+    title: "Unsupported media type",
+    status: 415,
+    detail: "Send `Content-Type: application/json`; the body may be `{}`.",
+  });
+}
+
 function methodNotAllowed(request: Request): Response {
   const refused = problem(request, {
     type: `${PROBLEM_TYPE_BASE}/method-not-allowed`,

@@ -434,7 +434,7 @@ describe("an unconfigured bucket refuses rather than passing", () => {
     const configuredWindows = Object.values(DEFAULT_LIMITS).flatMap((tiers) =>
       Object.values(tiers).map((cell) => cell.windowMs),
     );
-    expect(configuredWindows).toHaveLength(12);
+    expect(configuredWindows).toHaveLength(15);
     for (const windowMs of configuredWindows) {
       expect(verdict.windowMs).toBeGreaterThan(windowMs);
     }
@@ -505,7 +505,10 @@ describe("the ruled ceilings, as shipped", () => {
     expect(cell("live", "anonymous")).toEqual({ limit: 60, windowMs: HOUR });
     expect(cell("live", "account")).toEqual({ limit: 120, windowMs: HOUR });
     expect(cell("live", "key")).toEqual({ limit: 120, windowMs: HOUR });
-    expect(Object.keys(DEFAULT_LIMITS).sort()).toEqual(["live", "read", "upload", "write"]);
+    expect(cell("poll", "anonymous")).toEqual({ limit: 3_600, windowMs: HOUR });
+    expect(cell("poll", "account")).toEqual({ limit: 3_600, windowMs: HOUR });
+    expect(cell("poll", "key")).toEqual({ limit: 3_600, windowMs: HOUR });
+    expect(Object.keys(DEFAULT_LIMITS).sort()).toEqual(["live", "poll", "read", "upload", "write"]);
   });
 
   it("a refused cell actually refuses, rather than being a zero nobody reads", async () => {

@@ -136,6 +136,7 @@ export const UNCONFIGURED_BACKOFF_MS = 365 * 24 * HOUR;
  *     write           refused     120 / h       120 / h
  *     upload          refused      30 / h        30 / h
  *     live             60 / h     120 / h       120 / h
+ *     poll          3 600 / h   3 600 / h     3 600 / h
  *
  * **Nothing here was invented.** The owner ruled four quantities — anonymous read, keyed
  * read, keyed write, and upload — and this task reported that four quantities fill three of
@@ -186,6 +187,16 @@ export const DEFAULT_LIMITS: LimitConfig = {
     anonymous: { limit: 60, windowMs: HOUR },
     account: { limit: 120, windowMs: HOUR },
     key: { limit: 120, windowMs: HOUR },
+  },
+  /* The live page's poll. It asks GET every two seconds while an interview runs, and a 304
+     is the usual answer, so this bucket is what bounds the requests themselves while `read`
+     is spent only on a body or a miss. 3 600 an hour is one tab polling flat out; a second
+     tab from the same address halves what each gets, which is the right shape for a limit
+     on a channel nobody needs two tabs for. */
+  poll: {
+    anonymous: { limit: 3_600, windowMs: HOUR },
+    account: { limit: 3_600, windowMs: HOUR },
+    key: { limit: 3_600, windowMs: HOUR },
   },
 };
 

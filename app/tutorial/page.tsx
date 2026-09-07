@@ -150,9 +150,10 @@ export default function TutorialPage() {
             <p className={P}>
               The interview happens in your terminal, and this page is how you watch it. Opening
               a live page gives you an address with a token in it; the blueprint-writing skill
-              posts its draft there after every phase, and the page draws the graph as it takes
-              shape, in the same panel a published blueprint uses. Nothing runs on this site: it
-              shows what your agent posts.
+              posts its draft there after every phase. The page lists the nodes and edges as
+              they are named, and once every node has its card it draws the graph in the same
+              panel a published blueprint uses. Nothing runs on this site: it shows what your
+              agent posts.
             </p>
             <StartLive />
           </section>
@@ -168,11 +169,11 @@ export default function TutorialPage() {
             </p>
             <LivePrompt name="design" />
             <p className={P}>
-              The interview asks one question per turn: what exists at the end, which command
-              fails when the work is wrong, whether the registry already holds a piece of it,
-              who does each part, what must never reach each node, and where the loop closes.
-              After each phase the draft lands on your live page and the graph grows a node or
-              an edge, so keep that tab open while you answer.
+              The interview starts one question per turn: what exists at the end, and which
+              command fails when the work is wrong. It then searches the registry for a piece
+              of it on its own, and asks the node, port and isolation questions in numbered
+              rounds. After each phase the draft lands on your live page and the graph grows a
+              node or an edge, so keep that tab open while you answer.
             </p>
           </section>
         </li>
@@ -231,10 +232,10 @@ export default function TutorialPage() {
               </Link>{" "}
               and drop the folder on{" "}
               <Link href="/upload" className={LINK}>
-                Upload
+                Publish
               </Link>
               , where visibility defaults to private. An account gives you private blueprints,
-              releases by version, and an API key for the CLI.
+              releases by version, and an API key for publishing from the terminal.
             </p>
           </section>
         </li>

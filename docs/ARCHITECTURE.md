@@ -99,7 +99,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 | `/spec/attractor`, `/spec/topology` | static | the Attractor crosswalk; the DOT dialect |
 | `/spec/card` | dynamic | the node card format, with the vocabulary browser |
 | `/towards-a-dark-factory`, `/tutorial` | static | the essay on the phases of automation; the five-step walkthrough that has the reader write a blueprint in their own agent with the blueprint-writing skill, opens the live page the draft is posted to, and points at MCP and `/upload` |
-| `/tutorial/live/[token]` | per request, client-polled | one reader's live page: the draft the blueprint-writing skill posts, drawn as the graph takes shape, the registry hits, and the next step per phase; 404 on a malformed or expired token |
+| `/tutorial/live/[token]` | per request, client-polled | one reader's live page: the draft the blueprint-writing skill posts, drawn as the graph takes shape, the registry hits, and the next step per phase; 404 on a malformed token, and an expired or unknown one renders the expired notice with a link back to `/tutorial` |
 | `/u/[username]` | dynamic | a profile |
 | `/u/[username]/[slug]` | dynamic | a permanent redirect to `/blueprints/[username]/[slug]` |
 | `/u/[username]/blueprints`, `/u/[username]/cards`, `/u/[username]/saved` | dynamic | the three shelves |
@@ -354,7 +354,7 @@ a key that does not resolve is treated as no key, never refused. Limits (`lib/se
 `read` allows 600 requests an hour for anonymous and signed-in callers and 6000 for a key;
 `write` is 120 an hour and `upload` 30, both refused to anonymous callers; `live` is 60 an hour
 for an anonymous caller and 120 for the two signed-in tiers. The MCP routes spend `read`; the
-live tutorial routes spend `live` on POST and PUT and `read` on GET; nothing else spends a
+live tutorial routes spend `live` on POST and PUT, `poll` (3 600 an hour for every tier) on every GET, and `read` on a GET that answers a body or a miss; nothing else spends a
 bucket today. A refused request answers 429 problem+json carrying `limit`, `remaining`,
 `resetAt` and `keysAvailable`, and a tool call renders the same facts as a result.
 
@@ -401,7 +401,7 @@ else `/upload`, and handed to the author to publish.
 
 The live preview and the enrich mode: when the author opts in, or arrives from `/tutorial`
 with a live URL, the blueprint-writing skill opens a page with `POST /api/tutorial/live` (or
-takes the token off the URL), keeps the token in the shell, and `PUT`s a `LiveDraft` from
+takes the token off the URL), keeps the token, and `PUT`s a `LiveDraft` from
 `lib/core/tutorial/live.ts` to `/api/tutorial/live/<token>` at every phase boundary and once
 more after writing, so `/tutorial/live/<token>` draws the graph as it takes shape. The bundle
 in a draft may be partial. A failed PUT is one line to the author and never blocks the
@@ -558,7 +558,7 @@ Rollback while the old code is still promoted: `psql "$D" -v ON_ERROR_STOP=1 -f 
 then `DATABASE_URL="$D" npm run migrate:stored-cards -- --expect-db postgres --check-manifest
 rb-prod.sql.manifest.tsv`. After step 9 only the dump from step 3 restores the dropped rows.
 Every `/d/<digest>` address recorded before step 6 answers 404 after it; the embeddings are
-keyed by row id and refreshed by step 10.
+keyed by row id and refreshed by step 11.
 
 ## 16. Known gaps
 

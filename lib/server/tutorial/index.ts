@@ -20,4 +20,4 @@ export { withTutorialStore } from "./store";
 
 /* The transport boundary, published because the routes under `app/api/tutorial/**` cannot
    use a wrapper they cannot name. */
-export { spendLiveRead, spendLiveWrite, withTutorialErrors } from "./http";
+export { spendLivePoll, spendLiveRead, spendLiveWrite, withTutorialErrors } from "./http";

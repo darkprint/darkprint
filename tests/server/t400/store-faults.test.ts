@@ -98,7 +98,10 @@ describe("the routes answer a store fault as problem+json", () => {
     ["GET /api/tutorial/live/[token]", "GET", `/api/tutorial/live/${UNKNOWN_TOKEN}`, undefined, "getLive"],
     ["PUT /api/tutorial/live/[token]", "PUT", `/api/tutorial/live/${UNKNOWN_TOKEN}`, draftAt("nodes"), "putLive"],
   ])("%s answers 500 store-failed naming the verb", async (label, method, path, body, verb) => {
-    const answer = await callRoute(method, path, { headers: { "x-forwarded-for": "198.51.100.99" }, body });
+    const answer = await callRoute(method, path, {
+      headers: { "x-forwarded-for": "198.51.100.99", "content-type": "application/json" },
+      body,
+    });
     expect(answer.status, label).toBe(500);
     const problem = await asProblem(answer, label);
     expect(problem.type).toBe("https://darkprint.io/problems/store-failed");

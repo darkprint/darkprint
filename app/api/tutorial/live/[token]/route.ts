@@ -26,6 +26,7 @@ import { withLimitsErrors } from "@/lib/server/limits";
 import {
   getLive,
   putLive,
+  spendLivePoll,
   spendLiveRead,
   spendLiveWrite,
   withTutorialErrors,
@@ -61,6 +62,10 @@ function matchesIfNoneMatch(header: string | null, etag: string): boolean {
 export async function GET(request: Request, context: Context): Promise<Response> {
   return withLimitsErrors(request, () =>
     withTutorialErrors(request, async () => {
+      /* The poll bucket first, before the token is even looked at: it bounds the requests a
+         page makes at all, so neither a token holder nor a guesser can drive the store
+         faster than one tab polls. */
+      await spendLivePoll(request);
       const { token } = await context.params;
       if (!isLiveToken(token)) return badRequest(request, MALFORMED_TOKEN);
       const { db } = getSharedDbClient();
@@ -92,13 +97,17 @@ export async function PUT(request: Request, context: Context): Promise<Response>
       const { token } = await context.params;
       if (!isLiveToken(token)) return badRequest(request, MALFORMED_TOKEN);
 
-      /* Measured on the wire bytes before anything parses them: `readObjectBody` has no cap
-         of its own, and the bound has to sit where the bytes are rather than after a parse
-         that already did the work. The text is then handed to the shared reader so the JSON
-         refusals keep one wording across every route. */
-      const text = await request.text();
-      const bytes = Buffer.byteLength(text, "utf8");
-      if (bytes > LIVE_DRAFT_MAX_BYTES) return tooLarge(request, bytes);
+      /* Bounded on the wire, twice: a declared length over the cap is refused before a byte
+         is read, and the stream is read chunk by chunk and cut off the moment it passes the
+         cap, so a body that lies about its length still cannot be buffered whole. The text is
+         then handed to the shared reader so the JSON refusals keep one wording. */
+      const declared = Number(request.headers.get("content-length"));
+      if (Number.isFinite(declared) && declared > LIVE_DRAFT_MAX_BYTES) {
+        return tooLarge(request, declared);
+      }
+      const body = await readBounded(request, LIVE_DRAFT_MAX_BYTES);
+      if (body.over) return tooLarge(request, body.bytes);
+      const text = body.text;
       const parsed = await readObjectBody(
         new Request(request.url, {
           method: "PUT",
@@ -116,6 +125,32 @@ export async function PUT(request: Request, context: Context): Promise<Response>
       return ok(written);
     }),
   );
+}
+
+/**
+ * The body as text, or the fact that it passed `max` bytes. Reading stops at the first
+ * chunk that crosses the cap and the stream is cancelled, so the most this ever holds is
+ * one chunk over the limit.
+ */
+async function readBounded(
+  request: Request,
+  max: number,
+): Promise<{ over: false; text: string } | { over: true; bytes: number }> {
+  if (request.body === null) return { over: false, text: "" };
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let bytes = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    bytes += value.byteLength;
+    if (bytes > max) {
+      await reader.cancel();
+      return { over: true, bytes };
+    }
+    chunks.push(value);
+  }
+  return { over: false, text: new TextDecoder().decode(Buffer.concat(chunks)) };
 }
 
 /** 413, under the same problem type the validate routes use for an over-limit submission. */

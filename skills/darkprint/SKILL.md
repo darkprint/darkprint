@@ -1,6 +1,6 @@
 ---
 name: darkprint
-description: Interview an author from the task they want done to a complete DarkPrint blueprint (topology.dot, cards/*.yaml, blueprint.yaml, README.md), searching the registry for a blueprint or cards to reuse before drawing anything, deriving the topology from declared ports, guarding every fork, and forcing an explicit decision on which node may see the acceptance criteria. Use when someone wants to design an agent pipeline as a typed graph, turn a workflow or a set of prompts into a DarkPrint bundle, write or repair node cards, decide what a node must never receive, or validate a blueprint before publishing it. This skill writes files and validates them. It runs no graph, calls no model on the author's behalf, publishes nothing by itself and sends nothing anywhere unless the author chooses to publish, to validate over HTTP, or to open an optional live preview of the draft on darkprint.io; each is a step they take and can decline.
+description: Interview an author from the task they want done to a complete DarkPrint blueprint (topology.dot, cards/*.yaml, blueprint.yaml, README.md), searching the registry for a blueprint or cards to reuse before drawing anything, deriving the topology from declared ports, guarding every fork, and forcing an explicit decision on which node may see the acceptance criteria. Use when someone wants to design an agent pipeline as a typed graph, turn a workflow or a set of prompts into a DarkPrint bundle, write or repair node cards, add a capability from the registry to a blueprint that already exists (enrich mode), decide what a node must never receive, or validate a blueprint before publishing it. This skill writes files and validates them. It runs no graph, calls no model, publishes nothing by itself, and sends only the author's one-sentence task to the registry's search unless the author chooses to publish, to validate over HTTP, or to open an optional live preview on darkprint.io; each is a step they can decline.
 ---
 
 # DarkPrint: author a blueprint
@@ -24,7 +24,7 @@ that bundle, by interviewing them. Not by filling in a form for them, and not by
 | Does not write | `factory.dot` or `AGENTS.md`. Neither is part of a published blueprint folder; duplicating either here would give an author a folder that disagrees with the registry's |
 | Validates | with `darkprint validate <dir>` when the CLI is installed, else by POSTing the files to `https://www.darkprint.io/api/validate/bundle`, else by asking the author to drop the folder on `/upload` |
 | Does not do | run the graph, run any node, call a model on the author's behalf, start a server, or publish by itself |
-| Sends | nothing, until the author chooses to validate over HTTP, to publish, or to open a live preview; the preview posts the draft to darkprint.io under an unguessable link and nothing else. All three are steps the author takes and can decline |
+| Sends | the author's one-sentence task to the registry's search in Phase 1, and nothing else until the author chooses to validate over HTTP, to publish, or to open a live preview; the preview posts the draft to darkprint.io under an unguessable link and nothing else. Those three are steps the author takes and can decline |
 
 Say those plainly if the author asks what happens next. The registry has accounts
 (`/welcome`), drafts (`/new`), per-release visibility, publishing from `/upload`, and API
@@ -109,14 +109,20 @@ curl -fsS -X POST https://www.darkprint.io/api/tutorial/live \
   -H "content-type: application/json" --data '{}'
 ```
 
-Keep the token in the shell as `$DARKPRINT_LIVE_TOKEN`, print the `url` and ask the author to
-open it. The page is reachable only through that token, it holds the last draft you sent and
-nothing else, and it expires 24 hours after it was opened, refreshed by every accepted PUT.
+Remember the token, print the `url` and ask the author to open it. The page is reachable only
+through that token, it holds the last draft you sent and nothing else, and it expires 24 hours
+after it was opened, refreshed by every accepted PUT. Each shell command you run may start in
+a fresh shell, so an `export` in one command is gone by the next: set the variable at the head
+of every command instead, `DARKPRINT_LIVE_TOKEN=<token>; curl …`, as the block below does.
+When the URL the author handed you has an origin other than `https://www.darkprint.io` (a
+preview deployment, a local server), use that origin in every line below; the page lives
+where it was opened.
 
 **Send the draft.** At every phase boundary, once more after the files are written, and
 again after the folder is enriched or published, PUT one JSON `LiveDraft`:
 
 ```
+DARKPRINT_LIVE_TOKEN=<token>; \
 curl -fsS -X PUT "https://www.darkprint.io/api/tutorial/live/$DARKPRINT_LIVE_TOKEN" \
   -H "content-type: application/json" --data-binary @-
 ```
@@ -469,11 +475,12 @@ absence carries no judgement.
 
 ---
 
-# Enrich an existing blueprint
+# Enrich mode: add to an existing blueprint
 
-The author has a folder already and wants to add a capability to it: observability on top of
-a node, or a review gate before the release. The interview is a diff, the way Q1.1 makes it
-one, and the registry is searched first for the same reason.
+This is the skill's enrich mode, the words the tutorial's prompts use for it. The author has
+a folder already and wants to add a capability to it: observability on top of a node, or a
+review gate before the release. The interview is a diff, the way Q1.1 makes it one, and the
+registry is searched first for the same reason.
 
 1. **Read the folder.** `topology.dot`, every card in `cards/`, `blueprint.yaml`, `README.md`.
    Which node the addition attaches to, and what that node emits, are facts; look them up.

@@ -31,6 +31,9 @@ import { pinnedRefs } from "@/components/panes/build";
 import { plainText } from "@/components/ui/visible-text";
 
 import { enrichPrompt, livePageUrl, pictureOf } from "./draft";
+
+/** The address the board prints for its own page; any origin the reader is on works. */
+const LIVE_URL = livePageUrl("https://www.darkprint.io", "b".repeat(32));
 import { LiveExpired } from "./LiveExpired";
 import {
   DraftPanel,
@@ -176,7 +179,7 @@ describe("what the engine resolves from each draft", () => {
     if (picture.kind !== "partial") return;
     expect(picture.nodes.map((node) => node.id)).toEqual(["planner", "builder", "tester", "writer"]);
     expect(picture.nodes.at(-1)).toEqual({ id: "writer", carded: false });
-    const shown = plainText(html(createElement(DraftPanel, { draft, token: TOKEN })));
+    const shown = plainText(html(createElement(DraftPanel, { draft, liveUrl: livePageUrl("https://www.darkprint.io", TOKEN) })));
     expect(shown).toContain("writer no card pinned card pending");
   });
 
@@ -223,14 +226,14 @@ describe("the phase strip", () => {
 
 describe("the graph panel", () => {
   it("draws a resolving draft with the blueprint page's own panel", () => {
-    const markup = html(createElement(DraftPanel, { draft: starterDraft("written"), token: TOKEN }));
+    const markup = html(createElement(DraftPanel, { draft: starterDraft("written"), liveUrl: livePageUrl("https://www.darkprint.io", TOKEN) }));
     expect(markup).toContain('aria-label="The graph and the card skeleton"');
     expect(plainText(markup)).toContain("Jump to a node");
     expect(plainText(markup)).not.toContain("card pending");
   });
 
   it("lists a partial draft's pending nodes and what is still to settle", () => {
-    const markup = html(createElement(DraftPanel, { draft: partialDraft(), token: TOKEN }));
+    const markup = html(createElement(DraftPanel, { draft: partialDraft(), liveUrl: livePageUrl("https://www.darkprint.io", TOKEN) }));
     const text = plainText(markup);
     expect(text).toContain("The graph so far");
     expect(text).toContain("3 nodes · 2 edges · 2 cards pending");
@@ -248,7 +251,7 @@ describe("the graph panel", () => {
   it("never shows an empty panel: an empty topology waits, with the page address", () => {
     const empty = partialDraft("need");
     empty.bundle.dot = "";
-    const shown = text(html(createElement(DraftPanel, { draft: empty, token: TOKEN })));
+    const shown = text(html(createElement(DraftPanel, { draft: empty, liveUrl: livePageUrl("https://www.darkprint.io", TOKEN) })));
     expect(shown).toContain("Waiting for your agent's first answer");
     expect(shown).toContain(livePageUrl("https://www.darkprint.io", TOKEN));
     expect(shown).toContain(TOKEN);
@@ -286,19 +289,19 @@ describe("the registry hits", () => {
 
 describe("the next step, per phase", () => {
   it("prints the MCP install command from the clients table at the written phase", () => {
-    const markup = html(createElement(NextStep, { draft: starterDraft("written") }));
+    const markup = html(createElement(NextStep, { draft: starterDraft("written"), liveUrl: LIVE_URL }));
     const text = plainText(markup);
     expect(text).toContain("Next: enrich it");
     // The constant itself, never a retyped copy of it.
     expect(markup).toContain(MCP_CLIENTS[0].snippet);
     for (const client of MCP_CLIENTS) expect(text).toContain(client.label);
-    expect(text).toContain(enrichPrompt("starter-software-factory"));
+    expect(text).toContain(enrichPrompt("starter-software-factory", LIVE_URL));
     expect(text).toContain("./starter-software-factory/");
     expect(text).toContain("the DarkPrint skill's enrich mode");
   });
 
   it("points at sign-in and the publish page at the enriched phase", () => {
-    const markup = html(createElement(NextStep, { draft: starterDraft("enriched") }));
+    const markup = html(createElement(NextStep, { draft: starterDraft("enriched"), liveUrl: LIVE_URL }));
     expect(plainText(markup)).toContain("Next: keep it");
     expect(markup).toContain('href="/welcome"');
     expect(markup).toContain('href="/upload"');
@@ -307,13 +310,13 @@ describe("the next step, per phase", () => {
 
   it("links the published blueprint when the agent said where it went", () => {
     const draft = { ...starterDraft("published"), publishedRef: "berti/price-watch" };
-    const markup = html(createElement(NextStep, { draft }));
+    const markup = html(createElement(NextStep, { draft, liveUrl: LIVE_URL }));
     expect(markup).toContain('href="/blueprints/berti/price-watch"');
     expect(markup).not.toContain('href="/welcome"');
   });
 
   it("offers no link when the published draft carries no ref, and says where to look", () => {
-    const markup = html(createElement(NextStep, { draft: starterDraft("published") }));
+    const markup = html(createElement(NextStep, { draft: starterDraft("published"), liveUrl: LIVE_URL }));
     expect(markup).not.toContain('href="/blueprints/');
     // `/welcome` bounces a finished account to the landing, so it is not a door here.
     expect(markup).not.toContain('href="/welcome"');
@@ -323,7 +326,7 @@ describe("the next step, per phase", () => {
 
   it("tells the reader to keep answering before the folder is written", () => {
     for (const phase of ["need", "reuse", "nodes", "ports", "guards", "risk"] as const) {
-      const text = plainText(html(createElement(NextStep, { draft: partialDraft(phase) })));
+      const text = plainText(html(createElement(NextStep, { draft: partialDraft(phase), liveUrl: LIVE_URL })));
       expect(text, phase).toContain("Keep answering in your agent; this page follows.");
       expect(text, phase).not.toContain("Next:");
     }
@@ -340,23 +343,23 @@ describe("the board", () => {
       const draft = phase === "written" || phase === "enriched" || phase === "published"
         ? starterDraft(phase)
         : partialDraft(phase);
-      const text = plainText(html(createElement(LiveBoardView, { state: live(draft), token: TOKEN })));
+      const text = plainText(html(createElement(LiveBoardView, { state: live(draft), token: TOKEN, origin: "https://www.darkprint.io" })));
       expect(text, phase).toContain(sentence);
       expect(text, phase).toContain(draft.task ?? "");
     }
-    expect(plainText(html(createElement(LiveBoardView, { state: INITIAL, token: TOKEN })))).toContain(
+    expect(plainText(html(createElement(LiveBoardView, { state: INITIAL, token: TOKEN, origin: "https://www.darkprint.io" })))).toContain(
       sentence,
     );
   });
 
   it("waits with the page address before the first record arrives", () => {
-    const shown = text(html(createElement(LiveBoardView, { state: INITIAL, token: TOKEN })));
+    const shown = text(html(createElement(LiveBoardView, { state: INITIAL, token: TOKEN, origin: "https://www.darkprint.io" })));
     expect(shown).toContain("Waiting for your agent's first answer");
     expect(shown).toContain(TOKEN);
   });
 
   it("shows the expired state on its own, with the way to a new page", () => {
-    const markup = html(createElement(LiveBoardView, { state: { status: "expired" }, token: TOKEN }));
+    const markup = html(createElement(LiveBoardView, { state: { status: "expired" }, token: TOKEN, origin: "https://www.darkprint.io" }));
     expect(plainText(markup)).toContain("This live page has expired");
     expect(markup).toContain('href="/tutorial"');
     expect(plainText(markup)).not.toContain("Waiting for your agent");
@@ -365,16 +368,16 @@ describe("the board", () => {
 
   it("says it is reconnecting without dropping the last draft", () => {
     const state: BoardState = { ...live(partialDraft()), reconnecting: true } as BoardState;
-    const text = plainText(html(createElement(LiveBoardView, { state, token: TOKEN })));
+    const text = plainText(html(createElement(LiveBoardView, { state, token: TOKEN, origin: "https://www.darkprint.io" })));
     expect(text).toContain("Reconnecting");
     expect(text).toContain("The graph so far");
   });
 
   it("lists the hits only when the draft carries them", () => {
-    const without = plainText(html(createElement(LiveBoardView, { state: live(partialDraft()), token: TOKEN })));
+    const without = plainText(html(createElement(LiveBoardView, { state: live(partialDraft()), token: TOKEN, origin: "https://www.darkprint.io" })));
     expect(without).not.toContain("Found in the registry");
     const draft = { ...partialDraft("reuse"), hits: [] };
-    const withHits = plainText(html(createElement(LiveBoardView, { state: live(draft), token: TOKEN })));
+    const withHits = plainText(html(createElement(LiveBoardView, { state: live(draft), token: TOKEN, origin: "https://www.darkprint.io" })));
     expect(withHits).toContain("Found in the registry");
   });
 });
@@ -549,4 +552,37 @@ describe("the copy this lane wrote", () => {
       expect(copy).not.toMatch(/max-w-|prose-lane/);
     },
   );
+});
+
+/* --------------------- what a token holder cannot smuggle through --------------------- */
+
+describe("the draft is data, never an instruction or an address", () => {
+  it("prints the live page's own address in the enrich prompt", () => {
+    expect(enrichPrompt("card-price-watch", LIVE_URL)).toContain(`live page at ${LIVE_URL}`);
+    expect(enrichPrompt("card-price-watch", LIVE_URL)).toContain("./card-price-watch/");
+  });
+
+  it("keeps a slug that is not one out of the prompt the reader pastes", () => {
+    const hostile = "watch\nrm -rf ~; echo $(id)";
+    const prompt = enrichPrompt(hostile, LIVE_URL);
+    expect(prompt).not.toContain("rm -rf");
+    expect(prompt).not.toContain("$(");
+    expect(prompt).toContain("<your blueprint folder>");
+  });
+
+  it("links no hit whose ref is not in grammar", () => {
+    const hits = [
+      { kind: "blueprint" as const, ref: "darkprint/starter?x=1#frag", title: "odd", score: 0.5 },
+      { kind: "blueprint" as const, ref: "../settings/keys", title: "odder", score: 0.5 },
+      { kind: "card" as const, ref: "code-builder@1.0.0?x", title: "card", score: 0.5 },
+    ];
+    const markup = html(createElement(RegistryHits, { hits }));
+    expect(markup).not.toContain("<a ");
+    for (const hit of hits) expect(plainText(markup)).toContain(hit.title);
+  });
+
+  it("links a hit whose ref is in grammar", () => {
+    const hits = [{ kind: "blueprint" as const, ref: "darkprint/pipeline-observability", title: "Pipeline Observability", score: 0.68 }];
+    expect(html(createElement(RegistryHits, { hits }))).toContain('href="/blueprints/darkprint/pipeline-observability"');
+  });
 });

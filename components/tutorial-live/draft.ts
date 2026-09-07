@@ -126,11 +126,21 @@ export function pictureOf(draft: LiveDraft): DraftPicture {
 }
 
 /**
- * The prompt a reader pastes into their agent at the "written" phase, with their own slug
- * in it. One function, because the board prints it and the test checks the slug landed.
+ * The grammar a slug, an owner handle or a card id has to meet before it is printed into a
+ * prompt or turned into a link. The draft is whatever the token's holder posted, so a value
+ * that fails this stays text and never reaches a shell or an href.
  */
-export function enrichPrompt(slug: string): string {
-  return `Using the darkprint MCP, find a blueprint that adds observability to this pipeline (a trace per step, a summary, an alert when a step fails) and merge it into ./${slug}/ with the DarkPrint skill's enrich mode. Then update the live page.`;
+export const REF_SEGMENT = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/**
+ * The prompt a reader pastes into their agent at the "written" phase, with their own slug
+ * and their live page's address in it. The address is what lets the agent post the
+ * `enriched` draft back; without it the page could never move past "Folder written". The
+ * wording follows the tutorial's own enrich prompt so the two read as one instruction.
+ */
+export function enrichPrompt(slug: string, liveUrl: string): string {
+  const folder = REF_SEGMENT.test(slug) ? `./${slug}/` : "<your blueprint folder>";
+  return `Use the darkprint MCP server to find a blueprint that adds observability to this pipeline (a trace per step, a summary, an alert when a step fails), fetch it, and merge it into ${folder} with the DarkPrint skill's enrich mode. Then post the grown draft to my live page at ${liveUrl}.`;
 }
 
 /** The absolute address of one live page, as the reader hands it to their agent. */

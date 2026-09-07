@@ -81,3 +81,8 @@ export async function spendLiveWrite(request: Request): Promise<void> {
 export async function spendLiveRead(request: Request): Promise<void> {
   await enforceLimit(liveSubject(request), LIVE_READ_BUCKET);
 }
+
+/** Every GET, before the store is asked, so a token holder cannot drive unbounded reads. */
+export async function spendLivePoll(request: Request): Promise<void> {
+  await enforceLimit(liveSubject(request), "poll");
+}

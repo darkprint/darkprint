@@ -35,4 +35,11 @@ describe("anonymous callers against the shipped ceilings", () => {
     const past = await checkLimit(ANON, "live", { counter });
     expect(past.allowed).toBe(false);
   });
+
+  it("are admitted in the poll bucket at one tab's rate, 3 600 an hour", async () => {
+    const verdict = await checkLimit(ANON, "poll", { counter: createSlotCounter() });
+    expect(verdict.allowed).toBe(true);
+    expect(verdict.limit).toBe(3_600);
+    expect(verdict.windowMs).toBe(60 * 60 * 1000);
+  });
 });

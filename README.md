@@ -34,7 +34,7 @@ docker compose up -d          # Postgres with pgvector on 5432, MinIO on 9000
 cp .env.example .env.local
 npm install
 npm run db:migrate
-npm run seed:import           # publishes the nine content/ blueprints into the registry
+npm run seed:import           # publishes the ten content/ blueprints into the registry
 npm run dev                   # http://localhost:3000
 ```
 
@@ -68,7 +68,7 @@ lib/data/            seeded fixtures that several surfaces still read
 packages/cli/        the darkprint verbs: clone, validate, export, import, bump, report
 packages/mcp/        the darkprint bin, the stdio MCP server and the tool table
 skills/darkprint/    the blueprint-writing skill: SKILL.md, references, templates
-content/             9 blueprints, 57 card versions, ontology/extensions.yaml
+content/             10 blueprints, 61 card versions, ontology/extensions.yaml
 models/              all-MiniLM-L6-v2, quantised ONNX (23 MB)
 scripts/             prebuild, seed import, re-embed, retrieval eval, production preflight
 tests/               the backend suites, tree-wide guards, scratch-database support

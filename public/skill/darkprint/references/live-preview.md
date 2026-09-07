@@ -21,19 +21,22 @@ accepted PUT refreshes that. The contract caps one draft at 512 KiB of JSON. A 4
 field that is wrong in one sentence; fix the payload and send again. The page polls the GET
 itself, so the skill never calls it.
 
-Open once, and keep the token in the shell:
+Open once and remember the token from the answer:
 
 ```
 curl -fsS -X POST https://www.darkprint.io/api/tutorial/live \
   -H "content-type: application/json" --data '{}'
-export DARKPRINT_LIVE_TOKEN=<the token from the answer>
 ```
 
-When the author arrived with the URL already, `DARKPRINT_LIVE_TOKEN` is its last path segment
-and the POST is skipped. Then, at each boundary, the JSON goes on stdin, so nothing is written
-to disk before the author has said yes to the files:
+When the author arrived with the URL already, the token is its last path segment and the POST
+is skipped; when that URL's origin is not `https://www.darkprint.io`, use its origin in every
+line here, because the page lives where it was opened. Each shell command may run in a fresh
+shell, so set the variable at the head of every command rather than exporting it once. Then,
+at each boundary, the JSON goes on stdin, so nothing is written to disk before the author has
+said yes to the files:
 
 ```
+DARKPRINT_LIVE_TOKEN=<token>; \
 curl -fsS -X PUT "https://www.darkprint.io/api/tutorial/live/$DARKPRINT_LIVE_TOKEN" \
   -H "content-type: application/json" --data-binary @- <<'JSON'
 { "phase": "nodes", "task": "...", "bundle": { "manifest": { ... }, "dot": "...", "cardFiles": { ... } }, "ledger": { ... } }

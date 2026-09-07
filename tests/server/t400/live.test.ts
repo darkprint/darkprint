@@ -51,7 +51,9 @@ afterAll(async () => {
 });
 
 function from(ip: string, extra: Record<string, string> = {}): Record<string, string> {
-  return { "x-forwarded-for": ip, ...extra };
+  /* The JSON content type on every request, because POST refuses a body without it: a
+     cross-site form cannot send that header, and both real callers do. */
+  return { "x-forwarded-for": ip, "content-type": "application/json", ...extra };
 }
 
 async function openPage(ip: string): Promise<{ token: string; url: string; expiresAt: string }> {
@@ -353,4 +355,25 @@ describe("the live bucket", () => {
     const read = await callRoute("GET", `/api/tutorial/live/${token}`, { headers: from(IP) });
     expect(read.status, "a poll spends the read bucket, which is untouched").toBe(200);
   }, 60_000);
+});
+
+describe("opening a page needs the JSON content type", () => {
+  /* A simple cross-site POST carries a form content type or none. Refusing anything else
+     before a slot is spent is what keeps another page from opening live pages against a
+     visitor's address; the body itself is still ignored. */
+  it("answers 415 to a POST without it and spends no slot", async () => {
+    const ip = "198.51.100.77";
+    const refused = await callRoute("POST", "/api/tutorial/live", {
+      headers: { "x-forwarded-for": ip },
+    });
+    expect(refused.status).toBe(415);
+    const problem = await asProblem(refused, "POST without a content type");
+    expect(problem.type).toBe("https://darkprint.io/problems/unsupported-media-type");
+    const formed = await callRoute("POST", "/api/tutorial/live", {
+      headers: { "x-forwarded-for": ip, "content-type": "application/x-www-form-urlencoded" },
+    });
+    expect(formed.status).toBe(415);
+    const opened = await openPage(ip);
+    expect(opened.token).toHaveLength(32);
+  });
 });

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, JetBrains_Mono, Space_Grotesk } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
+import { SiteAnalytics } from "@/components/site/SiteAnalytics";
 import "./globals.css";
 import "@xyflow/react/dist/style.css";
 import { SiteHeader } from "@/components/site/SiteHeader";
@@ -90,12 +90,9 @@ export default function RootLayout({
           <LearnShell>{children}</LearnShell>
         </main>
         <SiteFooter />
-        {/*
-          Page-view counting only, and only once deployed on Vercel — it no-ops
-          locally. Distinct from the blueprint telemetry of doc 1 §8, which runs
-          on the user's own machine (§0.1.3) and is not built.
-        */}
-        <Analytics />
+        {/* Page-view counting only, and only once deployed on Vercel; it no-ops locally.
+            The wrapper keeps live tutorial tokens out of the recorded paths. */}
+        <SiteAnalytics />
       </body>
     </html>
   );

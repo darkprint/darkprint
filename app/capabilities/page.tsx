@@ -515,7 +515,7 @@ export default function CapabilitiesPage() {
             </KeyValueRow>
           </KeyValueList>
           <p className="text-sm leading-relaxed text-dim">
-            This site does not check what the skill writes. It is a document your agent follows,
+            This site does not check what the DarkPrint skill writes. It is a document your agent follows,
             and this list describes it rather than testing it.
           </p>
         </div>

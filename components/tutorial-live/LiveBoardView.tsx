@@ -11,14 +11,13 @@ import {
 } from "@/lib/core/tutorial/live";
 import { cx } from "@/lib/format";
 import { blueprintHref, nodeHref } from "@/lib/href";
-import { SITE_ORIGIN } from "@/lib/site";
 import { InstallTabs } from "@/components/mcp/InstallTabs";
 import { SynchronisedPanes } from "@/components/panes/SynchronisedPanes";
 import { ButtonLink } from "@/components/ui/Button";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { DiagnosticList } from "@/components/ui/DiagnosticList";
 import { PanelHeading } from "@/components/ui/SectionHeading";
-import { enrichPrompt, livePageUrl, pictureOf, type DraftPicture } from "./draft";
+import { REF_SEGMENT, enrichPrompt, livePageUrl, pictureOf, type DraftPicture } from "./draft";
 import { LiveExpired } from "./LiveExpired";
 import type { BoardState } from "./poll";
 
@@ -102,17 +101,17 @@ function LiveHeader({ draft }: { draft: LiveDraft }) {
 
 /* --------------------- the graph --------------------- */
 
-export function LiveWaiting({ token }: { token: string }) {
+export function LiveWaiting({ liveUrl }: { liveUrl: string }) {
   return (
     <section className="panel flex flex-col gap-3 p-5" aria-label="Waiting for the first draft">
       <PanelHeading>Waiting for your agent&rsquo;s first answer</PanelHeading>
       <p className="text-sm leading-relaxed text-muted">
         This page is{" "}
         <code className="rounded bg-surface-3 px-1 py-0.5 font-mono text-[12px] text-fg">
-          {livePageUrl(SITE_ORIGIN, token)}
+          {liveUrl}
         </code>
-        . Hand it to the blueprint-writing skill when it asks where to post the draft, and
-        the graph appears here as the interview goes.
+        . Paste it into the prompt on the tutorial page, or hand it to the blueprint-writing
+        skill when it offers a live preview, and the graph appears here as the interview goes.
       </p>
     </section>
   );
@@ -204,10 +203,10 @@ function PartialGraph({
   );
 }
 
-export function DraftPanel({ draft, token }: { draft: LiveDraft; token: string }) {
+export function DraftPanel({ draft, liveUrl }: { draft: LiveDraft; liveUrl: string }) {
   const picture = useMemo(() => pictureOf(draft), [draft]);
 
-  if (picture.kind === "empty") return <LiveWaiting token={token} />;
+  if (picture.kind === "empty") return <LiveWaiting liveUrl={liveUrl} />;
 
   return (
     <div className="flex flex-col gap-5">
@@ -231,14 +230,28 @@ export function DraftPanel({ draft, token }: { draft: LiveDraft; token: string }
 
 /* --------------------- the registry hits --------------------- */
 
+/**
+ * `owner/slug` split and checked half by half. `blueprintHref` expects both halves already
+ * in grammar, and a ref here came from whoever holds the token, so a half that fails stays
+ * plain text rather than becoming a link with a query or a fragment in it.
+ */
+function blueprintRefHref(ref: string): string | undefined {
+  const slash = ref.indexOf("/");
+  if (slash <= 0 || slash === ref.length - 1) return undefined;
+  const owner = ref.slice(0, slash);
+  const slug = ref.slice(slash + 1);
+  if (!REF_SEGMENT.test(owner) || !REF_SEGMENT.test(slug)) return undefined;
+  return blueprintHref(owner, slug);
+}
+
 function hitHref(hit: LiveHit): string | undefined {
-  if (hit.kind === "blueprint") {
-    const slash = hit.ref.indexOf("/");
-    if (slash <= 0 || slash === hit.ref.length - 1) return undefined;
-    return blueprintHref(hit.ref.slice(0, slash), hit.ref.slice(slash + 1));
-  }
+  if (hit.kind === "blueprint") return blueprintRefHref(hit.ref);
+  /* A card id may be namespaced (`owner/id`), so each segment is checked on its own. */
   const parsed = parseCardRef(hit.ref);
-  return parsed === undefined ? undefined : nodeHref(parsed.id);
+  if (parsed === undefined || !parsed.id.split("/").every((part) => REF_SEGMENT.test(part))) {
+    return undefined;
+  }
+  return nodeHref(parsed.id);
 }
 
 export function RegistryHits({ hits }: { hits: readonly LiveHit[] }) {
@@ -289,17 +302,14 @@ export function RegistryHits({ hits }: { hits: readonly LiveHit[] }) {
 /* --------------------- the next step --------------------- */
 
 function publishedHref(ref: string | undefined): string | undefined {
-  if (ref === undefined) return undefined;
-  const slash = ref.indexOf("/");
-  if (slash <= 0 || slash === ref.length - 1) return undefined;
-  return blueprintHref(ref.slice(0, slash), ref.slice(slash + 1));
+  return ref === undefined ? undefined : blueprintRefHref(ref);
 }
 
-export function NextStep({ draft }: { draft: LiveDraft }) {
+export function NextStep({ draft, liveUrl }: { draft: LiveDraft; liveUrl: string }) {
   const { phase } = draft;
 
   if (phase === "written") {
-    const prompt = enrichPrompt(draft.bundle.manifest.slug);
+    const prompt = enrichPrompt(draft.bundle.manifest.slug, liveUrl);
     return (
       <section className="panel flex flex-col gap-4 p-5" aria-labelledby="live-next">
         <PanelHeading>
@@ -397,20 +407,34 @@ function Reconnecting() {
 
 /* --------------------- the board --------------------- */
 
-export function LiveBoardView({ state, token }: { state: BoardState; token: string }) {
+export function LiveBoardView({
+  state,
+  token,
+  origin,
+}: {
+  state: BoardState;
+  token: string;
+  /**
+   * The origin the reader is on. The board is told rather than reading the build-time site
+   * origin, so the address it prints for this page is the one in the reader's own address
+   * bar, on a preview deployment and on localhost as much as on the site.
+   */
+  origin: string;
+}) {
   if (state.status === "expired") return <LiveExpired />;
+  const liveUrl = livePageUrl(origin, token);
 
   return (
     <div className="flex flex-col gap-8">
       {state.reconnecting && <Reconnecting />}
       {state.status === "waiting" ? (
-        <LiveWaiting token={token} />
+        <LiveWaiting liveUrl={liveUrl} />
       ) : (
         <Fragment>
           <LiveHeader draft={state.record.draft} />
-          <DraftPanel draft={state.record.draft} token={token} />
+          <DraftPanel draft={state.record.draft} liveUrl={liveUrl} />
           {state.record.draft.hits !== undefined && <RegistryHits hits={state.record.draft.hits} />}
-          <NextStep draft={state.record.draft} />
+          <NextStep draft={state.record.draft} liveUrl={liveUrl} />
         </Fragment>
       )}
       <HonestyLine />
