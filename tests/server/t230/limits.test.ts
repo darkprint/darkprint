@@ -130,7 +130,7 @@ describe("T230 the verdict, admitted rather than filtered", () => {
     expect(
       Object.keys(verdict).sort(),
       `checkLimit answered a member \`interface LimitVerdict\` does not declare.\n` +
-        `  backend.md §T230: ${publishedInterface("LimitVerdict").text}\n` +
+        `  published: ${publishedInterface("LimitVerdict").text}\n` +
         `  This is the identity-oracle guard at the verdict, and it is a whitelist for the ` +
         `same reason T081's problem document needed one: the block forbids naming "the ` +
         `caller's identity, key id or IP", and the shape that passes every field pin is a ` +

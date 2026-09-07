@@ -108,7 +108,7 @@ describe("T230 issueKey's return, admitted rather than filtered", () => {
       Object.keys(issued.record).sort(),
       `The record carries a member \`interface ApiKeyRecord\` does not declare, or is missing ` +
         `one it does.\n` +
-        `  backend.md §T230: ${publishedInterface("ApiKeyRecord").text}\n` +
+        `  published: ${publishedInterface("ApiKeyRecord").text}\n` +
         `  The block makes the secret's absence STRUCTURAL — "in the same way PublicAuthor has ` +
         `no email" — and a structural guarantee is an equality on the key set, not a check ` +
         `that one named field is missing.\n` +

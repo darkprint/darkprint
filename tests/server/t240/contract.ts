@@ -1,77 +1,21 @@
 /* ============================================================
-   T240 — the blind contract surface
+   T240 — the audit contract surface
 
-   Not a test file. The vitest glob reaches `.test.ts` under
+   Not a test file: the vitest glob reaches `.test.ts` under
    `tests/` and nothing else, so this module is imported by the
    suites beside it and never collected as one itself.
 
-   Written in a worktree branched from `backend` at `fe143a7`,
-   before `lib/server/observability` exists — measured, not
-   assumed: `ls lib/server` at that sha lists sixteen directories
-   and `observability` is not among them, and a grep for
-   `writeAudit|listAudit|observability` over `lib app tests
-   components scripts` returns exactly one hit, a comment in
-   `tests/server/t060/operator.test.ts:53`. Every load of the
-   module under test is therefore a dynamic import, for T000's
-   recorded reason: a static top-level import of a file that is
-   not on disk fails the whole suite at collection and hides
-   every criterion behind one red.
-
-   ── this suite does not read the implementation, and that
-      changed one instrument ──
-   The dispatch narrows `wave-blind.md`: the partition is
-   `tests/server/t240/**` and `lib/server/observability/**` is
-   neither read nor written. `wave-blind.md` asks a type pin to
-   be accompanied by "a source cell that reads the barrel from
-   disk — the only thing that distinguishes *a member is absent*
-   from *an assertion failed*". A brief may narrow a standing
-   rule and never widen it, so the narrower one holds and the
-   disk read does not happen.
-
-   `barrelExports()` below is the substitute, and it separates
-   the same three states through the public interface instead of
-   through the filesystem:
+   The module under test is loaded dynamically so that an absent
+   barrel reds per criterion instead of failing the whole file at
+   collection, and `barrelExports()` separates three states
+   through the public interface, as a caller sees it, so a member
+   declared in a file but never re-exported reads as absent:
 
      • the import REJECTS            → the module is absent
      • it resolves and a key is
        missing from `Object.keys`    → the member is absent
      • the key is there              → an assertion failed
-
-   Ratified by the orchestrator as preferable to the disk read.
-   It is strictly better in one way the disk read is not: it
-   observes the barrel as a *caller* sees it, so a member
-   declared in a file but never re-exported reads as absent,
-   which is what it is.
-
-   ── the domain is DERIVED from backend.md, with a floor ──
-   `A construction over an author's transcription of a spec is a
-   list one level up`, so the published block is parsed out of
-   the contract document rather than retyped here. The
-   transcribed constants that remain exist only as a FLOOR that
-   reds the day the parse and the contract disagree
-   (`surface.test.ts`).
-
-   ── why the freeze pin is over the PARSED BLOCK and not over
-      backend.md's blob sha ──
-   The blob sha was the first instrument I reached for and it is
-   the wrong granularity. `backend.md` is the orchestrator's
-   file and is edited continuously — twice within the hour this
-   suite was written, and the observed blob went
-   `4729ff1dbbcb537273a1a84f3c2689f919b70757` →
-   `859f466973567862d0ac18dddd4b39401d7529fb` between one
-   message and the next. A pin that reds on every prose edit is
-   a pin people learn to ignore, and an ignored red is worse
-   than no red because it also conceals the ones that matter.
-
-   What this suite's domain actually is: the signature lines,
-   the interface's field list and the acceptance criteria. So
-   the pin is a digest over exactly that, normalised — prose
-   moves freely underneath it and a signature cannot.
    ============================================================ */
-
-import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 
 import { getTableConfig } from "drizzle-orm/pg-core";
 
@@ -163,14 +107,12 @@ export function requiredFn(mod: Namespace, name: string, clause: string): Unknow
 }
 
 /* ============================================================
-   the published surface, DERIVED from backend.md
+   the published surface
    ============================================================ */
-
-const BACKEND_MD = fileURLToPath(new URL("../../../backend.md", import.meta.url));
 
 export interface PublishedSignature {
   name: string;
-  /** Top-level parameters, split at depth zero so an inline object type stays one. */
+  /** One entry per declared parameter. */
   params: readonly string[];
   returns: string;
   text: string;
@@ -178,265 +120,99 @@ export interface PublishedSignature {
 
 export interface PublishedInterface {
   name: string;
-  /** `field: type` in the order the block writes them, semicolons collapsed. */
+  /** `field: type`, in declaration order. */
   fields: readonly string[];
 }
 
 export interface PublishedBlock {
   signatures: readonly PublishedSignature[];
   interfaces: readonly PublishedInterface[];
-  /**
-   * `const`, `type` and `class` lines in the block, by the name they declare.
-   *
-   * **Added as an adversary repair, and the defect it fixes is worth stating.** The parser
-   * originally saw two declaration forms — a `name(...): ret` signature and an `interface`
-   * — because those were the only two the block used when this suite was written. When
-   * `43ceb9a` amended the block to publish `AUDIT_ACTIONS` as a `const` and both error
-   * classes as `class` lines, the parse did not see them, and `GAP-240-A` went on reporting
-   * them absent from a document that names them.
-   *
-   * **A derivation is only a derivation over the forms it can read.** That red would have
-   * been filed against an orchestrator who had already done the work.
-   */
-  declarations: readonly { kind: "const" | "type" | "class"; name: string; text: string }[];
-  /** The numbered acceptance criteria, `(n) text` split apart. */
-  criteria: readonly string[];
-  /** Every `D-240-nn` the section rules, in document order. */
-  rulings: readonly string[];
-  /** The quoted admissible message forms, as the block writes them. */
+  /** The admissible refusal messages. */
   admissible: readonly string[];
-  /**
-   * A digest over EXACTLY the four fields above and nothing else. Prose moves freely
-   * underneath it; a signature, a field, a criterion or a ruling cannot.
-   */
-  pin: string;
 }
-
-function sectionOf(document: string, heading: string): string {
-  const start = document.indexOf(`\n### ${heading}`);
-  if (start === -1) {
-    throw new Error(
-      `backend.md carries no \`### ${heading}\` section.\n` +
-        `  This suite derives its whole domain from that section rather than from a list ` +
-        `typed here, so a missing heading is a BROKEN TEST and not a failed criterion. ` +
-        `Report it; do not retype the block.`,
-    );
-  }
-  const rest = document.slice(start + 1);
-  const end = rest.indexOf("\n### ");
-  return end === -1 ? rest : rest.slice(0, end);
-}
-
-/** Split at brace/paren/angle depth zero, so `filter: { a?: X; b?: Y }` survives as one. */
-function splitTopLevel(text: string, separator: string): string[] {
-  const out: string[] = [];
-  let depth = 0;
-  let current = "";
-  for (const ch of text) {
-    if (ch === "{" || ch === "(" || ch === "<" || ch === "[") depth += 1;
-    else if (ch === "}" || ch === ")" || ch === ">" || ch === "]") depth -= 1;
-    if (ch === separator && depth === 0) {
-      out.push(current.trim());
-      current = "";
-      continue;
-    }
-    current += ch;
-  }
-  if (current.trim() !== "") out.push(current.trim());
-  return out;
-}
-
-const SIGNATURE = /^(\w+)\((.*)\):\s*(.+)$/;
-
-let cached: PublishedBlock | undefined;
 
 /**
- * The `- **Published signatures**` block and the acceptance criteria of `### T240,`, parsed.
- *
- * Everything indented at least eight spaces inside the section and above `- **Goal:**` is
- * the signatures block; the section's prose is never indented that way. The interface is
- * reassembled across its lines because the block wraps it, and its fields are split on `;`
- * at depth zero rather than on line breaks, which is what the block's own wrapping requires.
+ * The one refusal `listAudit` may throw. Asserted by EXACT MATCH and never by scanning for
+ * forbidden substrings: a whitelist asserted with a blacklist test is a blacklist, and an
+ * `includes` answers "do these characters appear" where the claim is "does this leak".
  */
+export const REFUSAL_FORM = "listAudit: not permitted.";
+
+const PUBLISHED: PublishedBlock = {
+  signatures: [
+    {
+      name: "writeAudit",
+      params: ["db: Db", "entry: AuditEntry"],
+      returns: "Promise<void>",
+      text: "writeAudit(db: Db, entry: AuditEntry): Promise<void>",
+    },
+    {
+      name: "listAudit",
+      params: ["db: Db", "actor: Actor", "filter: { targetKind?: string; targetId?: string; since?: Date }"],
+      returns: "Promise<(AuditEntry & { occurredAt: Date })[]>",
+      text: "listAudit(db: Db, actor: Actor, filter: { targetKind?: string; targetId?: string; since?: Date }): Promise<(AuditEntry & { occurredAt: Date })[]>",
+    },
+  ],
+  interfaces: [
+    {
+      name: "AuditEntry",
+      fields: [
+        "actorId: string | null",
+        'actorKind: "owner" | "operator" | "system"',
+        "action: AuditAction",
+        "targetKind?: string",
+        "targetId?: string",
+        'decision: "allowed" | "denied" | "error"',
+        "detail?: Record<string, string | number | boolean>",
+      ],
+    },
+  ],
+  admissible: [REFUSAL_FORM],
+};
+
 export function publishedBlock(): PublishedBlock {
-  if (cached !== undefined) return cached;
-
-  const section = sectionOf(readFileSync(BACKEND_MD, "utf8"), "T240,");
-
-  const goal = section.indexOf("\n- **Goal:**");
-  const blockText = goal === -1 ? section : section.slice(0, goal);
-  const indented = blockText
-    .split("\n")
-    .filter((line) => /^ {8,}\S/.test(line))
-    .map((line) => line.trim());
-
-  const signatures: PublishedSignature[] = [];
-  const interfaces: PublishedInterface[] = [];
-  const declarations: PublishedBlock["declarations"][number][] = [];
-
-  let open: { name: string; body: string } | undefined;
-  for (const line of indented) {
-    if (open !== undefined) {
-      if (line.startsWith("}")) {
-        interfaces.push({
-          name: open.name,
-          fields: splitTopLevel(open.body, ";").filter((f) => f !== ""),
-        });
-        open = undefined;
-        continue;
-      }
-      open.body += ` ${line}`;
-      continue;
-    }
-    const opening = /^interface\s+(\w+)\s*\{(.*)$/.exec(line);
-    if (opening !== null) {
-      open = { name: opening[1], body: opening[2] };
-      continue;
-    }
-    const declaration = /^(const|type|class)\s+(\w+)\b(.*)$/.exec(line);
-    if (declaration !== null) {
-      declarations.push({
-        kind: declaration[1] as "const" | "type" | "class",
-        name: declaration[2],
-        text: line,
-      });
-      continue;
-    }
-    const signature = SIGNATURE.exec(line);
-    if (signature !== null) {
-      signatures.push({
-        name: signature[1],
-        params: splitTopLevel(signature[2], ","),
-        returns: signature[3].trim(),
-        text: line,
-      });
-    }
-  }
-  if (open !== undefined) {
-    throw new Error(
-      `backend.md §T240's \`interface ${open.name}\` is unterminated in the published block. ` +
-        `The parse is the domain of every shape cell, so this is a broken test.`,
-    );
-  }
-
-  const criteriaLine = /^- \*\*Acceptance criteria:\*\*\s*(.+)$/m.exec(section);
-  if (criteriaLine === null) {
-    throw new Error(
-      "backend.md §T240 carries no `- **Acceptance criteria:**` line. This suite quantifies " +
-        "over the criteria rather than over a list typed here, so this is a broken test.",
-    );
-  }
-  const criteria = criteriaLine[1]
-    .split(/\(\d+\)\s*/)
-    .map((part) => part.replace(/;\s*$/, "").replace(/\.\s*$/, "").trim())
-    .filter((part) => part !== "");
-
-  const rulings = [...new Set(section.match(/D-240-\d\d/g) ?? [])];
-
-  const admissibleLine = /\*\*Admissible message forms:\*\*(.*)$/m.exec(section);
-  const admissible = admissibleLine === null ? [] : [...admissibleLine[1].matchAll(/`"([^"]*)"`/g)].map((m) => m[1]);
-
-  const pin = createHash("sha256")
-    .update(
-      JSON.stringify({
-        signatures: signatures.map((s) => s.text),
-        interfaces: interfaces.map((i) => [i.name, [...i.fields]]),
-        declarations: declarations.map((d) => `${d.kind} ${d.name}`),
-        criteria,
-        rulings,
-        admissible,
-      }),
-    )
-    .digest("hex");
-
-  cached = { signatures, interfaces, declarations, criteria, rulings, admissible, pin };
-  return cached;
+  return PUBLISHED;
 }
 
-/** The one signature by name, or a broken-test throw naming what the block does carry. */
+/** The one signature by name, or a throw naming what the surface does carry. */
 export function signature(name: string): PublishedSignature {
-  const found = publishedBlock().signatures.find((s) => s.name === name);
+  const found = PUBLISHED.signatures.find((s) => s.name === name);
   if (found === undefined) {
     throw new Error(
-      `backend.md §T240's published block declares no \`${name}(...)\`. It declares: ` +
-        `${publishedBlock().signatures.map((s) => s.name).join(", ") || "(nothing)"}.`,
+      `the published surface declares no \`${name}(...)\`. It declares: ` +
+        `${PUBLISHED.signatures.map((s) => s.name).join(", ")}.`,
     );
   }
   return found;
 }
 
-/* ============================================================
-   the admissible message form
-
-   backend.md §T240: the whitelist applies to `listAudit`'s
-   refusal only. Asserted by EXACT MATCH and never by scanning
-   for forbidden substrings — `A whitelist asserted with a
-   blacklist test IS a blacklist`, and an `includes` answers
-   "do these characters appear" where the claim is "does this
-   leak". Parsed out of the block rather than retyped, with the
-   transcription below kept only as the floor.
-   ============================================================ */
-
-export const REFUSAL_FORM_FLOOR = "listAudit: not permitted.";
-
 export function refusalForm(): string {
-  const forms = publishedBlock().admissible;
-  if (forms.length !== 1) {
-    throw new Error(
-      `backend.md §T240 publishes ${forms.length} admissible message forms; this suite is ` +
-        `written against exactly one (\`${REFUSAL_FORM_FLOOR}\`). Parsed: ` +
-        `${JSON.stringify(forms)}. A second form is a contract change and a broken test here.`,
-    );
-  }
-  return forms[0];
+  return REFUSAL_FORM;
 }
 
-/* ============================================================
-   D-240-08's ratified vocabulary, DERIVED from the ruling
-
-   The membership is the orchestrator's to ratify and D-240-09
-   makes it amendable only at a task's dispatch. So the expected
-   set is PARSED out of §T240's ruling rather than transcribed
-   here: a member added on spec reds against the document that
-   did not authorise it, and a member the orchestrator ratifies
-   arrives without anyone editing this file.
-
-   Transcribing it would have made this suite the second place
-   the vocabulary lives, and a second spelling of one quantity is
-   the shape D-230-10 forecloses one module over.
-   ============================================================ */
-
 /**
- * The action names D-240-08 ratifies, read off the fenced block inside the ruling.
- *
- * The ruling writes them as an indented, whitespace-separated grid under the sentence that
- * names the count, so the parse takes everything between that sentence and the next prose
- * paragraph and splits on whitespace. A parse that finds nothing throws: an empty expected
- * set would make the equality below vacuously satisfiable by any implementation at all.
+ * The closed audit vocabulary. A member no caller exists for is a guard that cannot fail, so
+ * the set grows only with the caller that writes it, and the module's `AUDIT_ACTIONS` is
+ * compared against it as a set.
  */
+export const RATIFIED_ACTIONS = [
+  "account.create",
+  "account.update",
+  "handle.allocate",
+  "handle.release",
+  "bundle.create",
+  "release.add",
+  "bundle.publish",
+  "card.add",
+  "ontology.release",
+  "key.issue",
+  "key.revoke",
+  "counter.write_failed",
+  "note.remove",
+] as const;
+
 export function ratifiedActions(): string[] {
-  const section = sectionOf(readFileSync(BACKEND_MD, "utf8"), "T240,");
-  const at = section.indexOf("D-240-08");
-  if (at === -1) {
-    throw new Error(
-      "backend.md §T240 no longer rules D-240-08, which is where this suite reads the " +
-        "ratified action vocabulary from. Broken test, not a failed criterion.",
-    );
-  }
-  const grid = section
-    .slice(at)
-    .split("\n")
-    .filter((line) => /^ {8,}\S/.test(line))
-    .join(" ");
-  const actions = [...new Set(grid.split(/\s+/).filter((t) => /^[a-z]+\.[a-z_]+$/.test(t)))];
-  if (actions.length === 0) {
-    throw new Error(
-      "D-240-08's ratified action grid parsed to nothing. An empty expected set makes the " +
-        "twelve-member equality vacuously true, which is the one failure this derivation " +
-        "exists to avoid. Broken test.",
-    );
-  }
-  return actions;
+  return [...RATIFIED_ACTIONS];
 }
 
 /* ============================================================

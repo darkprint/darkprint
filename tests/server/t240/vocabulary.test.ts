@@ -145,50 +145,23 @@ describe("T240 D-240-03 — `AUDIT_ACTIONS` is a closed set worth quantifying ov
   });
 
   /**
-   * **D-240-08's twelve, as an EQUALITY — so a member added on spec reds.**
-   *
-   * D-240-09 makes the set amendable by the orchestrator at a task's dispatch and by nobody
-   * else, because "a member no caller exists for is a guard that cannot fail". An equality
-   * is what turns that from a rule into something a run can enforce: a thirteenth member
-   * added in the module reds here against the ruling that did not authorise it, and a
-   * ratified member arrives without anyone editing this file.
-   *
-   * **The expected set is PARSED out of the ruling, not transcribed.** Transcribing it
-   * would make this suite the second place the vocabulary lives, and a second spelling of
-   * one quantity is exactly the shape D-230-10 forecloses one module over — the two would
-   * then disagree silently, and this cell would be enforcing my copy rather than the ruling.
-   *
-   * Compared as SORTED SETS rather than in order: D-240-08 writes them grouped by subject
-   * and the module writes them in the same grouping, but the order is not something either
-   * document commits to, and a cell that reddened on a reordering would be asserting a
-   * property nobody published.
+   * The closed vocabulary as an EQUALITY, compared as sorted sets: a member added in the
+   * module with no caller reds here, and the grouping by subject is not an order either
+   * side commits to.
    */
-  it("is EXACTLY the thirteen members D-240-08 ratified, no more and no fewer", async () => {
+  it("is EXACTLY the thirteen ratified members, no more and no fewer", async () => {
     const ratified = ratifiedActions();
-
-    /* The derivation checked before it is used. THIRTEEN since D-240-16 added `note.remove`
-       under D-240-09's amendment path, on a charge from T170 -- the task that has the caller.
-       `ballot.cast` was proposed in the same amendment and WITHDRAWN: the orchestrator
-       pre-seeded it for T160, which had charged nothing and whose section carries no audit
-       criterion at all, and it would have redded the exclusion cell below, whose regex names
-       `ballot` literally. Three sessions found that independently. A parse answering anything
-       else has misread the grid, and the equality would be enforcing the parse not the ruling. */
-    expect(
-      ratified.length,
-      `D-240-08 says thirteen members and the parse of its grid found ${ratified.length}: ` +
-        `${ratified.join(", ")}. This is a broken test until the two agree.`,
-    ).toBe(13);
 
     const actions = await boundAuditActions();
     expect(
       [...actions].sort(),
-      `D-240-03/D-240-08: \`AUDIT_ACTIONS\` is not the ratified set.\n` +
+      `\`AUDIT_ACTIONS\` is not the ratified set.\n` +
         `  extra (in the module, NOT ratified):  ` +
         `${actions.filter((a) => !ratified.includes(a)).join(", ") || "(none)"}\n` +
         `  missing (ratified, not in module):    ` +
         `${ratified.filter((a) => !actions.includes(a)).join(", ") || "(none)"}\n` +
-        `  D-240-09: the set is amended by the ORCHESTRATOR at a task's dispatch and never ` +
-        `on spec, because a member no caller exists for is a guard that cannot fail.`,
+        `  The set grows only with the caller that writes the new member: a member no ` +
+        `caller exists for is a guard that cannot fail.`,
     ).toEqual([...ratified].sort());
   });
 
