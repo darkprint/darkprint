@@ -427,13 +427,14 @@ describe("an unconfigured bucket refuses rather than passing", () => {
 
        Derived from `DEFAULT_LIMITS` rather than from the literal hour, so it stays true if
        the owner ever rules a window that is not an hour. The length check is the anti-vacuity
-       control: over an empty table every `toBeGreaterThan` below would pass. */
+       control: over an empty table every `toBeGreaterThan` below would pass. Twelve is four
+       buckets by three tiers, the `live` bucket included. */
     const { counter } = fixedCounter();
     const verdict = await checkLimit(ANON, "unconfigured", { config: CONFIG, counter });
     const configuredWindows = Object.values(DEFAULT_LIMITS).flatMap((tiers) =>
       Object.values(tiers).map((cell) => cell.windowMs),
     );
-    expect(configuredWindows).toHaveLength(9);
+    expect(configuredWindows).toHaveLength(12);
     for (const windowMs of configuredWindows) {
       expect(verdict.windowMs).toBeGreaterThan(windowMs);
     }
@@ -485,9 +486,11 @@ describe("the ruled ceilings, as shipped", () => {
 
   it("is the owner's matrix, cell for cell", () => {
     /* Written out as LITERALS rather than derived from the table under test, which would
-       assert the table agrees with itself. Nine cells, because the reporting of this task was
-       that four ruled quantities fill three of nine — so the nine is the number that has to
-       be visible, and a tenth bucket or a fourth tier reds here. */
+       assert the table agrees with itself. Twelve cells: the owner's nine, plus the three of
+       the `live` bucket the live tutorial channel writes to, which is the one bucket an
+       anonymous caller may write to because that page exists to be used before the reader
+       has an account. The count is the number that has to be visible, and a fifth bucket or
+       a fourth tier reds here. */
     const cell = (bucket: string, tier: "anonymous" | "account" | "key") =>
       limitFor(DEFAULT_LIMITS, bucket, tier);
     expect(cell("read", "anonymous")).toEqual({ limit: 600, windowMs: HOUR });
@@ -499,7 +502,10 @@ describe("the ruled ceilings, as shipped", () => {
     expect(cell("upload", "anonymous")).toEqual({ limit: 0, windowMs: HOUR });
     expect(cell("upload", "account")).toEqual({ limit: 30, windowMs: HOUR });
     expect(cell("upload", "key")).toEqual({ limit: 30, windowMs: HOUR });
-    expect(Object.keys(DEFAULT_LIMITS).sort()).toEqual(["read", "upload", "write"]);
+    expect(cell("live", "anonymous")).toEqual({ limit: 60, windowMs: HOUR });
+    expect(cell("live", "account")).toEqual({ limit: 120, windowMs: HOUR });
+    expect(cell("live", "key")).toEqual({ limit: 120, windowMs: HOUR });
+    expect(Object.keys(DEFAULT_LIMITS).sort()).toEqual(["live", "read", "upload", "write"]);
   });
 
   it("a refused cell actually refuses, rather than being a zero nobody reads", async () => {
