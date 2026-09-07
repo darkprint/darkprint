@@ -4,29 +4,24 @@
    URL, and `components/ontology/VocabularyBrowser.tsx` is the
    specification for all three.
 
-   ── Both corpora, and why that is not optional (D-200-17) ──
+   ── Both corpora, and why that is not optional ──
    The registry's terms are `CORE_ONTOLOGY`, in the process; a
    LOCAL term travels with the release that declares it
-   (`release.localVocabulary`), because T030's merged view folds an
+   (`release.localVocabulary`), because the merged view folds an
    overlay in per bundle rather than per registry. Reading the core
-   alone would leave `origin=local` filtering NOTHING, EVER, on a
-   key the contract says may not change — a criterion made
-   unsatisfiable rather than merely narrow. The core half was an
-   `ontology_term` read until `0009_drop_ontology_versioning`
-   dropped that table with the versions it was keyed to; what
-   changed is where the core comes from, not that there are two
-   corpora.
+   alone would leave `origin=local` filtering nothing, ever, on a
+   key the URL contract says may not change.
 
-   ── Which is why AC4 bites hardest here ──
+   ── Visibility is inherited, so the universe carries it ──
    A local term is NOT a row with a visibility column: it inherits
-   its bundle's. So the public-only rule (D-200-06, D-200-07) is
-   applied by taking the bundle universe from
-   `blueprints(db, PUBLIC_ONLY)` — T080's answer to what is public
-   — and reading local vocabularies only from those bundles'
-   CURRENT releases. A private bundle's local term therefore
-   reaches no caller, its own owner and the operator included, and
-   it does so because the universe never contained the bundle
-   rather than because a filter downstream remembered to drop it.
+   its bundle's. So the public-only rule is applied by taking the
+   bundle universe from `blueprints(db, PUBLIC_ONLY)`, the one
+   answer to what is public, and reading local vocabularies only
+   from those bundles' CURRENT releases. A private bundle's local
+   term therefore reaches no caller, its own owner and the operator
+   included, and it does so because the universe never contained
+   the bundle rather than because a filter downstream remembered to
+   drop it.
    ============================================================ */
 
 import { CORE_ONTOLOGY, splitTermId, type TermKind } from "@/lib/core";
@@ -42,6 +37,7 @@ import {
 import { blueprints } from "@/lib/server/registry";
 import type { OntologyTerm } from "@/lib/server/types";
 import { value } from "./params";
+import { encoderState } from "./embed";
 import { cmpString, evidenceFor, queryWords, ranked, unranked, type Field, type Scored } from "./rank";
 import { withSearchStore } from "./store";
 import type { Results } from "./types";
@@ -85,8 +81,8 @@ const FIELDS: readonly Field<OntologyTerm>[] = [
 /**
  * Ontology terms matching `params`, with the vocabularies to filter by next.
  *
- * `actor` is ACCEPTED AND DELIBERATELY UNUSED (D-200-07): search is public-only for every
- * caller, so who is asking cannot change the answer. See `visibility.ts`.
+ * `actor` is ACCEPTED AND DELIBERATELY UNUSED: search is public-only for every caller, so
+ * who is asking cannot change the answer. See `visibility.ts`.
  */
 export async function searchTerms(
   db: Db,
@@ -100,8 +96,8 @@ export async function searchTerms(
 async function search(db: Db, params: Record<string, string>): Promise<Results<OntologyTerm>> {
   const corpus = await bothCorpora(db);
 
-  /* AC3, keyed by the URL parameter names (D-200-18). Both are vocabularies in the strict
-     sense — closed sets this surface accepts — rather than a projection of what matched. */
+  /* Facets keyed by the URL parameter names. Both are vocabularies in the strict sense,
+     closed sets this surface accepts, rather than a projection of what matched. */
   const facets: Record<string, readonly string[]> = {
     kind: TERM_KINDS,
     origin: ORIGINS,
@@ -118,23 +114,34 @@ async function search(db: Db, params: Record<string, string>): Promise<Results<O
     return true;
   });
 
+  /* Every query word is required, and the vocabulary has no vector channel: a reader here
+     types one or two exact words, and a term's rank is how many places they were found.
+     `score` is that count, so the published number still says what produced the order. */
   const query = queryWords(params);
   const hits: Scored<OntologyTerm>[] = [];
   for (const term of candidates) {
-    const evidence = evidenceFor(term, FIELDS, query);
+    const evidence = evidenceFor(term, FIELDS, query, "all");
     if (query.length > 0 && evidence === undefined) continue;
-    hits.push({ item: term, evidence: evidence ?? [], identity: term.id });
+    hits.push({
+      item: term,
+      evidence: evidence ?? [],
+      identity: term.id,
+      score: evidence?.length ?? 0,
+      similarity: 0,
+    });
   }
 
   /* `/ontology` publishes no `sort`, so there is no explicit-instruction branch here: a
      query ranks, and anything else is the vocabulary's own id order. */
+  const encoder = await encoderState();
   if (query.length === 0) {
     return unranked(
       hits.map((hit) => hit.item),
       facets,
+      encoder,
     );
   }
-  return ranked(hits, facets);
+  return ranked(hits, facets, encoder);
 }
 
 /**

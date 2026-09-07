@@ -249,12 +249,11 @@ describe.skipIf(!hasDb)("a vector records the input it was built from", () => {
     await reembedRelease(client.db, p.bundleId, p.digest);
     const before = await card(p.cardVersionId);
 
-    /* The control on the cell above, and the case ed3ae85 actually was: `willNot` is one of
-       the fields that migration moved, and `cardText` reads none of them. A writer that
-       rewrote unconditionally would pass the previous cell and red here, and a stamp taken
-       over `card_version.digest` instead of over the encoder's input would red here too,
-       because this edit moves the whole card's content hash. */
-    await rewriteBody(p.cardVersionId, body({ willNot: ["Substitute a part number the buyer has not approved."] }));
+    /* The control on the cell above: `notes` is authoring commentary and `cardText` leaves
+       it out. A writer that rewrote unconditionally would pass the previous cell and red
+       here, and a stamp taken over `card_version.digest` instead of over the encoder's
+       input would red here too, because this edit moves the whole card's content hash. */
+    await rewriteBody(p.cardVersionId, body({ notes: "Reworded after the buyer changed the reorder policy." }));
     await reembedRelease(client.db, p.bundleId, p.digest);
 
     expect(
@@ -262,6 +261,19 @@ describe.skipIf(!hasDb)("a vector records the input it was built from", () => {
       "the stamp is over the text handed to the encoder, so a field outside `cardText` is " +
         "not a reason to re-encode anything",
     ).toEqual(before);
+  });
+
+  it("a rewrite of `willNot` IS repaired, because the undertaking is part of the card's document", async () => {
+    const p = await publish();
+    await reembedRelease(client.db, p.bundleId, p.digest);
+    const before = await card(p.cardVersionId);
+
+    await rewriteBody(p.cardVersionId, body({ willNot: ["Substitute a part number the buyer has not approved."] }));
+    await reembedRelease(client.db, p.bundleId, p.digest);
+    const after = await card(p.cardVersionId);
+
+    expect(after.stamp, "what a node promises not to do is in its document, so the stamp moves").not.toBe(before.stamp);
+    expect(after.vec).not.toBe(before.vec);
   });
 
   /* --------------------- the release half, where a digest column would have failed --------------------- */

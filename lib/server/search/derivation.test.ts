@@ -1,20 +1,14 @@
 /* ============================================================
    The pure half of lib/server/search, driven.
 
-   THIS IS NOT THE CRITERION SUITE and must not be read as one. A
-   blind author is writing the acceptance cells for T200 against
-   the contract without seeing this implementation, and a test
-   written by the author of the code it tests is a consistency
-   check: it shows the module agrees with itself, never that the
-   reading is right. What these cells are for is the half of the
-   module that has NO database in it and that the criteria reach
-   only through three layers — the derivation, the evidence and the
-   order they imply — so a regression in it fails here rather than
-   surfacing as a puzzling acceptance red.
+   These cells reach the half of the module that has no database in
+   it: the encoder's properties, the lexical matcher, the coverage
+   words, the hit rule, the score and the order they imply. A
+   regression in any of them fails here rather than surfacing as a
+   puzzling red in a database suite three layers up.
 
    Every cell below is reachable with no Postgres, no env var and
-   no fixture, which is what makes it runnable on a host whose gate
-   slot belongs to somebody else.
+   no fixture.
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
@@ -24,54 +18,49 @@ import { readFileSync } from "node:fs";
 
 import {
   EMBEDDING_DIMENSIONS,
+  LEXICAL_BOOST,
+  MAX_HITS,
+  MIN_SIMILARITY,
   embed,
   encoderAvailable,
   MODEL_BLOB,
   MODEL_FILE,
-  SIMILAR_EVIDENCE,
-  SIMILAR_MIN,
 } from "./embed";
 import { flag, oneOf, searchParams, sortKey, value } from "./params";
-import { evidenceFor, ranked, rankedWithSimilar, unranked, type Field, type Scored } from "./rank";
-import { findWord, normalise, trigrams } from "./text";
+import {
+  coverageOf,
+  evidenceFor,
+  isHit,
+  lexicalMatch,
+  ranked,
+  scoreOf,
+  similarityEvidence,
+  similarityFrom,
+  taskWords,
+  unranked,
+  type Field,
+  type Scored,
+} from "./rank";
+import { HARNESS_PHRASES, STOPWORDS, coverageWords, findWord, normalise, stripHarness } from "./text";
 
 /* --------------------- the derivation --------------------- */
 
 /**
- * WHICH WORLD THIS RUN IS IN, resolved once and ANNOUNCED rather than assumed.
- *
- * The derivation is now a sentence-encoder (D-300-01) whose weights are provisioned by an
- * explicit operator step, not by `npm ci` (D-300-05). So these cells have two worlds, and
- * the dangerous one is not the world without an encoder — it is a suite that cannot tell
- * them apart and reports green in both.
- *
- * Every vector cell below is `skipIf`'d on the encoder, and the first cell asserts WHICH
- * world it is in unconditionally. That way a skipped count is a fact a reader can act on,
- * and no cell here can be vacuously green: with no encoder, the degradation contract is
- * what gets measured, and it is a real criterion (D-300-05) rather than a stand-down.
+ * Which world this run is in, resolved once and announced rather than assumed. Every vector
+ * cell below is skipped without an encoder, and the first cell asserts which world it is in
+ * unconditionally, so a skipped count is a fact a reader can act on.
  */
 const HAVE_ENCODER = await encoderAvailable();
 
 describe("the vendored weights", () => {
-  it("are the exact bytes the calibration was measured on (D-300-08)", () => {
-    /* THE PIN, MADE LOAD-BEARING. `MODEL_BLOB` is a constant, and a constant nothing reads
-       is decoration — this is the something that reads it.
-
-       What it defends is not the file's existence but the CALIBRATION's subject. Every
-       number in `SIMILAR_MIN`'s table is a measurement of these bytes, so a swapped blob
-       moves every vector in the archive while the committed table goes on reading as
-       still-measured.
-
-       THE WIDTH PROBE IN `load()` CANNOT CATCH THAT, and this was driven rather than
-       argued: `model_uint8.onnx` from the same upstream repository, dropped in place of the
-       pinned file, LOADS, passes the width probe at 384 dimensions, and passes all thirty
-       other cells in this file — every vector-property cell included. This cell was the only
-       red. A wrong model that happens to be the right width is invisible to everything else
-       the module checks, which is the whole reason a digest is here.
-
-       Both the length and the digest, because they fail differently: a truncated or
-       partially-checked-out file is caught by the cheap comparison with a legible number,
-       and a same-length substitution is caught by the expensive one. */
+  it("are the exact bytes the calibration was measured on", () => {
+    /* The pin, made load-bearing. Every number behind `MIN_SIMILARITY` and `LEXICAL_BOOST`
+       is a measurement of these bytes, so a swapped blob moves every vector in the archive
+       while the committed constants go on reading as still-measured. The width probe in
+       `load()` cannot catch that: `model_uint8.onnx` from the same upstream loads, passes
+       the probe at 384 and passes every other cell in this file. Both the length and the
+       digest, because they fail differently: a truncated checkout is caught by the cheap
+       comparison with a legible number, a same-length substitution by the expensive one. */
     const bytes = readFileSync(MODEL_FILE);
     expect(bytes.byteLength, `${MODEL_FILE} is not the vendored file: wrong length`).toBe(
       MODEL_BLOB.bytes,
@@ -79,10 +68,9 @@ describe("the vendored weights", () => {
     expect(
       createHash("sha256").update(bytes).digest("hex"),
       `${MODEL_FILE} does not match MODEL_SHA256.\n` +
-        `  The published SIMILAR_MIN calibration is a measurement of the pinned bytes. If ` +
-        `these weights were deliberately changed, the table in embed.ts must be RE-MEASURED ` +
-        `and this constant updated in the same commit; if they were not, this is a bad ` +
-        `merge or a corrupted checkout and the file should be restored.`,
+        `  The published constants are a measurement of the pinned bytes. If these weights ` +
+        `were deliberately changed, re-run the smoke eval and update the constant in the ` +
+        `same commit; if they were not, this is a bad merge or a corrupted checkout.`,
     ).toBe(MODEL_BLOB.sha256);
   });
 });
@@ -90,12 +78,8 @@ describe("the vendored weights", () => {
 describe("the stored vector", () => {
   it("reports which derivation this run measured, so a skip is never silent", async () => {
     /* Unconditional and deliberately unskippable. It fails only if `encoderAvailable` and
-       `embed` DISAGREE about whether this machine can encode — the one state in which every
-       other cell in this block is reading the wrong world.
-
-       AWAITED rather than returned as a `.resolves` chain. An un-awaited assertion resolves
-       after the cell has already passed, so it can report a failure it cannot fail on —
-       which would make the one unskippable cell in this block the one incapable of redding. */
+       `embed` disagree about whether this machine can encode, which is the one state in
+       which every other cell in this block is reading the wrong world. */
     expect(typeof HAVE_ENCODER).toBe("boolean");
     const answer = await embed("a factory that plans and implements");
     if (HAVE_ENCODER) expect(Array.isArray(answer)).toBe(true);
@@ -108,16 +92,8 @@ describe("the stored vector", () => {
   });
 
   it.skipIf(!HAVE_ENCODER)("is a function of the text and of nothing else", async () => {
-    // AC6's determinism claim, at the one layer that can break it. A derivation seeded from
-    // anything ambient — a salted string hash, iteration order, the clock — reproduces a
-    // different vector on the next call, and the delete-and-re-embed cell is what would
-    // eventually catch it, one process restart later.
-    //
-    // WITHIN one process is the WEAKER half and it is all a cell here can reach. The
-    // encoder was measured byte-identical ACROSS three separate pids over four texts, which
-    // is the axis a salted hash actually fails; that measurement is recorded in
-    // `reembed.ts` beside the write it licenses, because no cell in this file can restart
-    // the process it is running in.
+    // A derivation seeded from anything ambient reproduces a different vector on the next
+    // call. Within one process is the weaker half and all a cell here can reach.
     const once = await embed("retrieval augmented generation");
     const twice = await embed("retrieval augmented generation");
     expect(twice).toEqual(once);
@@ -134,26 +110,11 @@ describe("the stored vector", () => {
   );
 
   it.skipIf(!HAVE_ENCODER)(
-    "gives a text with nothing in it an ORDINARY unit vector, with no special case",
+    "gives a text with nothing in it an ordinary unit vector, with no special case",
     async () => {
-      /* ── REPLACES the zero-vector cell, and the replacement is reported rather than
-         quiet (granted by D-300-06 F3) ──
-
-         The cell here used to assert that `embed("   ---   ")` was all zeros, and under the
-         3-gram derivation that was true and load-bearing: a text with no letters had no
-         3-grams, so the sum of squares was 0 and normalising it would have divided by zero.
-
-         The encoder has no such state. `""` and `"   ---   "` both tokenize to the CLS/SEP
-         pair and come back with all 384 components non-zero at unit length — MEASURED on
-         the ruled model, not reasoned from the architecture. So the old assertion is not
-         merely unnecessary, it is FALSE of the module it guards, and keeping it would red a
-         correct implementation.
-
-         What replaces it is the property that IS true and that a caller still depends on:
-         an empty document is representable, legal in a `vector(384) NOT NULL` column, and
-         gets no special standing. The assertion EXCLUDES the old behaviour rather than
-         merely admitting the new one — a module that still answered zeros would fail this
-         cell, which is what stops the replacement from being a weakening. */
+      /* `""` and `"   ---   "` both tokenize to the CLS/SEP pair and come back with all 384
+         components non-zero at unit length. An empty document is representable, legal in a
+         `vector(384) NOT NULL` column, and gets no special standing. */
       const empty = (await embed("   ---   ")) ?? [];
       expect(empty).toHaveLength(EMBEDDING_DIMENSIONS);
       expect(empty.some((value) => value !== 0)).toBe(true);
@@ -162,32 +123,27 @@ describe("the stored vector", () => {
   );
 
   it.skipIf(!HAVE_ENCODER)("separates two documents that share no word", async () => {
-    // The property the whole-token derivation could not have: it is checked as a
-    // DIFFERENCE rather than as a similarity, because two random vectors are also
+    // Checked as a difference rather than a similarity, because two random vectors are also
     // dissimilar and only the contrast says the derivation carries content.
     const near = cosine((await embed("orchestration")) ?? [], (await embed("orchestrator")) ?? []);
     const far = cosine((await embed("orchestration")) ?? [], (await embed("bicycle")) ?? []);
     expect(near).toBeGreaterThan(far);
   });
 
-  it.skipIf(!HAVE_ENCODER)("puts a paraphrase above a stranger, which is what AC1 buys", async () => {
-    /* AC1's shape at the derivation layer, where it can be checked without a database. The
-       query shares NO content word with the document it should reach, and shares one with
-       the document it should not — so a lexical derivation would rank these BACKWARDS, and
-       this cell is the one that separates the encoder from everything T200 shipped. */
+  it.skipIf(!HAVE_ENCODER)("puts a paraphrase above a stranger, and the paraphrase clears the floor", async () => {
+    /* The query shares no content word with the document it should reach and shares one
+       with the document it should not, so a lexical derivation would rank these backwards. */
     const query = (await embed("rival bots settle a dispute by themselves")) ?? [];
     const paraphrased = (await embed("two agents argue and a consensus node negotiates one answer")) ?? [];
     const stranger = (await embed("rival bicycle couriers race across the city")) ?? [];
     expect(cosine(query, paraphrased)).toBeGreaterThan(cosine(query, stranger));
-    // And the one it should reach clears the published floor it is filtered by.
-    expect(cosine(query, paraphrased)).toBeGreaterThanOrEqual(SIMILAR_MIN);
+    expect(cosine(query, paraphrased)).toBeGreaterThanOrEqual(MIN_SIMILARITY);
   });
 
   it.skipIf(HAVE_ENCODER)(
     "degrades to no vector at all when no encoder is provisioned, rather than throwing",
     async () => {
-      /* D-300-05's graceful degradation, and it is a CRITERION rather than a stand-down:
-         on a machine with no model directory `reembedRelease` must write nothing and the
+      /* On a machine with no model directory `reembedRelease` must write nothing and the
          searchers must stay lexical, which is only possible if this answers a value. */
       await expect(embed("a factory that plans and implements")).resolves.toBeUndefined();
     },
@@ -200,13 +156,73 @@ function cosine(a: readonly number[], b: readonly number[]): number {
   return sum;
 }
 
-describe("normalisation and 3-grams", () => {
+/* --------------------- normalisation and near matches --------------------- */
+
+describe("normalisation and near matches", () => {
   it("keeps letters outside ASCII whole rather than shattering them", () => {
     expect(normalise("Pré-résolution, v2")).toBe("pré résolution v2");
   });
 
-  it("pads a word at both ends, so a prefix and a suffix carry weight", () => {
-    expect(trigrams("ab")).toEqual(["_ab", "ab_"]);
+  it("reaches a misspelling no substring match would, and no further", () => {
+    expect(findWord("retrieval augmented", "retrival")).toBe("retrieval");
+    expect(findWord("deployment", "planning")).toBeUndefined();
+  });
+
+  it("matches a two-letter query word whole, and a longer one as a substring", () => {
+    expect(findWord("decision specification", "ci")).toBeUndefined();
+    expect(findWord("rerun ci nightly", "ci")).toBe("ci");
+    expect(findWord("approve the prompt", "pr")).toBeUndefined();
+    expect(findWord("agentic review", "agent")).toBe("agentic");
+  });
+
+  it("holds the short-token floor, which a natural pair cannot reach past", () => {
+    /* A four-letter query has four 3-grams and needs three of them present, which for a real
+       word almost always means the document contains the query outright, so the substring
+       pass answers first. `abcd` against `abcxcd` is the boundary made reachable: exactly
+       0.75, and not a substring. */
+    expect(findWord("abcxcd", "abcd")).toBeUndefined();
+  });
+});
+
+/* --------------------- the words of a task --------------------- */
+
+describe("the words of a task", () => {
+  it("strips a harness phrase wherever it sits, and leaves a look-alike alone", () => {
+    expect(stripHarness("triage tickets in claude code")).toBe("triage tickets");
+    expect(stripHarness("In Claude Code, triage tickets")).toBe(", triage tickets");
+    expect(stripHarness("build me a merge bot for my cursor agent please")).toBe("build me a merge bot please");
+    expect(stripHarness("a codex of runbooks")).toBe("a codex of runbooks");
+  });
+
+  it("every published harness phrase is removed from a task that ends with it", () => {
+    for (const phrase of HARNESS_PHRASES) {
+      expect(stripHarness(`review pull requests ${phrase}`), phrase).toBe("review pull requests");
+    }
+  });
+
+  it("keeps content words and drops stopwords and single letters", () => {
+    expect(coverageWords("I want a bot that triages my support tickets")).toEqual(["triages", "support", "tickets"]);
+    expect(STOPWORDS.has("that")).toBe(true);
+  });
+
+  it("keeps the two-letter words this archive means something by", () => {
+    /* `PR`, `QA`, `KB` and `CI` carry the task in half the seeded blueprints; a three-letter
+       floor would score "review a PR and rerun CI" on "review" and "rerun" alone. */
+    expect(coverageWords("review a PR and rerun CI")).toEqual(["review", "pr", "rerun", "ci"]);
+    expect(coverageWords("is it in an ok state")).toEqual(["state"]);
+  });
+
+  it("falls back to the raw words when the filter would leave nothing", () => {
+    /* `0/0` coverage would make every candidate a miss with no error anywhere. A query made
+       only of stopwords still asks for something, so the raw words are searched instead. */
+    expect(coverageWords("the")).toEqual(["the"]);
+    expect(coverageWords("in claude code")).toEqual([]);
+    expect(coverageWords("")).toEqual([]);
+    expect(taskWords({ q: "  " })).toEqual([]);
+  });
+
+  it("deduplicates, so a repeated word cannot inflate the denominator", () => {
+    expect(coverageWords("tickets tickets tickets")).toEqual(["tickets"]);
   });
 });
 
@@ -224,78 +240,122 @@ const FIELDS: readonly Field<Doc>[] = [
 
 describe("evidence", () => {
   it("names the word in the DOCUMENT, not the word in the query", () => {
-    const evidence = evidenceFor({ title: "Agentic Loop", tags: [] }, FIELDS, ["agent"]);
-    expect(evidence).toEqual(["title:agentic"]);
+    expect(evidenceFor({ title: "Agentic Loop", tags: [] }, FIELDS, ["agent"], "any")).toEqual(["title:agentic"]);
   });
 
-  it("reaches a misspelling no substring match would", () => {
-    // The 3-gram channel, which is the only thing the stored vector's derivation buys the
-    // reader. `retrival` is not a substring of `retrieval`.
-    expect(findWord("retrieval augmented", "retrival")).toBe("retrieval");
-    // And a word that shares nothing is still not found, so the channel is not a wildcard.
-    expect(findWord("deployment", "planning")).toBeUndefined();
-  });
-
-  it("holds the short-token floor, which a natural pair cannot reach past", () => {
-    /* This pair is SYNTHETIC, and that is the finding rather than a shortcut. A four-letter
-       query has four 3-grams and needs three of them present, which for a real word almost
-       always means the document contains the query outright — so the substring pass answers
-       first and the floor never comes up. `abcd` against `abcxcd` is the boundary made
-       reachable: exactly 0.75, and not a substring.
-
-       It is here because the first version of this cell asserted
-       `findWord("deployment", "plan") === undefined` under a comment saying the floor was
-       what excluded it. The ratio excluded it, at 0.000, and dropping the floor from 5 to 1
-       reddened NOTHING — a mutation the suite could not see, under a comment claiming it
-       could. The cases the floor actually excludes are coincidences rather than spellings,
-       which is the argument for having it and also why it takes a contrived pair to show. */
-    expect(findWord("abcxcd", "abcd")).toBeUndefined();
-  });
-
-  it("requires every query word, so a common word cannot drag the archive back", () => {
+  it("in `all` mode requires every query word, which is what the vocabulary search keeps", () => {
     const doc: Doc = { title: "Nightly Data Janitor", tags: ["data"] };
-    expect(evidenceFor(doc, FIELDS, ["data", "janitor"])).toEqual(["tag:data", "title:data", "title:janitor"]);
-    expect(evidenceFor(doc, FIELDS, ["data", "orchestrator"])).toBeUndefined();
+    expect(evidenceFor(doc, FIELDS, ["data", "janitor"], "all")).toEqual(["tag:data", "title:data", "title:janitor"]);
+    expect(evidenceFor(doc, FIELDS, ["data", "orchestrator"], "all")).toBeUndefined();
   });
 
-  it("is deduplicated and sorted, so byte-identity is a meaningful test", () => {
-    const doc: Doc = { title: "data data data", tags: [] };
-    expect(evidenceFor(doc, FIELDS, ["data"])).toEqual(["title:data"]);
+  it("in `any` mode answers what it found, and an empty list for nothing", () => {
+    const doc: Doc = { title: "Nightly Data Janitor", tags: ["data"] };
+    expect(evidenceFor(doc, FIELDS, ["data", "orchestrator"], "any")).toEqual(["tag:data", "title:data"]);
+    expect(evidenceFor(doc, FIELDS, ["orchestrator"], "any")).toEqual([]);
+  });
+
+  it("counts distinct query words found, not places found", () => {
+    const doc: Doc = { title: "data data data", tags: ["data"] };
+    const match = lexicalMatch(doc, FIELDS, ["data", "janitor"]);
+    expect(match.evidence).toEqual(["tag:data", "title:data"]);
+    expect(match.found).toBe(1);
+    expect(coverageOf(match.found, 2)).toBe(0.5);
+    expect(coverageOf(0, 0)).toBe(0);
   });
 
   it("is absent for a caller who asked for no text at all", () => {
-    expect(evidenceFor({ title: "anything", tags: [] }, FIELDS, [])).toBeUndefined();
+    expect(evidenceFor({ title: "anything", tags: [] }, FIELDS, [], "any")).toBeUndefined();
+  });
+
+  it("discloses the similarity as `similarity:<two decimals>`", () => {
+    expect(similarityEvidence(0.4321)).toBe("similarity:0.43");
+    expect(similarityEvidence(0.155)).toMatch(/^similarity:\d\.\d{2}$/);
+    expect(similarityEvidence(0.155)).not.toMatch(/semantic/i);
   });
 });
 
-/* --------------------- the order the evidence implies --------------------- */
+/* --------------------- the hit rule and the score --------------------- */
 
-function candidate(identity: string, evidence: readonly string[]): Scored<string> {
-  return { item: identity, evidence, identity };
+describe("the hit rule", () => {
+  it("admits a candidate at the floor exactly, and refuses one just below it", () => {
+    expect(isHit(MIN_SIMILARITY, 0)).toBe(true);
+    expect(isHit(MIN_SIMILARITY - 0.0001, 0)).toBe(false);
+  });
+
+  it("converts a distance once and floors the similarity at zero", () => {
+    expect(similarityFrom(0.57)).toBeCloseTo(0.43, 10);
+    expect(similarityFrom(1.04)).toBe(0);
+    expect(isHit(similarityFrom(1.04), 0)).toBe(false);
+    /* The disclosed entry must keep the two-decimal grammar a caller parses, so a pair past
+       a right angle reads `similarity:0.00` and never `similarity:-0.04`. */
+    expect(similarityEvidence(similarityFrom(1.04))).toBe("similarity:0.00");
+    expect(similarityEvidence(similarityFrom(1.04))).toMatch(/^similarity:\d\.\d{2}$/);
+  });
+
+  it("admits any lexical coverage whatever the similarity", () => {
+    expect(isHit(0, 0.25)).toBe(true);
+    expect(isHit(0, 0)).toBe(false);
+  });
+
+  it("scores similarity plus the boosted coverage, to four places", () => {
+    expect(scoreOf(0.4, 1)).toBe(Math.round((0.4 + LEXICAL_BOOST) * 10_000) / 10_000);
+    expect(scoreOf(0.123456, 0)).toBe(0.1235);
+    expect(scoreOf(0, 0.5)).toBe(Math.round(LEXICAL_BOOST * 0.5 * 10_000) / 10_000);
+  });
+
+  it("publishes the constants the searchers use", () => {
+    expect(MIN_SIMILARITY).toBeGreaterThan(0);
+    expect(MIN_SIMILARITY).toBeLessThan(1);
+    expect(LEXICAL_BOOST).toBeGreaterThan(0);
+    expect(MAX_HITS).toBe(20);
+  });
+});
+
+/* --------------------- the order the score implies --------------------- */
+
+function candidate(identity: string, evidence: readonly string[], score: number, similarity = 0): Scored<string> {
+  return { item: identity, evidence, identity, score, similarity };
 }
 
 describe("the ranking", () => {
-  it("puts more evidence above less", () => {
+  it("puts a higher score above a lower one, whatever the identities say", () => {
     const results = ranked(
-      [candidate("a", ["title:x"]), candidate("b", ["tag:x", "title:x"])],
+      [candidate("a", ["title:x"], 0.2), candidate("b", ["similarity:0.40"], 0.4, 0.4)],
       {},
+      "present",
     );
     expect(results.hits.map((hit) => hit.item)).toEqual(["b", "a"]);
+    expect(results.hits.map((hit) => hit.score)).toEqual([0.4, 0.2]);
   });
 
-  it("keeps byte-identical evidence in ONE CONTIGUOUS BLOCK (D-200-20)", () => {
-    /* The arrangement the ruling exists for, and the one a `(score, identity)` sort gets
-       wrong: two evidence groups of equal size, whose identities interleave. Under an
-       identity-only tiebreak this comes back a, b, c, d — two blocks split into four — and
-       the response then presents an order its own evidence does not explain. */
+  it("breaks a tied score by similarity, then by the evidence, then by identity", () => {
     const results = ranked(
       [
-        candidate("a", ["title:x"]),
-        candidate("b", ["tag:x"]),
-        candidate("c", ["title:x"]),
-        candidate("d", ["tag:x"]),
+        candidate("d", ["title:x"], 0.3, 0),
+        candidate("c", ["similarity:0.30"], 0.3, 0.3),
+        candidate("b", ["title:x"], 0.3, 0),
+        candidate("a", ["tag:x"], 0.3, 0),
       ],
       {},
+      "present",
+    );
+    expect(results.hits.map((hit) => hit.item)).toEqual(["c", "a", "b", "d"]);
+  });
+
+  it("keeps hits carrying byte-identical evidence in one contiguous block when scores tie", () => {
+    /* The vector-free worlds produce exactly this: every hit scores the same coverage, so
+       the evidence key is what keeps two `title:x` hits together rather than letting an
+       identity tiebreak interleave them with the `tag:x` ones. */
+    const results = ranked(
+      [
+        candidate("a", ["title:x"], 0.15),
+        candidate("b", ["tag:x"], 0.15),
+        candidate("c", ["title:x"], 0.15),
+        candidate("d", ["tag:x"], 0.15),
+      ],
+      {},
+      "present",
     );
     expect(blocks(results.hits.map((hit) => hit.evidence))).toEqual([
       ["tag:x", "tag:x"],
@@ -303,75 +363,36 @@ describe("the ranking", () => {
     ]);
   });
 
+  it("keeps at most the limit it is given, from the top", () => {
+    const many = Array.from({ length: 30 }, (_, i) => candidate(`c${String(i).padStart(2, "0")}`, ["title:x"], 1 - i / 100));
+    const results = ranked(many, {}, "present", MAX_HITS);
+    expect(results.hits).toHaveLength(MAX_HITS);
+    expect(results.hits[0].item).toBe("c00");
+    expect(ranked(many, {}, "present").hits).toHaveLength(30);
+  });
+
   it("declares itself ordered exactly when every hit explains itself", () => {
-    expect(ranked([candidate("a", ["title:x"])], {}).ordered).toBe(true);
-    expect(unranked(["a", "b"], {}).ordered).toBe(false);
+    expect(ranked([candidate("a", ["title:x"], 0.15)], {}, "present").ordered).toBe(true);
+    expect(unranked(["a", "b"], {}, "present").ordered).toBe(false);
   });
 
   it("declares an EMPTY result ordered, because the law says so and the branch does not", () => {
     /* `[].every(…)` is `true`. An implementation that set `ordered` from `q !== ""` answers
-       `false` here and breaks the published law while looking obviously right — which is
-       why the field is derived from the hits rather than from the branch that made them. */
-    expect(unranked([], {}).ordered).toBe(true);
-    expect(ranked([], {}).ordered).toBe(true);
+       `false` here and breaks the published law while looking obviously right. */
+    expect(unranked([], {}, "present").ordered).toBe(true);
+    expect(ranked([], {}, "present").ordered).toBe(true);
   });
 
-  it("puts the vector channel's finds BEHIND every lexical hit (AC3)", () => {
-    /* AC3's whole content, and it is checked against the arrangement that BREAKS it rather
-       than a comfortable one. `similar:purpose` scores 1, exactly like `title:x`, and
-       `similar:` sorts between `owner:` and `slug:` — so a tail fed through the ordinary
-       comparator would land BETWEEN these two lexical hits instead of after both. The
-       fixture is built so that a wrong implementation reorders visibly. */
-    const results = rankedWithSimilar(
-      [candidate("slug-hit", ["slug:x"]), candidate("owner-hit", ["owner:x"])],
-      [candidate("vector-only", [SIMILAR_EVIDENCE])],
-      {},
-    );
-    expect(results.hits.map((hit) => hit.item)).toEqual(["owner-hit", "slug-hit", "vector-only"]);
-  });
-
-  it("keeps the tail contiguous and never splits a lexical block (D-200-20)", () => {
-    const results = rankedWithSimilar(
-      [candidate("a", ["title:x"]), candidate("c", ["title:x"]), candidate("b", ["tag:x"])],
-      [candidate("v1", [SIMILAR_EVIDENCE]), candidate("v2", [SIMILAR_EVIDENCE])],
-      {},
-    );
-    expect(blocks(results.hits.map((hit) => hit.evidence))).toEqual([
-      ["tag:x"],
-      ["title:x", "title:x"],
-      [SIMILAR_EVIDENCE, SIMILAR_EVIDENCE],
-    ]);
-  });
-
-  it("preserves the tail's own distance order rather than re-sorting it", () => {
-    /* The tail arrives nearest-first from pgvector and every entry carries byte-identical
-       evidence, so ANY comparator would fall through to the identity tiebreak and sort it
-       alphabetically. `zeta` before `alpha` is the fixture that tells the two apart. */
-    const results = rankedWithSimilar(
-      [],
-      [candidate("zeta", [SIMILAR_EVIDENCE]), candidate("alpha", [SIMILAR_EVIDENCE])],
-      {},
-    );
-    expect(results.hits.map((hit) => hit.item)).toEqual(["zeta", "alpha"]);
-  });
-
-  it("stays ordered:true with a tail, and that is the law computing (D-300-04 D1)", () => {
-    /* Not an amendment — `finish` evaluates the same `every(evidence.length > 0)` it always
-       did. Recorded as a cell because the ruling this task was DISPATCHED with said an
-       all-semantic response was `ordered: false`, which the unamended law does not compute;
-       D-300-04 D1 resolved that toward the marker, and this is what the resolution means in
-       the code. */
-    const allSemantic = rankedWithSimilar([], [candidate("v", [SIMILAR_EVIDENCE])], {});
-    expect(allSemantic.ordered).toBe(true);
-    expect(rankedWithSimilar([], [], {}).ordered).toBe(true);
+  it("carries the encoder state it is told, on ranked and unranked answers alike", () => {
+    expect(ranked([], {}, "absent").encoder).toBe("absent");
+    expect(unranked(["a"], {}, "present").encoder).toBe("present");
+    expect(unranked(["a"], {}, "present").hits[0].score).toBe(0);
   });
 
   it("hands back the facets it was given, hits or no hits", () => {
-    // AC3: a facet map derived from the result set is empty exactly when a reader most
-    // needs it, and that implementation passes every test that searches for something present.
     const facets = { tag: ["rag"], cat: ["ops"] };
-    expect(ranked([], facets).facets).toEqual(facets);
-    expect(unranked([], facets).facets).toEqual(facets);
+    expect(ranked([], facets, "present").facets).toEqual(facets);
+    expect(unranked([], facets, "present").facets).toEqual(facets);
   });
 });
 
@@ -395,21 +416,18 @@ describe("reading params", () => {
     expect(value({ tag: "rag" }, "tag")).toBe("rag");
   });
 
-  it("reads a flag as the merged shelves do, so a stale link still answers", () => {
+  it("reads a flag as the shelves do, so a stale link still answers", () => {
     expect(flag({ df: "1" }, "df")).toBe(true);
     expect(flag({ df: "0" }, "df")).toBe(false);
     expect(flag({ df: "true" }, "df")).toBe(false);
   });
 
   it("sends every enum key through one branch, absent empty and unrecognised alike", () => {
-    // The rule `forks` did not go through until D-200-37. Exact match, no trimming and no
-    // case folding: the published set is fixed, so a value outside it is not a near miss.
     const stances = ["all", "rolled", "originals"] as const;
     const spellings: Record<string, string>[] = [{}, { forks: "" }, { forks: "banana" }, { forks: "ALL" }, { forks: "all " }];
     for (const params of spellings) {
       expect(oneOf(params, "forks", stances, "rolled"), JSON.stringify(params)).toBe("rolled");
     }
-    // The control: a published spelling still reaches its own branch.
     expect(oneOf({ forks: "all" }, "forks", stances, "rolled")).toBe("all");
   });
 

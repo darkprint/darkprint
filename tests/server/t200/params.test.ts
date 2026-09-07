@@ -135,14 +135,17 @@ describe("AC1 every key on /blueprints narrows", () => {
     ).toEqual([blueprintKey(w.alpha.handle, w.s1.bundle.slug)]);
   });
 
-  it("D-200-21 `q` reaches `slug`, so an address a caller already knows finds its blueprint", async () => {
+  it("`q` reaches `slug`, so an address a caller already knows finds its blueprint first", async () => {
     setup.check();
     const hit = await keys("searchBlueprints", { q: w.s3.bundle.slug });
+    /* First rather than alone: coverage admits any blueprint sharing a word with the
+       address, and every minted slug here shares its prefix and the pid. The one that
+       carries EVERY word of the address has full coverage and ranks first. */
     expect(
-      hit,
-      "D-200-21 puts `slug` in the corpus on the argument that a caller searching for an " +
-        "address they know and getting nothing back is the worse answer.",
-    ).toEqual([blueprintKey(w.alpha.handle, w.s3.bundle.slug)]);
+      hit[0],
+      "`slug` is in the corpus on the argument that a caller searching for an address they " +
+        `know and getting nothing back is the worse answer. ranks: ${hit.join(", ")}`,
+    ).toBe(blueprintKey(w.alpha.handle, w.s3.bundle.slug));
   });
 
   it("D-200-21 `q` reaches `ownerHandle`, which `/blueprints` publishes no filter for", async () => {
@@ -307,13 +310,18 @@ describe("AC1 every key on /blueprints narrows", () => {
 /* --------------------- the card keys --------------------- */
 
 describe("AC1 every key on /cards narrows", () => {
-  it("`q` narrows to the card carrying the token", async () => {
+  it("`q` narrows to the card carrying the token, and puts the card named by an id first", async () => {
     setup.check();
     const all = await keys("searchCards", {});
-    const hit = await keys("searchCards", { q: w.cardTest.cardId });
-    expect(hit, `AC1 \`q\` did not narrow on cards; the shelf is ${all.length}.`).toEqual([
+    /* A word from the card's name narrows to the one card. The minted id shares the `card`
+       and pid words with every id on this shelf, so under coverage it reaches all four and
+       the card carrying every word of it ranks first. */
+    const byName = await keys("searchCards", { q: "suite" });
+    expect(byName, `\`q\` did not narrow on cards; the shelf is ${all.length}.`).toEqual([
       `card:${w.cardTest.ref}`,
     ]);
+    const byId = await keys("searchCards", { q: w.cardTest.cardId });
+    expect(byId[0], `ranks: ${byId.join(", ")}`).toBe(`card:${w.cardTest.ref}`);
     expect(all.length, "the card shelf is empty, so `q` narrowing it proves nothing").toBe(4);
   });
 

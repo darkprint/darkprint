@@ -289,7 +289,9 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
     const ranked = await searchBlueprints(client.db, ANON, { q: "triage" });
     expect(ranked.ordered).toBe(true);
     for (const hit of ranked.hits) expect(hit.evidence.length).toBeGreaterThan(0);
-    // More places matched ranks higher, and the evidence says which places.
+    /* With no vectors both hits score the same coverage, and the tie breaks on the evidence
+       key: `slug:triage` sorts before `summary:triage`, so the blueprint named for the word
+       comes first, and the evidence says which places matched. */
     expect(ranked.hits[0].item.slug).toBe("triage");
     expect(ranked.hits[0].evidence).toContain("tag:triage");
 

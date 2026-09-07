@@ -12,21 +12,20 @@
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { eq } from "drizzle-orm";
-
 import { bundleDigest } from "@/lib/core";
 import { schema, type DbClient } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
 import { createTestDb, resetTestDb, type TestDb } from "../../../tests/support/db";
 import { searchBlueprints } from "./blueprints";
-import { searchCards } from "./cards";
 import { reembedRelease } from "./reembed";
-import { searchTerms } from "./terms";
-import { SIMILAR_EVIDENCE } from "./embed";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 
 const ANON: Actor = { kind: "anonymous" };
+
+const SIMILARITY = /^similarity:\d\.\d{2}$/;
+const hasSimilarity = (evidence: readonly string[]): boolean => evidence.some((e) => SIMILARITY.test(e));
+const lexical = (evidence: readonly string[]): string[] => evidence.filter((e) => !e.startsWith("similarity:"));
 
 describe.skipIf(!hasDb)("lib/server/search", () => {
   let testDb: TestDb | undefined;
@@ -150,15 +149,14 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
      `CORE_ONTOLOGY` in the process, merged per bundle with `release.local_vocabulary`, which
      is what `PublishOptions.vocabulary` above already writes. */
 
-  /* --------------------- AC1, AC3 and the visibility of a vector --------------------- */
+  /* --------------------- recall, the shared order, and the visibility of a vector --------------------- */
 
   const CONSENSUS =
     "Two agents solve the same task from opposite temperatures, then a consensus node " +
     "negotiates a single answer, re-opening the debate when they clash.";
   /**
-   * A paraphrase of `CONSENSUS` that carries NO occurrence of the word the AC3 cell queries
-   * with. That is what makes it reachable only through the vector channel, and it is the
-   * whole reason this third blueprint exists — see the cell.
+   * A paraphrase of `CONSENSUS` that carries NO occurrence of the word the mixed-order cell
+   * queries with, so it is reachable only through the vector channel.
    */
   const ARBITER =
     "Two competing agents argue opposite proposals and an arbiter reconciles them into one " +
@@ -192,26 +190,17 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
     expect(slugs).toContain("consensus-line");
 
     const hit = results.hits.find((h) => h.item.slug === "consensus-line");
-    expect(hit?.evidence).toEqual([SIMILAR_EVIDENCE]);
+    expect(hasSimilarity(hit?.evidence ?? []), JSON.stringify(hit?.evidence)).toBe(true);
+    expect(lexical(hit?.evidence ?? []), "no content word was shared, so nothing lexical is cited").toEqual([]);
+    expect(results.encoder).toBe("present");
   });
 
-  it("AC3: a semantic-only hit never outranks a lexical one, and the law still computes", async () => {
-    /* ── THIS CELL WAS INERT AND THE PREMISES BELOW ARE THE REPAIR ──
-
-       The first version guarded its only real assertion — `if (firstSemantic !== -1)` — and
-       the fixture produced `lexical: 1, semantic: 0`, so that line NEVER EXECUTED. A cell
-       named for AC3's ordering had never once asserted AC3's ordering, and it passed. The
-       two-blueprint world could not produce a mixed response at all: `data-janitor` measures
-       cosine 0.125 against `q=consensus`, below the 0.20 cutoff.
-
-       Found by auditing my own cells for a shape the blind author had just reported in one
-       of its own — a probe that cannot reach the condition it names.
-
-       The fixture is only half the fix. A world that reaches the condition today can stop
-       reaching it tomorrow, because `SIMILAR_MIN` is a published constant somebody may
-       re-calibrate and these cosines sit within 0.06 of it. So both channels are asserted
-       NON-EMPTY as premises: if this world ever goes quiet again, it reds here with a
-       message saying so, instead of passing while measuring nothing. */
+  it("a lexical hit and a vector-only hit share one order, by the published score", async () => {
+    /* The two-blueprint world cannot produce a mixed response: `data-janitor` is far from
+       `q=consensus`. A third blueprint paraphrasing the first with no occurrence of the word
+       is what puts a vector-only hit beside a lexical one. Both are asserted NON-EMPTY as
+       premises, so if this world ever goes quiet again it reds here with a message saying
+       so, instead of passing while measuring nothing. */
     const owner = await seedAndEmbed();
     const arbiter = await publish({
       owner,
@@ -221,31 +210,21 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
     });
     await reembedRelease(client.db, arbiter.bundleId, arbiter.digest);
 
-    /* `consensus` is in the first blueprint's slug, title, summary and card ref, so it is a
-       LEXICAL hit; it is absent from `ARBITER`, which the vector channel reaches at 0.2599
-       and which therefore arrives marked. One of each is what AC3 is about. */
     const results = await searchBlueprints(client.db, ANON, { q: "consensus" });
-    const lexical = results.hits.filter((h) => !h.evidence.includes(SIMILAR_EVIDENCE));
-    const semantic = results.hits.filter((h) => h.evidence.includes(SIMILAR_EVIDENCE));
+    const lexicalHits = results.hits.filter((h) => lexical(h.evidence).length > 0);
+    const vectorOnly = results.hits.filter((h) => lexical(h.evidence).length === 0 && hasSimilarity(h.evidence));
 
+    expect(lexicalHits.length, "no lexical hit: this cell compares the two kinds and this world has only one").toBeGreaterThan(0);
     expect(
-      lexical.length,
-      "no lexical hit: AC3 compares the two channels and this world has only one",
-    ).toBeGreaterThan(0);
-    expect(
-      semantic.length,
-      `no semantic-only hit: the vector channel returned nothing, so the ordering assertion ` +
-        `below would measure NOTHING. This is the premise that failed silently in the first ` +
-        `version of this cell. Check SIMILAR_MIN against cos(q="consensus", ARBITER) ~ 0.26 ` +
-        `before repairing anything else.`,
+      vectorOnly.length,
+      `no vector-only hit: the channel returned nothing for ARBITER, so the ordering assertion ` +
+        `below would measure nothing. Check MIN_SIMILARITY against cos(q="consensus", ARBITER) ` +
+        `before repairing anything else. evidence: ${JSON.stringify(results.hits.map((h) => h.evidence))}`,
     ).toBeGreaterThan(0);
 
-    /* UNGUARDED, which is the point: with both premises held there is no input on which
-       this line does not run. */
-    const lastLexical = results.hits.findLastIndex((h) => !h.evidence.includes(SIMILAR_EVIDENCE));
-    const firstSemantic = results.hits.findIndex((h) => h.evidence.includes(SIMILAR_EVIDENCE));
-    expect(firstSemantic).toBeGreaterThan(lastLexical);
-
+    const scores = results.hits.map((h) => h.score);
+    for (let i = 1; i < scores.length; i += 1) expect(scores[i]).toBeLessThanOrEqual(scores[i - 1]);
+    expect(results.hits[0].item.slug, "the blueprint carrying the word outranks the one merely near it").toBe("consensus-line");
     expect(results.ordered).toBe(true);
   });
 
@@ -278,7 +257,7 @@ describe.skipIf(!hasDb)("lib/server/search", () => {
        so the channel has nothing to return and the lexical answer is untouched. */
     const results = await searchBlueprints(client.db, ANON, { q: "triage" });
     expect(results.hits.map((h) => h.item.slug)).toEqual(["triage"]);
-    expect(results.hits[0].evidence).not.toContain(SIMILAR_EVIDENCE);
+    expect(hasSimilarity(results.hits[0].evidence)).toBe(false);
     expect(results.ordered).toBe(true);
   });
 });
