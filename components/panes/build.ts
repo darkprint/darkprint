@@ -24,7 +24,7 @@
    into the upload wizard can.
    ============================================================ */
 
-import { parseDot, type NodeCard } from "@/lib/core";
+import { cardRef, parseCardRef, parseDot, type NodeCard } from "@/lib/core";
 import type {
   PaneAbsence,
   PaneCard,
@@ -73,6 +73,56 @@ export interface PaneModelInput {
   /** Drawn nodes, in the order the DOT declares them. */
   nodes: readonly PaneNodeInput[];
   absences?: readonly PaneAbsenceInput[];
+}
+
+/**
+ * The card each node pins, keyed by node id, in the two spellings the resolver accepts:
+ * `card="id@version"`, or a bare `version` on a node whose id is the card id.
+ *
+ * Read off the parsed statements and never off a release's ref list: a release lists its
+ * refs distinct and sorted, the graph lists its nodes in DOT order, and joining the two by
+ * position hands the first node whichever card sorts first.
+ */
+export function pinnedRefs(dot: string, dotFile = "topology.dot"): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const stmt of parseDot(dot, dotFile).graph?.nodes ?? []) {
+    const explicit = stmt.attrs["card"];
+    const version = stmt.attrs["version"];
+    const raw =
+      explicit !== undefined
+        ? explicit
+        : version !== undefined
+          ? cardRef(stmt.id, version.trim())
+          : undefined;
+    if (raw === undefined) continue;
+    const ref = parseCardRef(raw);
+    if (ref !== undefined) out.set(stmt.id, cardRef(ref.id, ref.version));
+  }
+  return out;
+}
+
+/**
+ * The drawn nodes joined to their cards through the DOT, for a page that holds the cards
+ * and their documents keyed by ref.
+ */
+export function paneNodesFor(
+  nodes: readonly { id: string; label: string }[],
+  dot: string,
+  resolved: ReadonlyMap<string, NodeCard>,
+  documents: ReadonlyMap<string, string>,
+): PaneNodeInput[] {
+  const refs = pinnedRefs(dot);
+  return nodes.map((node) => {
+    const entry: PaneNodeInput = { nodeId: node.id, label: node.label };
+    const ref = refs.get(node.id);
+    if (ref === undefined) return entry;
+    entry.ref = ref;
+    const card = resolved.get(ref);
+    if (card !== undefined) entry.card = card;
+    const yaml = documents.get(ref);
+    if (yaml !== undefined) entry.yaml = yaml;
+    return entry;
+  });
 }
 
 /* --------------------- the card document --------------------- */
@@ -147,7 +197,7 @@ function ports(
   if (written.length === 0) return {};
   return {
     detail: written
-      .map((port) => `${port.name}: ${port.type} — ${port.description ?? ""}`)
+      .map((port) => `${port.name}: ${port.type}. ${port.description ?? ""}`.trimEnd())
       .join("\n"),
   };
 }
@@ -286,7 +336,7 @@ function fieldValue(
       // here: `FIELD_NOTE.will_not` carries the claim about who reads it, in one place,
       // the way `FIELD_NOTE.notes` does for `notes`. A gloss on the value would be this
       // slot answering with a description of itself.
-      return list(card.willNot, "nothing is undertaken");
+      return list(card.willNot, "nothing is promised");
     case "risk_markers":
       return list(card.riskMarkers, "none declared");
     case "notes":

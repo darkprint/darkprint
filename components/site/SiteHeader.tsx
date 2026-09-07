@@ -173,8 +173,8 @@ const BUILD = NAV.filter((item) => item.group === "build");
 
 const BUILD_BLURB: Record<string, string> = {
   "/mcp": "Reach the registry from your own agent",
-  "/skill": "Install the authoring skill and name your goal",
-  "/capabilities": "Every operation, from a terminal, an agent or an editor",
+  "/skill": "A skill for your coding agent that interviews you and writes the blueprint",
+  "/capabilities": "Everything you can do here, from the site, a terminal or your agent",
   "/tutorial": "Fill in the keywords of a real one, in your browser",
 };
 

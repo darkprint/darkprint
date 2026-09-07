@@ -39,10 +39,10 @@ import { readSession } from "@/components/profile/session";
 export async function generateMetadata({ params }: PageProps<"/u/[username]/cards">) {
   const { username } = await params;
   const author = await profileMetadata(username);
-  if (author === undefined) return { title: "Builder not found" };
+  if (author === undefined) return { title: "Profile not found" };
   return {
-    title: `${author.displayName} · node cards`,
-    description: `Node cards authored by ${author.displayName} on DarkPrint.`,
+    title: `${author.displayName} · cards`,
+    description: `Cards published by ${author.displayName} on DarkPrint, and the blueprints each one is used in.`,
   };
 }
 
@@ -62,7 +62,7 @@ export default async function Page({ params }: PageProps<"/u/[username]/cards">)
           <ShelfToolbar
             placeholder="Find a card…"
             label="Find a card"
-            note={`${view.ownedCards.length} card${view.ownedCards.length === 1 ? "" : "s"}, read live off the registry, public and private together.`}
+            note={`${view.ownedCards.length} card${view.ownedCards.length === 1 ? "" : "s"}, public and private together.`}
           >
             <VisibilityFilter label="Filter cards by visibility" />
           </ShelfToolbar>
@@ -71,11 +71,8 @@ export default async function Page({ params }: PageProps<"/u/[username]/cards">)
         </div>
       ) : view.ownedCards.length === 0 ? (
         <div className="mt-10">
-          <EmptyState
-            title="No node cards"
-            action={{ href: "/nodes", label: "Browse the card library" }}
-          >
-            {view.author.displayName} has not published a node card so far.
+          <EmptyState title="No cards yet" action={{ href: "/nodes", label: "Browse cards" }}>
+            {view.author.displayName} has not published a card yet.
           </EmptyState>
         </div>
       ) : (
@@ -87,7 +84,7 @@ export default async function Page({ params }: PageProps<"/u/[username]/cards">)
           <ShelfToolbar
             placeholder="Find a card…"
             label="Find a card"
-            note={`${view.ownedCards.length} card${view.ownedCards.length === 1 ? "" : "s"}, read live off the registry.`}
+            note={`${view.ownedCards.length} public card${view.ownedCards.length === 1 ? "" : "s"}.`}
           />
 
           <OwnedCards cards={view.ownedCards} owner={false} />

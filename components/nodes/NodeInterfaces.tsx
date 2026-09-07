@@ -242,9 +242,10 @@ export function NodeInterfaces({
               ))}
             </ul>
             <p className="text-xs leading-relaxed text-dim">
-              The upstream nodes this card expects to hear from. The resolver
-              checks each one against a real edge in every blueprint that pins the
-              card. Unlinked names belong to a graph, not the library.
+              The upstream nodes this card expects to receive from. Whenever a
+              blueprint pins this card, each name is checked against a real edge in
+              that graph. A name without a link is not a published card; it refers to
+              a node inside some graph.
             </p>
           </>
         )}

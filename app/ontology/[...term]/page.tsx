@@ -69,9 +69,10 @@ export async function generateMetadata({ params }: PageProps<"/ontology/[...term
   const { db } = getSharedDbClient();
   const found = (await vocabularyView(db)).get(term.join("/"));
   if (!found) return { title: "Term not found" };
+  const kind = TERM_KIND_META[found.kind].label;
   return {
-    title: `${found.label}: ${TERM_KIND_META[found.kind].label}`,
-    description: found.description,
+    title: `${found.label} · ${kind} term`,
+    description: `${kind} in the DarkPrint vocabulary: ${found.description}`,
   };
 }
 
@@ -419,7 +420,9 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
               </h2>
               <span className="font-mono text-[11px] text-dim">
                 {chain.length === 1
-                  ? "root of its branch"
+                  ? children.length === 0
+                    ? "stands alone"
+                    : "root of its branch"
                   : `${chain.length - 1} level${chain.length - 1 === 1 ? "" : "s"} deep`}
               </span>
             </div>
@@ -452,10 +455,12 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                     </li>
                   ))}
                 </ol>
-                <p className="text-xs leading-relaxed text-dim">
-                  Read left to right as &ldquo;is a kind of&rdquo;, backwards. A rule
-                  written about any term in this chain also catches {term.id}.
-                </p>
+                {chain.length > 1 && (
+                  <p className="text-xs leading-relaxed text-dim">
+                    Each term is a kind of the one before it. A rule written about any term
+                    in this chain also applies to {term.id}.
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-col gap-2">
@@ -468,7 +473,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   </div>
                 ) : (
                   <p className="text-sm text-dim">
-                    Nothing specialises {term.id}, it is a leaf of its branch.
+                    No term is narrower than {term.id}.
                   </p>
                 )}
               </div>
@@ -652,7 +657,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                     <PanelLabel>Blueprints</PanelLabel>
                     <ul className="divide-y divide-line">
                       {usingBlueprints.map((bp) => (
-                        <li key={bp.slug}>
+                        <li key={`${bp.ownerHandle}/${bp.slug}`}>
                           <Link
                             href={blueprintRecordHref(bp)}
                             className="group flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2.5"
@@ -661,7 +666,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                               {bp.title}
                             </span>
                             <code className="font-mono text-[11px] text-dim">
-                              {bp.slug}
+                              {bp.ownerHandle}/{bp.slug}
                             </code>
                           </Link>
                         </li>
@@ -720,7 +725,12 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                 label="Status"
                 value={
                   term.deprecated === undefined ? (
-                    <span className="text-emerald">✓ current</span>
+                    <span
+                      className="text-emerald"
+                      title="Not deprecated; nothing supersedes this term."
+                    >
+                      ✓ current
+                    </span>
                   ) : (
                     <span className="text-amber">◑ deprecated</span>
                   )
@@ -766,12 +776,10 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
               <StatRow label="Distinct authors" value={usage.authors.length} />
             </dl>
             <p className="mt-4 text-xs leading-relaxed text-dim">
-              These are the three figures the first phase of promotion watches for.
-              They spot a local term that has become a real pattern rather than one
-              author&apos;s habit. The counting works. The workflow that would read it
-              does not exist. No threshold has been calibrated. No term has ever been
-              promoted. They are shown because knowing what the registry actually leans on
-              is worth something on its own.
+              How widely the term is used: the cards that name it, the blueprints those
+              cards appear in, and how many different authors wrote them. The counts are
+              live. Nothing is decided from them yet; promoting a widely used local term
+              into the core vocabulary is planned and not built.
             </p>
           </section>
         </aside>

@@ -71,7 +71,8 @@ function band(extra: Record<string, unknown> = {}): string {
 }
 
 const DOWNLOAD = createElement(CodeMenu, {
-  command: "darkprint clone mara-veil/starter-software-factory --version 1.2.0",
+  command: 'curl -fsSL -O "https://darkprint.io/f/README.md"',
+  cliCommand: "darkprint clone mara-veil/starter-software-factory --version 1.2.0",
   files: [{ path: "README.md", href: "/f/README.md" }],
 });
 
@@ -161,7 +162,8 @@ describe("the same row for a card", () => {
       forks: 1,
       saveId: "node:spec-planner@1.0.0",
       download: createElement(CodeMenu, {
-        command: "darkprint clone mara-veil/starter-software-factory --version 1.2.0",
+        command: 'curl -fsSL -O "https://darkprint.io/f/spec-planner@1.0.0.yaml"',
+        cliCommand: "darkprint clone card spec-planner@1.0.0",
         files: [],
         label: "Download card",
         tone: "amber" as const,
@@ -182,8 +184,12 @@ describe("the same row for a card", () => {
         "2026-09-06 and `app/globals.css` job 3 carries it.",
     ).not.toContain("copper");
     // The blueprint's band is the control. A repointed tone map or a changed default would
-    // read as a pass here if only the card were ever rendered.
-    expect(BLUEPRINT, "the blueprint's band took the card register").not.toContain("amber");
+    // read as a pass here if only the card were ever rendered. Read up to the download's
+    // trigger: the panel body behind it carries amber on both callers, in the badge that
+    // fences the CLI line.
+    const chrome = BLUEPRINT.slice(0, BLUEPRINT.indexOf("</summary>"));
+    expect(chrome.length, "the band has no download trigger to read up to").toBeGreaterThan(900);
+    expect(chrome, "the blueprint's band took the card register").not.toContain("amber");
   });
 
   it("draws no visibility pill for a subject that has none", () => {

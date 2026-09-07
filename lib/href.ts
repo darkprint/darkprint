@@ -129,6 +129,33 @@ export function kindHref(kind: ContentKind): string {
   return `/${SEGMENT[kind]}`;
 }
 
+/** A profile's page. */
+export function profilePageHref(handle: string): string {
+  return `/u/${handle}`;
+}
+
+/**
+ * Where `/blueprints/<one segment>` sends a reader, or `undefined` for a 404.
+ *
+ * The segment is read as an owner first, because that is the shape the canonical
+ * `/blueprints/<owner>/<slug>` address gives the slot, and an account's blueprints live on
+ * its profile. It is read as the pre-owner slug second, for links written before a slug
+ * became unique per owner, and only when exactly one account holds it: with two holders
+ * there is no fact to pick one by, and with none there is nowhere to go.
+ */
+export function legacyBlueprintTarget(input: {
+  segment: string;
+  accountExists: boolean;
+  holders: readonly { ownerHandle: string }[];
+  query?: string;
+}): string | undefined {
+  const query = input.query ?? "";
+  if (input.accountExists) return `${profilePageHref(input.segment)}${query}`;
+  const [only, second] = input.holders;
+  if (only === undefined || second !== undefined) return undefined;
+  return `${blueprintHref(only.ownerHandle, input.segment)}${query}`;
+}
+
 /**
  * An id (a card's or a term's) as a path, keeping its namespace separator a separator.
  *

@@ -167,7 +167,7 @@ function NoteList({ comments }: { comments: Comment[] }) {
                 )}
                 <span className="text-faint">·</span>
                 <span className="font-mono text-[11px] text-dim">
-                  {prettyDate(c.createdAt)}
+                  {prettyDate(c.createdAt.slice(0, 10))}
                 </span>
                 <span
                   className="ml-auto font-mono text-[11px] text-emerald"
@@ -309,7 +309,13 @@ function LiveComments({ live, subject }: { live: LiveNotes; subject: string }) {
         </div>
       )}
 
-      <PostForm apiBase={live.apiBase} viewer={live.viewer} onPosted={onPosted} className="mt-3" />
+      <PostForm
+        apiBase={live.apiBase}
+        viewer={live.viewer}
+        onPosted={onPosted}
+        subject={subject}
+        className="mt-3"
+      />
     </section>
   );
 }
@@ -360,11 +366,14 @@ function PostForm({
   apiBase,
   viewer,
   onPosted,
+  subject,
   className,
 }: {
   apiBase: string;
   viewer: LiveNotes["viewer"];
   onPosted: (note: NoteView) => void;
+  /** What the page is about, so a card's form does not ask about a blueprint. */
+  subject: string;
   className?: string;
 }) {
   const [body, setBody] = useState("");
@@ -425,7 +434,7 @@ function PostForm({
         <textarea
           value={body}
           onChange={(event) => setBody(event.target.value)}
-          placeholder="Say something about this blueprint."
+          placeholder={`Say something about this ${subject}.`}
           rows={3}
           className="w-full resize-y rounded-md border border-line bg-surface-2 p-3 text-sm text-fg placeholder:text-dim focus:border-cyan focus:outline-none"
         />

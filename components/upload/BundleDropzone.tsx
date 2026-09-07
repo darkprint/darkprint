@@ -663,9 +663,9 @@ export function BundleDropzone({
           </span>
           <div className="flex flex-col gap-1">
             <p className="text-sm text-fg">
-              Drop the whole bundle here, the{" "}
+              Drop the whole folder here, the{" "}
               <span className="font-mono text-cyan">.dot</span> graph and the{" "}
-              <span className="font-mono text-cyan">.yaml</span> cards it pins
+              <span className="font-mono text-cyan">.yaml</span> cards it names
             </p>
             {/* ── D-263-12: this line said "nothing is uploaded" and it had to go ──
                 It was unconditional rendered copy on the upload control itself, and after

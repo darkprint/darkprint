@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { FavoriteStar } from "@/components/ui/FavoriteStar";
 import { MetaPill } from "@/components/ui/MetaPill";
 import { ForkButton } from "@/components/bundle/ForkButton";
+import { blueprintHref } from "@/lib/href";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // SEAM-20 LIVE (T280): the Star control (`star`) and the Fork button (`fork`, SEAM-70) each
@@ -188,7 +189,7 @@ export function BundleHeader({
               <p className="font-mono text-[11px] text-dim">
                 forked from{" "}
                 <Link
-                  href={`/blueprints/${lineage.slug}`}
+                  href={blueprintHref(lineage.owner, lineage.slug)}
                   className="text-muted transition-colors hoverable:hover:text-cyan"
                 >
                   {lineage.owner} / {lineage.slug}
@@ -232,7 +233,7 @@ export function BundleHeader({
                   label="Star"
                   count={0}
                   disabled
-                  title="Nothing stores a star for this bundle yet."
+                  title="Nothing stores a star for this blueprint yet."
                 />
               )}
               {fork === undefined ? (
@@ -241,7 +242,7 @@ export function BundleHeader({
                   label="Fork"
                   count={forks}
                   disabled
-                  title="Nothing copies this bundle into an account yet. Take the folder from the download beside this instead."
+                  title="Nothing copies this blueprint into an account yet. Download the folder beside this instead."
                 />
               ) : (
                 <ForkButton

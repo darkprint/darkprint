@@ -358,7 +358,7 @@ describe("announce", () => {
     const focus = resolveFocus(m, { nodeId: "planner", absence: "criteria-to-builder" });
     if (focus === undefined) throw new Error("the fixture graph is empty");
     expect(announce(m, focus)).toBe(
-      "planner ⇢ builder is not in this bundle. The criteria reach the tester and stop there. The drawing rings builder.",
+      "planner ⇢ builder is not in this blueprint. The criteria reach the tester and stop there. The drawing rings builder.",
     );
   });
 });

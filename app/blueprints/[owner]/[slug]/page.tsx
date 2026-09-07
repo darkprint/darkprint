@@ -25,7 +25,7 @@ import { KindBadge } from "@/components/ui/Badge";
 import { TagPill } from "@/components/ui/TagPill";
 import { SideRail, type SideRailItem } from "@/components/ui/SideRail";
 import { absencesFor } from "@/components/panes/absences";
-import { buildPaneModel, type PaneNodeInput } from "@/components/panes/build";
+import { buildPaneModel, paneNodesFor } from "@/components/panes/build";
 import { SynchronisedPanes } from "@/components/panes/SynchronisedPanes";
 import { BundleHeader } from "@/components/bundle/BundleHeader";
 import { DraftLanding, type DraftLandingBundle } from "@/components/bundle/DraftLanding";
@@ -33,7 +33,11 @@ import { CodeMenu } from "@/components/bundle/CodeMenu";
 import { FileTree } from "@/components/bundle/FileTree";
 import { History } from "@/components/bundle/History";
 import { ReadmePanel } from "@/components/bundle/ReadmePanel";
-import { cardFilesFromPaths, filesFromPaths } from "@/components/bundle/load";
+import {
+  cardFilesFromPaths,
+  filesFromPaths,
+  releaseDownloadCommand,
+} from "@/components/bundle/load";
 import { Comments, type NoteView } from "@/components/blueprint/Comments";
 import { ToolScopes } from "@/components/blueprint/Requirements";
 
@@ -95,9 +99,22 @@ async function actorNow(): Promise<Actor> {
 export async function generateMetadata({ params }: PageProps<"/blueprints/[owner]/[slug]">) {
   const { owner, slug } = await params;
   const { db } = getSharedDbClient();
-  const summary = await blueprint(db, await actorNow(), owner, slug);
+  const actor = await actorNow();
+  const summary = await blueprint(db, actor, owner, slug);
   if (summary === undefined) return { title: "Blueprint not found" };
-  return { title: summary.manifest.title, description: summary.manifest.summary };
+  /* Two more reads for the description's prefix. A search result needs to say what kind
+     of page this is; the node count and the autonomy class are what tell one blueprint
+     from another in a list of titles. */
+  const [drawings, scorecard] = await Promise.all([
+    graphsOf(db, actor, [{ ownerHandle: owner, slug }]),
+    scoresOf(db, actor, owner, slug),
+  ]);
+  const drawing = drawings.get(`${owner}/${slug}`);
+  const shape =
+    drawing === undefined || scorecard === undefined
+      ? "Blueprint"
+      : `Blueprint (${drawing.graph.nodes.length} node${drawing.graph.nodes.length === 1 ? "" : "s"}, ${scorecard.autonomy.label})`;
+  return { title: summary.manifest.title, description: `${shape}: ${summary.manifest.summary}` };
 }
 
 /**
@@ -140,34 +157,14 @@ function blueprintSections(hasReadme: boolean): readonly SideRailItem[] {
        the Bundle panel, the shape is the graph two sections down, and the tool-scope count
        is a number over a list `Requirements` prints in full. A panel of pointers at other
        panels is what a page has instead of a first section, not one. */
-    /* The graph opens the reading now, and the rail follows the page rather than leading it.
-       The owner moved it up on 2026-09-06: the long description block that used to sit above
-       the file list came off, and "the graph panel (extend full horizontal length as the
-       other elements)" took its place. The rows below are the page top to bottom, and the
-       step numbers are stamped from that order rather than typed beside it.
-
-       `Tool scopes` is the one section above the graph that has no row. It is a four-line
-       panel directly under the band, in view before a reader has scrolled at all, and a rail
-       row is for a place a reader has to travel to. */
+    /* The rows are the page top to bottom, and the step numbers are stamped from that order
+       rather than typed beside it. The tool capabilities panel has no row: it sits directly
+       under the band, in view before a reader has scrolled, and a rail row is for a place a
+       reader has to travel to. */
     { href: "#blueprint-workspace", label: "Graph and cards" },
     { href: "#files", label: "Files" },
     { href: "#blueprint-readme", label: "Readme" },
-    /* `#evidence` stood here, third. It was `EvidenceLayers`' three-column panel, and it left
-       with the rest of the scoring reading on the owner's instruction to simplify this page.
-       Two of its three columns existed to say what a ballot and a run report could not tell a
-       reader yet, which is an answer only a page carrying a score has the question for. */
     { href: "#history", label: "History" },
-    /* `#use-this-blueprint` stood here, fourth, labelled `Use this release`. The owner asked
-       the panel behind it off the page: "remove ... the Exact release panel". Its download
-       did not leave with it — it is the `Code` control on the file list's own header row now,
-       which is GitHub's shape and the same instruction's other half — so the rail row is not
-       repointed at a second name for `#files`. It is the section that is gone, not the thing
-       it offered.
-
-       `#blueprint-source` stood after it, labelled `Source`: the `topology.dot` breakdown,
-       removed on the same instruction. The file itself is still one click away in the
-       listing above and in the Code menu, and `/spec/topology` still draws the same figure
-       over the same file. */
     { href: "#community-notes", label: "Community notes" },
   ];
   /* Filtered rather than conditionally pushed, so the order above stays readable as the
@@ -177,13 +174,9 @@ function blueprintSections(hasReadme: boolean): readonly SideRailItem[] {
     .map((row, index) => ({ ...row, step: String(index + 1).padStart(2, "0") }));
 }
 
-/** Small mono heading for the in-page panels. */
-function PanelLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
-      {children}
-    </span>
-  );
+/** The calendar day of a timestamp, which is the shape `prettyDate` formats. */
+function isoDay(at: Date): string {
+  return at.toISOString().slice(0, 10);
 }
 
 /**
@@ -440,7 +433,7 @@ export default async function Page({
      it. A sentence written here would reach a reader as the bundle author's. */
   const readme = folder?.readme;
 
-  const updatedAt = (current?.createdAt ?? record?.updatedAt ?? new Date()).toISOString();
+  const updatedAt = isoDay(current?.createdAt ?? record?.updatedAt ?? new Date());
   const shortened = `${summary.digest.slice(0, 13)}…`;
   /* THE FOLDER THE READER ASKED FOR, GitHub's way (owner, 2026-09-06: "the cards folder is
      not clickable. Make it clickable and once click, it show the list of the cards inside").
@@ -492,7 +485,7 @@ export default async function Page({
         ...(release.digest === summary.digest ? { tag: "latest" as const } : {}),
         message: release.manifest.summary,
         author: release.manifest.author ?? owner,
-        at: release.createdAt.toISOString(),
+        at: isoDay(release.createdAt),
       })),
     /* `releases` was mapped here into per-release rows for the `Releases` panel, which
        came off on 2026-09-05. The RAW `releases` list is untouched and still read three
@@ -533,16 +526,10 @@ export default async function Page({
     }),
   );
 
-  const paneNodes: PaneNodeInput[] = bp.graph.nodes.map((node, i) => {
-    const ref = bp.cardRefs[i] ?? "";
-    const entry: PaneNodeInput = { nodeId: node.id, label: node.label };
-    if (ref !== "") entry.ref = ref;
-    const parsed = resolved.get(ref);
-    if (parsed !== undefined) entry.card = parsed;
-    const yaml = documents.get(ref);
-    if (yaml !== undefined) entry.yaml = yaml;
-    return entry;
-  });
+  /* Joined through the DOT, never by position: `summary.cardRefs` is sorted and distinct
+     while `bp.graph.nodes` is in DOT order, so an index join showed the first node whichever
+     card sorted first. */
+  const paneNodes = paneNodesFor(bp.graph.nodes, bp.graph.dot, resolved, documents);
   const paneModel = buildPaneModel({
     slug: bp.slug,
     title: bp.title,
@@ -656,7 +643,8 @@ export default async function Page({
       download={
         folder === undefined ? undefined : (
           <CodeMenu
-            command={`darkprint clone ${owner}/${slug} --version ${folder.version}`}
+            command={releaseDownloadCommand(owner, slug, { digest: folder.digest }, paths)}
+            cliCommand={`darkprint clone ${owner}/${slug} --version ${folder.version}`}
             files={codeFiles}
           />
         )
@@ -677,9 +665,16 @@ export default async function Page({
            published. It belongs beside the digest, which is the other half of the same
            question, how old is what I am about to take. */
         <span className="font-mono text-[11px] text-dim">
-          version <span className="text-fg">{shortDigest(bp.digest)}</span> ·{" "}
-          {releases.length} release{releases.length === 1 ? "" : "s"} · published{" "}
-          {prettyDate(bp.createdAt)}
+          {current !== undefined && (
+            <>
+              release <span className="text-fg">{current.version}</span> ·{" "}
+            </>
+          )}
+          digest {shortDigest(bp.digest)} · {releases.length} release
+          {releases.length === 1 ? "" : "s"}
+          {/* The release's own date, never the manifest's: the two differed by months on one
+              page. Omitted rather than invented when no release resolves. */}
+          {current !== undefined && <> · published {prettyDate(isoDay(current.createdAt))}</>}
         </span>
       }
     >
@@ -719,7 +714,7 @@ export default async function Page({
     </BundleHeader>
 
     <div className="container-page py-10 lg:py-12">
-      {/* ---------- Tool scopes, directly under the band ----------
+      {/* ---------- Tool capabilities, directly under the band ----------
           The owner: "move the tool scopes right below the section attached", the section
           being the identity band — breadcrumb, `owner / slug`, the title, the summary, the
           kind badge and the tags. So it opens the body.
@@ -737,7 +732,6 @@ export default async function Page({
           already is — `model` is a Behaviour row in the card skeleton the graph below opens,
           per node, read off the card it belongs to. */}
       <section className="panel flex flex-col gap-3 p-5">
-        <PanelLabel>Tool scopes</PanelLabel>
         <ToolScopes tools={bp.requiredTools} />
       </section>
 

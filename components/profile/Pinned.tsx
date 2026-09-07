@@ -174,9 +174,8 @@ export function Pinned({ items }: { items: readonly PinnedItem[] }) {
           that is not counted, so the qualifier sits under them rather than being left to a
           glyph. */}
       <p className="font-mono text-[11px] text-dim">
-        Read off the archive at build time. A card&apos;s star figure is its live count; a
-        blueprint&apos;s is seeded community support. There is no ballot, and no scorecard
-        reads either.
+        A card&apos;s star count is live. A blueprint&apos;s star is a seeded figure. Neither
+        feeds a score.
       </p>
     </div>
   );

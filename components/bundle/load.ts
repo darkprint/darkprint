@@ -34,7 +34,7 @@ import { blueprintFileHref, cardFileHref } from "@/lib/href";
 /** What each generated file is, in one line. Keyed by the exporter's own constants. */
 const PUBLISHED_FILE_NOTE: Record<string, { kind: BundleFile["kind"]; note: string }> = {
   [TOPOLOGY_DOT]: { kind: "dot", note: "the topology, as the author wrote it" },
-  [BUNDLE_README]: { kind: "doc", note: "identity, digest and the download command" },
+  [BUNDLE_README]: { kind: "doc", note: "what this blueprint is, its digest, and how to run it" },
   [BUNDLE_VOCABULARY]: { kind: "yaml", note: "the local terms this bundle's cards use" },
 };
 

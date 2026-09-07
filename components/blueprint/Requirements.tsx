@@ -120,10 +120,10 @@ export function ToolScopes({
   return (
     <div className={cx("flex flex-col gap-5", className)}>
       <ChipList
-        label="Tool scopes"
+        label="Tool capabilities"
         items={tools}
         accent="var(--color-amber)"
-        emptyHint="No external tools; self-contained reasoning only."
+        emptyHint="No tool capability is declared on any card: every node works from its inputs alone."
       />
     </div>
   );

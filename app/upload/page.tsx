@@ -46,7 +46,7 @@ export const metadata: Metadata = {
      pass. `components/site/nav.test.ts` holds the chrome to this name. */
   title: "Publish",
   description:
-    "Publish a blueprint bundle to the DarkPrint registry. DarkPrint resolves it in your browser and reports what it could not resolve. Publishing needs an account.",
+    "Check a blueprint folder in your browser, then publish it to the DarkPrint registry as a numbered release. Every problem the check finds says where and why. Publishing needs an account.",
 };
 
 /**
@@ -222,12 +222,12 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
             names the action; "Check your work" names the outcome, one line above it, so
             the two are read together and a reader knows before the fold that uploading
             here is how a bundle gets checked and not how it gets somewhere. */}
-        <Eyebrow>Validate before release</Eyebrow>
+        <Eyebrow>Check it, then publish it</Eyebrow>
         <SectionHeading
           as="h1"
           className="mt-3"
           title="Publish"
-          lead="Choose a blueprint bundle and resolve it in your own tab. You get explainable diagnostics on anything that does not resolve. Publishing a release needs an account."
+          lead="Drop a blueprint folder: the topology.dot graph and the cards it names. This page checks it in your browser: every node has a card, the cards' inputs and outputs line up along each edge, and every term they use is known. Each problem it finds says where and why. Publishing a release needs an account, or a write-scoped API key from your settings."
         />
         {/* ── Where the folder in front of the reader came from ──
             The population arriving here changed. Until now the only person with a bundle
@@ -255,15 +255,15 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
         {/* Full width, on the author's instruction 2026-08-07: `max-w-2xl` off this one.
             The paragraphs around it keep their measure; this is a named exception. */}
         <p className="mt-5 text-sm leading-relaxed text-muted">
-          A folder written by the{" "}
+          If your coding agent wrote the folder with the{" "}
           <Link href={SKILL_ROUTE} className={PROSE_LINK}>
             DarkPrint skill
-          </Link>{" "}
-          drops straight in. It runs in your own editor. It writes the two things this page
-          reads: a <span className="font-mono text-cyan">topology.dot</span> and the{" "}
-          <span className="font-mono text-cyan">cards/</span> it pins. There is nothing to
-          export and nothing to convert. Bring it before it is finished. A graph whose cards
-          are half written resolves as far as it goes. The report says how far.
+          </Link>
+          , drop it in as it is. The skill writes exactly what this page reads, a{" "}
+          <span className="font-mono text-cyan">topology.dot</span> and the{" "}
+          <span className="font-mono text-cyan">cards/</span> it names, so there is nothing
+          to export or convert. You can bring it before it is finished: a graph whose cards
+          are half written is checked as far as it goes, and the report says how far.
         </p>
         {/* ── The other folder a reader can arrive with (§11.0 Q20 c) ──
             A person holding an Attractor pipeline was, until now, the one visitor this
@@ -283,10 +283,11 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
             when the session has no handle to attribute the cards to. A sentence here
             promising a conversion would describe a button that is deliberately not that. */}
         <p className="mt-5 text-sm leading-relaxed text-muted">
-          An Attractor pipeline is the other folder that works here. Drop the{" "}
-          <span className="font-mono text-cyan">.dot</span> and this page offers to read it
-          into a draft bundle in your own tab, one card per node, attributed to you. It
-          names what the two formats cannot say to each other before it writes anything.
+          An Attractor pipeline works here too. Drop its{" "}
+          <span className="font-mono text-cyan">.dot</span> and this page offers to turn it
+          into a draft blueprint in your browser, one card per node, attributed to you.
+          Before it writes anything it lists what the two formats cannot express in each
+          other, so you know what the draft will be missing.
         </p>
         {/* ── Two of the three sentences that stood here are gone, and ONE stayed (D-263-02) ──
             The paragraph used to refuse three things at once: an account to upload into,
@@ -314,8 +315,8 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
             badge ended up alone at the far left of a single very long line. */}
         <p className="mt-5 flex max-w-2xl flex-wrap items-center gap-2 text-[13px] leading-relaxed text-dim">
           <ComingSoonBadge />
-          Not built yet: a live push from the editor the skill runs in. It writes the folder
-          to your disk. You bring it here.
+          Not built yet: a live push from the editor the skill runs in. The skill writes the
+          folder to your disk, and you bring it here yourself.
         </p>
         {/* The vocabulary asymmetry, moved here from `/what-it-isnt` when that page was
             removed. It is a statement about this page, and it was the only unconditional
@@ -360,10 +361,10 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
             reading 4 here and 2 on its page, went with the number on the page rather than
             with the divergence. */}
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-dim">
-          What you drop is resolved here against the curated core vocabulary, plus any{" "}
-          <span className="font-mono text-cyan">ontology/extensions.yaml</span> in the
-          folder. The registry runs the check again when you publish. The reading on this
-          page is the fast one. The registry&rsquo;s reading decides.
+          The terms your cards use are checked against DarkPrint&rsquo;s core vocabulary, plus
+          any <span className="font-mono text-cyan">ontology/extensions.yaml</span> in the
+          folder. When you publish, the registry runs the same check on its side. The reading
+          on this page is the quick one. The registry&rsquo;s reading decides.
         </p>
       </header>
 
@@ -393,8 +394,8 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
           and never a shortfall it deducts for. That claim is the one this paragraph exists
           to make on the one page where somebody is being asked to hand over their work. */}
       <p className="mt-5 text-sm leading-relaxed text-dim">
-        A graph with a person standing in it resolves like one without. It names the node
-        where they act.
+        A graph with a human step in it is checked the same way as one without. The report
+        names the node where a person acts and treats it as a design choice.
       </p>
 
       <div className="mt-10">

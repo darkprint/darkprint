@@ -100,8 +100,8 @@ export function ProfileFields({
               <span className={over ? "text-amber" : undefined}>
                 {bio.length} / {BIO_LIMIT}
               </span>{" "}
-              · one sentence is enough; it renders under your name and on every card you
-              publish
+              · one sentence is enough; it shows under your name on your
+              profile
             </>
           }
         >
@@ -163,7 +163,7 @@ export function ProfileFields({
           <span className="font-mono text-[11px] text-dim">@{handle}</span>
         )}
         {validator && (
-          <span className="font-mono text-[11px] text-cyan">✦ validator ring</span>
+          <span className="font-mono text-[11px] text-cyan">✦ validator badge</span>
         )}
         <p className="text-center font-mono text-[11px] leading-relaxed text-dim">
           Follows what you type. Save changes writes it to your account.

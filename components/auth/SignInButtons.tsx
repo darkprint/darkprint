@@ -63,6 +63,14 @@ function GoogleMark() {
   );
 }
 
+/**
+ * What sign-in stores, said once and rendered by every page that offers the buttons. The
+ * GitHub scope is `read:user user:email` and Google's is `openid email profile`; the account
+ * row keeps the email and, for GitHub, the login. Neither scope can write to the account.
+ */
+export const SIGN_IN_PRIVACY_NOTE =
+  "Sign-in stores the email address your provider returns and, for GitHub, your username. DarkPrint cannot write to your GitHub or Google account, and publishing puts a blueprint on this registry only.";
+
 export interface SignInProvider {
   href: string;
   label: string;

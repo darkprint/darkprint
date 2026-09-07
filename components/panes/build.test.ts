@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { NodeCard } from "@/lib/core";
-import { buildPaneModel, cardYamlBlocks, type PaneNodeInput } from "./build";
+import {
+  buildPaneModel,
+  cardYamlBlocks,
+  paneNodesFor,
+  pinnedRefs,
+  type PaneNodeInput,
+} from "./build";
 import { CARD_FIELD_KEYS } from "./model";
 import type { PaneNode } from "./model";
 
@@ -423,5 +429,69 @@ describe("buildPaneModel — absences", () => {
 
   it("has none when the caller declares none", () => {
     expect(model().absences).toEqual([]);
+  });
+});
+
+/* --------------------- the join between a node and its card --------------------- */
+
+describe("pinnedRefs and paneNodesFor", () => {
+  /* The first node pins the ref that sorts LAST, and the third pins through the bare
+     `version` form. A join by position against a sorted ref list would hand `task` the
+     verifier's card; the join has to come from the DOT. */
+  const JOIN_DOT = `digraph join {
+  task    [card="task-intake@1.0.0"];
+  verify  [card=" acceptance-verifier@2.0.0 "];
+  deliver [version="1.0.0"];
+  task -> verify -> deliver;
+}
+`;
+  const NODES = [
+    { id: "task", label: "Task Intake" },
+    { id: "verify", label: "Acceptance Verifier" },
+    { id: "deliver", label: "Deliver" },
+  ];
+  const RESOLVED = new Map<string, NodeCard>([
+    ["task-intake@1.0.0", card({ id: "task-intake", name: "Task Intake" })],
+    ["acceptance-verifier@2.0.0", card({ id: "acceptance-verifier", version: "2.0.0" })],
+    ["deliver@1.0.0", card({ id: "deliver", name: "Deliver" })],
+  ]);
+
+  it("reads every node's pin off its own DOT statement, in both spellings", () => {
+    expect([...pinnedRefs(JOIN_DOT)]).toEqual([
+      ["task", "task-intake@1.0.0"],
+      ["verify", "acceptance-verifier@2.0.0"],
+      ["deliver", "deliver@1.0.0"],
+    ]);
+  });
+
+  it("gives the first node its own card, not the card that sorts first", () => {
+    const sorted = [...RESOLVED.keys()].sort();
+    expect(sorted[0], "the fixture no longer discriminates").not.toBe("task-intake@1.0.0");
+
+    const nodes = paneNodesFor(
+      NODES,
+      JOIN_DOT,
+      RESOLVED,
+      new Map([["task-intake@1.0.0", "id: task-intake\n"]]),
+    );
+    expect(nodes.map((n) => n.ref)).toEqual([
+      "task-intake@1.0.0",
+      "acceptance-verifier@2.0.0",
+      "deliver@1.0.0",
+    ]);
+    expect(nodes[0].card?.id).toBe("task-intake");
+    expect(nodes[0].yaml).toBe("id: task-intake\n");
+    expect(nodes[1].card?.id).toBe("acceptance-verifier");
+    expect(nodes[1].yaml).toBeUndefined();
+  });
+
+  it("leaves a node without a legal pin unjoined rather than guessing", () => {
+    const nodes = paneNodesFor(
+      [{ id: "loose", label: "Loose" }],
+      `digraph g { loose [card="unversioned"]; }`,
+      RESOLVED,
+      new Map(),
+    );
+    expect(nodes).toEqual([{ nodeId: "loose", label: "Loose" }]);
   });
 });

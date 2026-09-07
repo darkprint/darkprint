@@ -670,6 +670,12 @@ export function BlueprintGraph({
         panOnDrag
         preventScrolling={false}
         nodesConnectable={false}
+        /* The library's default screen-reader text promises moving and deleting nodes on a
+           drawing nothing here lets a reader edit. */
+        ariaLabelConfig={{
+          "node.a11yDescription.default": "Press Enter or Space to select a node and show its card.",
+          "edge.a11yDescription.default": "Press Enter or Space to select an edge.",
+        }}
         /* A selected node is lifted to z 1000 by default, which would put it back over
            the labels the moment a reader clicks one. Nothing in these graphs overlaps a
            sibling, so the lift buys nothing and costs the fix above. */

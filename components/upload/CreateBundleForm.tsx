@@ -355,7 +355,7 @@ export function CreateBundleForm({
           <span className="font-mono text-cyan">
             {ownerHandle}/{trimmedSlug === "" ? "…" : trimmedSlug}
           </span>{" "}
-          with no release yet. Bring the graph and its cards on the upload step next.
+          with no release yet. Add its graph and cards on the Publish page next.
         </p>
       </div>
     </form>

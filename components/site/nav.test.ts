@@ -263,6 +263,17 @@ describe("a route is called the same thing everywhere", () => {
     expect(source).not.toContain("Validate and publish");
   });
 
+  /* The header says "Cards" for the route and the page says "Node cards" in its `<title>`
+     and its `h1`: one short name in the chrome, one full name on the page, and the two
+     halves on the page have to agree with each other. They drifted three ways once. */
+  it("titles the cards page under one name in its title and its heading", () => {
+    const source = read("app/nodes/page.tsx");
+    expect(source).toContain('title: "Node cards",');
+    expect(source).toContain('title="Node cards"');
+    expect(source, "the tab title fell back to the bare word").not.toContain('title: "Nodes",');
+    expect(HEADER_LABELS.get("/nodes")).toBe("Cards");
+  });
+
   it("never puts one label on two routes", () => {
     for (const [where, links] of [
       ["header", NAV as readonly { href: string; label: string }[]],

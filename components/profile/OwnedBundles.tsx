@@ -17,67 +17,31 @@ import { blueprintHref } from "@/lib/href";
 import { shelfEmptyMessage } from "./parts";
 import type { ShelfSort } from "./SortControl";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-67 LIVE: PATCH /api/bundles/{owner}/{slug}/visibility — `visibilityApi` below, drawn
-// once per row for the owner. This shelf is the only surface that carries it for a bundle
-// that HAS a release (2026-09-06, when it came off the blueprint page). `DraftLanding` still
-// draws `VisibilitySwitch` for a bundle with none, which is the state where there is no
-// detail page to have carried it in the first place.
-
 /* ============================================================
-   Your blueprints: one list, public and private together, live off the registry (T280).
+   Your blueprints: one list, public and private together, live off the registry.
 
-   `ownedBundles(db, actor, handle)` replaced `bundlesOwnedBy(username)` in `load.ts` — see
-   that file's own header for the cutover — and the row shape changed with it.
-   `OwnedBundleSummary` is a projection of the `bundle` row itself, not a fully resolved
-   archive entry: it has a title, a summary, a visibility and (when a release exists) a
-   version, a digest and a node count, and nothing else. `ContentRow` wants a full
-   `Blueprint` — a graph to draw, an author to attribute, a scorecard to fold into the
-   autonomy meter — which a bare row from `bundle` cannot supply.
+   A row takes one of two shapes. A released row the archive carries a drawing for is a
+   `ContentRow`, the same row `/blueprints` draws. Everything else is `SummaryRow`: a
+   zero-release draft, rendered as "no release yet" rather than hidden, or a released
+   blueprint the archive has never heard of, published through `/new` and `/upload`. A
+   summary carries no graph, so that row draws no preview and says so, and it carries a
+   Publish link for the owner that lands a release on this blueprint whether it has none
+   yet or already has one.
 
-   So a row takes ONE of two shapes now, and the branch is the same test the old
-   `DraftRow`/`ContentRow` split used, widened by one more case:
+   The visibility control is drawn on both shapes, once each, because a published blueprint
+   the archive carries is exactly the row that would otherwise lose it. Private rows take
+   violet.
 
-   - **released, and `content/` carries the same slug for this owner** — `ContentRow`
-     itself, the same row `/blueprints` draws, because there is a full archive entry to
-     draw it from.
-   - **everything else** — `SummaryRow`, below: a zero-release draft (the GitHub
-     empty-repository state, rendered as "no release yet" rather than hidden — B-06 stays
-     untouched, this is a DIFFERENT reader that wants exactly the rows the public shelf
-     skips) or a released bundle the static content archive has never heard of (created
-     through `/new` and `/upload` rather than shipped in `content/`).
-
-   `SummaryRow` draws less than `ContentRow` does — no graph, because a summary carries no
-   graph to draw — but it draws every field the live row actually has, including a `Publish`
-   link for the owner: `/upload?owner=<handle>&slug=<slug>` lands a release on THIS bundle
-   whether it has none yet or already has one (B6's prefill contract), so the one link
-   serves both "publish a first release" and "publish a new one".
-
-   ── Who can see it, changed from here and nowhere else ──
-   The owner, 2026-09-06: "remove the panel visibility from the blueprint card; such option
-   should be visible only on the user account list of the blueprints". This file is the
-   second half of that sentence, and it has to serve BOTH row shapes — a published bundle
-   the archive carries is exactly the case that lost its switch when the bundle page's
-   column came off, so a control on `SummaryRow` alone would leave the regression standing
-   on the rows that hit it. `RowVisibility` below is the one mount, drawn twice.
-
-   ── Violet, unconditionally, on a private row ──
-   Unchanged from before T280: `Private` takes violet on the author's instruction
-   (`app/globals.css`'s accent comment carries the reasoning), and it is a fact about
-   `summary.visibility` rather than a branch this component invents.
-
-   ── Find, sort and visibility, all three live over the loaded rows ──
-   `FindBox` writes `?q=`, `SortControl` writes `?sort=`, `VisibilityFilter` writes
-   `?visibility=` — three keys, one `useQueryState`, no prop passed between any control and
-   this list. All three run on both branches: a visitor's rows are always `public`, so the
-   visibility filter is inert there rather than absent, the same reasoning that kept it
-   inert (rather than removed) before this pass.
+   Find, sort and visibility all read the address bar through one `useQueryState`, so no
+   prop passes between a control and this list and Back cannot disagree with the shelf. A
+   visitor's rows are always public, so the visibility filter is inert for them rather than
+   absent.
    ============================================================ */
 
-/** One row: the live summary, and the same slug's archive entry when there is one. */
+/** One row: the live summary, and the archive entry at the same slug when there is one. */
 export interface OwnedRow {
   summary: OwnedBundleSummary;
-  /** Present when `content/` carries a blueprint at this slug for this owner. */
+  /** Present when the archive carries a blueprint at this slug. */
   blueprint?: Blueprint;
 }
 
@@ -168,7 +132,7 @@ function SummaryRow({
           summary carries no DOT and no card refs to lay one out from. */}
       <RowThumbFrame className="flex items-center justify-center border-dashed">
         <span className="px-4 text-center font-mono text-[11px] uppercase tracking-[0.12em] text-dim">
-          {draft ? "no release yet" : "no graph drawn"}
+          {draft ? "no release yet" : "no preview"}
         </span>
       </RowThumbFrame>
 
@@ -303,7 +267,7 @@ export function OwnedBundles({
 
       {visible.length === 0 && (
         <p className="rounded-lg border border-dashed border-line bg-surface/40 px-5 py-8 text-center font-mono text-[13px] text-dim">
-          {shelfEmptyMessage("rows", visibility, query)}
+          {shelfEmptyMessage("blueprints", visibility, query)}
         </p>
       )}
 
@@ -344,12 +308,12 @@ export function OwnedBundles({
       {!owner && (
         <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface-2/50 px-5 py-4 sm:flex-row sm:gap-5">
           <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
-            The model
+            What is listed
           </span>
           <div className="flex flex-col gap-2 text-[13px] leading-relaxed text-muted">
             <p>
-              Every row is a bundle this account has made public, released or not. Private
-              bundles are never listed here and no count on this page includes one.
+              Every public blueprint this account owns, including ones with no release yet.
+              Private blueprints are left out of the list and out of the counts.
             </p>
           </div>
         </div>

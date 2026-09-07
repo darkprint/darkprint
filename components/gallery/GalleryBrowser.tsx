@@ -177,21 +177,6 @@ export function GalleryBrowser({
     return PHASE_ORDER.filter((id) => covered.has(id));
   }, [blueprints]);
 
-  /* The fork stance.
-     ------------------------------------------------------------
-     `rolled` is the default and the design's: a fork does not take its own tile, it lists
-     under the bundle it came from. One graph, one entry. `all` gives each published fork a
-     tile of its own carrying its lineage line, and `originals` hides them.
-
-     In the URL like every other filter on this page (`useQueryState`), never mirrored into
-     React state, so Back cannot disagree with the shelf.
-
-     **It never sorts.** Doc 2 §1.1 keeps league tables off this shelf — the same rule that
-     took autonomy out of `SortKey` — so the fork count states a fact on a tile and orders
-     nothing. There is no "most forked" and there must not be one. */
-  const forkStance = params.get("forks") ?? "rolled";
-
-
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
 
@@ -219,8 +204,6 @@ export function GalleryBrowser({
       return true;
     });
 
-    /* The shelf hands the browser no fork rows, so the fork stance removes nothing here and
-       every tile stands; the control survives as the URL parameter the server reads. */
     const sorted = [...filtered];
     sorted.sort((a, b) => {
       const at = a.updatedAt || a.createdAt;
@@ -372,24 +355,11 @@ export function GalleryBrowser({
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <label className="flex items-center gap-2">
-            <span className="sr-only">How to show forks</span>
-            <select
-              value={forkStance}
-              onChange={(e) => setParam("forks", e.target.value === "rolled" ? null : e.target.value)}
-              aria-label="How to show forks"
-              className={controlClass}
-            >
-              <option value="rolled">Forks: rolled up</option>
-              <option value="all">Forks: all</option>
-              <option value="originals">Forks: originals</option>
-            </select>
-          </label>
-
           {/* Same 40px shell as the selects it stands beside — it is a control in that row,
               and a control 6px shorter than its neighbours reads as a mistake rather than as
               a different kind of thing. */}
           <label
+            title="Every node runs unattended and all five lifecycle phases are covered"
             className={cx(
               "flex h-10 w-full cursor-pointer select-none items-center gap-2 rounded-md border px-3 font-mono text-xs transition-colors sm:w-auto",
               darkFactory
@@ -404,7 +374,7 @@ export function GalleryBrowser({
               className="h-3.5 w-3.5 accent-cyan"
             />
             <span aria-hidden>◼</span>
-            dark factory
+            dark factory only
           </label>
         </div>
 
@@ -442,13 +412,6 @@ export function GalleryBrowser({
             </button>
           </div>
         )}
-
-        {/* The control is real and the shelf carries no fork rows for it to fold, so it says
-            so rather than leaving a reader to wonder why three settings show one shelf. */}
-        <p className="font-mono text-[11px] text-dim">
-          A published fork is listed as a blueprint of its own, so all three settings show
-          the same shelf. A private fork is never listed here.
-        </p>
 
       </RegistryFilterBar>
 
@@ -511,14 +474,12 @@ export function GalleryBrowser({
               bundle rather than for the lead alone — see `ContentRow`. */}
           {leadBlueprint !== null && (
             <div className="flex flex-col gap-2">
-              <p className="label-lead">Start here</p>
+              <p className="label-lead">Start here: the five-node starter factory</p>
               <ContentRow item={leadBlueprint} />
             </div>
           )}
           {gridBlueprints.map((bp) => (
-            <div key={bp.slug} className="flex flex-col gap-2">
-              <ContentRow item={bp} />
-            </div>
+            <ContentRow key={`${bp.ownerHandle ?? ""}/${bp.slug}`} item={bp} />
           ))}
         </div>
       ) : (

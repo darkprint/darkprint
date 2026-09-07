@@ -28,6 +28,10 @@ import { CodeMenu } from "./CodeMenu";
  */
 const COMMAND = "darkprint clone darkprint/starter-software-factory --version 1.2.0";
 
+/** The line that runs today: every file of the release at its digest address, in one `curl`. */
+const CURL =
+  'curl --fail-early -fsSL --create-dirs -o "starter-software-factory/#1" "https://darkprint.io/api/files/blueprints/darkprint/starter-software-factory/d/sha256:abc/{README.md,topology.dot}"';
+
 /** `releaseFiles` order and spelling: bundle-relative, forward slashes. */
 const FILES = [
   { path: "README.md", href: "/api/blueprints/darkprint/starter/files/README.md" },
@@ -39,7 +43,7 @@ const FILES = [
 ] as const;
 
 function render(files: readonly { path: string; href: string }[] = FILES): string {
-  return renderToStaticMarkup(createElement(CodeMenu, { command: COMMAND, files }));
+  return renderToStaticMarkup(createElement(CodeMenu, { command: CURL, cliCommand: COMMAND, files }));
 }
 
 const HTML = render();
@@ -84,22 +88,26 @@ describe("the panel a reader gets before any script runs", () => {
   it("takes a caller's label and the amber register", () => {
     const card = renderToStaticMarkup(
       createElement(CodeMenu, {
-        command: COMMAND,
+        command: CURL,
+        cliCommand: COMMAND,
         files: FILES,
         label: "Download card",
         tone: "amber" as const,
       }),
     );
     expect(openText(card)).toContain("Download card");
-    expect(card, "the amber register is not drawn from `--color-amber`").toContain("amber");
+    /* The register lives on the trigger. The panel body carries amber on both callers, in
+       the badge that fences the CLI line, so the register is read off the `<summary>`. */
+    const trigger = (html: string) => html.slice(html.indexOf("<summary"), html.indexOf("</summary>"));
+    expect(trigger(card), "the amber register is not drawn from `--color-amber`").toContain("amber");
     expect(
       card,
       "a card's download is still drawing the copper register the owner overruled",
     ).not.toContain("copper");
-    expect(card, "the card's trigger took the blueprint's cyan").not.toContain("cyan");
+    expect(trigger(card), "the card's trigger took the blueprint's cyan").not.toContain("cyan");
     // And the default is still the blueprint's.
-    expect(HTML).toContain("border-cyan/40");
-    expect(HTML, "the blueprint's download took the card register").not.toContain("amber");
+    expect(trigger(HTML)).toContain("border-cyan/40");
+    expect(trigger(HTML), "the blueprint's download took the card register").not.toContain("amber");
     expect(HTML).not.toContain("copper-line");
   });
 
@@ -120,7 +128,8 @@ describe("the panel a reader gets before any script runs", () => {
   it("does not wear an honesty claim's shape while wearing its colour", () => {
     const card = renderToStaticMarkup(
       createElement(CodeMenu, {
-        command: COMMAND,
+        command: CURL,
+        cliCommand: COMMAND,
         files: FILES,
         label: "Download card",
         tone: "amber" as const,
@@ -143,6 +152,8 @@ describe("the panel a reader gets before any script runs", () => {
     // `plainText` reads the whole document; `openText` reads what a reader sees without
     // opening anything. The pair is what says the body is really behind the summary AND
     // really in the HTML, which one reading alone cannot distinguish.
+    expect(plainText(HTML)).toContain(CURL);
+    expect(openText(HTML)).not.toContain(CURL);
     expect(plainText(HTML)).toContain(COMMAND);
     expect(openText(HTML)).not.toContain(COMMAND);
     for (const file of FILES) {
@@ -173,7 +184,23 @@ describe("the panel a reader gets before any script runs", () => {
     expect(plainText(empty)).not.toContain("Files");
     // The command survives the empty case: a bundle with nothing to list is still a
     // bundle somebody may clone once it has a release.
-    expect(plainText(empty)).toContain(COMMAND);
+    expect(plainText(empty)).toContain(CURL);
+  });
+
+  /**
+   * The order is the panel's argument: the command that runs comes first, and the CLI line
+   * that does not run on a stranger's machine sits last, under the badge that says so. A
+   * reader who has just been handed a working command reads the next code block as another
+   * one unless the panel says otherwise before they reach it.
+   */
+  it("puts the working command first and the CLI line under the badge", () => {
+    const text = plainText(HTML);
+    const curl = text.indexOf(CURL);
+    const badge = text.indexOf("Coming soon");
+    const cli = text.indexOf(COMMAND);
+    expect(curl, "the curl line is missing").toBeGreaterThan(-1);
+    expect(badge, "the badge is missing").toBeGreaterThan(curl);
+    expect(cli, "the CLI line is not under the badge").toBeGreaterThan(badge);
   });
 });
 
@@ -185,8 +212,8 @@ describe("claims this panel may not stop making", () => {
    * in a code block says "run this", and a reader who runs it gets a 404 from npm unless
    * this sentence is beside it.
    */
-  it("says the package is not on npm", () => {
-    expect(plainText(HTML).toLowerCase()).toContain("not on npm");
+  it("says the package is not published to npm", () => {
+    expect(plainText(HTML).toLowerCase()).toContain("not published to npm");
   });
 
   /**

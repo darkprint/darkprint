@@ -16,7 +16,6 @@
     "db:migrate": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON lib/db/cli.ts up",
     "db:rollback": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON lib/db/cli.ts down",
     "preflight:db": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/prod-preflight.ts",
-    "migrate:stored-cards": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/migrate-stored-cards.ts",
     "db:reembed": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/reembed.ts",
     "eval:rag": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/rag-eval.ts",
     "build": "next build",

@@ -29,7 +29,7 @@ import { describe, expect, it } from "vitest";
 
 import { CORE_ONTOLOGY, ontologyView } from "@/lib/core";
 
-import { nodeHref, termHref } from "./href";
+import { legacyBlueprintTarget, nodeHref, termHref } from "./href";
 
 const VIEW = ontologyView(CORE_ONTOLOGY);
 
@@ -78,5 +78,49 @@ describe("nodeHref", () => {
   it("uses the same rule, because `/nodes/[...id]` is the same shape of route", () => {
     expect(nodeHref("berti/solver-a")).toBe("/nodes/berti/solver-a");
     expect(nodeHref("solver-a")).toBe("/nodes/solver-a");
+  });
+});
+
+describe("legacyBlueprintTarget", () => {
+  /* `/blueprints/darkprint` answered 404 for an account that exists, because the route only
+     ever read its one segment as a pre-owner slug. */
+  it("sends an existing owner to their profile, query and all", () => {
+    expect(
+      legacyBlueprintTarget({ segment: "darkprint", accountExists: true, holders: [], query: "?q=1" }),
+    ).toBe("/u/darkprint?q=1");
+  });
+
+  it("reads the segment as an owner before it reads it as a slug", () => {
+    expect(
+      legacyBlueprintTarget({
+        segment: "mara",
+        accountExists: true,
+        holders: [{ ownerHandle: "somebody" }],
+      }),
+    ).toBe("/u/mara");
+  });
+
+  it("sends a slug one account holds to that blueprint", () => {
+    expect(
+      legacyBlueprintTarget({
+        segment: "smoke-checker",
+        accountExists: false,
+        holders: [{ ownerHandle: "alessandro" }],
+        query: "?path=cards",
+      }),
+    ).toBe("/blueprints/alessandro/smoke-checker?path=cards");
+  });
+
+  it("answers nothing for a slug two accounts hold, and for a segment nobody holds", () => {
+    expect(
+      legacyBlueprintTarget({
+        segment: "guarded-merge-bot",
+        accountExists: false,
+        holders: [{ ownerHandle: "darkprint" }, { ownerHandle: "alessandro" }],
+      }),
+    ).toBeUndefined();
+    expect(
+      legacyBlueprintTarget({ segment: "nobody-here", accountExists: false, holders: [] }),
+    ).toBeUndefined();
   });
 });

@@ -53,7 +53,7 @@ function DeletePlanFigures({ plan }: { plan: DeletionPlan }) {
       <div className="flex flex-col gap-1">
         <dt className="text-[11px] uppercase tracking-[0.1em] text-dim">destroyed</dt>
         <dd className="text-fg">
-          {plan.privateBundles} private bundle{plan.privateBundles === 1 ? "" : "s"}
+          {plan.privateBundles} private blueprint{plan.privateBundles === 1 ? "" : "s"}
         </dd>
       </div>
       <div className="flex flex-col gap-1">
@@ -65,7 +65,7 @@ function DeletePlanFigures({ plan }: { plan: DeletionPlan }) {
       <div className="flex flex-col gap-1">
         <dt className="text-[11px] uppercase tracking-[0.1em] text-dim">stays published</dt>
         <dd className="text-fg">
-          {plan.publishedBundles} bundle{plan.publishedBundles === 1 ? "" : "s"}
+          {plan.publishedBundles} blueprint{plan.publishedBundles === 1 ? "" : "s"}
         </dd>
       </div>
       <div className="flex flex-col gap-1">
@@ -133,9 +133,11 @@ function DeleteAccount({ handle }: { handle: string | null }) {
         <div className="flex min-w-[280px] flex-1 flex-col gap-1">
           <span className="text-sm text-fg">Delete account</span>
           <span className="text-[13px] leading-relaxed text-muted">
-            Your handle stays reserved. Your private bundles and cards are destroyed.
-            Everything you published stays. A pinned card cannot be withdrawn. Review the
-            exact figures before you confirm anything.
+            Your handle is retired and nobody can claim it. Your private blueprints and
+            cards are deleted, unless a public release still uses the card. Everything you
+            published stays: a public release is permanent, and a card version another
+            blueprint uses cannot be withdrawn. Review the exact figures before you
+            confirm.
           </span>
         </div>
         {!expanded && (
@@ -271,8 +273,8 @@ function TransferBundle({ initial }: { initial: readonly TransferableBundle[] })
         <div className="flex min-w-[280px] flex-1 flex-col gap-1">
           <span className="text-sm text-fg">Transfer a blueprint</span>
           <span className="text-[13px] leading-relaxed text-muted">
-            Hand ownership to another handle. The digest does not change, because the
-            bundle is the same bytes; only the author line moves.
+            Hand a blueprint to another account. Its files and release digests stay
+            exactly as they are; only the owner changes, and its address moves with it.
           </span>
         </div>
         {!expanded && available.length > 0 && (
@@ -292,7 +294,7 @@ function TransferBundle({ initial }: { initial: readonly TransferableBundle[] })
         <div className="flex flex-col gap-3 border-t border-line pt-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-2">
-              <span className="label">Bundle</span>
+              <span className="label">Blueprint</span>
               <select
                 value={bundleId}
                 onChange={(event) => {
@@ -346,8 +348,8 @@ function TransferBundle({ initial }: { initial: readonly TransferableBundle[] })
           {plan !== undefined && (
             <p className="font-mono text-[11px] text-dim">
               {plan.collides
-                ? `@${toHandle.trim()} already holds a bundle at "${plan.slug}", so this is refused before anything moves.`
-                : `Ready: moves "${plan.slug}" into @${toHandle.trim()}'s namespace.`}
+                ? `@${toHandle.trim()} already holds a blueprint at "${plan.slug}", so this is refused before anything moves.`
+                : `Ready: "${plan.slug}" will move to @${toHandle.trim()}.`}
             </p>
           )}
           {transferError !== undefined && (
