@@ -447,11 +447,12 @@ publish example names the key `$DARKPRINT_KEY` in the author's shell; the CLI re
 .env.local`, `npm run db:migrate`, `npm run seed:import` (publishes the ten `content/`
 blueprints under the handle `darkprint` at version 1.0.0 through the same `publish()` the site
 uses; a database already holding a slug at 1.0.0 with a different digest refuses the import, so
-seed a fresh database rather than editing rows), `npm run dev`. Gates: `npm run typecheck` (`tsc --noEmit`; needs a build or `npx next
-typegen` first for the route types), `npm run lint`, `npm test` (`vitest run` over `packages/**`,
-`lib/**`, `components/**`, `scripts/**`, `app/**`, `tests/**`; `maxWorkers` 3 because every worker
-shares one Postgres; 20 s test timeout, 30 s hook timeout), `npm run build` (`prebuild`
-regenerates `public/bundles`, `public/cards`, `public/skill`, then `next build`). Tests need
+seed a fresh database rather than editing rows), `npm run dev`. Gates: `npm run typecheck`
+(`tsc --noEmit`; needs a build or `npx next typegen` first for the route types), `npm run
+lint`, `npm test` (`vitest run` over `packages/**`, `lib/**`, `components/**`, `scripts/**`,
+`app/**`, `tests/**`; `maxWorkers` 3 because every worker shares one Postgres; 20 s test
+timeout, 30 s hook timeout), `npm run build` (`prebuild` regenerates `public/bundles`,
+`public/cards`, `public/skill`, then `next build`). Tests need
 `DATABASE_URL` and the four `S3_*` variables in the shell; database suites create
 `darkprint_test_<uuid>` databases through `tests/support/db.ts` and drop them afterwards, so a
 killed run leaves some behind. `.github/workflows/ci.yml` runs build, typecheck, lint and test on
