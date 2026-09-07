@@ -35,6 +35,7 @@ import {
   ranked,
   scoreOf,
   similarityEvidence,
+  similarityFrom,
   taskWords,
   unranked,
   type Field,
@@ -167,6 +168,13 @@ describe("normalisation and near matches", () => {
     expect(findWord("deployment", "planning")).toBeUndefined();
   });
 
+  it("matches a two-letter query word whole, and a longer one as a substring", () => {
+    expect(findWord("decision specification", "ci")).toBeUndefined();
+    expect(findWord("rerun ci nightly", "ci")).toBe("ci");
+    expect(findWord("approve the prompt", "pr")).toBeUndefined();
+    expect(findWord("agentic review", "agent")).toBe("agentic");
+  });
+
   it("holds the short-token floor, which a natural pair cannot reach past", () => {
     /* A four-letter query has four 3-grams and needs three of them present, which for a real
        word almost always means the document contains the query outright, so the substring
@@ -273,6 +281,16 @@ describe("the hit rule", () => {
   it("admits a candidate at the floor exactly, and refuses one just below it", () => {
     expect(isHit(MIN_SIMILARITY, 0)).toBe(true);
     expect(isHit(MIN_SIMILARITY - 0.0001, 0)).toBe(false);
+  });
+
+  it("converts a distance once and floors the similarity at zero", () => {
+    expect(similarityFrom(0.57)).toBeCloseTo(0.43, 10);
+    expect(similarityFrom(1.04)).toBe(0);
+    expect(isHit(similarityFrom(1.04), 0)).toBe(false);
+    /* The disclosed entry must keep the two-decimal grammar a caller parses, so a pair past
+       a right angle reads `similarity:0.00` and never `similarity:-0.04`. */
+    expect(similarityEvidence(similarityFrom(1.04))).toBe("similarity:0.00");
+    expect(similarityEvidence(similarityFrom(1.04))).toMatch(/^similarity:\d\.\d{2}$/);
   });
 
   it("admits any lexical coverage whatever the similarity", () => {

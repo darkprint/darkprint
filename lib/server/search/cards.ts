@@ -39,6 +39,7 @@ import {
   unranked,
   type Field,
   type Scored,
+  similarityFrom,
 } from "./rank";
 import { withSearchStore } from "./store";
 import { stripHarness } from "./text";
@@ -191,7 +192,7 @@ async function search(db: Db, params: Record<string, string>): Promise<Results<C
  *
  * The reasoning is `blueprints.ts`'s `similarityOf` and is not repeated: the candidate set
  * carries the visibility rule and the filters, the narrowing happens in SQL so a private or
- * filtered-out row is never read, and `<=>` is a cosine distance converted once.
+ * filtered-out row is never read, and `<=>` is a cosine distance `similarityFrom` converts once.
  *
  * The narrowing is by card id, a superset of the `id@version` pairs the candidates name,
  * and the exact pair is matched in JS through `cardRef` so the canonical spelling stays
@@ -227,7 +228,7 @@ async function similarityOf(
   for (const row of rows) {
     const ref = cardRef(row.cardId, row.version);
     if (!wanted.has(ref)) continue;
-    byRef.set(ref, 1 - Number(row.distance));
+    byRef.set(ref, similarityFrom(Number(row.distance)));
   }
   return { byRef, encoder: "present" };
 }

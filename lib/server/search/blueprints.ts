@@ -50,6 +50,7 @@ import {
   unranked,
   type Field,
   type Scored,
+  similarityFrom,
 } from "./rank";
 import { withSearchStore } from "./store";
 import { stripHarness } from "./text";
@@ -230,7 +231,8 @@ function identityOf(bp: BlueprintSummary): string {
  *
  * ── The distance, and the sign that is easy to get backwards ──
  * `<=>` is pgvector's cosine DISTANCE, 0 (identical) to 2 (opposite). Both vectors are unit
- * length, so `similarity = 1 - distance` is exact. The conversion is written once, here.
+ * length, so `similarity = 1 - distance` is exact; `similarityFrom` does that conversion
+ * once for both searchers and floors it at zero.
  *
  * No `LIMIT` and no floor in SQL: every candidate's similarity is read so the score can be
  * computed over the whole visible set, and the floor is applied by `isHit` beside the
@@ -276,7 +278,7 @@ async function similarityOf(
     if (row.handle === null) continue;
     const bp = wanted.get(`${row.slug}/${row.handle}#${row.digest}`);
     if (bp === undefined) continue;
-    byIdentity.set(identityOf(bp), 1 - Number(row.distance));
+    byIdentity.set(identityOf(bp), similarityFrom(Number(row.distance)));
   }
   return { byIdentity, encoder: "present" };
 }

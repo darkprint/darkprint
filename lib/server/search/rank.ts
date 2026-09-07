@@ -122,6 +122,19 @@ export function coverageOf(found: number, queryLength: number): number {
   return queryLength === 0 ? 0 : found / queryLength;
 }
 
+/**
+ * Cosine similarity from pgvector's `<=>` distance, floored at zero.
+ *
+ * Two unrelated documents can sit past a right angle, which puts the distance above 1 and
+ * the raw similarity below zero. A candidate like that can still be a hit through coverage,
+ * and `similarity:-0.04` would break the two-decimal grammar callers parse, so the floor is
+ * applied here, at the only place the conversion happens, and the disclosed number never
+ * carries a sign. Below the floor and above it alike, the candidate is equally far.
+ */
+export function similarityFrom(distance: number): number {
+  return Math.max(0, 1 - distance);
+}
+
 /** The hit rule: near enough by vector, or found by at least one content word. */
 export function isHit(similarity: number, coverage: number): boolean {
   return similarity >= MIN_SIMILARITY || coverage > 0;

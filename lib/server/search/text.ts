@@ -89,9 +89,17 @@ export const STOPWORDS: ReadonlySet<string> = new Set([
 /**
  * Shortest word that counts toward coverage. Single letters are substrings of half the
  * archive; two-letter words stay because `PR`, `QA`, `KB` and `CI` are content words in this
- * domain, and the two-letter function words are on the stopword list instead.
+ * domain, the two-letter function words are on the stopword list instead, and `findWord`
+ * matches a word this short only whole.
  */
 export const MIN_COVERAGE_WORD_LENGTH = 2;
+
+/**
+ * Below this length a query word is matched whole rather than as a substring: `pr` is inside
+ * `prompt` and `approve`, `ci` inside `decision`, and a match like that credits a document
+ * with a word the reader never meant.
+ */
+const MIN_SUBSTRING_QUERY_LENGTH = 3;
 
 /**
  * The query with every harness phrase removed, whitespace collapsed.
@@ -186,6 +194,9 @@ function nearMatches(queryWord: string, documentWord: string): boolean {
  */
 export function findWord(fieldText: string, queryWord: string): string | undefined {
   const candidates = words(normalise(fieldText));
+  if (queryWord.length < MIN_SUBSTRING_QUERY_LENGTH) {
+    return candidates.find((word) => word === queryWord);
+  }
   for (const word of candidates) if (word.includes(queryWord)) return word;
   for (const word of candidates) if (nearMatches(queryWord, word)) return word;
   return undefined;

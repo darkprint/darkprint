@@ -4,29 +4,24 @@
    URL, and `components/ontology/VocabularyBrowser.tsx` is the
    specification for all three.
 
-   ── Both corpora, and why that is not optional (D-200-17) ──
+   ── Both corpora, and why that is not optional ──
    The registry's terms are `CORE_ONTOLOGY`, in the process; a
    LOCAL term travels with the release that declares it
-   (`release.localVocabulary`), because T030's merged view folds an
+   (`release.localVocabulary`), because the merged view folds an
    overlay in per bundle rather than per registry. Reading the core
-   alone would leave `origin=local` filtering NOTHING, EVER, on a
-   key the contract says may not change — a criterion made
-   unsatisfiable rather than merely narrow. The core half was an
-   `ontology_term` read until `0009_drop_ontology_versioning`
-   dropped that table with the versions it was keyed to; what
-   changed is where the core comes from, not that there are two
-   corpora.
+   alone would leave `origin=local` filtering nothing, ever, on a
+   key the URL contract says may not change.
 
-   ── Which is why AC4 bites hardest here ──
+   ── Visibility is inherited, so the universe carries it ──
    A local term is NOT a row with a visibility column: it inherits
-   its bundle's. So the public-only rule (D-200-06, D-200-07) is
-   applied by taking the bundle universe from
-   `blueprints(db, PUBLIC_ONLY)` — T080's answer to what is public
-   — and reading local vocabularies only from those bundles'
-   CURRENT releases. A private bundle's local term therefore
-   reaches no caller, its own owner and the operator included, and
-   it does so because the universe never contained the bundle
-   rather than because a filter downstream remembered to drop it.
+   its bundle's. So the public-only rule is applied by taking the
+   bundle universe from `blueprints(db, PUBLIC_ONLY)`, the one
+   answer to what is public, and reading local vocabularies only
+   from those bundles' CURRENT releases. A private bundle's local
+   term therefore reaches no caller, its own owner and the operator
+   included, and it does so because the universe never contained
+   the bundle rather than because a filter downstream remembered to
+   drop it.
    ============================================================ */
 
 import { CORE_ONTOLOGY, splitTermId, type TermKind } from "@/lib/core";
@@ -86,8 +81,8 @@ const FIELDS: readonly Field<OntologyTerm>[] = [
 /**
  * Ontology terms matching `params`, with the vocabularies to filter by next.
  *
- * `actor` is ACCEPTED AND DELIBERATELY UNUSED (D-200-07): search is public-only for every
- * caller, so who is asking cannot change the answer. See `visibility.ts`.
+ * `actor` is ACCEPTED AND DELIBERATELY UNUSED: search is public-only for every caller, so
+ * who is asking cannot change the answer. See `visibility.ts`.
  */
 export async function searchTerms(
   db: Db,
@@ -101,8 +96,8 @@ export async function searchTerms(
 async function search(db: Db, params: Record<string, string>): Promise<Results<OntologyTerm>> {
   const corpus = await bothCorpora(db);
 
-  /* AC3, keyed by the URL parameter names (D-200-18). Both are vocabularies in the strict
-     sense — closed sets this surface accepts — rather than a projection of what matched. */
+  /* Facets keyed by the URL parameter names. Both are vocabularies in the strict sense,
+     closed sets this surface accepts, rather than a projection of what matched. */
   const facets: Record<string, readonly string[]> = {
     kind: TERM_KINDS,
     origin: ORIGINS,
