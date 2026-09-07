@@ -299,7 +299,7 @@ export default function SpecAttractorPage() {
             as="h1"
             eyebrow={page.eyebrow}
             title={page.title}
-            lead="One page for the reader who already knows Attractor, StrongDM's graph runner, which executes the DOT file darkprint export produces. Which card field becomes which node attribute, which node type selects which handler, and every reserved name a runner reads that a blueprint has no way to set. New to both? Start with the topology and the node card and come back."
+            lead="One page for the reader who already knows Attractor, StrongDM's graph runner and the program the file darkprint export writes is written for. Which card field becomes which node attribute, which node type selects which handler, and every reserved name a runner reads that a blueprint has no way to set. New to both? Start with the topology and the node card and come back."
           />
           {/* The revision these tables were checked against, printed rather than dated in
               prose: an undated compatibility claim has no shelf life, and this is the only
