@@ -256,7 +256,7 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
           <Link href={SKILL_ROUTE} className={PROSE_LINK}>
             DarkPrint skill
           </Link>
-          , drop it in as it is. The skill writes exactly what this page reads, a{" "}
+          , drop it in as it is. The DarkPrint skill writes exactly what this page reads, a{" "}
           <span className="font-mono text-cyan">topology.dot</span> and the{" "}
           <span className="font-mono text-cyan">cards/</span> it names, so there is nothing
           to export or convert. You can bring it before it is finished: a graph whose cards
@@ -281,10 +281,9 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
             promising a conversion would describe a button that is deliberately not that. */}
         <p className="mt-5 text-sm leading-relaxed text-muted">
           An Attractor pipeline works here too. Drop its{" "}
-          <span className="font-mono text-cyan">.dot</span> and this page offers to turn it
-          into a draft blueprint in your browser, one card per node, attributed to you.
-          Before it writes anything it lists what the two formats cannot express in each
-          other, so you know what the draft will be missing.
+          <span className="font-mono text-cyan">.dot</span> and this page offers to read it
+          into a draft bundle in your browser, one card per node, attributed to you. Before
+          it writes anything it lists what the two formats cannot express in each other.
         </p>
         {/* ── Two of the three sentences that stood here are gone, and ONE stayed (D-263-02) ──
             The paragraph used to refuse three things at once: an account to upload into,
@@ -312,8 +311,8 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
             badge ended up alone at the far left of a single very long line. */}
         <p className="mt-5 flex max-w-2xl flex-wrap items-center gap-2 text-[13px] leading-relaxed text-dim">
           <ComingSoonBadge />
-          Not built yet: a live push from the editor the skill runs in. The skill writes the
-          folder to your disk, and you bring it here yourself.
+          Not built yet: a live push from the editor the skill runs in. The DarkPrint skill
+          writes the folder to your disk, and you bring it here yourself.
         </p>
         {/* The vocabulary asymmetry, moved here from `/what-it-isnt` when that page was
             removed. It is a statement about this page, and it was the only unconditional

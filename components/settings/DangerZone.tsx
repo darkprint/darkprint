@@ -136,8 +136,7 @@ function DeleteAccount({ handle }: { handle: string | null }) {
             Your handle is retired and nobody can claim it. Your private blueprints and
             cards are deleted, unless a public release still uses the card. Everything you
             published stays: a public release is permanent, and a card version another
-            blueprint uses cannot be withdrawn. Review the exact figures before you
-            confirm.
+            blueprint uses cannot be withdrawn.
           </span>
         </div>
         {!expanded && (
@@ -273,8 +272,8 @@ function TransferBundle({ initial }: { initial: readonly TransferableBundle[] })
         <div className="flex min-w-[280px] flex-1 flex-col gap-1">
           <span className="text-sm text-fg">Transfer a blueprint</span>
           <span className="text-[13px] leading-relaxed text-muted">
-            Hand a blueprint to another account. Its files and release digests stay
-            exactly as they are; only the owner changes, and its address moves with it.
+            Hand a blueprint to another account. Its files and release digests stay as
+            they are; only the owner changes, and its address moves with it.
           </span>
         </div>
         {!expanded && available.length > 0 && (

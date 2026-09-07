@@ -252,8 +252,8 @@ export function AttractorOffer({
             <span className="font-mono text-fg">{nodes}</span> nodes carry no{" "}
             <span className="font-mono">prompt</span>. §2.6 gives that attribute the default{" "}
             <span className="font-mono">&quot;&quot;</span>, and a §4.10 tool node runs its{" "}
-            <span className="font-mono">tool_command</span> while a §4.6 human gate simply
-            waits, so a pipeline is entitled to leave it out. A DarkPrint card is not: those{" "}
+            <span className="font-mono">tool_command</span> while a §4.6 human gate waits,
+            so a pipeline is entitled to leave it out. A DarkPrint card is not: those{" "}
             {unprompted === 1 ? "card arrives" : "cards arrive"} with an empty{" "}
             <span className="font-mono">spec</span>, {unprompted === 1 ? "does" : "do"} not
             load, and the bundle stays unfinished until you write what the{" "}

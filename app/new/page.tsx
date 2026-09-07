@@ -40,8 +40,8 @@ function SignedOut() {
   return (
     <div className="mt-10 flex flex-col gap-5 rounded-xl border border-line bg-surface-2/50 px-6 py-7 sm:max-w-md">
       <p className="text-sm leading-relaxed text-muted">
-        A blueprint is created under your account as an empty draft, a name and a
-        visibility with no files yet, so DarkPrint needs to know who you are first.
+        A blueprint is created under your account as a draft, a name and a visibility
+        with no files yet, so DarkPrint needs to know who you are first.
       </p>
       <SignInButtons />
     </div>

@@ -83,12 +83,12 @@ export default async function Page({ params }: PageProps<"/u/[username]">) {
             title={owner ? "Nothing here yet" : "No published blueprints"}
             action={
               owner
-                ? { href: "/new", label: "Start a blueprint" }
+                ? { href: "/new", label: "New blueprint" }
                 : { href: "/blueprints", label: "Browse blueprints" }
             }
           >
             {owner
-              ? "Nothing pinned and nothing published or drafted yet. New blueprint starts one."
+              ? "Nothing pinned, published or drafted yet."
               : `${author.displayName} has not published a blueprint yet. Private blueprints are not listed here.`}
           </EmptyState>
         </div>

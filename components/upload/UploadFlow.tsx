@@ -1371,8 +1371,7 @@ export function UploadFlow({
                     vocabulary alone, the same reading a bundle&rsquo;s own cards get
                     before any local overlay is layered on. Publishing one by itself is
                     not built. The registry stores a {KIND_NOUN[kind]} today only when
-                    pinned inside a blueprint bundle that publishes. The last step here
-                    says so.
+                    pinned inside a blueprint bundle that publishes.
                   </>
                 )}
               </p>
@@ -1575,7 +1574,7 @@ export function UploadFlow({
                       against it.
                     </>
                   ) : (
-                    <>Semantic version. The next release of this slug must be above it.</>
+                    <>Semantic version.</>
                   )}
                 </p>
               </div>
@@ -1593,7 +1592,7 @@ export function UploadFlow({
                     </span>
                     : this release is{" "}
                     <span className="text-fg">{visibility === "public" ? "public" : "private"}</span>.
-                    Change it from the blueprint&rsquo;s own page, not here.
+                    Change it from the blueprint&rsquo;s page.
                   </p>
                 </div>
               ) : (
@@ -1660,8 +1659,7 @@ export function UploadFlow({
               <p className="max-w-xl text-sm leading-relaxed text-muted">
                 <span className="text-fg">Read off your cards.</span> The agents and tools
                 listed below are what your cards declare, so a reader knows what the graph
-                needs before running it. You do not type them here; the registry derives them
-                from the cards.
+                needs before running it. You do not type them here.
               </p>
 
               <DerivedChips
@@ -1748,8 +1746,7 @@ export function UploadFlow({
               </h3>
               <p className="prose-lane mt-4 text-sm leading-relaxed text-muted">
                 A bundle without a <span className="font-mono text-cyan">.dot</span> is
-                not incomplete. It is not a bundle. Go back to the first step and add the
-                topology.
+                not a bundle. Go back to the first step and add the topology.
               </p>
             </div>
           ) : (
@@ -1966,7 +1963,7 @@ export function UploadFlow({
               <div className="rounded-lg border border-line bg-surface-2/40 p-4">
                 <p className="text-xs leading-relaxed text-muted">
                   <span className="text-fg">Not built:</span> publishing a lone{" "}
-                  {KIND_NOUN[kind]} on its own. Today the registry only stores one pinned
+                  {KIND_NOUN[kind]}. Today the registry only stores one pinned
                   inside a blueprint bundle that publishes. Pick Blueprint on the first
                   step to publish one.
                 </p>

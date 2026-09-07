@@ -38,7 +38,7 @@ describe("API key scope copy", () => {
   });
 
   it("the read sentence promises no write and points at what does", () => {
-    expect(SCOPE_COPY.read.blurb).toContain("authorizes no write");
+    expect(SCOPE_COPY.read.blurb).toContain("authorises no write");
     expect(SCOPE_COPY.read.blurb).toContain("write key");
   });
 
