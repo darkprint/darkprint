@@ -3,13 +3,14 @@ import type { NextConfig } from "next";
 /**
  * Files the sentence encoder reads from disk at runtime, which the build's import tracer
  * cannot see: the vendored MiniLM weights under `models/` and the onnxruntime binary with
- * the shared library it dlopens. The function runtime is linux/x64 (a deployed /api/health
- * named the x64 binding as the missing module), so that is the one platform traced. The
+ * the shared library it dlopens. A prebuilt deployment runs on linux/arm64 (the builder
+ * declares it and /api/health on such a deployment asked for the arm64 binding), so that is
+ * the one platform traced; a build made on Vercel's own machines runs x64 instead. The
  * binding is required through a `${platform}/${arch}` template, which makes the tracer keep
  * every platform's binaries unless they are excluded, and that surplus alone pushed the
  * deployment past the Hobby plan's function grouping.
  */
-const ENCODER_FILES = ["./models/**", "./node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**"];
+const ENCODER_FILES = ["./models/**", "./node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**"];
 /** The route paths whose functions load the encoder: the two searchers, the MCP find tools and endpoint, publish (which re-embeds), and the health probe. */
 const ENCODER_ROUTES = [
   "/api/search/blueprints",
@@ -22,17 +23,17 @@ const ENCODER_ROUTES = [
 ];
 
 const FOREIGN_BINARIES = [
-  "./node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**",
+  "./node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**",
   "./node_modules/onnxruntime-node/bin/napi-v6/darwin/**",
   "./node_modules/onnxruntime-node/bin/napi-v6/win32/**",
   /* `@huggingface/transformers` imports sharp at load, so sharp stays; only the builds for
      platforms the function will never run on go. A prebuilt deploy from a Mac carries the
-     linux-x64 pair because the release steps install them alongside the host's. */
+     linux-arm64 pair because the release steps install them alongside the host's. */
   "./node_modules/@img/sharp-darwin*/**",
   "./node_modules/@img/sharp-libvips-darwin*/**",
   "./node_modules/@img/sharp-win32*/**",
-  "./node_modules/@img/sharp-linux-arm*/**",
-  "./node_modules/@img/sharp-libvips-linux-arm*/**",
+  "./node_modules/@img/sharp-linux-x64/**",
+  "./node_modules/@img/sharp-libvips-linux-x64/**",
   "./node_modules/@img/sharp-linuxmusl*/**",
   "./node_modules/@img/sharp-libvips-linuxmusl*/**",
   "./node_modules/@img/sharp-wasm32/**",
