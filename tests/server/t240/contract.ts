@@ -413,7 +413,7 @@ export async function auditRows(scratch: Scratch): Promise<Row[]> {
    the ordering is a rule here rather than a preference.
    ============================================================ */
 
-/** `writeAudit(db, entry): Promise<void>` — backend.md §T240's published block. */
+/** `writeAudit(db, entry): Promise<void>`, as published. */
 export async function boundWriteAudit(): Promise<
   (db: unknown, entry: unknown) => Promise<void>
 > {

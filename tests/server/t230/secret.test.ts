@@ -11,10 +11,10 @@
    are different instruments doing different jobs:
 
    **Key-set equality** admits only what the contract names, and
-   the admitted set is parsed out of `backend.md` rather than typed
-   here. It fails closed on a member nobody published — which is
-   the shape that passes every field pin, the way an RFC 9457
-   extension member passed all five of T081's.
+   the admitted set is the contract's published interface rather
+   than one typed here. It fails closed on a member nobody
+   published, which is the shape that passes every field pin, the
+   way an RFC 9457 extension member passes a pin per named field.
 
    **Provenance** catches a PUBLISHED member carrying the secret:
    a `label` echoed with it appended, a `keyId` minted from it. A

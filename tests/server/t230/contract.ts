@@ -259,7 +259,7 @@ export async function requiredFn(name: string): Promise<UnknownFn> {
     throw new Error(
       `\`${BARREL}\` exports no \`${name}\` (it has: ` +
         `${Object.keys(mod).sort().join(", ") || "(nothing)"}).\n` +
-        `  backend.md §T230 Published signatures: ${publishedFunction(name).text}\n` +
+        `  published: ${publishedFunction(name).text}\n` +
         `  The block names the barrel, so a capability living outside it is either a deep ` +
         `path the barrel should re-export or a write outside this task's Owns set.`,
     );
