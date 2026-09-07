@@ -5,7 +5,8 @@ import { SEVERITY_META, severityCount } from "@/components/ui/severity";
 
 /* Severity presentation moved to `components/ui/severity.ts`. The rule it records — the
    glyph and the word both carry the meaning — has to hold on every surface that prints a
-   diagnostic, and it stopped holding when PROJECT.md §3.1 routed the criteria notes to
+   diagnostic, and it stopped holding when the length pass (cut density, keep every
+   statement reachable) routed the criteria notes to
    `components/blueprint/Explainability.tsx`, which had its own glyph and no word. One
    table, imported by all of them. */
 

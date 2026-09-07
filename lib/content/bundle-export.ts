@@ -43,8 +43,8 @@
    adapting it). Both are gone: the folder now hands over exactly what an author wrote —
    the topology and the pinned cards — and stops shipping a second, compiled description
    of the same graph next to the first. `emitAttractorDot` itself is untouched in
-   `lib/core`; it has callers outside this module (`lib/starter/variants.test.ts`,
-   `emit.test.ts`) and stays there as a general DOT-emission capability.
+   `lib/core`; it has callers outside this module (`emit.test.ts`) and stays there as a
+   general DOT-emission capability.
 
    `FACTORY_DOT` outlived that removal for one reason and no longer has it: the two FROZEN
    suites that imported the name were its only consumers, so the export existed to be

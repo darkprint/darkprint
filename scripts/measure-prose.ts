@@ -1,10 +1,9 @@
 /* ============================================================
    How much does a reader actually have to read?
 
-   PROJECT.md §3.1 settled the metric and this script is the
-   instrument for it. Three decisions are carried over from there,
-   each because the cruder version was acted on once and gave the
-   wrong answer:
+   The metric is the prose a reader has to read, and this script is
+   the instrument for it. Three decisions shape it, each because
+   the cruder version was acted on once and gave the wrong answer:
 
    - **Prose, not pixels.** Page height ranks `/nodes` worst. It is a
      grid of 53 tiles, skimmed in seconds. Height measures scrolling;

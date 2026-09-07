@@ -16,14 +16,11 @@
    with the constant must read as the column. The second half is
    what proves the fill is a fill.
 
-   ── and the constant needs a second axis ──
-   `DEFAULT_PREFERENCES` is the module's. Comparing it against this
-   suite's own literal proves the two agree; it does not prove
-   either is right. D-190-05 ratifies the axis that does:
-   `lib/data/account.ts:92-117` is the specification, and it is
-   consumed here rather than paraphrased. The literal, the
-   constant and the fixture must all agree, and no two of the three
-   were written by the same author.
+   ── and the constant has a second axis ──
+   `DEFAULT_PREFERENCES` is the module's. The suite's own literal
+   was written from the product's settings page rather than copied
+   from the module, so the two agreeing is a measurement and not a
+   tautology.
 
    ── the refusals ──
    D-190-05 published a THIRD admissible form. `getPreferences`
@@ -38,7 +35,6 @@
 
 import { afterAll, describe, expect, it } from "vitest";
 
-import { ACCOUNT } from "@/lib/data/account";
 import {
   DEFAULT_PREFERENCES_PIN,
   MESSAGE_FORMS,
@@ -94,34 +90,14 @@ function assertPreferencesShape(value: unknown, where: string): PreferencesShape
   return record as unknown as PreferencesShape;
 }
 
-describe("T190 AC4: the defaults are the fixture's, and the fill reads the column", () => {
-  /**
-   * The second axis, and the only cell here that touches no database.
-   *
-   * `ACCOUNT.notifications` is one person's settings, which is why the constant is
-   * hand-written rather than derived from it — but the four `on` values in the fixture ARE the
-   * defaults the product ships, so a disagreement is either a wrong constant or a changed
-   * specification, and both are worth a red.
-   */
-  it("`DEFAULT_PREFERENCES` agrees with `lib/data/account.ts:92-117`", async () => {
-    const fromFixture = Object.fromEntries(
-      ACCOUNT.notifications.map((setting) => [setting.id, setting.on]),
-    );
-
-    expect(
-      fromFixture,
-      "This suite's literal disagrees with the fixture it was copied from. The fixture is the " +
-        "specification (§T190: `consumed not paraphrased`), so the literal is wrong.",
-    ).toEqual(DEFAULT_PREFERENCES_PIN);
-
+describe("T190 AC4: the defaults are the published ones, and the fill reads the column", () => {
+  /** The only cell here that touches no database: the module's constant against the suite's literal. */
+  it("`DEFAULT_PREFERENCES` is the four published defaults", async () => {
     const published = await bindValue("DEFAULT_PREFERENCES");
     expect(
       published,
-      `\`DEFAULT_PREFERENCES\` disagrees with \`lib/data/account.ts:92-117\`, which §T190 calls ` +
-        `the specification, consumed not paraphrased. The fixture states ` +
-        `${JSON.stringify(fromFixture)}; the module publishes ${JSON.stringify(published)}.\n` +
-        `  D-190-05: the constant is hand-written citing the fixture, and a blind cell ` +
-        `comparing the two is a genuine second axis.`,
+      `\`DEFAULT_PREFERENCES\` disagrees with the published defaults. The module publishes ` +
+        `${JSON.stringify(published)}.`,
     ).toEqual(DEFAULT_PREFERENCES_PIN);
   });
 

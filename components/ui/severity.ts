@@ -6,8 +6,9 @@ import type { Severity } from "@/lib/core";
  * **The glyph and the word both carry the meaning — the colour is decoration, so a
  * reader who cannot see it loses nothing.** That rule was written in
  * `components/ui/DiagnosticList.tsx` and held there, and it was broken the moment a
- * second surface started rendering diagnostics: PROJECT.md §3.1's length pass moved the
- * criteria notes off the sidebar list and into the panel that interprets them, and the
+ * second surface started rendering diagnostics: the length pass (cut density, keep every
+ * statement reachable) moved the criteria notes off the sidebar list and into the panel
+ * that interprets them, and the
  * new renderers emitted an `aria-hidden` amber ▲ with no word beside it. The word
  * "warning" then appeared on none of the nine blueprint pages, where it had been on all
  * nine. A screen-reader user got no severity at all, and the same ▲ meant "warning" in

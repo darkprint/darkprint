@@ -31,12 +31,12 @@ export function SectionTitle({
  * exactly one control on it already. Same border, same ground, same amber `◐`, same
  * `aria-label`, so the two read as one figure wherever they appear together.
  */
-export function SupportPill({ count }: { count: number }) {
+export function SupportPill({ count, seeded = false }: { count: number; seeded?: boolean }) {
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-0.5 font-mono text-[11px] text-muted"
-      title="Seeded support count; no community backend is connected"
-      aria-label={`${count} community stars, seeded`}
+      title={seeded ? "Seeded figure from the archive index, not a live count" : undefined}
+      aria-label={seeded ? `${count} community stars, seeded` : `${count} stars`}
     >
       <svg
         aria-hidden
@@ -51,9 +51,11 @@ export function SupportPill({ count }: { count: number }) {
         <path d="M12 3.5l2.47 5.006 5.53.804-4 3.9.944 5.507L12 16.9l-4.944 2.6.944-5.507-4-3.9 5.53-.804L12 3.5z" />
       </svg>
       {compact(count)}
-      <span className="text-amber" aria-hidden>
-        ◐
-      </span>
+      {seeded && (
+        <span className="text-amber" aria-hidden>
+          ◐
+        </span>
+      )}
     </span>
   );
 }
