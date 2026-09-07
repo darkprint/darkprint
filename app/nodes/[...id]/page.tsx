@@ -1710,7 +1710,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           id="fields"
           className="scroll-mt-24"
           label="Card values"
-          meta={`${declared} declared · each field is defined in the card spec, linked below`}
+          meta={`${declared} declared`}
         >
           <div className="flex flex-col gap-5">
             {CARD_BLOCKS.map((block) => {
@@ -1915,7 +1915,6 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
           </div>
 
           <p className="mt-4 border-t border-line pt-3 text-xs leading-relaxed text-dim">
-            What each of these fields is for:{" "}
             {/* Amber, the card register, since the owner ruled it on 2026-09-06. This
                 line used to argue the opposite — that amber marks a BOX which leaves the
                 page, never an inline sentence link. The shape half of that argument

@@ -444,7 +444,7 @@ export function NodeBrowser({
     }
     if (own !== "human" && humanOnly) parts.push("“human in the loop”");
     if (own !== "risk" && riskOnly) parts.push("“carries a risk marker”");
-    if (parts.length === 0) return "No node card in the library carries this.";
+    if (parts.length === 0) return "No node card in the registry carries this.";
     return `Nothing is left once this is combined with ${parts.join(" and ")}.`;
   }
 
@@ -987,7 +987,7 @@ export function NodeBrowser({
             No node cards match
           </h2>
           <p className="max-w-md text-sm text-muted">
-            Nothing in the library answers to these filters. Try a broader query,
+            Nothing in the registry answers to these filters. Try a broader query,
             or drop the node type or the phase.
           </p>
           {hasFilters && (

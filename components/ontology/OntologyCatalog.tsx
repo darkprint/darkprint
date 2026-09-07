@@ -171,7 +171,7 @@ export function OntologyCatalog({
         still
         footnote={
           <>
-            Two fields on a card are deliberately not in here:{" "}
+            Two fields on a card are not in here:{" "}
             <code className="font-mono text-muted">mcp</code> names a process somebody
             installed, and <code className="font-mono text-muted">agent</code> is a label
             nothing reads.
@@ -269,8 +269,7 @@ export function OntologyCatalog({
                 phases a blueprint has nodes in is read off its cards and shown on the
                 blueprint as a statement of scope, for example &ldquo;this blueprint covers
                 planning, implementation and testing&rdquo;, the same way the autonomy
-                class is shown. Covering three of the five is a description of scope rather
-                than a gap, and nothing on DarkPrint scores a blueprint or a node for the
+                class is shown. Nothing on DarkPrint scores a blueprint or a node for the
                 phases it leaves out.
               </p>
             </KindNotes>
@@ -310,8 +309,8 @@ export function OntologyCatalog({
                 <p className="text-sm leading-relaxed text-muted">
                   Nothing is ever deleted. <Id>{renamed.id}</Id> was renamed to{" "}
                   <Id>{renamed.deprecated.replacedBy}</Id>. The old id stays in the
-                  vocabulary and keeps resolving. It carries a pointer to its successor,
-                  so a card written against it still loads and still resolves. It is marked
+                  vocabulary with a pointer to its successor, so a card written against it
+                  still loads and still resolves. It is marked
                   below rather than hidden: a deprecated term is a redirect rather than a
                   broken row.{" "}
                   {stillSpelledThatWay === 0
@@ -353,8 +352,8 @@ export function OntologyCatalog({
                 vocabulary, so a recalibration touches one file and the terms keep meaning
                 what they meant. A marker coined in somebody&apos;s own namespace declares
                 its own weight, because nobody but its author knows what it should cost.{" "}
-                <Id>execution-risk</Id> and <Id>isolation-breach</Id> carry no weight at
-                all: they are categories a rule can be written about, and a card should not
+                <Id>execution-risk</Id> and <Id>isolation-breach</Id> carry no weight:
+                they are categories a rule can be written about, and a card should not
                 declare them directly. Read the figures as the shipped calibration; changing
                 one changes what Security says about every published blueprint.
               </p>
@@ -379,10 +378,8 @@ export function OntologyCatalog({
             <KindNotes>
               <p className="text-sm leading-relaxed text-muted">
                 Every port on every card declares one. The validator checks both ends
-                before a blueprint is allowed to load. An edge type-checks when the
-                producer&apos;s type is the consumer&apos;s type, or something narrower
-                than it. <Id>any</Id> sits at the top and accepts everything. Avoid it on
-                a port that matters.{" "}
+                before a blueprint is allowed to load. <Id>any</Id> sits at the top and
+                accepts everything. Avoid it on a port that matters.{" "}
                 <Id>acceptance-criteria</Id> does two jobs: it is how the criteria-leak
                 check finds the node that produces the criteria, and how it tells whether
                 the node being judged can see them.
@@ -403,9 +400,9 @@ export function OntologyCatalog({
             <KindNotes>
               <p className="text-sm leading-relaxed text-muted">
                 A card lists capabilities rather than vendors:{" "}
-                <Id>web-search</Id>, rather than the name of one search API. This means
-                the same blueprint can run on a different stack without rewriting a
-                single card. They sit flat under one root, unlike the kinds above. The
+                <Id>web-search</Id>, rather than the name of one search API, so the same
+                blueprint can run on a different stack without rewriting a card. They sit
+                flat under one root, unlike the kinds above. The
                 name overlaps on purpose: the node type <Id>tool</Id> is a node that does
                 something deterministic. These are the capabilities that node needs from
                 its host. The two live in different dimensions and never resolve to

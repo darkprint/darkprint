@@ -252,8 +252,8 @@ export function VocabularyBrowser({
         children
       ) : results.length === 0 ? (
         <p className="rounded-lg border border-dashed border-line bg-surface/40 px-5 py-16 text-center text-sm text-muted">
-          No term matches. The vocabulary is curated and small on purpose. Doc 3 §6 adds a
-          term. A term is not coined at the point of use.
+          No term matches. The vocabulary is curated and small on purpose; a term is added
+          through doc 3 §6 rather than coined at the point of use.
         </p>
       ) : (
         <ul className="overflow-hidden rounded-lg border border-line bg-surface">

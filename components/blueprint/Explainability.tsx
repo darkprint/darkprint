@@ -924,10 +924,6 @@ function CriteriaIsolation({
               </code>
             </div>
             <p className="text-sm leading-relaxed text-fg">
-              <span className="text-muted">
-                Nothing here says this blueprint leaks its acceptance criteria, and
-                nothing here says it does not.
-              </span>{" "}
               The analyzer had nowhere to start, and nothing is charged for it.{" "}
               {/* The engine's own sharpest clause, promoted out of the hint and into the
                   open. Eight of the nine bundles land in this state, and §3.1's pass put
@@ -965,7 +961,7 @@ function CriteriaIsolation({
                 Most of the registry is in this state today. That is a gap in what the
                 graphs declare, not a fault in what they do. The criteria are real, and
                 the port that carries them is not typed. The analyzer records that it
-                does not know. It does not charge for a leak it never observed.
+                does not know.
               </p>
             </More>
           </div>
@@ -1042,7 +1038,7 @@ function CriteriaIsolation({
             <p className="text-xs leading-relaxed text-dim">
               Doc 1 §3.2: isolation is the absence of the content from the spec, and an
               absent edge is only half of it. The comparison here is a proxy, because the
-              acceptance criteria exist only at run time. The comparison actually uses
+              acceptance criteria exist only at run time. The comparison uses
               the criteria producer&rsquo;s instructions for writing them.
             </p>
           </More>
