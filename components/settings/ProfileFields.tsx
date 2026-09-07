@@ -116,8 +116,8 @@ export function ProfileFields({
           label="Avatar hue"
           hint={
             <>
-              {hue}° · avatars are generated from one number, so no image is ever uploaded
-              or stored
+              {hue}° · avatars are generated from one number, so no image is uploaded or
+              stored
             </>
           }
         >

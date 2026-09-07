@@ -206,10 +206,9 @@ export function ApiKeys() {
           existing keys were issued under and it is reproduced verbatim in `SCOPE_COPY`. */}
       <p className="text-[13px] leading-relaxed text-muted">
         A key raises the rate ceiling for an agent reading the registry over the MCP
-        endpoints. What else it may do is its scope, which you choose once, when you mint
-        it, and which cannot be changed afterwards. The key itself is shown to you once, at
-        that same moment. DarkPrint never stores it and cannot show it to you again. If you
-        lose it, revoke it and mint a new one.
+        endpoints. What else it may do is its scope, which you choose when you mint it and
+        cannot change afterwards. The key is shown to you once, at that moment. DarkPrint
+        never stores it. If you lose it, revoke it and mint a new one.
       </p>
 
       {minted !== undefined && (

@@ -269,7 +269,7 @@ export function ValidationReport({
             {blueprint === undefined
               ? "The DOT could not be parsed into a directed graph, so there is no topology to draw and nothing to analyse. The source is open below, with the lines the validator named."
               : unfinished
-                ? `Your topology parsed. ${progress.placed} of its ${progress.total} nodes have their card. The rest are named below, one line each. None of that is a defect. A blueprint is written a card at a time, and this stage is normal. The schematic and the two computed readings wait for the last card, because a number taken over nodes the engine could not open would have no basis. Drop the folder again whenever you like.`
+                ? `Your topology parsed. ${progress.placed} of its ${progress.total} nodes have their card. The rest are named below, one line each. A blueprint is written a card at a time, and this stage is normal. The schematic and the two computed readings wait for the last card, because a number taken over nodes the engine could not open would have no basis. Drop the folder again whenever you like.`
                 : "The bundle resolved far enough to report on, but it still has errors. DarkPrint will not put a number on a graph whose references it could not check. Fix the errors below. Then the schematic, the autonomy fraction and the security ledger appear here."}
           </p>
         </div>

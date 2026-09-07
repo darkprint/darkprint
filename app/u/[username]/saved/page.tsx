@@ -67,9 +67,8 @@ export default async function Page({ params }: PageProps<"/u/[username]/saved">)
             title="Saves are private"
             action={{ href: `/u/${view.author.username}`, label: "Back to the profile" }}
           >
-            Only {view.author.displayName} can see this list. Saved lists and their size
-            never appear on a public profile; the star counts on the cards themselves are
-            public.
+            Only {view.author.displayName} can see this list or its size. The star counts on
+            the cards are public.
           </EmptyState>
         </div>
       )}
