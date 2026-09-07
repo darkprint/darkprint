@@ -14,14 +14,7 @@
    the same folder draw a graph on one page and a list on another.
    ============================================================ */
 
-import {
-  buildGraph,
-  cardRef,
-  loadBundle,
-  parseDocument,
-  parseDot,
-  type Diagnostic,
-} from "@/lib/core";
+import { cardRef, loadBundle, parseDocument, parseDot, type Diagnostic } from "@/lib/core";
 import type { LiveDraft } from "@/lib/core/tutorial/live";
 import { graphForBlueprint } from "@/lib/graph-seed";
 import type { BlueprintGraph as BlueprintGraphData } from "@/lib/types";
@@ -115,17 +108,14 @@ export function pictureOf(draft: LiveDraft): DraftPicture {
   if (parsed === undefined) {
     return { kind: "partial", parsed: false, nodes: [], edges: [], diagnostics: result.diagnostics };
   }
-  // `buildGraph` so a node only ever named inside an edge is listed too, in DOT order.
-  const order = buildGraph(
-    parsed.nodes.map((node) => node.id),
-    parsed.edges,
-  ).ids;
+  // `parsed.nodes` already carries a node only ever named inside an edge, in DOT order, so
+  // the listing needs no second walk to find it.
   const refs = pinnedRefs(dot, DOT_FILE);
-  const nodes: PartialNode[] = order.map((id) => {
-    const ref = refs.get(id);
+  const nodes: PartialNode[] = parsed.nodes.map((stmt) => {
+    const ref = refs.get(stmt.id);
     return ref === undefined
-      ? { id, carded: false }
-      : { id, ref, carded: documents.has(ref) };
+      ? { id: stmt.id, carded: false }
+      : { id: stmt.id, ref, carded: documents.has(ref) };
   });
   const edges: PartialEdge[] = parsed.edges.map((edge) => {
     const entry: PartialEdge = { source: edge.source, target: edge.target };

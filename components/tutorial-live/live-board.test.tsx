@@ -25,6 +25,7 @@ import {
   type LivePhase,
   type LiveRecord,
 } from "@/lib/core/tutorial/live";
+import LivePage, { metadata as pageMetadata } from "@/app/tutorial/live/[token]/page";
 import { MCP_CLIENTS } from "@/components/mcp/clients";
 import { pinnedRefs } from "@/components/panes/build";
 import { plainText } from "@/components/ui/visible-text";
@@ -165,6 +166,18 @@ describe("what the engine resolves from each draft", () => {
       { source: "builder", target: "tester", label: "build" },
     ]);
     expect(picture.diagnostics.map((d) => d.code)).toContain("bundle/missing-card");
+  });
+
+  it("lists a node the DOT only names inside an edge, with no card pinned", () => {
+    const draft = partialDraft();
+    draft.bundle.dot = PARTIAL_DOT.replace("builder -> tester", "builder -> tester;\n  tester -> writer");
+    const picture = pictureOf(draft);
+    expect(picture.kind).toBe("partial");
+    if (picture.kind !== "partial") return;
+    expect(picture.nodes.map((node) => node.id)).toEqual(["planner", "builder", "tester", "writer"]);
+    expect(picture.nodes.at(-1)).toEqual({ id: "writer", carded: false });
+    const shown = plainText(html(createElement(DraftPanel, { draft, token: TOKEN })));
+    expect(shown).toContain("writer no card pinned card pending");
   });
 
   it("reads an empty topology as nothing to draw yet, and a broken one as unparsed", () => {
@@ -360,6 +373,34 @@ describe("the board", () => {
     const draft = { ...partialDraft("reuse"), hits: [] };
     const withHits = plainText(html(createElement(LiveBoardView, { state: live(draft), token: TOKEN })));
     expect(withHits).toContain("Found in the registry");
+  });
+});
+
+/* --------------------- the route --------------------- */
+
+/** The props Next hands the page: both promises, since the route type requires the pair. */
+function pageProps(token: string): PageProps<"/tutorial/live/[token]"> {
+  return { params: Promise.resolve({ token }), searchParams: Promise.resolve({}) };
+}
+
+describe("the page shell", () => {
+  it("refuses a malformed token before anything renders, and stays out of the index", async () => {
+    await expect(LivePage(pageProps("not-a-token"))).rejects.toMatchObject({
+      digest: expect.stringContaining("404"),
+    });
+    expect(pageMetadata.title).toBe("Your blueprint, live");
+    expect(pageMetadata.robots).toEqual({ index: false, follow: false });
+  });
+
+  it("renders the board under a plain link back to the tutorial", async () => {
+    const markup = html(await LivePage(pageProps(TOKEN)));
+    expect(markup).toContain('href="/tutorial"');
+    const shown = text(markup);
+    expect(shown).toContain("Back to the tutorial");
+    expect(shown).toContain("Your blueprint, live");
+    // The server render is the board's waiting state; the poll only starts in the browser.
+    expect(shown).toContain("Waiting for your agent's first answer");
+    expect(markup).not.toMatch(/max-w-|prose-lane/);
   });
 });
 
