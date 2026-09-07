@@ -1,0 +1,58 @@
+id: run-summariser
+name: Run Summariser
+type: agent
+phase: testing
+
+action: >-
+  Aggregate the run's trace records into one report of per-step metrics: how many times each
+  step ran, how many of those runs failed, and how long each took.
+spec: >-
+  Read every trace record handed to you on `traces` for the run in hand and write one report on
+  `report`. Give every step that appears in the records its own row: the number of records, the
+  number whose outcome is a failure, the first line of the most recent error, and its timing,
+  read as the interval between each of its records and the record before it in the run; mark
+  the first record of a run as unmeasured rather than giving it a number. Under the rows, give
+  the run's totals: records, failures, distinct steps, and the time from the first record to
+  the last. When a record is malformed, count it under a row named `unparseable` and go on.
+  When `rejected` arrives from the gate naming what the previous report lacked, rebuild the
+  report from the same records and address what was named; never fill a gap with a guess.
+  Every figure in the report has to be recomputable from the records, and a step that failed
+  every time stays in the report with its failures counted.
+model: claude-haiku-4-5
+agent: Summariser
+tools: []
+mcp: []
+skill: skills/run-summariser.md
+params:
+  timing: interval-from-previous-record
+  keep_unparseable_row: true
+
+inputs:
+  - name: traces
+    type: json
+    description: The trace records of the run, one per value seen, as the tracer emitted them.
+  - name: rejected
+    type: status
+    required: false
+    description: The gate's rejection of a previous report, naming what it lacked, when a report is being rebuilt.
+outputs:
+  - name: report
+    type: report
+    description: Per-step counts, failures and timings for the run, with the run's totals under them.
+dependencies:
+  - step-tracer
+  - anomaly-gate
+cannot: []
+will_not:
+  - invent a timing for a step that has no record
+  - drop a step from the report because it failed
+
+risk_markers: []
+notes: >-
+  The report is where tracing becomes metrics, and it is deliberately arithmetic over the
+  records and nothing else: no reading of payloads, because the records do not carry them, and
+  no judgement about whether a figure is acceptable, which is the gate's job. `rejected` is
+  optional because the first report of a run has nothing to be rebuilt from.
+
+version: 1.0.0
+author: hachi

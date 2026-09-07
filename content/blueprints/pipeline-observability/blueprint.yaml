@@ -1,0 +1,26 @@
+slug: pipeline-observability
+title: Pipeline Observability
+summary: >-
+  Observability for a pipeline you already have: tracing on every watched step, metrics per
+  step in one report, monitoring of that report against thresholds, and an alert when a step
+  fails or runs long. To feed the tracer, a step has to emit one structured value per run, json
+  or a table will do, plus its outcome signal when it has one; the alert sender never receives
+  the records or the report, only the gate's signal.
+description: |-
+  Add observability to a scraping pipeline, or to any other, without rewriting the nodes it already has. Wire the step you want watched into `tracer` and the four nodes here do the rest: a trace record for every value the step emits, a report of per-step timings and failure counts, a gate that reads the report against thresholds, and an alert when a threshold is crossed.
+
+  What a pipeline has to emit. The tracer's `step` input is typed `structured`, so a step whose output is json, a table, a report or a plan wires straight in; a step that emits text or bytes needs a small wrapping step first. A step that also emits a `status` can be wired into `outcome` as well, and a failure is then counted as one rather than read as a missing record. Pin the edge with `in=step` when the watched node has more than one output. The record carries the value's size and digest rather than the value itself, so tracing a step copies its data nowhere.
+
+  What never crosses. The records are `json` and the report is a `report`, both under `structured` in the data lattice, and `alert-dispatch` lists `structured` under `cannot`: the resolver refuses any edge that would carry either of them to the sender. The only thing that reaches the channel is the gate's `event`, naming the step, the metric, the threshold and the figure.
+
+  The loop is bounded. A report the gate cannot judge goes back to the summariser to be rebuilt, at most twice, and the cap is `max_retries` on the gate's card, where the security analyzer reads it. The one marker the blueprint carries is `irreversible-action` on the sender, because a posted alert cannot be unsent.
+category: Operations
+tags:
+  - observability
+  - monitoring
+  - tracing
+  - alerting
+  - metrics
+author: hachi
+createdAt: "2026-09-07"
+updatedAt: "2026-09-07"

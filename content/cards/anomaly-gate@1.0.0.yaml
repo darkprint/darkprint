@@ -1,0 +1,58 @@
+id: anomaly-gate
+name: Anomaly Gate
+type: validation
+phase: testing
+
+action: >-
+  Hold the run report to the declared thresholds and emit one signal: a breach naming the step,
+  the metric, the threshold and the figure, or an all-clear.
+spec: >-
+  Read the report handed to you on `report` and first decide whether it can be judged: every
+  step named in it needs a record count and a failure count, and every step past the first
+  needs a timing. When something is missing, emit on `rejected` what is missing and for which
+  step, and judge nothing on that pass. When the report is whole, compare each step's failures
+  with `failures_per_step` and its timing with `duration_ms`; the `unparseable` row is compared
+  with `unparseable_records` in the same way. Emit one notice on `signal`. When any threshold is
+  crossed, the notice is a breach and names the step, the metric, the threshold and the figure
+  the report carries, worst first when several crossed; when none is crossed, the notice says
+  the run is clear and carries the totals. Quote the report's figures as they stand: never
+  recompute them, never edit the report, and never move a threshold to make a run pass.
+model: claude-haiku-4-5
+agent: Threshold judge
+tools: []
+mcp: []
+skill: skills/anomaly-gate.md
+params:
+  max_retries: 2
+  thresholds:
+    failures_per_step: 1
+    duration_ms: 30000
+    unparseable_records: 0
+
+inputs:
+  - name: report
+    type: report
+    description: The run report, one row per step, as the summariser wrote it.
+outputs:
+  - name: signal
+    type: event
+    description: The verdict as a notice, a breach naming the step, metric, threshold and figure, or an all-clear with the totals.
+  - name: rejected
+    type: status
+    description: What the report lacked, for the summariser to rebuild against.
+dependencies:
+  - run-summariser
+cannot: []
+will_not:
+  - edit the report it judges
+  - move a threshold to make a run pass
+
+risk_markers: []
+notes: >-
+  `max_retries` is the cap on the loop back to the summariser: a report the gate cannot judge
+  goes back at most twice, and the security analyzer reads that key as the bound on the cycle,
+  so removing it would charge the loop as unbounded. The thresholds sit under a key of their own
+  so an operator can tune them without touching the spec.
+
+version: 1.0.0
+author: hachi

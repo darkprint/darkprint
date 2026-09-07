@@ -1,0 +1,52 @@
+id: step-tracer
+name: Step Tracer
+type: tool
+
+action: >-
+  Turn every value a watched step emits into one trace record carrying the step's name, the
+  time it arrived, its outcome, and the size and digest of the value, and hand the record on.
+spec: >-
+  You sit beside one step of a pipeline. You are handed whatever that step emits on `step`, and
+  its outcome on `outcome` when the pipeline emits one. For every value that arrives, write one
+  trace record and emit it on `traces`: the step's name, the time the value arrived in UTC, the
+  outcome as the step reported it or `unknown` when nothing arrived on `outcome`, the byte size
+  of the value, and a sha256 over its canonical form. When the outcome is a failure, copy the
+  first line of the error into the record and nothing more of it. Never copy the value itself
+  into a record: a trace names what passed and how big it was, and the payload stays on the
+  edge it came in on. Write nothing to disk and keep nothing between records; whoever runs the
+  graph decides where records are kept.
+tools: []
+mcp: []
+skill: skills/step-tracer.md
+params:
+  clock: utc
+  digest: sha256
+  include_error_head: true
+
+inputs:
+  - name: step
+    type: structured
+    description: One step's output, as the pipeline emitted it. Any typed structured value wires here.
+  - name: outcome
+    type: status
+    required: false
+    description: The step's own outcome, when the pipeline emits one, so a failure is counted rather than read as a missing record.
+outputs:
+  - name: traces
+    type: json
+    description: One trace record per value seen, with the step's name, arrival time, outcome, size and digest.
+dependencies: []
+cannot: []
+will_not:
+  - copy a step's payload into a record
+  - write a record anywhere but its output port
+
+risk_markers: []
+notes: >-
+  `step` is typed `structured` rather than `any` so the edge into it stays a typed edge: json, a
+  table, a report or a plan wires straight in, and a step that emits text or bytes needs a
+  wrapping step first. The record carries a digest and a size in place of the value, which is
+  what lets the records travel to the summariser without carrying the pipeline's data with them.
+
+version: 1.0.0
+author: hachi
