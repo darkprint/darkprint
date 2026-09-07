@@ -1,0 +1,56 @@
+{
+  "name": "darkprint",
+  "archiveRoot": "skills/darkprint",
+  "archive": {
+    "path": "darkprint.tgz",
+    "bytes": 43893,
+    "sha256": "ed55d4f2a16327a212cbf2b262e6f4eb46d08810fb562eba31333ffb624bee79"
+  },
+  "files": [
+    {
+      "path": "SKILL.md",
+      "bytes": 33643,
+      "sha256": "04cae62107863f954f5217d4f7193b9b343b7a132515e770776396b9c933193f"
+    },
+    {
+      "path": "references/card-schema.md",
+      "bytes": 27416,
+      "sha256": "ce0b21b1b58ccf5f59e20b7a3f5355a86e2d25a6bb7837c72bac1e592064f180"
+    },
+    {
+      "path": "references/dot-and-attractor.md",
+      "bytes": 16054,
+      "sha256": "c4a4836979c445799bd922a97ade23a12f51e845ad481365a90512dc3a0efc6f"
+    },
+    {
+      "path": "references/ontology.md",
+      "bytes": 15070,
+      "sha256": "a62ed32599cd34293ea1c72a7748100f44a92f162f5fd50c6835ae07568d96b6"
+    },
+    {
+      "path": "references/preflight.md",
+      "bytes": 12972,
+      "sha256": "4d4fccdc4975945190092ec82d013b46bad5afc7d15ae44e5a014c172b7e6242"
+    },
+    {
+      "path": "references/writing-cards.md",
+      "bytes": 7871,
+      "sha256": "950d78135a3d33badcf3cdee9bad3db40749cbcd5bcf4dd012ac3f35a450dc8c"
+    },
+    {
+      "path": "templates/card.yaml",
+      "bytes": 5041,
+      "sha256": "6dbf8ea00d4fc408feda1f62bd6af6263820ecd3a06d5d4323058884c4f0902f"
+    },
+    {
+      "path": "templates/shell-tool-card.yaml",
+      "bytes": 1937,
+      "sha256": "2c06d87b70faf5bd977667e4803570938d9a820971e2bf65ce0f070c3fbb143d"
+    },
+    {
+      "path": "templates/topology.dot",
+      "bytes": 3980,
+      "sha256": "ee2f2ac3d7dce7f5b9ed5e9d23d46be0664be83eae11fe6844703b66b559a1fe"
+    }
+  ]
+}
