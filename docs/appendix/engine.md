@@ -185,7 +185,7 @@ retired term is marked `deprecated` in place.
 
 | change | what goes stale |
 |---|---|
-| **a weight or threshold** | every score computed from now on, the nine bundle READMEs under `public/bundles`, the stored scores on every release until it is re-analysed, and the "4 to 2" demonstration |
+| **a weight or threshold** | every score computed from now on, the ten bundle READMEs under `public/bundles`, the stored scores on every release until it is re-analysed, and the "4 to 2" demonstration |
 | **an autonomy band** | every class shown in the registry and on every blueprint page |
 | **a diagnostic code** | the check tables on the `/spec/*` pages, any page quoting it, the skill's `references/preflight.md`, and the fixtures asserting it |
 | **the leak check** | `/spec/card`'s quoted diagnostic and the starter's claim to be the reference clean result |

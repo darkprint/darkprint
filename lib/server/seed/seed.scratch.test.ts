@@ -78,8 +78,8 @@ afterAll(async () => {
 });
 
 describe("planImport (AC1, no database)", () => {
-  it("names nine bundles whose digests are the ones the site prints today", () => {
-    expect(plan.bundles.length).toBe(9);
+  it("names ten bundles whose digests are the ones the site prints today", () => {
+    expect(plan.bundles.length).toBe(10);
     for (const bundle of plan.bundles) {
       const readme = readFileSync(`public/bundles/${bundle.slug}/README.md`, "utf8");
       const printed = /bundle digest\s+(sha256:[0-9a-f]{64})/.exec(readme)?.[1];
@@ -89,13 +89,13 @@ describe("planImport (AC1, no database)", () => {
     }
   });
 
-  it("names the 57 card files, four ids of which carry two versions", () => {
-    expect(plan.cards.length).toBe(57);
-    expect(new Set(plan.cards.map((c) => c.cardId)).size).toBe(53);
+  it("names the 61 card files, four ids of which carry two versions", () => {
+    expect(plan.cards.length).toBe(61);
+    expect(new Set(plan.cards.map((c) => c.cardId)).size).toBe(57);
     expect(plan.cards.every((c) => c.visibility === "public")).toBe(true);
     /* Every digest distinct: two versions of one card are two documents, and a plan that
-       collapsed them would still report 57 rows. */
-    expect(new Set(plan.cards.map((c) => c.digest)).size).toBe(57);
+       collapsed them would still report 61 rows. */
+    expect(new Set(plan.cards.map((c) => c.digest)).size).toBe(61);
   });
 
   /* Literals, never `REGISTRY_HANDLE` and `SEED_RELEASE_VERSION` off the barrel. Measured:
@@ -113,9 +113,9 @@ describe("planImport (AC1, no database)", () => {
 });
 
 describe("runImport (AC2, AC4)", () => {
-  it("creates nine bundles on the first run and skips nine on the second", () => {
-    expect({ created: first.created, skipped: first.skipped }).toEqual({ created: 9, skipped: 0 });
-    expect({ created: second.created, skipped: second.skipped }).toEqual({ created: 0, skipped: 9 });
+  it("creates ten bundles on the first run and skips ten on the second", () => {
+    expect({ created: first.created, skipped: first.skipped }).toEqual({ created: 10, skipped: 0 });
+    expect({ created: second.created, skipped: second.skipped }).toEqual({ created: 0, skipped: 10 });
   });
 
   it("returns the plan it was given alongside what happened", () => {
@@ -147,10 +147,10 @@ describe("runImport (AC2, AC4)", () => {
     }
   });
 
-  it("stores the 57 card versions once, public, owned by the registry account", async () => {
+  it("stores the 61 card versions once, public, owned by the registry account", async () => {
     const owner = await resolveOwner(db, "darkprint");
     const rows = await db.select().from(schema.cardVersion);
-    expect(rows.length, "a card pinned by two bundles was stored twice").toBe(57);
+    expect(rows.length, "a card pinned by two bundles was stored twice").toBe(61);
     expect(rows.every((r) => r.ownerId === owner!.accountId)).toBe(true);
 
     /* Stored against PLANNED, not against the literal `"public"`, and the difference was
@@ -160,7 +160,7 @@ describe("runImport (AC2, AC4)", () => {
        nothing held it to. Comparing the two makes the field a claim about the store rather
        than a value only its author reads. */
     const stored = new Map(rows.map((r) => [`${r.cardId}@${r.version}`, r.visibility]));
-    expect(stored.size).toBe(57);
+    expect(stored.size).toBe(61);
     for (const card of plan.cards) {
       expect(stored.get(`${card.cardId}@${card.version}`), `${card.cardId}@${card.version}`).toBe(
         card.visibility,
@@ -204,7 +204,7 @@ describe("the freeze", () => {
        puts — implies, by reading the code. This reads them back, out of a store that began
        this suite empty. Decoded rather than merely present, because an object of the wrong
        shape and no object are the same to a length check. */
-    expect(storage.size(), "nothing was frozen at all").toBe(9);
+    expect(storage.size(), "nothing was frozen at all").toBe(10);
     for (const planned of plan.bundles) {
       const bytes = await storage.get(planned.digest);
       expect(bytes, `${planned.slug}: nothing frozen at its digest`).toBeDefined();

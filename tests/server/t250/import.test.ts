@@ -83,7 +83,7 @@ const SLOW = 180_000;
 
 describe("AC2: re-running is idempotent", () => {
   it(
-    "reports nine bundles created on the first run",
+    "reports ten bundles created on the first run",
     async () => {
       const { first } = await twice();
       assertKeys(first, IMPORT_RESULT_KEYS, "ImportResult (first run)");
@@ -94,7 +94,7 @@ describe("AC2: re-running is idempotent", () => {
   );
 
   it(
-    "reports nothing created and nine skipped on the second (D-250-08)",
+    "reports nothing created and ten skipped on the second (D-250-08)",
     async () => {
       const { second } = await twice();
       assertKeys(second, IMPORT_RESULT_KEYS, "ImportResult (second run)");
@@ -108,12 +108,12 @@ describe("AC2: re-running is idempotent", () => {
   );
 
   it(
-    "counts bundles and not cards, so 57 never appears in either number",
+    "counts bundles and not cards, so 61 never appears in either number",
     async () => {
       const { first, second } = await twice();
-      /* The discriminating value. A `created` that folded the library in would be 66 on the
-         first run and would report the same 57 as new work on every run after it. */
-      expect([first.created, first.skipped, second.created, second.skipped]).toEqual([9, 0, 0, 9]);
+      /* The discriminating value. A `created` that folded the library in would be 71 on the
+         first run and would report the same 61 as new work on every run after it. */
+      expect([first.created, first.skipped, second.created, second.skipped]).toEqual([10, 0, 0, 10]);
     },
     SLOW,
   );

@@ -61,7 +61,7 @@ describe("AC1: the oracle itself", () => {
   /* Not ceremony. Every figure below is read out of a file `prebuild` writes, and a README
      whose format drifted would otherwise let nine assertions compare `undefined` to
      `undefined` and report a pass. A set that can only be empty is not a measurement. */
-  it("parses five figures out of all nine shipped READMEs", () => {
+  it("parses five figures out of all ten shipped READMEs", () => {
     const cases = archiveCases();
     expect(cases).toHaveLength(EXPECTED_BUNDLE_COUNT);
     for (const { slug, oracle } of cases) {

@@ -1,0 +1,20 @@
+digraph pipeline_observability {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  tracer     [card="step-tracer@1.0.0"];
+  summariser [card="run-summariser@1.0.0"];
+  gate       [card="anomaly-gate@1.0.0"];
+  dispatch   [card="alert-dispatch@1.0.0"];
+
+  // Nothing upstream of `tracer` is written here: this blueprint sits on top of a pipeline
+  // somebody already has, and the edge from the watched step into `tracer` is theirs to draw.
+  tracer -> summariser [label="trace records"];
+  summariser -> gate [label="report"];
+
+  // One key against its own negation is the only total pair the condition grammar admits,
+  // so a report the gate could not judge takes the dashed arm and every judged report reaches
+  // the sender, breach or clear. The cap on the loop is `max_retries` on the gate's card.
+  gate -> summariser [label="incomplete", style=dashed, out="rejected", in="rejected", condition="outcome!=success"];
+  gate -> dispatch [label="signal", out="signal", condition="outcome=success"];
+}

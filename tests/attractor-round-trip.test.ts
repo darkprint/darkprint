@@ -297,9 +297,9 @@ describe("a DarkPrint bundle comes home byte for byte", () => {
     readdirSync(join(BUNDLES_DIR, name)).includes("topology.dot"),
   );
 
-  it("has the nine shipped bundles to run over", () => {
+  it("has the ten shipped bundles to run over", () => {
     // A `readdirSync` that came back empty would make every cell below vanish silently.
-    expect(slugs.length).toBeGreaterThanOrEqual(9);
+    expect(slugs.length).toBeGreaterThanOrEqual(10);
   });
 
   it.each(slugs)("%s", (slug) => {

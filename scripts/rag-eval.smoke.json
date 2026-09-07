@@ -7,7 +7,8 @@
     { "query": "a long multi-step batch job that can pick up again from its last saved point after a crash", "expected": "checkpoint-resume-runner" },
     { "query": "customer support inbox: sort the incoming requests, answer the easy ones from the help articles, hand the rest to a person", "expected": "frontline-triage" },
     { "query": "turn messy uploaded documents into rows that pass schema checks, fixing whatever fails in claude code", "expected": "schema-forge-etl" },
-    { "query": "the plain plan, build, test, debug and ship loop for a software project", "expected": "starter-software-factory" }
+    { "query": "the plain plan, build, test, debug and ship loop for a software project", "expected": "starter-software-factory" },
+    { "query": "add observability to a scraping pipeline", "expected": "pipeline-observability" }
   ],
   "negatives": [
     { "query": "book a table for four at an italian restaurant on friday night" },

@@ -74,16 +74,16 @@ function componentIndex(): Map<string, { cards: number; blueprints: number; auth
 }
 
 describe("the seeded archive, against the shipped component", () => {
-  it("the corpus really is the 9 / 57 / 53 one, so the comparison is over the archive", () => {
+  it("the corpus really is the 10 / 61 / 57 one, so the comparison is over the archive", () => {
     const registry = getRegistry();
     const all = registry.cards();
     const ids = new Set(all.map((r: { id: string }) => r.id));
     /* Numbers as literals, deliberately. A bound imported from the thing it bounds moves with
        it and asserts nothing, and `public/bundles/` losing directories must not silently shrink
        this file's domain to a fraction of the archive — the failure T090's suite recorded. */
-    expect(all.length).toBe(57);
-    expect(ids.size).toBe(53);
-    expect(registry.blueprints().length).toBe(9);
+    expect(all.length).toBe(61);
+    expect(ids.size).toBe(57);
+    expect(registry.blueprints().length).toBe(10);
   });
 
   it("`usage()` and the component agree on every term either of them counts", async () => {

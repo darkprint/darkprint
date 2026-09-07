@@ -547,6 +547,9 @@ describe("the archive schematics keep their type as large as the box allows", ()
       "guarded-merge-bot": 6.6,
       "incident-commander": 6.6,
       "nightly-data-janitor": 6.6,
+      /* Four columns and one return edge. Measured at 10.2, which is 0.2 CSS px over the
+         floor: of the two drawings this canvas makes legible, it is the one nearer the line. */
+      "pipeline-observability": 10.2,
       "schema-forge-etl": 6.6,
       "starter-software-factory": 12.2,
     });
@@ -569,6 +572,8 @@ describe("the archive schematics keep their type as large as the box allows", ()
       "guarded-merge-bot": 6.5,
       "incident-commander": 6.5,
       "nightly-data-janitor": 6.5,
+      /* On the floor exactly at the design width: its narrower canvas takes the 0.2 CSS px away. */
+      "pipeline-observability": 10.0,
       "schema-forge-etl": 6.5,
       "starter-software-factory": 12.0,
     });
@@ -645,19 +650,23 @@ describe("the archive schematics keep their type as large as the box allows", ()
      it is what a later pass would be trying to get back, and `minCanvasFor` still prices each
      member. A name with no current member is worth more here than a deleted one, because the
      next person to widen the pane needs to know what widening it is FOR. */
+  /* `pipeline-observability` is four columns and sits on the line: 10.2 at the 735 canvas and
+     exactly 10.0 at the design width's 724. Measured, it clears the floor at 1920, 1456, 1440,
+     1279, 1200 and at the tablet's full-body 900, and falls under it in the rail band (1366,
+     1280), at 1024 and 768, and on both phones. */
   const LEGIBLE_AT: Record<number, readonly string[]> = {
-    1920: ["starter-software-factory"],
-    1456: ["starter-software-factory"],
-    1440: ["starter-software-factory"],
+    1920: ["pipeline-observability", "starter-software-factory"],
+    1456: ["pipeline-observability", "starter-software-factory"],
+    1440: ["pipeline-observability", "starter-software-factory"],
     1366: ["starter-software-factory"],
     1280: ["starter-software-factory"],
-    1279: ["starter-software-factory"],
-    1200: ["starter-software-factory"],
+    1279: ["pipeline-observability", "starter-software-factory"],
+    1200: ["pipeline-observability", "starter-software-factory"],
     1024: ["starter-software-factory"],
     /* The widest canvas on the site, and it is a tablet. 900 is below `lg`, so the pane grid
        is one column and the graph has the whole body: 824px, against 735 at every desktop
        width above it. Still short of 1086. */
-    900: ["starter-software-factory"],
+    900: ["pipeline-observability", "starter-software-factory"],
     768: ["starter-software-factory"],
     500: [],
     390: [],
@@ -1374,6 +1383,7 @@ describe("the archive frames with the canvas this guard reads", () => {
       "guarded-merge-bot": 240,
       "incident-commander": 312,
       "nightly-data-janitor": 312,
+      "pipeline-observability": 255,
       "schema-forge-etl": 312,
       "starter-software-factory": 484,
     });
@@ -1416,6 +1426,7 @@ describe("the archive frames with the canvas this guard reads", () => {
       "guarded-merge-bot": 240,
       "incident-commander": 309,
       "nightly-data-janitor": 309,
+      "pipeline-observability": 252,
       "schema-forge-etl": 309,
       "starter-software-factory": 478,
     });
@@ -1487,6 +1498,7 @@ describe("the archive schematics draw their wires inside the frame", () => {
     expect(bow).toEqual({
       "adversarial-consensus-line": [0, 122.7],
       "checkpoint-resume-runner": [0, 0],
+      "pipeline-observability": [0, 0],
       "frontline-triage": [0, 0],
       "grounded-research-desk": [0, 0],
       "guarded-merge-bot": [0, 0],

@@ -1,5 +1,5 @@
 /* ============================================================
-   The DOT breakdown, held to the nine files it actually runs over.
+   The DOT breakdown, held to the ten files it actually runs over.
 
    `components/panes/DotBreakdown.tsx` highlights `card="id@version"`
    in the cyanotype register, and lights one block of the file when a
@@ -12,7 +12,7 @@
    reporting on the card figure: steps that were not in document
    order, so a highlight landed on lines belonging to another step.
    There the ranges are hand-written and resolved by key name; here
-   there are NINE files and no table at all, so the property is
+   there are TEN files and no table at all, so the property is
    asserted directly — strictly increasing, no overlap, and no
    statement left out of the breakdown.
 
@@ -32,7 +32,7 @@ const BLUEPRINTS = allBlueprints();
 const CASES = BLUEPRINTS.map((bp) => [bp.slug, bp.graph.dot] as const);
 
 describe("the breakdown is derived from the file", () => {
-  it("has nine blueprints to break down", () => {
+  it("has ten blueprints to break down", () => {
     expect(BLUEPRINTS.length).toBeGreaterThan(0);
   });
 

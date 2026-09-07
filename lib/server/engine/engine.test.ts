@@ -46,11 +46,11 @@ function revalidate(loaded: (typeof ARCHIVE)[number], cardFiles?: Record<string,
   });
 }
 
-describe("AC1 — the nine archive bundles reproduce the build", () => {
-  it("returns the same diagnostics, autonomy class and security level for all nine", () => {
+describe("AC1 — the ten archive bundles reproduce the build", () => {
+  it("returns the same diagnostics, autonomy class and security level for all ten", () => {
     /* A floor, so a walk that stopped reaching the archive reds instead of passing over an
        empty set. The three assertions below are quantified over this list. */
-    expect(ARCHIVE.length).toBe(9);
+    expect(ARCHIVE.length).toBe(10);
 
     for (const loaded of ARCHIVE) {
       const result = revalidate(loaded);

@@ -100,8 +100,8 @@ const BUNDLES_DIR = "public/bundles";
 const BLUEPRINTS_DIR = "content/blueprints";
 const EXTENSIONS_FILE = "ontology/extensions.yaml";
 
-/** The archive as it ships. Nine, and the count is asserted rather than assumed. */
-export const EXPECTED_BUNDLE_COUNT = 9;
+/** The archive as it ships. Ten, and the count is asserted rather than assumed. */
+export const EXPECTED_BUNDLE_COUNT = 10;
 
 function readOracle(slug: string): ArchiveOracle {
   const path = join(BUNDLES_DIR, slug, "README.md");

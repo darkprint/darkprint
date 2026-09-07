@@ -317,8 +317,14 @@ describe("T100 AC3 — the stored digest is the engine's over the submitted byte
        spelled `max_retries: 2` instead of `max_iterations: 3`. Both the DOT and a pinned
        card digest changed, so `bundleDigest` covers both moves. Corroborated the way the
        note above requires, off an artefact this suite does not produce: the regenerated
-       `public/bundles/starter-software-factory/README.md` reports the identical value. */
-    ).toBe("sha256:121612ae5535c9502ce87f7f9e008a071c8b407b5fecb8c68b9b98765d92f9a1");
+       `public/bundles/starter-software-factory/README.md` reports the identical value.
+
+       Moved once more when the CORPUS moved rather than its bytes. `resolvingCorpus` takes
+       the smallest bundle by node count, and `pipeline-observability` has four nodes to the
+       starter's five, so the archive's newest bundle is the corpus now and the starter is
+       `secondCorpus`. The starter still hashes to `sha256:121612ae…f9a1`, and the value below
+       is what `public/bundles/pipeline-observability/README.md` reports. */
+    ).toBe("sha256:c6ef312cfffd549b691b3339a155ac1e12c280fac1329d7c61fda272354b39d1");
   });
 });
 

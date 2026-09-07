@@ -19,7 +19,7 @@ import { contentOntology, contentOntologyDiagnostics, readContent } from "./read
 describe("readContent over content/", () => {
   const loaded = readContent();
 
-  it("loads all nine blueprints with no error-severity diagnostic", () => {
+  it("loads all ten blueprints with no error-severity diagnostic", () => {
     expect(loaded.map((b) => b.slug)).toEqual([
       "adversarial-consensus-line",
       "checkpoint-resume-runner",
@@ -28,6 +28,7 @@ describe("readContent over content/", () => {
       "guarded-merge-bot",
       "incident-commander",
       "nightly-data-janitor",
+      "pipeline-observability",
       "schema-forge-etl",
       "starter-software-factory",
     ]);

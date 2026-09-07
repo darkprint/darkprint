@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { AUTONOMY_LABELS, autonomyStatement } from "@/lib/format";
 import { AUTHOR_LIST } from "@/lib/data/users";
-import { COMMUNITY } from "@/lib/data/community";
+import { communityFor } from "@/lib/data/community";
 import { parseCardRef } from "@/lib/core";
 import type { MetricKey } from "@/lib/types";
 
@@ -26,6 +26,7 @@ const SLUGS = [
   "guarded-merge-bot",
   "incident-commander",
   "nightly-data-janitor",
+  "pipeline-observability",
   "schema-forge-etl",
   // Doc 2 §5.2's canonical factory, and the only bundle in the archive that gives doc 3
   // §4.1's `criteria-leak` check something to anchor on: `spec-planner` is the one card
@@ -45,7 +46,7 @@ const METRIC_ORDER: MetricKey[] = [
 const blueprints = allBlueprints();
 
 describe("allBlueprints", () => {
-  it("resolves all nine, sorted by slug", () => {
+  it("resolves all ten, sorted by slug", () => {
     expect(blueprints.map((b) => b.slug)).toEqual(SLUGS);
   });
 
@@ -97,6 +98,9 @@ describe("allBlueprints", () => {
     "guarded-merge-bot": ["warning analysis/criteria-leak-unanchored"],
     "incident-commander": ["warning analysis/criteria-leak-unanchored"],
     "nightly-data-janitor": ["warning analysis/criteria-leak-unanchored"],
+    // `gate` judges `summariser` and no node types a criteria port: the observability line
+    // sits on top of a pipeline somebody else wrote, so the criteria live in that graph.
+    "pipeline-observability": ["warning analysis/criteria-leak-unanchored"],
     "schema-forge-etl": ["warning analysis/criteria-leak-unanchored"],
     // Doc 2 §5.2's canonical factory, and the only bundle where the check runs end to
     // end: `spec-planner` types its `criteria` port, `planner -> builder` is absent, and
@@ -203,7 +207,9 @@ describe("derived metrics", () => {
 
   it("takes the subjective and measured metrics from the index, unchanged", () => {
     for (const bp of blueprints) {
-      const row = COMMUNITY[bp.slug];
+      // `communityFor` rather than `COMMUNITY[slug]`: the index zero-fills a blueprint nobody
+      // has voted on, and the view has to carry that zero through unchanged as well.
+      const row = communityFor(bp.slug);
       expect(bp.metrics[1].value).toBe(row.efficacy);
       expect(bp.metrics[2].value).toBe(row.reliability);
       expect(bp.metrics[3].value).toBe(row.transparency);

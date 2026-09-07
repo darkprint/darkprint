@@ -219,7 +219,7 @@ describe("the surfaces the ledger is read off", () => {
     for (const [name, html] of MENUS) {
       expect(html.length, name).toBeGreaterThan(900);
     }
-    expect(BLUEPRINTS.length).toBe(9);
+    expect(BLUEPRINTS.length).toBe(10);
   });
 
   /**
