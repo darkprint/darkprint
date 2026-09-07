@@ -100,8 +100,8 @@ export function DraftLanding({
               <div>
                 <span className="label">Quick setup</span>
                 <p className="mt-2 text-sm leading-relaxed text-muted">
-                  There is no release yet. Publish one from the upload wizard, pinned to
-                  this exact draft.
+                  Nobody can fetch this bundle yet. Publish a release from the upload
+                  wizard, pinned to this exact draft.
                 </p>
               </div>
 
@@ -119,13 +119,13 @@ export function DraftLanding({
                     DarkPrint skill
                   </Link>{" "}
                   at your own goal and let your agent draft the graph before you publish it
-                  here. The line installs it for Claude Code; that page has the Codex form:
+                  here. The line installs it for Claude Code; its page has the Codex form:
                 </p>
                 <div className="mt-2 flex items-center gap-2 rounded-md border border-line bg-void px-3 py-2">
                   <code className="flex-1 overflow-x-auto font-mono text-[12px] text-fg">
                     {SKILL_INSTALL_COMMAND}
                   </code>
-                  <CopyButton text={SKILL_INSTALL_COMMAND} ariaLabel="Copy the command that installs the DarkPrint skill" />
+                  <CopyButton text={SKILL_INSTALL_COMMAND} ariaLabel="Copy the DarkPrint skill install command" />
                 </div>
               </div>
 

@@ -401,7 +401,7 @@ export function OntologyCatalog({
               <p className="text-sm leading-relaxed text-muted">
                 A card lists capabilities rather than vendors:{" "}
                 <Id>web-search</Id>, rather than the name of one search API, so the same
-                blueprint runs on a different stack without rewriting a card. They sit
+                blueprint can run on a different stack without rewriting a card. They sit
                 flat under one root, unlike the kinds above. The
                 name overlaps on purpose: the node type <Id>tool</Id> is a node that does
                 something deterministic. These are the capabilities that node needs from

@@ -392,7 +392,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   The five are the one dimension a local namespace cannot extend. A node
                   type or a risk marker can be coined by anybody. A sixth phase would be
                   a different definition of what a dark factory is. There is no abstract
-                  root above them either, since a root would make the set look open.
+                  root above them either. A root would make the set look open.
                 </p>
                 <p className="text-sm leading-relaxed text-muted">
                   A card may name one of them, several, or none. The five describe the
@@ -537,7 +537,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   {weight === undefined
                     ? children.length > 0
                       ? `${term.id} is a category, not a marker a card declares. A rule written about ${children.length === 1 ? "the marker" : "the markers"} underneath it catches ${children.length === 1 ? "it" : "them all"}. It carries no weight and never moves the security level. The terms narrower than it carry the weight themselves.`
-                      : `No weight is configured for ${term.id} anywhere, so it counts ${formatWeight(DARKPRINT_CONFIG.security.unknownMarkerWeight)} and does not move the security level. A locally namespaced marker must declare a weight, or it documents a risk without pricing it. The author is told this rather than silently charged a number nobody chose.`
+                      : `No weight is configured for ${term.id} anywhere, so it counts ${formatWeight(DARKPRINT_CONFIG.security.unknownMarkerWeight)} and does not move the security level. A locally namespaced marker must declare a weight, or it documents a risk without pricing it. The author is told this. It is not silently charged a number nobody chose.`
                     : `A blueprint starts at a clean 4, loses the weight of every marker present, and the result is clamped into 1–4. ${term.id} is charged once for the whole blueprint no matter how many nodes carry it. The explanation still lists every node that established it.`}
                 </p>
 
@@ -557,7 +557,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                 <p className="text-sm leading-relaxed text-muted">
                   {configured
                     ? "The number lives in the engine's configuration and not in this vocabulary. A recalibration touches one file, so every blueprint is charged the same way. Nothing records which calibration an evaluation was made under, so move a weight and two evaluations stop being comparable."
-                    : `The engine's configuration prices the curated markers and is silent about this one. The number is the ${term.id.includes("/") ? "namespaced" : "local"} term's own declared weight, read from the vocabulary the bundle ships. Nothing records which weight an evaluation was made under, so move it and two evaluations stop being comparable.`}
+                    : `The engine's configuration prices the curated markers. It is silent about this one. The number is the ${term.id.includes("/") ? "namespaced" : "local"} term's own declared weight, read from the vocabulary the bundle ships. Nothing records which weight an evaluation was made under, so move it and two evaluations stop being comparable.`}
                 </p>
                 {/* "Every weight the engine knows" hung off the end of that paragraph,
                     pointing at `#weights` — `ScoringModel`'s own id, which the weight table
@@ -593,8 +593,8 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                         ✓
                       </span>
                       <span>
-                        Nothing in the registry spells it {term.id} any more. The zero is
-                        not a gap; it is what a finished rename looks like.
+                        Nothing in the registry spells it {term.id} any more, which is
+                        what a finished rename looks like.
                       </span>
                     </>
                   ) : reach.cards > 0 ? (
