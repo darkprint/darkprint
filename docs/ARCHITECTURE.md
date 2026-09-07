@@ -351,8 +351,10 @@ Keyed reads: `Authorization: Bearer <key>` with any live key (read scope is enou
 against the key tier and reads as the key's account, so the owner's private blueprints answer;
 a key that does not resolve is treated as no key, never refused. Limits (`lib/server/limits`):
 `read` allows 600 requests an hour for anonymous and signed-in callers and 6000 for a key;
-`write` is 120 an hour and `upload` 30, both refused to anonymous callers; only the MCP routes
-spend a bucket today. A refused request answers 429 problem+json carrying `limit`, `remaining`,
+`write` is 120 an hour and `upload` 30, both refused to anonymous callers; `live` is 60 an hour
+for an anonymous caller and 120 for the two signed-in tiers. The MCP routes spend `read`; the
+live tutorial routes spend `live` on POST and PUT and `read` on GET; nothing else spends a
+bucket today. A refused request answers 429 problem+json carrying `limit`, `remaining`,
 `resetAt` and `keysAvailable`, and a tool call renders the same facts as a result.
 
 The stdio server is `darkprint mcp` in `packages/mcp` (newline-delimited JSON-RPC 2.0 over
