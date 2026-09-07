@@ -1,67 +1,38 @@
 /* ============================================================
-   T300 AC3 and AC6 — the hybrid ranking, over a MIXED result set
+   T300 — one ranking over a MIXED result set
 
-   AC3: "semantic-only hits carry `similar:` evidence and never
-   outrank a lexical hit".
-   AC6: "AC5's law and D-200-20's contiguity hold over mixed result
-   sets".
+   The world's `kitchen` is in `service`'s title and nowhere else,
+   and `household` is the only other blueprint near it in meaning
+   while sharing no word with the query. So one query produces a
+   hit the lexical pass reached and a hit only the vector channel
+   reached, and the cells here are about how the two share one
+   order: by the published score, with the numbers that produced it
+   on every hit.
 
-   ── why a mixed set is the only fixture that can test this ──
-   Every cell here is vacuous over a response that is all one
-   channel. "No semantic hit outranks a lexical one" is trivially
-   true when there are no lexical hits, and equally true when there
-   are no semantic ones. So the world is built so that ONE query
-   produces both: `kitchen` is in `service`'s title and nowhere
-   else, and `household` is the only other blueprint near it in
-   meaning while sharing no word with the query.
-
-   The first cell in the criterion block is therefore a CONTROL
-   that both channels are represented, and it is not decoration:
-   without it this file reports clean against a module whose
-   channel never fires, which is the same zero T200's adversary
-   round found five of.
-
-   ── AC3 is arithmetic, not luck ──
-   Merged `rank.ts:ranked()` sorts on `(evidence.length desc,
-   evidenceKey asc, identity asc)`. The blueprint field keys are
-   `card, category, description, owner, slug, summary, tag, title`,
-   and `similar:` sorts between `owner:` and `slug:`. So a
-   one-item semantic hit fed through that comparator OUTRANKS every
-   one-item lexical hit that matched in `slug`, `summary`, `tag` or
-   `title` — which is most of them, and all of them in this world.
-
-   That proof is why D-300-04 D4 granted `rank.ts` to this task for
-   exactly one change: the tail appended AFTER `ranked()` with
-   `ordered` recomputed through `finish()`. A module that ranked
-   the two channels together reds here, and reds for a reason a
-   reader can check by hand.
-
-   ── D-200-20 over a mixed set is a stronger claim than it looks ──
-   The contiguity property is "hits carrying byte-identical
-   evidence occupy a contiguous block of ranks". Every semantic hit
-   carries the same constant, so the tail is ONE equal-evidence
-   group — and a lexical hit wedged into it splits that group,
-   which is the same defect the property was written for, arriving
-   through a channel that did not exist when it was written.
+   The first block is a CONTROL that both kinds of hit are present.
+   Without it every cell below is satisfied by a response with one
+   kind in it, which is the same zero a channel that never fires
+   would produce.
    ============================================================ */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   PROVISIONING_CAVEAT,
-  SIMILAR_MARKER,
-  channels,
-  isSimilarEvidence,
-  violatesChannelPurity,
-  violatesMarkerConstant,
-  violatesSemanticTail,
+  PUBLISHED_RANKING,
+  carriesSimilarity,
+  encoderOf,
+  lexicalEntries,
+  similarityOf,
+  violatesScoreFormula,
+  violatesScoreOrder,
+  violatesSimilarityGrammar,
 } from "./contract";
 import {
   bind,
   callsItselfSemantic,
   itemKey,
   search,
-  unexplainedOrdering,
   violatesEvidenceGrammar,
   violatesOrderedLaw,
   type Results,
@@ -105,16 +76,11 @@ afterAll(async () => {
 
 const WHERE = "searchBlueprints({q: <a word in one title>})";
 
+function serviceKey(): string {
+  return `blueprint:${w.owner.handle}/${w.service.slug}`;
+}
+
 describe("the fixture actually produces a mixed set", () => {
-  /**
-   * The provisioning premise, first in the file so a reader hits it before any criterion.
-   *
-   * Every cell below that names the vector channel reds identically whether the channel is
-   * wrong or ABSENT, and until D-300-05 rules the owner's arm the encoder is hand-placed in
-   * one worktree and missing from every other. A suite that could not tell those apart would
-   * report a provisioning gap as three AC3 defects against the half that followed the
-   * contract.
-   */
   it("the vector tables are populated, or nothing below this measures a criterion", () => {
     setup.check();
     expect(
@@ -125,69 +91,72 @@ describe("the fixture actually produces a mixed set", () => {
     ).toEqual({ releases: 4, cards: 4 });
   });
 
-  it("the lexical word reaches exactly one blueprint, and reaches it lexically", () => {
+  it("the lexical word reaches `service` through its title, and the hit says so", () => {
     setup.check();
-    const lexical = mixed.hits.filter((hit) => !hit.evidence.some(isSimilarEvidence));
+    const hit = mixed.hits.find((h) => itemKey(h.item) === serviceKey());
+    expect(hit, `\`${w.lexicalWord}\` is in \`${w.service.slug}\`'s TITLE; it must be a hit`).toBeDefined();
     expect(
-      lexical.map((h) => itemKey(h.item)),
-      `\`${w.lexicalWord}\` is in \`${w.service.slug}\`'s TITLE and in nothing else this ` +
-        `world plants — checked by the same premise shape \`recall.test.ts\` uses. If the ` +
-        `lexical half is empty or holds more than one, every AC3 cell below is measuring ` +
-        `something other than what it names.`,
-    ).toEqual([`blueprint:${w.owner.handle}/${w.service.slug}`]);
-    expect(
-      lexical[0]?.evidence,
-      `and it is reached through the TITLE, so the evidence names the field and the document ` +
-        `word — which is also the value AC3 says a lexical hit "keeps".`,
+      lexicalEntries(hit?.evidence ?? []),
+      `the lexical pass found the word in the title and nowhere else in this world, so the ` +
+        `\`field:token\` entries are exactly that one`,
     ).toEqual([`title:${w.lexicalWord}`]);
+    expect(
+      carriesSimilarity(hit?.evidence ?? []),
+      `and a hit with a stored vector also discloses its similarity beside the lexical entry`,
+    ).toBe(true);
   });
 
-  it("and at least one blueprint arrives only through the vector channel", () => {
+  it("and at least one blueprint arrives with a similarity entry and no lexical one", () => {
     setup.check();
-    const seen = channels(mixed);
+    const vectorOnly = mixed.hits.filter((h) => carriesSimilarity(h.evidence) && lexicalEntries(h.evidence).length === 0);
     expect(
-      seen.filter((c) => c === "semantic").length,
-      `THE CONTROL. Every cell in the criterion block below is satisfied by a response with ` +
-        `no semantic hit in it: "none of them outranks a lexical hit" is trivially true of ` +
-        `none of them, and so is every contiguity claim about the tail.\n` +
-        `  \`${w.household.slug}\` is about a person cooking supper at home and shares no ` +
-        `word with \`${w.lexicalWord}\`; it is the candidate the lexical pass cannot reach ` +
-        `and the vector pass can. A zero here means this file reported clean about a channel ` +
-        `that never fired.\n` +
-        `  channels by rank: ${seen.join(", ")}\n` +
+      vectorOnly.map((h) => itemKey(h.item)),
+      `THE CONTROL. \`${w.household.slug}\` is about a person cooking supper at home and ` +
+        `shares no word with \`${w.lexicalWord}\`; it is the candidate the lexical pass ` +
+        `cannot reach and the vector channel can. A zero here means this file reported ` +
+        `clean about a channel that never fired.\n` +
         `  evidence by rank: ${JSON.stringify(mixed.hits.map((h) => h.evidence))}` +
         PROVISIONING_CAVEAT,
-    ).toBeGreaterThan(0);
+    ).not.toHaveLength(0);
   });
 });
 
-describe("AC3 the two channels stay apart and the tail stays behind", () => {
-  it("no semantic-only hit outranks a lexical one", () => {
+describe("the two kinds of hit share one order, by the published score", () => {
+  it("hits are sorted by score, descending", () => {
     setup.check();
-    const complaint = violatesSemanticTail(mixed, WHERE);
+    const complaint = violatesScoreOrder(mixed, WHERE);
     expect(complaint ?? "", complaint ?? "").toBe("");
   });
 
-  it("no hit carries both channels' evidence", () => {
+  it("every score is reproducible from the hit's own evidence", () => {
     setup.check();
-    const complaint = violatesChannelPurity(mixed, WHERE);
-    expect(complaint ?? "", complaint ?? "").toBe("");
-  });
-
-  it("every marker is the published constant, byte for byte", () => {
-    setup.check();
-    const complaint = violatesMarkerConstant(mixed, WHERE);
-    expect(complaint ?? "", complaint ?? "").toBe("");
-    const markers = mixed.hits
-      .flatMap((h) => h.evidence)
-      .filter(isSimilarEvidence);
+    const complaint = violatesScoreFormula(mixed, WHERE);
     expect(
-      [...new Set(markers)],
-      `D-300-04 D5 pins ONE value. Asserted as equality rather than as "they all agree", ` +
-        `because "they all agree" is satisfied by a per-hit score that happened to tie and is ` +
-        `satisfied vacuously by a tail of one — the assertion has to exclude the bad output, ` +
-        `not merely admit the good one.` + PROVISIONING_CAVEAT,
-    ).toEqual([SIMILAR_MARKER]);
+      complaint ?? "",
+      (complaint ?? "") +
+        `\n  score = similarity + ${PUBLISHED_RANKING.lexicalBoost} * coverage, published ` +
+        `on every hit so a caller can check the order rather than trust it.`,
+    ).toBe("");
+  });
+
+  it("the blueprint that names the word outranks the one that is merely near it", () => {
+    setup.check();
+    const first = mixed.hits[0];
+    expect(
+      first === undefined ? "(nothing)" : itemKey(first.item),
+      `ranks by score: ${JSON.stringify(mixed.hits.map((h) => [itemKey(h.item), h.score]))}`,
+    ).toBe(serviceKey());
+    /* Not luck: the lexical boost sits on top of a similarity that is itself higher for the
+       document carrying the word, so the exact match wins on both terms of the formula. */
+    const service = similarityOf(first?.evidence ?? []) ?? 0;
+    const others = mixed.hits.slice(1).map((h) => similarityOf(h.evidence) ?? 0);
+    for (const other of others) expect(service + PUBLISHED_RANKING.lexicalBoost).toBeGreaterThan(other);
+  });
+
+  it("every similarity entry is in the published two-decimal form", () => {
+    setup.check();
+    const complaint = violatesSimilarityGrammar(mixed, WHERE);
+    expect(complaint ?? "", complaint ?? "").toBe("");
   });
 
   it("the response never calls itself semantic", () => {
@@ -198,71 +167,46 @@ describe("AC3 the two channels stay apart and the tail stays behind", () => {
       (complaint ?? "") +
         (complaint === undefined
           ? ""
-          : `\n  D-200-34's rule survives D-300-01: the word is now TRUE of the vector ` +
-            `channel and is STILL not free-floating — say it only where the vector channel is ` +
-            `being described. An \`evidence\` value handed to a caller is the definition of ` +
-            `free-floating, which is why the marker is \`${SIMILAR_MARKER}\`.`),
+          : `\n  The word is true of the vector channel and is still not free-floating: an ` +
+            `\`evidence\` value handed to a caller is the definition of free-floating, ` +
+            `which is why the entry is \`similarity:\`.`),
     ).toBe("");
   });
 
-  it("the marker still parses as the published evidence grammar", () => {
+  it("every evidence value still parses as `<field>:<token>`", () => {
     setup.check();
     const complaint = violatesEvidenceGrammar(mixed, WHERE);
-    expect(
-      complaint ?? "",
-      (complaint ?? "") +
-        (complaint === undefined
-          ? ""
-          : `\n  D-200-09 publishes \`<field>:<token>\`, and the marker is not exempt: a ` +
-            `caller reads every evidence value the same way, so a channel that shipped a ` +
-            `bare word would make the whole list ambiguous.`),
-    ).toBe("");
-  });
-});
-
-describe("AC6 the two honesty properties hold over the mixed set", () => {
-  it("AC5's law holds", () => {
-    setup.check();
-    const complaint = violatesOrderedLaw(mixed, WHERE);
     expect(complaint ?? "", complaint ?? "").toBe("");
   });
 
-  it("D-200-20's contiguity holds, with the tail as one equal-evidence group", () => {
+  it("the response says the encoder was present", () => {
     setup.check();
-    const complaint = unexplainedOrdering(mixed, WHERE);
+    expect(encoderOf(mixed)).toBe("present");
+  });
+});
+
+describe("the honesty law holds over the mixed set", () => {
+  it("`ordered === hits.every((h) => h.evidence.length > 0)`", () => {
+    setup.check();
+    const complaint = violatesOrderedLaw(mixed, WHERE);
+    expect(complaint ?? "", complaint ?? "").toBe("");
     expect(
-      complaint ?? "",
-      (complaint ?? "") +
-        (complaint === undefined
-          ? ""
-          : `\n  Over a mixed set this property has a subject it did not have before: every ` +
-            `semantic hit carries the SAME constant, so the tail is one equal-evidence group ` +
-            `and a lexical hit ranked inside it splits that group. That is the same defect ` +
-            `D-200-20 was written for, arriving through a channel that did not exist then.`),
-    ).toBe("");
+      mixed.ordered,
+      `every hit here carries either a \`field:token\` entry or a \`similarity:\` entry, so ` +
+        `the law computes TRUE and the order is one the response has explained in numbers`,
+    ).toBe(true);
   });
 
-  it("the tail is a suffix, so contiguity is a real check rather than a vacuous one", () => {
+  it("no hit is a hit for no reason: below the floor with no lexical match is not in the set", () => {
     setup.check();
-    const seen = channels(mixed);
-    const semanticRanks = seen.map((c, i) => ({ c, i })).filter((x) => x.c === "semantic").map((x) => x.i);
+    const offenders = mixed.hits.filter((h) => {
+      const similarity = similarityOf(h.evidence);
+      return lexicalEntries(h.evidence).length === 0 && (similarity === undefined || similarity < PUBLISHED_RANKING.minSimilarity);
+    });
     expect(
-      semanticRanks.length,
-      `the premise, restated where it is used: with fewer than two semantic hits the ` +
-        `contiguity check above compares nothing, and a green from it is the instrument going ` +
-        `quiet rather than the module being right. With one, this cell states the weaker ` +
-        `claim it can state.`,
-    ).toBeGreaterThan(0);
-    const expectedSuffix = Array.from(
-      { length: semanticRanks.length },
-      (_, k) => seen.length - semanticRanks.length + k,
-    );
-    expect(
-      semanticRanks,
-      `D-300-01: semantic-only hits "join the TAIL". Stated as the ranks they occupy rather ` +
-        `than as a pairwise comparison, because a suffix is one claim a reader can check ` +
-        `against the printed channel list.\n` +
-        `  channels by rank: ${seen.join(", ")}` + PROVISIONING_CAVEAT,
-    ).toEqual(expectedSuffix);
+      offenders.map((h) => [itemKey(h.item), h.evidence]),
+      `a candidate is a hit when its similarity is at or above ${PUBLISHED_RANKING.minSimilarity} ` +
+        `or a content word matched; anything else is not an answer`,
+    ).toEqual([]);
   });
 });

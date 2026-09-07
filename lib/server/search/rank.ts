@@ -1,40 +1,35 @@
 /* ============================================================
-   DarkPrint backend — matching, evidence and the order they imply
+   DarkPrint backend — matching, evidence, score and the order
    The three searchers differ in what they read and what they
-   filter by; they share this, which is the half AC5 is about.
+   filter by; they share this.
 
-   ── The score IS the evidence, and that is the point ──
-   `score = evidence.length`. There is no weight table, because a
-   weight table is an unpublished derivation and SEAM-88 names that
-   exact thing as what this site refuses everywhere else: "a
-   relevance score with no published derivation is the kind of
-   number this site refuses". A hit ranks above another because the
-   query was found in MORE PLACES, and every one of those places is
-   listed in `evidence` for a caller to check against the archive.
+   ── The score is published, and the evidence lets a caller redo it ──
+   `score = similarity + LEXICAL_BOOST * coverage`, where similarity
+   is `1 - cosine distance` between the query vector and the item's
+   stored vector (0 when either is missing) and coverage is the
+   share of the query's content words found somewhere in the item's
+   lexical fields. A hit is any candidate with similarity at or
+   above `MIN_SIMILARITY` or with coverage above zero. Both numbers
+   are on the hit: `similarity:0.43` in `evidence`, `score` beside
+   it, and the `field:token` entries say which words were found
+   where.
 
-   ── Why the evidence string is the second sort key ──
-   D-200-20: hits carrying BYTE-IDENTICAL evidence must occupy a
-   CONTIGUOUS BLOCK of ranks, because equal explanations that rank
-   unequally are an ordering the evidence does not explain. Sorting
-   on `(score, evidenceKey, identity)` makes that hold BY
-   CONSTRUCTION rather than by luck: two hits with identical
-   evidence agree on the first two keys, and anything that could
-   sort between them would have to agree on both too — which means
-   its evidence is identical as well, so it is inside the block
-   rather than splitting it.
+   With no encoder in the process, or no vector for a row, the
+   rule collapses to coverage alone and the order is lexical.
 
-   Sorting on `(score, identity)` alone does NOT hold it. Evidence
-   `[title:agent]` and evidence `[tag:agent]` both score 1, and the
-   identity tiebreak would interleave the two groups on a shelf
-   sorted by slug. That arrangement satisfies "every hit has
-   evidence" and still presents an order the evidence does not
-   explain, which is the defect the ruling was written for.
+   ── The sort ──
+   `(score desc, similarity desc, evidence asc, identity asc)`. The
+   evidence key keeps hits carrying byte-identical evidence in one
+   contiguous block whenever their scores tie, which is what the
+   vector-free worlds produce, and it is the order the vocabulary
+   search has always had. Identity makes the order total.
    ============================================================ */
 
+import { LEXICAL_BOOST, MIN_SIMILARITY } from "./embed";
 import type { Hit, Results } from "./types";
-import { findWord, normalise, words } from "./text";
+import { coverageWords, findWord, normalise, words } from "./text";
 
-/** Code-unit comparison, not `localeCompare` — the order must not depend on the host locale. */
+/** Code-unit comparison, not `localeCompare`: the order must not depend on the host locale. */
 export function cmpString(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
@@ -43,45 +38,48 @@ export function cmpString(a: string, b: string): number {
  * One searchable field of an item: the name that will appear in the evidence, and the text
  * to look in.
  *
- * `text` may answer several strings — `tags`, `cardRefs`, `tools`, a card's risk markers —
- * and each is searched separately so the evidence names the value that matched rather than
- * a concatenation nobody can point at in the archive.
+ * `text` may answer several strings (`tags`, `cardRefs`, `tools`, a card's risk markers) and
+ * each is searched separately so the evidence names the value that matched rather than a
+ * concatenation nobody can point at in the archive.
  */
 export interface Field<T> {
-  /**
-   * The evidence's left half. A FIELD name, never a caller-supplied value and never a URL
-   * parameter name — `category`, not `cat`. The pair and the reason are on `Results.facets`
-   * in `types.ts` (D-200-30).
-   */
+  /** The evidence's left half. A FIELD name, never a URL parameter name: `category`, not `cat`. */
   key: string;
   text: (item: T) => string | readonly string[] | undefined;
 }
 
-/** The words of a query, normalised. Empty when the caller asked for no text at all. */
+/** Every word of a query, normalised. Empty when the caller asked for no text at all. */
 export function queryWords(params: Record<string, string>): readonly string[] {
   return words(normalise(params.q ?? ""));
 }
 
 /**
- * The evidence for one item, or `undefined` when it is not a hit.
- *
- * EVERY query word must be found somewhere (conjunction across words, disjunction across
- * fields). The merged shelves are stricter still — `haystack.includes(q)` requires the
- * whole query contiguously — so this widens what matches rather than narrowing it, and a
- * one-word query, which is what a reader types, behaves identically under all three
- * readings.
- *
- * Entries are deduplicated and sorted, which is what makes byte-identity a meaningful test:
- * two items matched in the same places must produce the same string whatever order the
- * fields happened to be visited in.
+ * The words of a task that count toward coverage: harness phrases stripped, stopwords and
+ * short words dropped, falling back to the raw words when nothing else is left. Empty only
+ * when the query has no words.
  */
-export function evidenceFor<T>(
+export function taskWords(params: Record<string, string>): readonly string[] {
+  return coverageWords(params.q ?? "");
+}
+
+/** What the lexical pass found: the evidence entries, and how many distinct query words matched. */
+export interface LexicalMatch {
+  evidence: readonly string[];
+  found: number;
+}
+
+/**
+ * Look for every query word in every field. Entries are deduplicated and sorted, so two
+ * items matched in the same places produce the same list whatever order the fields were
+ * visited in.
+ */
+export function lexicalMatch<T>(
   item: T,
   fields: readonly Field<T>[],
   query: readonly string[],
-): readonly string[] | undefined {
-  if (query.length === 0) return undefined;
-  const found = new Set<string>();
+): LexicalMatch {
+  const entries = new Set<string>();
+  let found = 0;
   for (const word of query) {
     let matched = false;
     for (const field of fields) {
@@ -90,138 +88,138 @@ export function evidenceFor<T>(
       for (const text of typeof value === "string" ? [value] : value) {
         const documentWord = findWord(text, word);
         if (documentWord === undefined) continue;
-        found.add(`${field.key}:${documentWord}`);
+        entries.add(`${field.key}:${documentWord}`);
         matched = true;
       }
     }
-    // A word nobody carries takes the whole item out: the reader asked for all of them.
-    if (!matched) return undefined;
+    if (matched) found += 1;
   }
-  return [...found].sort(cmpString);
-}
-
-/** A candidate before it becomes a `Hit`: its item, its evidence, and its stable identity. */
-export interface Scored<T> {
-  item: T;
-  evidence: readonly string[];
-  /** The item's own key — slug, ref, term id. The last tiebreak, and always total. */
-  identity: string;
+  return { evidence: [...entries].sort(cmpString), found };
 }
 
 /**
- * The evidence as one comparable string.
+ * The lexical evidence for one item, or `undefined` when it is not a hit.
  *
- * The separator is a space, which `normalise` has already removed from inside every word
- * and which no field key contains — so the join is injective over the values that can
- * actually reach it, and two different evidence lists cannot collide onto one key.
+ * `"all"` requires every query word to be found somewhere (the vocabulary search, where a
+ * reader types one or two exact words). `"any"` accepts a single found word and answers an
+ * empty list for none, so the caller can weigh coverage instead. Either mode answers
+ * `undefined` for an empty query, which is a listing rather than a search.
+ */
+export function evidenceFor<T>(
+  item: T,
+  fields: readonly Field<T>[],
+  query: readonly string[],
+  mode: "all" | "any",
+): readonly string[] | undefined {
+  if (query.length === 0) return undefined;
+  const match = lexicalMatch(item, fields, query);
+  if (mode === "all" && match.found < query.length) return undefined;
+  return match.evidence;
+}
+
+/** Distinct query words found over the query's words. `0` for an empty query. */
+export function coverageOf(found: number, queryLength: number): number {
+  return queryLength === 0 ? 0 : found / queryLength;
+}
+
+/** The hit rule: near enough by vector, or found by at least one content word. */
+export function isHit(similarity: number, coverage: number): boolean {
+  return similarity >= MIN_SIMILARITY || coverage > 0;
+}
+
+/** The published formula, rounded to four places so two processes print the same number. */
+export function scoreOf(similarity: number, coverage: number): number {
+  return Math.round((similarity + LEXICAL_BOOST * coverage) * 10_000) / 10_000;
+}
+
+/** The evidence entry that discloses the vector channel's reading, two decimals. */
+export function similarityEvidence(similarity: number): string {
+  return `similarity:${similarity.toFixed(2)}`;
+}
+
+/** A candidate before it becomes a `Hit`: its item, its evidence, its numbers, and its stable identity. */
+export interface Scored<T> {
+  item: T;
+  evidence: readonly string[];
+  /** The item's own key: slug, ref, term id. The last tiebreak, and always total. */
+  identity: string;
+  score: number;
+  similarity: number;
+}
+
+/**
+ * The evidence as one comparable string. The separator is a space, which `normalise` has
+ * already removed from inside every word and which no field key contains, so two different
+ * evidence lists cannot collide onto one key.
  */
 function evidenceKey(evidence: readonly string[]): string {
   return evidence.join(" ");
 }
 
 /**
- * Order by relevance and answer the whole `Results`.
+ * Order by relevance and answer the whole `Results`, keeping at most `limit` hits.
  *
- * `ordered` is DERIVED from the hits and never from the branch that produced them
- * (D-200-09). That matters on the empty result, where `[].every(…)` is `true`: a listing
- * that matched nothing reports `ordered: true`, and an implementation that set the flag
- * from `q !== ""` would report `false` and break the published law while looking obviously
- * right.
+ * `ordered` is derived from the hits and never from the branch that produced them. On the
+ * empty result `[].every(…)` is `true`: a listing that matched nothing reports
+ * `ordered: true`, and an implementation that set the flag from `q !== ""` would report
+ * `false` and break the published law while looking obviously right.
  */
 export function ranked<T>(
   candidates: readonly Scored<T>[],
   facets: Record<string, readonly string[]>,
+  encoder: Results<T>["encoder"],
+  limit?: number,
 ): Results<T> {
-  return finish([...candidates].sort(byRelevance), facets);
+  const sorted = [...candidates].sort(byRelevance);
+  return finish(limit === undefined ? sorted : sorted.slice(0, limit), facets, encoder);
 }
 
 function byRelevance<T>(a: Scored<T>, b: Scored<T>): number {
   return (
-    b.evidence.length - a.evidence.length ||
+    b.score - a.score ||
+    b.similarity - a.similarity ||
     cmpString(evidenceKey(a.evidence), evidenceKey(b.evidence)) ||
     cmpString(a.identity, b.identity)
   );
 }
 
 /**
- * The lexical ranking, with the vector channel's own finds APPENDED BEHIND IT (D-300-02,
- * granted to T300 by D-300-04 D4 as this module's one change).
- *
- * ── Why the tail is concatenated rather than sorted in ──
- *
- * AC3 says a semantic-only hit never outranks a lexical one, and the ONLY construction that
- * makes that true for every input is putting it after the last of them. Feeding the tail
- * through `byRelevance` would not: `similar:purpose` scores 1 like any single-field match,
- * and `similar:` sorts alphabetically between `owner:` and `slug:`, so a hit found only by
- * cosine distance would interleave into the middle of the lexical block on the second sort
- * key. That is not a tuning question, it is the comparator doing exactly what it was
- * written to do — which is why the tail is kept out of it entirely.
- *
- * `similar` arrives in ascending cosine distance and KEEPS that order. It is an order the
- * archive does not explain, and the response says so: every hit in it carries the same
- * marker, so nothing about the tail claims a lexically-explainable rank.
- *
- * ── D-200-20's contiguity survives BY CONSTRUCTION, and this is why ──
- *
- * The property is that hits with byte-identical evidence occupy a contiguous block. Every
- * tail hit carries exactly `[SIMILAR_EVIDENCE]`, so the tail is one block and it is
- * contiguous because it is a suffix. It cannot SPLIT a lexical block either, and that does
- * not depend on the sort: `similar` is not a field name in either searcher's `FIELDS`
- * — blueprints match on slug/owner/title/summary/description/category/tag/card, cards on
- * id/name/action/spec/type/tool/phase/risk — so no lexical hit can carry this evidence and
- * no lexical block extends past the join.
- *
- * ── `ordered` is still DERIVED, and it is still the same law ──
- *
- * Through `finish`, unamended. A tail hit has non-empty evidence, so a response carrying
- * one computes `ordered: true` — which D-300-04 D1 ruled honest, and honest only because
- * the marker NAMES the channel and `SIMILAR_MIN`/`SEMANTIC_K` are published with the
- * calibration that produced them. The claim being made is "these came back because they
- * are near your query through the published channel", and that is checkable against the
- * archive by anyone willing to encode the query. Nothing here decides that; it is recorded
- * because this is the line where the law is evaluated.
- */
-export function rankedWithSimilar<T>(
-  lexical: readonly Scored<T>[],
-  similar: readonly Scored<T>[],
-  facets: Record<string, readonly string[]>,
-): Results<T> {
-  return finish([...[...lexical].sort(byRelevance), ...similar], facets);
-}
-
-/**
  * Answer a `Results` in the order given, making no ranking claim.
  *
- * For a listing with no `q` and for one under an explicit `sort` (D-200-09): the order is
- * the registry's own key order or the caller's own instruction, and neither is a rank the
- * archive explains, so every hit carries empty evidence and `ordered` follows.
- *
- * The evidence is DISCARDED here rather than never computed — under an explicit `sort` a
- * `q` still decides which items are hits, so the matching runs and only its explanation is
- * dropped. Reporting evidence for an order the evidence did not produce is the dishonesty
- * AC5 exists to prevent, in the one direction that looks generous.
+ * For a listing with no `q` and for one under an explicit `sort`: the order is the
+ * registry's own key order or the caller's own instruction, neither of which is a rank the
+ * archive explains, so every hit carries empty evidence, a zero score, and `ordered`
+ * follows. Under an explicit `sort` a `q` still decides which items are hits; only the
+ * explanation is dropped, because reporting evidence for an order the evidence did not
+ * produce is the dishonesty the flag exists to prevent.
  */
 export function unranked<T>(
   items: readonly T[],
   facets: Record<string, readonly string[]>,
+  encoder: Results<T>["encoder"],
 ): Results<T> {
   return finish(
-    items.map((item) => ({ item, evidence: [] as readonly string[], identity: "" })),
+    items.map((item) => ({ item, evidence: [] as readonly string[], identity: "", score: 0, similarity: 0 })),
     facets,
+    encoder,
   );
 }
 
 function finish<T>(
   ordered: readonly Scored<T>[],
   facets: Record<string, readonly string[]>,
+  encoder: Results<T>["encoder"],
 ): Results<T> {
   const hits: readonly Hit<T>[] = Object.freeze(
-    ordered.map((row) => Object.freeze({ item: row.item, evidence: Object.freeze(row.evidence) })),
+    ordered.map((row) =>
+      Object.freeze({ item: row.item, evidence: Object.freeze(row.evidence), score: row.score }),
+    ),
   );
   return Object.freeze({
     hits,
     facets: Object.freeze(facets),
     /* The law, evaluated rather than asserted. */
     ordered: hits.every((hit) => hit.evidence.length > 0),
+    encoder,
   });
 }

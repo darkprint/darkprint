@@ -1,124 +1,75 @@
 /* ============================================================
-   DarkPrint backend — reembedRelease
-   AC6: re-embedding is triggered by a release and is idempotent
-   for unchanged content. B-12 names the manifest AND the card
-   specs, so this writes BOTH vectors and "idempotent" has two
-   subjects (D-200-12) — `card_version_embedding` has no other
-   published writer, and inventing a second entry point would put
-   two owners on one table.
+   DarkPrint backend — reembedRelease and reembedAll
+   Re-embedding is triggered by a release and is idempotent for
+   unchanged content. It writes BOTH vectors: the release's own,
+   over a document describing the blueprint's purpose and its
+   graph, and one per pinned card version, over a document
+   describing what the node does and what it is told.
+   `card_version_embedding` has no other writer.
 
-   ── The row's presence WAS the whole of the idempotency, and
-      what falsified that ──
-   D-200-03 argued: a `release` row is content-addressed, `digest`
-   is derived from the bytes, so a row's digest CANNOT CHANGE, and
-   therefore a `release_embedding` row is already a vector for that
-   digest. No `embedded_digest`, no `embedded_at`, because those
-   columns detect a drift this shape makes impossible.
+   ── Idempotency reads the stamp, not the row ──
+   A `release` row is content-addressed but its manifest is not in
+   the digest, and a migration once rewrote `card_version.body` in
+   place under unchanged primary keys. So every vector row carries
+   `embedded_input_sha256`, the identity of the exact input it was
+   encoded from, and a call writes only when that stamp is absent or
+   disagrees. Equal input costs one indexed lookup and no model
+   load. The model's identity is inside the hash, so swapping the
+   weights invalidates every row for free.
 
-   The shape does not make it impossible. Commit ed3ae85, the
-   stored-card registry migration, ran `update card_version set
-   body, source, digest where id = ...` over all 58 rows and
-   `update release set manifest, card_digests, digest` over all 16,
-   in place, under unchanged primary keys. Digests moved. The
-   `on delete cascade` that was supposed to make a stale vector
-   unrepresentable never fired, because nothing was deleted. 42
-   card vectors and 7 release vectors written on 2026-08-25
-   survived a rewrite of their subjects on 2026-09-01 with nothing
-   recording which text they were computed from.
+   ── The documents are versioned in their first line ──
+   Both start with `v2`, so a change of template is visible in the
+   stamped input without decoding it and `reembedAll --dry-run`
+   counts every row stale the day the template moves.
 
-   Nothing broke, and the reason is which fields that migration
-   happened to touch. It moved `cannot`, `will_not`, `notes`,
-   `requires_human` and `ontology_version`, and `cardText` and
-   `manifestText` below read none of them. Re-encoding all 49
-   subjects from their post-migration bodies reproduced all 49
-   stored vectors to within float32 round-trip. That is luck about
-   one migration's field list, and the same script touching `spec`
-   would have left every card vector wrong with no column able to
-   say so.
-
-   ── What replaced it: `embedded_input_sha256` (0008) ──
-   The row now carries the identity of the exact input it was
-   encoded from, and idempotency reads THAT rather than presence.
-   Equal input, nothing written and not even a model load. Absent
-   or unequal, the row is rewritten.
-
-   Three decisions inside that, none of them free:
-
-     * It is NOT `embedded_digest`, and D-200-03's objection to
-       that column is kept rather than overruled. A column
-       mirroring a CURRENT value can only agree or be a bug.
-       `release.digest` is also simply the wrong quantity:
-       `bundleDigest` hashes `{dot, cardDigests}` with no manifest
-       in it, while the release vector is nothing but manifest
-       fields, so it would have called all 16 releases stale last
-       week and would not move at all if someone edited
-       `manifest.title`. This column records a PAST value, and
-       disagreement with the present one is the signal.
-
-     * The model's identity is IN the hash, not beside it. A text
-       hash alone is blind to a swapped encoder: change the
-       weights and every stamp still matches while every vector
-       becomes incomparable to the next one written. `MODEL_BLOB`
-       is the frozen identity of the vendored weights and
-       `derivation.test.ts` is what keeps that pin honest, so
-       folding it in makes a model swap invalidate every row for
-       free. It is not total. Changing the pooling or the
-       normalisation in `embed.ts` moves no stamp, and nothing
-       here claims otherwise.
-
-     * The write is now an upsert where it used to be
-       `onConflictDoNothing`, and `created_at` moves with it. AC6
-       is untouched, because a second call with unchanged content
-       returns before reaching the insert and leaves `embedding`
-       AND `created_at` byte-identical. What changed is the case
-       AC6 never covered: content that DID change, which the old
-       insert-only writer could not repair at all. Two concurrent
-       triggers now both write instead of one losing the race, and
-       they write the same bytes, because the encoder is
-       deterministic across processes.
-
-   `embedding` is `NOT NULL`, so "never embedded" is still the
-   ABSENCE of a row rather than a null inside one. `NULL` in
-   `embedded_input_sha256` is a different statement: the row was
-   written before 0008 and its input is unknown. It cannot be
-   backfilled honestly, because deriving it from today's text
-   would stamp agreement onto a vector nobody checked, so unknown
-   is treated exactly as disagreement and one sweep clears it.
-
-   ── `(bundleId, digest)` is not unique, and that is inherited ──
-   The unique index is `release_bundle_version_key` on
-   `(bundle_id, version)`; `release_digest_idx` is non-unique, and
-   `bundleDigest` takes `{dot, cardDigests}` with NO VERSION IN IT,
-   so two versions of identical content legitimately share a
-   digest. Merged T010's `getRelease` already resolves that by
-   taking the first row, and this module consumes its answer rather
-   than inventing a second resolver — which is also where the
-   malformed-digest handling already lives.
+   ── Visibility is not consulted, on purpose ──
+   A vector skipped while a blueprint is private has nothing to
+   trigger it on the day the blueprint goes public. The searchers
+   narrow to the public universe before they read either table.
    ============================================================ */
 
-import { eq, inArray, sql } from "drizzle-orm";
-import { cardRef, parseCardRef, sha256Hex } from "@/lib/core";
+import { asc, eq, inArray, sql } from "drizzle-orm";
+import {
+  cardRef,
+  hasErrors,
+  loadBundle,
+  parseCardRef,
+  requiresHuman,
+  sha256Hex,
+  type BlueprintAnalysis,
+  type Bundle,
+  type ResolvedBlueprint,
+} from "@/lib/core";
+import { cardFilePath } from "@/lib/content/bundle-export";
+import { requiredAgents, requiredTools } from "@/lib/graph-seed";
 import { schema, type Db } from "@/lib/db";
-import { getRelease } from "@/lib/server/archive";
+import {
+  MalformedVocabularyError,
+  getRelease,
+  parseStoredVocabulary,
+  type ReleaseRecord,
+} from "@/lib/server/archive";
+import { openView } from "@/lib/server/ontology";
 import type { BundleManifest, NodeCard } from "@/lib/server/types";
-import { MODEL_BLOB, embed } from "./embed";
+import { MODEL_BLOB, embed, encoderState } from "./embed";
 import { withSearchStore } from "./store";
+
+/** The first line of both documents. Bump it when either template changes shape. */
+export const DOCUMENT_VERSION = "v2";
+
+/**
+ * The most characters a blueprint document may run to. The encoder truncates at 512
+ * wordpieces, about 1800 characters of English, and text past the window buys nothing while
+ * diluting what is inside it.
+ */
+export const BLUEPRINT_DOCUMENT_BUDGET = 1800;
 
 /**
  * The identity of everything a stored vector is a function of: the encoder that produced it
  * and the exact string it was handed.
  *
- * Prefixed `sha256:` to match `lib/core/hash/digest.ts`'s convention, so a value read out of
- * the database says which algorithm made it and a second one can coexist later. The model
- * pin goes first and is a fixed 64 hex characters, so no text can be confused for it however
- * the newline lands.
- *
- * Exported so the decision that the MODEL PIN participates is observable. It is the half of
- * this column that no database cell can drive: every vector in a scratch database is written
- * by the one vendored encoder, so a run cannot show that swapping the weights invalidates a
- * stamp. Kept out of `index.ts`, which is the published barrel and is pinned by
- * `tests/server/t300/surface.test.ts` to exactly the four verbs and their approved
- * additions. `cardText` and `manifestText` stay private and are driven through behaviour.
+ * Prefixed `sha256:` to match `lib/core`'s digest convention. The model pin goes first and
+ * is a fixed 64 hex characters, so no text can be confused for it however the newline lands.
  */
 export function embeddedInput(text: string): string {
   return `sha256:${sha256Hex(`${MODEL_BLOB.sha256}\n${text}`)}`;
@@ -127,68 +78,156 @@ export function embeddedInput(text: string): string {
 /**
  * Embed a release and every card version it pins, writing what is missing or out of date.
  *
- * An absent release is a NO-OP returning `void` rather than a throw (D-200-13): it matches
- * the value-not-refusal convention this module's `errors.ts` measures, and a typed refusal
- * would add a class to the published surface that no caller could bind to yet.
- * `getRelease` answers `undefined` for a release that is not there and for a malformed
- * digest alike, and both are the same nothing-to-do here.
+ * An absent release is a no-op returning `void` rather than a throw: `getRelease` answers
+ * `undefined` for a release that is not there and for a malformed digest alike, and both are
+ * the same nothing-to-do here.
  */
 export async function reembedRelease(db: Db, bundleId: string, digest: string): Promise<void> {
   return withSearchStore("reembedRelease", async () => {
-    const release = await getRelease(db, bundleId, digest);
-    if (release === undefined) return;
-
-    const encoded = await embedManifest(db, release.id, release.manifest);
-
-    /* NO ENCODER, NOTHING WRITTEN, NO REFUSAL (D-300-05). The model directory is an
-       explicit operator step and a machine without it must keep publishing: the vector is
-       an ADDITIONAL recall channel, so its absence narrows what search can reach and
-       breaks nothing that worked before. Returning here rather than inside the loop
-       because the answer is a property of the process, not of this release — one absent
-       encoder cannot embed the cards either.
-
-       This is no longer the ONLY place that answer is read, and it cannot be: an up-to-date
-       manifest returns `true` without touching the encoder, so a release whose vector is
-       current and whose cards are not reaches the loop below on a machine with no weights.
-       `embedCards` checks for itself, and the loader is memoised, so the cost of arriving
-       there is one cached miss rather than a load per card. */
-    if (!encoded) return;
-
-    await embedCards(db, release.cardRefs);
+    await syncRelease(db, bundleId, digest, { dryRun: false, seenCards: new Set() });
   });
 }
 
-/**
- * The release half. `true` means the row is now a vector for `manifest`, whether this call
- * wrote it or found it already correct; `false` means only that this process cannot encode.
- *
- * The stamp is read BEFORE the encoder is consulted, which is what makes the unchanged case
- * cost one indexed lookup instead of a 23MB model load, and it is also what makes the
- * idempotency criterion checkable without weights at all.
- */
-async function embedManifest(db: Db, releaseId: string, manifest: BundleManifest): Promise<boolean> {
-  const text = manifestText(manifest);
-  const input = embeddedInput(text);
+/** What a sweep did, or in a dry run what it would do. Counts are over distinct vector rows. */
+export interface ReembedSweep {
+  /** Releases the sweep resolved. */
+  releases: number;
+  /** Vector rows written (or, dry, whose stamp disagrees with today's document). */
+  written: number;
+  /** Vector rows whose stamp already matched. */
+  unchanged: number;
+  encoder: "present" | "absent";
+}
 
+/**
+ * Re-embed every release in the archive, oldest first.
+ *
+ * `reembedRelease` runs at publish and nowhere else, so a template change leaves every
+ * existing row stale until something revisits it. This is that something. With `dryRun` the
+ * would-be stamps are computed and compared and nothing is encoded or written.
+ */
+export async function reembedAll(
+  db: Db,
+  options: { dryRun?: boolean } = {},
+): Promise<ReembedSweep> {
+  return withSearchStore("reembedAll", async () => {
+    const dryRun = options.dryRun ?? false;
+    const rows = await db
+      .select({ bundleId: schema.release.bundleId, digest: schema.release.digest })
+      .from(schema.release)
+      .orderBy(asc(schema.release.createdAt), asc(schema.release.id));
+
+    /* Two versions of one bundle can share a digest, and `getRelease` resolves the pair to
+       its first row either way, so the pair is visited once. Card rows are shared across
+       releases and counted once too. */
+    const visited = new Set<string>();
+    const seenCards = new Set<string>();
+    const sweep: ReembedSweep = { releases: 0, written: 0, unchanged: 0, encoder: "absent" };
+    for (const row of rows) {
+      const key = `${row.bundleId}#${row.digest}`;
+      if (visited.has(key)) continue;
+      visited.add(key);
+      const outcome = await syncRelease(db, row.bundleId, row.digest, { dryRun, seenCards });
+      if (outcome === undefined) continue;
+      sweep.releases += 1;
+      sweep.written += outcome.written;
+      sweep.unchanged += outcome.unchanged;
+    }
+    sweep.encoder = await encoderState();
+    return sweep;
+  });
+}
+
+/* --------------------- one release --------------------- */
+
+interface SyncOptions {
+  dryRun: boolean;
+  /** `card_version.id`s already handled by this sweep, so a shared card is counted once. */
+  seenCards: Set<string>;
+}
+
+interface SyncOutcome {
+  written: number;
+  unchanged: number;
+}
+
+interface CardRow {
+  id: string;
+  cardId: string;
+  version: string;
+  body: unknown;
+  source: string;
+  input: string | null;
+}
+
+async function syncRelease(
+  db: Db,
+  bundleId: string,
+  digest: string,
+  options: SyncOptions,
+): Promise<SyncOutcome | undefined> {
+  const release = await getRelease(db, bundleId, digest);
+  if (release === undefined) return undefined;
+
+  const pinned = await pinnedCards(db, release.cardRefs);
+  const outcome: SyncOutcome = { written: 0, unchanged: 0 };
+
+  const document = blueprintText(release.manifest, resolvedGraph(release, pinned));
+  const releaseState = await syncReleaseVector(db, release.id, document, options.dryRun);
+  /* No encoder, nothing written, no refusal: the machine keeps publishing and the searchers
+     stay lexical. Answered once here because the property belongs to the process, and one
+     absent encoder cannot embed the cards either. */
+  if (releaseState === "absent") return outcome;
+  count(outcome, releaseState);
+
+  /* Card labels come from the bare core vocabulary rather than this release's overlay: a
+     card version is one row pinned by any number of releases, and two overlays would give
+     it two documents that rewrite each other on every pass. */
+  const core = openView();
+  const labelOf = (id: string): string => core.get(id)?.label ?? id;
+  for (const row of pinned) {
+    if (options.seenCards.has(row.id)) continue;
+    options.seenCards.add(row.id);
+    const state = await syncCardVector(db, row, cardText(cardBody(row.body), labelOf), options.dryRun);
+    if (state === "absent") return outcome;
+    count(outcome, state);
+  }
+  return outcome;
+}
+
+function count(outcome: SyncOutcome, state: "written" | "unchanged"): void {
+  if (state === "written") outcome.written += 1;
+  else outcome.unchanged += 1;
+}
+
+type VectorState = "written" | "unchanged" | "absent";
+
+/**
+ * The release half. The stamp is read BEFORE the encoder is consulted, which is what makes
+ * the unchanged case cost one indexed lookup instead of a model load, and what makes the
+ * idempotency claim checkable without weights at all.
+ */
+async function syncReleaseVector(
+  db: Db,
+  releaseId: string,
+  text: string,
+  dryRun: boolean,
+): Promise<VectorState> {
+  const input = embeddedInput(text);
   const [current] = await db
     .select({ input: schema.releaseEmbedding.embeddedInputSha256 })
     .from(schema.releaseEmbedding)
     .where(eq(schema.releaseEmbedding.releaseId, releaseId));
-  if (current?.input === input) return true;
+  if (current?.input === input) return "unchanged";
+  if (dryRun) return "written";
 
   const vector = await embed(text);
-  if (vector === undefined) return false;
+  if (vector === undefined) return "absent";
 
   /* `createdAt` moves on a rewrite because the alternative is a column that dates a vector
-     it does not describe. AC6's byte-identical `created_at` is preserved by the return
-     above rather than by this clause: an unchanged input never reaches here.
-
-     What makes the upsert safe for two concurrent triggers is the encoder rather than the
-     conflict clause. The ruled model is deterministic across PROCESSES and not merely within
-     one, measured byte-identical over four texts across three separate pids, so the racer
-     that arrives second overwrites the first with the same 384 numbers. Under the previous
-     `onConflictDoNothing` the loser wrote nothing, which was the same outcome by a different
-     route; only `created_at` now belongs to the later writer. */
+     it does not describe. The unchanged case never reaches here, so a repeated call leaves
+     both columns byte-identical. Two concurrent triggers both write the same 384 numbers,
+     because the encoder is deterministic across processes. */
   await db
     .insert(schema.releaseEmbedding)
     .values({ releaseId, embedding: vector, embeddedInputSha256: input })
@@ -196,135 +235,319 @@ async function embedManifest(db: Db, releaseId: string, manifest: BundleManifest
       target: schema.releaseEmbedding.releaseId,
       set: { embedding: vector, embeddedInputSha256: input, createdAt: sql`now()` },
     });
-  return true;
+  return "written";
+}
+
+async function syncCardVector(db: Db, row: CardRow, text: string, dryRun: boolean): Promise<VectorState> {
+  const input = embeddedInput(text);
+  /* `input` is null both for a card with no vector and for one written before the stamp
+     column existed: two different states and the same instruction, re-encode. */
+  if (row.input === input) return "unchanged";
+  if (dryRun) return "written";
+
+  const vector = await embed(text);
+  if (vector === undefined) return "absent";
+  await db
+    .insert(schema.cardVersionEmbedding)
+    .values({ cardVersionId: row.id, embedding: vector, embeddedInputSha256: input })
+    .onConflictDoUpdate({
+      target: schema.cardVersionEmbedding.cardVersionId,
+      set: { embedding: vector, embeddedInputSha256: input, createdAt: sql`now()` },
+    });
+  return "written";
 }
 
 /**
- * The manifest as one document.
+ * The pinned card versions with their stored bytes and their current stamp, in the order
+ * the release stored the refs, deduplicated.
  *
- * Field order is fixed so the text is a function of the release and of nothing else. Under
- * the 3-gram derivation this was belt-and-braces — a bag of 3-grams survives a reordering —
- * and **under the encoder it is load-bearing**: a transformer reads the document as a
- * sequence, so two orderings of the same fields are two different vectors. `manifest` is
- * `jsonb` and arrives unvalidated, so every field is guarded the way `registry/snapshot.ts`
- * guards the same column.
- *
- * THE LIST STAYS WIDE, and that is ruled rather than inherited (D-300-04 D6). D-300-01
- * names `title + summary + description` as the purpose, and it named it as the CORE of the
- * document and not as a replacement for this list: `slug`, `category` and `tags` stay in,
- * so two releases differing only in `category` embed differently.
+ * One `IN` over card ids rather than one over every `id@version` pair, narrowed to the pin
+ * set afterwards: selecting by id alone returns every version of a pinned id. A pin that
+ * does not parse names no row and is dropped; the resolver reports it at publish and there
+ * is nothing here to attach a vector to.
  */
-function manifestText(manifest: BundleManifest): string {
-  const parts: string[] = [];
-  for (const field of [manifest.slug, manifest.title, manifest.summary, manifest.description, manifest.category]) {
-    if (typeof field === "string") parts.push(field);
-  }
-  if (Array.isArray(manifest.tags)) {
-    for (const tag of manifest.tags) if (typeof tag === "string") parts.push(tag);
-  }
-  return parts.join("\n");
-}
-
-/**
- * A card's spec as one document: what the node is, what it does, and the prose handed to
- * the agent that runs it.
- *
- * `spec` is the field B-12 means by "card specs" and it is the longest text in the archive,
- * which is what makes the card vectors worth storing at all. `author` and `provenance` are
- * excluded, for `cardDigest`'s reason — who typed the file says nothing about what the node
- * does, and two authors contributing the same card should reach the same vector.
- */
-function cardText(card: NodeCard): string {
-  const parts: string[] = [];
-  for (const field of [card.id, card.name, card.type, card.action, card.spec]) {
-    if (typeof field === "string") parts.push(field);
-  }
-  for (const list of [card.phases, card.tools, card.riskMarkers]) {
-    if (!Array.isArray(list)) continue;
-    for (const entry of list) if (typeof entry === "string") parts.push(entry);
-  }
-  return parts.join("\n");
-}
-
-/**
- * Embed each pinned card version whose stored vector is missing, unstamped or out of date.
- *
- * The query is a deliberate SUPERSET — one `IN` over card ids rather than one over every
- * `id@version` pair — narrowed here to the pin set, which is `registry/snapshot.ts`'s own
- * construction and for its reason: selecting by id alone returns every version of a pinned
- * id, including versions this release does not pin.
- *
- * A pin that does not parse names no row and is dropped. `resolveBundle` reports it as
- * `bundle/unpinned-card` at publish, and there is nothing here to attach a vector to.
- *
- * VISIBILITY IS NOT CONSULTED, and that is deliberate rather than an omission (D-200-25).
- * D-200-07's public-only rule is applied at the three searchers, where a caller can
- * actually observe it. D-82 excludes private content from the SEARCHABLE INDEX, which is
- * not the storage a vector lives in.
- *
- * **The premise this rested on has CHANGED and the conclusion has not.** It used to read
- * "nothing reads these tables", which stopped being true at T300: D-300-02 gives them their
- * first reader, and `blueprints.ts`/`cards.ts` now query them by cosine distance. That
- * makes the reasoning MORE load-bearing rather than less — an unfiltered vector table is
- * now reachable by a query, so the searchers' own filtering is the only thing keeping a
- * private card out of a result set, and it is written there (`semanticCandidates` narrows
- * to the public universe before it ranks). A vector for a private card exists and is never
- * an answer.
- *
- * Two reasons, and the second is the stronger one:
- *
- *   * Visibility is FLIPPABLE and re-embedding is triggered by a RELEASE. Skipping a
- *     private card leaves it with no vector and NOTHING TO TRIGGER ONE on the day it goes
- *     public — a staleness bug that raises no error and appears in no test.
- *   * `reembedRelease` takes no actor, deliberately. A visibility check inside it would
- *     make this table a SECOND AUTHOR of the visibility rule, which is exactly the defect
- *     D-200-06 corrected in the other direction: one rule, owned by T060 and applied by
- *     T080, consumed everywhere and restated nowhere.
- */
-async function embedCards(db: Db, pins: readonly string[]): Promise<void> {
+async function pinnedCards(db: Db, cardRefs: readonly string[]): Promise<CardRow[]> {
   const wanted = new Map<string, { id: string; version: string }>();
-  for (const pin of pins) {
+  for (const pin of cardRefs) {
     const parsed = parseCardRef(pin);
     if (parsed === undefined) continue;
-    wanted.set(cardRef(parsed.id, parsed.version), parsed);
+    const ref = cardRef(parsed.id, parsed.version);
+    if (!wanted.has(ref)) wanted.set(ref, parsed);
   }
-  if (wanted.size === 0) return;
+  if (wanted.size === 0) return [];
 
-  /* Left joined rather than queried per card: the stamp decides whether this row needs the
-     encoder at all, and asking the database once for 20 pins beats 20 round trips to skip
-     20 rows. `input` is null both for a card with no vector and for one whose vector predates
-     0008, which are two different states and the same instruction here. */
   const rows = await db
     .select({
       id: schema.cardVersion.id,
       cardId: schema.cardVersion.cardId,
       version: schema.cardVersion.version,
       body: schema.cardVersion.body,
+      source: schema.cardVersion.source,
       input: schema.cardVersionEmbedding.embeddedInputSha256,
     })
     .from(schema.cardVersion)
     .leftJoin(schema.cardVersionEmbedding, eq(schema.cardVersionEmbedding.cardVersionId, schema.cardVersion.id))
     .where(inArray(schema.cardVersion.cardId, [...new Set([...wanted.values()].map((pin) => pin.id))]));
 
-  for (const row of rows) {
-    if (!wanted.has(cardRef(row.cardId, row.version))) continue;
-    const text = cardText(row.body as NodeCard);
-    const input = embeddedInput(text);
-    if (row.input === input) continue;
-
-    const vector = await embed(text);
-    /* Reachable now that the caller no longer probes the encoder for every release (an
-       up-to-date manifest returns without one), and checked for the same reason as before:
-       the alternative is passing `undefined` into a `NOT NULL vector(384)` column and
-       reading about it in a driver message. `return` and not `continue`, because an absent
-       encoder is a property of the process and the next card cannot fare better. */
-    if (vector === undefined) return;
-    await db
-      .insert(schema.cardVersionEmbedding)
-      .values({ cardVersionId: row.id, embedding: vector, embeddedInputSha256: input })
-      .onConflictDoUpdate({
-        target: schema.cardVersionEmbedding.cardVersionId,
-        set: { embedding: vector, embeddedInputSha256: input, createdAt: sql`now()` },
-      });
+  const byRef = new Map(rows.map((row) => [cardRef(row.cardId, row.version), row]));
+  const out: CardRow[] = [];
+  for (const ref of wanted.keys()) {
+    const row = byRef.get(ref);
+    if (row !== undefined) out.push(row);
   }
+  return out;
+}
+
+/* --------------------- the blueprint document --------------------- */
+
+/** A release reassembled into the graph the site scores, with the scorecard that describes it. */
+export interface ResolvedGraph {
+  blueprint: ResolvedBlueprint;
+  analysis: BlueprintAnalysis;
+}
+
+/**
+ * The release reassembled the way an export reassembles it: the local vocabulary layered
+ * over the core, every pinned card's verbatim YAML under its bundle path, and `loadBundle`
+ * over the result. `undefined` when the release does not resolve cleanly, which is the same
+ * bar the registry holds a release to before it draws its graph; the document then falls
+ * back to the manifest alone, so a vector always exists.
+ *
+ * The stored scorecard wins over a fresh one where it exists, because it is the reading the
+ * site publishes for this release.
+ */
+export function resolvedGraph(release: ReleaseRecord, pinned: readonly CardRow[]): ResolvedGraph | undefined {
+  let overlay;
+  try {
+    overlay = parseStoredVocabulary(release.vocabulary, "reembedRelease");
+  } catch (cause) {
+    if (cause instanceof MalformedVocabularyError) return undefined;
+    throw cause;
+  }
+
+  const cardFiles: Record<string, string> = {};
+  for (const row of pinned) cardFiles[cardFilePath(cardRef(row.cardId, row.version))] = row.source;
+  const bundle: Bundle = { manifest: release.manifest, dot: release.dot, cardFiles };
+
+  let loaded;
+  try {
+    loaded = loadBundle(bundle, { ontology: openView(overlay?.terms) });
+  } catch {
+    return undefined;
+  }
+  if (loaded.blueprint === undefined || loaded.analysis === undefined || hasErrors(loaded.diagnostics)) {
+    return undefined;
+  }
+  return { blueprint: loaded.blueprint, analysis: storedAnalysis(release) ?? loaded.analysis };
+}
+
+/** The stored scorecard, or `undefined` when any of its three parts is missing. */
+function storedAnalysis(release: ReleaseRecord): BlueprintAnalysis | undefined {
+  const stored = release.analysis;
+  if (stored === undefined || stored === null) return undefined;
+  if (typeof stored.autonomy !== "object" || typeof stored.security !== "object" || typeof stored.phaseCoverage !== "object") {
+    return undefined;
+  }
+  return { autonomy: stored.autonomy, security: stored.security, phaseCoverage: stored.phaseCoverage, diagnostics: [] };
+}
+
+/**
+ * The blueprint as one document: purpose first, then structure.
+ *
+ * Field order is fixed and load-bearing: a transformer reads the document as a sequence, so
+ * two orderings of the same facts are two different vectors. Lists that have no natural
+ * order are sorted; the graph's lists keep graph order, which is a fact about the blueprint.
+ *
+ * Over budget, the document gives up description sentences first, then the routing line,
+ * then the actions on the step lines, in that order. The actions are the bulk of a large
+ * graph, so once they go the description and the routing come back if they now fit: they
+ * are short and say more about what the blueprint is for than a seventh action sentence.
+ * The first four lines never go.
+ */
+export function blueprintText(manifest: BundleManifest, resolved: ResolvedGraph | undefined): string {
+  const head = manifestLines(manifest);
+  const structure = resolved === undefined ? undefined : structureLines(resolved);
+  const render = (descriptionSentences: number, routing: boolean, actions: boolean): string =>
+    [
+      DOCUMENT_VERSION,
+      ...head.fixed,
+      ...head.description.slice(0, descriptionSentences),
+      head.category,
+      ...(structure === undefined ? [] : structure(routing, actions)),
+    ].join("\n");
+
+  const attempts: [number, boolean, boolean][] = [
+    [2, true, true],
+    [1, true, true],
+    [0, true, true],
+    [0, false, true],
+    [2, true, false],
+    [1, true, false],
+    [0, true, false],
+    [0, false, false],
+  ];
+  let text = render(...attempts[0]);
+  for (const attempt of attempts.slice(1)) {
+    if (text.length <= BLUEPRINT_DOCUMENT_BUDGET) break;
+    text = render(...attempt);
+  }
+  return text;
+}
+
+function manifestLines(manifest: BundleManifest): {
+  fixed: string[];
+  description: string[];
+  category: string;
+} {
+  const title = str(manifest.title);
+  const summary = str(manifest.summary);
+  const description = str(manifest.description);
+  const category = str(manifest.category);
+  const tags = strings(manifest.tags);
+  return {
+    fixed: [`Blueprint: ${title}`, `Purpose: ${summary}`],
+    description: description === "" ? [] : [sentences(description, 2).join(" ")],
+    category: `Category: ${category === "" ? "none" : category}. Tags: ${tags.length === 0 ? "none" : tags.join(", ")}.`,
+  };
+}
+
+/** The first `count` sentences of a text, split on sentence-ending punctuation. */
+function sentences(text: string, count: number): string[] {
+  return text
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(/(?<=[.!?])\s+/)
+    .filter((s) => s !== "")
+    .slice(0, count);
+}
+
+function structureLines(resolved: ResolvedGraph): (routing: boolean, actions: boolean) => string[] {
+  const { blueprint, analysis } = resolved;
+  const view = blueprint.ontology;
+  const label = (id: string): string => view.get(id)?.label ?? id;
+  const nodes = blueprint.nodes;
+
+  const nodeList = nodes.map((n) => `${n.nodeId} (${n.card.name}, ${label(n.card.type)})`).join("; ");
+  const steps = (withActions: boolean): string[] =>
+    nodes.map((n) => {
+      const phases = strings(n.card.phases).map(label);
+      const head = `- ${n.nodeId}, ${n.card.name} (${label(n.card.type)}; phases: ${phases.length === 0 ? "none" : phases.join(", ")})`;
+      return withActions ? `${head}: ${n.card.action}` : head;
+    });
+
+  const routed = blueprint.edges.filter((e) => e.label !== undefined || e.condition !== undefined);
+  const routing = routed.length === 0
+    ? "Routing: linear, no branches."
+    : `Routing: ${routed
+        .map((e) => `${e.source} -> ${e.target}${e.label === undefined ? "" : ` "${e.label}"`}${e.condition === undefined ? "" : ` when ${e.condition}`}`)
+        .join("; ")}`;
+
+  const cycles = blueprint.graph.cycles();
+  const loops = cycles.length === 0
+    ? "Loops: none."
+    : `Loops: ${cycles.map((cycle) => [...cycle, cycle[0]].join(" -> ")).join("; ")}.`;
+
+  const gates = nodes.filter((n) => requiresHuman(view, n.card.type));
+  const humanGates = gates.length === 0
+    ? "Human gates: none; the graph runs unattended."
+    : `Human gates: ${gates.map((n) => `${n.nodeId} (${n.card.name})`).join(", ")}.`;
+
+  const tools = requiredTools(blueprint);
+  const mcp = [...new Set(nodes.flatMap((n) => strings(n.card.mcp)))].sort();
+  const models = requiredAgents(blueprint);
+  const stack =
+    `Tools: ${tools.length === 0 ? "none" : tools.join(", ")}. ` +
+    `MCP servers: ${mcp.length === 0 ? "none" : mcp.join(", ")}. ` +
+    `Models: ${models.length === 0 ? "not pinned" : models.join(", ")}.`;
+
+  const autonomy = analysis.autonomy;
+  const security = analysis.security;
+  const markers = Array.isArray(security?.penalties)
+    ? security.penalties.map((p) => label(String(p.marker))).join(", ")
+    : "";
+  const scorecard =
+    `Autonomy: ${String(autonomy?.autonomyClass ?? "unscored")} ` +
+    `(${String(autonomy?.autonomousNodes ?? 0)} of ${String(autonomy?.totalNodes ?? nodes.length)} nodes run unattended). ` +
+    `Security level ${String(security?.level ?? "unscored")}${markers === "" ? "" : `: ${markers}`}.`;
+
+  const covered = strings(blueprint.phaseCoverage.covered).map(label);
+  const missing = strings(blueprint.phaseCoverage.missing).map(label);
+  const phasesLine =
+    `Phases covered: ${covered.length === 0 ? "none" : covered.join(", ")}. ` +
+    `Not covered: ${missing.length === 0 ? "none" : missing.join(", ")}.`;
+
+  return (withRouting: boolean, withActions: boolean): string[] => [
+    `Nodes (${nodes.length}, in graph order): ${nodeList}`,
+    "Steps:",
+    ...steps(withActions),
+    ...(withRouting ? [routing] : []),
+    loops,
+    humanGates,
+    stack,
+    scorecard,
+    phasesLine,
+  ];
+}
+
+/* --------------------- the card document --------------------- */
+
+/** A stored body as the partial card it can be trusted to be: `jsonb`, never validated here. */
+function cardBody(body: unknown): Partial<NodeCard> {
+  return typeof body === "object" && body !== null ? (body as Partial<NodeCard>) : {};
+}
+
+/**
+ * A card as one document: what the node is, what it does and is told, then its contract.
+ *
+ * Excluded on purpose: `id`, `version`, `author` and `provenance` (naming, not meaning),
+ * `notes` (authoring commentary), `params`, `model` and `agent` (deployment defaults), and
+ * `cannot` (data-type ids the resolver already enforces structurally). `spec` stays whole:
+ * it is the longest text and the reason the card index exists.
+ */
+export function cardText(card: Partial<NodeCard>, labelOf: (id: string) => string): string {
+  const name = str(card.name);
+  const type = str(card.type);
+  const lines: string[] = [
+    DOCUMENT_VERSION,
+    `Card: ${name}${type === "" ? "" : ` (${labelOf(type)})`}`,
+    `Does: ${str(card.action)}`,
+    `Instructions: ${str(card.spec)}`,
+  ];
+
+  const phases = strings(card.phases).map(labelOf);
+  const tools = strings(card.tools).map(labelOf);
+  const mcp = strings(card.mcp);
+  const skill = str(card.skill);
+  lines.push(
+    `Phases: ${phases.length === 0 ? "none declared" : phases.join(", ")}. ` +
+      `Tools: ${tools.length === 0 ? "none" : tools.join(", ")}. ` +
+      `MCP servers: ${mcp.length === 0 ? "none" : mcp.join(", ")}.` +
+      (skill === "" ? "" : ` Skill: ${skill}.`),
+  );
+
+  const ports = (raw: unknown): string => {
+    if (!Array.isArray(raw)) return "none";
+    const named = raw
+      .filter((p): p is { name: string; type?: string } => typeof p === "object" && p !== null && typeof (p as { name?: unknown }).name === "string")
+      .map((p) => (typeof p.type === "string" ? `${p.name} (${labelOf(p.type)})` : p.name));
+    return named.length === 0 ? "none" : named.join(", ");
+  };
+  lines.push(`Inputs: ${ports(card.inputs)}. Outputs: ${ports(card.outputs)}.`);
+
+  const willNot = strings(card.willNot);
+  if (willNot.length > 0) lines.push(`Will not: ${willNot.join("; ")}.`);
+  const risks = strings(card.riskMarkers).map(labelOf);
+  if (risks.length > 0) lines.push(`Risk markers: ${risks.join(", ")}.`);
+  const dependencies = strings(card.dependencies);
+  if (dependencies.length > 0) lines.push(`Depends on: ${dependencies.join(", ")}.`);
+
+  return lines.join("\n");
+}
+
+function str(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function strings(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
 }

@@ -24,10 +24,9 @@
 
    ── why the world below is T300's own and not a new one ──
    `tests/server/t300/world.ts` builds four public blueprints and
-   ships a query, `paraphrase`, proven — by `recall.test.ts` and by
-   `embed.ts`'s own calibration table — to retrieve `service`
-   through the vector channel at cosine 0.352 against a 0.20 floor,
-   sharing no literal word with what it retrieves. Writing a second
+   ships a query, `paraphrase`, proven by `recall.test.ts` to
+   retrieve `service` through the vector channel while sharing no
+   literal word with what it retrieves. Writing a second
    corpus and hoping a hand-picked paraphrase clears the cutoff
    would make this file's own fixture the thing actually under
    test. Reusing the proven one leaves exactly one new variable:
@@ -63,7 +62,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { CORE_ONTOLOGY } from "@/lib/core";
 
-import { channelOf } from "../server/t300/contract";
+import { carriesSimilarity, lexicalEntries } from "../server/t300/contract";
 import {
   assertTellsCannotOverMatch,
   bind,
@@ -185,11 +184,11 @@ describe("the fixture actually puts a real vector in front of a real leak surfac
         `  found: ${before.hits.map((h) => itemKey(h.item)).join(", ") || "(nothing)"}`,
     ).toBeDefined();
     expect(
-      channelOf(hit?.evidence ?? []),
-      `and it has to be the VECTOR channel doing the finding — \`recall.test.ts\` already ` +
+      { similarity: carriesSimilarity(hit?.evidence ?? []), lexical: lexicalEntries(hit?.evidence ?? []) },
+      `and it has to be the VECTOR channel doing the finding: \`recall.test.ts\` already ` +
         `establishes the paraphrase shares no literal token with anything this world plants, ` +
-        `so a lexical hit here would mean this premise is measuring the wrong channel.`,
-    ).toBe("semantic");
+        `so a lexical entry here would mean this premise is measuring the wrong channel.`,
+    ).toEqual({ similarity: true, lexical: [] });
   });
 
   it("and its card's own paraphrase retrieves the card the same way", async () => {
@@ -197,7 +196,8 @@ describe("the fixture actually puts a real vector in front of a real leak surfac
     const before = await search("searchCards", s.db, anonymous, { q: w.cardParaphrase });
     const hit = before.hits.find((h) => itemKey(h.item) === `card:${w.service.card.ref}`);
     expect(hit, `query: ${JSON.stringify(w.cardParaphrase)}`).toBeDefined();
-    expect(channelOf(hit?.evidence ?? [])).toBe("semantic");
+    expect(carriesSimilarity(hit?.evidence ?? [])).toBe(true);
+    expect(lexicalEntries(hit?.evidence ?? [])).toEqual([]);
   });
 });
 

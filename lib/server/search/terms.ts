@@ -42,6 +42,7 @@ import {
 import { blueprints } from "@/lib/server/registry";
 import type { OntologyTerm } from "@/lib/server/types";
 import { value } from "./params";
+import { encoderState } from "./embed";
 import { cmpString, evidenceFor, queryWords, ranked, unranked, type Field, type Scored } from "./rank";
 import { withSearchStore } from "./store";
 import type { Results } from "./types";
@@ -118,23 +119,34 @@ async function search(db: Db, params: Record<string, string>): Promise<Results<O
     return true;
   });
 
+  /* Every query word is required, and the vocabulary has no vector channel: a reader here
+     types one or two exact words, and a term's rank is how many places they were found.
+     `score` is that count, so the published number still says what produced the order. */
   const query = queryWords(params);
   const hits: Scored<OntologyTerm>[] = [];
   for (const term of candidates) {
-    const evidence = evidenceFor(term, FIELDS, query);
+    const evidence = evidenceFor(term, FIELDS, query, "all");
     if (query.length > 0 && evidence === undefined) continue;
-    hits.push({ item: term, evidence: evidence ?? [], identity: term.id });
+    hits.push({
+      item: term,
+      evidence: evidence ?? [],
+      identity: term.id,
+      score: evidence?.length ?? 0,
+      similarity: 0,
+    });
   }
 
   /* `/ontology` publishes no `sort`, so there is no explicit-instruction branch here: a
      query ranks, and anything else is the vocabulary's own id order. */
+  const encoder = await encoderState();
   if (query.length === 0) {
     return unranked(
       hits.map((hit) => hit.item),
       facets,
+      encoder,
     );
   }
-  return ranked(hits, facets);
+  return ranked(hits, facets, encoder);
 }
 
 /**

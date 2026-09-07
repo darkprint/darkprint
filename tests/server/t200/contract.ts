@@ -162,19 +162,24 @@ export async function bind(name: PublishedName): Promise<UnknownFn> {
 export interface Hit {
   item: Record<string, unknown>;
   evidence: readonly string[];
+  /** The published number the order was sorted on; `0` on an unranked listing. */
+  score: number;
 }
 
 export interface Results {
   hits: readonly Hit[];
   facets: Record<string, readonly string[]>;
   ordered: boolean;
+  /** Whether the process could encode the query. `absent` means the order is coverage alone. */
+  encoder: "present" | "absent";
 }
 
 /**
  * `Results`, checked member by member. The shape is part of the published signature, so a
- * missing `ordered` is a failed criterion and not a formatting difference: AC5's two
+ * missing `ordered` is a failed criterion and not a formatting difference: the two
  * admissible states are *stated through* `ordered`, and a response without it cannot
- * declare itself unordered at all.
+ * declare itself unordered at all. `score` and `encoder` are checked the same way: they are
+ * what lets a caller recompute the order rather than trust it.
  */
 export function asResults(value: unknown, where: string): Results {
   if (value === null || typeof value !== "object") {
@@ -184,7 +189,7 @@ export function asResults(value: unknown, where: string): Results {
         `readonly string[]>; ordered: boolean }\`.`,
     );
   }
-  const r = value as { hits?: unknown; facets?: unknown; ordered?: unknown };
+  const r = value as { hits?: unknown; facets?: unknown; ordered?: unknown; encoder?: unknown };
 
   if (!Array.isArray(r.hits)) {
     throw new Error(`${where} answered \`hits\` = ${describe_(r.hits)}; it is \`readonly Hit<T>[]\`.`);
@@ -221,11 +226,24 @@ export function asResults(value: unknown, where: string): Results {
     }
   }
 
+  if (r.encoder !== "present" && r.encoder !== "absent") {
+    throw new Error(
+      `${where} answered \`encoder\` = ${JSON.stringify(r.encoder)}; it is \`"present" | "absent"\`.\n` +
+        `  A caller has to be able to tell a coverage-only order from one the vector channel ` +
+        `took part in, and this field is how the response says which.`,
+    );
+  }
+
   const hits: Hit[] = [];
   for (const [i, hit] of (r.hits as unknown[]).entries()) {
     hits.push(asHit(hit, `${where}.hits[${i}]`));
   }
-  return { hits, facets: r.facets as Record<string, readonly string[]>, ordered: r.ordered };
+  return {
+    hits,
+    facets: r.facets as Record<string, readonly string[]>,
+    ordered: r.ordered,
+    encoder: r.encoder,
+  };
 }
 
 export function asHit(value: unknown, where: string): Hit {
@@ -235,7 +253,7 @@ export function asHit(value: unknown, where: string): Hit {
         `\`interface Hit<T> { item: T; evidence: readonly string[] }\`.`,
     );
   }
-  const h = value as { item?: unknown; evidence?: unknown };
+  const h = value as { item?: unknown; evidence?: unknown; score?: unknown };
   if (h.item === null || typeof h.item !== "object") {
     throw new Error(`${where}.item is ${describe_(h.item)}; it is the record the search found.`);
   }
@@ -251,7 +269,13 @@ export function asHit(value: unknown, where: string): Hit {
       throw new Error(`${where}.evidence[${i}] is ${describe_(e)}; every entry is a string.`);
     }
   }
-  return { item: h.item as Record<string, unknown>, evidence: h.evidence as readonly string[] };
+  if (typeof h.score !== "number" || Number.isNaN(h.score)) {
+    throw new Error(
+      `${where}.score is ${describe_(h.score)}; it is the published number the order was ` +
+        `sorted on, and a rank without it cannot be checked against its own evidence.`,
+    );
+  }
+  return { item: h.item as Record<string, unknown>, evidence: h.evidence as readonly string[], score: h.score };
 }
 
 /* --------------------- the item shapes, at their intersection --------------------- */

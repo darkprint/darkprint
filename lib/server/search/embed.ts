@@ -1,211 +1,92 @@
 /* ============================================================
    DarkPrint backend — the stored vector, encoded locally
-   D-300-01, the owner's ruling, replacing D-200-01's provider
-   clause and D-200-11's 3-gram derivation. The vector is now a
-   SEMANTIC one — a sentence-encoder embedding of the document's
-   purpose — and this module is the one place in the repository
-   where that word is both true and permitted (D-200-34: say it
-   only where the vector channel is what is being described).
+   A sentence-encoder embedding of a blueprint document or a card
+   document (`reembed.ts` builds both), compared by cosine distance
+   against the same encoder's reading of a reader's task. This is
+   the one module where the word "semantic" describes what the
+   vector is; nothing shipped to a caller uses it.
 
-   ── What the word buys, and what it does not ──
-   It buys RECALL: a query sharing no literal token with a stored
-   purpose can now reach it, which is AC1 and which the 3-gram
-   derivation provably could not do. It does NOT buy RANK. A cosine
-   similarity is still not explainable from the archive, so the
-   honesty model is unchanged: lexical hits keep their rank and
-   their `field:token` evidence, and a hit that only the vector
-   channel found joins the TAIL carrying `similar:purpose`, which
-   names the channel rather than asserting a score (D-300-04 D5).
-
-   ── The encoder is OPTIONAL AT RUNTIME, and that is structural ──
-   D-300-05, ARM (a): the weights are VENDORED IN THIS REPOSITORY,
-   under `models/`, so a bare checkout carries them and nothing is
-   fetched or provisioned by hand. They are not vendored through
-   npm, which is the thing that turned out to be impossible —
-   measured, not assumed: `@huggingface/transformers` is 9.5MB and
-   carries no `.onnx` file at all, and with
-   `allowRemoteModels = false` on a fresh install it throws rather
-   than encoding.
-
-   The degrade path stays anyway, and it is not vestigial: the
-   directory can be absent in a sparse or partial checkout, and the
-   package can be absent wherever `node_modules` is not installed.
-   This module has to answer for the machine where either is.
-
-   It answers with `undefined` rather than a throw, for `errors.ts`'s
-   own convention: an absent encoder is a VALUE. `reembedRelease`
-   then writes nothing and the searchers stay purely lexical, so a
-   machine with no model directory serves exactly what it served
-   before this task — narrower, never broken.
+   ── The encoder is optional at runtime ──
+   The weights are vendored in this repository under `models/`, so
+   a bare checkout carries them. They are not vendored through npm:
+   `@huggingface/transformers` carries no `.onnx` file, and with
+   `allowRemoteModels = false` a fresh install throws rather than
+   encoding. The directory can still be absent (a sparse checkout,
+   a deployment that did not trace it) and the package can be
+   absent wherever `node_modules` is not installed, so an absent
+   encoder answers `undefined` rather than a throw: `reembedRelease`
+   writes nothing and the searchers rank on lexical coverage alone.
    ============================================================ */
 
 /**
- * The width, and it is not this module's to choose (D-200-02).
- *
- * `vector(384)` is declared in `0003_search.up.sql` and pgvector refuses a row of any other
- * length. 384 is `all-MiniLM-L6-v2`'s output width, which is why D-300-01 could rule the
- * encoder a DROP-IN: the column was chosen at T200 for exactly this day, so the reversal
- * costs no migration and rewrites no row.
+ * The width. `vector(384)` is declared in the schema and pgvector refuses a row of any other
+ * length; 384 is `all-MiniLM-L6-v2`'s output width.
  */
 export const EMBEDDING_DIMENSIONS = 384;
 
 /**
- * The evidence a semantic-only hit carries, as a CONSTANT rather than a rendering
- * (D-300-04 D5).
+ * The cosine-similarity floor a candidate must clear to be a hit on the strength of its
+ * vector alone. A candidate that also matches a query word lexically is a hit whatever its
+ * similarity.
  *
- * `purpose` names WHAT was compared — the document that D-300-01 pins as the subject of the
- * embedding — and the marker deliberately carries NO NUMBER. A score in the marker would
- * ship the unpublished relevance figure SEAM-88 refuses, inside the one field whose whole
- * contract is that a caller can check it; and it would make every hit's evidence unique,
- * which turns D-200-20's contiguity property vacuous by making every block a singleton.
- *
- * It satisfies both merged guards, checked against them rather than by eye: it matches
- * T200's `EVIDENCE_GRAMMAR` (`/^[A-Za-z][A-Za-z0-9_.-]*:.+$/`) and it does not match
- * `FORBIDDEN_WORD` (`/semantic/i`), which `similar:` was chosen over `semantic:` to avoid.
+ * MiniLM is trained on symmetric sentence pairs and this is a short task against a mean-pooled
+ * document of several hundred words, so honest matches land in the 0.15 to 0.50 band and
+ * strangers below 0.10. See `LEXICAL_BOOST` for the measurement both constants were read off.
  */
-export const SIMILAR_EVIDENCE = "similar:purpose";
+export const MIN_SIMILARITY = 0.15;
 
 /**
- * How many candidates the vector channel may contribute, before the cutoff.
+ * How much a full lexical coverage is worth beside the similarity.
  *
- * A bound rather than a judgement: the tail is disclosed, marked and ranked behind every
- * lexical hit, but it is still rows a caller did not ask for by name, and an unbounded
- * channel would let a vague query return the whole registry wearing a marker.
+ * `score = similarity + LEXICAL_BOOST * coverage`. At 0.15 a task that names every content
+ * word of a blueprint gains about what a strong paraphrase gains in similarity, so an exact
+ * title still wins and a paraphrase that names nothing is not shut out.
+ *
+ * Measured over the seeded archive (nine blueprints under two owners, 58 card versions),
+ * encoded by the vendored quantised weights, against the author's own smoke set
+ * (`npm run eval:rag -- scripts/rag-eval.smoke.json`), with `MIN_SIMILARITY = 0.15`:
+ *
+ *     blueprints  top-1 8/8, top-3 8/8; expected similarity 0.15 to 0.55, median 0.39
+ *     negatives   2/2 quiet: a restaurant booking scores 0.03 on three lexical strays,
+ *                 a unit conversion answers nothing
+ *     cards       top-1 3/5, top-3 4/5; the miss sits at rank 6 with similarity 0.17
+ *
+ * The table is a consistency check rather than a proof: the queries are the author's own,
+ * and the held-out set is written by someone who has not seen them. Re-run the smoke set
+ * after changing either number or either document template.
  */
-export const SEMANTIC_K = 10;
+export const LEXICAL_BOOST = 0.15;
 
-/**
- * The cosine-similarity floor a candidate must clear to join the tail, published WITH its
- * calibration because the number alone would not be honest (D-300-04 D3, D-300-06).
- *
- * ── The calibration, measured 2026-08-24 over the seeded corpus, ON THE SHIPPED WEIGHTS ──
- *
- * Nine blueprint purposes and 57 card versions built by `manifestText`/`cardText` below,
- * encoded by `models/all-MiniLM-L6-v2` at `dtype: "q8"` — the exact file this repository
- * vendors — against nine paraphrase queries. Columns are how many of the nine true targets a
- * cutoff keeps, and how many of the 72 query-to-wrong-blueprint pairs it admits:
- *
- *     tau 0.10 — keeps 9/9, admits 33/72 (45.8%)
- *     tau 0.15 — keeps 9/9, admits 21/72 (29.2%)
- *     tau 0.20 — keeps 8/9, admits 14/72 (19.4%)   <- ruled
- *     tau 0.25 — keeps 7/9, admits  7/72 ( 9.7%)
- *     tau 0.30 — keeps 5/9, admits  4/72 ( 5.6%)
- *     tau 0.35 — keeps 2/9, admits  3/72 ( 4.2%)
- *
- * cos(correct pair) runs min 0.152, median 0.301, max 0.600; cos(distractor pair) has
- * median 0.093 and p90 0.247. Rank-1 on 7 of the 9.
- *
- * **MEASURED TWICE, AND THE SECOND RUN IS THE ONE THAT COUNTS.** The first calibration was
- * taken on the full-precision weights, before D-300-05 resolved toward the quantised file.
- * Quantisation changes every vector, so a table measured on fp32 would have described a
- * model this repository does not ship — the precise failure the "published WITH its
- * calibration" condition exists to prevent. Re-measured on q8: the cutoff is unchanged and
- * the encoder is slightly BETTER, rank-1 going 6/9 to 7/9.
- *
- * **The two distributions overlap and there is no clean gap**,
- * so every value here trades recall against tail noise and none of them is a natural
- * boundary. That is a property of the encoder rather than of this corpus: MiniLM is trained
- * on symmetric sentence pairs and this is a six-word query against a mean-pooled document
- * of several hundred words, which lands honest matches in the 0.15–0.35 band.
- *
- * ── Why 0.20 rather than the 0.35 this task was dispatched with ──
- *
- * 0.35 was ruled before the calibration existed and keeps TWO of the nine. It discards
- * seven correct rank-1 answers, among them `adversarial-consensus-line` at 0.321 — which is
- * the ONE query in the set sharing no content word at all with its target, and therefore the
- * only one that tests AC1 in its strict form. A cutoff that drops the single strict case
- * fails the criterion outright.
- *
- * (`schema-forge-etl` at 0.152 is below even the ruled floor and is NOT retrieved by this
- * channel. It is named here because an earlier version of this note called it an AC1 case,
- * which was wrong: its query shares the word `data` with the document, so the lexical pass
- * reaches it and the vector channel is not what it depends on.)
- *
- * The asymmetry is the argument, and it is the ruling's operative sentence: **a false
- * negative fails AC1 outright; a false positive is a disclosed, marked, bounded tail row**
- * that carries `similar:purpose`, sits behind every lexical hit, and is capped by
- * `SEMANTIC_K`. Those two are not equally bad, and 0.35 priced them as though they were.
- *
- * ── A limit stated rather than left to surface as somebody's red ──
- *
- * The channel is not uniformly good, and it is WORSE on the shipped weights than on the
- * full-precision ones. Over the 57-card corpus the query *"take in a new request and
- * understand what is being asked"* reaches `job-intake@1.0.0` at rank 34 of 57 and cosine
- * 0.106 (fp32: rank 26, 0.129), and no cutoff rescues it — a cutoff filters, it does not
- * reorder. That is the price of the quantised file, paid where it is visible. AC1 is
- * stated over blueprints, so this is outside it, but it is a real bound on what the tail
- * can do and it belongs next to the number rather than in a defect report later.
- *
- * ── What this table is NOT ──
- *
- * The queries are this module's author's own, so the table is a CONSISTENCY CHECK: it
- * shows the constant is satisfiable, never that the reading is right. The independent
- * measurement is the acceptance suite, whose corpus was built without seeing these queries.
- */
-export const SIMILAR_MIN = 0.2;
+/** The most hits a ranked search answers. A bound on the response, not a judgement about rank 21. */
+export const MAX_HITS = 20;
 
 /**
  * The encoder, and the model directory it is provisioned into.
  *
- * `all-MiniLM-L6-v2` per D-300-01. The id is a DIRECTORY NAME under `MODEL_ROOT` and not a
- * Hub repository path, because `allowRemoteModels` is turned off below and nothing is ever
- * resolved against a network host — a Hub-shaped id here would read as though it might be.
+ * The id is a DIRECTORY NAME under `MODEL_ROOT` and not a Hub repository path, because
+ * `allowRemoteModels` is turned off below and nothing is ever resolved against a network host.
  */
 const MODEL_ID = "all-MiniLM-L6-v2";
 const MODEL_ROOT = "models";
 
 /**
- * The precision, NAMED rather than defaulted (D-300-05, arm (a)).
- *
- * `models/all-MiniLM-L6-v2/onnx/` holds `model_quantized.onnx` and nothing else, and the
- * library's default for Node is fp32 — it would look for `model.onnx`, not find it, and this
- * module would degrade to "no encoder" on a machine that has one. So the dtype is not a
- * tuning knob here, it selects the only file that exists.
- *
- * The upstream FILENAME is kept rather than renamed to `model.onnx`. Renaming would make the
- * directory look full-precision and hide, from anyone reading the tree, which weights the
- * committed calibration was measured against.
+ * The precision, named rather than defaulted. `models/all-MiniLM-L6-v2/onnx/` holds
+ * `model_quantized.onnx` and nothing else, and the library's default for Node is fp32, so
+ * the dtype selects the only file that exists.
  */
 const MODEL_DTYPE = "q8";
 
-/**
- * The text the width is proved against at load.
- *
- * A literal rather than an empty string: every text reaches the same 384 columns, so the
- * content is irrelevant to the measurement, and a reader should not have to wonder whether
- * the empty case was chosen for a reason it no longer has.
- */
+/** The text the width is proved against at load. Any text reaches the same 384 columns. */
 const WIDTH_PROBE = "dimension probe";
 
 /**
- * The exact bytes this repository vendors, frozen (D-300-08).
+ * The exact bytes this repository vendors, frozen.
  *
- * ── Why a constant, when git already content-addresses the blob ──
- *
- * Because the CALIBRATION does. `SIMILAR_MIN`'s table below is a measurement of THESE bytes,
- * and every number in it moves if the file does. A swapped blob — a bad merge, a corrupted
- * checkout, a well-meant re-quantise to a smaller variant — changes every vector in the
- * archive while the committed table goes on reading as still-measured. The width probe
- * cannot catch that: `model.onnx` and `model_quantized.onnx` are both 384 wide, so the two
- * most likely wrong files pass it. This pin is what makes the swap loud.
- *
- * Raised by the adversary, whose argument was this module's own docblock turned on the blob.
- * The digest was measured INDEPENDENTLY on both sides before it was written down, and that
- * agreement is what the constant freezes rather than either side's single reading.
- *
- * ── Where it is compared, and why not at load ──
- *
- * A constant nothing reads is decoration, so it is compared — by a cell, in
- * `derivation.test.ts`, which digests the file and fails against these two values.
- *
- * The alternative was verifying inside `load()`, once per process. Declined, with the
- * reason: the realistic way these bytes go wrong is a COMMIT — a merge, a re-vendor, a
- * partial checkout — and a test catches that before it ships, which is where you want it.
- * Verifying at load would instead hash 23MB on every cold start, inside the release-write
- * transaction D-300-07 just finished pricing, to guard against post-checkout tampering that
- * this repository does not model and that a compromised host defeats anyway. It would move
- * the cost to production and the detection to after deployment, which is the wrong end of
- * both.
+ * The calibration behind `MIN_SIMILARITY` and `LEXICAL_BOOST` is a measurement of these
+ * bytes, and every number in it moves if the file does. The width probe cannot catch a swap:
+ * `model.onnx` and `model_quantized.onnx` are both 384 wide. `derivation.test.ts` digests
+ * the file and compares it here, so a bad merge or a re-quantise fails before it ships
+ * rather than hashing 23MB on every cold start.
  */
 const MODEL_SHA256 = "afdb6f1a0e45b715d0bb9b11772f032c399babd23bfc31fed1c170afc848bdb1";
 const MODEL_BYTES = 22_972_370;
@@ -213,7 +94,7 @@ const MODEL_BYTES = 22_972_370;
 /** The vendored weights, relative to the repository root. Exported so the pin has a subject. */
 export const MODEL_FILE = `${MODEL_ROOT}/${MODEL_ID}/onnx/model_quantized.onnx`;
 
-/** The frozen identity of `MODEL_FILE`. Compared by `derivation.test.ts`; see `MODEL_SHA256`. */
+/** The frozen identity of `MODEL_FILE`, and the model half of `embeddedInput`'s stamp. */
 export const MODEL_BLOB = Object.freeze({ sha256: MODEL_SHA256, bytes: MODEL_BYTES });
 
 /** The shape this module uses, written out rather than imported. See `load()`. */
@@ -240,80 +121,44 @@ interface TransformersModule {
  * Loaded at most once per process, absent or present.
  *
  * The PROMISE is memoised rather than the result, so concurrent callers share one load
- * instead of racing several ONNX sessions into memory — a publish and a query can arrive
- * together and each would otherwise build its own session over the same 23MB graph.
- *
- * Measured on THE VENDORED FILE, not on the full-precision one the first draft of this
- * comment was timed against: 438ms to first vector in a cold process (dynamic import, ONNX
- * session, and the width probe below), then 4.5ms per blueprint purpose and 1.4ms per query.
- * D-300-07 prices the cold load against the publish transaction that pays it.
- *
- * A failed load is memoised too, and deliberately. Absence here is a missing directory on
- * disk, which does not heal between two calls in one process; retrying it would pay the
- * failure on every publish and every query for a machine that is simply not provisioned.
+ * instead of racing several ONNX sessions into memory. A failed load is memoised too:
+ * absence is a missing directory on disk, which does not heal between two calls in one
+ * process, and retrying would pay the failure on every publish and every query.
  */
 let loading: Promise<Encoder | undefined> | undefined;
 
 async function load(): Promise<Encoder | undefined> {
   let extract: Encoder;
   try {
-    /* The specifier is a VARIABLE, and both halves of that are load-bearing.
-       
-       At runtime it makes the dependency optional: a static import of an absent package
-       throws at module load, which would take down `lib/server/search` entirely on a
-       machine with no encoder rather than degrading to the lexical path D-300-05 requires.
-       
-       At compile time it is what lets this module typecheck and lint TODAY, while the
-       dependency line is still the owner's open decision under D-300-05 — TypeScript does
-       not resolve a non-literal specifier, so the shape above is the contract and the
-       import cannot claim a package that is not in `package.json` yet. */
+    /* The specifier is a variable so that an absent package fails at call time and
+       degrades, rather than failing at module load and taking `lib/server/search` down
+       with it on a machine that has no encoder. */
     const specifier = "@huggingface/transformers";
     const mod: TransformersModule = await import(specifier);
 
-    /* AC5 BY CONSTRUCTION rather than by observation, and this is the whole reason the
-       criterion is assertable. With this flag off the library cannot reach the Hub even on
-       a cache miss, so "no network egress at query or publish" is a property of the
-       configuration a test can drive, not a claim about whether some cache happened to be
-       warm when the suite ran. Verified against the real package: on a fresh install it
-       throws `file was not found locally` rather than fetching. */
+    /* With this flag off the library cannot reach the Hub even on a cache miss, so "no
+       network egress at query or publish" is a property of the configuration rather than
+       of whether some cache happened to be warm. On a fresh install it throws `file was not
+       found locally` rather than fetching. */
     mod.env.allowRemoteModels = false;
     mod.env.allowLocalModels = true;
     mod.env.localModelPath = MODEL_ROOT;
 
     extract = await mod.pipeline("feature-extraction", MODEL_ID, { dtype: MODEL_DTYPE });
   } catch {
-    /* Swallowed, and it is the one place in this module that swallows anything. The two
-       reachable causes — the package is not installed, the model directory is not
-       provisioned — are the SAME condition from a caller's point of view: there is no
-       encoder on this machine. `withSearchStore` seals real faults; this is not one.
-
-       ONLY THE LOAD IS INSIDE THIS BLOCK, and the width probe below is deliberately outside
-       it: an ABSENT encoder degrades, a WRONG one does not, and the two must not be able to
-       collapse into each other here. */
+    /* The package is not installed, or the model directory is not provisioned: the same
+       condition from a caller's point of view. Only the load is inside this block; the
+       width probe below stays outside it, because an ABSENT encoder degrades and a WRONG
+       one must not be able to masquerade as absent. */
     return undefined;
   }
 
-  /* THE WIDTH IS PROVED ONCE, HERE, AND NOT ON EVERY CALL (D-300-06's arm 3).
-
-     A directory holding a model of another width is a MISPROVISIONING, not an absence, and
-     it stays LOUD: absent is legible and self-announcing, wrong is a defect somebody has to
-     go and find, so degrading on it would be the worse failure. What moved is WHERE it
-     surfaces. The check used to run inside `embed`, which since D-300-06 F4.2 means inside
-     `publish()`'s transaction, once per card — so a misprovisioned box announced itself on
-     the fifty-seventh card of a publish that then rolled back. Now it announces itself once
-     per process, at load, naming the directory, before a single row is written.
-
-     `loading` memoises this rejection, so every later caller re-throws the same named fault
-     rather than re-probing a model that cannot have changed under a running process. That
-     is also why `encoderAvailable()` THROWS here rather than answering `false`: answering
-     false would let a wrong model masquerade as an absent one, which is the exact collapse
-     this arm exists to prevent. */
   const probe = await extract(WIDTH_PROBE, { pooling: "mean", normalize: true });
   if (probe.data.length !== EMBEDDING_DIMENSIONS) {
     throw new Error(
       `The encoder in ${MODEL_ROOT}/${MODEL_ID} produced ${probe.data.length} dimensions, ` +
         `but \`release_embedding.embedding\` and \`card_version_embedding.embedding\` are ` +
-        `\`vector(${EMBEDDING_DIMENSIONS})\` (D-200-02) and pgvector refuses any other width. ` +
+        `\`vector(${EMBEDDING_DIMENSIONS})\` and pgvector refuses any other width. ` +
         `That directory holds a model this schema cannot store.`,
     );
   }
@@ -326,35 +171,15 @@ function encoder(): Promise<Encoder | undefined> {
 }
 
 /**
- * The semantic vector of a document, or `undefined` where no encoder is provisioned.
+ * The vector of a document, or `undefined` where no encoder is provisioned.
  *
- * ASYNC, which the 3-gram derivation was not (D-300-06 F2). Model load and inference are
- * both asynchronous and no amount of arranging makes them otherwise; `embed` is named in no
- * published signature block and is not on the barrel, so the shape was free to move, and
- * the change was ruled before either half wrote against it.
- *
- * Mean-pooled and L2-NORMALISED, because the index is `vector_cosine_ops` (D-200-02).
- * Normalising at the encoder rather than after keeps one definition of the vector's length,
- * and `<=>` over unit vectors is the cosine distance the HNSW index was built for. Measured
- * at 1.000000049 rather than exactly 1, which is float32 and not a defect — pgvector stores
- * float4 and the index is unaffected.
- *
- * ── There is no zero-vector case any more, and the old branch is gone ──
- *
- * The 3-gram derivation embedded a text with no letters to all zeros, because it had no
- * 3-grams to count. A transformer has no such state: `""` and `"   ---   "` both encode the
- * CLS/SEP pair and come back with all 384 components non-zero at unit length — measured,
- * not reasoned. So an empty document is no longer a special case to guard, it is an
- * ordinary point that happens to be near other empty documents, and a caller who published
- * an empty summary gets a legal row rather than a throw exactly as before.
+ * Mean-pooled and L2-normalised, because the index is `vector_cosine_ops`: `<=>` over unit
+ * vectors is exactly the cosine distance, and `1 - distance` is the similarity the ranking
+ * reads. An empty text is an ordinary unit vector, not a special case.
  */
 export async function embed(text: string): Promise<number[] | undefined> {
   const extract = await encoder();
   if (extract === undefined) return undefined;
-
-  /* No width check here any more: `load` proved it once for this process (D-300-06's arm 3).
-     Re-checking per call would re-measure a constant, and it put the failure inside a
-     publish transaction instead of at the point the model was chosen. */
   const output = await extract(text, { pooling: "mean", normalize: true });
   return Array.from(output.data);
 }
@@ -362,9 +187,14 @@ export async function embed(text: string): Promise<number[] | undefined> {
 /**
  * Whether this process can encode at all, without encoding anything.
  *
- * The searchers ask before building a query vector: with no encoder there is no tail, and
- * the lexical path should not pay a model load to find that out on every request.
+ * The first call pays the model load (about half a second warm, two seconds cold on a
+ * laptop); every later call in the process answers from the memoised promise.
  */
 export async function encoderAvailable(): Promise<boolean> {
   return (await encoder()) !== undefined;
+}
+
+/** The same answer, spelled the way `Results.encoder` reports it. */
+export async function encoderState(): Promise<"present" | "absent"> {
+  return (await encoderAvailable()) ? "present" : "absent";
 }

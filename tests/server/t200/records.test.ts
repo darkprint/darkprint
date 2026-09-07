@@ -40,7 +40,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { blueprints } from "@/lib/server/registry";
 import type { Db } from "@/lib/db";
 
-import { asBlueprintItem, asCardItem, asTermItem, itemKey, search } from "./contract";
+import { asBlueprintItem, asCardItem, asTermItem, findTokens, itemKey, search } from "./contract";
 import {
   anonymous,
   dropScratchDatabases,
@@ -257,15 +257,18 @@ describe("the read semantics this task inherits from T080", () => {
     ).toEqual([`blueprint:${r.ownerHandle}/${r.slug}`]);
 
     /* Asked for by name as well, because "it is not in the listing" and "it cannot be
-       reached" are different claims and a search is where the second one is tested. */
+       reached" are different claims and a search is where the second one is tested. The
+       whole response is swept for the handleless bundle's identifying strings rather than
+       compared to an empty list: its minted token shares the pid word with every other
+       identifier here, so the addressable blueprint may legitimately come back for it. */
     const byQuery = await search("searchBlueprints", s.db, anonymous, { q: r.handlelessToken });
     expect(
-      byQuery.hits.map((h) => itemKey(h.item)),
-      `An owner with no handle has no \`(owner, slug)\` key to be addressed by (B-09), so the ` +
-        `bundle is excluded from the index — published in the section as a read semantic this ` +
-        `task INHERITS rather than an implementation detail it may ignore.\n` +
-        `  A module that re-derived the index instead of consuming T080's would surface it, ` +
-        `and every cell searching for something present would still pass.`,
+      findTokens(byQuery, [r.handlelessSlug, r.handlelessToken]),
+      `An owner with no handle has no \`(owner, slug)\` key to be addressed by, so the bundle ` +
+        `is excluded from the index: a read semantic this module inherits from the registry ` +
+        `rather than an implementation detail it may ignore. A module that re-derived the ` +
+        `index instead of consuming the registry's would surface it here.\n` +
+        `  hits: ${byQuery.hits.map((h) => itemKey(h.item)).join(", ") || "(none)"}`,
     ).toEqual([]);
   });
 
