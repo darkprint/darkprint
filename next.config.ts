@@ -33,12 +33,13 @@ const nextConfig: NextConfig = {
    * whether the encoder loads, which is only a true answer if its function carries the
    * same files.
    */
+  /* One key for every route rather than one per embedding route. Vercel groups routes whose
+     traces agree into a single function; per-route includes split the app into more bundles
+     than the Hobby plan's cap of twelve allows, and the deploy is refused. A uniform trace keeps
+     the grouping and costs each bundle the encoder's files once. */
   outputFileTracingIncludes: {
-    "/api/search/*": ENCODER_FILES,
-    "/api/mcp": ENCODER_FILES,
-    "/api/mcp/**": ENCODER_FILES,
-    "/api/bundles": ENCODER_FILES,
-    "/api/health": ENCODER_FILES,
+    "/*": ENCODER_FILES,
+    "/**": ENCODER_FILES,
   },
 
   async headers() {
