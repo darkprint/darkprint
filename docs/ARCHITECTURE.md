@@ -36,7 +36,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 | `lib/content/` | reads `content/` at build time, exports a bundle as files (`bundle-export.ts`), the graph layout, the view models |
 | `lib/data/` | seeded fixtures (authors, community numbers, profiles) still imported by about thirty non-test files |
 | `lib/db/` | drizzle schema (`schema.ts`), pool (`client.ts`), object storage (`storage.ts`), migration runner (`migrate.ts`) and CLI (`cli.ts`), `migrations/` |
-| `lib/server/` | 27 subsystems, one barrel each, in the table below; `types.ts` re-exports the engine's domain types |
+| `lib/server/` | 28 subsystems, one barrel each, in the table below; `types.ts` re-exports the engine's domain types |
 | `lib/` (top) | `site.ts` (origin, name, tagline), `skill.ts` (install commands), `mcp.ts` (connect command), `href.ts`, `format.ts`, `types.ts`, `graph-seed.ts`, `criteria-state.ts` |
 | `packages/cli/`, `packages/mcp/` | the `darkprint` verbs (no bin of their own); the `darkprint` package: bin, stdio MCP server, tool table, in-process executor |
 | `skills/darkprint/` | the blueprint-writing skill: `SKILL.md`, `references/`, `templates/` |
@@ -75,6 +75,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 | `lib/server/search` | lexical plus vector search, the encoder, re-embedding |
 | `lib/server/seed` | the `content/` import |
 | `lib/server/terms` | term usage and promotion candidates |
+| `lib/server/tutorial` | the live tutorial channel: open a page, store the last draft the blueprint-writing skill posted for its token, read it back; rows expire 24 hours after the last write and no account is involved |
 | `lib/server/versioning` | semver, digests, bump inference |
 
 ## 4. Routes
@@ -164,6 +165,8 @@ public view; `cookie, refuses anonymous` lets the module answer 401; `anonymous`
 | `/api/ontology/categories`, `/api/ontology/phases`, `/api/ontology/phases/[phase]/cards`, `/api/ontology/tags`, `/api/ontology-usage`, `/api/ontology-usage/candidates` | GET | cookie optional |
 | `/api/search/blueprints`, `/api/search/cards`, `/api/search/terms` | GET | cookie optional |
 | `/api/transfer` (POST), `/api/transfer/plan` (GET) | POST; GET | session |
+| `/api/tutorial/live` | POST (GET answers 405, OPTIONS 204) | anonymous; opens a live tutorial page and answers `LiveOpened` with a 24-hour token, counted in the `live` bucket by address |
+| `/api/tutorial/live/[token]` | GET, PUT | anonymous; GET answers `LiveRecord` with `ETag: "<revision>"`, `Cache-Control: no-store` and 304 on a matching `If-None-Match`; PUT takes a `LiveDraft`, answers `{ revision, updatedAt, expiresAt }` and refreshes the expiry, 400 naming the field, 413 over `LIVE_DRAFT_MAX_BYTES`; both answer 404 for an unknown or expired token and 400 for a malformed one |
 | `/api/validate/bundle`, `/api/validate/card`, `/api/validate/dot`, `/api/validate/ontology` | POST | anonymous; nothing persisted |
 
 Refusals are `application/problem+json` with `type` under `https://darkprint.io/problems/`. A
@@ -171,7 +174,7 @@ private resource the caller may not see answers 404, never 403.
 
 ## 5. Data model
 
-`lib/db/schema.ts` declares 22 tables and 8 enums. Bytes live in object storage keyed by digest;
+`lib/db/schema.ts` declares 23 tables and 8 enums. Bytes live in object storage keyed by digest;
 Postgres holds the index and the current projection.
 
 | Table | Holds |
@@ -192,6 +195,7 @@ Postgres holds the index and the current projection.
 | `release_embedding`, `card_version_embedding` | `vector(384)` plus `embedded_input_sha256`, cascade-deleted with their subject |
 | `follow`, `profile_pin`, `account_support` | watching an author, the two pinned items, support for an author; every count is derived |
 | `notification_queue`, `unsubscribe_token` | queued notifications keyed (kind, account, subject digest) and their unsubscribe links |
+| `tutorial_draft` | one row per live tutorial page: the token, the last `LiveDraft` the blueprint-writing skill posted and its `phase`, a `revision` that increments per accepted PUT, `expires_at` 24 hours after the last write; no account, the token is the authority |
 
 Enums: `visibility`, `target_kind`, `target_actor_kind`, `actor_kind`, `audit_decision`,
 `api_key_scope`, `pin_kind`, `notification_kind`.
@@ -201,7 +205,7 @@ extension, the base tables and enums), `0002_community` (save, ballot, note, not
 run_report, api_key), `0003_search` (the two vector tables, `vector_cosine_ops` indexes),
 `0004_social`, `0005_notifications`, `0006_identities`, `0007_drafts`, `0008_embedding_input`,
 `0009_drop_ontology_versioning` (destructive: drops the two vocabulary-version tables and
-`release.scored_ontology_version_id`), `0010_key_scope`. The runner (`lib/db/migrate.ts`)
+`release.scored_ontology_version_id`), `0010_key_scope`, `0011_tutorial_live`. The runner (`lib/db/migrate.ts`)
 tracks ids in `"_migrations"`, wraps each migration in a transaction and holds the session
 lock `pg_advisory_lock(847362951)` on one pinned connection, which a transaction pooler cannot
 serve: `npm run db:migrate` reads `MIGRATE_DATABASE_URL` first, falls back to `DATABASE_URL`,
@@ -347,8 +351,10 @@ Keyed reads: `Authorization: Bearer <key>` with any live key (read scope is enou
 against the key tier and reads as the key's account, so the owner's private blueprints answer;
 a key that does not resolve is treated as no key, never refused. Limits (`lib/server/limits`):
 `read` allows 600 requests an hour for anonymous and signed-in callers and 6000 for a key;
-`write` is 120 an hour and `upload` 30, both refused to anonymous callers; only the MCP routes
-spend a bucket today. A refused request answers 429 problem+json carrying `limit`, `remaining`,
+`write` is 120 an hour and `upload` 30, both refused to anonymous callers; `live` is 60 an hour
+for an anonymous caller and 120 for the two signed-in tiers. The MCP routes spend `read`; the
+live tutorial routes spend `live` on POST and PUT and `read` on GET; nothing else spends a
+bucket today. A refused request answers 429 problem+json carrying `limit`, `remaining`,
 `resetAt` and `keysAvailable`, and a tool call renders the same facts as a result.
 
 The stdio server is `darkprint mcp` in `packages/mcp` (newline-delimited JSON-RPC 2.0 over

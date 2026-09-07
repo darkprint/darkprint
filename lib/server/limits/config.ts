@@ -135,6 +135,7 @@ export const UNCONFIGURED_BACKOFF_MS = 365 * 24 * HOUR;
  *     read            600 / h     600 / h     6 000 / h
  *     write           refused     120 / h       120 / h
  *     upload          refused      30 / h        30 / h
+ *     live             60 / h     120 / h       120 / h
  *
  * **Nothing here was invented.** The owner ruled four quantities — anonymous read, keyed
  * read, keyed write, and upload — and this task reported that four quantities fill three of
@@ -174,6 +175,17 @@ export const DEFAULT_LIMITS: LimitConfig = {
     anonymous: REFUSED,
     account: { limit: 30, windowMs: HOUR },
     key: { limit: 30, windowMs: HOUR },
+  },
+  /* The live tutorial channel's writes: opening a page and posting a draft after each phase
+     of one interview. Anonymous is the normal caller there, since the page exists to be used
+     before the reader has an account, so this is the one bucket an unkeyed caller may write
+     to. Sixty an hour is several interviews' worth of phase posts from one address; the two
+     signed-in tiers are there because every bucket names all three or the missing one
+     refuses, and no route counts a live write against either today. */
+  live: {
+    anonymous: { limit: 60, windowMs: HOUR },
+    account: { limit: 120, windowMs: HOUR },
+    key: { limit: 120, windowMs: HOUR },
   },
 };
 
