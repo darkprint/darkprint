@@ -236,7 +236,10 @@ describe("the walk finds both halves", () => {
        change, which is the property this cell needs: an id that exists to be reached from
        the rail and from nowhere else, on a page whose subject is not the thing being
        reorganised around it. */
-    for (const id of ["security-explained", "run", "crosswalk-heading"]) {
+    /* `every-term-heading` replaced `security-explained` when the unmounted panel that
+       linked the latter was deleted; it is written in `app/ontology/[...term]/page.tsx` and
+       declared in `app/spec/card/page.tsx`, so it still crosses a file boundary. */
+    for (const id of ["every-term-heading", "run", "crosswalk-heading"]) {
       expect(ids, `nothing links #${id} any more`).toContain(id);
     }
   });
