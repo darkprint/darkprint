@@ -171,7 +171,7 @@ private resource the caller may not see answers 404, never 403.
 
 ## 5. Data model
 
-`lib/db/schema.ts` declares 22 tables and 8 enums. Bytes live in object storage keyed by digest;
+`lib/db/schema.ts` declares 23 tables and 8 enums. Bytes live in object storage keyed by digest;
 Postgres holds the index and the current projection.
 
 | Table | Holds |
@@ -192,6 +192,7 @@ Postgres holds the index and the current projection.
 | `release_embedding`, `card_version_embedding` | `vector(384)` plus `embedded_input_sha256`, cascade-deleted with their subject |
 | `follow`, `profile_pin`, `account_support` | watching an author, the two pinned items, support for an author; every count is derived |
 | `notification_queue`, `unsubscribe_token` | queued notifications keyed (kind, account, subject digest) and their unsubscribe links |
+| `tutorial_draft` | one row per live tutorial page: the token, the last `LiveDraft` the blueprint-writing skill posted and its `phase`, a `revision` that increments per accepted PUT, `expires_at` 24 hours after the last write; no account, the token is the authority |
 
 Enums: `visibility`, `target_kind`, `target_actor_kind`, `actor_kind`, `audit_decision`,
 `api_key_scope`, `pin_kind`, `notification_kind`.
@@ -201,7 +202,7 @@ extension, the base tables and enums), `0002_community` (save, ballot, note, not
 run_report, api_key), `0003_search` (the two vector tables, `vector_cosine_ops` indexes),
 `0004_social`, `0005_notifications`, `0006_identities`, `0007_drafts`, `0008_embedding_input`,
 `0009_drop_ontology_versioning` (destructive: drops the two vocabulary-version tables and
-`release.scored_ontology_version_id`), `0010_key_scope`. The runner (`lib/db/migrate.ts`)
+`release.scored_ontology_version_id`), `0010_key_scope`, `0011_tutorial_live`. The runner (`lib/db/migrate.ts`)
 tracks ids in `"_migrations"`, wraps each migration in a transaction and holds the session
 lock `pg_advisory_lock(847362951)` on one pinned connection, which a transaction pooler cannot
 serve: `npm run db:migrate` reads `MIGRATE_DATABASE_URL` first, falls back to `DATABASE_URL`,

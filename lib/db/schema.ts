@@ -960,3 +960,31 @@ export const accountIdentity = pgTable("account_identity", {
   uniqueIndex("account_identity_provider_key").on(t.provider, t.providerId),
   index("account_identity_account_id_idx").on(t.accountId),
 ]);
+
+/* ============================================================
+   The live tutorial channel (0011_tutorial_live)
+
+   One row per page a reader opened at `/tutorial/live/<token>`,
+   holding the last draft the blueprint-writing skill posted for
+   it. No account column: the page is opened before the reader has
+   an account, and the token is the whole authority over the row.
+   `draft` is the `LiveDraft` of `lib/core/tutorial/live.ts`,
+   stored verbatim and re-validated by the route on every write,
+   which is why nothing here restates its shape.
+   ============================================================ */
+export const tutorialDraft = pgTable("tutorial_draft", {
+  token: text("token").primaryKey(),
+  /** The draft's own phase, lifted out so an operator can count pages per phase without
+      opening every `draft`. The route has already checked it against `LIVE_PHASES`. */
+  phase: text("phase").notNull(),
+  draft: jsonb("draft").notNull(),
+  /** Increments on every accepted PUT; the page reads it back as the ETag. */
+  revision: integer("revision").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  /** No default: the module writes it from the same clock it later compares against. */
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, (t) => [
+  /* The sweep every open runs (`delete ... where expires_at <= now`) reads this. */
+  index("tutorial_draft_expires_at_idx").on(t.expiresAt),
+]);
