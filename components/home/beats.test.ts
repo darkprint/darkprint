@@ -7,6 +7,7 @@ import { SectionBlueprint } from "@/components/home/SectionBlueprint";
 import { SectionFirstBlueprint } from "@/components/home/SectionFirstBlueprint";
 import { SectionNodeIsCard } from "@/components/home/SectionNodeIsCard";
 import { SectionSameRun } from "@/components/home/SectionSameRun";
+import { NAV } from "@/components/site/SiteHeader";
 import { plainText } from "@/components/ui/visible-text";
 
 import { LANDING_NARROW, LANDING_WIDE } from "./graph";
@@ -36,12 +37,13 @@ describe("the blueprint-first landing", () => {
     expect(text).not.toContain("Sign in with");
   });
 
-  it("keeps both loops reachable from the landing, in the section that now ends it", () => {
-    /* The hero's two buttons were folded into the page's ending, so the ending has to keep
-       both ways in: search the registry, and make one with the skill. */
-    const html = render(SectionFirstBlueprint);
-    expect(html).toContain('href="/blueprints"');
-    expect(html).toContain('href="/skill"');
+  it("keeps both loops reachable from the landing, through the header", () => {
+    /* The ending is one door, on the owner's instruction, so the two ways in it used to
+       carry, search the registry and make one with the skill, are held where every page
+       has them: the header's own table. */
+    const hrefs = NAV.map((row) => row.href);
+    expect(hrefs).toContain("/blueprints");
+    expect(hrefs).toContain("/skill");
   });
 
   /* Beat 2, and the only beat on the landing that argues rather than shows. Both claims
@@ -232,12 +234,10 @@ describe("the blueprint-first landing", () => {
       expect(text).toContain(step);
     }
 
-    // The door, the skill it uses, and the registry it searches. Nothing else links out of
-    // the ending, so the one instruction stays one instruction.
-    for (const href of ["/tutorial", "/skill", "/blueprints"]) {
-      expect(html, `the ending lost its ${href} link`).toContain(`href="${href}"`);
-    }
-    expect([...html.matchAll(/<a\b/g)]).toHaveLength(3);
+    // One door and nothing else links out of the ending, so the one instruction stays one
+    // instruction and the reader has one thing to click.
+    expect(html, "the ending lost its door").toContain('href="/tutorial"');
+    expect([...html.matchAll(/<a\b/g)]).toHaveLength(1);
   });
 
   /* `SectionDoors` had a case here — "closes on the same two loops without placeholder
