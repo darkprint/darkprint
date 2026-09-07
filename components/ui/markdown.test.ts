@@ -24,7 +24,7 @@
    throws on a malformed table does not degrade, it blanks the document. Every case here
    asserts non-throwing FIRST and shape second.
 
-   The corpus half renders all nine shipped `public/bundles/<slug>/README.md` rather than
+   The corpus half renders all ten shipped `public/bundles/<slug>/README.md` rather than
    fixtures alone, for the reason `components/site/honesty.test.ts` gives: a guard that
    only holds over an invented document is a guard about nothing. Its last case is the
    strongest claim this renderer makes — that no word of the source is dropped on the way
@@ -431,7 +431,7 @@ describe("markdown: malformed input degrades, and never throws", () => {
   });
 });
 
-describe("markdown: the nine shipped bundle READMEs", () => {
+describe("markdown: the ten shipped bundle READMEs", () => {
   for (const readme of READMES) {
     it(`renders ${readme.slug} whole`, () => {
       const html = render(readme.text);
