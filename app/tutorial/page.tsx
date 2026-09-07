@@ -223,7 +223,7 @@ export default function TutorialPage() {
           <section id="keep" className="flex min-w-0 scroll-mt-24 flex-col gap-4">
             <StepHeading index={5} title="Keep it on your account" />
             <p className={P}>
-              A live page expires after a day. To keep the blueprint,{" "}
+              A live page expires 24 hours after the last post. To keep the blueprint,{" "}
               <Link href="/welcome" className={LINK}>
                 sign in
               </Link>{" "}
