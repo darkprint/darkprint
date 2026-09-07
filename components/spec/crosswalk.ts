@@ -1,46 +1,26 @@
 /* ============================================================
-   The crosswalk: what a DarkPrint bundle becomes when it is
+   The crosswalk: what a DarkPrint blueprint becomes when it is
    compiled into a file an Attractor runner takes.
 
-   §11.0 Q20 (b). The owner chose a dedicated route over appending
-   an Attractor clause to each field row on `/spec/card`, and gave
-   two reasons: it is one URL you can hand a stranger, and a page
-   rendered from constants cannot go stale. This file is the second
-   half of that. It carries the prose a table needs and nothing a
-   table can read off the engine.
+   The column of attribute names is not written here. `crosswalk()`
+   walks `ATTRACTOR_EMITTED_ATTRIBUTES` and `DARKPRINT_EMITTED_ATTRIBUTES`
+   and looks each name up in the table below, throwing on one it
+   cannot find, so the page prints exactly the names the emitter can
+   write and an attribute added to the emitter fails the render rather
+   than going quietly missing. The other direction, a row for a name
+   nothing emits, is `crosswalk.test.ts`'s.
 
-   ── the rule this file exists to keep ──
-   The COLUMN OF ATTRIBUTE NAMES IS NOT WRITTEN HERE. `crosswalk()`
-   walks `ATTRACTOR_EMITTED_ATTRIBUTES` and
-   `DARKPRINT_EMITTED_ATTRIBUTES` — the two halves of `emit.ts`'s
-   private / runtime-read line — and looks each name up in the table
-   below, throwing on one it cannot find. So the page prints exactly
-   the names the emitter can write, in the order the emitter writes
-   them, and an attribute added to the emitter fails the render
-   instead of quietly going missing from the page that claims to
-   list them all. The other direction (a row here for a name nothing
-   emits) is `crosswalk.test.ts`'s.
+   That leaves this file owning what a constant cannot carry: which
+   bundle field a value came from, one sentence on what the runner
+   does with it, and the spec sections that say so. Those are
+   transcriptions held to the spec by a person, which is why every one
+   names its section. The source keys are still read off the engine
+   (`ITERATION_CAP_KEYS`, `TOOL_COMMAND_KEY`) because two modules
+   already had to agree about them and a page that re-typed either
+   would be a third answer.
 
-   That leaves this file owning three things a constant cannot
-   carry: which bundle field the value came from, one sentence on
-   what the runner does with it, and the spec sections that say so.
-   Those are transcriptions, and they are held to the spec by a
-   person rather than by a test, which is why every one of them
-   names its section — the same discipline `reserved.ts` applies to
-   the reserved sets it transcribes.
-
-   ── why the source keys are still read off the engine ──
-   `from` is prose and `keys` is not. The three spellings of the
-   iteration cap and the one spelling of the tool command are
-   exported constants (`ITERATION_CAP_KEYS`, `TOOL_COMMAND_KEY`),
-   because two modules already had to agree about them, and a page
-   that re-typed either would be a third answer. A reader checking
-   whether their card's `maxIterations` survives the export is
-   reading the array the emitter reads.
-
-   Plain TypeScript, no JSX and no React, so `crosswalk.test.ts` can
-   import it under `environment: "node"` and hold it against the
-   engine's own constants.
+   Plain TypeScript, no JSX, so `crosswalk.test.ts` can import it
+   under `environment: "node"`.
    ============================================================ */
 
 import {
@@ -50,13 +30,8 @@ import {
   isReserved,
   type AttractorScope,
 } from "@/lib/core";
-/* Deep import, and it is the only one on this route.
-
-   `TOOL_COMMAND_KEY` is declared in `lib/core/card/schema.ts` and not re-exported from
-   `lib/core/index.ts`, which is the barrel every other component on this site binds to.
-   Publishing it there is the right fix and that file belongs to another lane this pass,
-   so the import goes to the module rather than the page transcribing the string a fourth
-   time. Reported as owed. */
+/* `TOOL_COMMAND_KEY` is declared in `lib/core/card/schema.ts` and not re-exported from the
+   barrel, so the import goes to the module rather than transcribing the string again. */
 import { TOOL_COMMAND_KEY } from "@/lib/core/card/schema";
 
 /**
@@ -173,7 +148,7 @@ const ROWS: readonly CrosswalkRow[] = [
     attribute: "max_retries",
     keys: ITERATION_CAP_KEYS.map((key) => `card.params.${key}`),
     origin:
-      "The iteration cap the card declares, read by the same function that decides whether a cycle is charged as unbounded.",
+      "The iteration cap the card declares, read by the same function that decides whether a cycle is counted as unbounded.",
     reads:
       "§2.6: “Number of additional attempts beyond the initial execution. If omitted, inherits graph default_max_retries. max_retries=3 means up to 4 total executions.” So a cap of 3 is four passes, not three.",
     sections: ["2.6", "3.5", "3.6"],
@@ -190,7 +165,7 @@ const ROWS: readonly CrosswalkRow[] = [
       "§4.10 reads it bare and refuses the node without it: “IF command is empty: RETURN Outcome(status=FAIL, failure_reason=‘No tool_command specified’)”. It has no default anywhere in the spec.",
     sections: ["4.10"],
     absent:
-      "A shell-tool card with no command writes no attribute. That is deliberate: an empty string is the value §4.10 fails on, so the file leaves the header free to say the node has no command yet.",
+      "A shell-tool card with no command writes no attribute. That is deliberate: an empty string is the value §4.10 fails on, so a missing command is left out of the file, and the validator has already warned about it as card/missing-field.",
   },
   {
     scope: "node",
@@ -199,7 +174,7 @@ const ROWS: readonly CrosswalkRow[] = [
     origin:
       "The card's type, then its broader chain nearest-first, then its phases in the card's own order, each lowercased and hyphenated behind a dp- prefix.",
     reads:
-      "§2.12: “Classes are comma-separated.” §8.3 makes .class_name a stylesheet selector at specificity 2, above a shape and below a node id, which is what hands the reader model routing DarkPrint states no opinion about.",
+      "§2.12: “Classes are comma-separated.” §8.3 makes .class_name a stylesheet selector at specificity 2, above a shape and below a node id, which is what lets whoever runs the file choose a model per class; DarkPrint itself states no opinion on which model a class should run.",
     sections: ["2.10", "2.12", "8.2", "8.3"],
     absent: "A card with no phases and an unknown type still writes its declared type as one class.",
   },
