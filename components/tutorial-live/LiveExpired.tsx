@@ -9,7 +9,7 @@ export function LiveExpired() {
     <section className="panel flex flex-col gap-4 p-5" aria-label="This live page has expired">
       <p className="text-sm leading-relaxed text-muted">
         This live page has expired, or its address is not one this site opened; a page lasts
-        a day from the moment it was opened or your agent last posted to it.
+        24 hours after it was opened or your agent last posted to it.
       </p>
       <div>
         <ButtonLink href="/tutorial" variant="outline">

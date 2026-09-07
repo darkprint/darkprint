@@ -64,7 +64,7 @@ export const metadata: Metadata = {
   /* The shared-link preview owes a reader the limit before they open the tab, so the
      description carries the same sentence the closing section prints. */
   description:
-    "One command puts the blueprint-writing skill in your own agent. It interviews you, searches the registry for what already exists, and writes a folder of topology.dot, one card per node, blueprint.yaml and README.md. The DarkPrint skill runs nothing and sends nothing on its own; publishing is a step you take on this site or with an API key.",
+    "One command puts the DarkPrint skill in your own agent. It interviews you, searches the registry for what already exists, and writes a folder of topology.dot, one card per node, blueprint.yaml and README.md. The DarkPrint skill runs nothing and sends nothing on its own; publishing is a step you take on this site or with an API key.",
 };
 
 export default function SkillPage() {
@@ -74,7 +74,7 @@ export default function SkillPage() {
         as="h1"
         eyebrow="Setup"
         title="Assisted Design"
-        lead="One command puts the blueprint-writing skill in the agent you already use. It interviews you about the work, searches the registry for a blueprint or cards that already do part of it, and writes what you decided as a folder the registry can store."
+        lead="One command puts the DarkPrint skill in your own agent. It interviews you about the work, searches the registry for a blueprint or cards that already do part of it, and writes what you decided as a folder the registry can store."
       />
 
       <SkillSetup className="mt-10" />
@@ -83,7 +83,7 @@ export default function SkillPage() {
         <h2 className="font-display text-2xl font-semibold text-fg">What it never does</h2>
         <p className="text-[15px] leading-relaxed text-muted">
           The DarkPrint skill writes files and runs nothing. Whatever it is asked, three
-          limits hold, and each names where the capability lives instead.
+          limits hold.
         </p>
 
         {/* The same hairline rows step 2 draws, in blueprint ink rather than amber: amber is

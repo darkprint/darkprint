@@ -110,8 +110,8 @@ export function LiveWaiting({ liveUrl }: { liveUrl: string }) {
         <code className="rounded bg-surface-3 px-1 py-0.5 font-mono text-[12px] text-fg">
           {liveUrl}
         </code>
-        . Paste it into the prompt on the tutorial page, or hand it to the blueprint-writing
-        skill when it offers a live preview, and the graph appears here as the interview goes.
+        . Paste it into the prompt on the tutorial page, or hand it to the DarkPrint skill
+        when it offers a live preview, and the graph appears here as the interview goes.
       </p>
     </section>
   );
@@ -339,8 +339,8 @@ export function NextStep({ draft, liveUrl }: { draft: LiveDraft; liveUrl: string
           <span id="live-next">Next: keep it</span>
         </PanelHeading>
         <p className="text-sm leading-relaxed text-muted">
-          Sign in, then drop the folder on the Publish page. Visibility defaults to private
-          there, so the blueprint stays yours until you choose otherwise.
+          Sign in, then drop the folder on the Publish page, where visibility defaults to
+          private.
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <ButtonLink href="/welcome">Sign in</ButtonLink>
