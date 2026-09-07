@@ -37,7 +37,7 @@ import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
 export const metadata: Metadata = {
   title: "What a blueprint is",
   description:
-    "A blueprint is a folder that records how a piece of agent work is shaped: a graph of nodes, one version-pinned card per node, and the vocabulary both are written in. What is in the folder, what it is checked against, and what you still need in order to run it.",
+    "A blueprint is a folder that records how a piece of agent work is shaped: a graph of nodes, one version-pinned card per node, and the vocabulary both are written in. What is in the folder, what it is checked against, and what you still need to run it.",
 };
 
 /** The blueprint every worked example on this site opens with. */

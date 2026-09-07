@@ -240,8 +240,7 @@ const FIELDS: readonly {
         concrete server is registered under on the machine that runs the graph, which the
         vocabulary has no term for and is not going to grow one. <Id>tools</Id> says what
         the node is permitted to do and <Id>mcp</Id> says which process supplies it; a node
-        can carry either without the other, and merging them would lose the question each
-        one answers.
+        can carry either without the other.
       </>
     ),
   },
