@@ -49,7 +49,7 @@ export default function TowardsPage() {
                the cause and unattended is the consequence: the linked source defines the
                pattern by the layered control system holding it up, and a lead defining it
                purely by what is absent reads as fewer rules rather than more. */
-            lead="A dark factory is one shape a blueprint can take: a graph where planning, implementation, testing, debugging and deployment all run unattended, inside a harness somebody wrote. Running unattended is something you pay to build, and it is one shape among several. A graph with a person standing in it is a first-class blueprint here, shelved beside the rest."
+            lead="A dark factory is one shape a blueprint can take: a graph where planning, implementation, testing, debugging and deployment all run unattended, inside a harness somebody wrote. Running unattended is something you pay to build. A graph with a person standing in it is a first-class blueprint here, shelved beside the rest."
           />
           {/* The page's premise, ahead of the ladder: the ladder measures how much of a run
               goes unattended, and this is the one property that decides whether unattended

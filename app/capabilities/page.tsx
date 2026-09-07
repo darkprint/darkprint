@@ -282,8 +282,8 @@ export default function CapabilitiesPage() {
         The darkprint package is not on npm, so{" "}
         <code className="font-mono text-blueprint-ink">{NPX_INVOCATION}</code> fails, and the
         source repository it would be built from is private. Until that changes, the table below
-        is a reference for what each command will take; no visitor can run one yet. Exit code 0
-        on success, 1 on anything else.
+        is a reference for what each command will take. Exit code 0 on success, 1 on anything
+        else.
       </Framing>
       <TableShell>
         <thead>
@@ -424,9 +424,8 @@ export default function CapabilitiesPage() {
         ))}
       </KeyValueList>
       <p className="text-sm leading-relaxed text-dim">
-        Copy the one for your client. The server is remote, so nothing is installed. The same
-        server also runs on your own machine over stdio once the darkprint package is published
-        to npm; it is not published to npm yet.
+        Copy the one for your client. The same server also runs on your own machine over stdio
+        once the darkprint package is published to npm; it is not published to npm yet.
       </p>
     </section>
   );
@@ -480,7 +479,7 @@ export default function CapabilitiesPage() {
             ))}
           </KeyValueList>
           <p className="text-sm leading-relaxed text-dim">
-            Five of the questions it asks. The full interview is longer, walks a risk sheet for
+            Some of the questions it asks. The full interview is longer, walks a risk sheet for
             each node, and picks every name and version itself.
           </p>
         </div>
@@ -515,8 +514,8 @@ export default function CapabilitiesPage() {
             </KeyValueRow>
           </KeyValueList>
           <p className="text-sm leading-relaxed text-dim">
-            This site does not check what the DarkPrint skill writes. It is a document your agent follows,
-            and this list describes it rather than testing it.
+            This site does not check what the DarkPrint skill writes. It is a document your agent
+            follows.
           </p>
         </div>
       </div>

@@ -52,7 +52,7 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
   },
   {
     name: "the graph as a whole",
-    what: "Where a run enters. Where it ends. Whether every node can be reached from an entry point.",
+    what: "Where a run enters, where it ends, and whether every node can be reached from an entry point.",
     check: {
       codes: ["bundle/no-entry", "bundle/no-exit", "bundle/unreachable-node"],
       level: "warning",

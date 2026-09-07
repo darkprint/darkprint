@@ -299,7 +299,7 @@ export default function SpecAttractorPage() {
             as="h1"
             eyebrow={page.eyebrow}
             title={page.title}
-            lead="One page for the reader who already knows Attractor, StrongDM's graph runner and the program the file darkprint export writes is written for. Which card field becomes which node attribute, which node type selects which handler, and every reserved name a runner reads that a blueprint has no way to set. New to both? Start with the topology and the node card and come back."
+            lead="One page for the reader who already knows Attractor, StrongDM's graph runner and the program the file darkprint export writes is written for. Which card field becomes which node attribute, which node type selects which handler, and every reserved name a runner reads that a blueprint has no way to set. If you are new to both, start with the topology and the node card and come back."
           />
           {/* The revision these tables were checked against, printed rather than dated in
               prose: an undated compatibility claim has no shelf life, and this is the only
@@ -359,8 +359,8 @@ export default function SpecAttractorPage() {
               drift from the file.
             </p>
             <p>
-              The last two node rows carry the whole compatibility argument. <Id>card</Id>{" "}
-              pins the exact card version a node is an instance of, and <Id>dp_node</Id>{" "}
+              <Id>card</Id> pins the exact card version a node is an instance of, and{" "}
+              <Id>dp_node</Id>{" "}
               records an id the grammar forced the exporter to rewrite. Neither name is in
               §2.5, §2.6 or §2.7, neither is in any of Appendix A&rsquo;s three tables, and
               none of §7.2&rsquo;s built-in lint rules is about an attribute name those tables
@@ -526,15 +526,14 @@ export default function SpecAttractorPage() {
               <Id>subgraph &#123; label=&quot;Agent&quot; &#125;</Id> yields the class{" "}
               <Id>agent</Id>. A bare <Id>agent</Id> emitted from a card&rsquo;s type would be
               the same string on a different set of nodes, with nothing in §8.3 able to tell
-              the two apart. The prefix removes that collision outright instead of hoping
-              nobody draws that subgraph.
+              the two apart. The prefix removes that collision.
             </p>
             <p>
               The cost: a <Id>model_stylesheet</Id> rule written for Attractor&rsquo;s own{" "}
               <Id>.agent</Id> matches none of these nodes, and a rule aimed at a DarkPrint
-              class has to name <Id>.dp-agent</Id>. The alternative was worse. Without the
-              prefix, a subgraph somebody added for layout could silently move every agent in
-              the pipeline onto a different model.
+              class has to name <Id>.dp-agent</Id>. Without the prefix, a subgraph somebody
+              added for layout could silently move every agent in the pipeline onto a
+              different model.
             </p>
             <p>
               §2.12 makes the list comma-separated and §8.2&rsquo;s{" "}
@@ -737,9 +736,9 @@ export default function SpecAttractorPage() {
             <p>
               A topology on its own is not a pipeline. It carries no prompts and neither of
               the two boundary nodes Attractor requires, so a runner parses it and then
-              refuses to run it. <Id>darkprint export &lt;dir&gt; --attractor</Id> is what
-              compiles the graph and its cards into the file a runner takes, and that file
-              opens with a list of everything a blueprint had no way to say.
+              refuses to run it. <Id>darkprint export &lt;dir&gt; --attractor</Id> compiles
+              the graph and its cards into the file a runner takes, and that file opens with
+              a list of everything a blueprint had no way to say.
             </p>
             <p>
               §7.2 is where the refusal is written down. <Id>start_node</Id> and{" "}
