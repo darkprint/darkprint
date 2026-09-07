@@ -29,7 +29,8 @@ const STEPS = [
           blueprint-writing skill
         </Link>{" "}
         in your coding agent and describe a small task: watch the prices of a few trading
-        cards across the sites that list them. It interviews you and drafts the nodes.
+        cards across the sites that list them. The DarkPrint skill interviews you and drafts
+        the nodes.
       </>
     ),
   },

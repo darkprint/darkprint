@@ -52,7 +52,7 @@ const NEVER: readonly { label: string; body: React.ReactNode }[] = [
   },
   {
     label: "send",
-    body: "nothing leaves your machine on its own. Checking the folder against the registry's validator, and publishing it, are steps it asks you for and you take",
+    body: "the DarkPrint skill sends your one-sentence task to the registry's search while it drafts, and nothing else leaves your machine on its own. Checking the folder against the registry's validator, publishing it, and opening a live page are steps it asks you for and you take",
   },
 ];
 

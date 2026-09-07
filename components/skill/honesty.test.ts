@@ -41,8 +41,8 @@ const CLAIMS: readonly Claim[] = [
   },
   {
     surface: "/skill · the closing section",
-    why: "the folder is the reader's work, and the page has to say that nothing carries it off the machine without their say-so; the validator call and the publish are both steps the skill asks for",
-    says: "nothing leaves your machine on its own",
+    why: "the folder is the reader's work, and the page has to say what does leave the machine unasked: the one-sentence task the DarkPrint skill searches the registry with in its first phase, and nothing else; the validator call, the publish and the live page are steps it asks for",
+    says: "sends your one-sentence task to the registry's search while it drafts, and nothing else leaves your machine on its own",
     html: SKILL_PAGE,
   },
   {

@@ -138,6 +138,9 @@ export const UNCONFIGURED_BACKOFF_MS = 365 * 24 * HOUR;
  *     live             60 / h     120 / h       120 / h
  *     poll          3 600 / h   3 600 / h     3 600 / h
  *
+ * The first three rows are the owner's. `live` and `poll` were set with the live tutorial
+ * channel, sized to one interview and one polling tab, and await the owner's confirmation.
+ *
  * **Nothing here was invented.** The owner ruled four quantities — anonymous read, keyed
  * read, keyed write, and upload — and this task reported that four quantities fill three of
  * nine cells rather than placing the other six itself. The full matrix came back from the
