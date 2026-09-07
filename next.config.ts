@@ -26,13 +26,6 @@ const nextConfig: NextConfig = {
     root: import.meta.dirname,
   },
 
-  /**
-   * Only the routes that embed a query or a publish carry the ~70MB encoder. Publishing
-   * re-embeds inside its own transaction, so `/api/bundles` needs it; the registry pages
-   * call the searchers with no query and never load the model. `/api/health` reports
-   * whether the encoder loads, which is only a true answer if its function carries the
-   * same files.
-   */
   /* One key for every route rather than one per embedding route. Vercel groups routes whose
      traces agree into a single function; per-route includes split the app into more bundles
      than the Hobby plan's cap of twelve allows, and the deploy is refused. A uniform trace keeps
