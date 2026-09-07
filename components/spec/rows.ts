@@ -76,7 +76,7 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
        writes it through. A row that stopped at the first reading would be true of this
        page's subject and false of the artefact it tells the reader to compile. */
     name: '[label="acceptance criteria"]',
-    what: "What the author says the edge carries. DarkPrint compares it against nothing; the two port types decide what may travel. Attractor reads it a second way: the export copies the label into the compiled file, and Attractor spec §3.3 matches it, normalized, against the branch name a stage asks for, on edges that have no condition.",
+    what: "What the author says the edge carries. DarkPrint compares it against nothing; the two port types decide what may travel. Attractor reads it a second way: the export copies the label into the compiled file, and Attractor spec §3.3 matches it, normalised, against the branch name a stage asks for, on edges that have no condition.",
   },
   {
     name: '[condition="outcome=success"]',

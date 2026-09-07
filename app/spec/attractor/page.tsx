@@ -299,7 +299,7 @@ export default function SpecAttractorPage() {
             as="h1"
             eyebrow={page.eyebrow}
             title={page.title}
-            lead="One page for the reader who already knows Attractor, StrongDM's graph runner and the program the file darkprint export writes is written for. Which card field becomes which node attribute, which node type selects which handler, and every reserved name a runner reads that a blueprint has no way to set. If you are new to both, start with the topology and the node card and come back."
+            lead="One page for the reader who already knows Attractor, StrongDM's graph runner and the program the file darkprint export writes is written for. Which card field becomes which node attribute, which node type selects which handler, and every reserved name a runner reads that a blueprint has no way to set. New to both? Start with the topology and the node card and come back."
           />
           {/* The revision these tables were checked against, printed rather than dated in
               prose: an undated compatibility claim has no shelf life, and this is the only
@@ -359,9 +359,9 @@ export default function SpecAttractorPage() {
               drift from the file.
             </p>
             <p>
-              <Id>card</Id> pins the exact card version a node is an instance of, and{" "}
-              <Id>dp_node</Id>{" "}
-              records an id the grammar forced the exporter to rewrite. Neither name is in
+              The last two node rows are DarkPrint&rsquo;s own. <Id>card</Id> pins the exact
+              card version a node is an instance of, and <Id>dp_node</Id> records an id the
+              grammar forced the exporter to rewrite. Neither name is in
               §2.5, §2.6 or §2.7, neither is in any of Appendix A&rsquo;s three tables, and
               none of §7.2&rsquo;s built-in lint rules is about an attribute name those tables
               do not carry. So a runner parses them, finds nothing that reads them, and runs

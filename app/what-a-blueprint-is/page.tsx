@@ -275,8 +275,8 @@ export default function WhatABlueprintIsPage() {
             <div className="flex min-w-0 flex-col gap-4">
               <PanelHeading>A blueprint is the folder</PanelHeading>
               <p className={PROSE}>
-                One folder, three kinds of file. Every file shown on these pages is the real
-                one from the archive, so what you copy from here is a file that loads.
+                One graph, one folder, three kinds of file. Every file shown on these pages is
+                the real one from the archive, so what you copy from here is a file that loads.
               </p>
               <dl className="flex flex-col">
                 {BUNDLE_FILES.map((file) => (
