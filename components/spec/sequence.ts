@@ -479,7 +479,7 @@ export const LEARN_PRACTICE: readonly SpecPage[] = [
     step: "04",
     run: "practice",
     nav: "Towards a Dark Factory",
-    eyebrow: "The route",
+    eyebrow: "Four levels",
     title: "Towards a Dark Factory",
     question: "Decide which work can run unattended inside a deliberate harness.",
     /* Empty until 2026-08-11, on the reading that this page is one argument with no headed

@@ -61,7 +61,7 @@ const STEPS = [
   { n: 3, chip: "03 extract", title: "The extractor" },
   { n: 4, chip: "04 verify", title: "The checker, and the writer" },
   { n: 5, chip: "05 wire", title: "Wire them" },
-  { n: 6, chip: "06 take", title: "Take the folder" },
+  { n: 6, chip: "06 download", title: "Download the folder" },
   { n: 7, chip: "07 measure", title: "Measure it" },
 ] as const;
 
@@ -196,15 +196,15 @@ export function TutorialWizard() {
   const download = useCallback(() => {
     if (faults.length > 0) {
       setMessage(
-        "A term the ontology does not know cannot go in a bundle: the engine reports it as " +
-          "an error and refuses to export. Fix the red keywords first.",
+        "The vocabulary does not know one of these terms, and the validator would report it " +
+          "as an error. Fix the red keywords first.",
       );
       return;
     }
     if (mismatches.length > 0) {
       setMessage(
-        "Two ends of an edge that cannot carry the same thing. The engine reports that as an " +
-          "error too, so the folder would not export. Fix the red edge first.",
+        "Two ends of an edge that cannot carry the same thing. The validator reports that as " +
+          "an error too. Fix the red edge first.",
       );
       return;
     }
@@ -236,12 +236,11 @@ export function TutorialWizard() {
     );
 
     /*
-     * The same engine `/upload` runs, over the same bytes, in this tab.
+     * The same validator `/upload` runs, over the same bytes, in this tab.
      *
-     * `loadBundle` is `lib/core`'s and isomorphic, and it is what the wizard's own suite
-     * puts the example values through. `cardFilesOf` is not optional: `loadBundle` reads
-     * EVERY entry of `cardFiles` as a node card whatever its path, so handing it the whole
-     * folder reports `evals/scenario.yaml` as a card missing eight required fields.
+     * `cardFilesOf` is not optional: `loadBundle` reads every entry of `cardFiles` as a node
+     * card whatever its path, so handing it the whole folder reports `evals/scenario.yaml`
+     * as a card missing eight required fields.
      */
     const dot = files.find((file) => file.path === "topology.dot");
     if (dot === undefined) return;
@@ -372,7 +371,7 @@ export function TutorialWizard() {
             <p className="text-[15px] leading-relaxed text-muted">
               A blueprint is a folder: <code className="font-mono text-blueprint-ink">topology.dot</code>{" "}
               plus one card per node. The graph&rsquo;s name is the blueprint&rsquo;s, like a
-              repository: lowercase, hyphenated. The summary says what comes out, not how.
+              repository: lowercase, hyphenated. The summary says what comes out of a run.
             </p>
             <FilePanel name="topology.dot" meta="header">
               <Line>
@@ -400,11 +399,13 @@ export function TutorialWizard() {
               </Line>
             </FilePanel>
             <p className="text-[15px] leading-relaxed text-muted">
-              The summary goes in the README, and not on the{" "}
-              <code className="font-mono text-blueprint-ink">digraph</code> line. A root graph
-              attribute parses, and nothing in the engine reads one: a bundle&rsquo;s title,
-              summary, category and tags belong to a manifest, and a published folder carries no
-              manifest at all. Step 05 fills in the rest of the graph file.
+              The summary goes in the README rather than on the{" "}
+              <code className="font-mono text-blueprint-ink">digraph</code> line. DOT would
+              accept a graph-level attribute there and the validator ignores it. A
+              blueprint&rsquo;s title, summary, category and tags are entered on the Publish page
+              when you publish (a <code className="font-mono text-blueprint-ink">blueprint.yaml</code>{" "}
+              in the folder pre-fills them); the graph file is not where they live. Step 05
+              fills in the rest of the graph file.
             </p>
           </>
         );
@@ -414,9 +415,9 @@ export function TutorialWizard() {
           <>
             <p className="text-[15px] leading-relaxed text-muted">
               It fetches pages from the seed sites and hands the text on untouched, deciding
-              nothing about what is worth keeping. Its output port carries the contract: a type
-              the engine checks, and a record shape the next node reads. Cards first, because the
-              graph pins them by id.
+              nothing about what is worth keeping. Its output port carries the contract: a data
+              type the validator checks, and a record shape the next node reads. Cards first,
+              because the graph pins them by id.
             </p>
             <FilePanel name={cardName("c1_id")}>
               <Line>
@@ -504,10 +505,10 @@ export function TutorialWizard() {
                 term={<span className="font-mono text-xs text-blueprint-ink">cannot</span>}
               >
                 <span className="text-sm leading-relaxed text-muted">
-                  Data types the engine refuses to let an edge carry into this node. It takes
-                  ontology terms and nothing else, and a sentence here is an error that stops the
-                  bundle resolving. Empty on this card; step 07 puts the one entry it takes on the
-                  extractor.
+                  Data types the validator refuses to let an edge carry into this node. It takes
+                  terms from the vocabulary and nothing else; a sentence here is an error that
+                  fails the whole folder. Empty on this card; step 07 puts the one entry it takes
+                  on the extractor.
                 </span>
               </KeyValueRow>
               <KeyValueRow
@@ -516,7 +517,7 @@ export function TutorialWizard() {
               >
                 <span className="text-sm leading-relaxed text-muted">
                   The promise in your own words. Nothing checks it, and it is addressed to whoever
-                  reads the card and to the agent instantiated from it.
+                  reads the card and to the agent that runs from it.
                 </span>
               </KeyValueRow>
             </KeyValueList>
@@ -527,8 +528,9 @@ export function TutorialWizard() {
         return (
           <>
             <p className="text-[15px] leading-relaxed text-muted">
-              It reads, so it is an agent. Every entry it writes carries the URL and the quoted
-              span it came from. It takes a second input: what the checker sent back.
+              A model reads the pages and decides what each one claims, so its type is agent.
+              Every entry it writes carries the URL and the quoted span it came from. It takes
+              a second input: what the checker sent back.
             </p>
             <FilePanel name={cardName("c2_id")}>
               <Line>
@@ -617,9 +619,9 @@ export function TutorialWizard() {
             </FilePanel>
             <p className="text-[15px] leading-relaxed text-muted">
               <code className="font-mono text-blueprint-ink">dependencies</code> names the cards
-              upstream of this one, by card id and not by node name. Leave it empty and every edge
-              into the node is a warning: the graph says data arrives and the card does not say it
-              expects any.
+              upstream of this one, by card id rather than by node name. Leave it empty and every
+              edge into the node is a warning: the graph says data arrives and the card does not
+              say it expects any.
             </p>
           </>
         );
@@ -639,7 +641,7 @@ export function TutorialWizard() {
                 <Key>name</Key>: <B id="c3_name" />
               </Line>
               <Line>
-                <Key>type</Key>: <B id="c3_type" /> <Note># it judges, so not an agent</Note>
+                <Key>type</Key>: <B id="c3_type" /> <Note># it judges, so: validation</Note>
               </Line>
               <Line>
                 <Key>action</Key>: <Given>&gt;-</Given>
@@ -750,7 +752,7 @@ export function TutorialWizard() {
         return (
           <>
             <p className="text-[15px] leading-relaxed text-muted">
-              Name each node once. The card refs and the edges follow it.
+              Name each node once. The card references and the edges below reuse the names.
             </p>
             <FilePanel name="topology.dot" meta="nodes &amp; edges">
               <Line>
@@ -838,7 +840,7 @@ export function TutorialWizard() {
                       Edge
                     </th>
                     <th scope="col" className="label w-[32%] px-4 py-2.5 font-normal">
-                      Carrier <span className="normal-case text-dim">engine-checked</span>
+                      Carrier <span className="normal-case text-dim">checked by the validator</span>
                     </th>
                     <th scope="col" className="label w-[40%] px-4 py-2.5 font-normal">
                       Shape <span className="normal-case text-dim">port description</span>
@@ -866,48 +868,53 @@ export function TutorialWizard() {
               </table>
             </div>
             <p className="text-[15px] leading-relaxed text-muted">
-              Two layers. The <em>carrier</em> is an ontology data type the engine holds every
-              edge to, and a mismatch is an error before anything runs. The <em>shape</em> is the
-              field list inside it, written on the port&rsquo;s{" "}
-              <code className="font-mono text-blueprint-ink">description</code>: the engine reads
-              it as prose, and your runner and the next node&rsquo;s{" "}
-              <code className="font-mono text-blueprint-ink">spec</code> hold to it.
+              Two layers. The <em>carrier</em> is a data type from the vocabulary that the
+              validator holds every edge to, and a mismatch is an error before anything runs.
+              The <em>shape</em> is the field list inside it, written on the port&rsquo;s{" "}
+              <code className="font-mono text-blueprint-ink">description</code>: the validator
+              reads it as prose, and your harness and the next node&rsquo;s{" "}
+              <code className="font-mono text-blueprint-ink">spec</code> are what hold to it.
             </p>
             <KeyValueList>
               <KeyValueRow keyWidth={168} term={<span className="font-mono text-xs text-blueprint-ink">out= / in=</span>}>
                 <span className="text-sm leading-relaxed text-muted">
-                  Which port leaves and which arrives. Without them the engine takes the one
-                  type-compatible pairing it can find, and reports an edge that has more than
-                  one as ambiguous instead of guessing. One of these four does:{" "}
+                  Which port leaves and which arrives. Without them the validator takes the one
+                  type-compatible pairing it can find, and reports an edge with more than one as
+                  ambiguous instead of guessing. One of the four edges here has more than one:{" "}
                   <M id="n3" /> → <M id="n4" /> could carry either of the checker&rsquo;s two
                   outputs, because <code className="font-mono text-blueprint-ink">json</code> fits
-                  a <code className="font-mono text-blueprint-ink">structured</code> port. Step
-                  07&rsquo;s rubric edge is the second.
+                  a <code className="font-mono text-blueprint-ink">structured</code> port, so that
+                  edge names its ports. Once step 07 wires the rubric into the checker, that edge is
+                  the second one that needs them.
                 </span>
               </KeyValueRow>
               <KeyValueRow keyWidth={168} term={<span className="font-mono text-xs text-blueprint-ink">style=dashed</span>}>
                 <span className="text-sm leading-relaxed text-muted">
-                  The failure lane, drawn apart from the happy path.
+                  The failure lane, drawn apart from the path a successful run takes.
                 </span>
               </KeyValueRow>
               <KeyValueRow keyWidth={168} term={<span className="font-mono text-xs text-blueprint-ink">the return edge</span>}>
                 <span className="text-sm leading-relaxed text-muted">
                   It lands on the extractor, so only the checker sends an entry forward and the
-                  extractor never blesses its own work. It also means the checker&rsquo;s output
-                  reaches the node whose work it judges, which the analyser reports once a rubric
-                  exists: step 07 is where that is read.
+                  extractor never blesses its own work. It also means the checker&rsquo;s verdicts
+                  flow back to the node whose work it judges. Once a rubric exists (step 07), the
+                  validator reports that path as criteria relayed through a judge: it stopped at
+                  the checker and cannot see further. What keeps the criteria out of the
+                  extractor is the shape of the checker&rsquo;s unsupported port, a design choice
+                  nothing on this site verifies.
                 </span>
               </KeyValueRow>
               <KeyValueRow keyWidth={168} term={<span className="font-mono text-xs text-blueprint-ink">the cap</span>}>
                 <span className="text-sm leading-relaxed text-muted">
                   A cycle with no{" "}
                   <code className="font-mono text-blueprint-ink">params.max_iterations</code> on
-                  any member earns <code className="font-mono text-blueprint-ink">unbounded-loop</code>{" "}
-                  on all of them, at a cost of 1.5. On this blueprint that takes the security
-                  reading from 3 to 2: it is not 4 to begin with, because the crawler and the
-                  checker both reach the network and already spend 1.0 on{" "}
-                  <code className="font-mono text-blueprint-ink">unvalidated-external-access</code>.
-                  Step 04 asks for the number on the checker&rsquo;s card.
+                  any member marks every node in it{" "}
+                  <code className="font-mono text-blueprint-ink">unbounded-loop</code>, which
+                  subtracts 1.5 from the computed security score. This blueprint already scores 3
+                  rather than 4, because the crawler and the checker both reach the network
+                  (<code className="font-mono text-blueprint-ink">unvalidated-external-access</code>,
+                  1.0). Left uncapped, it scores 2. Step 04 asks for the number on the
+                  checker&rsquo;s card.
                 </span>
               </KeyValueRow>
             </KeyValueList>
@@ -959,11 +966,11 @@ export function TutorialWizard() {
               </Line>
             </FilePanel>
             <p className="text-sm leading-relaxed text-dim">
-              Findings first, then the pipeline your own runner takes. Neither is on npm, and a
-              checkout gives you no{" "}
-              <code className="font-mono text-blueprint-ink">darkprint</code> on your path until
-              you link one:{" "}
-              <Link href="/capabilities#cli">What you can do</Link> says what to run instead.
+              The first prints the validator&rsquo;s findings; the second writes the compiled graph
+              your harness takes. The{" "}
+              <code className="font-mono text-blueprint-ink">darkprint</code> CLI is not published to
+              npm yet, and a checkout of the repository puts no darkprint on your path until you link
+              it. <Link href="/capabilities#cli">What you can do</Link> lists the commands that work today.
             </p>
           </>
         );
@@ -1024,9 +1031,9 @@ export function TutorialWizard() {
               <KeyValueRow keyWidth={240} term={<span className="font-mono text-xs text-fg">cards/<M id="c2_id" /></span>}>
                 <span className="text-sm leading-relaxed text-muted">
                   + <code className="font-mono text-blueprint-ink">cannot: [acceptance-criteria]</code>.
-                  This is a rule about an edge, not a way to silence a marker: wire the rubric into
-                  the extractor with this line in place and the resolver refuses the bundle
-                  outright, as{" "}
+                  This forbids an edge; it does not hide a risk marker. Wire the rubric into the
+                  extractor with this line in place and the validator refuses the whole folder,
+                  reporting{" "}
                   <code className="font-mono text-blueprint-ink">bundle/prohibition-violated</code>.
                 </span>
               </KeyValueRow>
@@ -1091,10 +1098,19 @@ export function TutorialWizard() {
               </Line>
             </FilePanel>
             <p className="text-[15px] leading-relaxed text-muted">
-              This file rides along in the folder and DarkPrint never opens it. The bundle reader
-              takes the top-level files, <code className="font-mono text-blueprint-ink">cards/</code>{" "}
-              and a local vocabulary, so nothing here validates a scenario or grades a run. It sits
-              beside the graph it measures because that is where somebody will look for it.
+              This file travels in the folder and DarkPrint never opens it: the validator reads
+              topology.dot, the cards under{" "}
+              <code className="font-mono text-blueprint-ink">cards/</code> and a local vocabulary
+              file if there is one, so nothing on this site checks a scenario or grades a run. It
+              sits beside the graph it measures because that is where somebody will look for it.
+            </p>
+            <p className="text-sm leading-relaxed text-muted">
+              The last command needs two things this tutorial has not given you: the blueprint
+              published under your handle (<Link href="/upload">publish the folder</Link> first
+              and put that handle in{" "}
+              <code className="font-mono text-blueprint-ink">--target</code>), and a way to
+              authenticate. <Link href="/capabilities#cli">What you can do</Link> says how{" "}
+              <code className="font-mono text-blueprint-ink">report</code> signs in.
             </p>
             <FilePanel name="the three commands">
               <Line>
@@ -1104,7 +1120,7 @@ export function TutorialWizard() {
               </Line>
               <Line>
                 <Note>
-                  {"<your runner> desk.dot --scenario evals/scenario.yaml --out ./run   # not DarkPrint's job"}
+                  {"<your harness> desk.dot --scenario evals/scenario.yaml --out ./run   # not DarkPrint's job"}
                 </Note>
               </Line>
               <Line>
@@ -1132,10 +1148,8 @@ export function TutorialWizard() {
             {message === "" ? null : (
               <p className="text-sm leading-relaxed text-amber">{message}</p>
             )}
-            {/* The same block step 06 shows. Step 05 tells a reader the return edge earns a
-                finding "once a rubric exists: step 07 is where that is read", and step 07
-                computed it and rendered nothing, so the one diagnostic the page sends them
-                here for was thrown away. */}
+            {/* The same block step 06 shows: step 05 sends a reader here to read the finding
+                the rubric edge produces, so it has to be rendered here too. */}
             <Findings findings={findings} />
           </>
         );
@@ -1147,25 +1161,23 @@ export function TutorialWizard() {
 }
 
 /**
- * What `lib/core` says about the folder that was just built.
- *
- * The same engine `/upload` runs, over the same bytes, in this tab. Shown under both
- * download buttons: step 06's folder earns one finding and step 07's earns a different one,
- * and step 05 sends a reader to step 07 specifically to read the second.
+ * What the validator says about the folder that was just built, shown under both download
+ * buttons: step 06's folder produces one finding and step 07's a different one, and step
+ * 05 sends a reader to step 07 specifically to read the second.
  */
 function Findings({ findings }: { findings: readonly Diagnostic[] | undefined }) {
   if (findings === undefined) return null;
   return (
     <div className="flex flex-col gap-3">
-      <span className="label">What the engine says about it</span>
+      <span className="label">What the validator says about it</span>
       {findings.length === 0 ? (
         <p className="text-sm leading-relaxed text-muted">No findings.</p>
       ) : (
         <DiagnosticList diagnostics={findings} />
       )}
       <p className="text-sm leading-relaxed text-dim">
-        Run in this tab by the same <code className="font-mono">lib/core</code> the CLI and{" "}
-        <Link href="/upload">/upload</Link> run, over the bytes you just downloaded.
+        Checked in this tab by the same validator the CLI and the{" "}
+        <Link href="/upload">Publish page</Link> use, over the exact files you just downloaded.
       </p>
     </div>
   );
