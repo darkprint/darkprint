@@ -2,11 +2,17 @@ import type { NextConfig } from "next";
 
 /**
  * Files the sentence encoder reads from disk at runtime, which the build's import tracer
- * cannot see: the vendored MiniLM weights under `models/` and the Linux onnxruntime binary
- * with the shared library it dlopens. Without them a Vercel function loads no encoder and
- * search silently degrades to lexical-only.
+ * cannot see: the vendored MiniLM weights under `models/` and the onnxruntime binary with
+ * the shared library it dlopens. Vercel runs this project's functions on linux/arm64 (the
+ * builder writes `"architecture": "arm64"` into every function), so that is the one platform
+ * traced; the others are excluded below so no function carries a binary it cannot load.
  */
-const ENCODER_FILES = ["./models/**", "./node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**"];
+const ENCODER_FILES = ["./models/**", "./node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**"];
+const FOREIGN_BINARIES = [
+  "./node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**",
+  "./node_modules/onnxruntime-node/bin/napi-v6/darwin/**",
+  "./node_modules/onnxruntime-node/bin/napi-v6/win32/**",
+];
 
 /**
  * Sent on every response. No Content-Security-Policy: the app inlines styles and scripts
@@ -33,6 +39,10 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/*": ENCODER_FILES,
     "/**": ENCODER_FILES,
+  },
+  outputFileTracingExcludes: {
+    "/*": FOREIGN_BINARIES,
+    "/**": FOREIGN_BINARIES,
   },
 
   async headers() {
