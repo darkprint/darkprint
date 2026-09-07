@@ -1,5 +1,5 @@
 /* ============================================================
-   T220 AC1, second axis — nothing in the database moves
+   No operation writes, measured at the database
 
    `purity.test.ts` reads the module's imports. That is the check the
    block asks for by name, and it has one blind spot it cannot close:
@@ -23,7 +23,7 @@
    the reason the pair is enough is that `serveCard` and `serveFile`
    are the only writers a read-shaped composition plausibly reaches.
 
-   ── why the four verbs are called with arguments that SUCCEED ──
+   ── why the verbs are called with arguments that SUCCEED ──
    A verb that refused would write nothing whatever it composes, so
    a sweep over refusals is a green about nothing. Every call below
    names a public bundle, a real digest and a real card ref, and the
@@ -72,8 +72,8 @@ afterAll(async () => {
   await dropScratchDatabases();
 });
 
-describe("T220 AC1 — no operation writes, measured at the database", () => {
-  it("leaves every table untouched across all four verbs", async () => {
+describe("no operation writes, measured at the database", () => {
+  it("leaves every table untouched across all six verbs", async () => {
     const w = await world();
     const ref = refsOf(w.twice)[0]!;
 
@@ -84,13 +84,20 @@ describe("T220 AC1 — no operation writes, measured at the database", () => {
     expect(before.counts.bundle).toBeGreaterThan(0);
     expect(before.counts.card_version).toBeGreaterThan(0);
 
-    const mcpSearch = await verb("mcpSearch");
+    const findBlueprints = await verb("mcpFindBlueprints");
+    const findCards = await verb("mcpFindCards");
+    const getBlueprint = await verb("mcpGetBlueprint");
     const readCard = await verb("mcpReadCard");
     const provenance = await verb("mcpProvenance");
     const fetchRelease = await verb("mcpFetchRelease");
 
     const calls = [
-      ["mcpSearch", () => mcpSearch(w.scratch.db, anonymous, "") as Promise<unknown>],
+      ["mcpFindBlueprints", () => findBlueprints(w.scratch.db, anonymous, "review") as Promise<unknown>],
+      ["mcpFindCards", () => findCards(w.scratch.db, anonymous, "review") as Promise<unknown>],
+      [
+        "mcpGetBlueprint",
+        () => getBlueprint(w.scratch.db, anonymous, w.registry.handle, w.twice) as Promise<unknown>,
+      ],
       ["mcpReadCard", () => readCard(w.scratch.db, anonymous, ref) as Promise<unknown>],
       [
         "mcpProvenance",
@@ -118,8 +125,8 @@ describe("T220 AC1 — no operation writes, measured at the database", () => {
        composes, so an unchanged database after four refusals is a green about nothing. */
     expect(
       refused,
-      "these verbs refused, so the snapshot comparison below would measure four refusals " +
-        "rather than four reads.",
+      "these verbs refused, so the snapshot comparison below would measure refusals " +
+        "rather than reads.",
     ).toEqual([]);
 
     const after = await snapshot(w.scratch.query);
@@ -129,7 +136,7 @@ describe("T220 AC1 — no operation writes, measured at the database", () => {
     );
     expect(
       moved.map((t) => `${t}: ${before.counts[t]} -> ${after.counts[t]}`),
-      "AC1: no operation writes. `recordDownload` bumps `target`, and `serveCard` and " +
+      "No operation writes. `recordDownload` bumps `target`, and `serveCard` and " +
         "`serveFile` both call it — they are the obvious composition for `read a card` and " +
         "`fetch a release`, and `exportRelease` is the read-only verb.",
     ).toEqual([]);

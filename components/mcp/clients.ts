@@ -1,14 +1,21 @@
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-87) (cited at line 16): n/a — MCP stdio server, npx -y darkprint mcp
+// TODO(SEAM-87): the MCP connection, served remotely at /api/mcp
+
 /* ============================================================
-   What each MCP client's config looks like, once `darkprint` is on npm to run it. T280
-   gave the registry a server to point at — `/api/mcp/**`, and `packages/mcp` builds the
-   same stdio server from a checkout — so every snippet below is real configuration for a
-   real endpoint now. What still does not run is the command itself: `npx -y darkprint mcp`
-   answers a 404 from npm, because the package has never been published there. See doc 2
-   §0.4 — `InstallTabs.tsx` and `app/mcp/page.tsx` both say so, next to every one of these.
+   What each MCP client's configuration looks like for the remote
+   server. Every entry points at the same HTTP endpoint, so nothing
+   is installed and nothing is kept up to date on the reader's
+   machine. Each shape was checked against the client's own
+   documentation; the docs link beside it is where to re-check.
+   The host is spelled once, imported from the module that already
+   names it for the skill archive.
    ============================================================ */
+
+import { SKILL_SITE_ORIGIN } from "@/lib/skill";
+
+/** The one address every client below points at. */
+export const MCP_ENDPOINT_URL = `${SKILL_SITE_ORIGIN}/api/mcp`;
 
 export interface McpClientSetup {
   id: string;
@@ -22,28 +29,23 @@ export const MCP_CLIENTS: readonly McpClientSetup[] = [
   {
     id: "claude-code",
     label: "Claude Code",
-    snippet: "claude mcp add darkprint -- npx -y darkprint mcp",
-    note: "Adds the server from the terminal for Claude Code.",
+    snippet: `claude mcp add --transport http darkprint ${MCP_ENDPOINT_URL}`,
+    note: "One command in the terminal. Claude Code connects over HTTP and installs nothing.",
+    docsHref: "https://code.claude.com/docs/en/mcp",
   },
   {
     id: "codex",
     label: "Codex",
-    snippet: "codex mcp add darkprint -- npx -y darkprint mcp",
-    note: "Codex CLI, the IDE extension, and the ChatGPT desktop app share this host configuration.",
+    snippet: `codex mcp add darkprint --url ${MCP_ENDPOINT_URL}`,
+    note: "The same entry serves Codex CLI, the IDE extension and the desktop app; they read one configuration.",
     docsHref: "https://developers.openai.com/codex/mcp",
   },
   {
     id: "claude-desktop",
     label: "Claude Desktop",
-    snippet: `{
-  "mcpServers": {
-    "darkprint": {
-      "command": "npx",
-      "args": ["-y", "darkprint", "mcp"]
-    }
-  }
-}`,
-    note: "Add this server entry to Claude Desktop's MCP configuration.",
+    snippet: MCP_ENDPOINT_URL,
+    note: "On claude.ai open Customize, then Connectors, click + and choose Add custom connector, then paste this address. The connector is available in Claude Desktop as well; claude_desktop_config.json is for local servers only.",
+    docsHref: "https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp",
   },
   {
     id: "cursor",
@@ -51,12 +53,12 @@ export const MCP_CLIENTS: readonly McpClientSetup[] = [
     snippet: `{
   "mcpServers": {
     "darkprint": {
-      "command": "npx",
-      "args": ["-y", "darkprint", "mcp"]
+      "url": "${MCP_ENDPOINT_URL}"
     }
   }
 }`,
-    note: "Use this entry in Cursor's MCP configuration.",
+    note: "Put this in ~/.cursor/mcp.json for every project, or in .cursor/mcp.json for one.",
+    docsHref: "https://cursor.com/docs/context/mcp",
   },
   {
     id: "vscode",
@@ -64,12 +66,13 @@ export const MCP_CLIENTS: readonly McpClientSetup[] = [
     snippet: `{
   "servers": {
     "darkprint": {
-      "command": "npx",
-      "args": ["-y", "darkprint", "mcp"]
+      "type": "http",
+      "url": "${MCP_ENDPOINT_URL}"
     }
   }
 }`,
-    note: "Use this entry in VS Code's MCP server configuration.",
+    note: "Put this in .vscode/mcp.json, or run MCP: Add Server from the command palette and choose HTTP.",
+    docsHref: "https://code.visualstudio.com/docs/copilot/chat/mcp-servers",
   },
   {
     id: "gemini-cli",
@@ -77,12 +80,11 @@ export const MCP_CLIENTS: readonly McpClientSetup[] = [
     snippet: `{
   "mcpServers": {
     "darkprint": {
-      "command": "npx",
-      "args": ["-y", "darkprint", "mcp"]
+      "httpUrl": "${MCP_ENDPOINT_URL}"
     }
   }
 }`,
-    note: "Add this entry to ~/.gemini/settings.json; Gemini Code Assist agent mode reads the same shape.",
-    docsHref: "https://developers.google.com/gemini-code-assist/docs/use-agentic-chat-pair-programmer",
+    note: "Add this to ~/.gemini/settings.json. gemini mcp add --transport http writes the same entry.",
+    docsHref: "https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md",
   },
 ] as const;

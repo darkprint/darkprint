@@ -1,25 +1,15 @@
 /* ============================================================
-   darkprint mcp — JSON-RPC 2.0 over stdio, with no dependencies
-   D-220-08 ruled zero dependencies (G.3 option b), and the reason
-   is not asceticism: `@modelcontextprotocol/sdk` is present in
-   this repository's `node_modules` ONLY as a transitive of
-   `shadcn`, a devDependency. Nothing declares it. Building a
-   package meant for `npx` on an undeclared transitive dev
-   dependency is a package that breaks the first time the tool
-   above it drops the edge, and declaring it properly is a
-   `package.json` change that is the orchestrator's.
+   darkprint mcp: JSON-RPC 2.0, with no dependencies
+   The envelope rules live here once. `serve` frames them over
+   stdio (one message per line, `\n` terminated) and the remote
+   endpoint calls `answer` directly for each message in a POST body,
+   so both transports decide requests, notifications and malformed
+   input the same way. The package stays dependency-free because it
+   is meant for `npx`, and the official SDK is present in this tree
+   only as a transitive of a dev dependency.
 
-   MCP's stdio transport is newline-delimited JSON-RPC 2.0: one
-   message per line, no embedded newlines, `\n` terminated. That
-   is the whole framing, which is why hand-writing it is a hundred
-   lines rather than a project.
-
-   ── stdout is the WIRE ──
-   Nothing may write to it but this file. A stray `console.log`
-   anywhere in the package emits a line the client tries to parse
-   as a message and the session dies with a parse error naming
-   nothing. Diagnostics go to stderr, which is where every MCP host
-   already collects them.
+   stdout is the wire when serving stdio: nothing may write to it
+   but this file. Diagnostics go to stderr.
    ============================================================ */
 
 /** A request carries an `id`; a notification is the same shape without one. */
@@ -52,19 +42,55 @@ export class RpcError extends Error {
  */
 export type RpcHandler = (method: string, params: unknown) => Promise<unknown>;
 
+/** The response to a malformed body: JSON-RPC's own prescribed answer, with a null id. */
+export function parseErrorResponse(): Record<string, unknown> {
+  return { jsonrpc: "2.0", id: null, error: { code: RPC_PARSE_ERROR, message: "Parse error." } };
+}
+
+/**
+ * The response one already-parsed message earns, or `undefined` when it earns none.
+ *
+ * A notification gets no response, even a successful one and even a failed one. A request
+ * whose `method` is not a string is an invalid request; anything the handler throws that is
+ * not an `RpcError` is reported as an internal error with the message and nothing else.
+ */
+export async function answer(
+  message: unknown,
+  handle: RpcHandler,
+): Promise<Record<string, unknown> | undefined> {
+  const parsed: RpcMessage =
+    typeof message === "object" && message !== null && !Array.isArray(message)
+      ? (message as RpcMessage)
+      : {};
+  const id = parsed.id;
+  const isRequest = id !== undefined && id !== null;
+
+  if (typeof parsed.method !== "string") {
+    if (!isRequest) return undefined;
+    return {
+      jsonrpc: "2.0",
+      id,
+      error: { code: RPC_INVALID_REQUEST, message: "A request must carry a string `method`." },
+    };
+  }
+
+  try {
+    const result = await handle(parsed.method, parsed.params);
+    return isRequest ? { jsonrpc: "2.0", id, result: result ?? {} } : undefined;
+  } catch (err) {
+    if (!isRequest) return undefined;
+    const code = err instanceof RpcError ? err.code : RPC_INTERNAL_ERROR;
+    const text = err instanceof Error ? err.message : "Internal error.";
+    return { jsonrpc: "2.0", id, error: { code, message: text } };
+  }
+}
+
 /**
  * Reads newline-delimited JSON-RPC from `input` and writes answers to `output`.
  *
  * Resolves when the input ends, which is how an MCP host shuts a server down: it closes the
- * pipe. There is no other exit path and no signal handling, because the process has nothing
- * to flush — every answer is written before the next line is read.
- *
- * ── Malformed input answers and does not throw ──
- *
- * A line that is not JSON gets a `-32700` with a null id, which is JSON-RPC's own prescribed
- * answer for exactly this case, and the loop continues. A server that exits on one bad line
- * takes the agent's whole session with it, and the line it choked on is the one thing it
- * then cannot report.
+ * pipe. A line that is not JSON gets a `-32700` with a null id and the loop continues,
+ * because a server that exits on one bad line takes the agent's whole session with it.
  */
 export async function serve(
   input: NodeJS.ReadableStream,
@@ -78,8 +104,7 @@ export async function serve(
     buffer += chunk as string;
 
     /* Everything up to the last newline is complete messages; the tail is a partial line and
-       stays in the buffer. A chunk boundary can land anywhere, so treating a chunk as a
-       message is the bug this loop exists to not have. */
+       stays in the buffer, because a chunk boundary can land anywhere. */
     let newline = buffer.indexOf("\n");
     while (newline !== -1) {
       const line = buffer.slice(0, newline).trim();
@@ -99,46 +124,18 @@ async function dispatch(
   output: NodeJS.WritableStream,
   handle: RpcHandler,
 ): Promise<void> {
-  let message: RpcMessage;
+  let message: unknown;
   try {
-    message = JSON.parse(line) as RpcMessage;
+    message = JSON.parse(line);
   } catch {
-    write(output, { jsonrpc: "2.0", id: null, error: { code: RPC_PARSE_ERROR, message: "Parse error." } });
+    write(output, parseErrorResponse());
     return;
   }
-
-  const id = message.id;
-  const isRequest = id !== undefined && id !== null;
-
-  if (typeof message.method !== "string") {
-    if (isRequest) {
-      write(output, {
-        jsonrpc: "2.0",
-        id,
-        error: { code: RPC_INVALID_REQUEST, message: "A request must carry a string `method`." },
-      });
-    }
-    return;
-  }
-
-  try {
-    const result = await handle(message.method, message.params);
-    /* A notification gets NO response, even a successful one. */
-    if (isRequest) write(output, { jsonrpc: "2.0", id, result: result ?? {} });
-  } catch (err) {
-    if (!isRequest) return;
-    const code = err instanceof RpcError ? err.code : RPC_INTERNAL_ERROR;
-    const text = err instanceof Error ? err.message : "Internal error.";
-    write(output, { jsonrpc: "2.0", id, error: { code, message: text } });
-  }
+  const response = await answer(message, handle);
+  if (response !== undefined) write(output, response);
 }
 
-/**
- * One message, one line.
- *
- * `JSON.stringify` never emits a raw newline inside a string — it escapes them as `\n` — so
- * the framing holds for any payload, including a card's YAML.
- */
+/** One message, one line. `JSON.stringify` escapes raw newlines, so the framing holds for any payload. */
 function write(output: NodeJS.WritableStream, message: unknown): void {
   output.write(`${JSON.stringify(message)}\n`);
 }

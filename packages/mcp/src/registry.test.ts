@@ -4,10 +4,9 @@
    `request` was GET-only until `packages/cli`'s `report` verb
    needed to post a run report. The alternative was a second client
    in the CLI with a second base-URL default, a second env read and
-   a second copy of the 429 rendering, which D-270-05(2) names as
-   the thing not to do ("one env contract, one base-URL default, one
-   429 rendering"). So this file holds the two properties that
-   change makes load-bearing:
+   a second copy of the 429 rendering; this package holds one env
+   contract, one base-URL default and one 429 rendering. So this file
+   holds the two properties that change makes load-bearing:
 
    **The default is unmoved.** Every call site in this repository
    passes no `init`, and each one has to keep sending exactly the
@@ -22,7 +21,7 @@
    noticing.
 
    Nothing here opens a socket: `fetch` is injected, which is the
-   member's whole reason for existing (D-270-05(2)).
+   member's whole reason for existing.
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
@@ -143,7 +142,7 @@ describe("the refusals, unchanged by the widening", () => {
 describe("the env contract, stated once", () => {
   it("defaults the base URL and reads the key, with no session of its own", () => {
     const options = optionsFromEnv({} as NodeJS.ProcessEnv);
-    expect(options.baseUrl).toBe("https://darkprint.io");
+    expect(options.baseUrl).toBe("https://www.darkprint.io");
     expect(options.apiKey).toBeUndefined();
     /* A session is NOT part of this shape and must not become part of it: this module is
        the read client an MCP server runs, and it has no business holding a credential that

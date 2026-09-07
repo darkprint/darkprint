@@ -96,8 +96,8 @@ export const CLI_VERBS: readonly CliVerb[] = [
     name: "report",
     args: "report <run-dir> --target <owner>/<slug> --cost <units>",
     does:
-      "Sends a finished Attractor run to the registry, printing what was claimed on stdout and " +
-      "on stderr which manifest key the start time came from and how the nodes ended.",
+      "Sends a finished Attractor run to the registry. Prints what was claimed on stdout; on " +
+      "stderr, which manifest key the start time came from and how each node ended.",
     dispatchedBy: "packages/cli/src/run.ts",
   },
   {
@@ -108,8 +108,8 @@ export const CLI_VERBS: readonly CliVerb[] = [
     name: "mcp",
     args: "mcp",
     does:
-      "Serves the registry over MCP on stdio, which is the command the six client " +
-      "configurations on the site already run.",
+      "Serves the registry over MCP on stdio, for a client that cannot reach the remote " +
+      "server at /api/mcp.",
     hint: "serve the registry over MCP (stdio)",
     dispatchedBy: "packages/mcp/src/cli.ts",
   },
@@ -134,18 +134,17 @@ export interface CliEnvVar {
 /**
  * The three variables the CLI reads, in the order the help prints them.
  *
- * The wording is the help block's, unchanged: `DARKPRINT_SESSION`'s sentence carries D-270-01
- * C4, and the moment a reader needs it is the moment they try to make `report` work with an
- * API key.
+ * `/capabilities` renders each sentence verbatim, so every one has to describe what the
+ * routes accept today rather than what the CLI was first written against.
  */
 export const CLI_ENV: readonly CliEnvVar[] = [
-  { name: "DARKPRINT_URL", does: "registry base URL (default https://darkprint.io)" },
+  { name: "DARKPRINT_URL", does: "registry base URL (default https://www.darkprint.io)" },
   { name: "DARKPRINT_API_KEY", does: "an API key, which raises the rate limit ceiling" },
   {
     name: "DARKPRINT_SESSION",
     does:
-      "a signed-in session cookie. report is the one verb that writes, and the route that " +
-      "takes a run report reads a session: no write route accepts an API key.",
+      "a signed-in session cookie. report is the only verb that writes, and it sends this " +
+      "cookie. The run route also takes a write-scoped API key, which report does not send.",
   },
 ];
 

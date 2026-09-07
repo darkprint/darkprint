@@ -3,9 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SurfaceTabs, type Surface } from "@/components/capabilities/SurfaceTabs";
-import { MCP_CLIENTS } from "@/components/mcp/clients";
+import { MCP_CLIENTS, MCP_ENDPOINT_URL } from "@/components/mcp/clients";
 import { QUESTIONS } from "@/components/skill/SkillSetup";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { KeyValueList, KeyValueRow } from "@/components/ui/KeyValueList";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -13,49 +12,31 @@ import { StatusPill, type CapabilityStatus } from "@/components/ui/StatusPill";
 import { BUNDLE_CARDS_DIR, BUNDLE_README, TOPOLOGY_DOT } from "@/lib/content/bundle-export";
 import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
 import { CLI_ENV, CLI_INVOCATION, CLI_VERBS, NPX_INVOCATION } from "@/packages/cli/src/index";
-import { TOOLS } from "@/packages/mcp/src/tools";
+import { TOOL_DEFINITIONS } from "@/packages/mcp/src/definitions";
 
 /* ============================================================
-   /capabilities — every operation, read off the modules that define it
+   /capabilities: every operation, read off the modules that define it
 
-   ── why this page imports two packages ──
-   It is the first file under `app/` to import from `packages/**`, and that edge is the
-   whole design. The three surfaces this page indexes are defined in code — `CLI_VERBS`
-   and `CLI_ENV` in the CLI's dispatcher, `TOOLS` in the MCP server, `MCP_CLIENTS` beside
+   The three surfaces this page indexes are defined in code: `CLI_VERBS` and `CLI_ENV` in
+   the CLI's dispatcher, `TOOL_DEFINITIONS` in the MCP package, `MCP_CLIENTS` beside
    `/mcp`'s own tabs, `SKILL_INSTALL_COMMAND` in `lib/skill.ts`, `QUESTIONS` in
-   `SkillSetup` — and a reference page that retyped any of them would be a fourth copy of
-   a command a reader pastes into a shell, going stale in silence. `lib/skill.ts:14` names
-   that failure exactly: "a wrong command produces an error in somebody else's shell, never
-   a red test here." So no verb, flag, tool name, client snippet or environment variable is
-   written in this file. Everything is `.map`ped.
+   `SkillSetup`. A reference page that retyped any of them would be a fourth copy of a
+   command a reader pastes into a shell, going stale in silence, so no verb, flag, tool
+   name, client snippet or environment variable is written in this file. Everything is
+   mapped, and `app/capabilities/honesty.test.ts` holds the page from both ends.
 
-   This is a SERVER component and must stay one. `TOOLS` reaches `packages/cli/src/index`,
-   which reaches `lib/server/engine` and `node:fs`; none of that may cross into a browser
-   bundle. The one interactive part, the tab bar, is a client island that receives the
-   three already-rendered panels as children.
+   A server component, and it must stay one: the CLI barrel reaches `lib/server/engine` and
+   `node:fs`. The tab bar is a client island that receives the three rendered panels.
 
-   ── what IS written here, and why it is a small array ──
-   The status of each row. `live`, `checkout`, `not built` and `by design` are editorial:
-   no module carries a field saying whether the thing it defines works today, and inventing
-   one would put a claim about the world into a data structure that describes an interface.
-   So `INTENTS` below is the page's own, every row carries the decision or the source line
-   its status rests on, and `app/capabilities/honesty.test.ts` holds the strings that are
-   NOT editorial against the modules they come from.
-
-   ── the legend has four words, and one of them is not amber ──
-   `app/globals.css` reserves `--color-amber` for "does not exist yet" and names its two
-   contracted consumers. `by design` is the opposite claim, so it is muted. `StatusPill`
-   carries that argument at the tone table.
+   The status of each row is editorial: no module carries a field saying whether the thing
+   it defines works today. Each row carries the reason its status rests on, for whoever
+   changes it.
    ============================================================ */
 
 export const metadata: Metadata = {
   title: "What you can do",
-  /* The three surfaces and the one limit that applies to two of them, because a shared
-     link's preview is where a reader decides whether the page is worth opening and the npm
-     404 is the thing most likely to surprise them once they are here. `/mcp`'s description
-     makes the same trade for the same reason. */
   description:
-    "Every operation DarkPrint offers, from three places: the command line, the MCP server, and the DarkPrint blueprint-writing skill. Four registry reads are live over HTTP. The npm package is not published, so every CLI verb runs from a checkout.",
+    "Every operation DarkPrint offers, from the command line, from a remote MCP server your coding agent connects to with nothing to install, and from the DarkPrint blueprint-writing skill. The CLI is not on npm yet.",
 };
 
 /**
@@ -65,11 +46,6 @@ export const metadata: Metadata = {
  * before cloning one, and both come before cutting a version of your own. `how` is prose
  * when the answer is not a command, because a row that prints a command a reader cannot
  * run is worse than a row that says so in words.
- *
- * Every command in this table goes through `<Verb>` or names an MCP tool, so none of them
- * is a string typed here. `honesty.test.ts` refuses to find a command literal in this
- * file's source at all, which is the half of that claim a render cannot make: a hand-typed
- * copy that happens to match today passes any assertion about the markup.
  */
 const INTENTS: readonly {
   readonly intent: string;
@@ -80,37 +56,45 @@ const INTENTS: readonly {
 }[] = [
   {
     intent: "Find one for a task",
-    how: <code className="font-mono text-blueprint-ink">search {"{ task: \"…\" }​"}</code>,
+    how: <code className="font-mono text-blueprint-ink">find_blueprints {"{ task: \"…\" }"}</code>,
     status: "live",
-    because:
-      "`app/api/mcp/search/route.ts` answers, and `packages/mcp/src/tools.ts` calls it. " +
-      "Live over HTTP whatever the npm package does.",
+    because: "`app/api/mcp/blueprints/find/route.ts` answers, over HTTP and over the remote MCP endpoint.",
   },
   {
-    intent: "Read a card before pinning",
+    intent: "Find a node for a task",
+    how: <code className="font-mono text-blueprint-ink">find_cards {"{ task: \"…\" }"}</code>,
+    status: "live",
+    because: "`app/api/mcp/cards/find/route.ts`, same as above.",
+  },
+  {
+    intent: "Read a card before you depend on it",
     how: <code className="font-mono text-blueprint-ink">read_card {"{ ref: \"…@1.0.0\" }"}</code>,
     status: "live",
     because: "`app/api/mcp/cards/[...ref]/route.ts`, same as above.",
   },
   {
-    intent: "Pin bytes that will not move",
+    intent: "Fetch an exact release by its digest",
     how: (
       <span>
         <code className="font-mono text-blueprint-ink">inspect_provenance</code> for the digest,
-        then <code className="font-mono text-blueprint-ink">fetch_release</code> at it
+        then <code className="font-mono text-blueprint-ink">get_blueprint</code> at it
+      </span>
+    ),
+    status: "live",
+    because: "Both are MCP tools over live routes; `get_blueprint` returns every file in one answer.",
+  },
+  {
+    intent: "Get the files on disk",
+    how: (
+      <span>
+        <code className="font-mono text-blueprint-ink">get_blueprint</code> from your agent, or{" "}
+        <Verb name="clone" /> from a checkout
       </span>
     ),
     status: "live",
     because:
-      "Both are MCP tools over live routes. This row said `clone --digest` in the handoff, " +
-      "which straddles two surfaces with two statuses: `clone` is a CLI verb and every " +
-      "other CLI row on this page reads `checkout`.",
-  },
-  {
-    intent: "Get the files on disk",
-    how: <Verb name="clone" />,
-    status: "checkout",
-    because: "A CLI verb, and the package is not on npm.",
+      "The MCP tool hands an agent every file of a release today; the CLI verb needs a build " +
+      "from the private repository until the package is on npm.",
   },
   {
     intent: "Check a folder is valid",
@@ -128,7 +112,7 @@ const INTENTS: readonly {
     status: "checkout",
     because:
       "The site executes nothing, which `/upload` and `/mcp` both state in the open. The " +
-      "verb that gets you a runnable file is a CLI verb.",
+      "verb that gets you a runnable file is a CLI verb; `export_pipeline` returns the same file over MCP.",
   },
   {
     intent: "Bring a foreign pipeline in",
@@ -137,11 +121,6 @@ const INTENTS: readonly {
     because: "A CLI verb.",
   },
   {
-    /* Two rows and not one. They were one, reading "the DarkPrint skill interviews you, or
-       fill in the blanks" under a single `not built`, and a row with two answers can only
-       carry the status of the worse of them: a reader scanning the column saw amber beside
-       the route that ships in this very change. `because` is not rendered, so an argument
-       written there settles nothing a reader can see. */
     intent: "Write one from nothing",
     how: (
       <span className="text-muted">
@@ -154,16 +133,19 @@ const INTENTS: readonly {
       "checked in the tab.",
   },
   {
-    intent: "Be interviewed into one",
-    how: <span className="text-muted">the DarkPrint skill asks, and writes the folder</span>,
-    status: "not built",
+    intent: "Have your agent write one",
+    how: (
+      <span className="text-muted">
+        install the DarkPrint skill from this site; it interviews you and writes the folder
+      </span>
+    ),
+    status: "live",
     because:
-      "`lib/skill.ts` forbids the bare phrase `the skill`, hence the qualifier. The status " +
-      "is about reachability: the repository the install command clones answers 404 to " +
-      "anyone but its owner, so the command fails for every reader. ARCHITECTURE §11.0 Q8.",
+      "`SKILL_INSTALL_COMMAND` fetches the archive this site serves under `/skill/`, so the " +
+      "command runs for every reader. `lib/skill.ts` forbids the bare phrase `the skill`, hence the qualifier.",
   },
   {
-    intent: "Check a version number is enough",
+    intent: "Check a version bump matches the change",
     how: <Verb name="bump" />,
     status: "checkout",
     because:
@@ -175,33 +157,38 @@ const INTENTS: readonly {
     how: <Verb name="report" />,
     status: "checkout",
     because:
-      "The one verb that writes, and it needs a session cookie no page hands out " +
-      "(ARCHITECTURE §11.1, 2026-08-30).",
+      "The one verb that writes. The route takes a session cookie or a write-scoped key, and " +
+      "the verb itself still needs a build from the private repository.",
   },
   {
-    intent: "Publish from the editor",
+    intent: "Publish from your agent",
     how: (
       <span className="text-muted">
-        publishing is live on this site, and not from your agent
+        POST a release with a write-scoped API key; <Link href="/settings">Settings</Link> prints
+        the exact call when you mint one, and the <Link href="/upload">Publish</Link> page does the
+        same from a browser
       </span>
     ),
-    status: "not built",
+    status: "live",
     because:
-      "SEAM-96: nothing pushes a release from an editor. `POST /api/bundles` has been live " +
-      "since T263, which is why the row says where publishing DOES work.",
+      "`POST /api/bundles` takes a session or a write-scoped key. The curl is `PUBLISH_CURL` in " +
+      "`components/settings/ApiKeys.tsx`, a client module this server page does not import, so " +
+      "the row points at the page that prints it rather than typing it a second time.",
   },
   {
-    intent: "Reach a private bundle",
+    intent: "Read a private blueprint over MCP",
     how: (
       <span className="text-muted">
-        MCP carries no identity, and a key only raises the read ceiling
+        send your API key as a bearer token; get_blueprint, read_card, inspect_provenance and
+        fetch_release then reach your own private blueprints, while the two find tools search
+        public blueprints only
       </span>
     ),
-    status: "by design",
+    status: "live",
     because:
-      "`lib/server/mcp/actor.ts` hands every MCP read `{ kind: \"anonymous\" }`, whatever " +
-      "session it was asked with. D-114 is the other half and rules that a key gates no " +
-      "read and authorises no write. Neither is unfinished work.",
+      "`lib/server/mcp/http.ts` resolves a bearer key to its account and the four addressed " +
+      "verbs decide visibility with `can`. `searchBlueprints` and `searchCards` are public-only " +
+      "by their own rule, so the find tools do not widen.",
   },
 ];
 
@@ -226,11 +213,10 @@ function Verb({ name }: { name: string }) {
 /**
  * A module's own prose, with its backticks rendered as code.
  *
- * `TOOLS[].description` is written for an agent reading a tool list, so it marks its
- * identifiers the way that audience reads them, in backticks. Printed verbatim on a page
- * those are stray characters; converted, they are the same `<code>` runs the rest of this
- * page uses. Nothing is added or removed but the delimiters, which is what lets
- * `honesty.test.ts` still hold the rendered text against the module's string.
+ * A tool description is written for an agent reading a tool list, so it marks its
+ * identifiers in backticks. Converted, they are the same `<code>` runs the rest of this page
+ * uses; nothing is added or removed but the delimiters, which is what lets
+ * `honesty.test.ts` hold the rendered text against the module's string.
  */
 function Ticks({ text }: { text: string }) {
   return (
@@ -274,8 +260,8 @@ function Th({ children, width }: { children: React.ReactNode; width: string }) {
 export default function CapabilitiesPage() {
   const surfaces: readonly Surface[] = [
     { id: "cli", label: "Terminal · CLI", count: CLI_VERBS.length },
-    { id: "mcp", label: "Agent · MCP", count: TOOLS.length },
-    { id: "skill", label: "Editor · Assisted Design", count: 1 },
+    { id: "mcp", label: "Agent · MCP", count: TOOL_DEFINITIONS.length },
+    { id: "skill", label: "Agent · Assisted Design", count: 1 },
   ];
 
   const cli = (
@@ -288,16 +274,11 @@ export default function CapabilitiesPage() {
         The command-line surface
       </h2>
       <Framing>
-        Not on npm: <code className="font-mono text-blueprint-ink">{NPX_INVOCATION}</code>{" "}
-        answers 404, so every verb below runs from a checkout.{" "}
-        <code className="font-mono text-blueprint-ink">npm run build</code> in{" "}
-        <code className="font-mono text-blueprint-ink">packages/mcp</code> writes the bin, and
-        nothing links it: the repository declares no workspaces, so a verb is{" "}
-        <code className="font-mono text-blueprint-ink">
-          node packages/mcp/dist/cli.js &lt;verb&gt;
-        </code>{" "}
-        until you link it yourself. The grammar below is what the command takes either way.
-        Exit 0 on success, 1 on everything else.
+        The darkprint package is not on npm, so{" "}
+        <code className="font-mono text-blueprint-ink">{NPX_INVOCATION}</code> fails, and the
+        source repository it would be built from is private. Until that changes, the table below
+        is a reference for what each command will take; no visitor can run one yet. Exit code 0
+        on success, 1 on anything else.
       </Framing>
       <TableShell>
         <thead>
@@ -332,8 +313,8 @@ export default function CapabilitiesPage() {
       <p className="text-sm leading-relaxed text-dim">
         One of the seven needs more than a checkout.{" "}
         <code className="font-mono text-blueprint-ink">report</code> is the only verb that
-        writes, it authenticates with a signed-in session cookie, and no page on this site
-        hands one out: you read it out of a browser&rsquo;s developer tools. It also refuses
+        writes. It needs a signed-in session cookie, passed through the session variable below,
+        or a write-scoped API key from <Link href="/settings">Settings</Link>. It also refuses
         offline until five facts about the run are supplied or found in the run manifest.
       </p>
       <KeyValueList>
@@ -364,10 +345,16 @@ export default function CapabilitiesPage() {
         The MCP server
       </h2>
       <Framing>
-        Four registry reads, live over HTTP under{" "}
-        <code className="font-mono text-blueprint-ink">/api/mcp</code>, plus one compiler that
-        fetches a release and compiles it in your own process. The server itself speaks MCP over
-        stdio. Read access and nothing else, and no tool knows who is asking.
+        A remote MCP server at{" "}
+        <code className="font-mono text-blueprint-ink">{MCP_ENDPOINT_URL}</code>, nothing to
+        install. Two tools search the public registry by task, one returns a whole blueprint with
+        notes for instantiating it under your harness, three read one thing by its address, and
+        one compiles a release into a pipeline for Attractor, the runner DarkPrint compiles to.
+        Every tool reads. Without a key every call reads as anonymous and sees public blueprints
+        and cards only; a key sent as a bearer token raises the rate limit and lets the four
+        addressed tools reach your own private blueprints. Ranking is a similarity between your
+        task and each document, and a score says nothing about quality. Nothing here runs a
+        blueprint.
       </Framing>
       <TableShell>
         <thead>
@@ -379,11 +366,10 @@ export default function CapabilitiesPage() {
           </tr>
         </thead>
         <tbody>
-          {TOOLS.map((tool) => {
-            /* `Takes` is the schema's own `required` list and not a description of it. A
-               prose paraphrase here would be a second statement of the argument names an
-               agent actually has to send, and the two would drift the first time one was
-               renamed. */
+          {TOOL_DEFINITIONS.map((tool) => {
+            /* `Takes` is the schema's own `required` list and not a description of it: a
+               paraphrase would be a second statement of the argument names an agent has to
+               send, and the two would drift the first time one was renamed. */
             const required = (tool.inputSchema as { required?: readonly string[] }).required ?? [];
             return (
               <tr key={tool.name} className="border-b border-line last:border-b-0">
@@ -419,13 +405,10 @@ export default function CapabilitiesPage() {
             key={client.id}
             keyWidth={240}
             term={<span className="text-sm text-fg">{client.label}</span>}
-            aside={<ComingSoonBadge />}
           >
-            {/* `data-client` is the row's identity in the markup, and it is there for the
-                guard rather than for the browser: asserting that the page CONTAINS every
-                snippet is satisfied by a page that prints them all against the wrong
-                labels, which is exactly the mistake the design handoff made when it
-                collapsed four clients onto one line of JSON that fits none of them. */}
+            {/* `data-client` is the row's identity in the markup, for the guard: asserting
+                that the page contains every snippet is satisfied by a page that prints them
+                all against the wrong labels. */}
             <pre
               data-client={client.id}
               className="min-w-0 overflow-x-auto whitespace-pre font-mono text-xs leading-relaxed text-blueprint-ink"
@@ -436,8 +419,9 @@ export default function CapabilitiesPage() {
         ))}
       </KeyValueList>
       <p className="text-sm leading-relaxed text-dim">
-        Every snippet above is real configuration for a real endpoint. The command inside it is
-        the part that fails: the package it runs is not published to npm.
+        Copy the one for your client. The server is remote, so nothing is installed. The same
+        server also runs on your own machine over stdio once the darkprint package is published
+        to npm; it is not published to npm yet.
       </p>
     </section>
   );
@@ -452,9 +436,10 @@ export default function CapabilitiesPage() {
         The DarkPrint skill
       </h2>
       <Framing>
-        One command, one interview, and a folder. Not a card&rsquo;s{" "}
-        <code className="font-mono text-blueprint-ink">skill:</code> field, which points at a
-        document for one node: this one writes the graph.
+        One command installs the DarkPrint skill into your agent, which then interviews you and
+        writes a blueprint folder. A card&rsquo;s{" "}
+        <code className="font-mono text-blueprint-ink">skill:</code> field points at a document
+        for one node, while the DarkPrint skill writes the whole graph.
       </Framing>
       <div className="flex min-w-0 flex-wrap items-start gap-2">
         <pre className="panel min-w-0 flex-1 overflow-x-auto px-3.5 py-3 font-mono text-xs leading-relaxed text-blueprint-ink">
@@ -464,13 +449,10 @@ export default function CapabilitiesPage() {
           text={SKILL_INSTALL_COMMAND}
           ariaLabel="Copy the command that installs the DarkPrint skill"
         />
-        <ComingSoonBadge />
       </div>
       <p className="text-sm leading-relaxed text-dim">
-        The skills CLI reads this over git, and the repository it names is not publicly readable
-        yet, so the command fails the same way{" "}
-        <code className="font-mono text-blueprint-ink">{NPX_INVOCATION}</code> does.{" "}
-        <Link href={SKILL_ROUTE}>Assisted Design</Link> is the page that explains it, and{" "}
+        The archive is served by this site, so the command runs for every reader.{" "}
+        <Link href={SKILL_ROUTE}>Assisted Design</Link> explains it and gives the Codex form, and{" "}
         <Link href="/tutorial">the tutorial</Link> writes the same folder by hand with nothing
         installed.
       </p>
@@ -492,13 +474,9 @@ export default function CapabilitiesPage() {
               </KeyValueRow>
             ))}
           </KeyValueList>
-          {/* The five are `SkillSetup`'s own array, which is what `/skill` prints. SKILL.md
-              runs to twenty-four numbered questions plus a risk table, so this column is a
-              selection and the sentence below says so rather than letting five read as all
-              of them. */}
           <p className="text-sm leading-relaxed text-dim">
-            Five of about thirty. The interview also walks a risk sheet per node and derives
-            every name and version itself.
+            Five of the questions it asks. The full interview is longer, walks a risk sheet for
+            each node, and picks every name and version itself.
           </p>
         </div>
         <div className="flex min-w-0 flex-col gap-3">
@@ -531,12 +509,9 @@ export default function CapabilitiesPage() {
               </span>
             </KeyValueRow>
           </KeyValueList>
-          {/* Under its own rule rather than as a fourth row: neither of these is a file the
-              skill writes, and a reader counting outputs under a heading that says Writes
-              would count five. */}
           <p className="text-sm leading-relaxed text-dim">
-            Nothing here checks that output. The skill is a document your agent runs, and no
-            gate in this repository fails on the day what it writes stops matching this list.
+            This site does not check what the skill writes. It is a document your agent follows,
+            and this list describes it rather than testing it.
           </p>
         </div>
       </div>
@@ -549,13 +524,12 @@ export default function CapabilitiesPage() {
         as="h1"
         eyebrow="Reference"
         title="What you can do"
-        lead="Every operation, from three places: a terminal, an agent, an editor."
+        lead="Everything you can do with DarkPrint, and where: the darkprint command line, an MCP server your coding agent connects to, and a skill your agent installs to write blueprints. Each row says whether it works today."
       />
       <p className="mt-3 text-sm leading-relaxed text-dim">
-        <span className="text-emerald">live</span> works as printed ·{" "}
-        <span className="text-blueprint-ink">checkout</span> runs from a clone, not npm ·{" "}
-        <span className="text-amber">not built</span> as it says ·{" "}
-        <span className="text-muted">by design</span> a shipped constraint, not a gap
+        <span className="text-emerald">live</span>: works as printed ·{" "}
+        <span className="text-blueprint-ink">checkout</span>: needs a build from the source
+        repository, which is private today
       </p>
 
       <section aria-labelledby="intent-title" className="mt-10 flex min-w-0 flex-col gap-3">

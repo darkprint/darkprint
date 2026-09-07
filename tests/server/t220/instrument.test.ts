@@ -9,17 +9,17 @@
    Two of them are checked, and the reasons are different failures
    this repository has already paid for.
 
-   `strip` + `importsOf` is AC1's whole discriminating power, and it
-   can fail in BOTH directions. Blind to a real import, and AC1 reds
-   nothing whatever the module does. Sighted on prose, and it reds a
+   `strip` + `importsOf` is the purity scan's whole discriminating power,
+   and it can fail in BOTH directions. Blind to a real import, and the scan
+   reds nothing whatever the module does. Sighted on prose, and it reds a
    correct module on its own docblock — `lib/server/export/index.ts`
    discusses `recordDownload` by name in a comment, and
    `export-release.ts`'s header names the serving verbs to explain
    why it is not one of them. So the fixtures below include both a
    real import that MUST be found and three mentions that MUST NOT.
 
-   `stringsIn` is AC3's leak scan, and its known blindness is the
-   shape D-13's hygiene clause rewards: `rateLimitedError` hangs its
+   `stringsIn` is the privacy leak scan, and its known blindness is the
+   shape the error-hygiene clause rewards: `rateLimitedError` hangs its
    payload off a symbol so `Object.keys`, `JSON.stringify` and a
    spread all skip it. An enumerable-only walk reads `{}` and
    reports no leak while the payload sits there — measured in this
@@ -37,7 +37,7 @@ const names = (source: string): string[] =>
 const specs = (source: string): string[] =>
   importsOf("x.ts", source).map((i) => i.specifier);
 
-describe("the AC1 source scan finds what it must find", () => {
+describe("the purity source scan finds what it must find", () => {
   it("reads a plain named import", () => {
     const src = `import { serveCard } from "@/lib/server/export";\n`;
     expect(names(src)).toContain("serveCard");
@@ -64,7 +64,7 @@ describe("the AC1 source scan finds what it must find", () => {
   });
 });
 
-describe("the AC1 source scan does NOT fire on prose", () => {
+describe("the purity source scan does NOT fire on prose", () => {
   /* The three shapes that would red a correct module. Each is a real pattern from
      `lib/server/**`, not an invented one. */
   /* The comment carries a WHOLE import statement, not merely the forbidden name. A comment
@@ -118,7 +118,7 @@ describe("the AC1 source scan does NOT fire on prose", () => {
   });
 });
 
-describe("the AC3 leak scan reads what an enumerable-only walk cannot", () => {
+describe("the privacy leak scan reads what an enumerable-only walk cannot", () => {
   const NONCE = "t220-nonce-9f3a";
 
   it("finds a string on a plain value", () => {
@@ -168,7 +168,7 @@ describe("the shape guard names the right cause", () => {
   /* Measured before this guard existed: a module that dropped `evidence` reddened three
      cells with `TypeError: Cannot read properties of undefined (reading 'length')`. That is
      a red naming a plausible WRONG cause — a reader triaging it looks for a null-safety bug
-     in the suite rather than for the field D-220-04 restored. The rule this repository holds
+     in the suite rather than for the field the verb dropped. The rule this repository holds
      is to widen what the failure SAYS, never to narrow what the module may return, so the
      guard raises and the cells still accept anything with an evidence array. */
 
@@ -179,20 +179,20 @@ describe("the shape guard names the right cause", () => {
 
   it("names the missing field rather than dereferencing it", () => {
     const dropped = { hits: [{ ref: "a/b" }], ordered: true };
-    expect(() => hitsOf(dropped, "mcpSearch(...)")).toThrowError(/carry no `evidence` array/);
+    expect(() => hitsOf(dropped, "mcpFindBlueprints(...)")).toThrowError(/carry no `evidence` array/);
     /* The bad output is EXCLUDED, not merely the good one admitted: the old failure is the
-       string this must never be. */
+       string this must never be, and the message has to name the field that is missing. */
     try {
-      hitsOf(dropped, "mcpSearch(...)");
+      hitsOf(dropped, "mcpFindBlueprints(...)");
     } catch (err) {
       expect((err as Error).message).not.toContain("Cannot read properties of undefined");
-      expect((err as Error).message).toContain("D-220-04");
+      expect((err as Error).message).toContain("evidence: readonly string[]");
     }
   });
 
   it("names an answer that carries no hits array at all", () => {
-    expect(() => hitsOf({ ordered: true }, "mcpSearch(...)")).toThrowError(/no `hits` array/);
-    expect(() => hitsOf(undefined, "mcpSearch(...)")).toThrowError(/no `hits` array/);
+    expect(() => hitsOf({ ordered: true }, "mcpFindBlueprints(...)")).toThrowError(/no `hits` array/);
+    expect(() => hitsOf(undefined, "mcpFindBlueprints(...)")).toThrowError(/no `hits` array/);
   });
 
   it("does not fire on an EMPTY hit list, which is a legitimate answer", () => {
