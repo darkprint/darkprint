@@ -1070,7 +1070,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
     },
     {
       href: "#prohibitions",
-      label: "What it refuses",
+      label: "Refusals",
       /* Two numbers where one stood, and the two words are the sentence. "Declared" was
          the only word available while one list held both kinds, and it flattened them:
          a reader saw `2 declared` and could not tell whether the engine was holding the
