@@ -92,7 +92,7 @@ const EXPORTS = loaded.map((entry) => ({
 }));
 
 describe("exportBundle over content/", () => {
-  it("covers all nine blueprints", () => {
+  it("covers all ten blueprints", () => {
     expect(EXPORTS.map((e) => e.slug)).toEqual([
       "adversarial-consensus-line",
       "checkpoint-resume-runner",
@@ -101,6 +101,7 @@ describe("exportBundle over content/", () => {
       "guarded-merge-bot",
       "incident-commander",
       "nightly-data-janitor",
+      "pipeline-observability",
       "schema-forge-etl",
       "starter-software-factory",
     ]);

@@ -5,7 +5,7 @@ agent, tool, gate or check is, what it needs, what it produces, and what it must
 
 **Source of truth:** `lib/core/card/schema.ts` (the type), `lib/core/card/validate.ts` (what is
 checked), `lib/core/card/parse.ts` (wire format to type).
-**Examples:** `content/cards/*.yaml`, 57 files, 53 distinct ids.
+**Examples:** `content/cards/*.yaml`, 61 files, 57 distinct ids.
 **Rendered:** `/nodes/<id>` shows every field of every version, with a YAML download.
 **Published:** a `card_version` row per `(id, version)`, body and source kept verbatim.
 
@@ -164,7 +164,7 @@ and `darkprint bump` prints the inference for a declared version.
 | **change a field's checking** | `validate.ts` and the diagnostic table in [`engine.md`](./engine.md) |
 | **add a `cannot` entry to a shipped card** | it is a **major** bump; the library check fails the build until the version is right |
 | **change `spec`** | it is compiled into the runner's `prompt`, and the card's digest and every release pinning it change |
-| **rename a field** | the 57 content files, every stored `card_version.source`, and the wire-format mapping in `parse.ts` |
+| **rename a field** | the 61 content files, every stored `card_version.source`, and the wire-format mapping in `parse.ts` |
 
 The landing's annotated card and `/spec/card` read `code-builder@1.0.0` through
 `cardSource()`, so they cannot drift from the archive. Keep it that way; do not replace it

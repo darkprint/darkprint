@@ -36,7 +36,10 @@ import {
   printedDigests,
 } from "./contract";
 
-/** Every card version in the archive, all 57 of them. See the enumeration cell for why not `allNodeCards`. */
+/** The bundles `lib/data/community.ts` seeds figures for: the archive as it stood when that fixture was written. */
+const SEEDED_FIGURE_BUNDLES = 9;
+
+/** Every card version in the archive, all 61 of them. See the enumeration cell for why not `allNodeCards`. */
 function allCardVersions(): { id: string; version: string; card: Record<string, unknown> }[] {
   const out: { id: string; version: string; card: Record<string, unknown> }[] = [];
   for (const id of cardIds()) {
@@ -61,12 +64,12 @@ describe("the archive this task imports", () => {
    * numbers to say so. A throw inside the scan function would land in whichever hook called it
    * first and produce SKIPS, which is quieter still.
    */
-  it("prints nine bundle digests, so AC1's per-bundle cell list is nine long", () => {
+  it("prints ten bundle digests, so AC1's per-bundle cell list is ten long", () => {
     expect(printedDigests().map((b) => b.slug)).toEqual([...bundleSlugs()]);
     expect(printedDigests()).toHaveLength(EXPECTED_BUNDLES);
   });
 
-  it("carries 57 card files across 53 distinct ids, and nine bundles", () => {
+  it("carries 61 card files across 57 distinct ids, and ten bundles", () => {
     expect(cardFiles()).toHaveLength(EXPECTED_CARD_FILES);
     expect(cardIds()).toHaveLength(EXPECTED_CARD_IDS);
     expect(bundleSlugs()).toHaveLength(EXPECTED_BUNDLES);
@@ -80,7 +83,7 @@ describe("the archive this task imports", () => {
    * coverage. Both numbers are asserted, so the day that helper changes its mind the red says
    * which of the two moved.
    */
-  it("needs nodeCardVersions to reach all 57: allNodeCards answers 53", () => {
+  it("needs nodeCardVersions to reach all 61: allNodeCards answers 57", () => {
     expect(allNodeCards()).toHaveLength(EXPECTED_CARD_IDS);
     expect(allCardVersions()).toHaveLength(EXPECTED_CARD_FILES);
   });
@@ -116,7 +119,7 @@ describe("AC1's oracle: the digest the site prints today", () => {
    * disagreement between the plan and the README is a claim about the plan rather than about
    * which of two oracles was picked.
    */
-  it("agrees with lib/content on all nine, element-wise", () => {
+  it("agrees with lib/content on all ten, element-wise", () => {
     const printed = Object.fromEntries(printedDigests().map((b) => [b.slug, b.digest]));
     const fromContent = Object.fromEntries(
       allBlueprints().map((b) => [b.slug, (b as { digest?: string }).digest]),
@@ -128,7 +131,7 @@ describe("AC1's oracle: the digest the site prints today", () => {
    * The near-miss. Flipping ONE hex character of ONE of the nine has to red the comparison
    * above, or that comparison is resolving rather than discriminating.
    */
-  it("discriminates: one hex character of one of the nine is enough to disagree", () => {
+  it("discriminates: one hex character of one of the ten is enough to disagree", () => {
     const printed = Object.fromEntries(printedDigests().map((b) => [b.slug, b.digest]));
     const perturbed = { ...printed };
     const first = printedDigests()[0];
@@ -146,7 +149,7 @@ describe("re-attribution is digest-safe, measured rather than read", () => {
    * `bundleDigest` takes `{dot, cardDigests}` only, so the manifest that carries `author` is
    * outside a bundle's identity as well. That is the reason AC1 and AC4 can both hold.
    */
-  it("cardDigest is unchanged by re-attribution, across all 57 card versions", () => {
+  it("cardDigest is unchanged by re-attribution, across all 61 card versions", () => {
     const moved = allCardVersions()
       .filter(({ card }) => cardDigest(card as never) !== cardDigest({ ...card, author: "darkprint" } as never))
       .map(({ id, version }) => `${id}@${version}`);
@@ -158,7 +161,7 @@ describe("re-attribution is digest-safe, measured rather than read", () => {
    * a digest does NOT move, so on its own it is satisfied by a `cardDigest` that always returns
    * the same string. Perturbing a field that IS in the identity has to move all 57.
    */
-  it("discriminates: a field inside the identity moves every one of the 57", () => {
+  it("discriminates: a field inside the identity moves every one of the 61", () => {
     const moved = allCardVersions()
       .filter(({ card }) => cardDigest(card as never) !== cardDigest({ ...card, name: `${String(card.name)}!` } as never))
       .map(({ id, version }) => `${id}@${version}`);
@@ -217,10 +220,15 @@ describe("AC3's second axis: there were numbers to import", () => {
     }[];
     expect(records).toHaveLength(EXPECTED_BUNDLES);
 
+    /* Nine, not every bundle: `lib/data/community.ts` seeds figures for the bundles that were
+       in the archive when it was written, and `pipeline-observability` came later with no row,
+       so the index zero-fills it. The discipline this cell guards is that no seeded figure is
+       stored as a counter, and a bundle that seeds nothing cannot break it either way. */
     const withFigures = records.filter(
       (b) => typeof b.downloads === "number" && (b.downloads as number) > 0,
     );
-    expect(withFigures).toHaveLength(EXPECTED_BUNDLES);
+    expect(withFigures).toHaveLength(SEEDED_FIGURE_BUNDLES);
+    expect(withFigures.map((b) => b.slug)).not.toContain("pipeline-observability");
 
     /* The one the contract names, on the same object as its digest. */
     const loud = records.find((b) => b.downloads === 8940);
@@ -236,7 +244,7 @@ describe("AC3's second axis: there were numbers to import", () => {
    * everything else, and they are written in the six invented voices D-250-11 rules out of
    * existence as accounts.
    */
-  it("carries twelve seeded community notes across the nine bundles", () => {
+  it("carries twelve seeded community notes across the ten bundles", () => {
     const comments = (allBlueprints() as unknown as { comments?: unknown[] }[]).map(
       (b) => (Array.isArray(b.comments) ? b.comments.length : 0),
     );

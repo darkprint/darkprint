@@ -142,10 +142,10 @@ promotes automatically.
 |---|---|
 | **add a term** | the `/ontology/<term>` page count, the totals printed on `/what-a-blueprint-is` and `/spec/card`, and the skill's generated `references/ontology.md` (`scripts/generate-skill-refs.test.ts` reds until it is regenerated) |
 | **remove or rename a term** | every card using it (`card/unknown-term`), every port typed with it, every `cannot` naming it, and every bundle's scores |
-| **change the lattice** (`broader`) | port compatibility across all 9 bundles, and `cannot` enforcement: a widened parent can make a prohibition fire where it did not |
-| **change a weight in `config.ts`** | every security reading on the site and all 9 bundle READMEs; `components/explain/starter-isolation.ts` derives the "4 to 2" figure for `/spec/card` |
+| **change the lattice** (`broader`) | port compatibility across all 10 bundles, and `cannot` enforcement: a widened parent can make a prohibition fire where it did not |
+| **change a weight in `config.ts`** | every security reading on the site and all 10 bundle READMEs; `components/explain/starter-isolation.ts` derives the "4 to 2" figure for `/spec/card` |
 | **add a term to the closed `phase` list** | phase coverage, the phase chips, `isDarkFactory` and every surface that assumes five |
 
-Four of the nine archive blueprints floor at security 1 under the shipped weights. Before
+Four of the ten archive blueprints floor at security 1 under the shipped weights. Before
 changing a weight, treat that as the open calibration item it is: tune against real data rather
 than with another ad-hoc nudge.

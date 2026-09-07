@@ -71,7 +71,7 @@ export const RELEASES_PER_BUNDLE = 1;
 
 /** D-250-08. `created` and `skipped` count BUNDLES. Cards do not fold in. */
 export const SECOND_RUN_CREATED = 0;
-export const SECOND_RUN_SKIPPED = 9;
+export const SECOND_RUN_SKIPPED = 10;
 
 /** D-250-06. The sole overlay term, whose id stays in `lupo`'s namespace because a rename moves card digests. */
 export const OVERLAY_TERM = "lupo/pii-handling";
@@ -302,9 +302,9 @@ const PUBLIC_BUNDLES = `${REPO_ROOT}public/bundles`;
  * moves with it and asserts nothing, and `public/bundles/` losing six directories must not
  * silently shrink AC1 to a third of its domain, which is the failure T090's suite recorded.
  */
-export const EXPECTED_BUNDLES = 9;
-export const EXPECTED_CARD_FILES = 57;
-export const EXPECTED_CARD_IDS = 53;
+export const EXPECTED_BUNDLES = 10;
+export const EXPECTED_CARD_FILES = 61;
+export const EXPECTED_CARD_IDS = 57;
 
 export function bundleSlugs(): readonly string[] {
   return readdirSync(BUNDLES_DIR)
@@ -318,7 +318,7 @@ export function cardFiles(): readonly string[] {
     .sort();
 }
 
-/** The distinct card ids, which is 53 where the file count is 57: four ids carry two versions. */
+/** The distinct card ids, which is 57 where the file count is 61: four ids carry two versions. */
 export function cardIds(): readonly string[] {
   return [...new Set(cardFiles().map((file) => file.split("@")[0]))].sort();
 }

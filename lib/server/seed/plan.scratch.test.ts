@@ -17,9 +17,9 @@ import { readContent, contentVocabulary } from "@/lib/content/read";
 const MARK = process.env.SCRATCH_MARK ?? "bundle digest";
 
 describe("T250 scratch: what the content tree already answers", () => {
-  it("reproduces the nine digests the site prints today (AC1)", () => {
+  it("reproduces the ten digests the site prints today (AC1)", () => {
     const loaded = readContent();
-    expect(loaded.length).toBe(9);
+    expect(loaded.length).toBe(10);
     for (const b of loaded) {
       const readme = readFileSync(`public/bundles/${b.slug}/README.md`, "utf8");
       const printed = new RegExp(`${MARK}\\s+(sha256:[0-9a-f]{64})`).exec(readme)?.[1];
@@ -28,13 +28,13 @@ describe("T250 scratch: what the content tree already answers", () => {
     }
   });
 
-  it("every one of the 57 library files is pinned by some bundle", () => {
+  it("every one of the 61 library files is pinned by some bundle", () => {
     const pinned = new Set<string>();
     for (const b of readContent()) for (const n of b.blueprint.nodes) pinned.add(n.ref);
     const fileRefs = readdirSync("content/cards")
       .filter((f) => f.endsWith(".yaml"))
       .map((f) => f.replace(/\.yaml$/, ""));
-    expect(fileRefs.length).toBe(57);
+    expect(fileRefs.length).toBe(61);
     expect(fileRefs.filter((r) => !pinned.has(r))).toEqual([]);
     expect([...pinned].filter((r) => !fileRefs.includes(r))).toEqual([]);
   });
