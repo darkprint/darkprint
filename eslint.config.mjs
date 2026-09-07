@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // `vercel build` writes its function bundles here; generated output, never source.
+    ".vercel/**",
     // The distributable T270 bundles with esbuild (`packages/cli/build.mjs`), gitignored by
     // `packages/mcp/.gitignore`. It is generated, minifiable, third-party code in part — it
     // carries a bundled `yaml` — and linting it reports 33 problems nobody here can act on.
