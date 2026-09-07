@@ -179,20 +179,20 @@ describe("the shape guard names the right cause", () => {
 
   it("names the missing field rather than dereferencing it", () => {
     const dropped = { hits: [{ ref: "a/b" }], ordered: true };
-    expect(() => hitsOf(dropped, "mcpSearch(...)")).toThrowError(/carry no `evidence` array/);
+    expect(() => hitsOf(dropped, "mcpFindBlueprints(...)")).toThrowError(/carry no `evidence` array/);
     /* The bad output is EXCLUDED, not merely the good one admitted: the old failure is the
-       string this must never be. */
+       string this must never be, and the message has to name the field that is missing. */
     try {
-      hitsOf(dropped, "mcpSearch(...)");
+      hitsOf(dropped, "mcpFindBlueprints(...)");
     } catch (err) {
       expect((err as Error).message).not.toContain("Cannot read properties of undefined");
-      expect((err as Error).message).toContain("D-220-04");
+      expect((err as Error).message).toContain("evidence: readonly string[]");
     }
   });
 
   it("names an answer that carries no hits array at all", () => {
-    expect(() => hitsOf({ ordered: true }, "mcpSearch(...)")).toThrowError(/no `hits` array/);
-    expect(() => hitsOf(undefined, "mcpSearch(...)")).toThrowError(/no `hits` array/);
+    expect(() => hitsOf({ ordered: true }, "mcpFindBlueprints(...)")).toThrowError(/no `hits` array/);
+    expect(() => hitsOf(undefined, "mcpFindBlueprints(...)")).toThrowError(/no `hits` array/);
   });
 
   it("does not fire on an EMPTY hit list, which is a legitimate answer", () => {

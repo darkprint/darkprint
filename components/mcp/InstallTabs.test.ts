@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import McpPage from "@/app/mcp/page";
 import { InstallTabs } from "@/components/mcp/InstallTabs";
-import { MCP_CLIENTS } from "@/components/mcp/clients";
+import { MCP_CLIENTS, MCP_ENDPOINT_URL } from "@/components/mcp/clients";
 import { plainText } from "@/components/ui/visible-text";
 
 describe("InstallTabs", () => {
@@ -23,32 +23,25 @@ describe("InstallTabs", () => {
   });
 
   /**
-   * One case, split across two surfaces on 2026-08-11, because half of the claim moved.
-   *
-   * It asserted both halves over this component: that the block says "configuration", and
-   * that it does not say "coming soon". The 3a pass took the panel chrome off — the
-   * `{label} configuration` heading and the emerald `configuration` chip printed the word
-   * twice over a box whose contents are self-evidently configuration, and the mock has
-   * neither — so the positive half is no longer this component's to carry.
-   *
-   * It is not dropped, which is the rule this repository works to: a case comes out when
-   * the claim it guards is gone, not when the claim moves. §1 of the page now opens "The
-   * shape of the configuration, so the proposal can be read against a real host", so the
-   * assertion follows it onto the page.
-   *
-   * The negative half stays here and is the stronger of the two. `honesty.test.ts` records
-   * why the badge must not sit inside this block: the page refuses the server in three
-   * registers and all three are sentences, and an amber pill beside a snippet reads as a
-   * caveat about one client rather than about the route.
+   * The server is live and remote, so an amber pill beside a snippet would say the opposite
+   * of what the page says in words; the one limit that survives (the npm package) is a
+   * sentence on the page, not a glyph in this block.
    */
   it("does not wear a coming-soon badge beside the snippet", () => {
     const html = renderToStaticMarkup(createElement(InstallTabs));
     expect(plainText(html).toLowerCase()).not.toContain("coming soon");
   });
 
-  it("is presented as configuration by the section that mounts it", () => {
+  it("is introduced by the section that mounts it as something to run or paste", () => {
     const page = plainText(renderToStaticMarkup(createElement(McpPage as never)));
-    expect(page.toLowerCase()).toContain("the shape of the configuration");
+    expect(page.toLowerCase()).toContain("run the command, or paste the json into its mcp settings");
+  });
+
+  it("points every client at the one remote address, and none at npm", () => {
+    for (const client of MCP_CLIENTS) {
+      expect(client.snippet, `${client.label} does not name the endpoint`).toContain(MCP_ENDPOINT_URL);
+      expect(client.snippet, `${client.label} still runs the unpublished package`).not.toContain("npx");
+    }
   });
 
   /**

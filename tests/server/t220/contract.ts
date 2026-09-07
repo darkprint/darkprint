@@ -1,44 +1,15 @@
 /* ============================================================
-   T220 — the blind contract surface
+   The MCP surface's contract, as the suites beside this file bind it
 
-   Not a test file. The vitest glob reaches `.test.ts` under `tests`
-   and nothing else, so this module is imported by the suites beside
-   it and is never collected as one itself.
+   Not a test file: the vitest glob reaches `.test.ts` under `tests`
+   and nothing else. The module is loaded with a dynamic import
+   inside each cell rather than statically, so an absent or broken
+   module reds one cell per criterion instead of failing the whole
+   file at collection, and it is bound LAST in every cell so a
+   fixture write below the bind is never masked by it.
 
-   ── why every load is a dynamic import ──
-   These tests were written in a worktree branched before
-   `lib/server/mcp` existed — `ls lib/server/mcp` answered "No such
-   file or directory" at the moment this file was created. A static
-   top-level import of a module that is not on disk fails the whole
-   FILE at collection, which reports one red where the protocol asks
-   for one per acceptance criterion and hides six criteria behind
-   the first missing module. Loading inside the cell that needs it
-   turns "the module is not there yet" into exactly the per-criterion
-   red the hand-off is supposed to produce. The specifier stays a
-   literal so the `@` alias resolves.
-
-   ── and why the module is bound LAST inside every cell ──
-   An early bind masks every fixture write below it while being
-   correct about its own subject. Three cells in an earlier round of
-   this project were found never to have executed, and the tell is a
-   red in 0ms where a database round trip was expected. So the order
-   in every cell here is: build the world, plant the premise, ASSERT
-   the premise, and only then `loadMcp()`.
-
-   ── no candidate lists ──
-   Every name is bound exactly and its absence quotes the clause that
-   publishes it. T000 paid two rounds for the alternative: a candidate
-   list resolved `encodeSession` instead of the cookie writer and
-   produced five false reports of a broken round trip. Where the
-   contract has a name, guessing is worse than binding.
-
-   ── what this file deliberately does NOT bind ──
-   No error class. The published block names none, and three of the
-   four verbs return total types (`Promise<string>`,
-   `Promise<Provenance>`) that must refuse somehow. That is charged
-   to the orchestrator, not guessed here: a blind suite that invents
-   `McpError` and reds on its absence is reporting a defect against
-   an implementer who followed the contract.
+   Every name is bound exactly. A candidate list resolves the wrong
+   export and reports a broken round trip that never happened.
    ============================================================ */
 
 export type Namespace = Record<string, unknown>;
@@ -46,23 +17,19 @@ export type UnknownFn = (...args: unknown[]) => unknown;
 
 export const MCP = "@/lib/server/mcp";
 
-/* --------------------- what the contract publishes --------------------- */
+/* --------------------- what the barrel publishes --------------------- */
 
-/**
- * The Published signatures block of `backend.md` §T220, quoted verbatim so a red says
- * where the name comes from and not merely that a test wanted it.
- *
- * Re-verified against the tree before binding, which D-220-01 (2) requires because the
- * block is stamped `d260c33` and T200's block at the same stamp named two wrong types.
- * What checks out: `Db` (`lib/db/client.ts:11`), `Actor` (`lib/server/policy/types.ts:10`),
- * `CardRef` (`= string`, `lib/core/card/schema.ts:161`), `ExportedFile` (`{path, text}`,
- * `lib/content/bundle-export.ts:157`). What does not is charged in the T220 log rather
- * than corrected here.
- */
+/** The six verbs, as their signatures read, so a red says what was expected and not only what was missing. */
 export const PUBLISHED = {
-  mcpSearch:
-    "mcpSearch(db: Db, actor: Actor, task: string): " +
-    "Promise<{ hits: readonly McpSearchHit[]; ordered: boolean }>",
+  mcpFindBlueprints:
+    "mcpFindBlueprints(db: Db, actor: Actor, task: string, options?: { limit?: number; includeForks?: boolean }): " +
+    "Promise<McpFindResult<McpBlueprintHit>>",
+  mcpFindCards:
+    "mcpFindCards(db: Db, actor: Actor, task: string, options?: { limit?: number }): " +
+    "Promise<McpFindResult<McpCardHit>>",
+  mcpGetBlueprint:
+    "mcpGetBlueprint(db: Db, actor: Actor, ownerHandle: string, slug: string, options?: { digest?: string; harness?: McpHarness }): " +
+    "Promise<McpBlueprint>",
   mcpReadCard: "mcpReadCard(db: Db, actor: Actor, ref: CardRef): Promise<string>",
   mcpProvenance:
     "mcpProvenance(db: Db, actor: Actor, ownerHandle: string, slug: string): Promise<Provenance>",
@@ -74,108 +41,77 @@ export const PUBLISHED = {
 export type PublishedName = keyof typeof PUBLISHED;
 
 /**
- * The two classes D-220-06 rules, after this suite charged the block for publishing none.
- *
- * `McpRefusedError` answers absent, unparseable AND private with ONE sentence (B-03's
- * 404-over-403 rule: a distinct refusal for "it exists but is not yours" reinstates the leak
- * the status code closed). `McpStoreError` is D-13's seal, and D-220-06 ratifies it as
- * T220's OWN boundary because `getBundle` and `listReleases` are unsealed bare selects.
- *
- * `ExportError` is WRAPPED here rather than passed through, so the four-verb surface refuses
- * with one voice instead of leaking its dependencies' taxonomy — which is the opposite of
- * D-50-08's pass-through rule and is ruled that way deliberately.
- *
- * Not counted against `tests/error-hygiene.test.ts` by anything here: that guard is an
- * EQUALITY whose domain is `git ls-tree -d <backend sha> lib/server/`, so a module in a
- * worktree cannot move it. It goes 40 -> 42 at the merge, derived there, and T160 and T180
- * move the same figure from the same base — whoever lands last faces a different number.
+ * The two classes the surface refuses with. `McpRefusedError` answers absent, unparseable
+ * and not-visible with one sentence, so a caller cannot learn whether a private address
+ * exists; `McpStoreError` is the store's own fault, sealed.
  */
 export const PUBLISHED_CLASSES = ["McpRefusedError", "McpStoreError"] as const;
 
-/** Four, in the order the block publishes them. */
+/** Six, in the order the barrel publishes them. */
 export const PUBLISHED_NAMES = Object.keys(PUBLISHED) as PublishedName[];
 
 /**
- * The arity each verb publishes, so a cell can state it without counting parameters in prose.
- *
- * `Function.length` stops at the first parameter with a default, and TypeScript's `?` erases
- * to nothing — so an optional parameter spelled `?` still counts and one spelled
- * `= undefined` does not. Both spellings have shipped in this repository and the `?` was
- * charged, so the number below is what the block's parameter list says and the cell that
- * reads it says which spelling would move it.
+ * The arity each verb publishes. An optional trailing `options` is spelled with a default
+ * (`= {}`), which `Function.length` does not count, where a `?` would count: a verb whose
+ * arity is one high has an optional parameter spelled the way that moves this number.
  */
 export const PUBLISHED_ARITY: Record<PublishedName, number> = {
-  mcpSearch: 3,
+  mcpFindBlueprints: 3,
+  mcpFindCards: 3,
+  mcpGetBlueprint: 4,
   mcpReadCard: 3,
   mcpProvenance: 4,
   mcpFetchRelease: 5,
 };
 
 /**
- * The four operations `/mcp` advertises (`app/mcp/page.tsx:85-110`), which D-220-01 (3)
- * makes the advertised contract and rules MAY NOT BE RENAMED.
- *
- * Held as the page's own words rather than as a mapping this file invents, because the
- * mapping from a page's prose to a function name is exactly the guess a blind suite is not
- * entitled to make. What the cells hold the module to is that FOUR operations exist and
- * that they are the four the block names — the page is the oracle for the count and for
- * what each one takes and returns, not for the spelling of an identifier.
+ * The seven tools `/mcp` advertises, in the page's order. The page is the oracle for the
+ * count and the names; the cells hold the barrel to one verb per tool that is not a
+ * composition, and the names are read off the page rather than off this transcription.
  */
 export const ADVERTISED = [
-  "search",
-  "read a card",
-  "inspect provenance",
-  "fetch a release",
-  "export a pipeline",
+  "find_blueprints",
+  "find_cards",
+  "get_blueprint",
+  "read_card",
+  "inspect_provenance",
+  "fetch_release",
+  "export_pipeline",
 ] as const;
 
 /**
- * The advertised operations that are NOT server verbs, and what each one composes.
+ * The advertised tools that are NOT server verbs, and what each one composes.
  *
- * Empty until D-107. `export a pipeline` is the first operation `/mcp` advertises that
- * `lib/server/mcp` does not publish a verb for, because it is `mcpFetchRelease` followed by a
- * pure local compile (`attractorPipeline`, from `packages/cli`) — it reaches no route
- * `fetch a release` does not already reach and it writes nothing.
- *
- * **Why this list exists rather than a bumped number.** `surface.test.ts` held "the barrel
- * publishes one verb per advertised operation", which was an equality only while every
- * operation happened to be a server read. Relaxing it to `>=` would have made it stop
- * detecting the thing it was written for: a tool published against no barrel verb at all.
- * Naming the exceptions and what they compose keeps the cell exact — a sixth operation with
- * no verb and no entry here still reds, and an entry here whose constituents are not
- * themselves published reds too.
+ * `export_pipeline` is `mcpFetchRelease` followed by a pure local compile, reaching no route
+ * `fetch_release` does not already reach. Naming the exceptions keeps the surface cell an
+ * equality: a tool with neither a verb nor an entry here still reds, and an entry naming a
+ * constituent the barrel does not publish reds too.
  */
 export const COMPOSED: Readonly<Record<string, readonly PublishedName[]>> = Object.freeze({
-  "export a pipeline": ["mcpFetchRelease"],
+  export_pipeline: ["mcpFetchRelease"],
 });
 
 /**
- * The operation names read OFF `app/mcp/page.tsx`, not off the constant above.
+ * The tool names read OFF `app/mcp/page.tsx`, not off the constant above.
  *
- * The constant is a transcription and comparing it to `PUBLISHED_NAMES.length` is 4 === 4
- * with both fours written in this file — a cell that passes against an absent module and
- * reads as coverage. Measured: it was the one cell in the whole suite that passed in the
- * blind position, which is exactly how a tautology announces itself.
- *
- * The page is the advertised contract (D-220-01 (3)) and it is Forbidden to both halves, so
- * reading it is the only way this claim gets a second author. Comments are stripped first
- * for the reason `purity.test.ts` states at length: the page's own docblock discusses the
- * operations in prose, and a raw scan would count the discussion.
+ * Comparing the transcription to `PUBLISHED_NAMES.length` is two numbers written in this
+ * file, a cell that passes against an absent module. Comments are stripped first because
+ * the page's own prose discusses the tools by name.
  */
 export function advertisedOperations(pageSource: string): string[] {
   const code = strip(pageSource);
   const start = code.indexOf("const OPERATIONS");
   if (start === -1) {
     throw new Error(
-      "`const OPERATIONS` is not in app/mcp/page.tsx. D-220-01 (3) names lines 85-110 as the " +
-        "advertised contract; if the array was renamed, this reader needs updating and the " +
-        "count below is not a finding about the module.",
+      "`const OPERATIONS` is not in app/mcp/page.tsx. The tool table is the advertised " +
+        "surface; if the array was renamed, this reader needs updating and the count below is " +
+        "not a finding about the module.",
     );
   }
   const end = code.indexOf("] as const;", start);
   const block = code.slice(start, end === -1 ? undefined : end);
   /* The names come from the ORIGINAL text at the offsets the stripped block reports, because
-     `strip` blanks string bodies — same split as the AC1 import scan. */
+     `strip` blanks string bodies. */
   const names: string[] = [];
   const re = /name:\s*"/g;
   let m: RegExpExecArray | null;
@@ -191,8 +127,7 @@ let mcpModule: Promise<Namespace> | undefined;
 
 /**
  * Memoised as the promise, rejection included: a module that is absent stays absent for the
- * whole file, and every cell that awaits it gets its own copy of the same red rather than
- * one cell's failure cascading into an unhandled rejection in the next.
+ * whole file, and every cell that awaits it gets its own copy of the same red.
  */
 export function loadMcp(): Promise<Namespace> {
   mcpModule ??= import("@/lib/server/mcp").then(
@@ -200,10 +135,8 @@ export function loadMcp(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${MCP} does not load.\n` +
-          `  backend.md §T220 owns \`lib/server/mcp/**\` and \`packages/mcp/**\` and publishes ` +
-          `four functions: ${PUBLISHED_NAMES.join(", ")}.\n` +
-          `  This is a failed acceptance criterion — the MCP surface is absent — and not a ` +
-          `broken test. The specifier is a literal so the \`@\` alias resolves.`,
+          `  The barrel publishes six functions: ${PUBLISHED_NAMES.join(", ")}.\n` +
+          `  This is a failed criterion, the MCP surface is absent, and not a broken test.`,
         { cause },
       );
     },
@@ -222,57 +155,37 @@ function requireFrom(mod: Namespace, name: PublishedName): unknown {
   const exported = Object.keys(mod).sort().join(", ") || "(nothing)";
   throw new Error(
     `\`${name}\` is not exported from ${MCP}.\n` +
-      `  backend.md §T220 publishes it as:\n    ${PUBLISHED[name]}\n` +
+      `  It is published as:\n    ${PUBLISHED[name]}\n` +
       `  ${MCP} exports: ${exported}.`,
   );
 }
 
-/**
- * One published verb, checked for KIND as well as presence.
- *
- * A binding is only usable once the thing it bound to has been shown to be the right kind
- * of thing. A name that resolves to a non-function is a broken binding rather than a failed
- * criterion, and it is raised here rather than left to fail confusingly at the call site.
- */
+/** One published verb, checked for kind as well as presence. */
 export async function verb(name: PublishedName): Promise<UnknownFn> {
   const bound = requireFrom(await loadMcp(), name);
   if (typeof bound !== "function") {
     throw new Error(
       `\`${name}\` is exported from ${MCP} but is ${describe_(bound)}, not a function.\n` +
-        `  backend.md §T220 publishes it as:\n    ${PUBLISHED[name]}`,
+        `  It is published as:\n    ${PUBLISHED[name]}`,
     );
   }
   return bound as UnknownFn;
 }
 
-/* --------------------- AC1's denylist --------------------- */
+/* --------------------- the purity denylist --------------------- */
 
 /**
  * Every writing function reachable from a barrel `lib/server/mcp` could plausibly compose,
- * enumerated by hand from those barrels' own export lists rather than recalled.
+ * enumerated from those barrels' own export lists.
  *
- * AC1's discriminating test is not "a write was refused" but that the module's imports
- * contain no writing function — the block says so in as many words, in the shape T060's
- * purity check established. A denylist is the wrong instrument for a claim about ALL
- * writes, so `purity.test.ts` checks the import SPECIFIERS against an allowlist as well;
- * this list exists because the two most dangerous names on it are the two an implementer
- * would reach for first, and a red naming them is worth more than a red naming a module.
- *
- * ── the two that are the whole point ──
- * `serveCard` (`lib/server/export/serve-card.ts:58`) and `serveFile`
- * (`lib/server/export/serve-file.ts:109`) BOTH call `recordDownload`, which writes a
- * counter row. They are the obvious composition for "read a card" and "fetch a release"
- * and they break AC1 while looking exactly right. `exportRelease` is the AC1-safe verb and
- * its own header says why: *"No download event: the contract counts one event per *served*
- * file, this verb returns `ExportedFile[]` where the serving verbs return `ServedFile`"*.
- *
- * `enforceLimit` and `checkLimit` are deliberately NOT on this list. They mutate a
- * process-local `Int32Array` (`lib/server/limits/counter.ts:238-239`) and touch no
- * database, so whether AC1's "writes" reaches them is a question about the criterion rather
- * than about the module — charged to the orchestrator, not decided here.
+ * `serveCard` and `serveFile` both call `recordDownload`, which writes a counter row. They
+ * are the obvious composition for reading a card and fetching a release and they break the
+ * read-only rule while looking exactly right; `exportRelease` is the read-only verb.
+ * `enforceLimit` and `checkLimit` are deliberately NOT here: they mutate a process-local
+ * counter and touch no database.
  */
 export const WRITERS: readonly string[] = [
-  /* @/lib/server/export — the two that read as readers */
+  /* @/lib/server/export */
   "recordDownload",
   "serveCard",
   "serveFile",
@@ -289,6 +202,7 @@ export const WRITERS: readonly string[] = [
   "forkBundle",
   /* @/lib/server/search */
   "reembedRelease",
+  "reembedAll",
   /* @/lib/server/accounts */
   "upsertFromGitHub",
   "changeHandle",
@@ -298,17 +212,14 @@ export const WRITERS: readonly string[] = [
   /* @/lib/server/limits */
   "issueKey",
   "revokeKey",
+  "revokeKeysFor",
   /* @/lib/server/ontology */
   "addOntologyVersion",
 ];
 
 /**
- * The barrels a read-only composition may name, from D-220-03 plus the block's own
- * "composes T080, T090 and T200 through their barrels and owns no storage".
- *
- * Deep paths are absent by construction and that is the second half of the check: T000's
- * contract D-01 makes a deep path into another module internal, so `@/lib/server/export/serve-card`
- * is a violation whatever it imports.
+ * The barrels a read-only composition may name. Deep paths are absent by construction: a
+ * deep path into another module is internal whatever it imports.
  */
 export const COMPOSABLE = [
   "@/lib/core",
@@ -316,12 +227,7 @@ export const COMPOSABLE = [
   "@/lib/content/bundle-export",
   "@/lib/server/types",
   "@/lib/server/policy",
-  /* The transport boundary. Every owned module in this repo publishes one here rather than
-     beside the routes, because `app/api/**` holds route handlers and nothing else (D-01) —
-     `withSearchErrors`, `withRegistryErrors`, `withLineageErrors` are all this shape. It was
-     missing from my first list and reddened a correct module on `mcp/http.ts`, which is the
-     false charge this cell's own pre-registration named as most likely. `notFound` and
-     `problem` render; neither writes. */
+  /* The transport boundary renders and never writes. */
   "@/lib/server/http",
   "@/lib/server/accounts",
   "@/lib/server/archive",
@@ -338,20 +244,10 @@ export const COMPOSABLE = [
 /**
  * What a call did: answered, or refused.
  *
- * Every AC3 cell in this suite is written against this rather than against
- * `expect(...).rejects.toThrow()`, and the reason is charge 6 in the T220 log: **the
- * published block names no error class**, while `mcpReadCard: Promise<string>` and
- * `mcpProvenance: Promise<Provenance>` are total return types that must refuse somehow.
- * Three resolutions are live — a new `McpError`, the composed modules' classes passing
- * through, or `| undefined` on the return type — and a blind cell that picks one reports a
- * defect against an implementer who followed the contract.
- *
- * So the criterion is asserted in the form it is actually written in: *private content is
- * unreachable*. Unreachable is a claim about what came BACK, and it is true of a throw, of
- * an `undefined` and of an empty list alike. It is false of exactly one thing, which is the
- * private bytes arriving — and `rejects.toThrow()` cannot see that difference at all: a
- * suite's own absent-module rejection satisfies a bare `rejects.toThrow()`, so the cell
- * passes against a module that does not exist.
+ * The privacy cells ask whether private bytes came BACK, which is true of a throw, an
+ * `undefined` and an empty list alike and false of exactly one thing. A bare
+ * `rejects.toThrow()` cannot see that difference: the suite's own absent-module rejection
+ * satisfies it, so the cell passes against a module that does not exist.
  */
 export type Outcome = { ok: true; value: unknown } | { ok: false; error: unknown };
 
@@ -366,15 +262,9 @@ export async function outcome(fn: () => Promise<unknown>): Promise<Outcome> {
 /**
  * Every string reachable from a value, errors and their `cause` chains included.
  *
- * Written for a LEAK scan, which is why it does not stop where D-13's hygiene clause does.
- * That clause rewards an error whose payload is non-enumerable — `rateLimitedError` hangs
- * its context off a symbol precisely so `Object.keys`, `JSON.stringify` and a spread all
- * skip it — and an enumerable-only walk over that shape reads `{}` and reports no leak
- * while the payload sits there. So this reads `message`, `stack`, `cause` transitively, own
- * enumerable AND non-enumerable properties, and symbol-keyed ones.
- *
- * Cycles are closed on identity rather than on depth: a `cause` chain can be circular and a
- * depth cap would turn a leak scan into a scan of the first few frames.
+ * Written for a leak scan, so it reads own enumerable AND non-enumerable properties and
+ * symbol-keyed ones: an error whose payload hangs off a symbol renders as `{}` to
+ * `JSON.stringify` while the payload sits there. Cycles are closed on identity.
  */
 export function stringsIn(value: unknown): string[] {
   const found: string[] = [];
@@ -392,13 +282,8 @@ export function stringsIn(value: unknown): string[] {
     if (v instanceof Error) {
       found.push(v.name, v.message);
       if (typeof v.stack === "string") found.push(v.stack);
-      /* REDUNDANT TODAY, AND KEPT — measured rather than assumed. `new Error(m, {cause})`
-         installs `cause` as a NON-ENUMERABLE OWN property (`Object.keys` answers `[]`,
-         `Reflect.ownKeys` answers `stack,message,cause`), so the general walk below already
-         reaches it: deleting this line alone reddened 0 of 15 instrument cells. It is a
-         waiting guard rather than dead code, and the 2x2 is what separates the two — with
-         the walk below narrowed to `Object.keys` as well, the `cause` cell RED. Both
-         mutations together red 2; either alone reds 1 and 0. */
+      /* Redundant with the general walk while `cause` is an own property, and kept as the
+         guard for a runtime that installs it differently. */
       walk((v as { cause?: unknown }).cause);
     }
     if (Array.isArray(v)) {
@@ -426,29 +311,21 @@ export function stringsIn(value: unknown): string[] {
 }
 
 /**
- * Whether `needle` appears anywhere in what a call produced.
- *
- * The needle is always a string only the private fixture carries, so a hit is a leak and
- * not a coincidence. Substring rather than equality: private bytes can arrive embedded in
- * a larger document, which is the shape a whole-value comparison misses.
+ * Whether `needle` appears anywhere in what a call produced. Substring rather than
+ * equality: private bytes can arrive embedded in a larger document.
  */
 export function reveals(result: Outcome, needle: string): boolean {
   const subject = result.ok ? result.value : result.error;
   return stringsIn(subject).some((s) => s.includes(needle));
 }
 
-/* --------------------- AC1's source scan, and its instrument --------------------- */
+/* --------------------- the source scan, and its instrument --------------------- */
 
 /**
  * `text` with every comment blanked and every string body blanked, preserving offsets.
  *
- * Blanked rather than deleted so a reported index still points where a reader would look,
- * and so two adjacent tokens cannot be fused into a third by the removal.
- *
- * String bodies go too, and that is deliberate: an import specifier is a string, so the
- * scan below reads specifiers from the parsed statement rather than from free text, and a
- * function name mentioned inside an unrelated string literal — an error message naming
- * `serveCard`, which is exactly what a well-written refusal would do — must not red.
+ * String bodies go too: an import specifier is a string, so the scan reads specifiers from
+ * the parsed statement, and a function name mentioned inside an error message must not red.
  */
 export function strip(text: string): string {
   const out = text.split("");
@@ -487,7 +364,7 @@ export function strip(text: string): string {
         if (text[j] === ch) break;
         j += 1;
       }
-      /* The quotes are KEPT and only the body is blanked, so the statement still parses as
+      /* The quotes are kept and only the body is blanked, so the statement still parses as
          `from " "` and the specifier extraction below reads a recognisable shape. */
       blank(i + 1, j, true);
       i = Math.min(j + 1, n);
@@ -504,13 +381,7 @@ export interface Imported {
   names: string[];
 }
 
-/**
- * Every static import, read off the stripped source and re-read for its specifier.
- *
- * The specifier is taken from the ORIGINAL text at the offsets the stripped text reports,
- * because `strip` blanked the string bodies. That split is the point: the shape is decided
- * on code with no prose in it, and the value is then read from the bytes.
- */
+/** Every static import, read off the stripped source and re-read for its specifier. */
 export function importsOf(file: string, text: string): Imported[] {
   const stripped = strip(text);
   const found: Imported[] = [];
@@ -536,24 +407,18 @@ export function importsOf(file: string, text: string): Imported[] {
 }
 
 /**
- * The hits of a `mcpSearch` answer, checked for SHAPE before anything reads `evidence`.
+ * The hits of a find answer, checked for shape before anything reads `evidence`.
  *
- * Without this, a module that dropped `evidence` reds three cells with
- * `TypeError: Cannot read properties of undefined (reading 'length')` — measured, that is
- * the exact string. It is a red, and it names the wrong cause: a reader triaging it looks
- * for a null-safety bug in the suite rather than for the published field D-220-04 restored
- * after both halves charged its absence. Widening what the failure SAYS costs nothing and
- * does not narrow what the module may return.
- *
- * Returns the hits so a cell reads `hitsOf(result)` and then dereferences freely.
+ * Without this a module that dropped `evidence` reds with `Cannot read properties of
+ * undefined`, a red naming a plausible wrong cause. Widening what the failure says costs
+ * nothing and does not narrow what the module may return.
  */
 export function hitsOf(result: unknown, where: string): { evidence: readonly string[] }[] {
   const hits = (result as { hits?: unknown })?.hits;
   if (!Array.isArray(hits)) {
     throw new Error(
-      `${where}: the answer carries no \`hits\` array — it is ${describe_(hits)}.\n` +
-        `  backend.md §T220 publishes ` +
-        `\`Promise<{ hits: readonly McpSearchHit[]; ordered: boolean }>\`.`,
+      `${where}: the answer carries no \`hits\` array; it is ${describe_(hits)}.\n` +
+        "  A find verb answers `{ task, encoder, ordered, hits }`.",
     );
   }
   const missing = hits.filter(
@@ -563,9 +428,8 @@ export function hitsOf(result: unknown, where: string): { evidence: readonly str
     throw new Error(
       `${where}: ${missing.length} of ${hits.length} hits carry no \`evidence\` array.\n` +
         `  First: ${JSON.stringify(missing[0])}\n` +
-        "  D-220-04 restored `evidence: readonly string[]` to `McpSearchHit` after both " +
-        "halves charged the block for losing it: `ordered: true` with nothing beside it is " +
-        "the relevance-number-with-no-published-derivation `/mcp`'s own OPEN row refuses.",
+        "  Every find hit carries `evidence: readonly string[]`: `ordered: true` with nothing " +
+        "beside it is a relevance number with no published derivation.",
     );
   }
   return hits as { evidence: readonly string[] }[];

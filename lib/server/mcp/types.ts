@@ -1,98 +1,117 @@
 /* ============================================================
-   DarkPrint backend — the MCP surface's published record shapes
-   Two shapes, both from the task's published block with D-220-04
-   and D-220-05 applied.
-
-   Neither restates anything. `McpSearchHit` is a PROJECTION of
-   T200's `Hit<BlueprintSummary>` and `Hit<CardSummary>` onto the
-   four fields `/mcp` advertises plus the evidence that makes the
-   order checkable; `Provenance` is a projection of T010's
-   `BundleRecord` and `ReleaseRecord`. Nothing here is a second
-   opinion about a shape another module owns, which is why neither
-   `BlueprintSummary` nor `ReleaseRecord` is re-exported from this
-   module's barrel.
+   DarkPrint backend: the MCP surface's published record shapes
+   Every shape here is a projection of a record another module
+   owns, flattened for an agent: a find hit is a search `Hit` plus
+   the summary fields an agent decides on, a blueprint answer is a
+   release's files plus its scorecard and provenance. Nothing is
+   restated, which is why `BlueprintSummary`, `ReleaseRecord` and
+   `ExportedFile` are not re-exported from this module's barrel.
    ============================================================ */
 
+import type { ExportedFile } from "@/lib/content/bundle-export";
+
+/** The instantiation flavours `get_blueprint` writes notes for. It filters nothing. */
+export type McpHarness = "claude-code" | "codex" | "generic";
+export const MCP_HARNESSES: readonly McpHarness[] = ["claude-code", "codex", "generic"];
+
+export function isMcpHarness(value: unknown): value is McpHarness {
+  return typeof value === "string" && (MCP_HARNESSES as readonly string[]).includes(value);
+}
+
 /**
- * One result, flattened for an agent, and the reason it sits where it sits.
- *
- * ── `evidence` was missing from the published block and D-220-04 put it back ──
- *
- * AC5 is *results carry evidence or declare themselves unordered*, and D-220-02 rules
- * `ordered` to be T200's own law composed through rather than a new quantity:
- *
- *     ordered === hits.every((h) => h.evidence.length > 0)
- *
- * That law is not even stateable over a hit shape with no evidence. Worse, an agent handed
- * `ordered: true` and nothing beside it has been given exactly the relevance number with no
- * published derivation that SEAM-88 exists to refuse — and unlike a reader on `/blueprints`,
- * an agent consuming a ranked list has no way to ask. The field is already computed on
- * `Hit<T>`, so dropping it was pure loss; SEAM-93's own sketch of this surface carried it.
- *
- * It is also what keeps T300 auditable. When the semantic channel lands it feeds THIS
- * surface (D-300-01), and a cosine distance is the one ranking that cannot explain itself
- * from the archive. Evidence on the wire is where that will show.
- *
- * The format is T200's, unaltered: `<field>:<token>`, naming the field that matched and the
- * word in the DOCUMENT it matched, one entry per place the query was found. Empty when the
- * response makes no ranking claim, which is the other admissible state of AC5's honesty
- * clause and not a degraded one.
- *
- * ── `author` is OPTIONAL, and the asymmetry is structural rather than an omission ──
- *
- * D-220-05: the owner's handle for a blueprint hit, and OMITTED — not `undefined`, not `""`
- * — for a card hit. `BlueprintSummary` carries `ownerHandle`; `CardSummary` carries no
- * owner field at all, so filling the card half needs a per-hit join against T050 that
- * D-220-02 tells this task not to invent.
- *
- * The two fields that could have stood in for it are the stale claims T250 deliberately
- * left (D-250-18), naming six handles no account holds. An agent must be able to ACT on
- * what a hit carries: `ownerHandle` joins to `mcpProvenance` and to `/u/`, and a fixture
- * name joins to nothing. An absent field says *this surface does not know*, which is true;
- * a populated one would say something false in a shape that looks actionable.
- *
- * ── `ref` is the two-part key ──
- *
- * `ownerHandle/slug` for a blueprint and `id@version` for a card (D-220-13). B-09 made the
- * blueprint key two-part, so a slug alone cannot tell `alice/foo` from `bob/foo`; a bare
- * card id collides on four of the archive's 53. The `/mcp` page's slug-only and bare-id
- * spellings predate B-09 and are stale — the block governs, and the page is Forbidden.
+ * What every find hit carries. `evidence` is the search module's own `<field>:<token>`
+ * list, plus `similarity:0.43` when a vector was available; `score` is the number the order
+ * was sorted on and `similarity` is that entry as a number, absent when there was none.
  */
-export interface McpSearchHit {
-  kind: "blueprint" | "card";
+interface McpHitBase {
   ref: string;
-  /** The owner's handle on a blueprint hit. Absent on a card hit; see above. */
-  author?: string;
   digest: string;
+  score: number;
+  similarity?: number;
   evidence: readonly string[];
+}
+
+/**
+ * One blueprint, flattened for an agent. `ref` is `ownerHandle/slug` because a slug alone
+ * cannot tell `alice/foo` from `bob/foo`. The scorecard fields are absent, never null, when
+ * the current release carries no scorecard.
+ */
+export interface McpBlueprintHit extends McpHitBase {
+  kind: "blueprint";
+  author: string;
+  title: string;
+  summary: string;
+  category?: string;
+  tags: readonly string[];
+  nodes?: number;
+  humanGates?: readonly string[];
+  autonomy?: string;
+  security?: number;
+  phases?: readonly string[];
+}
+
+/**
+ * One card version, flattened for an agent. `ref` is `id@version`. No `author`: the card
+ * summary carries no owner, and the pinning blueprint's owner is a different fact.
+ */
+export interface McpCardHit extends McpHitBase {
+  kind: "card";
+  name: string;
+  type: string;
+  action: string;
+  phases: readonly string[];
+  tools: readonly string[];
+  riskMarkers: readonly string[];
+  /** The blueprints pinning this exact version, as `ownerHandle/slug`. */
+  usedIn: readonly string[];
+}
+
+/**
+ * A find answer. `ordered` is the search module's own law composed through: true when every
+ * hit carries evidence, and true over zero hits. `encoder` says whether this process could
+ * encode the task; when it is `absent` no hit carries a similarity and the order is lexical.
+ */
+export interface McpFindResult<H> {
+  task: string;
+  encoder: "present" | "absent";
+  ordered: boolean;
+  hits: readonly H[];
+}
+
+/** The stored scorecard of one release, reduced to what an agent decides on. */
+export interface McpScorecard {
+  autonomy: { class: string; fraction: number; humanGates: readonly string[] };
+  security: { level: number; markers: readonly string[] };
+  phases: { covered: readonly string[]; missing: readonly string[] };
+}
+
+/** A whole blueprint at one digest, with the notes for instantiating it. */
+export interface McpBlueprint {
+  owner: string;
+  slug: string;
+  digest: string;
+  version: string;
+  /** Whether `digest` is the blueprint's current release. */
+  current: boolean;
+  manifest: {
+    title: string;
+    summary: string;
+    description?: string;
+    category?: string;
+    tags: readonly string[];
+  };
+  files: readonly ExportedFile[];
+  scorecard?: McpScorecard;
+  provenance: Provenance;
+  instantiate: { harness: McpHarness; steps: readonly string[] };
 }
 
 /**
  * Where a bundle came from: who published it, what it was forked from, and every release.
  *
- * `publishedBy` is a HANDLE and never an account id. The store keys ownership by uuid, and
- * a uuid is not something an agent can do anything with — it addresses no route on this
- * site. A bundle whose owner holds no handle refuses the whole read rather than rendering a
- * hole here, which is T080's own exclusion (*a bundle whose owner has no handle is
- * excluded*) applied at the one surface that would otherwise have to invent a value for it.
- *
- * ── `forkedFrom` is OMITTED WHOLE when the upstream is unreadable ──
- *
- * The lineage is three columns on the FORK's own row, so rendering it names an upstream
- * owner, slug and version WITHOUT ever reading the upstream — which is how AC3 leaks by
- * lineage: a fork of a private or deleted bundle would publish that bundle's existence
- * through a verb that never touched it.
- *
- * `searchBlueprints`' `forkedKeys` already settled the analogous case one module over, and
- * this follows its precedent rather than inventing a second rule: a fork whose upstream is
- * not in the public set presents as an original. It has no upstream a reader could be sent
- * to instead. Omitted whole rather than partially, for the same reason the handle case
- * refuses: two of the three fields with the third missing is a shape nothing downstream can
- * use and every reader has to special-case.
- *
- * `releases` is every release of the bundle, so an agent can pin one. `version` and `digest`
- * together, because those are the two ways to name a release and the distinction between
- * them is what `mcpFetchRelease` exists to honour.
+ * `publishedBy` is a handle and never an account id, because a uuid addresses no route on
+ * this site. `forkedFrom` is omitted whole when the upstream is not readable by the caller:
+ * a fork of a private bundle must not publish that bundle's existence through its lineage.
  */
 export interface Provenance {
   publishedBy: string;

@@ -1,33 +1,30 @@
 #!/usr/bin/env node
 /* ============================================================
-   darkprint — the command `/mcp` advertises
-   `components/mcp/clients.ts` publishes `npx -y darkprint mcp` in
-   all six client configurations and SEAM-87 restates it, so the
-   package is `darkprint` and `mcp` is a SUBCOMMAND (D-220-08,
-   F-220-H). A package named `@darkprint/mcp` with a bare bin would
-   be a different command from the one the site tells six clients
-   to run.
+   darkprint: the bin
+   `mcp` serves the registry over stdio; every other verb is the
+   CLI's and is dispatched into `packages/cli`. One distributable,
+   so `npx -y darkprint mcp` and `npx -y darkprint validate` are the
+   same package.
 
-   Every message here goes to stderr. stdout is the JSON-RPC wire
-   and a single stray line on it kills the session (see `rpc.ts`).
+   Every message here goes to stderr. On the `mcp` branch stdout is
+   the JSON-RPC wire and a single stray line on it kills the session.
+   This file must never import `./local`: that module reaches the
+   database driver, and the bundler would ship it to every reader.
    ============================================================ */
 
 import { CLI_VERBS, NPX_INVOCATION, renderCliUsage, runCli, type CliVerb } from "../../cli/src/index";
 import { optionsFromEnv } from "./registry";
 import { runServer } from "./server";
 
-/* `mcp` first here and last in `packages/cli/src/run.ts`, which is the one difference between
-   the two help blocks and is deliberate: this shim is the bin of a package NAMED for that
-   subcommand, and it is the line the site's six client configurations already run, so it
-   leads. The verbs themselves come from the table either way, so the orders can differ
-   without the text differing. */
+/* `mcp` first here and last in `packages/cli/src/run.ts`: this shim is the bin of a package
+   named for that subcommand, so it leads. The verbs come from the same table either way. */
 const MCP_FIRST: readonly CliVerb[] = [
   ...CLI_VERBS.filter((verb) => verb.name === "mcp"),
   ...CLI_VERBS.filter((verb) => verb.name !== "mcp"),
 ];
 
 const USAGE = renderCliUsage(
-  "darkprint — the DarkPrint registry from your terminal and from an agent.",
+  "darkprint: the DarkPrint registry from your terminal and from an agent.",
   NPX_INVOCATION,
   MCP_FIRST,
   true,
@@ -48,15 +45,8 @@ export async function main(argv: readonly string[]): Promise<number> {
     return 0;
   }
 
-  /* Every other verb is T270's, and this is the whole of the dispatcher extension C1
-     granted: ONE distributable, so `npx -y darkprint mcp` and `npx -y darkprint validate`
-     are the same package and the site's six client configs keep working unchanged.
-
-     The two real streams are passed HERE and nowhere else. `packages/cli` renders through
-     `io` alone (D-270-03(1)) so a suite can drive a whole command in-process; this shim is
-     the one place that turns that into a terminal. `out` goes to stdout and `err` to
-     stderr — and note that this is the only branch where stdout is NOT the JSON-RPC wire,
-     which is why the rule at the top of this file is about the `mcp` branch specifically. */
+  /* The two real streams are passed here and nowhere else: `packages/cli` renders through
+     `io` alone so a suite can drive a whole command in-process. */
   return await runCli(argv, {
     out: (text) => {
       process.stdout.write(text);

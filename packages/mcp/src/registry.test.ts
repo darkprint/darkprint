@@ -143,7 +143,7 @@ describe("the refusals, unchanged by the widening", () => {
 describe("the env contract, stated once", () => {
   it("defaults the base URL and reads the key, with no session of its own", () => {
     const options = optionsFromEnv({} as NodeJS.ProcessEnv);
-    expect(options.baseUrl).toBe("https://darkprint.io");
+    expect(options.baseUrl).toBe("https://www.darkprint.io");
     expect(options.apiKey).toBeUndefined();
     /* A session is NOT part of this shape and must not become part of it: this module is
        the read client an MCP server runs, and it has no business holding a credential that

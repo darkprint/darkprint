@@ -108,8 +108,8 @@ export const CLI_VERBS: readonly CliVerb[] = [
     name: "mcp",
     args: "mcp",
     does:
-      "Serves the registry over MCP on stdio, which is the command the six client " +
-      "configurations on the site already run.",
+      "Serves the registry over MCP on stdio, for a client that cannot reach the remote " +
+      "server at /api/mcp.",
     hint: "serve the registry over MCP (stdio)",
     dispatchedBy: "packages/mcp/src/cli.ts",
   },
@@ -139,7 +139,7 @@ export interface CliEnvVar {
  * API key.
  */
 export const CLI_ENV: readonly CliEnvVar[] = [
-  { name: "DARKPRINT_URL", does: "registry base URL (default https://darkprint.io)" },
+  { name: "DARKPRINT_URL", does: "registry base URL (default https://www.darkprint.io)" },
   { name: "DARKPRINT_API_KEY", does: "an API key, which raises the rate limit ceiling" },
   {
     name: "DARKPRINT_SESSION",
