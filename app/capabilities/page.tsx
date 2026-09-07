@@ -8,6 +8,7 @@ import { QUESTIONS } from "@/components/skill/SkillSetup";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { KeyValueList, KeyValueRow } from "@/components/ui/KeyValueList";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { SpecPager } from "@/components/spec/SpecPager";
 import { StatusPill, type CapabilityStatus } from "@/components/ui/StatusPill";
 import { BUNDLE_CARDS_DIR, BUNDLE_README, TOPOLOGY_DOT } from "@/lib/content/bundle-export";
 import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
@@ -256,6 +257,9 @@ function Th({ children, width }: { children: React.ReactNode; width: string }) {
     </th>
   );
 }
+
+/** This page is a stop in the Learn sequence; the pager at its foot reads the list. */
+const HERE = "/capabilities";
 
 export default function CapabilitiesPage() {
   const surfaces: readonly Surface[] = [
@@ -533,7 +537,7 @@ export default function CapabilitiesPage() {
       </p>
 
       <section aria-labelledby="intent-title" className="mt-10 flex min-w-0 flex-col gap-3">
-        <h2 id="intent-title" className="label">
+        <h2 id="intent-title" className="label scroll-mt-24">
           By intent
         </h2>
         <KeyValueList>
@@ -561,6 +565,9 @@ export default function CapabilitiesPage() {
         </h2>
         <SurfaceTabs surfaces={surfaces}>{[cli, mcp, skill]}</SurfaceTabs>
       </section>
+      <div className="mt-16">
+        <SpecPager href={HERE} />
+      </div>
     </div>
   );
 }

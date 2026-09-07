@@ -498,6 +498,36 @@ export const LEARN_PRACTICE: readonly SpecPage[] = [
       { id: "sources", label: "Where this framing comes from" },
     ],
   },
+  /* Two practice stops after the essay: the index of what the surfaces do, then the
+     walkthrough that uses them. Both left the AI Tools menu because a reader consults them
+     while learning, and Learn is where the chrome puts what a reader consults. */
+  {
+    href: "/capabilities",
+    step: "05",
+    run: "practice",
+    nav: "What you can do",
+    eyebrow: "Reference",
+    title: "What you can do",
+    question:
+      "Every operation, from the site, a terminal or your agent, and whether it works today.",
+    sections: [
+      { id: "intent-title", label: "By intent" },
+      { id: "cli", label: "Command line" },
+      { id: "mcp", label: "MCP" },
+      { id: "skill", label: "The blueprint-writing skill" },
+    ],
+  },
+  {
+    href: "/tutorial",
+    step: "06",
+    run: "practice",
+    nav: "Write your first blueprint",
+    eyebrow: "Tutorial",
+    title: "Write your first blueprint",
+    question:
+      "Make one: the blueprint-writing skill interviews you and the graph draws itself as you answer.",
+    sections: [],
+  },
 ];
 
 /**

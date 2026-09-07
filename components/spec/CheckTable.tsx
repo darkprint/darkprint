@@ -19,6 +19,8 @@
    the alarm colour belongs on a defect somebody actually has.
    ============================================================ */
 
+import type { DiagnosticCode } from "@/lib/core";
+
 export interface CheckRow {
   /** The field, attribute or construct, spelled as it appears in the file. */
   name: string;
@@ -32,7 +34,9 @@ export interface CheckRow {
    * be the site overstating what it can vouch for.
    */
   check?: {
-    codes: readonly string[];
+    /* Typed to the validator's own union, so a code that is renamed or deleted in the
+       engine fails the typecheck here instead of leaving a stale row on the page. */
+    codes: readonly DiagnosticCode[];
     /** `error` refuses the bundle; `warning` is reported and the bundle still loads. */
     level: "error" | "warning";
   };

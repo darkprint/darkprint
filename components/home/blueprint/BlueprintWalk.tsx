@@ -1,8 +1,7 @@
 "use client";
 
 /* ============================================================
-   The landing's graph beat: a drawing that becomes the file it was
-   drawn from.
+   The landing's graph beat: the starter blueprint, drawn.
 
    The copy is one sentence and the drawing is the argument. The
    claims about the loop and the absent edge live where they are
@@ -19,14 +18,15 @@
    stops in the first figure on the site. What each run carries is in
    the scene's `<desc>`, which is what a screen reader is given
    instead of walking the drawing.
-   ============================================================ */
 
+   A client component only because the drawing animates: the scene
+   plays its flow once it scrolls into view. The drawing stays a
+   drawing; the file behind it is one click away on `/spec/topology`.
+   ============================================================ */
 
 import { FlowAbsence, FlowEdge, FlowNode, FlowScene, Sheet } from "@/components/viz";
 import { kindTone, type FlowTone } from "@/components/viz/flow";
 import { useLuminousFlow } from "@/components/viz/useLuminousFlow";
-import { DotBreakdown } from "@/components/panes/DotBreakdown";
-import { SourceSwap } from "../SourceSwap";
 
 import {
   LANDING_GRAPH_DESCRIPTION,
@@ -35,7 +35,6 @@ import {
   LANDING_WIDE,
   type LandingGraph,
 } from "../graph";
-
 
 /**
  * The disc is coloured by what the node is, the way the registry's tiles colour it, so the
@@ -62,17 +61,9 @@ function Drawing({ graph, className }: { graph: LandingGraph; className: string 
   return (
     <FlowScene
       {...flow.scene}
-      /* Names on, always.
-         ------------------------------------------------------------
-         `useLuminousFlow` returns `labels: "hover"` the moment a scene animates, and on
-         this one that left five identical glowing discs with nothing written on them. The
-         beat's caption says "five nodes, five edges" and the drawing showed five dots: a
-         reader could not tell a planner from a release gate, and a reader without a mouse
-         never could at all. `beats.test.ts` states the rule this broke, in the site's own
-         words: "a figure whose meaning is only available to a mouse user is a broken
-         figure."
-
-         Safe to turn on rather than a judgement call: `scene-labels.test.ts` measures
+      /* Names on, always. `useLuminousFlow` returns `labels: "hover"` the moment a scene
+         animates, and five identical glowing discs with nothing written on them is a figure
+         whose meaning is only available to a mouse user. `scene-labels.test.ts` measures
          every label box in both of this section's frames, so a name that would collide or
          leave the sheet fails the suite. After the spread, so it wins over the hook. */
       labels="always"
@@ -129,74 +120,20 @@ function Drawing({ graph, className }: { graph: LandingGraph; className: string 
   );
 }
 
-/* `components/hero/Wordmark.tsx` links `#blueprint`. This section's own top padding
-   happens to be deeper than the sticky header, so nothing was hidden; the `scroll-mt-24`
-   is there so the rule in `components/site/anchors.test.ts` holds over every anchor
-   without an exemption list nobody would revisit. */
 /**
- * The drawing, and the file it is a picture of.
+ * The starter blueprint on one sheet, at the two placements the viewport picks between.
  *
- * `SectionBlueprint` is the server half: it reads `topology.dot` off the archive and hands
- * it down. This half is a client component because the drawing animates, and because the
- * swap below it is driven by scroll.
- *
- * Two sheets, not one with its contents replaced. Each is a complete object with its own
- * title block — the drawing's says what the graph holds, the file's says what the file is —
- * and `SourceSwap` crossfades between them. A single sheet whose insides changed would
- * make the frame the constant and the content the variable, which is backwards: the point
- * is that these are two renderings of one artefact, not one container showing two things.
+ * `components/hero/Wordmark.tsx` links `#blueprint`, which is the section around this;
+ * `scroll-mt-24` on that section keeps `components/site/anchors.test.ts`'s rule without an
+ * exemption.
  */
-export function BlueprintWalk({
-  dot,
-  file,
-  heading,
-}: {
-  dot: string;
-  file: string;
-  /** The section's heading, drawn inside the pin. See `SourceSwap`'s own `heading`. */
-  heading?: React.ReactNode;
-}) {
+export function BlueprintWalk() {
   return (
-    <SourceSwap
-      {...(heading === undefined ? {} : { heading })}
-      /* `max-w-5xl`, not the `4xl` the sheet alone wanted: the source layer is
-         `DotBreakdown`, which lays a listing beside a column of notes, and at 4xl the notes
-         wrapped to three words a line. The drawing is centred in the same width. */
-      className="mx-auto mt-10 max-w-5xl"
-      figure={
-        <Sheet
-          label="starter software factory"
-          title="five nodes, five edges"
-          /* `note="one run deliberately missing"` stood here and the author asked it out.
-             The absent edge is still drawn — dashed, labelled `acceptance-criteria`, with
-             its own absence glyph — and the walk's third and fourth notes name it in the
-             listing this drawing turns into. A caption in the sheet's corner saying the
-             same thing was the third telling. */
-        >
-          <Drawing graph={LANDING_NARROW} className="sm:hidden" />
-          <Drawing graph={LANDING_WIDE} className="hidden sm:block" />
-        </Sheet>
-      }
-      hint="Scroll down. The drawing becomes the file it was drawn from."
-      source={(progress) => (
-        /* The panel `/spec/topology` uses, driven rather than clicked. `walkTo` walks the
-           five blocks off the swap's own clock, so the listing lights one block and shows
-           that block's note alone.
-
-           The window is the tail of the pin: the file has finished arriving by 0.28 and the
-           walk spends everything after it, 0.14 of the track per block. At 1440 × 950 that
-           is 266px of scroll each — comfortably past the pace `CardWalk` settled on for its
-           nine, and slow enough to read a note before the next one replaces it.
-
-           `Math.min` and not a modulo: the last block holds while a reader scrolls the last
-           of the pin rather than wrapping back to the first, which would read as a loop. */
-        <DotBreakdown
-          source={dot}
-          title={file}
-          drawnAbove
-          walkTo={Math.min(4, Math.floor(Math.max(0, progress - 0.30) / 0.14))}
-        />
-      )}
-    />
+    <div className="mx-auto mt-10 max-w-4xl">
+      <Sheet label="starter software factory" title="five nodes, five edges">
+        <Drawing graph={LANDING_NARROW} className="sm:hidden" />
+        <Drawing graph={LANDING_WIDE} className="hidden sm:block" />
+      </Sheet>
+    </div>
   );
 }

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { Wordmark } from "@/components/hero/Wordmark";
 import { SectionBlueprint } from "@/components/home/SectionBlueprint";
-import { SectionLifecycle } from "@/components/home/SectionLifecycle";
+import { SectionFirstBlueprint } from "@/components/home/SectionFirstBlueprint";
 import { SectionNodeIsCard } from "@/components/home/SectionNodeIsCard";
 import { SectionSameRun } from "@/components/home/SectionSameRun";
 import { plainText } from "@/components/ui/visible-text";
@@ -37,10 +37,9 @@ describe("the blueprint-first landing", () => {
   });
 
   it("keeps both loops reachable from the landing, in the section that now ends it", () => {
-    /* The pair the fold gave up. `SectionLifecycle` is the ending since `SectionDoors` was
-       deleted, and two of its five panels are these exact routes — so this cell is what
-       makes the hero change a MOVE rather than a removal. */
-    const html = render(SectionLifecycle);
+    /* The hero's two buttons were folded into the page's ending, so the ending has to keep
+       both ways in: search the registry, and make one with the skill. */
+    const html = render(SectionFirstBlueprint);
     expect(html).toContain('href="/blueprints"');
     expect(html).toContain('href="/skill"');
   });
@@ -176,26 +175,21 @@ describe("the blueprint-first landing", () => {
     expect(html).toContain(`0 0 ${LANDING_NARROW.width} ${LANDING_NARROW.height}`);
   });
 
-  /* The landing strips the comment lines out of `topology.dot` before the walk draws it,
-     so its listing is shorter than the file in the archive and the caption may only count
-     what is shown. The archive claim belongs to `/spec/topology`, which shows the file
-     whole. */
-  it("counts the lines it shows and does not claim they are the archive's", () => {
+  /* The beat draws the blueprint and no listing, so it may not claim a line count or that
+     the archive's file is shown; that claim belongs to `/spec/topology`. */
+  it("shows the drawing without claiming to show the file", () => {
     const text = plainText(render(SectionBlueprint));
-    expect(text).toMatch(/\d+ lines/);
+    expect(text).not.toMatch(/\d+ lines/);
     expect(text).not.toContain("as the archive stores them");
   });
 
-  it("closes beat 2 on what a blueprint pins, and a way into one", () => {
+  it("closes beat 2 on what a blueprint pins, and the page that explains one", () => {
     const html = render(SectionBlueprint);
     expect(plainText(html)).toContain(
       "A blueprint pins the handoffs, loops, checkpoints, and deliberate absences that make a workflow reusable.",
     );
-    /* D-261-05, under AC5's own carve: B-09 moved this URL, so the literal moves with the
-       emitter rather than the emitter riding its own 308. Spelled out rather than imported
-       from `lib/href.ts` — an expected value taken from the module under test asserts only
-       that the module agrees with itself. */
-    expect(html).toContain('href="/blueprints/darkprint/starter-software-factory"');
+    expect(plainText(html)).toContain("What a blueprint is");
+    expect(html).toContain('href="/what-a-blueprint-is"');
   });
 
   it("shows a card as a contract with inputs, outputs, and prohibitions", () => {
@@ -230,29 +224,20 @@ describe("the blueprint-first landing", () => {
    * doors safe. Losing one silently would leave the landing with no way out of the beat it
    * ends on.
    */
-  it("ends the landing with a way into each of the five", () => {
-    const html = render(SectionLifecycle);
+  it("ends the landing on the tutorial, with the path it walks spelled out", () => {
+    const html = render(SectionFirstBlueprint);
     const text = plainText(html);
-    for (const step of ["Learn", "Find", "Create", "Use", "Publish"]) {
+    expect(text).toContain("Write your first blueprint");
+    for (const step of ["01", "02", "03", "04"]) {
       expect(text).toContain(step);
     }
-    expect(text).toContain("00");
-    expect(html).not.toMatch(/<h3[^>]*>Validate<\/h3>/);
 
-    // One link per panel, and every one of them a route this site has.
-    for (const href of [
-      "/what-a-blueprint-is",
-      "/blueprints",
-      "/skill",
-      "/blueprints/darkprint/starter-software-factory#files",
-      "/upload",
-    ]) {
-      expect(html, `the ${href} panel lost its link`).toContain(`href="${href}"`);
+    // The door, the skill it uses, and the registry it searches. Nothing else links out of
+    // the ending, so the one instruction stays one instruction.
+    for (const href of ["/tutorial", "/skill", "/blueprints"]) {
+      expect(html, `the ending lost its ${href} link`).toContain(`href="${href}"`);
     }
-    expect([...html.matchAll(/<a\b/g)]).toHaveLength(5);
-
-    expect(text).toContain("Human interface");
-    expect(text).toContain("Agent interface");
+    expect([...html.matchAll(/<a\b/g)]).toHaveLength(3);
   });
 
   /* `SectionDoors` had a case here — "closes on the same two loops without placeholder

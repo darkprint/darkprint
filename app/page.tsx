@@ -5,9 +5,8 @@
    blueprint against the prompt before either artefact appears,
    because "why not just a prompt?" is the objection a reader forms in
    the second after the hero. The graph beat and the card beat show
-   one concept apiece off the real starter files, and the lifecycle
-   beat ends the page with five ways in, so no second set of doors is
-   needed under it.
+   one concept apiece off the real starter files, and the last beat
+   ends the page on one door: write your first blueprint.
 
    Everything technical the landing once carried lives on the page
    whose subject it is: the ladder on `/towards-a-dark-factory`, the
@@ -24,7 +23,7 @@ import {
   SectionSameRun,
   SectionBlueprint,
   SectionNodeIsCard,
-  SectionLifecycle,
+  SectionFirstBlueprint,
 } from "@/components/home";
 
 /**
@@ -34,7 +33,7 @@ import {
  */
 export const metadata: Metadata = {
   description:
-    "A registry of reusable blueprints for agent workflows. Each blueprint is a graph plus one version-pinned card per node, checked before it is published. Search it, download a folder, and run it with your own harness.",
+    "A registry of reusable blueprints for agent workflows. Each blueprint is a graph plus one version-pinned card per node, checked before it is published. Search it, download a folder, and run it.",
 };
 
 export default function HomePage() {
@@ -44,7 +43,7 @@ export default function HomePage() {
       <SectionSameRun />
       <SectionBlueprint />
       <SectionNodeIsCard />
-      <SectionLifecycle />
+      <SectionFirstBlueprint />
     </>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { TutorialWizard } from "@/components/tutorial/TutorialWizard";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { SpecPager } from "@/components/spec/SpecPager";
 
 /* ============================================================
    /tutorial: write one blueprint, one keyword at a time.
@@ -24,6 +25,9 @@ export const metadata: Metadata = {
     "Write a four-node blueprint by filling in its keywords: a crawler, an extractor, a checker with a capped loop and a writer, then a rubric to measure it by. Built and checked in your browser, downloaded from there. Nothing is uploaded.",
 };
 
+/** The last stop of the Learn sequence; the pager at the foot reads the list. */
+const HERE = "/tutorial";
+
 export default function TutorialPage() {
   return (
     <div className="container-page py-16 sm:py-20">
@@ -34,6 +38,9 @@ export default function TutorialPage() {
         lead="A small pipeline that reads a set of websites and turns them into cited notes: four nodes, one loop, then a rubric to measure it by. Type over the highlighted keywords."
       />
       <TutorialWizard />
+      <div className="mt-16">
+        <SpecPager href={HERE} />
+      </div>
     </div>
   );
 }

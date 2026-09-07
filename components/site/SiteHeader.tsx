@@ -99,12 +99,6 @@ export const NAV = [
      2026-09-06 and there is nothing left to tell it apart from. */
   { href: "/mcp", label: "MCP", group: "build" },
   { href: "/skill", label: "Assisted Design", group: "build" },
-  /* Two reference routes, after the two surfaces and in that order. `/capabilities` is an
-     index of what the three surfaces already do, so it reads after them rather than as a
-     fourth one; `/tutorial` is where somebody goes who has read the index and wants to
-     write something, which is the order the menu's blurbs say out loud. */
-  { href: "/capabilities", label: "What you can do", group: "build" },
-  { href: "/tutorial", label: "Write your first blueprint", group: "build" },
   /* `/build` had a row here, then deliberately did not, and now has no route to point at.
      The owner deleted it and `components/build/**` on 2026-09-06: "it is not useful and
      make confusion". Its `docs` row below is gone with it, and so is the import from
@@ -168,8 +162,6 @@ const BUILD = NAV.filter((item) => item.group === "build");
 const BUILD_BLURB: Record<string, string> = {
   "/mcp": "Reach the registry from your own agent",
   "/skill": "A skill for your coding agent that interviews you and writes the blueprint",
-  "/capabilities": "Everything you can do here, from the site, a terminal or your agent",
-  "/tutorial": "Fill in the keywords of a real one, in your browser",
 };
 
 export const LEARN = SPEC_SEQUENCE.map((page) => ({
@@ -232,7 +224,7 @@ function accountMenuHref(
  */
 const MOBILE_GROUPS = [
   { id: "browse", title: "Browse" },
-  { id: "build", title: "Design" },
+  { id: "build", title: "AI Tools" },
   { id: "learn", title: "Learn" },
   { id: "you", title: "You" },
 ] as const;
@@ -405,7 +397,8 @@ export function SiteHeader() {
 
           <span aria-hidden className="mx-1 h-5 w-px bg-line xl:mx-2" />
 
-          {/* Build ▾ — the three ways to make one, with the line that tells them apart. */}
+          {/* AI Tools ▾: the two surfaces a coding agent uses, with the line that tells them
+              apart. */}
           <details
             open={isOpen("build")}
             onToggle={(event) =>
@@ -421,7 +414,7 @@ export function SiteHeader() {
                   : "text-muted hoverable:hover:text-fg",
               )}
             >
-              Design
+              AI Tools
               <Caret />
             </summary>
             <div className="menu-panel absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-line-bright bg-surface-2 shadow-[0_16px_40px_-12px_rgb(0_0_0/0.85)]">

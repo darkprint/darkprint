@@ -173,7 +173,9 @@ function WhereNext() {
           title="Where to go from here"
           lead="Two reference pages follow: the topology file first, then the node card, which also covers the vocabulary."
         />
-        <ol className="grid gap-4 sm:grid-cols-3">
+        {/* Two columns for two doors, so the card door sits at the right edge the way
+            the pager's "Next" does on every other Learn page. */}
+        <ol className="grid gap-4 sm:grid-cols-2">
           {SPEC_LAYERS.map((layer, i) => (
             <li key={layer.href}>
               <Link

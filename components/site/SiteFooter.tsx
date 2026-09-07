@@ -87,7 +87,7 @@ export const COLS = [
     ],
   },
   {
-    title: "Design",
+    title: "AI Tools",
     links: [
       /* One row for `/skill`, not two.
 
@@ -102,13 +102,8 @@ export const COLS = [
       /* The author's order: the protocol, then the skill, then the ask. Publishing is last
          because it is the thing you do once you have made something, which is the order the
          other two put you in. */
-      /* The two reference routes sit between the surfaces and the ask, because both are
-         things a reader consults while making something rather than a fourth way to make
-         one. `nav.test.ts` holds each label byte-identical to the header's. */
       { href: "/mcp", label: "MCP" },
       { href: "/skill", label: "Assisted Design" },
-      { href: "/capabilities", label: "What you can do" },
-      { href: "/tutorial", label: "Write your first blueprint" },
       { href: "/upload", label: "Publish" },
     ],
   },

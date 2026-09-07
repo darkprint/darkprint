@@ -167,9 +167,13 @@ describe("the sequence and the filesystem agree", () => {
       { step: "02", href: "/spec/topology", run: "specification" },
       { step: "03", href: "/spec/card", run: "specification" },
       { step: "04", href: "/towards-a-dark-factory", run: "practice" },
+      { step: "05", href: "/capabilities", run: "practice" },
+      { step: "06", href: "/tutorial", run: "practice" },
     ]);
     expect(LEARN_PRACTICE.map((page) => page.href)).toEqual([
       "/towards-a-dark-factory",
+      "/capabilities",
+      "/tutorial",
     ]);
   });
 
@@ -207,16 +211,16 @@ describe("the sequence and the filesystem agree", () => {
    * the sandbox that stood between them went with `/build`, and the crosswalk that took the
    * slot after that moved to the front of the sequence later the same day.
    */
-  it("closes the practice run with the essay", () => {
-    expect(SPEC_SEQUENCE.at(-1)?.href).toBe("/towards-a-dark-factory");
-    expect(specNeighbours("/towards-a-dark-factory").next).toBeUndefined();
+  it("opens the practice run with the essay and closes it with the tutorial", () => {
     expect(specNeighbours("/towards-a-dark-factory").previous?.href).toBe("/spec/card");
-    const essay = readFileSync(
-      join(ROOT, "app/towards-a-dark-factory/page.tsx"),
-      "utf8",
-    );
-    expect(essay).toMatch(/from "@\/components\/spec\/SpecPager"/);
-    expect(essay).toContain("<SpecPager href={HERE} />");
+    expect(SPEC_SEQUENCE.at(-1)?.href).toBe("/tutorial");
+    expect(specNeighbours("/tutorial").next).toBeUndefined();
+    expect(specNeighbours("/tutorial").previous?.href).toBe("/capabilities");
+    for (const page of ["app/towards-a-dark-factory/page.tsx", "app/tutorial/page.tsx"]) {
+      const text = readFileSync(join(ROOT, page), "utf8");
+      expect(text, page).toMatch(/from "@\/components\/spec\/SpecPager"/);
+      expect(text, page).toContain("<SpecPager href={HERE} />");
+    }
   });
 
   /** The position a reader is shown is the position inside their own run. */
@@ -229,7 +233,7 @@ describe("the sequence and the filesystem agree", () => {
     expect(runPosition("/towards-a-dark-factory")).toEqual({
       run: "practice",
       position: 1,
-      total: 1,
+      total: 3,
     });
     expect(Object.keys(RUNS).sort()).toEqual(["practice", "specification"]);
   });

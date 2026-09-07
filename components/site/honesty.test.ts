@@ -31,7 +31,7 @@ import { GuardrailShape } from "@/components/explain/ConceptFigures";
 import { BlueprintCanvas } from "@/components/blueprint/BlueprintCanvas";
 import { CloneMenu } from "@/components/blueprint/CloneMenu";
 import { CodeMenu } from "@/components/bundle/CodeMenu";
-import { SectionLifecycle } from "@/components/home/SectionLifecycle";
+import { SectionFirstBlueprint } from "@/components/home/SectionFirstBlueprint";
 import { openText, plainText } from "@/components/ui/visible-text";
 
 /* --------------------- the surfaces --------------------- */
@@ -68,7 +68,7 @@ const UPLOAD_PAGE = renderToStaticMarkup(createElement(UploadPage as never));
 const GUARDRAILS = renderToStaticMarkup(createElement(GuardrailShape));
 
 /** The landing's lifecycle beat, held to the length floor so the render is a real one. */
-const LIFECYCLE = renderToStaticMarkup(createElement(SectionLifecycle));
+const ENDING = renderToStaticMarkup(createElement(SectionFirstBlueprint));
 
 /**
  * The starter is the one archive blueprint whose criteria walk stops at a judge, so it is
@@ -209,7 +209,7 @@ describe("the surfaces the ledger is read off", () => {
     for (const [name, html] of [
       ["/spec/card", SPEC_CARD],
       ["the starter's canvas", STARTER],
-      ["/ · the lifecycle beat", LIFECYCLE],
+      ["/ · the ending", ENDING],
       ["/upload", UPLOAD_PAGE],
     ] as const) {
       expect(html.length, name).toBeGreaterThan(2000);
