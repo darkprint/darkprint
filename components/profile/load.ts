@@ -22,37 +22,12 @@ import {
   ownedBundles,
 } from "@/lib/server/registry";
 import { listSaves } from "@/lib/server/saves";
-import { starsFor } from "@/lib/data/node-community";
-/* `starsFor` is the one `lib/data` import T280 leaves standing, and it feeds exactly one
-   figure: the seeded `support` pill on a node-card tile (Pinned's mini-cards, `NodeTile`
-   generally). It has no column and no counter — `lib/server/counters` counts a CARD's
-   stars fine, but the pill this reads is `starsFor`'s own per-card seed number, a different
-   figure from a live `getSignalsMany` star count, and swapping one for the other silently
-   would be answering a question nobody asked rather than wiring the one that was.
-   Everything else this file used to read off `lib/data/profiles.ts` — watchers, support,
-   validated, pinned, and the join date — is gone from here as of T280: `0004_social` and
-   `0007_drafts` gave every one of them a table, and `getProfile` and `ownedBundles` below
-   read them off it. `lib/data/profiles.ts` and `lib/data/bundles.ts` are untouched and
-   still exist — `tabs.test.ts` still holds their seeded rows against the archive — this
-   file simply stopped being one of their readers. */
 import type { NodeSummary } from "@/components/nodes/NodeCardSummary";
 import { authorFor } from "./author";
 import type { OwnedRow } from "./OwnedBundles";
 import type { PinnedItem } from "./Pinned";
 import { attachStars } from "./remove-save";
 import type { ProfileTabId } from "./tabs";
-
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-53 LIVE: the identity and the join date, off `@/lib/server/accounts` and
-//   `@/lib/server/profiles` rather than a per-handle endpoint.
-// SEAM-55 LIVE (T280): the pinned selection, off `getProfile`'s own `pinned` — see below.
-// SEAM-56/57 LIVE (T280): watchers, support and the community signals line — see below.
-// SEAM-59 LIVE (T132): the visitor's card shelf, off `cardsOwnedBy` — see below.
-// SEAM-61 LIVE: the Saved tab, off `@/lib/server/saves`.
-// SEAM-63/64 LIVE (T280): the owner's bundle shelf, off `ownedBundles` — see below.
-// SEAM-113 LIVE (T132): the owner's card shelf, public and private together, off
-//   `cardsOwnedBy` — see below. No dedicated `GET /api/authors/{handle}/cards` route was
-//   built or is owed, the same in-process shape SEAM-63/64 settled for bundles.
 
 /* ============================================================
    Everything the five profile routes read, assembled once.
@@ -123,8 +98,12 @@ export interface NodeTile {
   record: CardVersionRecord;
   typeLabel: string;
   usedIn: number;
+  /** The card's live star count, off `getSignalsMany`. */
   support: number;
 }
+
+/** A tile before its star count is known: the counters are read once for the whole shelf. */
+type BareTile = Omit<NodeTile, "support">;
 
 export interface ProfileView {
   author: Author;
@@ -170,18 +149,13 @@ export interface ProfileView {
   stars: number;
 }
 
-function tileFor(record: CardVersionRecord): NodeTile {
+function tileFor(record: CardVersionRecord): BareTile {
   const ontology = getOntologyView();
   return {
     record,
     typeLabel:
       ontology.resolve(record.card.type, "node-type")?.term.label ?? record.card.type,
     usedIn: getRegistry().usersOf(record.id).length,
-    /* Seeded, and it stays seeded: this is `starsFor`'s own per-card figure, not the live
-       `getSignalsMany` star count the profile's community-signals line now reads — see the
-       file header. There is no `◐`-shedding change here, only the one this file already
-       carries at the `starsFor` import. */
-    support: starsFor(record.id),
   };
 }
 
@@ -392,16 +366,18 @@ async function withStarState(
  * with no lookup in front of it.
  *
  * `downloads` sums the blueprint half only, matching the figure's own name: a card has no
- * "download" a reader would recognise as one. `stars` sums both halves, the same two
- * fixture folds (`Blueprint.votes` + `NodeTile.support`) this replaces.
+ * "download" a reader would recognise as one. `stars` sums both halves. The per-card
+ * counts come back as `cardStars` so each tile prints its own, and `pinnedCardIds` are
+ * read in the same query without entering the sum: a pin is a preference, not authorship.
  */
 async function signalsFor(
   db: Db,
   actor: Actor,
   username: string,
   liveRows: readonly OwnedBundleSummary[],
-  cards: readonly NodeTile[],
-): Promise<{ downloads: number; stars: number }> {
+  cards: readonly BareTile[],
+  pinnedCardIds: readonly string[],
+): Promise<{ downloads: number; stars: number; cardStars: ReadonlyMap<string, number> }> {
   const owner = liveRows.length === 0 ? undefined : await resolveOwner(db, username);
 
   const bundleRecords =
@@ -412,23 +388,26 @@ async function signalsFor(
   const blueprintTargets: CounterTarget[] = bundleRecords.flatMap((record) =>
     record === undefined ? [] : [{ kind: "blueprint" as const, refId: record.id }],
   );
-  const cardTargets: CounterTarget[] = cards.map((tile) => ({
-    kind: "card" as const,
-    refId: tile.record.id,
-  }));
+  const authored = cards.map((tile) => tile.record.id);
+  const cardIds = [...new Set([...authored, ...pinnedCardIds])];
+  const cardTargets: CounterTarget[] = cardIds.map((refId) => ({ kind: "card" as const, refId }));
 
   const targets = [...blueprintTargets, ...cardTargets];
-  if (targets.length === 0) return { downloads: 0, stars: 0 };
+  if (targets.length === 0) return { downloads: 0, stars: 0, cardStars: new Map() };
 
   const signals = await getSignalsMany(db, actor, targets);
   const blueprintSignals = signals.slice(0, blueprintTargets.length);
   const cardSignals = signals.slice(blueprintTargets.length);
+  const cardStars = new Map(cardIds.map((id, i) => [id, cardSignals[i].starCount]));
 
   return {
     downloads: blueprintSignals.reduce((n, s) => n + s.downloadCount, 0),
+    /* Summed over the authored list, versions included, so a card published twice counts
+       its stars once per version the way the shelf draws it. */
     stars:
       blueprintSignals.reduce((n, s) => n + s.starCount, 0) +
-      cardSignals.reduce((n, s) => n + s.starCount, 0),
+      authored.reduce((n, id) => n + (cardStars.get(id) ?? 0), 0),
+    cardStars,
   };
 }
 
@@ -466,7 +445,7 @@ export async function profileView(
   const record = await getProfile(db, actor, username);
 
   const blueprints = allBlueprints().filter((b) => b.author.username === username);
-  const cards = allNodeCards()
+  const authoredCards = allNodeCards()
     .filter((entry) => entry.card.author === username)
     .map(tileFor);
   const terms = getOntologyView().ontology.terms.filter((term) =>
@@ -495,18 +474,19 @@ export async function profileView(
   const ownedCardRows = await cardsOwnedBy(db, actor, username);
   const ownedCards: NodeSummary[] = ownedCardRows.map((row) => nodeSummaryForOwned(row, author));
 
-  /* T280/SEAM-55: the stored, actor-filtered selection off `getProfile`, resolved against
-     the content archive the same way the seeded selection always was — `[]` for a pin the
-     archive cannot resolve, rather than a placeholder card. `record` is only ever
-     `undefined` on the same race `joinedAt`'s fallback below guards against. */
-  const pinned: PinnedItem[] = (record?.pinned ?? []).flatMap((pin): PinnedItem[] => {
+  /* The stored, actor-filtered selection off `getProfile`, resolved against the content
+     archive: `[]` for a pin the archive cannot resolve, rather than a placeholder card.
+     `record` is only ever `undefined` on the same race `joinedAt`'s fallback below guards
+     against. A pinned card gets its star count with the rest of the shelf, below. */
+  type PinnedDraft = { kind: "blueprint"; blueprint: Blueprint } | { kind: "node"; tile: BareTile };
+  const pinnedDrafts: PinnedDraft[] = (record?.pinned ?? []).flatMap((pin): PinnedDraft[] => {
     if (pin.kind === "blueprint") {
       const blueprint = allBlueprints().find((b) => b.slug === pin.slug);
       return blueprint === undefined ? [] : [{ kind: "blueprint", blueprint }];
     }
     const [id, version] = pin.ref.split("@");
     const card = getNodeCard(id ?? "", version);
-    return card === undefined ? [] : [{ kind: "node", ...tileFor(card) }];
+    return card === undefined ? [] : [{ kind: "node", tile: tileFor(card) }];
   });
 
   /* AC4: the owner's own saves, off the account rather than out of a fixture. A visitor
@@ -543,7 +523,22 @@ export async function profileView(
   };
   if (owner) counts.saved = saves.length;
 
-  const { downloads, stars } = await signalsFor(db, actor, username, liveRows, cards);
+  const { downloads, stars, cardStars } = await signalsFor(
+    db,
+    actor,
+    username,
+    liveRows,
+    authoredCards,
+    pinnedDrafts.flatMap((pin) => (pin.kind === "node" ? [pin.tile.record.id] : [])),
+  );
+  const withStars = (tile: BareTile): NodeTile => ({
+    ...tile,
+    support: cardStars.get(tile.record.id) ?? 0,
+  });
+  const cards = authoredCards.map(withStars);
+  const pinned: PinnedItem[] = pinnedDrafts.map((pin) =>
+    pin.kind === "blueprint" ? pin : { kind: "node", ...withStars(pin.tile) },
+  );
 
   return {
     author,

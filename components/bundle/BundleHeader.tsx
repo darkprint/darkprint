@@ -48,8 +48,6 @@ import { ForkButton } from "@/components/bundle/ForkButton";
    two adjacent controls; the owner ruled them one concept, so `FavoriteStar` draws a
    single starred/unstarred pill here and writes the account save behind it (see that
    file's header for what the Saved tab reads and why the save write survives the fold).
-   A `support` figure still draws the same pill switched off and marked `◐`, because the
-   fold changed how many controls a reader sees and not whether a seeded number says so.
 
    `Fork` and `Star` each take an additive prop (`fork`, `star`) that swaps a
    drawn-and-disabled pill for a live control over `/api/bundles/[owner]/[slug]/fork` and
@@ -67,7 +65,6 @@ export function BundleHeader({
   driftNote,
   forks,
   saveId,
-  support,
   breadcrumb,
   title,
   validator = false,
@@ -100,15 +97,6 @@ export function BundleHeader({
    * key is what makes that a decision the control takes rather than one it guesses.
    */
   saveId: string;
-  /**
-   * A star figure the caller holds from a fixture rather than from `getSignals`.
-   *
-   * Absent rather than zero where there is none: a bundle nobody can see has not been
-   * starred down to nothing, it has never had a counter row. It draws the same pill `star`
-   * draws, switched off and marked `◐` — the marker stays because the figure is still
-   * illustrative on this path (D-262-07), and a caller with a live count passes `star`.
-   */
-  support?: number;
   /* ---- the four slots the published view fills and the owner view does not ---- */
   /** The row above the identity line: where a reader came from. */
   breadcrumb?: React.ReactNode;
@@ -233,8 +221,6 @@ export function BundleHeader({
             <div className="flex flex-wrap items-center gap-2">
               {star !== undefined ? (
                 <FavoriteStar id={saveId} star={star} />
-              ) : support !== undefined ? (
-                <FavoriteStar id={saveId} count={support} seeded />
               ) : (
                 /* Zero, and it is not a stand-in: `lib/server/counters` keys a target by a
                    released bundle's row, so a caller with neither prop is a bundle no counter

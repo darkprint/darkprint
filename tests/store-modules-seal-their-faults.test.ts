@@ -1,27 +1,19 @@
 /* ============================================================
-   D-13: no rejection may carry the failed statement or its bound
-   parameters. Five of six `lib/server` modules ship an `errors.ts`
-   and seal their faults. `lib/server/registry/` shipped none — and
-   a closed-port probe against its merged, tagged routes returned a
-   raw `DrizzleQueryError` opening with the full `select … from
-   "bundle"`.
+   A lib/server module that reaches Postgres seals its faults.
 
-   `tests/error-hygiene.test.ts` cannot see that, and the reason is
-   the interesting one. It builds its domain BY CONSTRUCTION — every
-   barrel export whose `prototype instanceof Error` — so a module
-   exporting no error class contributes an empty domain and passes.
-   AN ABSENT CLASS LEAKS BY NOT EXISTING. Its `>= 8` floor does not
-   help either: the floor counts across all modules, so one module
-   contributing zero hides inside a total the others satisfy.
-
-   A domain built by construction is only as complete as the thing
-   it constructs over, and constructing over exported error classes
-   exempts precisely the module most likely to be leaking.
+   No rejection may carry the failed statement or its bound
+   parameters. `tests/error-hygiene.test.ts` cannot see a module
+   that exports no error class at all: it builds its domain from
+   exported classes, so a module with none contributes an empty
+   domain and passes. The registry once shipped exactly that way
+   and answered a closed-port probe with a raw `DrizzleQueryError`
+   opening with the full `select … from "bundle"`. AN ABSENT CLASS
+   LEAKS BY NOT EXISTING.
 
    So this guard constructs over what a module REACHES instead: any
-   `lib/server/<name>/` whose source imports `@/lib/db` is talking
-   to Postgres, and must publish at least one sealed error class to
-   wrap what the driver throws. Derived, so the next
+   `lib/server/<name>/` whose committed source imports `@/lib/db`
+   at runtime is talking to Postgres, and must publish at least one
+   error class to wrap what the driver throws. Derived, so the next
    database-touching module is covered the day it lands.
 
    Fails CLOSED: no modules discovered is an error, not a pass.
@@ -33,9 +25,13 @@ import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
 
-/** Modules that have SHIPPED, so an unmerged worktree is never red for work in progress. */
-function shippedServerFiles(): readonly string[] {
-  return execFileSync("git", ["ls-tree", "-r", "--name-only", "backend", "lib/server"], {
+/**
+ * The committed tree, read through `git` rather than the working directory, so the file list
+ * and the file contents below describe one tree: a module added or deleted is measured once
+ * the change is committed and never half-way.
+ */
+function committedServerFiles(): readonly string[] {
+  return execFileSync("git", ["ls-tree", "-r", "--name-only", "HEAD", "lib/server"], {
     cwd: REPO_ROOT,
     encoding: "utf8",
     maxBuffer: 32 * 1024 * 1024,
@@ -44,35 +40,27 @@ function shippedServerFiles(): readonly string[] {
     .filter((p) => p.endsWith(".ts") && !p.endsWith(".test.ts"));
 }
 
+function committedSource(file: string): string {
+  return execFileSync("git", ["show", `HEAD:${file}`], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024,
+  });
+}
+
 /**
- * The one module known to be unsealed, with the task that fixes it.
- *
- * This is an exemption and it is written to EXPIRE rather than to be maintained. The second
- * assertion below reds when an entry here gains an error class — so the day T081 lands, this guard
- * fails until the name is removed, and the exemption cannot outlive the defect it names.
- *
- * It exists rather than a red base because three adversary rounds are in flight with pre-registered
- * arithmetic keyed to base's current failing set, and moving that mid-round would invalidate their
- * reconciliations for a defect they did not introduce. It is not a judgement that the leak is
- * acceptable: T081 exists, it is a raw `DrizzleQueryError` escaping a merged tagged route with the
- * full query in its message, and D-13 is the clause it violates.
- */
-/*
- * Empty since T081 merged (`752721d`), and the emptying is the exemption expiring exactly as designed:
- * `lib/server/registry/errors.ts` is now on `backend`, so the second test below RED and forced this
- * line to be looked at. Note the axis that decides WHEN it fires — both loops read from `backend`, so
- * the guard could not red in any worktree carrying an unmerged class, only in the merge commit itself.
- * T081's adversary measured that distinction against a prediction of mine that had treated this guard
- * and `error-hygiene` as one; they differ in exactly the scope axis this file's own fix was about.
+ * Modules known to be unsealed, each an exemption written to EXPIRE rather than to be
+ * maintained: the second cell reds when an entry here gains an error class, so an exemption
+ * cannot outlive the defect it names.
  */
 const KNOWN_UNSEALED: readonly string[] = [];
 
 describe("a lib/server module that reaches Postgres seals its faults", () => {
   it("every module importing @/lib/db exports at least one error class", () => {
-    const files = shippedServerFiles();
+    const files = committedServerFiles();
     expect(
       files.length,
-      "No shipped lib/server files were found, which would make the assertion below vacuous.",
+      "No committed lib/server files were found, which would make the assertion below vacuous.",
     ).toBeGreaterThan(0);
 
     const reachesDb = new Set<string>();
@@ -80,43 +68,10 @@ describe("a lib/server module that reaches Postgres seals its faults", () => {
     for (const file of files) {
       const name = /^lib\/server\/([^/]+)\//.exec(file)?.[1];
       if (name === undefined) continue;
-      /*
-       * Read from `backend`, NOT from the working tree, and this is the whole correctness of the
-       * check rather than a detail.
-       *
-       * The domain above is `git ls-tree backend` — the SHIPPED tree — and the first version of this
-       * loop then read each path with `readFileSync` from the WORKING tree. Those are two different
-       * trees, which is this file's own scope rule committed inside the guard written for it. The
-       * moment T050 merged, `lib/server/accounts/errors.ts` existed on `backend` and did not exist
-       * in any worktree that had not merged, so the guard died with ENOENT and reported NOTHING
-       * about whether any module seals its faults — in every worktree at once, silently, because an
-       * error is not a red about the subject.
-       *
-       * Found by T081's implementer, in a worktree behind base, which is exactly where it fires.
-       */
-      const source = execFileSync("git", ["show", `backend:${file}`], {
-        cwd: REPO_ROOT,
-        encoding: "utf8",
-        maxBuffer: 32 * 1024 * 1024,
-      });
-      /* `@/lib/db` is the only way to a connection; a module that never names it cannot raise a
-         driver error and owes no wrapper. */
-      /* `import type` is EXCLUDED, and this narrowing is the guard's own justification applied
-         to its own predicate: a module that never names the driver at runtime "cannot raise a
-         driver error and owes no wrapper". A type-only import is ERASED AT BUILD -- it cannot
-         raise anything -- so counting it puts a module in this domain for a line that does not
-         exist in the emitted code.
-
-         Found by T250's blind author, which ran this predicate over an integration tree rather
-         than over `backend` and got `unsealed = ['seed']` for exactly this reason. The module
-         authors no refusal: every rejection an import produces belongs to a merged module and
-         leaves unaltered under D-50-08, so a class of its own would be a SECOND AUTHOR on
-         somebody else's sentence -- and a class nobody raises is a guard that cannot fail,
-         which is the shape this project charges hardest. D-250-17 is withdrawn on that
-         argument.
-
-         Falsified rather than assumed: making the pattern count `import type` again puts
-         `seed` back in `unsealed` and reds this cell. */
+      const source = committedSource(file);
+      /* `@/lib/db` is the only way to a connection; a module that never names it at runtime
+         cannot raise a driver error and owes no wrapper. `import type` is erased at build, so
+         it cannot raise anything either and is excluded for the same reason. */
       if (/(?<!import\s+type\s[^;]{0,200})from\s+["']@\/lib\/db/.test(source)) {
         const typeOnly = /import\s+type\s[^;]*from\s+["']@\/lib\/db/.test(source);
         const valueImport = /import\s+(?!type\s)[^;]*from\s+["']@\/lib\/db/.test(source);
@@ -132,27 +87,21 @@ describe("a lib/server module that reaches Postgres seals its faults", () => {
     expect(
       unsealed,
       "A lib/server module imports @/lib/db and publishes no error class, so whatever the driver " +
-        "throws escapes as-is — and a DrizzleQueryError's message opens with the full query and " +
-        "every bound parameter (D-13). tests/error-hygiene.test.ts cannot catch this: it builds " +
-        "its domain from exported error classes, so a module with none contributes an empty domain " +
-        "and passes. An absent class leaks by not existing. Add a sealed error class that carries " +
-        "the operation alone, with the driver error on `cause`.",
+        "throws escapes as-is, and a DrizzleQueryError's message opens with the full query and " +
+        "every bound parameter. tests/error-hygiene.test.ts cannot catch this: it builds its " +
+        "domain from exported error classes, so a module with none contributes an empty domain " +
+        "and passes. An absent class leaks by not existing. Add a sealed error class that " +
+        "carries the operation alone, with the driver error on `cause`.",
     ).toEqual([]);
   });
 
   it("no exemption outlives the defect it names", () => {
-    const files = shippedServerFiles();
+    const files = committedServerFiles();
     const stale: string[] = [];
     for (const name of KNOWN_UNSEALED) {
       const sealed = files
         .filter((f) => f.startsWith(`lib/server/${name}/`))
-        /* `git show`, not `readFileSync` — same reason as the loop above: the domain is `backend`
-           and reading the working tree makes the two disagree the moment a merge lands. */
-        .some((f) =>
-          /export\s+class\s+\w*Error\b/.test(
-            execFileSync("git", ["show", `backend:${f}`], { cwd: REPO_ROOT, encoding: "utf8" }),
-          ),
-        );
+        .some((f) => /export\s+class\s+\w*Error\b/.test(committedSource(f)));
       if (sealed) stale.push(name);
     }
     expect(

@@ -242,7 +242,6 @@ const EM_DASH_FILES = [
     "components/panes/SynchronisedPanes.tsx",
     // New copy from this pass inside an otherwise-exempt tree — see the comment on
     // `COPY_TREES` above for why it is named here rather than by widening that list.
-    "components/blueprint/ForkAction.tsx",
     ...COPY_TREES.flatMap(sourcesUnder),
     ...appPages(),
   ]),

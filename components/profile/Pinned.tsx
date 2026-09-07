@@ -93,7 +93,7 @@ function PinnedBlueprint({ blueprint }: { blueprint: Blueprint }) {
           place on the site still making that claim. */}
       <div className="mt-auto flex flex-wrap items-center gap-3 border-t border-line pt-3">
         <span className="ml-auto">
-          <SupportPill count={blueprint.votes} />
+          <SupportPill count={blueprint.votes} seeded />
         </span>
       </div>
     </article>
@@ -169,13 +169,14 @@ export function Pinned({ items }: { items: readonly PinnedItem[] }) {
           ),
         )}
       </div>
-      {/* The section head says `✓ counted`, and that is true of the tags, the summary and
-          the usage figure — all of it read off the bundle. The class was in that list until
-          the meter printing it came off these cards. The star is the one number here that is
-          not counted, so the qualifier sits under them rather than being left to a glyph. */}
+      {/* The section head says `✓ counted`, and that is true of the tags, the summary, the
+          usage figure and a card's star count. A blueprint's star is the one number here
+          that is not counted, so the qualifier sits under them rather than being left to a
+          glyph. */}
       <p className="font-mono text-[11px] text-dim">
-        Read off the archive at build time. The star figure beside each one is seeded
-        community support. There is no ballot, and no scorecard reads it.
+        Read off the archive at build time. A card&apos;s star figure is its live count; a
+        blueprint&apos;s is seeded community support. There is no ballot, and no scorecard
+        reads either.
       </p>
     </div>
   );

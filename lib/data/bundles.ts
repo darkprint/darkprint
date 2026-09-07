@@ -483,26 +483,6 @@ export function bundlesOwnedBy(username: string): OwnedBundle[] {
 }
 
 /**
- * The published forks of a bundle, and public means public.
- *
- * A private fork is never announced on its upstream and its author is not told it exists —
- * that is the promise `/settings` §04 makes when it recommends Private as the default, and
- * every surface that counts forks reads it through this function so the promise is kept in
- * one place rather than in four.
- *
- * It returns nothing in this build, and that is the honest state rather than a gap: the
- * rule in this file's header makes every seeded bundle private, because a public one is a
- * claim about a registry a fixture cannot make true. `guarded-merge-bot` is the case worth
- * knowing — it really does have a fork here, and every fork surface is right to stay silent
- * about it.
- */
-export function publicForksOf(slug: string): OwnedBundle[] {
-  return OWNED_BUNDLES.filter(
-    (b) => b.forkedFrom?.slug === slug && b.visibility === "public",
-  );
-}
-
-/**
  * One bookmark.
  *
  * A save is a private bookmark and it is not the star count beside a blueprint. The two

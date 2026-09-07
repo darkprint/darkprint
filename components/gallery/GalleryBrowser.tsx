@@ -1,9 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useQueryState } from "@/components/ui/useQueryState";
-import { publicForksOf } from "@/lib/data/bundles";
 import {
   CONTROL_CLASS,
   RegistryFilterBar,
@@ -13,7 +11,6 @@ import type { AutonomyClass, Blueprint } from "@/lib/types";
 import { cx } from "@/lib/format";
 import { ContentRow } from "@/components/ui/ContentRow";
 import { PHASE_ORDER, phaseLabel } from "@/components/ui/PhaseCoverage";
-import { blueprintHref } from "@/lib/href";
 
 // Backend contract seams anchored in this file (see docs/architecture/seams.md):
 // TODO(SEAM-02) (cited at line 93): GET /api/blueprints?q&tag&cat&phase&autonomy&df&forks&sort
@@ -194,21 +191,6 @@ export function GalleryBrowser({
      nothing. There is no "most forked" and there must not be one. */
   const forkStance = params.get("forks") ?? "rolled";
 
-  /** Published forks per upstream slug. Empty in this build; see `publicForksOf`. */
-  const forksBySlug = useMemo(() => {
-    const map = new Map<string, ReturnType<typeof publicForksOf>>();
-    for (const bp of blueprints) {
-      const forks = publicForksOf(bp.slug);
-      if (forks.length > 0) map.set(bp.slug, forks);
-    }
-    return map;
-  }, [blueprints]);
-
-  /** Slugs that are themselves a published fork of something else on this shelf. */
-  const forkSlugs = useMemo(
-    () => new Set([...forksBySlug.values()].flat().map((fork) => fork.slug)),
-    [forksBySlug],
-  );
 
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -237,20 +219,16 @@ export function GalleryBrowser({
       return true;
     });
 
-    /* `rolled` and `originals` both take a fork off the shelf; they differ in whether it
-       reappears under its upstream, which is the grid's business rather than this filter's.
-       `all` leaves every tile standing. */
-    const stanced =
-      forkStance === "all" ? filtered : filtered.filter((bp) => !forkSlugs.has(bp.slug));
-
-    const sorted = [...stanced];
+    /* The shelf hands the browser no fork rows, so the fork stance removes nothing here and
+       every tile stands; the control survives as the URL parameter the server reads. */
+    const sorted = [...filtered];
     sorted.sort((a, b) => {
       const at = a.updatedAt || a.createdAt;
       const bt = b.updatedAt || b.createdAt;
       return bt.localeCompare(at) || a.title.localeCompare(b.title);
     });
     return sorted;
-  }, [blueprints, search, tag, category, phase, autonomy, darkFactory, forkStance, forkSlugs]);
+  }, [blueprints, search, tag, category, phase, autonomy, darkFactory]);
 
   const hasFilters =
     search.trim() !== "" ||
@@ -465,17 +443,12 @@ export function GalleryBrowser({
           </div>
         )}
 
-        {/* The control is real and the set it works over is empty, so it says so rather
-            than leaving a reader to wonder why three settings show one shelf. Every fork
-            in `lib/data/bundles.ts` is private by the rule in that file's header, and a
-            private fork is never announced on its upstream — which is the promise, not the
-            gap. */}
-        {forksBySlug.size === 0 && (
-          <p className="font-mono text-[11px] text-dim">
-            No published fork exists yet, so all three settings show the same shelf. A
-            private fork is never listed here.
-          </p>
-        )}
+        {/* The control is real and the shelf carries no fork rows for it to fold, so it says
+            so rather than leaving a reader to wonder why three settings show one shelf. */}
+        <p className="font-mono text-[11px] text-dim">
+          A published fork is listed as a blueprint of its own, so all three settings show
+          the same shelf. A private fork is never listed here.
+        </p>
 
       </RegistryFilterBar>
 
@@ -542,42 +515,11 @@ export function GalleryBrowser({
               <ContentRow item={leadBlueprint} />
             </div>
           )}
-          {gridBlueprints.map((bp) => {
-            const forks = forksBySlug.get(bp.slug) ?? [];
-            /* Rolled up: the parent keeps its row and its published forks list under it,
-                so one graph is one entry on the shelf. Under `all` each of them has a row
-                of its own above, and under `originals` they are not on the page at all —
-                either way there is nothing to attach here. */
-            const rolled = forkStance === "rolled" ? forks : [];
-            return (
-              <div key={bp.slug} className="flex flex-col gap-2">
-                <ContentRow item={bp} forks={forks.length} />
-                {rolled.length > 0 && (
-                  <ul className="flex flex-col gap-1.5 rounded-md border border-line bg-surface-2/50 px-3 py-2.5">
-                    {rolled.map((fork) => (
-                      <li key={fork.slug} className="flex flex-col gap-0.5">
-                        {/* The canonical bundle URL (B-09). `/u/<owner>/<slug>` becomes a
-                            308 onto it under D-261-08(1), and an internal link aimed at a
-                            redirect costs every reader a hop for nothing — the refusal
-                            `next.config.ts` already records for `/which-tasks`. One granted
-                            line from T261 (D-261-09); the fork rows themselves are
-                            untouched and stay seeded. */}
-                        <Link
-                          href={blueprintHref(fork.owner, fork.slug)}
-                          className="font-mono text-[11px] text-cyan transition-colors hoverable:hover:text-cyan-bright"
-                        >
-                          {fork.owner} / {fork.slug}
-                        </Link>
-                        <span className="text-xs leading-snug text-dim">
-                          {fork.draft?.summary ?? ""}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            );
-          })}
+          {gridBlueprints.map((bp) => (
+            <div key={bp.slug} className="flex flex-col gap-2">
+              <ContentRow item={bp} />
+            </div>
+          ))}
         </div>
       ) : (
         <div className="panel flex flex-col items-center gap-3 px-6 py-16 text-center">

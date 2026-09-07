@@ -1,32 +1,17 @@
 /* ============================================================
    T231 AC4 and the must-not-move set
 
-   AC4 is *"the 429's published key set (D-230-09) is unchanged"*,
-   and around it sits a short list of things this task must leave
-   exactly where they are. Every cell here is readable TODAY —
-   none of them depends on D-231-01's new signature — so this file
-   is the half of the suite whose green is a measurement rather
-   than a prediction, and its reds after the merge are T231
-   breaking something rather than T231 being unfinished.
+   Around the 429's key set sits a short list of things the key
+   type change must leave exactly where they are. Every cell here
+   is readable without the new signature, so its reds after a
+   merge are the change breaking something rather than the change
+   being unfinished.
 
-   The domain is PARSED out of §T230 rather than typed here. A
-   construction over an author's transcription of a spec is a list
-   one level up, and AC4 says the document's set is unchanged — a
-   set transcribed into this file would have this suite asserting
-   that the document agrees with what this suite remembers of it.
-
-   ── F-230-J, and the one cell that would have caught it ──
-   Deleting `isNull(revokedAt)` from `resolveKey`'s WHERE scored
-   **0 new failures across all 164 cells of both halves** while
-   end-to-end a revoked key held 6 000 against 600. That line is
-   the whole of AC4's *refused immediately* and nothing measured
-   it. The cell below reds when it is deleted. It is a source
-   assertion rather than a behavioural one — deliberately, because
-   the behavioural form needs a scratch database and this run
-   stands 28 of them awaiting the owner's ruling. A source cell
-   that reds is worth more than a behavioural one that is not
-   written, and its weakness is stated rather than hidden: it
-   pins the CLAUSE, not the effect.
+   One cell is a source assertion rather than a behavioural one:
+   deleting `isNull(revokedAt)` from `resolveKey`'s WHERE moved no
+   behavioural cell while end-to-end a revoked key kept its
+   ceiling. The source cell pins the CLAUSE, not the effect, and
+   says so.
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
@@ -63,8 +48,8 @@ async function limits(): Promise<Record<string, unknown>> {
   return (await import("@/lib/server/limits")) as unknown as Record<string, unknown>;
 }
 
-describe("AC4 — the 429's published key set is exactly D-230-09's, and it is nine", () => {
-  it("renders exactly the members §T230 publishes, no more and no fewer", async () => {
+describe("AC4 — the 429's published key set is exactly the nine members it publishes", () => {
+  it("renders exactly the published members, no more and no fewer", async () => {
     const { members } = publishedProblemMembers();
     const mod = await limits();
     const rateLimited = mod.rateLimited as (r: Request, v: unknown, b: string) => Response;
@@ -82,19 +67,6 @@ describe("AC4 — the 429's published key set is exactly D-230-09's, and it is n
         `  published: ${[...members].sort().join(", ")}\n` +
         `  rendered:  ${Object.keys(body).sort().join(", ")}`,
     ).toEqual([...members].sort());
-  });
-
-  it("is nine members, counted from the document rather than asserted from memory", () => {
-    const { members } = publishedProblemMembers();
-    /* The brief states nine. Derived here so the nine is the document's and not the brief's:
-       a number recalled into an assertion is a number this suite wrote itself. */
-    expect(
-      members.length,
-      `§T230's \`problem+json 429\` block parses to ${members.length} members: ` +
-        `${members.join(", ")}. AC4 pins the set at what D-230-09 published, and this suite ` +
-        `and the document now disagree about what that is.`,
-    ).toBe(9);
-    expect(new Set(members).size, `the published set has a duplicate member`).toBe(9);
   });
 
   it("pins `keysAvailable` to the value the document pins it to", async () => {

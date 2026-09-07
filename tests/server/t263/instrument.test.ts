@@ -2,31 +2,15 @@
    T263 — falsifying this suite's own instrument, before any cell
    trusts it.
 
-   `wave-blind.md`: "A zero is a claim about an instrument until
-   something proves otherwise", and "A type-level instrument cannot
-   observe its own blindness." Every AC cell in this directory is a
-   count over `stripComments`'s output, so a stripper that silently
-   ate the wrong span would report absences that are artefacts of
-   the reader. That failure is invisible to the cells it corrupts —
-   they would go green — so it is measured here instead.
-
-   Two axes, because one is not enough:
-
-   **Axis 1, constructed inputs.** Comment forms it must remove and
-   non-comment forms it must not touch, including the two that
-   actually occur in `.tsx`: a `//` inside a URL string, and an
-   apostrophe in rendered text with no closing quote on its line.
-
-   **Axis 2, the real partition.** A stripper can pass every unit
-   case and still desynchronise on 55 kB of real TSX. So the same
-   function is run over the files the suite reads, against a token
-   measured to live ONLY in comments and tokens measured to live in
-   code. `SEAM-\d+` is the comment-only control: 15 occurrences raw,
-   0 after stripping, at `32274eb` — and it stays comment-only
-   because `SEAM` ids are a documentation vocabulary, never an
-   identifier. `/api/bundles` is deliberately NOT used as that
-   control even though it measures identically today, because the
-   cutover is supposed to turn it into code.
+   Every AC cell in this directory is a count over `stripComments`'s
+   output, so a stripper that silently ate the wrong span would
+   report absences that are artefacts of the reader, and the cells
+   it corrupts would go green. It is measured here instead, on two
+   axes: constructed inputs, including the two forms that occur in
+   `.tsx` (a `//` inside a URL string, an apostrophe in rendered
+   text with no closing quote on its line), and the real partition,
+   against a token that lives only in comments and tokens that live
+   only in code.
    ============================================================ */
 
 import { describe, expect, it } from "vitest";
@@ -93,16 +77,16 @@ describe("axis 2 — stripComments over the real partition", () => {
   });
 
   /**
-   * The control. `SEAM-\d+` is documentation vocabulary and appears in no identifier, so
-   * every occurrence is inside a comment by construction. A stripper that leaves any of
-   * them has not run; one that leaves none has removed at least the spans it was aimed at.
+   * The control. A docblock opener cannot survive stripping and does not appear in code
+   * outside a string, so a stripper that leaves any has not run and one that leaves none has
+   * removed at least the spans it was aimed at.
    */
-  it("removes every occurrence of a token measured to be comment-only", () => {
-    const raw = files.reduce((n, f) => n + occurrences(f.raw, /SEAM-\d+/), 0);
-    const code = files.reduce((n, f) => n + occurrences(f.code, /SEAM-\d+/), 0);
-    expect(raw, "no SEAM ids in the partition — the control is gone, not the comments")
+  it("removes every occurrence of a token that lives only in comments", () => {
+    const raw = files.reduce((n, f) => n + occurrences(f.raw, /\/\*\*/), 0);
+    const code = files.reduce((n, f) => n + occurrences(f.code, /\/\*\*/), 0);
+    expect(raw, "no docblocks in the partition, so the control is gone rather than the comments")
       .toBeGreaterThan(0);
-    expect(code, "SEAM ids survived stripping: comments are not being removed").toBe(0);
+    expect(code, "docblock openers survived stripping: comments are not being removed").toBe(0);
   });
 
   /**
@@ -112,17 +96,13 @@ describe("axis 2 — stripComments over the real partition", () => {
    * make every absence assertion in this suite pass for free.
    */
   it("keeps tokens that only occur in code", () => {
-    /* `setSubmitted` stood here and was WRONG: the cutover legitimately replaced that
-       boolean with a wider state, so the desync alarm fired on a correct implementation.
-       A canary for "did the scanner eat code?" has to be something no correct change can
-       remove — structure, or copy a ruling protects — never an identifier the task under
-       test is allowed to rename. */
+    /* A canary for "did the scanner eat code?" has to be something no correct change can
+       remove: structure, never an identifier or a sentence a rewrite is allowed to change. */
     const keep = [
       /\bexport\b/,
       /\breturn\b/,
       /download="REPORT\.md"/,
       /vocabularyProblem/,
-      /live push from the editor the skill runs in/i,
     ];
     for (const pattern of keep) {
       const code = files.reduce((n, f) => n + occurrences(f.code, pattern), 0);

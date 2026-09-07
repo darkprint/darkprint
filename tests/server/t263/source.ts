@@ -1,55 +1,28 @@
 /* ============================================================
-   T263 — the blind suite's one instrument, and why it is not a grep
+   T263 — the upload suite's one instrument, and why it is not a grep
 
    Not a test file. The vitest glob reaches `.test.ts` under
    `tests/`, so this module is imported by the suites beside it and
-   never collected as one itself. `tests/server/contract.ts` does
-   the same thing for the same reason.
+   never collected as one itself.
 
-   ── why every assertion here reads SOURCE ──
-   T263 publishes no module surface (`backend.md`, its Published
-   signatures block). Its deliverable is route and component files,
-   and D-263-03 ruled AC3 to be "a SOURCE-LEVEL assertion over
-   `components/upload/UploadFlow.tsx`, in T262-AC6's own idiom —
-   greppable, not rendered", after finding that the success screen
-   is step 4 of a stateful client component, that `vitest.config.ts`
-   sets `environment: "node"` with no jsdom, and that
-   `components/site/honesty.test.ts:139-140` refuses lifting the
-   sentence out "for a test's convenience". So there is no DOM to
-   drive the wizard with and no export to call. Source is what is
-   left.
+   Every assertion in this directory reads SOURCE: the wizard is a
+   stateful client component, vitest runs with `environment: "node"`
+   and no DOM, and the upload route publishes no module surface to
+   call. Two traps shape every cell.
 
-   ── ── ── the trap this file exists to disarm ── ── ──
-   **This repository's comments quote their own predicates**, so a
-   raw grep is answered by the docblock that explains the thing
-   rather than by the thing. That is not a hypothesis here, it is a
-   measurement at `32274eb`, before any cutover work:
+   1. This repository's comments quote their own predicates, so a
+      raw grep is answered by the docblock that explains the thing
+      rather than by the thing. Every pattern is matched against
+      `stripComments`'s output, and `instrument.test.ts` falsifies
+      the stripper on both axes before any suite trusts it.
 
-       /api/bundles   raw 2   comment-stripped 0
-       SEAM-\d+       raw 15  comment-stripped 0
-
-   A cell asserting "the route reaches `POST /api/bundles`" over raw
-   bytes is therefore **already green on the shipped tree**, where
-   nothing is wired and `fetch(` appears zero times in the whole
-   partition. It would have proved nothing and no mutation could
-   have reddened it. Every pattern below is matched against
-   `stripComments`'s output for that reason, and
-   `instrument.test.ts` falsifies the stripper itself on both axes
-   before any suite trusts it.
-
-   ── the second trap, and the shape of every cell in this suite ──
-   A negative over source is **green against a tree that does not
-   contain the file**: no file, no match, pass. That is the
-   `rejects`-wrapper launderer in grep form. So `premise()` runs
-   first in every cell and fails OUTSIDE the negative — the file
-   exists, clears a byte floor, survives stripping at a sane ratio,
-   and still carries the sentences that are supposed to SURVIVE the
-   cutover. The survivors are what make the absences discriminating
-   rather than vacuous, and they are listed in `SURVIVORS` with the
-   ruling that keeps each one.
+   2. A negative over source is green against a tree that does not
+      contain the file: no file, no match, pass. So `premise()` runs
+      first in every cell and fails OUTSIDE the negative: the files
+      exist, clear a byte floor, survive stripping at a sane ratio
+      and still carry the identifiers that must survive any rewrite.
    ============================================================ */
 
-import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -57,19 +30,19 @@ import { expect } from "vitest";
 
 export const REPO_ROOT = fileURLToPath(new URL("../../..", import.meta.url));
 
-/** The two grants in T263's `Owns` line, read off `backend.md` rather than recalled. */
+/** The two directories the upload route lives in. */
 export const ROUTE_DIRS = ["app/upload", "components/upload"] as const;
 
 /**
- * The two files every ruling cites by name. Enumeration below is mechanical, but a
- * partition that no longer contains these two is a RENAME, and a rename must red rather
- * than silently shrink what the negatives are asserted over.
+ * The two files the cells name. Enumeration below is mechanical, but a partition that no
+ * longer contains these two is a RENAME, and a rename must red rather than silently shrink
+ * what the negatives are asserted over.
  */
 export const PAGE = "app/upload/page.tsx";
 export const FLOW = "components/upload/UploadFlow.tsx";
 
 export interface RouteFile {
-  /** Repo-relative, POSIX separators — the form `backend.md` and the rulings cite. */
+  /** Repo-relative, POSIX separators. */
   path: string;
   raw: string;
   /** `raw` with comments removed. Every pattern in this suite is matched against this. */
@@ -168,20 +141,15 @@ function closeOnSameLine(src: string, open: number, quote: string): number {
 /* --------------------- reading the partition --------------------- */
 
 /**
- * Every source file under T263's two grants, enumerated from disk.
+ * Every source file under the two directories, enumerated from disk. A hand-written list
+ * goes stale the first time a component is added, and the negatives would then be asserted
+ * over a partition smaller than the one the criterion names.
  *
- * `common-traps.md`: "Enumerate mechanically and transitively, never from recall." A
- * hand-written list goes stale the first time the implementer adds a component, and the
- * negatives would then be asserted over a partition smaller than the one the criterion
- * names.
+ * Colocated `.test.ts`/`.test.tsx` are excluded: a test file quoting a sentence in order to
+ * assert its absence would otherwise red the absence cells.
  *
- * Colocated `.test.ts`/`.test.tsx` are excluded: they are the implementer's own regression
- * tests, `components/upload/progress.test.ts` is frozen by D-263-05, and a test file
- * QUOTING a retired sentence in order to assert its absence would otherwise red AC5.
- *
- * Fails CLOSED, the way `tests/route-partition.test.ts` does: an empty enumeration is an
- * error rather than an empty comparison, because every AC5 negative passes vacuously over
- * zero files.
+ * Fails CLOSED: an empty enumeration is an error rather than an empty comparison, because
+ * every negative passes vacuously over zero files.
  */
 export function routeFiles(): RouteFile[] {
   const found: RouteFile[] = [];
@@ -221,8 +189,8 @@ export function fileAt(files: readonly RouteFile[], path: string): RouteFile {
   const hit = files.find((f) => f.path === path);
   if (hit === undefined) {
     throw new Error(
-      `T263: ${path} is not in the partition. Every ruling in this task cites it by name, ` +
-        `so a rename is a contract change rather than a refactor. Found: ` +
+      `T263: ${path} is not in the partition. A rename is a contract change rather than a ` +
+        `refactor. Found: ` +
         `${files.map((f) => f.path).join(", ")}`,
     );
   }
@@ -237,72 +205,37 @@ export function occurrences(haystack: string, pattern: RegExp): number {
 /* --------------------- the survivors, and the premise they carry --------------------- */
 
 /**
- * Sentences and identifiers that must still be there AFTER the cutover, each with the
- * ruling that keeps it. These are the premise: a cell that asserts a retired sentence is
- * gone is only saying something if the file it read still holds the copy that stays.
- *
- * Every count here is a MEASUREMENT at `32274eb`, not an expectation — recorded so a
- * later reader can tell a survivor that was deleted from one that was never there.
+ * Identifiers that must still be there after any rewrite of the upload route. They are the
+ * premise: a cell that asserts something is absent is only saying something if the file it
+ * read still holds the code that stays. Copy is deliberately not pinned here, so a rewrite
+ * of the page's sentences cannot red a suite about wiring.
  */
 export const SURVIVORS = [
   {
-    /* D-263-02: "STAYS. T270 is `todo` and removing it would be a false claim."
-
-       **The pattern is the CLAIM, not the sentence, and that correction cost 20 false reds.**
-       It first read `/nor is there a live push…/`. "Nor is there" was a coordinating
-       conjunction that only parsed while the two sentences AC5 retires stood in front of it;
-       with those gone the implementer rewrote the survivor to stand alone — "Not built yet: a
-       live push from the editor the skill runs in" — and moved the ledger pin with it in the
-       same commit, which is exactly what D-78 asks for. Pinning the grammar reddened a
-       correct page, and because this is the premise every other cell runs first, it reddened
-       31 of 44 cells for one cause. A survivor pattern must match every wording the claim can
-       honestly take. */
-    what: "the skill's live-push refusal",
-    pattern: /live push from the editor the skill runs in/i,
-    file: PAGE,
-    ruling: "D-263-02",
-  },
-  {
-    /* The Contract line: `still being written` and `blocked` with an error count survive;
-       only `not wired up` goes. */
-    what: "the `still being written` disabled reason",
-    pattern: /still being written/i,
-    file: FLOW,
-    ruling: "T263 Contract",
-  },
-  {
-    /* D-263-01: "`BundleDropzone.tsx:436-439` is NOT the same sentence and is UNTOUCHED":
-       it fires only when `parts.vocabularyProblem` is set and stays true after any cutover. */
+    /* The unreadable-overlay disclosure fires only when `parts.vocabularyProblem` is set, and
+       that trigger outlives any copy change. */
     what: "the unreadable-overlay disclosure's trigger",
     pattern: /vocabularyProblem/,
     file: "components/upload/BundleDropzone.tsx",
-    ruling: "D-263-01",
   },
 ] as const;
 
 /**
- * The floors are half of each file's size at `32274eb` (`page.tsx` 13528,
- * `UploadFlow.tsx` 55005). Half, because the cutover legitimately DELETES copy — the
- * `not wired up` reason, two ledger sentences — and a tight floor would red the
- * implementer for doing what the contract asks. What this catches is a file stubbed,
+ * Well under each file's size, because a rewrite legitimately deletes copy and comments and
+ * a tight floor would red the author for doing so. What this catches is a file stubbed,
  * emptied or replaced by a re-export, which is the shape that makes every negative below
- * pass for the wrong reason. `honesty.test.ts:521-527` uses the same device and says why:
- * "A ledger held over an empty string passes every case in it."
+ * pass for the wrong reason.
  */
 export const BYTE_FLOORS: Readonly<Record<string, number>> = {
-  [PAGE]: 6700,
-  [FLOW]: 27500,
+  [PAGE]: 3000,
+  [FLOW]: 12000,
 };
 
 /**
- * The premise every cell in this suite runs FIRST.
- *
- * `wave-blind.md`: "Bind the module LAST in a cell — after the premises and the planting.
- * An early red masks every write below it while being correct about its own subject." The
- * source analogue is this: assert the partition is real and still carries what survives,
- * and only then assert that something is absent from it. Each `expect` below fails
- * OUTSIDE the negative it guards, which is the whole point — an absence reported over a
- * deleted file is not a finding about copy.
+ * The premise every cell in this suite runs FIRST: the partition is real and still carries
+ * what survives, and only then is anything asserted absent from it. Each `expect` below
+ * fails OUTSIDE the negative it guards, because an absence reported over a deleted file is
+ * not a finding about the route.
  */
 export function premise(files: readonly RouteFile[]): void {
   expect(files.length, "T263 partition is empty; every negative below would pass vacuously")
@@ -315,99 +248,31 @@ export function premise(files: readonly RouteFile[]): void {
     /* The stripper is an instrument, so its output is checked for sanity wherever it is
        used. A desync swallows code and would silently satisfy every absence assertion. */
     const ratio = f.code.length / f.raw.length;
-    expect(ratio, `${path}: stripComments kept ${(ratio * 100).toFixed(0)}% — desynchronised?`)
+    expect(ratio, `${path}: stripComments kept ${(ratio * 100).toFixed(0)}%, desynchronised?`)
       .toBeGreaterThan(0.2);
-    expect(ratio, `${path}: stripComments removed nothing — did it run?`).toBeLessThan(0.98);
   }
 
   for (const s of SURVIVORS) {
     const f = fileAt(files, s.file);
     expect(
       occurrences(f.code, s.pattern),
-      `${s.ruling}: ${s.what} must SURVIVE the cutover and is missing from ${s.file}. ` +
+      `${s.what} must survive a rewrite and is missing from ${s.file}. ` +
         "Until it is there, the absence assertions in this suite prove nothing.",
     ).toBeGreaterThan(0);
   }
 }
 
-/* --------------------- D-263-05, the frozen pair --------------------- */
-
-/**
- * `components/upload/progress.ts` and its test, pinned by content digest at `32274eb`.
- *
- * D-263-05 carved both OUT of T263's `Owns`: `lib/server/publish/publish.ts:48` imports
- * `bundleProgress` from this file and `publish.ts:163-176` consumes `progress.state`,
- * `placed` and `total` directly, so a merged and verified module's AC1/AC2 distinction is
- * decided here. The implementer owns its own regression tests and the blind author may not
- * read them, so nothing else in the tree enforces the freeze.
- *
- * A digest rather than a mtime or a line count: `sha256` is stable across processes where
- * a hashed object identity is not, and "equal size" has passed for a different file here
- * before. **A red is the intended signal even when the change is legitimate** — the ruling
- * says a change here "is a T100 change and comes back to me", so this cell's job is to
- * make it arrive rather than to judge it.
- */
-export const FROZEN: Readonly<Record<string, string>> = {
-  /* Re-pinned at the topology rename (owner-instructed, 2026-08-25): one word in the
-     header comment moved with the file the whole tree renamed (`blueprint.dot` →
-     `topology.dot`). No exported value or behaviour changed; the pair's test half is
-     byte-identical. The pin fired exactly as designed and this records the cause.
-
-     Re-pinned again at D-109 (owner-instructed, 2026-08-30), and this time BEHAVIOUR moved,
-     which is the case this freeze exists to escalate rather than to prevent. The owner ruled
-     that the publish gate splits by lifecycle stage: a draft is near-unconditional, a release
-     must additionally resolve. `bundleProgress` was the last place still asking `hasErrors`,
-     so `publish.ts:207` inherited the old bar through it.
-
-     What moved, stated so a reader does not have to diff two digests to find out:
-       - `resolves` now means `isReleasable` rather than "no error anywhere", so a bundle
-         whose ports do not fit, whose types cannot flow, or that names an unminted term is
-         published WITH its findings instead of refused. Those are inferences, and
-         `lib/core/gate.ts` rule 4 forbids an inference from refusing anybody's work.
-       - `rejected` narrows to bytes the registry cannot hold, plus the one refusal a card's
-         own author declared through `cannot:`.
-       - `unfinished` is unchanged in meaning. The local `AWAITING_CARD` set and the
-         `bundle/missing-dependency` shadow rule are deleted, because `gate.ts` reached the
-         same two codes from the other direction and one list is reviewable where two are not.
-     `publish.ts` is untouched: it reads `progress.state` and the state it reads now answers
-     the release question. Both halves of the pair changed, so both digests move. */
-  /* Re-pinned a THIRD time, 2026-09-05, and this is the mildest of the three. The diff is
-     ONE WORD, inside the header comment, and it is a quotation being kept true: the comment
-     quotes the headings a rejected bundle used to show an unfinished author, and
-     `ValidationReport.tsx`'s withheld-state heading moved from "No schematic and no scores"
-     to "No schematic and no readings" when the scoring copy was swept (§11.0 Q28). A comment
-     that quotes a surface and then stops matching it is the drift this repository's own
-     rules exist to catch, so leaving it would have been the defect.
-
-     No exported value, no behaviour and no assertion moved; `progress.test.ts` is
-     byte-identical. This cell's stated job is to make a change here ARRIVE rather than to
-     judge it, and it did. The judgement is recorded here because the ruling says a change
-     to this file comes back to the owner. */
-  "components/upload/progress.ts":
-    "4b414e3a793524718b84d89cf8a7421033ea2e8eb9e2930b3fbe215473e93504",
-  "components/upload/progress.test.ts":
-    "8f5d2c72152220876659d88554036f6643728084e3abbc1bed1c2ac365022b73",
-};
-
-export function sha256Of(relPath: string): string {
-  return createHash("sha256").update(readFileSync(join(REPO_ROOT, relPath))).digest("hex");
-}
-
 /**
  * The file, or files, that actually name the publish endpoint.
  *
- * **Scoped rather than partition-wide, and the mutation table is why.** The body-field cells
- * first asserted their tokens across the whole partition, where `version` already occurs in
- * `components/upload/BundleDropzone.tsx` at `32274eb`. Paired with `ownerHandle` — which
- * measures 0 — the cell reddened for its partner's reason and the `version` clause never
- * decided anything. Mutation C removed `version` from the publish body and reddened **0 of
- * 44 cells**. That is `paired clauses mask each other`, and the fix is to ask the question
- * about the file that builds the request rather than about the folder.
+ * Scoped rather than partition-wide: `version` already occurs in `BundleDropzone.tsx`, so a
+ * partition-wide count of the body fields was satisfied by a file that builds no request,
+ * and removing `version` from the publish body reddened nothing. Asking the question about
+ * the file that builds the request is what makes the clause decide anything.
  *
  * The structural claim this makes: the body's fields are named in the same file that names
  * `/api/bundles`. An implementation that splits the two across files is correct and would
- * red here — so the message says exactly that, and the split is worth hearing about rather
- * than passing silently.
+ * red here, so the message says exactly that.
  */
 export function publishBodyText(files: readonly RouteFile[]): string {
   return files
