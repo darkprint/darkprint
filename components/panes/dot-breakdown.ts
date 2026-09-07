@@ -1,54 +1,27 @@
 /* ============================================================
    `topology.dot`, tokenised and cut into blocks.
 
-   The pure half of `./DotBreakdown.tsx`: no React, no DOM, so the
-   node suite can hold every claim in here to the nine files the
-   archive actually stores.
+   The pure half of `./DotBreakdown.tsx`: no React, no DOM, so a node
+   test can hold every claim in here to the files the archive stores.
 
-   ── Why the steps are DERIVED and never typed ──
-   `components/home/nodecard/annotations.ts` records the bug this
-   avoids: a hand-written table of line ranges drifted out of
-   document order, and the highlight climbed the file while the
-   reader scrolled down it. Its fix was to resolve every range from
-   the file itself, and the same fix applies here twice over,
-   because this figure runs over NINE different files — one per
-   blueprint — and a typed table would have to be right nine times
-   and stay right whenever any of them is edited.
+   The steps are derived from the file rather than typed, because a
+   hand-written table of line ranges once drifted out of document
+   order and the highlight climbed the file while the reader scrolled
+   down it. A step is a block: a run of statements of one kind, with
+   the comment lines above it attached, ended by a blank line, the
+   closing brace, or a change of kind. Blocks come out in document
+   order by construction, which `dot-breakdown.test.ts` asserts over
+   every blueprint.
 
-   So a step is a BLOCK of the file: a run of statements of one kind
-   (the header, the node declarations, one group of edges), with the
-   comment lines immediately above it attached to it, ended by a
-   blank line, by the closing brace, or by the kind changing. That
-   rule gives the starter five steps —
+   `card="id@version"` is the join between a box in the drawing and
+   the document describing it, so the tokeniser marks the whole
+   attribute as one kind and the listing can light all three tokens
+   together rather than colouring a string that merely looks like a
+   ref.
 
-     L1–3    the graph, opened
-     L5–10   five nodes, each pinned to a card
-     L12–18  the two edges into `tester`, under the comment about
-             the edge that is NOT written
-     L20–24  the tester ⇄ debugger loop
-     L26     the release edge
-
-   — and three steps for the six blueprints whose edges are one
-   unbroken run. Blocks are emitted in document order by
-   construction, which is the property `dot-breakdown.test.ts`
-   asserts: there is no ordering decision left for an author to get
-   wrong.
-
-   ── What "the important tag" is ──
-   `card="id@version"`. It is the one attribute DarkPrint adds to
-   DOT (`components/spec/rows.ts`, `TOPOLOGY_ROWS`), and it is the
-   join between a box in the drawing and the document that describes
-   it. The tokeniser marks the whole attribute — name, `=`, value —
-   as one `card` kind so the listing can light all three together
-   rather than colouring a string that happens to look like a ref.
-
-   ── Where the prose comes from ──
-   Every sentence below is a `TOPOLOGY_ROWS` claim, restated for the
-   block it lands on. Nothing here says anything about the engine
-   that `/spec/topology` does not already say in its check table:
-   layout attributes are read by nobody, `label` is compared against
-   nothing, and the port types are what decide whether an edge can
-   carry anything at all.
+   Every sentence below restates a `TOPOLOGY_ROWS` claim for the block
+   it lands on; nothing here says anything `/spec/topology`'s check
+   table does not.
    ============================================================ */
 
 /* ==================== tokens ==================== */
@@ -375,27 +348,27 @@ function statementCount(lines: readonly string[], block: Block): number {
 const HEADER_TITLE = "The graph, opened";
 
 const HEADER_BODY_BARE =
-  "One directed graph per bundle, named on the opening line. Every rule the engine " +
+  "One directed graph per blueprint, named on the opening line. Every rule the validator " +
   "applies below it reads which way an edge points.";
 
-/* `shape` used to be listed here beside `rankdir` and `style` as one more layout
-   default, and it is the one attribute in the line that is not layout: Attractor spec
-   §2.8 picks the handler that runs a node from its shape. Nothing about the DarkPrint
-   half changed — a topology's shapes are still read by nobody here — but a reader who
-   goes on to compile this file needs the other half of that sentence, because the shape
-   is what decides what each node in the compiled file does. */
+/* `shape` is the one attribute in the defaults line that is not layout: Attractor picks
+   the handler that runs a node from its shape, so a reader who goes on to compile this
+   file needs that half of the sentence. */
 const HEADER_BODY_LAYOUT =
-  "One directed graph per bundle, named on the opening line. The statements under it " +
-  "set defaults for the nodes below. `rankdir` and `style` are Graphviz layout and " +
-  "DarkPrint reads neither. `shape` is the attribute Attractor picks a node's handler " +
-  "from, and the export writes it again per node from the card's type. The drawing " +
-  "above this listing is its own.";
+  "One directed graph per blueprint, named on the opening line. The statements under it " +
+  "set defaults for the nodes below. `rankdir` and `style` are Graphviz layout hints and " +
+  "DarkPrint reads neither. `shape` matters only once the file is compiled for Attractor, " +
+  "StrongDM's graph runner. Attractor decides what runs each node from its shape, and the " +
+  "export sets the shape per node from the card's type.";
 
-/* `grounded-research-desk` is the only blueprint in the archive that opens a
-   `subgraph cluster_…`, and without a shape of its own it took the opening line's title
-   and printed "The graph, opened" twice on the same walk. The body stays a fact about the
-   FILE — what the grouping does to the engine's reading of it is not something this
-   figure is in a position to claim. */
+/* Only where a drawing really sits above the listing. `/spec/topology` mounts the same
+   figure with nothing drawn over it, and a sentence about a drawing that is not there
+   read as a rendering fault. */
+const HEADER_BODY_DRAWN_ABOVE =
+  " The drawing above is this site's own layout; these lines do not position it.";
+
+/* `grounded-research-desk` opens a `subgraph cluster_…`, and without a shape of its own
+   it took the opening line's title and printed "The graph, opened" twice on one walk. */
 const CLUSTER_TITLE = "A cluster of nodes";
 
 const CLUSTER_BODY =
@@ -415,22 +388,22 @@ const NODES_BODY_MORE =
 
 /** The first group of edges carries the claim; the rest carry what makes them different. */
 const EDGE_BODY_INTERFACE =
-  "An edge is an interface. The resolver pairs an output port with an input port by type, " +
-  "and an edge with no compatible pairing is a graph that cannot run.";
+  "An edge is an interface. The validator pairs an output port on one card with an input " +
+  "port on the next by data type, and an edge with no compatible pairing fails the whole " +
+  "blueprint.";
 
 const EDGE_BODY_DASHED =
-  "`style=dashed` is Graphviz layout and says nothing to the engine. The two port types " +
-  "still decide what may travel this way.";
+  "`style=dashed` is a Graphviz drawing hint and DarkPrint reads nothing from it. The two " +
+  "port types still decide what may travel this way.";
 
-/* Both readings, because the row in `TOPOLOGY_ROWS` this restates now carries both.
-   "Compared against nothing" is true of DarkPrint and false of the runner: spec §3.3
-   Step 2 matches a normalized `label` to pick a branch, and the export writes the label
+/* Both readings, because "compared against nothing" is true of DarkPrint and false of the
+   runner: Attractor matches a label to pick a branch, and the export writes the label
    straight through, so a caption in this listing is a routing key in the compiled file. */
 const EDGE_BODY_LABEL =
-  "`label` is what the author says an edge carries. It is drawn on the schematic and " +
-  "compared against nothing here, and the two port types decide what travels. The " +
-  "compiled file reads it a second way: over the edges that carry no guard, Attractor " +
-  "matches the label, normalized, against the branch a stage asked for (spec §3.3).";
+  "`label` is what the author says an edge carries. DarkPrint compares it against nothing, " +
+  "and the two port types decide what travels. Once compiled for Attractor it does a second " +
+  "job: on an edge with no condition, Attractor matches the label against the branch name " +
+  "the previous node asked for, so a caption here becomes a routing key there.";
 
 /** `planner, builder → tester`, `tester ⇄ debugger`, or a count when the shape has none. */
 function edgeTitle(edges: readonly Edge[]): string {
@@ -472,18 +445,28 @@ function nodeTitle(nodes: readonly { id: string; card: boolean }[], first: boole
   return carded ? `${nodes.length} nodes, each pinned to a card` : `${nodes.length} nodes`;
 }
 
+export interface DotStepOptions {
+  /**
+   * Whether a drawing of this graph sits directly above the listing, which is true on the
+   * landing and false on `/spec/topology`. The header note mentions the drawing only when
+   * there is one to mention.
+   */
+  drawnAbove?: boolean;
+}
+
 /**
  * The breakdown, resolved from the file.
  *
  * Returned in document order with `step` numbered from 1, and `from`/`to` strictly
- * increasing across the list — asserted in `dot-breakdown.test.ts` against all nine
- * blueprints, because a block whose range overlaps its neighbour's is a rail row that
- * lights lines belonging to another row, which is the one defect this whole derivation
- * exists to make impossible.
+ * increasing across the list, asserted in `dot-breakdown.test.ts` against every
+ * blueprint: a block whose range overlaps its neighbour's is a rail row that lights lines
+ * belonging to another row, the one defect this derivation exists to make impossible.
  */
-export function resolveDotSteps(source: string): DotStep[] {
+export function resolveDotSteps(source: string, options: DotStepOptions = {}): DotStep[] {
   const lines = source.replace(/\r\n?/g, "\n").split("\n");
   const blocks = blocksOf(lines);
+  const layoutBody =
+    options.drawnAbove === true ? HEADER_BODY_LAYOUT + HEADER_BODY_DRAWN_ABOVE : HEADER_BODY_LAYOUT;
 
   let edgeGroup = 0;
   let nodeGroup = 0;
@@ -495,13 +478,13 @@ export function resolveDotSteps(source: string): DotStep[] {
         return {
           ...base,
           title: HEADER_TITLE,
-          body: statementCount(lines, block) > 1 ? HEADER_BODY_LAYOUT : HEADER_BODY_BARE,
+          body: statementCount(lines, block) > 1 ? layoutBody : HEADER_BODY_BARE,
         };
       }
       if (/\bsubgraph\b/i.test(text)) {
         return { ...base, title: CLUSTER_TITLE, body: CLUSTER_BODY };
       }
-      return { ...base, title: DEFAULTS_TITLE, body: HEADER_BODY_LAYOUT };
+      return { ...base, title: DEFAULTS_TITLE, body: layoutBody };
     }
     if (block.kind === "nodes") {
       nodeGroup += 1;

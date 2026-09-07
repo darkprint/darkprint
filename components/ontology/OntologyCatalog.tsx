@@ -51,14 +51,9 @@ function Id({ children }: { children: string }) {
 }
 
 /**
- * Section header for one `TermKind` panel: glyph, name, and how many there are.
- *
- * `h3`, not `h2`, since 2026-09-06. The catalog was the whole of `/ontology` under that
- * route's `h1`, so a kind panel was a top-level section of the page and `h2` was right.
- * It mounts inside a band on `/spec/card` now, under that band's own `h2`, and six
- * `h2`s sitting beside the heading that introduces them makes the outline claim the five
- * kinds are peers of the enumeration rather than its parts. One level down states the
- * containment, and skips nothing: `h1` page, `h2` band, `h3` panel.
+ * Section header for one `TermKind` panel: glyph, name, and how many there are. An `h3`,
+ * because the catalog mounts inside a band on `/spec/card` under that band's own `h2`, and
+ * one level down states the containment without skipping a level.
  */
 function KindHeader({
   id,
@@ -110,71 +105,17 @@ function KindNotes({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ── Where this mounts, and what it stopped carrying ──
-
-   It is the browse half of the vocabulary listing, rendered on the server and handed to
+/* The browse half of the vocabulary listing, rendered on the server and handed to
    `VocabularyBrowser` as its children: the filter bar shows this when nothing is filtered
-   and its own flat result list when something is. One enumeration on screen at a time, and
-   the shape a reader who is reading rather than looking one word up actually wants.
+   and its own flat result list when something is, so one enumeration is on screen at a
+   time. It mounts on `/spec/card` because every term is a legal value of a card field, and
+   `canonical-route.test.ts` holds that placement.
 
-   That listing has been on four routes. It was a full-bleed band on the ontology
-   specification, then the browse half of `/ontology` when the accounts pass gave the
-   vocabulary an index, then back inside a band on that specification when the owner deleted
-   the index on 2026-09-06, and it is a band on `/spec/card` since the specification itself
-   was folded into the card schema later the same day. Every term is a legal value of a card
-   field, which is the reason the fold was ruled and the reason this listing keeps landing
-   wherever the fields are. `components/ontology/canonical-route.test.ts` carries all four
-   positions and which one is asserted; this file only ever draws the terms.
-
-   It used to carry the page heading and its own `container-page`, because the first of
-   those mounts was full-bleed and had to supply both. The route owns them now, so this is
-   a plain stack: a component that sets its own page container cannot be nested inside one,
-   and this one is.
-
-   ── Why the view and the usage index are props now ──
-
-   Both were read here, off `@/lib/content`, which made this component a second reader of
-   the build-time archive sitting underneath a route that no longer has one. The route reads
-   the registry and passes what it read, so there is one read per request and one set of
-   terms the whole page describes — a component resolving its own would be free to list a
-   different overlay from the rows above it.
-
-   ── The vocabulary has no version, and this is the file that used to print one ──
-
-   `view.ontology.version` was read here and rendered twice: layer 01 called the core
-   "versioned as one vocabulary", and layer 02 printed the number itself as what a score
-   computed against the merged view was recorded under. Both are gone on the owner's
-   instruction of 2026-09-05, along with the field behind them.
-
-   The reason, so nobody reintroduces it: this vocabulary names what an Attractor node is,
-   and Attractor fixes those shapes in its own spec. A DarkPrint-only semver on top of them
-   was a second thing to keep in step with nothing. It could not gate a resolve, because no
-   card declares a version to check one against. It could not date a term, because nothing
-   ever bumped it. The one reader that gave it meaning was `release.scored_ontology_version_id`,
-   the column that recorded which vocabulary a stored reading was taken against, and `0009`
-   dropped it. §6.2 survives without it: a term is never
-   deleted, it is deprecated and pointed at its successor, and the pointer is the half a
-   reader acts on.
-
-   ── The governance band is gone too (owner, 2026-09-06) ──
-
-   The closing band drew three layers: the curated core, namespaced local terms, and
-   promotion into the core. Promotion described a review workflow nobody built, and it only
-   made sense while the vocabulary had versions to promote a term between. With the
-   versioning gone the band was a model of a process this project no longer offers.
-
-   Its heading is not quoted anywhere in this file on purpose. `canonical-route.test.ts`
-   holds the removal as a string check over these bytes, and a comment reproducing the
-   sentence it forbids reds a correct file.
-
-   The mechanism it described is NOT gone: a bundle still declares its own terms in
-   `ontology/extensions.yaml` and the resolver still merges them over the core. What the
-   band said about that, and the resolver rules it listed, are the overlay band of the
-   specification. That used to be a route away and a button at the top of this listing
-   pointed at it; the two are one page since 2026-09-06, so the rules are one band below
-   these panels and the button would have been a self-link. The local terms themselves are
-   still listed in the rows below, marked as local. Nothing here counted them any more once
-   the band went, so `partitionTerms` came out with it. */
+   The view and the usage index are props rather than reads, so the route reads the
+   registry once per request and the rows below describe the same terms as the chips above
+   them. The vocabulary has no version: it names what an Attractor node is, and Attractor
+   fixes those shapes in its own spec, so a semver on top was a second thing to keep in
+   step with nothing. */
 export function OntologyCatalog({
   view,
   usage,
@@ -187,28 +128,26 @@ export function OntologyCatalog({
   const dataTypes = view.byKind("data-type");
   const tools = view.byKind("tool");
 
-  // Doc 3 §2's own order, which is the lifecycle and not the alphabet — `byKind("phase")`
-  // sorts by id and would open the five with `debugging`. `CORE_PHASE_IDS` is exported for
-  // exactly this, and the lookup keeps the terms themselves coming from the view.
+  // Lifecycle order rather than the alphabet: `byKind("phase")` sorts by id and would open
+  // the five with `debugging`. The lookup keeps the terms themselves coming from the view.
   const phases = CORE_PHASE_IDS.map((id) => view.get(id)).filter(
     (term): term is OntologyTerm => term !== undefined,
   );
 
-  // Risk markers read best by what they cost: the marker that can take a graph to 1 on
-  // its own first. The two abstract categories carry no weight at all and sort last —
-  // they are what a rule is written about, not what a card declares.
+  // Risk markers read best by weight, heaviest first. The two category terms carry no
+  // weight at all and sort last: they are what a rule is written about rather than what a
+  // card declares.
   const riskMarkers = view.byKind("risk-marker").slice().sort((a, b) => {
     const byWeight = (markerWeight(b) ?? 0) - (markerWeight(a) ?? 0);
     return byWeight !== 0 ? byWeight : a.id < b.id ? -1 : 1;
   });
 
-  // Stated in the copy beside each tree rather than guessed at: the vocabulary draws
-  // exactly the subsumption edges doc 3 §3 and §4 draw, which leaves several kinds with
-  // many roots.
+  // Counted off the view rather than typed, because a hand-typed count went stale the day
+  // a fifth root was added.
   const nodeTypeRoots = termRootIds(view, "node-type").length;
 
-  // §6.2's live demonstration. Read off the vocabulary rather than written into the
-  // copy, so the paragraph cannot outlive the rename it describes.
+  // Read off the vocabulary rather than written into the copy, so the paragraph cannot
+  // outlive the rename it describes.
   const renamed = nodeTypes.find(
     (term) => term.deprecated?.replacedBy !== undefined,
   );
@@ -216,46 +155,11 @@ export function OntologyCatalog({
 
   return (
     <div>
-      {/* ---------- The five kinds ----------
-
-          This slot held silhouettes: one small SVG per kind, dots and edges laid out from
-          the real forest, meant to show that phases are flat and data types go three
-          levels deep. The author: "You can't represent the ontology using those
-          representations. They have no meaning."
-
-          Correct, and the reason is worth writing down so nobody rebuilds them. A
-          vocabulary is made of names. A dot with no label carries no term, no relation a
-          reader can act on, and no way to tell `validation` from `decision`; the shape it
-          traced was a property of the drawing, not a fact anybody could use. It was the
-          craft floor's "soft-shadowed rounded rectangles standing in for content" wearing
-          a graph's clothes.
-
-          What replaces it names things. Each row is a kind, the card field that reaches
-          it, and its actual root terms, so the top of the page is the vocabulary rather
-          than a picture of its outline. The shape is said in words, where it can be
-          precise: "flat and closed" is a fact, a row of five dots is a guess. */}
-      {/* ---------- and the index ----------
-
-          The rows are links now, one per kind, into the five sections below. /ontology is
-          50 terms over eight viewports and it shipped with no lookup at all — no search,
-          no filter, nothing but Cmd-F — while the two sibling shelves of 9 and 53 items
-          both open with a search panel. This is the surface a reader arrives at holding a
-          specific word.
-
-          This is the cheap half of a way in, on purpose. A real `TermBrowser` — a filter
-          box narrowing all 50 rows across the five kinds at once — is a new client
-          component with its own state, its own empty state and its own no-JS story, and
-          it belongs in its own pass. What it is not is a reason to leave the figure that
-          already names all five kinds unlinked.
-
-          No width of its own. This sat in a `max-w-4xl` wrapper to match the five panels
-          below, on the argument that an index overhanging the sections it points at draws
-          a relation the page does not have. The argument survives and the number did not:
-          the panels run to `container-page` now (owner, 2026-09-05), so the figure and the
-          sections it indexes still share one right edge, 1200px out instead of 896. */}
-      {/* `h3` with the panel headers below it, and for the same reason: this names the
-          index over the five kinds, which is a part of the enumeration band rather than a
-          section beside it. */}
+      {/* The index over the five kinds names things rather than drawing silhouettes of
+          them: a dot with no label carries no term and no relation a reader can act on.
+          Each row is a kind, the card field that reaches it, and its root terms, and each is
+          a link into the section below, because this is the surface a reader arrives at
+          holding a specific word. */}
       <h3 className="sr-only">The five kinds of term</h3>
       <ReachList
         label="Five lists, five fields"
@@ -270,7 +174,7 @@ export function OntologyCatalog({
             Two fields on a card are deliberately not in here:{" "}
             <code className="font-mono text-muted">mcp</code> names a process somebody
             installed, and <code className="font-mono text-muted">agent</code> is a label
-            the engine never reads.
+            nothing reads.
           </>
         }
       >
@@ -310,8 +214,8 @@ export function OntologyCatalog({
           hrefLabel={`Risk markers, ${riskMarkers.length} terms`}
         >
           <KindLink href="#risk-markers">Risk markers</KindLink>, what it could damage:{" "}
-          <Roots ids={termRootIds(view, "risk-marker")} />. Each priced one carries a
-          weight the static risk analysis charges.
+          <Roots ids={termRootIds(view, "risk-marker")} />. Each concrete marker carries a
+          weight Security subtracts; the two category terms carry none.
         </ReachRow>
         <ReachRow
           field="inputs · outputs"
@@ -326,37 +230,11 @@ export function OntologyCatalog({
         </ReachRow>
       </ReachList>
 
-      {/* ---------- The vocabulary ----------
-
-          Every section runs header → terms → notes, and it used to run header → notes →
-          terms. Measured on the old order, a reader arriving to look one term up read
-          between 81 and 184 words first, 620 across the five, before a single term
-          appeared. The header already carries the orientation the prose was standing in
-          for — how many terms, how many roots, what the ordering is — so the terms can
-          come straight after it and the argument can follow them under a rule.
-
-          Nothing was cut to do it. Every paragraph is where it was, in the order it was,
-          one block further down. */}
-      {/* ---------- one right edge ----------
-
-          An earlier pass pulled the width cap off `TermTable`/`TermTree` and put a single
-          `max-w-4xl` here, because four different right edges inside one panel — grid,
-          notes, header rule, border — made the weight column, whose whole job is to be
-          compared down a column, right-aligned to an invisible one. One edge was the point
-          and 896px was the number.
-
-          The number is gone (owner, 2026-09-05: "the panel in /ontology do not occupy full
-          horizontal space, fix them"). Capped at 896 inside a 1200px `container-page`,
-          every panel on this page stopped ~300px short of the band the heading and the
-          filter bar above it draw, which is the same defect one level up. The stack now
-          fills the container and the single right edge is the container's.
-
-          The reading measure went with it. `.prose-lane` came off the notes in the same
-          change: a 36rem column of prose under a full-width grid reads as a second column
-          rather than as the grid's caption, which is the argument two of these notes were
-          already exempted on. */}
+      {/* Every section runs header, terms, notes: a reader arriving to look one term up
+          should meet the terms before the argument about them. The stack fills the container
+          on the owner's instruction, so the weight column reads against one right edge. */}
       <div className="mt-16 flex flex-col gap-8">
-        {/* Phases — doc 3 §1–§2, doc 2 §8 */}
+        {/* Phases */}
         <section
           id="phases"
           className="panel overflow-hidden scroll-mt-24"
@@ -372,11 +250,10 @@ export function OntologyCatalog({
             <TermTable terms={phases} />
             <KindNotes>
               <p className="text-sm leading-relaxed text-muted">
-                These five phases are what the word <em>blueprint</em> means here: from
-                the request to a plan, from the plan to an artefact, to the checks, to
-                the fix, to the release. They are listed in that order, not
-                alphabetically. Anybody can coin a node type or a risk marker. A sixth
-                phase would define a different thing.
+                A blueprint covers some or all of five phases: from the request to a plan,
+                from the plan to an artefact, to the checks, to the fix, to the release.
+                They are listed in that order rather than alphabetically. Anybody can coin a
+                node type or a risk marker. A sixth phase would define a different thing.
               </p>
               {/* This was set off behind a 2px violet rule. `globals.css` reserves that
                   leading edge for `.route-box`, the box whose job is to send a reader off
@@ -386,15 +263,15 @@ export function OntologyCatalog({
                   paragraph above it, and loses nothing a reader was using. */}
               <p className="text-sm leading-relaxed text-muted">
                 A card&apos;s <Id>phase</Id> names one of the five, several of them, or
-                none. The five describe the blueprint, not each node in it. An intake, a
-                retrieval step and a router each do work that none of the five names. A
-                node that both builds and repairs stands in two phases. Which phases a
-                blueprint has nodes in is read off its cards and shown on the blueprint
-                as a statement of scope, for example &ldquo;this blueprint covers
+                none. The five describe the blueprint rather than each node in it. An
+                intake, a retrieval step and a router each do work that none of the five
+                names. A node that both builds and repairs stands in two phases. Which
+                phases a blueprint has nodes in is read off its cards and shown on the
+                blueprint as a statement of scope, for example &ldquo;this blueprint covers
                 planning, implementation and testing&rdquo;, the same way the autonomy
-                class is shown. It is not a checklist with two boxes left empty. Nothing
-                on DarkPrint charges a blueprint for the phases it leaves to somebody
-                else, and nothing charges a node for standing outside them.
+                class is shown. Covering three of the five is a description of scope rather
+                than a gap, and nothing on DarkPrint scores a blueprint or a node for the
+                phases it leaves out.
               </p>
             </KindNotes>
           </div>
@@ -420,15 +297,14 @@ export function OntologyCatalog({
                 <Id>broader</Id> relation. The relation is load-bearing: a node typed{" "}
                 <Id>human-input</Id> puts a person in the loop because{" "}
                 <Id>human-input</Id> is a kind of <Id>human-in-the-loop</Id>, which is the
-                only question the autonomy metric asks. It is not because anybody
-                remembered to tick a flag.
+                only question Autonomy asks.
               </p>
               <p className="text-sm leading-relaxed text-muted">
-                There are {nodeTypeRoots} roots below, not one. <Id>agent</Id> and{" "}
-                <Id>tool</Id> stand on their own; <Id>human-in-the-loop</Id> and{" "}
-                <Id>evaluative</Id> are abstract categories that exist to be asked about and
-                that no card ever declares directly. A common root above all four would
-                assert a relation the vocabulary does not draw, so there isn&apos;t one.
+                {nodeTypeRoots} roots stand below. <Id>agent</Id> and <Id>tool</Id> stand on
+                their own; <Id>human-in-the-loop</Id>, <Id>evaluative</Id> and{" "}
+                <Id>orchestration</Id> are categories that rules are written about and that
+                a card should not declare directly. There is no common root above them,
+                because the vocabulary draws no relation between them.
               </p>
               {renamed?.deprecated?.replacedBy !== undefined && (
                 <p className="text-sm leading-relaxed text-muted">
@@ -436,8 +312,8 @@ export function OntologyCatalog({
                   <Id>{renamed.deprecated.replacedBy}</Id>. The old id stays in the
                   vocabulary and keeps resolving. It carries a pointer to its successor,
                   so a card written against it still loads and still resolves. It is marked
-                  below rather than hidden, a deprecated term is a redirect, not a broken
-                  row.{" "}
+                  below rather than hidden: a deprecated term is a redirect rather than a
+                  broken row.{" "}
                   {stillSpelledThatWay === 0
                     ? "No card in the registry spells it that way any more, which is what a finished rename looks like."
                     : `${stillSpelledThatWay} card${stillSpelledThatWay === 1 ? "" : "s"} in the registry still spell it that way, and nothing forces them to change.`}
@@ -463,26 +339,24 @@ export function OntologyCatalog({
             <TermTree kind="risk-marker" ontology={view} showWeight />
             <KindNotes>
               <p className="text-sm leading-relaxed text-muted">
-                The static risk analyzer starts every blueprint at a clean 4 and subtracts the weight of every marker present, then clamps the
-                result into 1–4. A marker counts <strong className="font-medium text-fg">
-                once for the whole blueprint</strong>, no matter how many nodes carry it.
-                The count reflects severity, not frequency. The explanation still lists
-                every node that fired it. Three of them are also inferred from the graph
-                when the card is silent:{" "}
+                Security starts every blueprint at level 4, subtracts the weight of every
+                marker present, and clamps the result to the range 1 to 4. A marker counts{" "}
+                <strong className="font-medium text-fg">once for the whole blueprint</strong>,
+                no matter how many nodes carry it: the weight reflects severity rather than
+                frequency, and the explanation still lists every node that fired it. Three
+                markers are also read off the graph when the card is silent:{" "}
                 <Id>unbounded-loop</Id>, <Id>unvalidated-external-access</Id> and{" "}
                 <Id>criteria-leak</Id>.
               </p>
               <p className="text-sm leading-relaxed text-muted">
-                The core weights live in the engine&apos;s configuration, not here. A
-                recalibration touches one file, and the vocabulary keeps meaning what it
-                meant. A marker coined in somebody&apos;s own namespace declares its own,
-                because nobody but its author knows what it should cost.{" "}
-                <Id>execution-risk</Id> and <Id>isolation-breach</Id> carry no weight
-                at all. They are categories a rule can be written about, not markers a
-                card declares. Read the figures as the shipped calibration, not as a
-                law. Changing one changes what the analyzer says about every blueprint in
-                the archive, retroactively, because nothing here is pinned to the
-                calibration it was written under.
+                The core weights live in DarkPrint&apos;s configuration rather than in the
+                vocabulary, so a recalibration touches one file and the terms keep meaning
+                what they meant. A marker coined in somebody&apos;s own namespace declares
+                its own weight, because nobody but its author knows what it should cost.{" "}
+                <Id>execution-risk</Id> and <Id>isolation-breach</Id> carry no weight at
+                all: they are categories a rule can be written about, and a card should not
+                declare them directly. Read the figures as the shipped calibration; changing
+                one changes what Security says about every published blueprint.
               </p>
             </KindNotes>
           </div>
@@ -504,14 +378,14 @@ export function OntologyCatalog({
             <TermTree kind="data-type" ontology={view} />
             <KindNotes>
               <p className="text-sm leading-relaxed text-muted">
-                Every port on every card declares one. The resolver checks both ends
+                Every port on every card declares one. The validator checks both ends
                 before a blueprint is allowed to load. An edge type-checks when the
                 producer&apos;s type is the consumer&apos;s type, or something narrower
                 than it. <Id>any</Id> sits at the top and accepts everything. Avoid it on
                 a port that matters.{" "}
-                <Id>acceptance-criteria</Id> does two jobs: it is how the analyzer finds
-                the node that produces the criteria, and it is how the analyzer tells
-                whether the node being judged can see them.
+                <Id>acceptance-criteria</Id> does two jobs: it is how the criteria-leak
+                check finds the node that produces the criteria, and how it tells whether
+                the node being judged can see them.
               </p>
             </KindNotes>
           </div>
@@ -528,7 +402,7 @@ export function OntologyCatalog({
             <TermTree kind="tool" ontology={view} />
             <KindNotes>
               <p className="text-sm leading-relaxed text-muted">
-                A card lists capabilities, not vendors:{" "}
+                A card lists capabilities rather than vendors:{" "}
                 <Id>web-search</Id>, rather than the name of one search API. This means
                 the same blueprint can run on a different stack without rewriting a
                 single card. They sit flat under one root, unlike the kinds above. The

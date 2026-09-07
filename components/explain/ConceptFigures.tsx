@@ -137,60 +137,40 @@ export function WhatACardReaches({
   willNot: string;
   riskMarkers: string;
 }) {
-  /* Seven rows, and each carries its own fine print.
-     ------------------------------------------------------------
-     Two of the changes come from the same defect. The page drew this figure with five rows
-     and then set a six-box grid under it, one box per field, keyed by the same names. The
-     same list twice, and the two disagreed: the figure said five rows, the grid explained
-     six, and `risk_markers` appeared only in the grid. A reader counting fields on a page
-     whose subject is what the fields are got two answers.
-
-     So the sixth row is here, and the grid's sentences are the rows' `note`s. The gloss
-     says what the field reaches; the note says the thing about it a reader would otherwise
-     find out by trying it. Nothing was cut.
-
-     The seventh arrived with the prohibition split. `cannot` used to hold both the data
-     types the resolver refuses and the sentences it cannot read, and this row's note was
-     where the figure admitted it: "an entry that names a data type is enforced, an entry
-     that names anything else is a note for a reader". A figure whose subject is what one
-     card reaches was spending a note on telling a reader that one of its own rows meant
-     two things. The card format says it now, so the figure draws two rows and the note is
-     free to say what each is for.
-
-     `code-builder` declares no risk markers, and the row says so. That is the honest
-     drawing: the field exists on every card and this card leaves it empty. */
+  /* Seven rows, each with its own fine print: the gloss says what the field reaches, and
+     the note says the thing about it a reader would otherwise find out by trying it. The
+     two prohibition fields are two rows because the card format keeps them apart.
+     `code-builder` declares no risk markers, and the row says so: the field exists on every
+     card and this card leaves it empty. */
   return (
     <ReachList label="One card, seven rows">
       <ReachRow
         field="model"
         value={model}
-        /* "and overridable" left the direction out, and a reader arriving from the DOT
-           side filled it in the wrong way round: a graph-level model_stylesheet looks
-           like the outer scope, so it reads as the thing that wins. Attractor spec §8.5
-           ranks it the other way. The stylesheet supplies a default for nodes that name
-           no model, and this line beats it. Say which outranks which or the row corroborates
-           whatever the reader already believed. */
+        /* The direction is the claim: a graph-level model_stylesheet looks like the outer
+           scope, so a reader arriving from the DOT side reads it as the thing that wins,
+           and Attractor spec §8.5 ranks it the other way. `rows.test.ts` reads this note. */
         note="Written the way the provider writes it. A stylesheet on the graph is a default for the nodes that name no model; a line here outranks it. A reader can still point the run at something else."
       >
-        The model it thinks with. The ceiling on what this step can be trusted to attempt.
+        The model this step runs on, named the way the provider names it.
       </ReachRow>
       <ReachRow
         field="tools"
         value={tools}
-        note="The card names the capability, not a vendor. A graph says what it touches, not what you bought."
+        note="The card names a capability rather than a vendor, so a graph says what it touches and never what you bought."
       >
         Capabilities it may reach for: a shell, a search index, a browser.
       </ReachRow>
       <ReachRow
         field="mcp"
         value={mcp}
-        /* The second sentence is the podcast document's least-privilege point, folded
-           into the row it is about rather than given a block of its own. In a graph the
-           question is never what an agent may do; it is what THIS node may do, and the
-           four reach fields are declared per card, which is per-node identity. */
-        note="Two nodes naming the same server share the same door, and two that do not are two different reaches. Every field on this list is declared per card. A graph says what each node may touch, not what the system may."
+        /* Equal reach and nothing more: a card only names a server, nothing on this site
+           runs a graph, and whether a runner opens one connection or two is the runner's
+           business. */
+        note="Two nodes naming the same server have the same reach; two naming different servers do not. Reach is declared per card, so a graph says what each node may touch rather than what the whole system may."
       >
-        A server exposing one. MCP is the wire, so this row is the reach a run has.
+        An MCP server this step may talk to, by the name it is registered under on the
+        machine that runs the graph.
       </ReachRow>
       <ReachRow
         field="skill"
@@ -198,49 +178,42 @@ export function WhatACardReaches({
         note={
           <>
             <span className="text-muted">
-              The engine reads nothing at the other end of this path, so no skill document
-              travels in the download.
+              Nothing here reads what this path points at, so no skill document travels in
+              the folder.
             </span>{" "}
-            Each bundle&rsquo;s README lists the ones you supply yourself.
+            Each blueprint&rsquo;s README lists the ones you supply yourself.
           </>
         }
       >
         A written procedure it follows. A pointer only: the document does not travel in
-        the download.
+        the folder.
       </ReachRow>
       <ReachRow
         field="cannot"
         value={cannot}
         barred
-        note="Ontology data types, and nothing else. Writing one here is what turns a stated rule into a checked one."
+        note="Data types from the vocabulary, and nothing else. Writing one here is what turns a stated rule into a checked one."
       >
-        What must never arrive. The resolver enforces it against every incoming edge, no
+        What must never arrive. The validator enforces it against every incoming edge, no
         matter which node draws the edge.
       </ReachRow>
       <ReachRow
         field="will_not"
         value={willNot}
         barred
-        note="The prohibitions no engine can check, kept apart from the ones it can, so a reader can tell them apart without running anything."
+        note="The prohibitions nothing can check, kept apart from the ones the validator can, so a reader can tell them apart without running anything."
       >
-        What the card undertakes, in the author&rsquo;s own sentences. It reaches whoever
-        runs the node, and the agent that reads the specification.
+        What the card promises, in the author&rsquo;s own sentences. It reaches whoever
+        runs the node, and the model that is handed the specification at run time.
       </ReachRow>
       <ReachRow
         field="risk_markers"
         value={riskMarkers}
-        /* "Each marker costs the blueprint security points" and a link reading "How a
-           blueprint is graded" stood here, pointing at `/reading-the-radar`. The owner
-           asked that page off the site on 2026-09-04 and no blueprint page prints a
-           security number any more, so both halves were promising a surface a reader
-           cannot open: the link 308s to `/build` and would have landed somebody who
-           clicked "how this is graded" in a sandbox about three dials.
-
-           What survives the removal is the only thing this row was ever teaching — a
-           marker is a term out of the ontology and not a sentence, which is what makes a
-           stated blast radius a checked one. That is the same claim the `cannot` row
-           above makes about its own field, and it is still true. */
-        note="Risk-marker terms from the ontology, and nothing else. Writing one here puts the blast radius in the file, where the checker can hold the author to a word the vocabulary defines."
+        /* No link to a grading page and no score sentence: no page prints a security
+           number beside a card. What the row teaches is that a marker is a term out of the
+           vocabulary rather than a sentence, which is what makes a stated blast radius a
+           checked one. */
+        note="Risk-marker terms from the vocabulary, and nothing else. Writing one here puts the blast radius in the file, where the validator can hold the author to a word the vocabulary defines."
       >
         The blast radius, declared. The card states what this step could break if it goes
         wrong. A reader does not need to guess.

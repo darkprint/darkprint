@@ -603,7 +603,7 @@ export function SectionSameRun() {
                  `--color-dim` here, and the reason is the one the panel is about. This is
                  the side without a specification, so it does not get spoken about in the
                  colour a specification is drawn in. */
-              title={<span className="text-dim">same prompt · three routes · nothing to credit</span>}
+              title={<span className="text-dim">same prompt · three routes · no step to credit for the score</span>}
               /* `px-5 pt-5 pb-3.5` is the mock's 20/20/14 around the drawing, where `Sheet`
                  would otherwise spend `p-4 sm:p-6`. The 14 under the scene is what keeps the
                  drawing off the title strip. */

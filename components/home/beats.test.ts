@@ -176,6 +176,16 @@ describe("the blueprint-first landing", () => {
     expect(html).toContain(`0 0 ${LANDING_NARROW.width} ${LANDING_NARROW.height}`);
   });
 
+  /* The landing strips the comment lines out of `topology.dot` before the walk draws it,
+     so its listing is shorter than the file in the archive and the caption may only count
+     what is shown. The archive claim belongs to `/spec/topology`, which shows the file
+     whole. */
+  it("counts the lines it shows and does not claim they are the archive's", () => {
+    const text = plainText(render(SectionBlueprint));
+    expect(text).toMatch(/\d+ lines/);
+    expect(text).not.toContain("as the archive stores them");
+  });
+
   it("closes beat 2 on what a blueprint pins, and a way into one", () => {
     const html = render(SectionBlueprint);
     expect(plainText(html)).toContain(

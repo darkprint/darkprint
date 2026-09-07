@@ -15,22 +15,11 @@ import {
   type AttractorScope,
   type CardVersionRecord,
 } from "@/lib/core";
-/* Three deep imports, and each one is a constant the barrel does not publish.
-
-   `ATTRACTOR_DEFAULTING_ATTRIBUTES` and `ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES` are the two
-   halves the emitted file's own header prints, split by `ATTRACTOR_REQUIRED_ATTRIBUTES`.
-   Deriving the split here instead would mean re-typing the three §-backed names the split
-   turns on, which is exactly the transcription this route was chosen to avoid.
-
-   `ATTRACTOR_SPEC_PIN` is deliberately absent from the barrel, and `reserved.ts` says why:
-   "nothing in the product should branch on when a document was last read: this is
-   provenance for one guard and for a person doing the re-verification". This page branches
-   on none of it and computes nothing from it. It prints it, for the second of those two
-   readers, because a compatibility claim with no revision on it has no shelf life and no
-   other surface on this site names the document these tables were checked against.
-
-   `lib/core/index.ts` is not this lane's file. Publishing the two attribute groups on the
-   barrel is the tidier end state and is reported as owed. */
+/* Three constants the barrel does not publish. The two attribute groups are the halves
+   the compiled file's own header prints, and deriving the split here would mean re-typing
+   the names it turns on. `ATTRACTOR_SPEC_PIN` is provenance for a person doing the
+   re-verification; this page computes nothing from it and prints it, because a
+   compatibility claim with no revision on it has no shelf life. */
 import {
   ATTRACTOR_DEFAULTING_ATTRIBUTES,
   ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES,
@@ -45,61 +34,40 @@ import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /* ============================================================
-   /spec/attractor — the crosswalk, as a route of its own.
+   /spec/attractor: the crosswalk, on a route of its own.
 
-   §11.0 Q20 (b). The 2026-09-04 audit asked whether DarkPrint is a
-   file registry a person who already knows the Attractor spec can
-   use without re-learning anything, and the owner was put two ways
-   to answer it: append an Attractor clause to each field row on
-   `/spec/card`, or give the mapping one page. The page won on two
-   grounds. It is one URL you can hand a stranger, and every table
-   on it is rendered from the constants the exporter itself reads,
-   so it cannot drift from what `darkprint export --attractor`
-   actually writes.
+   One URL you can hand a person who already knows Attractor, and
+   every table on it is rendered from the constants the exporter
+   itself reads, so it cannot drift from what `darkprint export
+   --attractor` writes. If a table here were a literal array typed
+   into this file, that property would be gone while appearing to
+   hold:
 
-   ── the one way this page fails ──
-   If a table here is a literal array typed into this file, the
-   ruling has been refused while appearing to be followed. So:
-
-     the crosswalk        `crosswalk()`, which walks
-                          `ATTRACTOR_EMITTED_ATTRIBUTES` +
-                          `DARKPRINT_EMITTED_ATTRIBUTES` and throws
-                          on a name it has no row for;
+     the crosswalk        `crosswalk()`, which walks the emitted
+                          attribute lists and throws on a name it has
+                          no row for;
      types and handlers   `ATTRACTOR_TYPE_SHAPES`, plus the two
-                          synthesised boundary kinds;
-     what is unexpressed  `ATTRACTOR_DEFAULTING_ATTRIBUTES` and
-                          `ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES`,
-                          both derived from the reserved sets minus
-                          what the emitter writes;
-     reserved or not      `isReserved`, asked per row at render
-                          time inside `crosswalk()`;
-     the worked cards     the archive, through `attractorKindFor`
-                          and `attractorClassesFor` — the same two
-                          functions `emit.ts` calls.
+                          boundary kinds the exporter adds;
+     what is unexpressed  the two groups derived from the reserved
+                          sets minus what the emitter writes;
+     reserved or not      `isReserved`, asked per row at render time;
+     the worked cards     the archive, through the same two functions
+                          `emit.ts` calls.
 
-   `components/spec/crosswalk.test.ts` renders this page and holds
-   the output to those constants, so a table that stopped being
-   derived stops being green.
+   `components/spec/crosswalk.test.ts` renders this page and holds the
+   output to those constants. Every claim about Attractor cites a
+   section of the pinned revision, printed at the top, because the
+   reader this page is for is the one person who will catch a false
+   claim about their own spec.
 
-   ── what this page may not do ──
-   Every claim it makes about Attractor cites a section of the
-   pinned revision, and the pin is printed at the top. The reader
-   this page is for is the one person who will catch a false claim
-   about their own spec, which is why the citations are on the rows
-   rather than in a footnote.
-
-   ── No route config ──
-   A static segment under `app/spec`, so there is no
-   `generateStaticParams` and no `dynamicParams` to close (Next 16,
-   `docs/01-app/03-api-reference/03-file-conventions/page.md`). A
-   server component taking no props; every read below is the
-   memoized archive read the other spec pages already do at build.
+   A static segment under `app/spec`: a server component taking no
+   props, reading the memoized archive at build.
    ============================================================ */
 
 export const metadata: Metadata = {
   title: "The Attractor crosswalk",
   description:
-    "Which DarkPrint card field becomes which Attractor node attribute, which type selects which handler, and every reserved name a runner reads that a blueprint has no way to set. Rendered from the constants the exporter reads, against a pinned revision of the Attractor specification.",
+    "For readers who already know Attractor: which DarkPrint card field becomes which node attribute, which node type selects which handler, and which reserved names a blueprint cannot set. Checked against a pinned revision of the Attractor specification.",
 };
 
 const HERE = "/spec/attractor";
@@ -331,13 +299,11 @@ export default function SpecAttractorPage() {
             as="h1"
             eyebrow={page.eyebrow}
             title={page.title}
-            lead="One page for the reader who already knows Attractor. Which card field becomes which node attribute, which type selects which handler, and every reserved name a runner reads that a blueprint has no way to set."
+            lead="One page for the reader who already knows Attractor, StrongDM's graph runner and the program the file darkprint export writes is written for. Which card field becomes which node attribute, which node type selects which handler, and every reserved name a runner reads that a blueprint has no way to set. New to both? Start with the topology and the node card and come back."
           />
           {/* The revision these tables were checked against, printed rather than dated in
-              prose. An undated compatibility claim has no shelf life, and this is the only
-              surface on the site that names the document. `scripts/check-attractor-drift.mjs`
-              compares the two digests against the live file from CI, which is what turns a
-              revision upstream into a red job rather than into a page that is quietly wrong. */}
+              prose: an undated compatibility claim has no shelf life, and this is the only
+              surface on the site that names the document. */}
           <dl className="flex flex-col gap-2 border border-line bg-surface/40 p-4 font-mono text-[11px] sm:flex-row sm:flex-wrap sm:gap-x-8">
             <div className="flex gap-2">
               <dt className="text-dim">checked against</dt>
@@ -360,11 +326,11 @@ export default function SpecAttractorPage() {
               <dd className="min-w-0 break-all text-fg">{ATTRACTOR_SPEC_PIN.upstreamCommit}</dd>
             </div>
             <div className="flex gap-2">
-              <dt className="text-dim">that commit landed</dt>
+              <dt className="text-dim">spec last changed on</dt>
               <dd className="text-fg">{ATTRACTOR_SPEC_PIN.movedOn}</dd>
             </div>
             <div className="flex gap-2">
-              <dt className="text-dim">last read by a person</dt>
+              <dt className="text-dim">spec revision checked on</dt>
               <dd className="text-fg">{ATTRACTOR_SPEC_PIN.verifiedOn}</dd>
             </div>
           </dl>
@@ -386,28 +352,27 @@ export default function SpecAttractorPage() {
 
           <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
             <p>
-              A DarkPrint bundle is a topology in DOT, one YAML card per node, and a
+              A DarkPrint blueprint is a topology in DOT, one YAML card per node, and a
               vocabulary the two resolve against. <Id>darkprint export &lt;dir&gt; --attractor</Id>{" "}
               compiles those into a single DOT file. The tables below are what it writes,
-              read off the same constants the exporter reads, so a line it learns to emit
-              appears here on the next build and a line it stops emitting disappears.
+              read off the exporter&rsquo;s own constants rather than typed, so they cannot
+              drift from the file.
             </p>
             <p>
               The last two node rows carry the whole compatibility argument. <Id>card</Id>{" "}
-              pins the exact card version a node instantiates and <Id>dp_node</Id> records
-              an id the grammar forced the exporter to rewrite. Neither name is in §2.5,
-              §2.6 or §2.7, neither is in any of Appendix A&rsquo;s three tables, and none of
-              §7.2&rsquo;s thirteen built-in lint rules is about an attribute name those tables
+              pins the exact card version a node is an instance of, and <Id>dp_node</Id>{" "}
+              records an id the grammar forced the exporter to rewrite. Neither name is in
+              §2.5, §2.6 or §2.7, neither is in any of Appendix A&rsquo;s three tables, and
+              none of §7.2&rsquo;s built-in lint rules is about an attribute name those tables
               do not carry. So a runner parses them, finds nothing that reads them, and runs
               the pipeline anyway, while a DarkPrint reader gets the pin back out of the same
               file.
             </p>
             <p>
-              The right-hand column is not a claim typed into this page. Each row asks{" "}
-              <Id>isReserved(scope, name)</Id> at render time against the transcribed
-              reserved sets, which is {reservedTotal} names across the three positions. If a
-              later revision of the specification reserves one of the two, this column says
-              so and the paragraph above stops being true out loud.
+              The right-hand column is computed rather than typed: each row is checked against the{" "}
+              {reservedTotal} names Attractor reserves across graph, node and edge. If a later
+              revision of the specification reserves <Id>card</Id> or <Id>dp_node</Id>, that
+              column will say so.
             </p>
           </div>
 
@@ -465,16 +430,17 @@ export default function SpecAttractorPage() {
             <p>
               §2.6 makes <Id>shape</Id> the handler selector and §2.8 is the mapping. A
               DarkPrint card&rsquo;s type is an ontology term inside the YAML and never a DOT
-              attribute, so this table is the only place the two vocabularies meet. A local
-              type resolves through its <Id>broader</Id> chain first, which is why a term
-              nobody outside one archive has heard of still lands on a handler.
+              attribute, so this table is the only place the two vocabularies meet. A type a
+              blueprint declares in its own namespace is mapped through its parent types
+              (its <Id>broader</Id> chain), so a term only one publisher uses still lands on
+              a handler.
             </p>
             <p>
-              More than one type lands on {sharedShapes.length} of these shapes, and that is
-              the loss this page has to state rather than smooth over: a pipeline imported back from Attractor with no <Id>class</Id> to
-              read comes home as an <Id>agent</Id> where it may have meant a <Id>tool</Id> or
-              a <Id>validation</Id> node. It is also why the <Id>class</Id> attribute is
-              written at all, and the band below is about that.
+              More than one type lands on {sharedShapes.length} of these shapes, and that
+              loses information on the way back: a pipeline imported from Attractor with no{" "}
+              <Id>class</Id> attribute to read comes home as an <Id>agent</Id> where it may
+              have meant a <Id>tool</Id> or a <Id>validation</Id> node. That is why the{" "}
+              <Id>class</Id> attribute is written at all; the next section covers it.
             </p>
             <p>
               <Id>tool</Id> maps to <Id>box</Id> and §4.5&rsquo;s codergen handler, not to{" "}
@@ -518,13 +484,13 @@ export default function SpecAttractorPage() {
                   <td className="py-3 font-mono text-[12px] text-muted">{kind.handler}</td>
                 </tr>
               ))}
-              {/* The two synthesised nodes, in the same table because a reader counting
+              {/* The two boundary nodes, in the same table because a reader counting
                   shapes against §2.8 will otherwise wonder where the boundary went. They
                   come from no card: §7.2's `start_node` and `terminal_node` are both ERROR
                   and both demand exactly one, so the exporter adds them. */}
               {[
-                { label: "__start (synthesised)", kind: ATTRACTOR_ENTRY_KIND },
-                { label: "__exit (synthesised)", kind: ATTRACTOR_EXIT_KIND },
+                { label: "__start (added by the exporter)", kind: ATTRACTOR_ENTRY_KIND },
+                { label: "__exit (added by the exporter)", kind: ATTRACTOR_EXIT_KIND },
               ].map((row) => (
                 <tr key={row.label} className="border-b border-line/60 align-top">
                   <th
@@ -564,20 +530,17 @@ export default function SpecAttractorPage() {
               nobody draws that subgraph.
             </p>
             <p>
-              The reader pays for it, and the cost is stated here rather than left to be
-              discovered: a <Id>model_stylesheet</Id> rule written against Attractor&rsquo;s own{" "}
-              <Id>.agent</Id> matches none of these nodes. Every rule aimed at a
-              DarkPrint-emitted class has to name <Id>.dp-agent</Id>. That is the smaller of
-              two costs. The larger one would have been a subgraph somebody added for layout
-              quietly re-routing every agent in the factory onto a different model, which is a
-              wrong answer where this is a missing one.
+              The cost: a <Id>model_stylesheet</Id> rule written for Attractor&rsquo;s own{" "}
+              <Id>.agent</Id> matches none of these nodes, and a rule aimed at a DarkPrint
+              class has to name <Id>.dp-agent</Id>. The alternative was worse. Without the
+              prefix, a subgraph somebody added for layout could silently move every agent in
+              the pipeline onto a different model.
             </p>
             <p>
               §2.12 makes the list comma-separated and §8.2&rsquo;s{" "}
               <Id>ClassName ::= [a-z0-9-]+</Id> is what a name has to survive, which is why{" "}
               <Id>/</Id> and <Id>.</Id> collapse to a hyphen. The classes below are computed
-              from real cards in this archive by the same function the exporter calls, so
-              they are what would land in the file, not an illustration of one.
+              from real cards with the exporter&rsquo;s own function.
             </p>
           </div>
 
@@ -661,11 +624,11 @@ export default function SpecAttractorPage() {
           <div className="flex flex-col gap-4 text-[15px] leading-relaxed text-muted">
             <p>
               The compatibility claim is about the format: an Attractor runner accepts this
-              file. A reader holding the file hears a claim about the pipeline, which is
-              larger and is false. Attractor reads {reservedTotal} reserved names across the
-              three positions, and this exporter writes {emittedTotal} of them with
-              Attractor&rsquo;s own meaning. The other {unexpressedTotal} are below, and none of
-              them is an error: a <Id>goal_gate</Id> nobody wrote is a gate that never fires.
+              file. It is not a claim that a blueprint can say everything a pipeline can.
+              Attractor reads {reservedTotal} reserved names across graph, node and edge;
+              this exporter writes {emittedTotal} of them with Attractor&rsquo;s own meaning.
+              The other {unexpressedTotal} are listed below, and leaving one unset is not an
+              error: a <Id>goal_gate</Id> nobody wrote is a gate that never fires.
             </p>
             <p>
               {withheldTotal === 1 ? "One name is in neither list" : `${withheldTotal} names are in neither list`}, and it is a
@@ -679,9 +642,8 @@ export default function SpecAttractorPage() {
               <Id>attractor/reserved-attribute</Id>.
             </p>
             <p>
-              They are two groups because one sentence over both would be wrong about the
-              half that matters. Most of these names have a stated fallback, and the runner&rsquo;s
-              own default is what a blueprint that says nothing gets. Three names in the
+              The names fall into two groups. Most have a documented fallback: a blueprint
+              that says nothing gets the runner&rsquo;s own default. Three names in the
               specification have none at all: §4.10 returns <Id>FAIL</Id> on an empty{" "}
               <Id>tool_command</Id>, §6.5 sends a <Id>wait.human</Id> node round again rather
               than choosing without a <Id>human.default_choice</Id>, and §4.11 hands{" "}
@@ -690,10 +652,11 @@ export default function SpecAttractorPage() {
               {handlerNeededTotal} that a blueprint still cannot say.
             </p>
             <p>
-              The same two lists open every file <Id>darkprint export --attractor</Id>{" "}
-              writes, derived from the same three constants. The artefact is opened on a
-              machine that holds neither this repository nor this page, so what a blueprint
-              cannot carry has to travel inside it.
+              Every file <Id>darkprint export --attractor</Id> writes opens with these same
+              two lists. The file will be read on a machine that has neither this page nor
+              the source, so what a blueprint cannot carry has to travel with it. The command
+              ships in the darkprint package, which is not on npm yet;{" "}
+              <SpecLink href="/mcp">the MCP page</SpecLink> says what works today.
             </p>
           </div>
 
@@ -728,7 +691,7 @@ export default function SpecAttractorPage() {
 
             <div className="flex flex-col gap-4">
               <h3 className="font-mono text-[13px] text-warn">
-                read bare, with no default to fall back to
+                required by a handler, with no default
               </h3>
               <dl id="unexpressed-handler-needed" className="flex flex-col gap-4">
                 {unexpressedRows(ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES).map((row) => (
@@ -742,19 +705,15 @@ export default function SpecAttractorPage() {
                   </div>
                 ))}
               </dl>
-              {/* The three §-backed reasons, printed from the constant that carries them so
-                  a name leaving that group takes its sentence with it. `tool_command` has
-                  already left this way: the exporter learned to write it, and it moved out
-                  of both lists without either being edited. */}
+              {/* Printed from the constant that carries them, so a name leaving that group
+                  takes its sentence with it. */}
               <p className="text-[13px] leading-relaxed text-dim">
-                Named in{" "}
-                <Id>ATTRACTOR_REQUIRED_ATTRIBUTES</Id>, with the section that reads each one
-                bare:{" "}
+                Three names in the specification are read by a handler with no fallback:{" "}
                 {CROSSWALK_SCOPES.flatMap((scope) =>
                   ATTRACTOR_REQUIRED_ATTRIBUTES[scope].map((name) => `${name} (${scope})`),
                 ).join(", ")}
-                . A name this exporter learns to write leaves the group on its own, which is
-                how <Id>tool_command</Id> came off it.
+                . <Id>tool_command</Id> is not in the list above because the exporter writes
+                it for <Id>shell-tool</Id> cards; the other two a blueprint still cannot set.
               </p>
             </div>
           </div>
@@ -785,7 +744,7 @@ export default function SpecAttractorPage() {
             <p>
               §7.2 is where the refusal is written down. <Id>start_node</Id> and{" "}
               <Id>terminal_node</Id> are both ERROR and both require exactly one, and §7.1
-              says the engine &ldquo;must refuse to execute a pipeline with error-severity
+              says a runner &ldquo;must refuse to execute a pipeline with error-severity
               diagnostics&rdquo;. <Id>reachability</Id> is a third ERROR, which is why the
               exporter adds an edge from <Id>__start</Id> to every node a walk from the
               entry would otherwise miss. A topology also has no prompts, so every node would
@@ -798,8 +757,8 @@ export default function SpecAttractorPage() {
               compiled file is what a runner takes, and it is where the prompts, the models
               and the boundary appear. They are checked in different places for that reason:{" "}
               <SpecLink href="/spec/topology">the topology page</SpecLink> lists the
-              diagnostics the engine raises about the first, and the header of the second
-              carries the disclosure above.
+              diagnostics the validator raises about the first, and the compiled file&rsquo;s
+              own header carries the two lists above.
             </p>
           </div>
         </div>

@@ -1,95 +1,27 @@
 "use client";
 
 /* ============================================================
-   The card, walked one part at a time. THE LANDING'S MOUNT, and
-   the only one.
+   The card, walked one part at a time. The landing's mount, and the
+   only one: `/spec/card` mounts `./CardBreakdown.tsx`, the same nine
+   parts picked with a click, because a figure that does nothing until
+   it is clicked says nothing to a reader who is scrolling past, and a
+   scroll walk on a reference page gets in the way of studying it. Do
+   not fold the two together: the split is the instruction.
 
-   ── What the author asked for, three times ──
-   First for the landing: "I'd like you reprohose in the home in the
-   current Every node is a card the idea reported in spec/card,
-   where you scroll down and you can show all the component of a
-   card. But in a lightweight version without using as background
-   the blueprint."
-
-   Then, of the reference page the lightweight version was derived
-   from: "make /spec/card's scrollable node panel the same as the
-   home's", and "it should scroll in the middle of the screen". For
-   one release this file was therefore what BOTH `/` and
-   `/spec/card` drew, and the fork it was written as a copy of —
-   `NodeCardStage`, 534 lines, a `calc(100vh + 2500px)` track, a
-   leader line and a dezoom — was deleted rather than kept as a
-   second answer to one question.
-
-   Then, of that same page: "in /spec/card avoid the effect on
-   scrolling of the card panel (**keep it for the other pages**). I
-   prefer here the approach adopted in /spec/topology for the panel
-   starter-software-factory/blueprint.dot." So `/spec/card` mounts
-   `./CardBreakdown.tsx` now — the same nine parts, picked with a
-   click instead of walked with a scroll — and this component is the
-   landing's again.
-
-   THE PARENTHESIS IS THE INSTRUCTION. The scroll walk was not
-   replaced; it was narrowed to the surface that asked for it. Do
-   not "finish the migration" by deleting this file or by folding it
-   into the breakdown: the landing is where a reader is shown a card
-   without having decided to study one, and a figure that does
-   nothing until it is clicked says nothing to a reader who is
-   scrolling past.
-
-   What did NOT fork: `annotations.ts` resolves the same nine runs
+   What the two share: `annotations.ts` resolves the same nine runs
    against the same bytes, `yaml.ts` tokenises them, `YamlListing`
-   draws the listing for both, and `prose.tsx` spells the step number
-   and the line span for both. Only the interaction is two things.
+   draws the listing and `prose.tsx` spells the step number and the
+   line span. Only the interaction differs.
 
-   ── What "lightweight" cost, item by item ──
-   Recorded because these were deletions from the reference page as
-   well when it drew this figure, and none of them is free:
+   `bodies` is a prop because the landing wants short wording and the
+   reference page wants the diagnostic codes; anything unkeyed in
+   `WALK_BODY` falls through to `note.body`, so a new part appears in
+   full rather than not at all.
 
-     the Sheet          the blue graticule ground, which is the one
-                        thing the author named. This sits on plain
-                        `bg-void` behind a hairline, the same frame
-                        `/what-a-blueprint-is`'s figures use.
-     the leader         an elbow drawn from the run being read to
-                        the note about it, with the pixel geometry
-                        that costs. The listing's own highlight and
-                        the open note say the same thing here.
-     the dezoom         the card shrinking into a node of the
-                        starter graph at the end. `/spec/card` was
-                        its only mount, so asking for the home's
-                        version of this figure took it off the site;
-                        `components/viz/scene-labels.test.ts` and
-                        `ssr.test.ts` record the same removal where
-                        they used to measure it.
-     the reserve        the track is 190vh rather than 420, because
-                        there is no dezoom to reserve a quarter of
-                        the scroll for.
-     the per-head       every rail head was a `<button>` scrolling
-     buttons            the page to its own step. Nothing here is
-                        clickable: the reader's gesture is the only
-                        control, which is what makes the pin honest.
-
-   What survives is the part the author asked for every time: nine
-   parts of a real card, arriving one at a time, each marking its
-   own lines.
-
-   ── `bodies`, and why it is still a prop ──
-   The landing gets the 25-word wording below; `annotations.ts`
-   carries 45-word bodies, which are the ones `nodecard.test.ts`
-   holds to the diagnostic codes the site can be grepped for. Those
-   belong to `/spec/card`, and `CardBreakdown` reads them straight
-   off `annotations.ts` with no override at all — so the empty
-   `bodies={{}}` this component used to be passed from there is
-   gone with the mount. The prop stays because the fallback is still
-   what makes a NEW part appear in full rather than not at all:
-   anything unkeyed in `WALK_BODY` falls through to `note.body`.
-
-   ── Why one DOM and not two ──
-   The choreography classes all carry `lg:` and are emitted only
-   when `motion` is true, and `motion` is false on the server and on
-   the first client render. So the prerendered markup is the static
-   layout: the whole listing, all nine notes, no clipping. A phone
-   reader and a reader who asked for stillness get that, and so does
-   a crawler.
+   One DOM, not two: the choreography classes are emitted only when
+   `motion` is true, which is never on the server or the first client
+   render, so the prerendered markup is the static layout with the
+   whole listing and all nine notes open.
    ============================================================ */
 
 import { useMemo } from "react";
@@ -215,67 +147,46 @@ const PAD_Y = 2;
 const FACE_TOP = 31;
 
 /**
- * The landing's wording for the nine parts. Roughly 25 words each, against the 45 that
- * `annotations.ts` carries.
+ * The landing's wording for the nine parts, about 25 words each against the 45 that
+ * `annotations.ts` carries for `/spec/card`. Keyed by `AnnotationSpec.id`; anything unkeyed
+ * falls back to the long body.
  *
- * The long bodies stay where they are and are not edited: they are `/spec/card`'s, and
- * `nodecard.test.ts` holds three of them to the diagnostic codes the site can be checked
- * on (`bundle/prohibition-violated`, `bundle/port-mismatch`, `llm_model`). That is
- * reference material and it belongs on the reference page, which now draws it with
- * `CardBreakdown` and reads `note.body` directly rather than overriding anything.
- *
- * What the landing needs from the same nine parts is smaller: which part of a card this
- * is, and why anyone would write it down. Beat 3 carried 670 of the landing's 1090 words
- * with the reference sentences in it, on the page whose job is to get a reader as far as
- * the archive. The `L1–4` marks in the listing do the pointing that a sentence naming
- * line numbers would otherwise have to.
- *
- * Keyed by `AnnotationSpec.id`, and anything unkeyed falls back to the long body, so a
- * new part appears here in full rather than not at all.
- *
- * The invariant this wording is written to keep: **the LISTING is the taller of the two
- * columns**, so the figure's height — and therefore `GROUP` and the sticky half-height
- * below — is the listing's, and the notes have margin rather than a budget.
- *
- * It stopped being true for one commit and was put back. Re-measured 2026-08-12 at `lg`,
- * after `NC.rows` came down to match the blueprint beat: the notes column is 382px wide,
- * every body sets to three lines at that measure, one body is open at a time, and the nine
- * heads plus the open body come to 365px against the listing's 376px window. 11px, which is
- * why the row padding beside `<li>` is spelled out rather than left at a comfortable value.
- * A tenth line of note, or a body that reaches four lines here, takes the figure back off
- * the blueprint's size — check it rather than assume it.
+ * The invariant this wording keeps: the listing is the taller of the two columns, so the
+ * figure's height is the listing's. At `lg` the notes column is 382px wide and every body
+ * sets to three lines; a body that reaches four lines pushes the notes past the listing and
+ * pins the walk off-centre, so check the measure rather than assume it.
  */
 const WALK_BODY: Record<string, string> = {
   identity:
     "The first four lines fix identity. `code-builder` is the id a graph pins by version. " +
     "`agent` means a model runs this box. `implementation` places it in the lifecycle.",
   action:
-    "One line for what the node does. Nothing in the engine reads it, and it travels into " +
-    "the download unchanged, for whoever opens the card next.",
+    "One line for what the node does. Nothing checks it, and it travels into the download " +
+    "unchanged, for whoever opens the card next.",
   spec:
-    "The brief an agent is handed when the graph is instantiated on your own machine. It has " +
-    "to stand alone: whatever reads it never sees the rest of the graph.",
-  // "the compiled export", not `factory.dot`: the author asked for that name off the
-  // landing, and this walk renders there. Still true — the model line lands in the
-  // compiled file and not in `topology.dot`, which carries no `model` line at all.
+    "The brief an agent is handed when the graph runs on your own machine. It has to stand " +
+    "alone: whatever reads it never sees the rest of the graph.",
+  // The model line lands in the compiled graph, never in `topology.dot`, which carries no
+  // `model` line at all.
   model:
-    "Which model the agent is instantiated with. The compiled export carries it, and " +
-    "a card that names none inherits whatever the run supplies.",
+    "Which model runs this agent. The compiled graph carries it, and a card that names " +
+    "none inherits whatever the run supplies.",
   skill:
-    "A pointer to where the behaviour is written. The engine reads nothing at the other end, " +
-    "so no skill document travels in the download. You supply it.",
+    "A pointer to where the behaviour is written. Nothing here reads what it points at, so " +
+    "no skill document travels in the download. You supply it.",
   reach:
     "`tools` is empty and `mcp` names one server, so this node touches the filesystem and " +
-    "nothing else. A factory's whole reach reads off its cards before anything runs.",
+    "nothing else. A blueprint's whole reach can be read off its cards before anything runs.",
   inputs:
-    "One input, and it carries a type. `brief` is a `plan`, an ontology term rather than free " +
-    "text, so the resolver can check an incoming edge against it.",
+    "One input, and it carries a type. `brief` is a `plan`, a type from the shared vocabulary " +
+    "rather than free text, so the validator can check an incoming edge against it.",
   outputs:
     "One output, typed the same way. `build` is `code`, and it is what the edge to the " +
-    "acceptance tester carries. A downstream mismatch fails the bundle.",
+    "acceptance tester carries. A downstream mismatch fails the whole blueprint.",
   cannot:
-    "Two fields, because only one of them is checkable. An edge carrying " +
-    "`acceptance-criteria` fails the bundle. `will_not` is what the author promises instead.",
+    "Two fields, because only one is checkable. An edge carrying `acceptance-criteria` into " +
+    "this node fails the whole blueprint. `will_not` is a promise in the author's words, and " +
+    "nothing checks it.",
 };
 
 /* `ordinal`, `lineSpan` and `body` used to be declared here. They moved to `./prose.tsx`
@@ -515,7 +426,9 @@ export function CardWalk({
           <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 font-mono text-[11px] text-dim">
             <span className="text-muted">{cardRef}</span>
             <span className="flex items-baseline gap-3">
-              <span>{lines.length} lines, as the archive stores them</span>
+              {/* A bare count: the landing hides the card's metadata keys, so this is not
+                  the file as the archive stores it and the caption may not say so. */}
+              <span>{lines.length} lines</span>
               {/* What the fade on the listing's right edge means, said in words.
                   A card's `spec` runs past any column this figure can be given, macOS
                   draws no scrollbar at rest, and the cut then reads as a bug rather than
