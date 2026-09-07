@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SESSION_COOKIE_NAME, decodeSession, encodeSession, getSession } from "./session";
+import { SESSION_COOKIE_NAME, decodeSession, encodeSession, getSession, sessionSecretState } from "./session";
 
 const EXAMPLE_SECRET = "0".repeat(64);
 
@@ -31,11 +31,12 @@ describe("the published example secret is refused in production", () => {
     expect(() => encodeSession({ accountId: "acc_1", handle: "berti" })).toThrow(/all-zero example value/);
   });
 
-  it("refuses to verify a cookie with it in production, so a forged cookie is never accepted", () => {
+  it("verifies nothing with it in production, so a forged cookie reads as no session and a page still renders", () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("SESSION_SECRET", EXAMPLE_SECRET);
     const forged = encodeSession({ accountId: "acc_1", handle: "berti" }, EXAMPLE_SECRET);
-    expect(() => decodeSession(forged)).toThrow(/all-zero example value/);
+    expect(decodeSession(forged)).toBeUndefined();
+    expect(sessionSecretState()).toBe("example");
   });
 
   it("accepts the example secret outside production, which is what the local suite runs with", () => {

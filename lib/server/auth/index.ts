@@ -13,6 +13,7 @@ export {
   encodeSession,
   getSession,
   sessionCookieHeader,
+  sessionSecretState,
 } from "./session";
 
 export { withSession, withSessionOrWriteKey } from "./guard";

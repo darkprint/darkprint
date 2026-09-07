@@ -7,7 +7,8 @@
  */
 
 import { getSharedDbClient } from "@/lib/db";
-import { encoderAvailable } from "@/lib/server/search/embed";
+import { encoderAvailable } from "@/lib/server/search";
+import { sessionSecretState } from "@/lib/server/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ interface Health {
   db: { latencyMs: number; migrationsHead: string | null; migrationsApplied: number } | { error: string };
   encoder: "present" | "absent";
   storage: "configured" | "missing";
-  auth: { providers: string[] };
+  auth: { providers: string[]; sessionSecret: "set" | "example" | "missing" };
   commit: string | null;
 }
 
@@ -60,6 +61,7 @@ export async function GET(): Promise<Response> {
       providers: Object.entries(PROVIDERS)
         .filter(([, names]) => names.every(isSet))
         .map(([provider]) => provider),
+      sessionSecret: sessionSecretState(),
     },
     commit: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
   };

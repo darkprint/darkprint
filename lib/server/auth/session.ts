@@ -47,12 +47,23 @@ export interface SessionPayload {
 function sessionSecret(): string {
   const value = process.env.SESSION_SECRET;
   if (!value) throw new Error("SESSION_SECRET is not set");
-  if (process.env.NODE_ENV === "production" && value === EXAMPLE_SECRET) {
+  if (sessionSecretState() === "example") {
     throw new Error(
       "SESSION_SECRET is the all-zero example value from .env.example, which is public. Generate one with `openssl rand -hex 32` and set it in the deployment.",
     );
   }
   return value;
+}
+
+/**
+ * Whether the deployment's secret is usable. `example` only counts in production: the
+ * local suite and a development server run with the published value on purpose.
+ */
+export function sessionSecretState(): "set" | "example" | "missing" {
+  const value = process.env.SESSION_SECRET;
+  if (!value) return "missing";
+  if (process.env.NODE_ENV === "production" && value === EXAMPLE_SECRET) return "example";
+  return "set";
 }
 
 function sign(value: string, secret: string): string {
@@ -102,6 +113,12 @@ export function decodeSession(cookieValue: string | undefined, secret?: string):
   if (!cookieValue) return undefined;
   const dot = cookieValue.lastIndexOf(".");
   if (dot <= 0) return undefined;
+
+  /* A production deployment still carrying the public example secret verifies nothing: every
+     cookie reads as "no session" rather than every page with a cookie failing to render. The
+     mint path throws, so nobody can sign in until the secret is replaced, and /api/health
+     names the state. */
+  if (secret === undefined && sessionSecretState() === "example") return undefined;
 
   const body = cookieValue.slice(0, dot);
   const signature = cookieValue.slice(dot + 1);
