@@ -31,7 +31,7 @@ import { SKILL_INSTALL_COMMAND, SKILL_INSTALL_COMMAND_CODEX, SKILL_TREE_PATH } f
 export const metadata: Metadata = {
   title: "Write your first blueprint",
   description:
-    "Install the blueprint-writing skill, open a live page here, and describe a task to your agent. The graph draws itself on the live page as the interview runs; then enrich it from the registry over MCP and keep it on your account.",
+    "Write a blueprint in your own agent with the blueprint-writing skill while a live page on this site draws the graph as the interview runs. Then enrich it from the registry over MCP and keep it on your account.",
 };
 
 /** The last stop of the Learn sequence; the pager at the foot reads the list. */
@@ -210,10 +210,10 @@ export default function TutorialPage() {
             <LivePrompt name="enrich" />
             <p className={P}>
               Your agent calls <code className="font-mono text-[13px] text-fg">find_blueprints</code>,
-              which searches the registry by meaning, fetches the hit with{" "}
-              <code className="font-mono text-[13px] text-fg">get_blueprint</code>, and merges it
-              into your folder with the DarkPrint skill&rsquo;s enrich mode. The live page lists
-              the hits the search returned and draws the grown graph.
+              which searches the registry by meaning, and fetches the hit with{" "}
+              <code className="font-mono text-[13px] text-fg">get_blueprint</code>; the DarkPrint
+              skill&rsquo;s enrich mode merges it into your folder. The live page lists the hits
+              the search returned and draws the grown graph.
             </p>
           </section>
         </li>
