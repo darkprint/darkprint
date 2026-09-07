@@ -16,6 +16,7 @@ export {
 } from "./session";
 
 export { withSession, withSessionOrWriteKey } from "./guard";
+export { AuthStoreError } from "./errors";
 
 export {
   OAUTH_STATE_COOKIE_NAME,

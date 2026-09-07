@@ -137,7 +137,7 @@ describe("every published error class satisfies the hygiene clause", () => {
         "this walk exists to notice. Only barrels in the committed tree count: a directory in " +
         "the working tree that is not committed yet is checked for HYGIENE below and does not " +
         `move this number. Domain resolved from HEAD at ${domainSha}.`,
-    ).toBe(45);
+    ).toBe(46);
 
     const rendered: string[] = [];
     const traceless: string[] = [];

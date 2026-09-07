@@ -10,6 +10,7 @@
 import { getSharedDbClient } from "@/lib/db";
 import { resolveKey, writeActorFor } from "@/lib/server/limits";
 import { unauthorized } from "../http/problem";
+import { AuthStoreError } from "./errors";
 import { getSession, type SessionPayload } from "./session";
 
 /**
@@ -52,12 +53,17 @@ const BEARER = /^Bearer\s+(\S+)\s*$/i;
  * granted, so a key revoked or demoted between the two cannot buy a write.
  */
 async function writeAccountFor(secret: string): Promise<SessionPayload | undefined> {
-  const { db } = getSharedDbClient();
-  const key = await resolveKey(db, secret);
-  if (key === undefined) return undefined;
-  const actor = await writeActorFor(db, key);
-  if (actor === undefined || actor.kind !== "account") return undefined;
-  return { accountId: actor.accountId, handle: actor.handle };
+  try {
+    const { db } = getSharedDbClient();
+    const key = await resolveKey(db, secret);
+    if (key === undefined) return undefined;
+    const actor = await writeActorFor(db, key);
+    if (actor === undefined || actor.kind !== "account") return undefined;
+    return { accountId: actor.accountId, handle: actor.handle };
+  } catch (err) {
+    /* A driver fault must not travel with the query and the secret in its message. */
+    throw new AuthStoreError("writeAccountFor", err);
+  }
 }
 
 /**

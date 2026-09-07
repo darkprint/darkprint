@@ -22,13 +22,18 @@ export interface DbClient {
 /** Re-exported so a caller can `import { schema } from "@/lib/db/client"` alongside `db`. */
 export { schema };
 
-/** `pg`'s default of 10 per pool multiplies by every warm serverless instance; 3 keeps a burst under a hosted ceiling. */
-const DEFAULT_POOL_MAX = 3;
+/**
+ * `pg`'s default of 10 per pool multiplies by every warm serverless instance, so production
+ * defaults to 3 and stays under a hosted connection ceiling. Development and tests keep 10:
+ * the race suites warm eight clients at once on one pool and a smaller pool turns them into
+ * connect timeouts. `PG_POOL_MAX` overrides either.
+ */
+const DEFAULT_POOL_MAX = process.env.NODE_ENV === "production" ? 3 : 10;
 
 /**
  * Pool sizing for a runtime where every warm function instance holds a pool of its own.
  * Idle connections are released after ten seconds so a quiet instance holds none, a
- * connect that cannot be made in five seconds fails instead of queueing forever, and
+ * connect that cannot be made in ten seconds fails instead of queueing forever, and
  * `allowExitOnIdle` lets a script's process end without an explicit `close()`.
  */
 function poolOptions(): Pick<PoolConfig, "max" | "idleTimeoutMillis" | "connectionTimeoutMillis" | "allowExitOnIdle"> {
@@ -36,7 +41,7 @@ function poolOptions(): Pick<PoolConfig, "max" | "idleTimeoutMillis" | "connecti
   return {
     max: Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_POOL_MAX,
     idleTimeoutMillis: 10_000,
-    connectionTimeoutMillis: 5_000,
+    connectionTimeoutMillis: 10_000,
     allowExitOnIdle: true,
   };
 }
