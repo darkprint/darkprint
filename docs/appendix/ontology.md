@@ -1,61 +1,60 @@
 # The ontology
 
-The controlled vocabulary the DOT and the cards both draw from. **It has no version, and
-this line said `Version 0.1.0` until 2026-09-05** (D-131, §11.0 Q31). The section
-*Versioning the ontology* below was superseded twice and carries the full account; what
-was missed both times is that the number was also in the first sentence of the document,
-where a reader meets it before any of the supersessions. `Ontology` is `{ title, terms }`.
-`files/darkprint-ontology-v0.1.md`, cited below, keeps `v0.1` in its FILENAME and is the
-specification document rather than a version stamp on the vocabulary.
+The controlled vocabulary the DOT and the cards both draw from. It has no version: `Ontology`
+is `{ title, terms }`, and a term is retired by marking it `deprecated` in place with a pointer
+to its successor.
 
 **Source of truth:** `lib/core/ontology/core.ts` (the terms), `types.ts` (the shapes),
 `resolve.ts` (lookup, the lattice, `isA`, `partitionTerms`).
 **Local additions:** `content/ontology/extensions.yaml`.
-**Rendered:** `/ontology` and `/ontology/<term>` (50 pages), and `/spec/ontology`.
-**Specification:** `files/darkprint-ontology-v0.1.md` (doc 3).
+**Rendered:** the vocabulary browser on `/spec/card` and one page per term at `/ontology/<term>`.
+**Generated:** the skill's `references/ontology.md`, by `npm run generate:skill-refs`.
 
 To re-derive the counts below:
 
 ```bash
-node --experimental-strip-types -e 'import("./lib/core/ontology/core.ts").then(m => {
-  const by = {}; for (const t of Object.values(m.CORE_ONTOLOGY.terms ?? m.CORE_ONTOLOGY))
-    (by[t.kind] ??= []).push(t.id);
+node --experimental-strip-types --import ./scripts/module-hook.ts -e '
+  const { CORE_ONTOLOGY } = await import("./lib/core/ontology/core.ts");
+  const by = {};
+  for (const t of CORE_ONTOLOGY.terms) (by[t.kind] ??= []).push(t.id);
   for (const [k, v] of Object.entries(by)) console.log(k, v.length);
-})'
+'
 ```
 
 ---
 
 ## The 54 curated terms
 
-### `phase` — 5, and the list is closed
+### `phase`: 5, and the list is closed
 
 ```
 planning   implementation   testing   debugging   deployment
 ```
 
 **Phases describe the factory, not every node.** A card's `phase` is optional and repeatable:
-a node may sit in several or in none. Phase coverage is *descriptive* — it reports which
-phases a graph touches and never scores a graph for missing one.
+a node may sit in several or in none. Phase coverage is *descriptive*: it reports which phases
+a graph touches and never scores a graph for missing one.
 
 Note the collision hazard: these five words are nearly the same as the five **roles** the site
 names on `/spec/topology` (planner, builder, tester, debugger, deployer). A role is the job a
 node does in a graph; a phase is a field on a card drawn from this closed list. The site states
 the distinction wherever both appear.
 
-### `node-type` — 8
+### `node-type`: 13
 
 ```
-human-in-the-loop   evaluative        (categories)
-agent   tool   human-gate   human-input   decision   validation
+human-in-the-loop   evaluative   orchestration      (categories)
+agent   tool   shell-tool
+human-gate   human-input                            (under human-in-the-loop)
+decision   validation                               (under evaluative)
+parallel   parallel.fan-in   manager-loop           (under orchestration)
 ```
 
-`human-gate` and `human-input` are under `human-in-the-loop`, which is what
-`requires_human` must agree with and what `isDarkFactory` counts.
+`human-gate` and `human-input` are under `human-in-the-loop`, which is what `requiresHuman`
+reads and what `isDarkFactory` counts: a node needs a person exactly when its type is under
+that category. `shell-tool` is a `tool` whose `params.tool_command` is the command it runs.
 
-> **Superseded 2026-08-30 by D-92, D-110 (`docs/DECISIONS.md`).** `requires_human` no longer exists: a card's `type` is the whole answer, and the boolean is derived from it rather than stored, so the two can no longer disagree and there is no inconsistency left to validate. The text above is kept verbatim as the record of what was specified. The capability it implies — staffing a node whose type says nothing about people — was deliberately not restored.
-
-### `risk-marker` — 9
+### `risk-marker`: 9
 
 ```
 execution-risk   isolation-breach                    (categories)
@@ -65,26 +64,26 @@ irreversible-action
 ```
 
 The seven leaves carry weights in `lib/core/config.ts` and drive the security reading.
-An unrecognised marker weighs **0** — it is shown but never silently scored.
+An unrecognised marker weighs **0**: it is shown and never silently scored.
 
-### `data-type` — 15, and they form a lattice
+### `data-type`: 15, and they form a lattice
 
 ```
 any
-├── text ── markdown, code
-├── structured ── json, table, plan, acceptance-criteria, report
-├── binary ── artifact
-└── signal ── event, status
++-- text ........ markdown, code
++-- structured .. json, table, plan, acceptance-criteria, report
++-- binary ...... artifact
++-- signal ...... event, status
 ```
 
 The lattice is what makes port compatibility and `cannot` work. `isA` is **reflexive and
 one-directional**: `json` satisfies a port typed `structured`; `structured` does not satisfy
 one typed `json`.
 
-`acceptance-criteria` is the term the whole site turns on — it is what `code-builder@1.0.0`
+`acceptance-criteria` is the term the whole site turns on: it is what `code-builder@1.0.0`
 declares it `cannot` receive.
 
-### `tool` — 12
+### `tool`: 12
 
 ```
 tool-capability                                      (category)
@@ -115,32 +114,25 @@ Rules:
 - **A local term must be namespaced** (`owner/term`). An un-namespaced unknown term is
   `card/unknown-term`, an error.
 - It must declare `broader`, pointing at a curated term, so it inherits a place in the lattice.
+- A local risk marker declares a `defaultWeight`; absent, it weighs 0.
 - `partitionTerms()` in `resolve.ts` is the one place that splits curated from local. Use it
-  rather than counting terms yourself — a page that counted the overlay into the core is
-  exactly how the old `/spec` came to print "50 terms" when the core has 49.
+  rather than counting terms yourself: a page that counted the overlay into the core is exactly
+  how a spec page once printed a total the core did not have.
 - **Extensions travel with the bundle.** `ontology/extensions.yaml` is exported into any
-  bundle that uses local terms, or the download cannot reproduce its own scores.
+  bundle that uses local terms, or the download cannot reproduce its own scores. A published
+  release stores the author's file byte for byte as its local vocabulary.
 
 ---
 
-## Versioning the ontology
+## Moving the vocabulary
 
-Doc 3 §8. The version is stamped on every card (`ontology_version`) and every bundle.
-
-> **Superseded 2026-08-30 by D-93 (`docs/DECISIONS.md`).** The version is stamped on neither. `ontology_version` left the card and `ontologyVersion` left the bundle manifest when the vocabulary-version registry was removed: there is one living vocabulary, so there is nothing to resolve a stamp against. The version survives only on a stored score (`release.scoredOntologyVersionId`), which is where reproducibility actually lives. Kept verbatim as the record of what was specified.
->
-> **Superseded again 2026-09-05 by D-131, and this whole section with it.** There is no ontology version anywhere: not on a card, not on a manifest, not on a score, not on the vocabulary. `Ontology` is `{ title, terms }`; `release.scored_ontology_version_id` and both `ontology_*` tables were dropped by migration `0009`; `AutonomyResult.ontologyVersion` — the stamp the paragraph above pointed at — is gone. So the bump table below prices a number that does not exist. The mechanism §6.2 actually uses to move the vocabulary is `deprecated`, which retires a term in place and points at its successor. The one surviving trace is `OntologyTerm.since`, which still says *ontology version that introduced the term* and now names nothing.
-
-
-| change | bump |
-|---|---|
-| add a term | **minor** |
-| remove or rename a term | **major** |
-| change a weight or threshold in `lib/core/config.ts` | **patch** |
-
-The last one is easy to under-rate: moving a number re-scores every blueprint that already
-exists, which is why it is a version change at all and why every tunable lives in that one
-file rather than scattered through the analyzers.
+There is no version to bump. Adding a term is a change to `core.ts` and to the generated
+references. Retiring one means setting `deprecated: { since, replacedBy }` on it: a card that
+names a deprecated term loads with `card/deprecated-term`, and the term page points at the
+successor. Removing a term outright breaks every card that names it. A local term becomes a
+candidate for the core when `DARKPRINT_CONFIG.promotion` is met (3 distinct authors across 5
+distinct blueprints); `GET /api/ontology-usage/candidates` lists the counts and nothing
+promotes automatically.
 
 ---
 
@@ -148,12 +140,12 @@ file rather than scattered through the analyzers.
 
 | change | what goes stale |
 |---|---|
-| **add a term** | `/ontology/<term>` page count, the `partitionTerms` total printed on `/what-a-blueprint-is`'s vocabulary band, and ~~the ontology version on every card~~ (D-131, 2026-09-05: no card carries one and no vocabulary has one; what still goes stale is `OntologyTerm.since`, which every core term sets to the same `V01`) |
+| **add a term** | the `/ontology/<term>` page count, the totals printed on `/what-a-blueprint-is` and `/spec/card`, and the skill's generated `references/ontology.md` (`scripts/generate-skill-refs.test.ts` reds until it is regenerated) |
 | **remove or rename a term** | every card using it (`card/unknown-term`), every port typed with it, every `cannot` naming it, and every bundle's scores |
-| **change the lattice** (`broader`) | port compatibility across all 9 bundles, and `cannot` enforcement — a widened parent can make a prohibition fire where it did not |
-| **change a weight in `config.ts`** | every security reading on the site and all 9 bundle READMEs. The `/what-it-isnt` demonstration that quoted "4 to 2" is gone with that route; `components/explain/starter-isolation.ts` still derives the figure for `/spec/card` |
-| **add a term to the closed `phase` list** | doc 3 calls this list closed; phase coverage, the phase chips, and `/spec/ontology` all assume five |
+| **change the lattice** (`broader`) | port compatibility across all 9 bundles, and `cannot` enforcement: a widened parent can make a prohibition fire where it did not |
+| **change a weight in `config.ts`** | every security reading on the site and all 9 bundle READMEs; `components/explain/starter-isolation.ts` derives the "4 to 2" figure for `/spec/card` |
+| **add a term to the closed `phase` list** | phase coverage, the phase chips, `isDarkFactory` and every surface that assumes five |
 
-**Before changing a weight, check the open calibration item** in `../PROJECT.md` §3.3: four of
-nine blueprints currently floor at security 1, which suggests the weights or the scale need
-tuning against real data rather than another ad-hoc nudge.
+Four of the nine archive blueprints floor at security 1 under the shipped weights. Before
+changing a weight, treat that as the open calibration item it is: tune against real data rather
+than with another ad-hoc nudge.

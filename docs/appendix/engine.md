@@ -1,15 +1,16 @@
 # The engine
 
-30 modules under `lib/core`. Everything the site claims about a graph is computed here.
+33 modules under `lib/core`. Everything the site claims about a graph is computed here.
 
 **Hard constraint: `lib/core/**` is isomorphic.** No `node:fs`, `node:path`, `node:crypto`, no
 `Buffer`, no `Date.now()`, no `Math.random()`. It runs unchanged in the browser, which is what
-lets `/upload` validate and score a bundle with no server.
+lets `/upload` validate and score a bundle before anything is sent to a server.
 
 ```
 lib/core/
   config.ts        every tunable number, deliberately in ONE file
   diagnostics.ts   the code table
+  gate.ts          which codes block storage and which block a release
   dot/             lexer, recursive-descent parser, graph model
   card/            schema, parse, validate, iteration-cap
   ontology/        types, the 54 curated terms, resolve + isA + partitionTerms
@@ -18,7 +19,7 @@ lib/core/
   hash/            pure-TS sha256, canonical JSON, digest
   version/         semver, bump
   archive/         store, registry
-  attractor/       reserved, lint, emit
+  attractor/       reserved, lint, emit, import, condition
 ```
 
 ---
@@ -26,14 +27,14 @@ lib/core/
 ## The pipeline
 
 ```
-folder ──► parse DOT ──► load + validate cards ──► resolve ──► analyse ──► view model
-                                                      │
-                                                      └─► any ERROR ⇒ does not resolve
+folder -> parse DOT -> load + validate cards -> resolve -> analyse -> view model
+                                                   |
+                                                   +-> any ERROR => does not resolve
 ```
 
-`lib/content/read.ts` throws on an error-severity diagnostic, so a broken bundle **fails the
-build** rather than shipping. `lib/content/view.ts` is the only bridge from engine output to
-UI shapes, and it decides nothing — it translates.
+`lib/content/read.ts` throws on an error-severity diagnostic, so a broken bundle under
+`content/` fails the build rather than shipping. `lib/server/engine` runs the same pass behind
+`POST /api/validate/*`, and `lib/server/publish` refuses a release the pass reports errors on.
 
 ---
 
@@ -43,32 +44,30 @@ UI shapes, and it decides nothing — it translates.
 
 Two separate outputs, and the difference matters:
 
-**`autonomyClass`** — the *share* of nodes that run unattended, bucketed and named:
+**`autonomyClass`** is the share of nodes that run unattended, bucketed and named:
 
 | class | share |
 |---|---|
-| `closed-loop` | > 0.90 |
-| `conditional` | > 0.70 |
-| `supervised` | > 0.50 |
+| `closed-loop` | above 0.90 |
+| `conditional` | at least 0.70 |
+| `supervised` | at least 0.50 |
 | `assisted` | otherwise |
 
-Thresholds live in `config.ts`. The ordinal band exists internally for sorting; **no surface
-ever prints it.**
+Thresholds live in `config.ts`. When a graph declares at least `minControlPoints` (2) control
+points, the share of those that run unattended can lower the band. The numeric level exists
+internally for sorting; **no surface ever prints it**, and no surface ranks or grades a class.
 
-**`isDarkFactory`** — `totalNodes > 0 && autonomousNodes === totalNodes`. A literal
-**zero-human-node** test, not a threshold. This matters: an eleven-node graph clears 0.90 with
-a person still standing in it, so the fraction cannot carry that claim.
-
-A graph one gate short of it is not "nearly" anything. It is a supervised graph, which is a
-legitimate thing to be. Doc 2 §1.1 is enforced by tests here: no ordinal on any surface, no
-ranking, no badge.
+**`isDarkFactory`** is `autonomousNodes === totalNodes` and every one of the five phases
+covered. A literal test, not a threshold: an eleven-node graph clears 0.90 with a person still
+standing in it, so the fraction cannot carry that claim. A graph one gate short of it is a
+supervised graph, which is a legitimate thing to be.
 
 ---
 
 ## Security
 
-`lib/core/analysis/security.ts`. Starts at a clean **4** and subtracts weighted penalties for
-risk markers, then clamps.
+`lib/core/analysis/security.ts`. Starts at a clean **4**, subtracts the weight of every risk
+marker found, rounds and clamps to 1..4.
 
 | marker | weight |
 |---|---|
@@ -79,67 +78,61 @@ risk markers, then clamps.
 | `unvalidated-external-access` | 1.0 |
 | `unchecked-write` | 1.0 |
 | `secret-access` | 1.0 |
-| *unrecognised* | **0** — shown, never silently scored |
+| *unrecognised* | **0**, shown and never silently scored |
 
-**Open calibration item:** four of nine blueprints floor at security 1. Either the weights are
-too harsh or the scale is too short. Doc 3 §9 left this for tuning against real data; see
-`../PROJECT.md` §3.3. Changing any weight is a PATCH of the ontology version.
-
-> **The last sentence is superseded 2026-09-05 by D-131 (`docs/DECISIONS.md`).** There is no
-> ontology version for a weight change to be a PATCH of. The weights were never versioned in
-> the first place — they live in `DARKPRINT_CONFIG.security.weights`, which no version string
-> ever covered — so the rule could not have made a score reproducible even while a version
-> existed. Kept verbatim as the record of what was specified.
+The weights live in `DARKPRINT_CONFIG.security.weights` and nothing versions them: changing one
+re-scores every release the next time it is analysed, and stored scores on old releases keep
+the numbers they were computed with.
 
 ---
 
-## Criteria leak — the site's central check
+## Criteria leak, the site's central check
 
 The argument DarkPrint exists to make is that **isolation is a property of the graph**, and it
 is checked two independent ways.
 
-### 1. Topological + similarity — `analysis/`
+### 1. Topological plus similarity, in `analysis/`
 
 Does the acceptance criteria reach a node that produces work? The check has two halves,
 because isolation is not only a missing arrow:
 
-- **topological** — is there a path carrying `acceptance-criteria` into a producing node?
-- **similarity** — does a card's `spec` *paraphrase* the criteria? Jaccard over 3-gram
-  shingles, threshold **0.35** (`config.ts`). A card isolated on the diagram and quoting the
-  criteria in its prose is leaking in practice.
+- **topological**: is there a path carrying `acceptance-criteria` into a producing node?
+- **similarity**: does a card's `spec` paraphrase the criteria? Jaccard over 3-gram shingles,
+  threshold **0.35** (`config.ts`). Above it the engine warns; `similarityFiresMarker` is off, so
+  the text half never moves the score on its own. A card isolated on the diagram and quoting
+  the criteria in its prose is leaking in practice.
 
 Measured example: `code-builder@1.0.0` against `spec-planner@1.0.0` scores **0.0356**.
 
 Diagnostics: `criteria-leak-suspected`, `criteria-relayed-through-judge`,
 `criteria-out-of-band`, `criteria-leak-unanchored`.
 
-> Three bypasses were found and closed in this project by attacking the check's own design:
-> absorption at *any* validation node (which made the engine's own remediation hint a recipe
-> for hiding the leak), `tester → builder` reporting clean, and the check going silent when no
-> node was typed `validation`.
+Three bypasses were found and closed by attacking the check's own design: absorption at any
+validation node (which made the engine's own remediation hint a recipe for hiding the leak),
+`tester -> builder` reporting clean, and the check going silent when no node was typed
+`validation`.
 
-### 2. Declared prohibition — `bundle/resolve.ts`
+### 2. Declared prohibition, in `bundle/resolve.ts`
 
 A card's `cannot` entry naming an ontology data type is a rule. An incoming edge carrying that
-type raises **`bundle/prohibition-violated`**, an *error*, so the bundle does not resolve.
+type raises **`bundle/prohibition-violated`**, an error, so the bundle does not resolve.
 
 ### The two together, on the starter
 
-| | class | dark factory | security | resolves |
-|---|---|---|---|---|
-| as shipped | closed-loop | yes | **4** | yes |
-| add `planner -> builder` | closed-loop | yes | **2** | **no — `bundle/prohibition-violated`** |
+| | class | security | resolves |
+|---|---|---|---|
+| as shipped | closed-loop | **4** | yes |
+| add `planner -> builder` | closed-loop | **2** | **no: `bundle/prohibition-violated`** |
 
-Same conclusion from two directions. This is what the `/build` switch
-demonstrate live, and both surfaces must report the **refusal before the score** — a bundle
-that does not resolve is not a bundle with a low number.
+Same conclusion from two directions. Every surface reports the **refusal before the score**: a
+bundle that does not resolve is not a bundle with a low number.
 
 ---
 
 ## Phase coverage
 
 `analysis/phase-coverage.ts`. Reports which of the five phases a graph touches.
-**Descriptive only** — it never scores a graph for missing one, because a card's `phase` is
+**Descriptive only**: it never scores a graph for missing one, because a card's `phase` is
 optional and repeatable and phases describe the factory rather than every node.
 
 ---
@@ -147,60 +140,44 @@ optional and repeatable and phases describe the factory rather than every node.
 ## Diagnostics
 
 `lib/core/diagnostics.ts`. Codes are `namespace/kebab-case` and carry a severity. Any **error**
-means the bundle does not resolve.
+means the bundle does not resolve; `gate.ts` says which codes also block storage.
 
 | namespace | covers | examples |
 |---|---|---|
-| `card/` | one card in isolation | `missing-field`, `bad-version`, `unknown-term`, `spec-too-thin`, `human-type-inconsistent`, `version-bump-too-small` |
-| `bundle/` | the graph and its cards together | **`prohibition-violated`**, `port-mismatch`, `port-ambiguous`, `type-mismatch`, `unpinned-card`, `orphan-card`, `unreachable-node`, `no-entry`, `no-exit`, `digest-mismatch`, `ontology-mismatch` |
-| `analysis/` | what the analyzers found | `criteria-leak-suspected`, `criteria-relayed-through-judge`, `criteria-out-of-band`, `unresolved-node`, `empty-graph` |
-| `attractor/` | interop lint | `reserved-attribute`, `bad-node-id`, `quoted-node-id`, `strict-graph`, `undirected-graph`, `hash-comment` |
+| `card/` | one card in isolation | `missing-field`, `bad-version`, `unknown-term`, `wrong-term-kind`, `spec-too-thin`, `prohibition-misfiled`, `retired-field`, `version-bump-too-small` |
+| `bundle/` | the graph and its cards together | **`prohibition-violated`**, `port-mismatch`, `port-ambiguous`, `type-mismatch`, `unpinned-card`, `orphan-card`, `unreachable-node`, `no-entry`, `no-exit`, `missing-dependency`, `undeclared-dependency`, `digest-mismatch` |
+| `analysis/` | what the analyzers found | `criteria-leak-suspected`, `criteria-relayed-through-judge`, `criteria-out-of-band`, `criteria-leak-unanchored`, `unresolved-node`, `empty-graph` |
+| `attractor/` | interop lint | `reserved-attribute`, `bad-node-id`, `quoted-node-id`, `strict-graph`, `undirected-graph`, `hash-comment`, `condition-syntax`, `multiple-graphs` |
 
-Every code should carry a **hint** that names the fix. The `version-bump-too-small` hint, for
-instance, lists every reason the bump was required — which is what makes the build failure
-actionable rather than annoying.
+Every code carries a **hint** that names the fix. The `version-bump-too-small` hint, for
+instance, lists every reason the bump was required, which is what makes the failure actionable.
 
 ---
 
 ## The archive
 
-`lib/core/archive/`. Content-addressed: canonical JSON → pure-TS sha256 → digest. Card versions
-are **archived side by side**, never edited in place, which is what lets a figure quote
-`targeted-debugger@1.1.0`'s `max_retries: 2` and know it cannot drift.
-
-That example used to name `@1.0.0`'s `max_iterations: 3`, and the card it named is no longer
-in `content/`. **The immutability claim is what the change demonstrates rather than what it
-contradicts**: on 2026-09-04 the archive's iteration cap was respelled to mean what Attractor
-§2.6 means by it, and because a published version may not be edited, six cards were bumped
-and renamed instead. `2` and `3` are the same three total attempts under the two spellings;
-`@1.0.0`'s prose said "stop after three attempts" and its number permitted four, which is
-why the version moved rather than the file.
+`lib/core/archive/`. Content-addressed: canonical JSON, pure-TS sha256, digest. Card versions
+are **archived side by side**, never edited in place, which is what lets a page quote
+`targeted-debugger@1.1.0`'s `max_retries: 2` and know it cannot drift. When a card's meaning
+has to change, its version moves rather than its file.
 
 ---
 
-## Config — one file, on purpose
+## Config, one file on purpose
 
-`lib/core/config.ts`, deep-frozen. Doc 1 §11, taken literally: every threshold and weight that
-real data will later move lives here and nowhere else, because scattered constants make
-calibration a treasure hunt.
+`lib/core/config.ts`, deep-frozen. Every threshold and weight that real data will later move
+lives here and nowhere else, because scattered constants make calibration a treasure hunt.
 
 ```
-ontologyVersion  0.1.0
-autonomy         level4 0.90   level3 0.70   level2 0.50
+autonomy         level4 0.90   level3 0.70   level2 0.50   minControlPoints 2
 security         the weights table above, unknownMarkerWeight 0
 criteriaLeak     similarityThreshold 0.35   similarityFiresMarker false
-promotion        distinctAuthors 3   distinctBlueprints 5      (unused — no backend)
-telemetry        minRuns 5   outlierZScore 3                   (unused — no backend)
+promotion        distinctAuthors 3   distinctBlueprints 5   (read by the term candidates route)
+telemetry        minRuns 5   outlierZScore 3               (read by the run-report aggregate)
 ```
 
-> **The first line is superseded 2026-09-05 by D-131 (`docs/DECISIONS.md`).**
-> `DarkprintConfig` carries no `ontologyVersion`; `lib/core/config.ts:117` records the
-> removal in place of the field. It mirrored `CORE_ONTOLOGY.version`, which is also gone,
-> and two copies of one number are two things to keep in step. The listing is kept verbatim
-> as the record of what the file held.
-
-The last two blocks describe features that **do not exist**. They are design, not behaviour;
-do not let a surface imply otherwise.
+There is no ontology version anywhere in the engine: the vocabulary is `{ title, terms }` and a
+retired term is marked `deprecated` in place.
 
 ---
 
@@ -208,11 +185,11 @@ do not let a surface imply otherwise.
 
 | change | what goes stale |
 |---|---|
-| **a weight or threshold** | every score on the site, all 9 READMEs, the "4 to 2" demonstration, and ~~the ontology version (PATCH)~~ (D-131, 2026-09-05: there is no ontology version, and the weights were never inside one) |
-| **an autonomy band** | every class shown in the gallery and on every blueprint page |
-| **a diagnostic code** | the check tables on the three `/spec/*` layer pages, any page quoting it, and the fixtures asserting it |
-| **the leak check** | the `/build` switch, `/spec/card`'s quoted diagnostic, and the starter's claim to be the reference clean result. `/what-it-isnt` drew both graphs and was removed |
-| **anything in `lib/core`** | check the isomorphism constraint first — a `node:` import breaks `/upload` at runtime and not at build time |
+| **a weight or threshold** | every score computed from now on, the nine bundle READMEs under `public/bundles`, the stored scores on every release until it is re-analysed, and the "4 to 2" demonstration |
+| **an autonomy band** | every class shown in the registry and on every blueprint page |
+| **a diagnostic code** | the check tables on the `/spec/*` pages, any page quoting it, the skill's `references/preflight.md`, and the fixtures asserting it |
+| **the leak check** | `/spec/card`'s quoted diagnostic and the starter's claim to be the reference clean result |
+| **anything in `lib/core`** | check the isomorphism constraint first: a `node:` import breaks `/upload` at runtime and not at build time |
 
 **When you change a check, attack it before trusting it.** Every bypass listed above was found
 by asking "how would I get past this?" rather than by running the suite, and each one passed
