@@ -14,13 +14,13 @@
    context, which is what lets `honesty.test.ts`-style suites render
    the page whole in a node environment.
 
-   ── the rule carried over from the wizard this page replaced ──
+   ── no component is built inside a render ──
    A component built from `useCallback` or `useMemo` inside a render
    changes identity when its dependencies do, and React remounts every
-   element of that type. On the wizard that destroyed the input a reader
-   was typing into once per keystroke. Proving focus survives needs a
+   element of that type, so a control the reader is using is replaced
+   under them on the next state change. Proving focus survives needs a
    DOM this suite does not have; what can be checked is that the one
-   construction that caused it is absent from the island.
+   construction that causes it is absent from the island.
    ============================================================ */
 
 import { readFileSync } from "node:fs";
@@ -131,6 +131,15 @@ describe("five sections the rail can reach", () => {
     const written = declaringTag(SOURCE, id);
     expect(written, `the source writes no literal id="${id}"`).toBeDefined();
     expect(written).toContain("scroll-mt-24");
+  });
+
+  it("writes no other literal id into the page source", () => {
+    /* `anchors.test.ts` finds a fragment's target by the first `id="…"` in the tree that
+       spells it, `app/` sorting before `components/`. A prop that happened to be called
+       `id` would put a row name on a tag with no scroll offset, and a link to that fragment
+       from another page would then red against this file. */
+    const ids = [...SOURCE.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
+    expect(ids).toEqual([...SECTION_IDS]);
   });
 
   it("orders them as the reader takes them", () => {

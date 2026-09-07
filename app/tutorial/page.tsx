@@ -48,15 +48,17 @@ const TERMINAL_CLIENTS = MCP_CLIENTS.filter(
 /**
  * A command and the control that copies it: real text in a `<pre>`, wrapped rather than
  * scrolled so a phone shows the whole line. `data-command` names the row in the markup,
- * which is how the test tells the Codex cell from the Claude Code cell.
+ * which is how the test tells the Codex cell from the Claude Code cell. The prop is `row`
+ * rather than `id` so the only id attributes written in this file are the five anchors
+ * the Learn rail links, which is what the anchors walk reads this source for.
  */
 function CommandLine({
-  id,
+  row,
   label,
   command,
   ariaLabel,
 }: {
-  id: string;
+  row: string;
   label: string;
   command: string;
   ariaLabel: string;
@@ -66,7 +68,7 @@ function CommandLine({
       <span className="label">{label}</span>
       <div className="flex min-w-0 items-start gap-2">
         <pre
-          data-command={id}
+          data-command={row}
           className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words rounded-lg border border-line bg-surface-2 px-3.5 py-3 font-mono text-xs leading-relaxed text-emerald"
         >
           <code>{command}</code>
@@ -106,13 +108,13 @@ export default function TutorialPage() {
             <div className="grid gap-6 md:grid-cols-2 md:items-start">
               <div className="flex min-w-0 flex-col gap-4">
                 <CommandLine
-                  id="claude-code"
+                  row="claude-code"
                   label="Claude Code"
                   command={SKILL_INSTALL_COMMAND}
                   ariaLabel="Copy the command that installs the DarkPrint skill for Claude Code"
                 />
                 <CommandLine
-                  id="codex"
+                  row="codex"
                   label="Codex"
                   command={SKILL_INSTALL_COMMAND_CODEX}
                   ariaLabel="Copy the command that installs the DarkPrint skill for Codex"

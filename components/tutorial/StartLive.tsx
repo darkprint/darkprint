@@ -33,10 +33,9 @@ import {
 
    ── Every component is declared at module scope ──
    A component built inside a render, with `useCallback` or `useMemo`,
-   changes identity when its dependencies do and React remounts every
-   element of that type. On the wizard this page replaced, that
-   destroyed the input a reader was typing into once per keystroke.
-   `tutorial-page.test.ts` holds the shape.
+   changes identity when its dependencies do, and React then remounts
+   every element of that type, replacing the control under the reader
+   who is using it. `tutorial-page.test.ts` holds the shape.
    ============================================================ */
 
 /* ---------- the token store ---------- */
