@@ -4,9 +4,10 @@ One node = one **card**. A card is a YAML document (JSON is accepted) describing
 agent, tool, gate or check is, what it needs, what it produces, and what it must never see.
 
 **Source of truth:** `lib/core/card/schema.ts` (the type), `lib/core/card/validate.ts` (what is
-checked), `lib/core/card/parse.ts` (wire format → type).
-**Examples:** `content/cards/*.yaml` — 57 files, 53 distinct ids.
-**Rendered:** `/nodes/<id>` shows every field of every card.
+checked), `lib/core/card/parse.ts` (wire format to type).
+**Examples:** `content/cards/*.yaml`, 57 files, 53 distinct ids.
+**Rendered:** `/nodes/<id>` shows every field of every version, with a YAML download.
+**Published:** a `card_version` row per `(id, version)`, body and source kept verbatim.
 
 ---
 
@@ -22,11 +23,11 @@ type: agent
 phase: implementation
 
 action: >-
-  Work through the build brief and emit the source it describes, adding nothing the brief
-  does not ask for.
+  Work through the build brief and emit the source it describes, adding nothing the brief does
+  not ask for.
 spec: >-
   A build brief arrives with the run: an ordered list of steps... The brief is all you get,
-  and that is the point — do not go looking for a test suite, do not reason about how the
+  and that is the point: do not go looking for a test suite, do not reason about how the
   result will be checked, and do not tune anything toward a check you imagine exists.
 
 model: claude-sonnet-5
@@ -39,64 +40,67 @@ skill: skills/code-builder.md
 inputs:
   - name: brief
     type: plan
-    description: The ordered build steps the run was instantiated with.
+    description: The ordered build steps the run was instantiated with, the only thing this node sees.
 outputs:
   - name: build
     type: code
-    description: One complete, compiling change implementing the brief.
+    description: One complete, compiling change implementing the brief, with no commentary attached.
 
 dependencies: []
 cannot:
   - acceptance-criteria
+will_not:
   - read the checks the work will be run against
 
-requires_human: false
 risk_markers: []
 version: 1.0.0
 author: orin
-ontology_version: 0.1.0
 ```
 
 ---
 
 ## Every field
 
-Wire keys are `snake_case`; the parsed type is `camelCase`.
+Wire keys are `snake_case`; the parsed type is `camelCase`. `CARD_KNOWN_KEYS` in `validate.ts`
+is the list of accepted keys, and the skill's `references/card-schema.md` is generated from it.
 
 ### Identity
 
 | field | type | notes |
 |---|---|---|
-| `id` | `string` | Stable across versions. A graph pins `id@version`. |
+| `id` | `string` | Stable across versions. May carry one namespace segment (`berti/solver-a`). A graph pins `id@version`. |
 | `name` | `string` | Human-facing. |
-| `type` | `string` | **Ontology `node-type` term.** Checked. |
-| `phase` / `phases` | `string[]` | **Ontology `phase` terms.** Optional and repeatable — a node may sit in several phases or none. |
+| `type` | `string` | **Ontology `node-type` term.** Checked. Whether the node needs a person is derived from it. |
+| `phase` / `phases` | `string[]` | **Ontology `phase` terms.** Optional and repeatable: a node may sit in several phases or none. |
 | `version` | semver | Archived side by side, never edited in place. |
-| `author`, `provenance` | `string?` | |
-| ~~`ontology_version`~~ | ~~`string`~~ | ~~Which vocabulary this card was written against.~~ **RETIRED. Withdrawn from the schema by D-93 (2026-08-30), and the concept it named was removed entirely by D-131 (2026-09-05).** A card carrying it still loads and raises `card/retired-field` at warning, because every card published before the change carries one and refusing them would turn a schema change into an archive-wide outage. The example above is kept verbatim as the record of what was specified. |
+| `author`, `provenance` | `string?` | Excluded from the digest. |
+
+`requires_human` and `ontology_version` are retired keys. A card carrying either still loads
+and raises `card/retired-field` at warning, because cards published before the change carry
+them and refusing them would turn a schema change into an archive-wide outage.
 
 ### What it does
 
 | field | type | notes |
 |---|---|---|
 | `action` | `string` | One line. What this node does, for a reader. |
-| `spec` | `string` | **The instruction handed to the agent.** Inlined into `factory.dot` as Attractor's `prompt`. This is the field that actually runs. |
+| `spec` | `string` | **The instruction handed to the agent.** Compiled into Attractor's `prompt`. This is the field that actually runs. |
 | `notes` | `string?` | Prose for a reader; not checked, not run. |
 
-`spec` is held to a minimum substance by `card/spec-too-thin`, and it is one of the two
-halves of the criteria-leak check: a spec that *paraphrases* the acceptance criteria leaks
-them even when the graph shows no edge. See [`engine.md`](./engine.md).
+`spec` is held to a minimum substance by `card/spec-too-thin`, and it is one of the two halves
+of the criteria-leak check: a spec that paraphrases the acceptance criteria leaks them even
+when the graph shows no edge. See [`engine.md`](./engine.md).
 
 ### What it runs on
 
 | field | type | notes |
 |---|---|---|
-| `model` | `string?` | Emitted as Attractor's reserved `llm_model`. **Absent emits nothing** rather than an empty string, so the graph's `model_stylesheet` fills it in. Present, it OUTRANKS the sheet: spec §8.3/§8.5 rank an explicit node attribute above every stylesheet rule, and DarkPrint writes no stylesheet of its own. |
+| `model` | `string?` | Emitted as Attractor's reserved `llm_model`. Absent emits nothing, so the runner's own stylesheet fills it in; present, it outranks the sheet. |
 | `agent` | `string?` | Role name. |
 | `tools` | `string[]` | **Ontology `tool` terms.** Capabilities, checked. |
-| `mcp` | `string[]` | Concrete MCP server names. Free text, deliberately *not* merged with `tools` — they answer different questions. |
-| `skill` | `string?` | Path to the document defining behaviour, e.g. `skills/code-builder.md`. **DarkPrint stores the pointer and reads nothing at the other end.** No skill document travels in a bundle, and the bundle README says so. |
-| `params` | `Record<string, JsonValue>` | Free-form, and two keys are read on the way out. The iteration cap — `max_iterations`, `maxIterations` or `max_retries`, in that order — becomes Attractor's `max_retries`; the engine accepts all three spellings, and since 2026-09-04 every card in the archive already writes `max_retries`, so the mapping describes the engine rather than the shipped content. `tool_command` is the command a `shell-tool` node runs, and it is emitted onto the node and read back by the importer. |
+| `mcp` | `string[]` | Concrete MCP server names. Free text, deliberately separate from `tools`: they answer different questions. |
+| `skill` | `string?` | Path to the document defining behaviour, e.g. `skills/code-builder.md`. DarkPrint stores the pointer and reads nothing at the other end; no skill document travels in a bundle, and the bundle README says so. |
+| `params` | `Record<string, JsonValue>` | Free-form, and two keys are read on the way out. The iteration cap (`max_retries`, also accepted as `max_iterations` or `maxIterations`) becomes Attractor's `max_retries`; `tool_command` is the command a `shell-tool` node runs. Nesting is capped at depth 100. |
 
 ### Its interface
 
@@ -113,42 +117,42 @@ type lattice, so `json` satisfies a port typed `structured`.
 
 | field | type | notes |
 |---|---|---|
-| `cannot` | `string[]` | **Enforced when the entry names an ontology data type.** |
-| `requires_human` | `boolean` | Must agree with `type`; `card/human-type-inconsistent` otherwise. |
-
-> **Superseded 2026-08-30 by D-92, D-110 (`docs/DECISIONS.md`).** `requires_human` no longer exists: a card's `type` is the whole answer, and the boolean is derived from it rather than stored, so the two can no longer disagree and there is no inconsistency left to validate. The text above is kept verbatim as the record of what was specified. The capability it implies — staffing a node whose type says nothing about people — was deliberately not restored.
+| `cannot` | `string[]` | **Ontology data types this node must never receive.** Enforced by the resolver. |
+| `will_not` | `string[]` | Free-text promises about the node's own behaviour. Shown; the resolver never reads it. |
 | `risk_markers` | `string[]` | **Ontology `risk-marker` terms.** Drive the security reading. |
 
-**`cannot` is the field that makes the site's argument checkable.** An entry naming an
-ontology data type is a prohibition on *receiving* it. If an incoming edge carries that type,
-the bundle fails with `bundle/prohibition-violated` — an error, so it does not resolve at all.
+**`cannot` is the field that makes the site's argument checkable.** An entry naming an ontology
+data type is a prohibition on *receiving* it. If an incoming edge carries that type, the bundle
+fails with `bundle/prohibition-violated`, an error, so it does not resolve at all. A `cannot`
+entry the ontology does not know is `card/unknown-term`, and one naming a term of another kind
+is `card/wrong-term-kind`; both are errors. The misfiling check runs the other way: a `will_not`
+entry that resolves to a data type is `card/prohibition-misfiled`, a warning whose hint says to
+move it to `cannot`, where the resolver enforces it.
 
 The test is `ontology.isA(carrier.type, prohibited.id)` (`lib/core/bundle/resolve.ts`), which
 is reflexive and one-directional: `cannot: [structured]` fires against an edge carrying `json`,
 and `cannot: [acceptance-criteria]` is silent against an edge carrying the broader `structured`.
-
-Entries that name no ontology term — `"read the checks the work will be run against"` — are
-**free text**: shown to a reader, checked by nothing. The card page and `/spec/card` both say
-which is which, because that distinction is the site's whole claim.
 
 ---
 
 ## Versioning
 
 `lib/core/version/bump.ts` derives the required bump from two cards. It is not advisory:
-`resolveBundle` runs it over a bundle's version chain, and `lib/content/read.ts` runs it over
-the whole library at build time, so a wrong number **fails the build**.
+`resolveBundle` runs it over a bundle's version chain, `lib/content/read.ts` runs it over the
+whole library at build time, `publish()` refuses a version that is not higher than the last,
+and `darkprint bump` prints the inference for a declared version.
 
 | change | bump |
 |---|---|
-| removing a port, changing a port's type, adding a required input | **major** |
-| **declaring a `cannot` entry** — it narrows what the node accepts | **major** |
+| removing a port, changing a port's type, adding a required input, making an input required | **major** |
+| **declaring a `cannot` entry**, which narrows what the node accepts | **major** |
 | changing `id` | **major** (these are different cards) |
 | adding an optional input or an output | minor |
 | adding a term to `tools` / `mcp` / `risk_markers` | minor |
 | declaring or withdrawing a `phase` | minor |
-| adding or changing `model` | **minor** — an overridable default, not a narrowing |
-| descriptions, reordering, withdrawing a prohibition | patch |
+| adding or changing `model` | minor (an overridable default) |
+| withdrawing a `cannot` entry | minor (it widens what the node accepts) |
+| descriptions, reordering, dropping a list member, relaxing a required input | patch |
 
 ---
 
@@ -156,12 +160,12 @@ the whole library at build time, so a wrong number **fails the build**.
 
 | change | what goes stale |
 |---|---|
-| **add a field** | `schema.ts`, `parse.ts`, `validate.ts`, `bump.ts` (decide its bump level), `/nodes/<id>` rendering, `/spec/card`, the bundle export, and possibly `attractor/emit.ts` |
+| **add a field** | `schema.ts`, `parse.ts`, `validate.ts`, `bump.ts` (decide its bump level), `/nodes/<id>` rendering, `/spec/card`, the bundle export, the generated `references/card-schema.md`, and possibly `attractor/emit.ts` |
 | **change a field's checking** | `validate.ts` and the diagnostic table in [`engine.md`](./engine.md) |
 | **add a `cannot` entry to a shipped card** | it is a **major** bump; the library check fails the build until the version is right |
-| **change `spec`** | it is inlined into `factory.dot`, so every bundle carrying that card changes digest |
-| **rename a field** | the 57 content files, and the wire-format mapping in `parse.ts` |
+| **change `spec`** | it is compiled into the runner's `prompt`, and the card's digest and every release pinning it change |
+| **rename a field** | the 57 content files, every stored `card_version.source`, and the wire-format mapping in `parse.ts` |
 
 The landing's annotated card and `/spec/card` read `code-builder@1.0.0` through
-`cardSource()`, so they cannot drift from the archive. Keep it that way — do not replace it
+`cardSource()`, so they cannot drift from the archive. Keep it that way; do not replace it
 with a transcription.
