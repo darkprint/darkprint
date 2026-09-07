@@ -44,7 +44,7 @@ export const MCP_CLIENTS: readonly McpClientSetup[] = [
     id: "claude-desktop",
     label: "Claude Desktop",
     snippet: MCP_ENDPOINT_URL,
-    note: "Open Customize, then Connectors, then Add custom connector, and paste this address. Claude Desktop and claude.ai add remote servers there rather than in a JSON file.",
+    note: "On claude.ai open Customize, then Connectors, click + and choose Add custom connector, then paste this address. The connector is available in Claude Desktop as well; claude_desktop_config.json is for local servers only.",
     docsHref: "https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp",
   },
   {

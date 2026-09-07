@@ -1,5 +1,5 @@
 /* ============================================================
-   T220 AC1, second axis — nothing in the database moves
+   No operation writes, measured at the database
 
    `purity.test.ts` reads the module's imports. That is the check the
    block asks for by name, and it has one blind spot it cannot close:
@@ -72,7 +72,7 @@ afterAll(async () => {
   await dropScratchDatabases();
 });
 
-describe("T220 AC1 — no operation writes, measured at the database", () => {
+describe("no operation writes, measured at the database", () => {
   it("leaves every table untouched across all six verbs", async () => {
     const w = await world();
     const ref = refsOf(w.twice)[0]!;
@@ -136,7 +136,7 @@ describe("T220 AC1 — no operation writes, measured at the database", () => {
     );
     expect(
       moved.map((t) => `${t}: ${before.counts[t]} -> ${after.counts[t]}`),
-      "AC1: no operation writes. `recordDownload` bumps `target`, and `serveCard` and " +
+      "No operation writes. `recordDownload` bumps `target`, and `serveCard` and " +
         "`serveFile` both call it — they are the obvious composition for `read a card` and " +
         "`fetch a release`, and `exportRelease` is the read-only verb.",
     ).toEqual([]);
