@@ -47,7 +47,7 @@ const ENCODER_NAMES = [
 ] as const;
 
 describe("the published block", () => {
-  it("publishes exactly the four verbs, the two transport helpers, the boundary, the sweep and the encoder probe", async () => {
+  it("publishes exactly the four verbs, the two transport helpers, the boundary, the sweep and the two encoder probes", async () => {
     const mod = await loadSearch();
     const exported = Object.keys(mod).sort();
     const expected = [
@@ -57,6 +57,7 @@ describe("the published block", () => {
       "withSearchStore",
       "reembedAll",
       "encoderAvailable",
+      "encoderFailure",
     ].sort();
     expect(
       exported,
@@ -65,10 +66,11 @@ describe("the published block", () => {
     ).toEqual(expected);
   });
 
-  it("`reembedAll` and `encoderAvailable` are functions", async () => {
+  it("`reembedAll`, `encoderAvailable` and `encoderFailure` are functions", async () => {
     const mod = await loadSearch();
     expect(typeof mod.reembedAll).toBe("function");
     expect(typeof mod.encoderAvailable).toBe("function");
+    expect(typeof mod.encoderFailure).toBe("function");
   });
 
   for (const name of PUBLISHED_NAMES) {
