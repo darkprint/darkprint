@@ -36,7 +36,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 | `lib/content/` | reads `content/` at build time, exports a bundle as files (`bundle-export.ts`), the graph layout, the view models |
 | `lib/data/` | seeded fixtures (authors, community numbers, profiles) still imported by about thirty non-test files |
 | `lib/db/` | drizzle schema (`schema.ts`), pool (`client.ts`), object storage (`storage.ts`), migration runner (`migrate.ts`) and CLI (`cli.ts`), `migrations/` |
-| `lib/server/` | 27 subsystems, one barrel each, in the table below; `types.ts` re-exports the engine's domain types |
+| `lib/server/` | 28 subsystems, one barrel each, in the table below; `types.ts` re-exports the engine's domain types |
 | `lib/` (top) | `site.ts` (origin, name, tagline), `skill.ts` (install commands), `mcp.ts` (connect command), `href.ts`, `format.ts`, `types.ts`, `graph-seed.ts`, `criteria-state.ts` |
 | `packages/cli/`, `packages/mcp/` | the `darkprint` verbs (no bin of their own); the `darkprint` package: bin, stdio MCP server, tool table, in-process executor |
 | `skills/darkprint/` | the blueprint-writing skill: `SKILL.md`, `references/`, `templates/` |
@@ -75,6 +75,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 | `lib/server/search` | lexical plus vector search, the encoder, re-embedding |
 | `lib/server/seed` | the `content/` import |
 | `lib/server/terms` | term usage and promotion candidates |
+| `lib/server/tutorial` | the live tutorial channel: open a page, store the last draft the blueprint-writing skill posted for its token, read it back; rows expire 24 hours after the last write and no account is involved |
 | `lib/server/versioning` | semver, digests, bump inference |
 
 ## 4. Routes
