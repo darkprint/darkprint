@@ -11,6 +11,7 @@ import {
 } from "@/lib/core/tutorial/live";
 import { cx } from "@/lib/format";
 import { blueprintHref, nodeHref } from "@/lib/href";
+import { SITE_ORIGIN } from "@/lib/site";
 import { InstallTabs } from "@/components/mcp/InstallTabs";
 import { SynchronisedPanes } from "@/components/panes/SynchronisedPanes";
 import { ButtonLink } from "@/components/ui/Button";
@@ -116,17 +117,6 @@ export function LiveWaiting({ token }: { token: string }) {
     </section>
   );
 }
-
-/**
- * The origin the page prints. `process.env.NEXT_PUBLIC_SITE_ORIGIN` is inlined into the
- * client bundle at build time, so this is the same value `lib/site.ts` reads, spelled here
- * rather than imported because that module's own docblock keeps it import-free for the
- * server side and this file runs in the browser.
- */
-const SITE_ORIGIN = (process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://www.darkprint.io").replace(
-  /\/+$/,
-  "",
-);
 
 function PartialGraph({
   picture,
@@ -317,9 +307,9 @@ export function NextStep({ draft }: { draft: LiveDraft }) {
         </PanelHeading>
         <p className="text-sm leading-relaxed text-muted">
           Connect the DarkPrint MCP to your agent, then paste the prompt under it. Your agent
-          searches the registry for an observability blueprint, fetches it, and merges it into
-          your folder with the DarkPrint skill&rsquo;s enrich mode. This page shows the hits
-          and the grown graph when it posts again.
+          searches the registry for an observability blueprint and merges it into your folder
+          with the DarkPrint skill&rsquo;s enrich mode. This page shows the hits and the grown
+          graph when it posts again.
         </p>
         <InstallTabs />
         <div className="flex min-w-0 items-start gap-3 rounded-lg border border-line bg-surface-2 px-3.5 py-3">
@@ -361,16 +351,16 @@ export function NextStep({ draft }: { draft: LiveDraft }) {
         </PanelHeading>
         <p className="text-sm leading-relaxed text-muted">
           {href === undefined
-            ? "Your agent reported the blueprint published. It did not say where, so open your profile to find it."
+            ? "Your agent reported the blueprint published and did not say where. Your profile, in the account menu, lists it."
             : "Your blueprint has its own page now. This one stops following."}
         </p>
-        <div className="flex flex-wrap items-center gap-3">
-          {href === undefined ? (
-            <ButtonLink href="/welcome">Open your profile</ButtonLink>
-          ) : (
+        {/* No button without a ref: `/welcome` bounces a finished account back to the
+            landing, and the profile address needs the handle this page does not have. */}
+        {href !== undefined && (
+          <div className="flex flex-wrap items-center gap-3">
             <ButtonLink href={href}>Open your blueprint</ButtonLink>
-          )}
-        </div>
+          </div>
+        )}
       </section>
     );
   }

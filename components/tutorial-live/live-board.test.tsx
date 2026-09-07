@@ -312,10 +312,13 @@ describe("the next step, per phase", () => {
     expect(markup).not.toContain('href="/welcome"');
   });
 
-  it("falls back to the profile when the published draft carries no ref", () => {
+  it("offers no link when the published draft carries no ref, and says where to look", () => {
     const markup = html(createElement(NextStep, { draft: starterDraft("published") }));
     expect(markup).not.toContain('href="/blueprints/');
-    expect(markup).toContain('href="/welcome"');
+    // `/welcome` bounces a finished account to the landing, so it is not a door here.
+    expect(markup).not.toContain('href="/welcome"');
+    expect(markup).not.toContain("<a ");
+    expect(plainText(markup)).toContain("did not say where");
   });
 
   it("tells the reader to keep answering before the folder is written", () => {
