@@ -10,6 +10,17 @@ import type { NextConfig } from "next";
  * deployment past the Hobby plan's function grouping.
  */
 const ENCODER_FILES = ["./models/**", "./node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**"];
+/** The route paths whose functions load the encoder: the two searchers, the MCP find tools and endpoint, publish (which re-embeds), and the health probe. */
+const ENCODER_ROUTES = [
+  "/api/search/blueprints",
+  "/api/search/cards",
+  "/api/mcp",
+  "/api/mcp/blueprints/find",
+  "/api/mcp/cards/find",
+  "/api/bundles",
+  "/api/health",
+];
+
 const FOREIGN_BINARIES = [
   "./node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**",
   "./node_modules/onnxruntime-node/bin/napi-v6/darwin/**",
@@ -38,14 +49,13 @@ const nextConfig: NextConfig = {
     root: import.meta.dirname,
   },
 
-  /* One key for every route rather than one per embedding route. Vercel groups routes whose
-     traces agree into a single function; per-route includes split the app into more bundles
-     than the Hobby plan's cap of twelve allows, and the deploy is refused. A uniform trace keeps
-     the grouping and costs each bundle the encoder's files once. */
-  outputFileTracingIncludes: {
-    "/*": ENCODER_FILES,
-    "/**": ENCODER_FILES,
-  },
+  /* Only the routes that embed carry the encoder. Vercel groups routes whose traces agree
+     into one function, and on the Hobby plan a deployment may hold twelve functions at most;
+     giving every route the 60MB of weights and native library pushed the grouping past that
+     cap, while a handful of routes sharing one trace form one extra group. Routes outside
+     this list answer `encoder: "absent"` and rank on words alone, which is what they did
+     before the vector channel existed. */
+  outputFileTracingIncludes: Object.fromEntries(ENCODER_ROUTES.map((route) => [route, ENCODER_FILES])),
   outputFileTracingExcludes: {
     "/*": FOREIGN_BINARIES,
     "/**": FOREIGN_BINARIES,
