@@ -69,9 +69,8 @@ export const SHELVES = Object.keys(ROUTES) as readonly Shelf[];
 
    B-12 and the Contract: unchanged, so existing shared links keep
    working. This author cannot read the three components that
-   declare them, so both readings were taken from
-   `docs/architecture/seams.md` (SEAM-02 `:298`, SEAM-08 `:592`,
-   SEAM-15 `:224`) and then CHECKED AGAINST THE CODE by the
+   declare them, so both readings were taken from the frontend's
+   seam notes and then CHECKED AGAINST THE CODE by the
    orchestrator, which read the three declarations and confirmed
    them element-wise (D-260-12):
 
@@ -80,8 +79,8 @@ export const SHELVES = Object.keys(ROUTES) as readonly Shelf[];
        VocabularyBrowser.tsx:227 ["q","kind","origin"]
 
    That check mattered and is not ceremony: CLAUDE.md's rule is that
-   the code wins over a document, and `seams.md` IS stale elsewhere
-   on these very rows — SEAM-02 lists `sort = recency | downloads |
+   the code wins over a document, and those notes WERE stale elsewhere
+   on these very rows — they listed `sort = recency | downloads |
    votes`, two of which are exactly what
    `autonomy-surfaces.test.ts` exists to forbid.
 

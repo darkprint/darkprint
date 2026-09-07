@@ -1,6 +1,6 @@
 /* ============================================================
    T280 implementer's scratch harness for the blueprint star route
-   — not the criterion suite (docs/ORCHESTRATION.md, Agent A).
+   — not the criterion suite.
 
    ── The shared-client injection, and why it is asserted rather
       than trusted ──

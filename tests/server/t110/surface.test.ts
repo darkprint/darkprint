@@ -114,7 +114,7 @@ describe("T110 surface: read off disk, so an absent member says so", () => {
     } catch (cause) {
       throw new Error(
         `${BARREL} cannot be read.\n` +
-          `  backend.md §T110 owns \`lib/server/lineage/**\` and publishes "Barrel: ` +
+          `  T110 owns \`lib/server/lineage/**\` and publishes "Barrel: ` +
           `\`@/lib/server/lineage\`". This is the module being absent, which is the failed ` +
           `acceptance criterion and not a broken test.\n` +
           `  Cause: ${String(cause)}`,
@@ -159,7 +159,7 @@ describe("T110 surface: read off disk, so an absent member says so", () => {
     expect(
       offending,
       `The barrel names a \`Fork\` on ${offending.length} line(s):\n  ${offending.join("\n  ")}\n` +
-        `  backend.md §T110: "there is no \`Fork\` type and no second list ` +
+        `  T110's contract: "there is no \`Fork\` type and no second list ` +
         `(\`lib/data/bundles.ts:1-28\`)", and that file's own header makes the same argument — ` +
         `"\`forkedFrom\` is one optional field on the same row every other bundle uses".\n` +
         `  \`forkBundle\` and \`forksOf\` are not matched by this cell: it looks for \`Fork\` as a ` +
@@ -170,7 +170,7 @@ describe("T110 surface: read off disk, so an absent member says so", () => {
 
 describe("T110 surface: the rulings this suite was written under", () => {
   /**
-   * Not a claim about the implementation. Nine places where `backend.md` was silent were charged
+   * Not a claim about the implementation. Nine places where the contract was silent were charged
    * before, and while, this suite was written, and answered on 2026-08-23 —
    * six at dispatch and three as D-110-09/10/11, and several cells turn on
    * an answer rather than on the block. This cell fails if a ruling is ever edited out of

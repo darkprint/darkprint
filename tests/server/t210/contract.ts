@@ -121,7 +121,7 @@ export function loadTerms(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${TERMS} does not load.\n` +
-          "  backend.md §T210 owns `lib/server/terms/**` and publishes `usageOf` and " +
+          "  T210 owns `lib/server/terms/**` and publishes `usageOf` and " +
           "`candidates` from the barrel `@/lib/server/terms`.\n" +
           "  This is the MODULE failing to load, NOT a member being absent: the two produce " +
           "different reds on purpose. Before reading it as a missing export, check whether " +

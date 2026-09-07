@@ -1,6 +1,6 @@
 /* ============================================================
    DarkPrint implementer's scratch harness for `releaseFiles.readme`
-   — not the criterion suite (docs/ORCHESTRATION.md, Agent A).
+   — not the criterion suite.
    T261's blind suite already drives the file LIST and the
    counter pair from its own fixture; this file exists for the one
    field that suite cannot see, the README text the blueprint page

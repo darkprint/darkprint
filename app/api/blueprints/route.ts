@@ -1,6 +1,6 @@
 /* ============================================================
    GET /api/blueprints
-   The gallery's list (SEAM-01). Every response here is B-03's
+   The gallery's list. Every response here is B-03's
    envelope at 200; nothing on this route can 404, because "no
    blueprints you may see" is an empty list and not a failure.
 

@@ -12,9 +12,6 @@ import { cx } from "@/lib/format";
 import { ContentRow } from "@/components/ui/ContentRow";
 import { PHASE_ORDER, phaseLabel } from "@/components/ui/PhaseCoverage";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-02) (cited at line 93): GET /api/blueprints?q&tag&cat&phase&autonomy&df&forks&sort
-
 /**
  * How the grid is ordered.
  *

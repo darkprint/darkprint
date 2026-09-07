@@ -69,7 +69,7 @@ beforeAll(async () => {
    load a `DROP DATABASE` crossed 10s and all four database files here reported
    `Hook timed out in 10000ms`. Two consequences, and the second is the one that matters: a
    failed hook runs no test, so it adds NOTHING to the failed-test column and a handoff
-   reading the total would call a red run green (backend.md, "read the exit code and the
+   reading the total would call a red run green ("read the exit code and the
    failed-file count, never the test total"); and a teardown that times out never drops its
    scratch database, so the harness itself becomes the residue. `testTimeout` is already 20s
    for the same reason one level up. */

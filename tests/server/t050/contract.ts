@@ -8,7 +8,7 @@
    GIVEN, and read: `lib/db/schema.ts`, the barrels of
    `lib/server/{naming,policy,http,auth,registry}`, `tests/support/**`,
    the merged blind suites under `tests/server/t0NN/`,
-   `docs/architecture/routes.md`, `lib/data/account.ts`, `lib/types.ts`.
+   `lib/types.ts`.
 
    T050's OWN, and never opened: `lib/server/accounts/**`,
    `app/api/account/**`, the branch `feat/t050-accounts`.
@@ -18,8 +18,8 @@
    sit in T050's `Owns`, so T050 may rewrite them; a suite written
    against today's source of a file its own task is allowed to
    change is bound to a shape nobody promised to keep. Their
-   contract is taken from `docs/architecture/routes.md:55-58` and
-   T000's AC3 instead.
+   contract is taken from the route table quoted below and T000's
+   AC3 instead.
 
    ── the message pins are LITERALS ──
    Every expected string in this file is written out and never
@@ -41,10 +41,6 @@
            `email`. The cell this file left empty is now asserted in
            `visibility.test.ts` — a tolerance would have outlived the
            ambiguity, and there is no longer an ambiguity to outlive.
-
-   `docs/architecture/seams.md` published a CONTRADICTING second
-   reading of these routes and is marked superseded above its own
-   rows. Nothing here binds to it. The contract wins.
 
    ── what remains unasserted, and why ──
    The **store-fault message form**. Reported as D-50-08 and ruled
@@ -93,7 +89,7 @@ export function loadAccounts(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${ACCOUNTS} does not load.\n` +
-          `  backend.md §T050 owns \`lib/server/accounts/**\` and publishes \`upsertFromGitHub\`, ` +
+          `  T050 owns \`lib/server/accounts/**\` and publishes \`upsertFromGitHub\`, ` +
           `\`getAccount\`, \`getPublicAuthor\`, \`updateProfile\`, \`changeHandle\`, \`setEmail\` ` +
           `and \`setDefaultVisibility\` from the barrel \`${ACCOUNTS}\`.\n` +
           `  This is a failed acceptance criterion — the accounts module is absent — and not a ` +
@@ -107,7 +103,7 @@ export function loadAccounts(): Promise<Namespace> {
 
 /* --------------------- what the contract publishes --------------------- */
 
-/** The Published signatures block of backend.md §T050, quoted so a red says where a name comes from. */
+/** The Published signatures block of T050's contract, quoted so a red says where a name comes from. */
 export const PUBLISHED = {
   upsertFromGitHub:
     "upsertFromGitHub(db: Db, input: { githubId: string; githubLogin: string }): Promise<{ accountId: string; handle: string | null }>",
@@ -488,12 +484,6 @@ export async function rejection(call: Promise<unknown>, where: string): Promise<
      PATCH /api/account/default-visibility { visibility }
                                            -> 200 AccountRecord | 400 401 403
 
-   `docs/architecture/seams.md` carried a contradicting second
-   reading — `{ ok, verificationSent }` payloads, a `DELETE
-   /api/account` that is T120's, a `GET /api/auth/me` the tree
-   never had — and is marked superseded above its own rows.
-   Nothing here reads it.
-
    `PATCH /api/account/handle` is the ONE write route that accepts
    a `handle: null` session, because it is the route that allocates
    the first one and requiring a handle to reach it makes AC1
@@ -575,7 +565,7 @@ export function routeTable(): DiscoveredRoute[] {
   if (found.length === 0) {
     throw new Error(
       `No route file exists under \`app/api/account/\`.\n` +
-        `  backend.md §T050 publishes five: ${ROUTE_NAMES.map(
+        `  T050's contract publishes five: ${ROUTE_NAMES.map(
           (n) => `${ROUTES[n].method} ${ROUTES[n].path}`,
         ).join(", ")}\n` +
         `  The tree is walked, not guessed, so this is a failed acceptance criterion rather ` +

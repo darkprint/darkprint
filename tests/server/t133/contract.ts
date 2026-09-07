@@ -5,7 +5,7 @@
    and this is `.ts`, so nothing here runs on its own.
 
    ── what binds, and where every name came from ──
-   `backend.md` §T133 now carries a **Published signatures** block
+   T133's contract carries a **Published signatures** block
    (D-133-01, ruled 2026-08-22), so every name this suite expects is
    quoted in `PUBLISHED` below with the clause that published it. It
    was written after the charge that the block was missing, which is
@@ -50,7 +50,7 @@ export type Row = Record<string, unknown>;
 export type Query = (sql: string, params?: readonly unknown[]) => Promise<Row[]>;
 
 /**
- * `backend.md` §T133's Published signatures block and the two rulings under it, quoted so
+ * T133's Published signatures block and the two rulings under it, quoted so
  * a red says where a name comes from rather than merely that a test wanted it. Nothing
  * outside this object is a name this suite is entitled to expect.
  */

@@ -6,12 +6,9 @@ import { useRouter } from "next/navigation";
 import { cx } from "@/lib/format";
 import { nodeHref } from "@/lib/href";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-118 LIVE: POST /api/cards/{id}/fork — one card version copied into the caller's own
-// namespace, answering `{ card: CardRecord }`. It is not folded into SEAM-70, which is the
-// bundle fork: the two verbs take different bodies, refuse for six different reasons and
-// land on different addresses, so one row could not describe both without describing
-// neither.
+// POST /api/cards/{id}/fork copies one card version into the caller's own namespace and
+// answers `{ card: CardRecord }`. It is a separate verb from the bundle fork: the two take
+// different bodies, refuse for six different reasons and land on different addresses.
 
 /**
  * What a caller hands over to make this control live. Absent, it draws switched off.
@@ -53,11 +50,6 @@ export interface CardFork {
  * `components/bundle/BundleHeader.tsx` holds the pattern this copies: an additive prop swaps
  * a switched-off control for a working one, so the page renders honestly both before the
  * route exists and after.
- *
- * `components/blueprint/ForkAction.tsx` in its `kind="node"` mode used to stand in this
- * slot. It was a dropdown that explained what forking would mean and pointed at the
- * download, which was the right thing to draw while there was no fork at all and the wrong
- * thing beside a working Fork button. That branch is deleted now that the route exists.
  */
 export function CardForkButton({ fork }: { fork?: CardFork }) {
   /* The switched-off branch returns before a single hook is called, which is why this

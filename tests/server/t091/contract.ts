@@ -8,7 +8,7 @@
    ── the partition, and what this author has not read ──
    This suite is written blind against `lib/server/export/**`,
    which is T091's to extend and this author's to leave unopened.
-   Everything below is bound from backend.md §T091's Published
+   Everything below is bound from T091's Published
    signatures block and from code that already SHIPS on `backend`.
    The barrel under test is loaded dynamically, for the reason
    t090/contract.ts states: a static top-level import of an absent
@@ -28,8 +28,8 @@
    Nothing in this suite writes a byte of the container format.
    Every planted artefact goes in through `persistArtefacts` and
    every expectation about what a reader should find comes back
-   out through `decodeArtefacts`/`selectArtefact`. backend.md
-   §T091: the format "is T100's and is NOT this task's to
+   out through `decodeArtefacts`/`selectArtefact`. T091's
+   contract: the format "is T100's and is NOT this task's to
    redefine". A suite that hand-rolled the JSON would be a second
    author of a format that is supposed to have one, and would keep
    passing on the day T100 changed it.
@@ -66,7 +66,7 @@ export function loadExport(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${EXPORT} does not load.\n` +
-          `  backend.md §T091 owns \`lib/server/export/**\` as an EXTENSION — the barrel already ` +
+          `  T091 owns \`lib/server/export/**\` as an EXTENSION — the barrel already ` +
           `ships \`exportRelease\`, \`serveFile\`, \`serveCard\` and \`recordDownload\` from T090, ` +
           `so a module that does not load at all is a regression in the merge rather than an ` +
           `unbuilt criterion.\n` +
@@ -81,7 +81,7 @@ export function loadExport(): Promise<Namespace> {
 /* --------------------- what the contract publishes --------------------- */
 
 /**
- * backend.md §T091's Published signatures block, quoted verbatim, at `743865b`.
+ * T091's Published signatures block, quoted verbatim, at `743865b`.
  *
  * **`743865b` and not `e5ca6f6`, and the difference is this suite's own first finding.** The
  * block as first published had two wrong codec lines: `decodeArtefacts` dropped `| undefined`,
@@ -125,7 +125,7 @@ export const NO_SUCH_FILE = "serveFile: no such file in this release.";
 /**
  * Bind one published name, or throw naming the clause that published it.
  *
- * No fallback and no synonym: backend.md's own rule is that "where a signature is left open,
+ * No fallback and no synonym: the rule is that "where a signature is left open,
  * the test author reports it rather than resolving it — a candidate list papers over the gap
  * and then resolves to whichever name happens to exist first". T000 paid two rounds for the
  * alternative.
@@ -136,7 +136,7 @@ export function requiredFn(mod: Namespace, name: keyof typeof PUBLISHED): Unknow
     const exported = Object.keys(mod).sort().join(", ");
     throw new Error(
       `${EXPORT} exports no function \`${name}\`.\n` +
-        `  backend.md §T091 (${CONTRACT_SHA}) Published signatures: ${PUBLISHED[name]}\n` +
+        `  T091 (${CONTRACT_SHA}) Published signatures: ${PUBLISHED[name]}\n` +
         `  It exports: ${exported === "" ? "(nothing)" : exported}\n` +
         `  Bind this name rather than adding a synonym: the contract is what two agents who ` +
         `cannot see each other converge on.`,
@@ -152,7 +152,7 @@ export function requiredFn(mod: Namespace, name: keyof typeof PUBLISHED): Unknow
  *
  * The oracle for every "the frozen bytes are what came back" assertion, and it is deliberately
  * the SHIPPED decoder rather than a reimplementation. Two reasons, and the second is the one
- * that matters: a hand-rolled reader here would be a second author of a format backend.md says
+ * that matters: a hand-rolled reader here would be a second author of a format the contract says
  * has one, and — since this suite plants its artefacts through `persistArtefacts` — a private
  * codec at both ends would be a closed loop that agreed with itself and with nothing else.
  */
@@ -199,7 +199,7 @@ export function asServedFile(value: unknown, what: string): Served {
   if (value === null || typeof value !== "object") {
     throw new Error(
       `${what} answered ${describeValue(value)}.\n` +
-        `  backend.md §T090: interface ServedFile { path: string; bytes: Uint8Array; ` +
+        `  T090's contract: interface ServedFile { path: string; bytes: Uint8Array; ` +
         `contentType: string }`,
     );
   }
@@ -211,7 +211,7 @@ export function asServedFile(value: unknown, what: string): Served {
   if (!(file.bytes instanceof Uint8Array)) {
     throw new Error(
       `${what} carries \`bytes\` as ${describeValue(file.bytes)}.\n` +
-        `  backend.md §T090 publishes \`bytes: Uint8Array\`, and D-90-04 has a route write them ` +
+        `  T090's contract publishes \`bytes: Uint8Array\`, and D-90-04 has a route write them ` +
         `to a response body as the file's own bytes. The frozen container stores \`text\` as a ` +
         `string, so forwarding the codec's string unconverted is the specific way this task can ` +
         `get the type wrong — and every text comparison in this suite would still pass.`,

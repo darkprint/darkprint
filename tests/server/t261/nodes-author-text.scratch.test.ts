@@ -57,7 +57,7 @@ vi.mock("next/headers", () => ({
 /* `CardForkButton`'s live arm reads `useRouter()` at render, and the App Router context
    only exists inside a Next request, so the page throws on the way in without this. The
    card fork route landed 2026-09-06 and the page passes the control unconditionally, which
-   is what put a hook in this render path where `ForkAction` had held none.
+   is what put a hook in this render path where the fork explainer had held none.
 
    Same shape and same reasoning as the `next/headers` stub above, and the same stub
    `components/profile/owned-visibility.test.ts` uses for `DeleteBundleControl`. It answers

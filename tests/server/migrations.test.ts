@@ -30,7 +30,7 @@ import {
    the protocol allows.
 
    ── this file owns its database ──
-   The test-isolation rule in `backend.md` §T000: "The database is
+   The test-isolation rule (T000): "The database is
    addressed by name. A test needing a clean one creates and drops
    its own. AC1's 'empty database' means one the test itself created,
    never the shared development database."
@@ -61,7 +61,7 @@ import {
    ============================================================ */
 
 /**
- * `backend.md`: "the tables every later task extends". Ten at T000, eight since 2026-09-05.
+ * "The tables every later task extends". Ten at T000, eight since 2026-09-05.
  *
  * `ontology_version` and `ontology_term` were dropped by `0009_drop_ontology_versioning` on
  * the owner's instruction: DarkPrint's vocabulary names what an Attractor node IS, Attractor
@@ -204,8 +204,8 @@ function db(): Promise<Db> {
           `connected to "${String(where?.name)}" instead.\n` +
           `  the contract publishes: ${PUBLISHED.createDbClient}\n` +
           `  A client that ignores the connection string it is handed puts this file back ` +
-          `on the shared database, which is what the test-isolation rule in backend.md ` +
-          `§T000 forbids and what dropped another suite's tables mid-run in round 2.`,
+          `on the shared database, which is what the test-isolation rule forbids and what ` +
+          `dropped another suite's tables mid-run once already.`,
       );
     }
 

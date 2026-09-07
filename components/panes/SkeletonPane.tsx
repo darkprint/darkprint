@@ -165,8 +165,8 @@ export function SkeletonPane({
   onSelectAbsence: (absenceId: string) => void;
   /**
    * Blueprint detail page's merged panel: the focused card's ref becomes a real
-   * `<Link>` to that card's own `/nodes/<id>` page, via the same `nodeHref` helper
-   * `BundlePanel` uses for its own per-card links. Off by default, because a card is only
+   * `<Link>` to that card's own `/nodes/<id>` page, via the shared `nodeHref` helper.
+   * Off by default, because a card is only
    * linkable when it is published: `SynchronisedPanes` switches it on for the archive's
    * merged panel, where every card has its own `/nodes/<id>` page, and the default is what
    * any caller drawing cards that are not in the registry needs. `/build` was that caller

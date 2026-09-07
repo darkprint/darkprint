@@ -185,7 +185,7 @@ describe("a well-formed submission answers 200 with the module's own payload", (
    ============================================================ */
 
 describe("POST /api/validate/bundle turns `vocabulary` source into `extensions`", () => {
-  /* SEAM-30 sends `vocabulary?: **string**` and `validateBundle` takes
+  /* The upload flow sends `vocabulary?: **string**` and `validateBundle` takes
      `extensions?: readonly OntologyTerm[]`. The route is the only place that join happens, and
      it is the only part of D-40-02's ruling that no module test can reach.
 

@@ -4,7 +4,7 @@
    Not a test file (the vitest glob reaches `.test.ts` only).
 
    Everything here is built in memory and nothing is persisted:
-   backend.md §T025's Out of scope line is "storing anything; this
+   T025's Out of scope line is "storing anything; this
    is a pure service the three stores call". So there is no database
    to create or drop, no object store, and no shared `darkprint`
    database anywhere near this suite.

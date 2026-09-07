@@ -160,7 +160,7 @@ export function loadRegistry(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${REGISTRY} does not load.\n` +
-          `  backend.md §T081 publishes three names from this barrel: ` +
+          `  T081 publishes three names from this barrel: ` +
           `${Object.keys(PUBLISHED_T081).join(", ")}.\n` +
           `  This is a failed acceptance criterion, not a broken test. The specifier is a ` +
           `literal so the \`@\` alias resolves.`,
@@ -194,7 +194,7 @@ function requireFrom(mod: Namespace, name: string, clause: string): unknown {
 /* --------------------- what T081 publishes --------------------- */
 
 /**
- * backend.md §T081's Published signatures block, quoted so a red says where the name comes
+ * T081's Published signatures block, quoted so a red says where the name comes
  * from rather than only that a test wanted it.
  */
 export const PUBLISHED_T081 = {
@@ -213,7 +213,7 @@ export type PublishedT081Name = keyof typeof PUBLISHED_T081;
 export const T081_NAMES = Object.keys(PUBLISHED_T081) as PublishedT081Name[];
 
 /**
- * The readers backend.md §T080's Published signatures block names, and the only surface
+ * The readers T080's Published signatures block names, and the only surface
  * AC2's "every published read wraps" can mean. Quoted rather than re-derived, so a red
  * against this list is a disagreement with a published block.
  *
@@ -265,7 +265,7 @@ export const PUBLISHED_READERS = {
   usersOfMany:
     "usersOfMany(db: Db, actor: Actor, cardIds: readonly string[]): " +
     "Promise<ReadonlyMap<string, readonly BlueprintSummary[]>>",
-  /* T280's two (backend.md §T280): the owner-shelf reader over `bundle` directly, drafts
+  /* T280's two: the owner-shelf reader over `bundle` directly, drafts
      included, and the draft shell for the detail page's zero-release branch. Both bypass
      the snapshot on purpose — its release-skip is the public shelf's contract. */
   ownedBundles:
@@ -587,7 +587,7 @@ export function routeTable(): readonly DiscoveredRoute[] {
   if (found.length === 0) {
     throw new Error(
       `No route file exists under app/api/{${OWNED_API_TREES.join(",")}}/**.\n` +
-        `  backend.md §T081 owns those three trees and AC4 quantifies over "all eleven routes".\n` +
+        `  T081 owns those three trees and AC4 quantifies over "all eleven routes".\n` +
         `  Nothing here binds a file path: the routes are discovered, so this says the read API ` +
         `is absent rather than that a guessed path is wrong.`,
     );

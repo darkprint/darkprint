@@ -1,6 +1,6 @@
 /**
  * T280 implementer's scratch coverage of the notes routes — run by the implementer only,
- * does not count as verification (docs/ORCHESTRATION.md, Agent A). `lib/server/notes`'s own
+ * does not count as verification. `lib/server/notes`'s own
  * published surface is measured directly by `lib/server/notes/notes.db.scratch.test.ts`;
  * this file measures the six route files that sit on top of it — the owner/slug-to-bundle-id
  * bridge, the session gates, the query-string cursor, and the `problem+json` shapes — none of

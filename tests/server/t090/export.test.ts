@@ -58,7 +58,7 @@ beforeAll(async () => {
  * a scratch database (close the pool, open an admin pool, `drop database … with (force)`) crosses
  * that under the parallel worktree load this repository runs at. When it does, the run reports
  * `Tests 75 passed (75)` with two FAILED FILES and exit 1, because a hook that fails runs no
- * test and adds nothing to the failed column. That is backend.md's "read the exit code and the
+ * test and adds nothing to the failed column. That is the rule "read the exit code and the
  * failed-file count, never the test total", arriving in this suite's own teardown; it was found
  * by the falsification harness refusing to measure against an unclean baseline.
  */
@@ -82,7 +82,7 @@ async function exportFrom(
   if (!Array.isArray(files)) {
     throw new Error(
       `${EXPORT}'s \`exportRelease\` returned ${show(files)}.\n` +
-        `  backend.md §T090: ${PUBLISHED.exportRelease}\n` +
+        `  T090's contract: ${PUBLISHED.exportRelease}\n` +
         `  \`ExportedFile\` is \`lib/content/bundle-export.ts\`'s own — ` +
         `\`{ path: string; text: string }\` — and the contract says that module's decision is ` +
         `"consumed, never restated".`,
@@ -135,7 +135,7 @@ describe("AC1 — the file list equals what public/bundles/<slug>/ holds today, 
   it("covers all nine bundles the archive ships", () => {
     /* A guard on the loop above rather than on the implementation. If `public/bundles/` ever held
        three directories the nine `it`s would silently become three and AC1 would report green
-       over a third of its domain — backend.md's "the reachable set is the coverage claim". */
+       over a third of its domain — "the reachable set is the coverage claim". */
     expect(shippedSlugs().length).toBe(9);
     expect(archive().map((entry) => entry.slug).sort()).toEqual([...shippedSlugs()]);
   });
@@ -145,7 +145,7 @@ describe("AC1 — the file list equals what public/bundles/<slug>/ holds today, 
 
 describe("AC2 — two exports of one release are byte-identical", () => {
   /*
-   * backend.md §T090 states in as many words why the naive form of this criterion cannot fail:
+   * T090's contract states in as many words why the naive form of this criterion cannot fail:
    * "Generation is pure and sorted upstream. So the criterion tests two calls through
    * `exportRelease`, and the way to fail it is to add anything time-, order- or
    * environment-dependent at this layer — a timestamp in `README.md`, a `Map` iterated by

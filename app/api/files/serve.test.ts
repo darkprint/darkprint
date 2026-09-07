@@ -1,6 +1,6 @@
 /**
  * Scratch coverage of the route layer's own decisions, run by the implementer only —
- * does not count as verification (docs/ORCHESTRATION.md, Agent A).
+ * does not count as verification.
  *
  * In-process: no database, no network, no scratch anything. It drives `respondWithFile`
  * with a stub lookup, which is the whole point — the classification D-90-A got wrong is a

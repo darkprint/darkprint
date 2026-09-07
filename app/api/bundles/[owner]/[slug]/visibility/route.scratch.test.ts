@@ -1,6 +1,6 @@
 /**
  * Scratch coverage of `PATCH /api/bundles/[owner]/[slug]/visibility`, run by the
- * implementer only — does not count as verification (docs/ORCHESTRATION.md, Agent A).
+ * implementer only — does not count as verification.
  * Same DATABASE_URL-swap pattern as `app/api/files/routes.scratch.test.ts` and the
  * sibling `app/api/bundles/draft/route.scratch.test.ts`.
  */

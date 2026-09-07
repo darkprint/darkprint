@@ -1,6 +1,6 @@
 /* ============================================================
    GET /api/cards
-   The node library (SEAM-07). `cards()` and not `latestCards()`:
+   The node library. `cards()` and not `latestCards()`:
    the published shape is every indexed version, and which of them
    a page shows is the page's decision.
    ============================================================ */

@@ -59,7 +59,7 @@ import { SEVERITY_META } from "@/components/ui/severity";
  * at build time and arrives as plain data. Every import from the engine is type-only,
  * so none of it is pulled into the browser bundle.
  *
- * **PROJECT.md §3.1, the length pass.** This panel was the longest prose block on a
+ * **The length pass.** This panel was the longest prose block on a
  * blueprint page, and the complaint it answers is that a reader gives up before the
  * download. Two rules governed the cut and are worth stating, because the obvious way
  * to shorten an explainability panel is the one that breaks it:
@@ -73,8 +73,7 @@ import { SEVERITY_META } from "@/components/ui/severity";
  *   find-in-page. Anything about *this blueprint* stays in the open.
  *
  * The criteria diagnostics used to render twice on the page, here and again in the
- * sidebar's validation notes. They render here only now; `BundlePanel` counts them and
- * links up to this section. See `app/blueprints/[slug]/page.tsx` for the split.
+ * sidebar's validation notes. They render here only now.
  */
 
 /* --------------------- shared presentation --------------------- */
@@ -99,7 +98,7 @@ function tier(weight: number): { glyph: string; color: string } {
 /**
  * The engine's remediation advice on a row, folded.
  *
- * PROJECT.md §3.1. A finding's *working* is the marker, the node, the weight on the
+ * A finding's *working* is the marker, the node, the weight on the
  * ledger and the sentence the engine wrote about it, and all of that stays in the open.
  * The hint is what to do next, which is 24 to 55 words a reader who is deciding whether
  * to download the bundle does not need and an author fixing it does. Measured on the
@@ -140,7 +139,7 @@ function Hint({ text }: { text: string }) {
  * The severity the engine gave a diagnostic, as a word.
  *
  * `components/ui/severity.ts` records why this is not optional: the glyph and the word
- * both carry the meaning, and the colour is decoration. PROJECT.md §3.1 routed the
+ * both carry the meaning, and the colour is decoration. The length pass routed the
  * criteria notes out of the sidebar's `DiagnosticList` and into this panel, and the
  * replacement rows printed an `aria-hidden` glyph alone — so the word "warning", which
  * was on all nine blueprint pages, was on none of them. A screen-reader user got no
@@ -843,7 +842,7 @@ function CriteriaIsolation({
         </span>
       </div>
 
-      {/* PROJECT.md §3.1. The principle stays in the open, because it is what the state
+      {/* The principle stays in the open, because it is what the state
           token beside it means. What the analyzer looks for is reference depth about the
           check rather than about this blueprint, so it sits behind a disclosure: still
           prerendered, still keyboard-reachable, still found by find-in-page. */}
@@ -903,7 +902,7 @@ function CriteriaIsolation({
           </p>
         )}
 
-        {/* PROJECT.md §3.1. Eight of the nine bundles land here, and the block ran to
+        {/* Eight of the nine bundles land here, and the block ran to
             about 180 words on every one of them. The headline and the fact that nothing
             is charged stay in the open, because those are the two things a reader who
             has just read the ledger needs. The engine's own message and hint, and the
@@ -1070,7 +1069,7 @@ function CriteriaIsolation({
             </h5>
             <span className="font-mono text-[11px] text-dim">{relayed.length}</span>
           </div>
-          {/* PROJECT.md §3.1 cut the feedback-against-gaming distinction from here on the
+          {/* The length pass cut the feedback-against-gaming distinction from here on the
               grounds that the engine writes it into the hint on every row of this list.
               It does, and the same pass folded every hint into a closed disclosure, so
               the distinction left the page: it is the reason the walk stopping here
@@ -1101,7 +1100,7 @@ function CriteriaIsolation({
               the entry: the engine writes the same thing into the hint on every row of
               the list above, and every one of those hints is behind a closed disclosure.
               Delete this and the distinction between feedback and gaming leaves the
-              visible page entirely, which is PROJECT.md §3.1's failure exactly.
+              visible page entirely, which is exactly the failure the length pass guards against.
 
               So it moves rather than goes. Above the list it was a preamble a reader had
               to get through before the findings; below it, it is the footnote that says
@@ -1178,8 +1177,8 @@ function SecurityPanel({
           >
             ▸
           </span>
-          {/* `components/blueprint/BundlePanel.tsx` links this id, so it needs the same
-              offset every other anchor target on the site carries (`anchors.test.ts`). */}
+          {/* This id is a link target, so it needs the same offset every other anchor
+              target on the site carries (`anchors.test.ts`). */}
           <h3 id="security-explained" className={cx("scroll-mt-24", LABEL)}>
             Static risk exposure, what it gets to touch
           </h3>

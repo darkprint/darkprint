@@ -92,7 +92,7 @@ function databaseUrlFor(name: string): string {
   if (!base) {
     throw new Error(
       "DATABASE_URL is not set. Run `docker compose up -d` and `set -a; . ./.env.example; set +a` " +
-        "first — backend.md records that every DATABASE_URL failure in this run has been an unset " +
+        "first — every DATABASE_URL failure in this run so far has been an unset " +
         "shell rather than a defect.",
     );
   }

@@ -26,8 +26,8 @@
    write outside the task's `Owns` set, and both are worth a red.
 
    ── two tiers of binding, and why the lists shrank ──
-   `backend.md` now carries a **Published signatures** block for
-   T000, and the rule above it: "every task's Contract section states
+   T000's contract carries a **Published signatures** block, and
+   the rule above it: "every task's Contract section states
    the exact exported signatures of its public surface". So a name
    the contract publishes is bound *exactly* and its absence is a
    red — `required` and `requiredFn` below, whose message quotes the
@@ -55,7 +55,7 @@
    `BindingError`, and it is a broken test rather than a red.
 
    ── why nothing here reads `tests/support/**` ──
-   The environment contract in `backend.md` puts that directory on
+   The environment contract put that directory on
    the implementation branch, which this worktree cannot see. An
    import of it would fail on the path rather than on the thing under
    test, which is the one failure mode the protocol rejects.
@@ -82,7 +82,7 @@ export class BindingError extends Error {
     super(
       `${message}\n` +
         `  This is a broken test, not a failed acceptance criterion. Fix the candidate ` +
-        `list, not the implementation, and amend the T000 log in backend.md with the name.`,
+        `list, not the implementation.`,
     );
     this.name = "BindingError";
   }
@@ -131,7 +131,7 @@ function describe(value: unknown): string {
 }
 
 /**
- * The Published signatures block of `backend.md` §T000, quoted so a red says where the
+ * The Published signatures block of T000's contract, quoted so a red says where the
  * name comes from and not merely that a test wanted it. These are the whole of the named
  * surface; anything not here is still unnamed and still goes through a candidate list.
  */
@@ -160,8 +160,8 @@ export function required(mod: Namespace, name: string, source: string, clause: s
     `${source} exports no \`${name}\`.\n` +
       `  the contract publishes: ${clause}\n` +
       `  found: ${exported}\n` +
-      `  This is a failed acceptance criterion, not a naming difference. backend.md's ` +
-      `T000 Published signatures block names this export exactly, and the rule above it ` +
+      `  This is a failed acceptance criterion, not a naming difference. T000's ` +
+      `Published signatures block names this export exactly, and the rule above it ` +
       `("the contract must name the interface, not only the behaviour") exists because ` +
       `two rounds of candidate lists each resolved to the wrong thing. Do not add a ` +
       `synonym to a list here; publish the name the contract states.`,

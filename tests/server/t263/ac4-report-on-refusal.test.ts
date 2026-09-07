@@ -6,7 +6,7 @@
    today for a bundle that cannot publish. The control lives on the
    `submitted` screen and the Publish button is `disabled={blocked}`,
    so such a bundle never reaches the screen the download is on; and
-   SEAM-32 withholds the report unless
+   the upload flow withholds the report unless
    `blueprint && analysis && !hasErrors`, where `hasErrors` is
    `lib/core/diagnostics.ts:220-222`, `ds.some(d => d.severity ===
    "error")` — the plain count.
@@ -21,10 +21,10 @@
 
    **So AC4 mandates a behaviour change rather than a
    non-regression**, and the reason it is the right change is
-   SEAM-32's error-state column: the report states outright when
+   the report's own error-state rule: the report states outright when
    autonomy and risk were NOT computed rather than omitting the
    headings and letting the omission read as a pass. One consequence
-   travels with it — SEAM-69 says the success screen "hands over
+   travels with it — the publish flow says the success screen "hands over
    `REPORT.md` instead", and once publishing is real there is no
    "instead" left.
 

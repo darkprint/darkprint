@@ -33,7 +33,7 @@ describe("the barrel", () => {
     const mod = await loadSearch();
     expect(
       Object.keys(mod).length,
-      `${SEARCH} loaded but exports nothing. backend.md §T200 publishes ` +
+      `${SEARCH} loaded but exports nothing. T200's contract publishes ` +
         `${PUBLISHED_NAMES.join(", ")} through this barrel.`,
     ).toBeGreaterThan(0);
   });
@@ -93,7 +93,7 @@ function barrelSource(): { path: string; text: string } {
     entries = readdirSync(SEARCH_DIR);
   } catch (cause) {
     throw new Error(
-      `lib/server/search/ does not exist. backend.md §T200 owns it and publishes the barrel ` +
+      `lib/server/search/ does not exist. T200 owns it and publishes the barrel ` +
         `\`${SEARCH}\`.`,
       { cause },
     );
@@ -124,7 +124,7 @@ describe("the two published types are re-exported from the barrel", () => {
       expect(
         statements.some((line) => named.test(line)),
         `${barrel.path} exports no \`${name}\`.\n` +
-          `  backend.md §T200 publishes \`interface Hit<T> { item: T; evidence: readonly ` +
+          `  T200's contract publishes \`interface Hit<T> { item: T; evidence: readonly ` +
           `string[] }\` and \`interface Results<T> { hits: readonly Hit<T>[]; facets: ` +
           `Record<string, readonly string[]>; ordered: boolean }\` in the same block as the ` +
           `four functions, and every consumer named under Blocks — T220, T260, T261 — has ` +

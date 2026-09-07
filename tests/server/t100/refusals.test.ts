@@ -91,7 +91,7 @@ describe("T100 AC1 — an unresolved node is refused as unfinished, with its cou
     expect(
       refusal.kind,
       `AC1: the refusal carries kind ${JSON.stringify(refusal.kind)}.\n` +
-        `  backend.md §T100: a bundle with unresolved nodes is refused as \`unfinished\`, and ` +
+        `  T100's contract: a bundle with unresolved nodes is refused as \`unfinished\`, and ` +
         `"a generic refusal satisfies 'is refused' and loses the sentence the UI needs".\n` +
         `  Message was: ${refusal.message}`,
     ).toBe("unfinished");

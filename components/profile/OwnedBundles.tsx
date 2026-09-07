@@ -46,7 +46,7 @@ export interface OwnedRow {
 }
 
 /**
- * SEAM-67's address for one row, built in the one place this shelf builds it.
+ * The visibility route's address for one row, built in the one place this shelf builds it.
  *
  * Exported so a cell can pin the address without a live request: `api` reaches `fetch` and
  * never reaches the markup, so no render of this list can see where a segment points.

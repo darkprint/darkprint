@@ -4,7 +4,7 @@
    "A card version whose bump is too small aborts the whole
    publish, bundle included."
 
-   backend.md §T100 calls this "the criterion that makes this a
+   T100's contract calls this "the criterion that makes this a
    transaction and not a sequence", and names the discriminating
    shape outright: publish a bundle whose SECOND card fails its
    chain check and assert that **the first card is not stored

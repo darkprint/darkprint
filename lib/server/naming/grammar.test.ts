@@ -1,6 +1,6 @@
 /**
  * Scratch coverage for the pure half, run by the implementer only — does not count
- * as verification (docs/ORCHESTRATION.md, Agent A). No database: everything here is
+ * as verification. No database: everything here is
  * reachable without one, and putting it behind `skipIf(!DATABASE_URL)` would make a
  * pure guard silently unrun in a worktree with no compose stack.
  */

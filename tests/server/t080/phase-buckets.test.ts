@@ -105,7 +105,7 @@ describe("AC3 an undeclared phase is an empty bucket, not a 404", () => {
     const answered = await bucket(arbitrary);
     expect(
       answered,
-      `backend.md §T080: "AC3's empty bucket is a fact about the index, not a 404 … stated ` +
+      `T080's contract: "AC3's empty bucket is a fact about the index, not a 404 … stated ` +
         `because 'returns an empty list, not a 404' is the kind of clause an implementation ` +
         `satisfies for the *known* phases and fails for an arbitrary string." ` +
         `${JSON.stringify(arbitrary)} is that arbitrary string.`,
@@ -157,7 +157,7 @@ describe("AC3 an undeclared phase is an empty bucket, not a 404", () => {
 describe("AC4 the buckets cover cards() without partitioning it", () => {
   it("covers without partitioning: some card is in several buckets and some card is in none", async () => {
     /* The arithmetic is asserted against the archive in `build-parity.test.ts` and not
-       here. backend.md: "AC4's inequality is a property of the DATA, not of the
+       here. The contract: "AC4's inequality is a property of the DATA, not of the
        implementation … one card in two buckets and one in none cancel exactly", so the sum
        on a small fixture says nothing about the reader. What holds universally is the two
        exhibits, and the two structural facts they stand for: the union of the buckets is a

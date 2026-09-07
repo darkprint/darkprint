@@ -4,7 +4,7 @@
    Not a test file: `vitest.config.ts` collects `tests/**\/*.test.ts`
    and this is `.ts`, so nothing here runs on its own.
 
-   Three rules from `backend.md` shape everything below.
+   Three rules from the contract shape everything below.
 
    1. **The Published signatures block is binding.** T010 names five
       functions and two record shapes. This file binds to those exact
@@ -42,7 +42,7 @@ export type Row = Record<string, unknown>;
 export type Query = (sql: string, params?: readonly unknown[]) => Promise<Row[]>;
 
 /**
- * `backend.md` §T010's Published signatures block, quoted so a red says where a name
+ * T010's Published signatures block, quoted so a red says where a name
  * comes from rather than merely that a test wanted it. Nothing outside this object is
  * a name this suite is entitled to expect.
  */
@@ -161,8 +161,8 @@ export function requiredFn(mod: Namespace, name: string, source: string, clause:
       `${source} exports no \`${name}\`.\n` +
         `  the contract publishes: ${clause}\n` +
         `  found: ${exported}\n` +
-        `  This is a failed acceptance criterion, not a naming difference. backend.md's ` +
-        `T010 Published signatures block names this export exactly. Do not add a synonym ` +
+        `  This is a failed acceptance criterion, not a naming difference. T010's ` +
+        `Published signatures block names this export exactly. Do not add a synonym ` +
         `to a list here; publish the name the contract states.`,
     );
   }

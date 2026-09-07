@@ -1,6 +1,6 @@
 /**
  * Scratch coverage of `app/api/bundles/[owner]/[slug]/{fork,forks,drift}/**`, run by the
- * implementer only — does not count as verification (docs/ORCHESTRATION.md, Agent A).
+ * implementer only — does not count as verification.
  *
  * ── why one file, sitting under `fork/` ──
  * The three routes are one wire surface over one lineage operation — fork it, list who forked

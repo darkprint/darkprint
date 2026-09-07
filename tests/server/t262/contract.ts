@@ -5,7 +5,7 @@
    and this module is imported by the suites beside it.
 
    ── what this author could and could not see ──
-   GIVEN, and read: `backend.md`'s §T260-§T263 and every `D-263-NN`
+   GIVEN, and read: the contract's §T260-§T263 and every `D-263-NN`
    ruling; `vitest.config.ts`; `tests/server/contract.ts`;
    `tests/error-hygiene.test.ts`; the merged blind suites under
    `tests/server/t0NN/`.

@@ -136,7 +136,7 @@ describe("T170 D-13 — `NoteStoreError`'s message form is a literal, built here
     expect(
       err.message,
       `D-WAVE-04 publishes the form \`<operation>: the notes store failed.\` — quoted from ` +
-        `backend.md and never imported from the module, because an expectation built from ` +
+        `the contract and never imported from the module, because an expectation built from ` +
         `the module under test asserts only that the module agrees with itself.`,
     ).toBe(noteStoreFailedMessage("postNote"));
   });

@@ -79,8 +79,8 @@ export interface ProfileRecord {
   validated: number;
   /**
    * At most two, in the order the account chose, **filtered to the pins this ACTOR can
-   * resolve** — refs, never resolved items (D-131-04; SEAM-55's `PinnedItem[]` is a frontend
-   * view shape and is superseded here, as SEAM-52/53's `ProfileView` was at D-130-05).
+   * resolve** — refs, never resolved items (the frontend's `PinnedItem[]` is a view shape
+   * and is superseded here, as its `ProfileView` was).
    *
    * A pin whose target no longer resolves is ABSENT rather than null (AC3,
    * `components/profile/load.ts:182-190`), and so is one at a target this actor may not see

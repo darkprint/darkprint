@@ -27,7 +27,7 @@ import type { BundleManifest } from "@/lib/server/types";
 import { AUTONOMY_BLURB } from "@/lib/format";
 import type { Author, Blueprint, BlueprintAnalysisView } from "@/lib/types";
 
-// SEAM-01/SEAM-02 LIVE: the shelf is read from search (T200) and the registry (T080) rather
+// The shelf is read from search and the registry rather
 // than from `content/` at build time. The merged route is `GET /api/search/blueprints`; this
 // page consumes the MODULE rather than the route (D-260-13).
 

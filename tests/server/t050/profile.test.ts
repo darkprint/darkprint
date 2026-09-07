@@ -27,7 +27,7 @@
 
    ── email is UNVERIFIED and nothing here pretends otherwise ──
    D-50-12: "nothing sends a verification, so no validity claim is
-   made or tested." seams.md's `verificationSent` was dropped for
+   made or tested." The mock's `verificationSent` was dropped for
    being a field that would be a lie. So this file asserts that an
    address round-trips and that an empty one is refused, and
    asserts nothing whatever about whether the address is real.

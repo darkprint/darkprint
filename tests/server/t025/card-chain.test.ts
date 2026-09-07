@@ -128,7 +128,7 @@ describe("checkDeclaredBump: `subject` picks the code, and the function owns the
       expect(ds.length).toBe(1);
       expect(
         ds[0].code,
-        `backend.md §T025 maps \`subject\` to the code; "${subject}" is ${SUBJECT_CODES[subject]}`,
+        `T025's contract maps \`subject\` to the code; "${subject}" is ${SUBJECT_CODES[subject]}`,
       ).toBe(SUBJECT_CODES[subject]);
       expect(ds[0].severity).toBe("error");
     },

@@ -164,7 +164,7 @@ describe("T230 the owned route tree", () => {
     expect(
       discovered().map((r) => r.pattern),
       `No route file exists under \`${OWNED_TREE}/**\`.\n` +
-        `  backend.md §T230's \`Owns\` names that tree, and nothing here binds a path — the ` +
+        `  T230's \`Owns\` names that tree, and nothing here binds a path — the ` +
         `routes are discovered, so this says the owned tree is unserved rather than that a ` +
         `guessed path is wrong.\n` +
         `  F-230-B: the section publishes no URL, method, request body or response shape for ` +

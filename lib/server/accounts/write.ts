@@ -137,7 +137,7 @@ export function shapeProfilePatch(
 }
 
 /**
- * The three fields `/settings`' Public profile section edits (SEAM-44).
+ * The three fields `/settings`' Public profile section edits.
  *
  * A key absent from `patch` leaves its column alone; a key present and `null` clears
  * it. An empty patch is a no-op that answers the current record rather than an error
@@ -183,7 +183,7 @@ export async function setEmail(
 }
 
 /**
- * What a new bundle defaults to (SEAM-48). Checked at runtime although the parameter
+ * What a new bundle defaults to. Checked at runtime although the parameter
  * is typed to two literals: the type is a promise the compiler keeps for TypeScript
  * callers, and the caller that matters is a route holding a parsed JSON body, where
  * the value is whatever was sent.

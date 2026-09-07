@@ -21,15 +21,11 @@
    the isolation rule the shared database cannot: nothing in this
    suite ever opens `DATABASE_URL` itself.
 
-   Two places in the tree say the opposite and are stale rather than
-   wrong-headed — `backend.md`'s T000 environment contract ("Agent
-   B's tests ... must not import anything under `tests/support/**`,
-   which does not exist on the test branch") and `tests/support/
-   env.ts`'s own header ("Not for `tests/server/**`"). Both were
-   written when the directory did not exist on a test branch. It is
-   on `backend` now and this worktree is rebased on `backend`, so
-   the broken-import hazard they were written against is gone.
-   Reported to the orchestrator rather than silently reconciled.
+   `tests/support/env.ts`'s header once said the opposite ("Not for
+   `tests/server/**`"), written when the directory did not exist on
+   a test branch. It is on `backend` now and this worktree is rebased
+   on `backend`, so the broken-import hazard it was written against
+   is gone.
    ============================================================ */
 
 import { getTableConfig } from "drizzle-orm/pg-core";
@@ -43,7 +39,7 @@ export type UnknownFn = (...args: unknown[]) => unknown;
 export type Row = Record<string, unknown>;
 
 /**
- * `backend.md` §T020's Published signatures block, quoted so a red says where a name comes
+ * T020's Published signatures block, quoted so a red says where a name comes
  * from and not merely that a test wanted it. Nothing outside this object is a name this
  * suite is entitled to expect.
  */
@@ -129,7 +125,7 @@ function requiredFn(mod: Namespace, name: string, clause: string): UnknownFn {
       `@/lib/server/cards exports no \`${name}\`.\n` +
         `  the contract publishes: ${clause}\n` +
         `  found: ${exported}\n` +
-        `  This is a failed acceptance criterion, not a naming difference. backend.md's T020 ` +
+        `  This is a failed acceptance criterion, not a naming difference. T020's ` +
         `Published signatures block names this export exactly. Do not add a synonym to a list ` +
         `here; publish the name the contract states.`,
     );

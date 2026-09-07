@@ -68,7 +68,7 @@ export class AccountError extends Error {
    * undefined })` still *installs* `cause`, because the spec installs on `HasProperty`
    * rather than on the value — so every instance would answer true to
    * `hasOwnProperty("cause")` and a test checking a cause is present would be a guard
-   * that cannot fail (`backend.md`, T030's `expectCausePresent`).
+   * that cannot fail.
    */
   constructor(message: string, cause?: unknown) {
     super(message, cause === undefined ? undefined : { cause });

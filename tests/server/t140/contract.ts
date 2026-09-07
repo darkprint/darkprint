@@ -5,11 +5,11 @@
    and this module is imported by the suites beside it.
 
    ── what this author could and could not see ──
-   GIVEN, and read: `backend.md`'s whole preamble and its §T140,
+   GIVEN, and read: the contract's whole preamble and its §T140,
    §T050, §T060, §T081 and §T005; `lib/db/schema.ts`; the barrels of
    `lib/server/{policy,http,auth,db,naming,archive,cards,ontology}`;
    `tests/support/**`; the merged blind suites under
-   `tests/server/t0NN/`; `docs/architecture/{seams,routes}.md`.
+   `tests/server/t0NN/`.
 
    T140's OWN, and never opened: `lib/server/saves/**`,
    `app/api/account/saves/**`, the branch `feat/t140-saves`. Its
@@ -77,10 +77,10 @@
              ONTOLOGY VERSION, not visibility. Cards ask *visible*
              and terms ask *exists*, and the asymmetry is deliberate.
 
-   D-140-04  `seams.md`'s SEAM-61/62 rows are SUPERSEDED and the
+   D-140-04  The frontend's saves rows are SUPERSEDED and the
              route surface is OWED before either half builds against
              it. So there is no route cell anywhere in this suite and
-             nothing binds to that document. The route half of T140
+             nothing binds to the mock. The route half of T140
              is held by nothing, which is D-70-12's shape named
              before the round rather than found in one.
 
@@ -161,7 +161,7 @@ export function loadSaves(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${SAVES} does not load.\n` +
-          `  backend.md §T140 owns \`lib/server/saves/**\` and publishes \`listSaves\`, ` +
+          `  T140 owns \`lib/server/saves/**\` and publishes \`listSaves\`, ` +
           `\`saveTarget\`, \`unsaveTarget\`, \`countSaves\` and \`migrateLocalSaves\` from the ` +
           `barrel \`${SAVES}\`.\n` +
           `  This is a failed acceptance criterion — the saves module is absent — and not a ` +
@@ -176,7 +176,7 @@ export function loadSaves(): Promise<Namespace> {
 /* ============================================================
    What the contract publishes, quoted verbatim
 
-   The Published signatures block of backend.md §T140, so a red
+   The Published signatures block of T140's contract, so a red
    says where a name comes from rather than merely that a test
    wanted it.
    ============================================================ */
@@ -319,7 +319,7 @@ function requireFrom(mod: Namespace, name: string, clause: string): unknown {
     `${SAVES} exports no \`${name}\`.\n` +
       `  the contract publishes: ${clause}\n` +
       `  found: ${exported}\n` +
-      `  This is a failed acceptance criterion, not a naming difference. backend.md's §T140 ` +
+      `  This is a failed acceptance criterion, not a naming difference. T140's ` +
       `Published signatures block names this export exactly, and "the contract must name the ` +
       `interface, not only the behaviour" is why. Do not add a synonym here; publish the name ` +
       `the contract states.`,
@@ -902,7 +902,7 @@ export function absentUuid(): string {
 
    Four routes over ONE request shape, and that shape is
    `saveTarget`'s own `target` parameter, so the route translates
-   nothing. `SEAM-61`/`SEAM-62`'s compound key space is WITHDRAWN
+   nothing. The frontend's compound key space is WITHDRAWN
    rather than mapped, and nothing in this suite has ever bound to
    it.
 

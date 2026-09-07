@@ -1,6 +1,6 @@
 /**
  * Scratch coverage for the two routes D-70-03 published, run by the implementer only —
- * does not count as verification (docs/ORCHESTRATION.md, Agent A). Colocated under
+ * does not count as verification. Colocated under
  * `app/api/names/**`, which is T070's `Owns` and which `vitest.config.ts` began
  * collecting for exactly this: "four tasks own route files under `app/` and any
  * colocated test beside one was never going to be collected".

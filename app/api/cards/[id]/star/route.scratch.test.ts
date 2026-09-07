@@ -1,6 +1,6 @@
 /* ============================================================
    T280 implementer's scratch harness for the card star route —
-   not the criterion suite (docs/ORCHESTRATION.md, Agent A). See
+   not the criterion suite. See
    the blueprint star route's own scratch harness for why the
    shared-client slot is asserted by identity rather than trusted:
    this route writes too, against the same `getSharedDbClient()`.

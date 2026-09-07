@@ -13,12 +13,6 @@ import type { AccountRecord } from "@/lib/server/accounts";
 import { cx } from "@/lib/format";
 import { SIGN_IN_PROVIDERS } from "@/components/auth/SignInButtons";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-42 is LIVE: GET /api/account behind the session cookie, GET /api/auth/github/login
-// to start the OAuth dance, POST /api/auth/logout to end it. The planned shapes were
-// `POST /api/auth/session`, `DELETE /api/auth/session` and `GET /api/auth/me`; none of the
-// three was built under those names and all three are answered by the routes above.
-
 /* ============================================================
    Five targets, not seven. Four since the ontology fold, and the count is left in the
    heading rather than quietly corrected because what this docblock argues is the SHAPE:

@@ -124,7 +124,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
  * clause: `pg` sends `text` as UTF-8, an unpaired surrogate has no UTF-8 encoding, and it is
  * **silently replaced with U+FFFD**. The write SUCCEEDS carrying bytes the caller never sent,
  * and the account is later shown a label it did not choose. T010's D-12 is the same hazard
- * at a slug, recorded in `backend.md` before this file existed.
+ * at a slug.
  *
  * So the two clauses are not one clause with two spellings: a NUL is refused loudly by the
  * driver and a surrogate is accepted quietly by it. **The second is the one that needs a

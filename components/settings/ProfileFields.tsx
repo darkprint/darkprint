@@ -3,9 +3,6 @@
 import { avatarGradient } from "@/lib/format";
 import { Field } from "./controls";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-44 is LIVE: PATCH /api/account/profile, sent by `AccountForm` on Save.
-
 /* ============================================================
    §01's three fields and the preview they drive.
 

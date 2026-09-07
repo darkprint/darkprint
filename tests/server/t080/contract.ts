@@ -73,7 +73,7 @@ export function loadRegistry(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${REGISTRY} does not load.\n` +
-          `  backend.md §T080 owns \`lib/server/registry/**\` and publishes thirteen readers: ` +
+          `  T080 owns \`lib/server/registry/**\` and publishes thirteen readers: ` +
           `${READER_NAMES.join(", ")}.\n` +
           `  This is a failed acceptance criterion — the read model is absent — and not a ` +
           `broken test. The specifier is a literal so the \`@\` alias resolves.`,
@@ -87,7 +87,7 @@ export function loadRegistry(): Promise<Namespace> {
 /* --------------------- what the contract publishes --------------------- */
 
 /**
- * The Published signatures block of backend.md §T080, quoted so a red says where the name
+ * The Published signatures block of T080's contract, quoted so a red says where the name
  * comes from and not merely that a test wanted it. `BlueprintSummary` and `CardSummary`
  * replace `lib/core`'s `BlueprintRecord`/`CardVersionRecord` throughout the block per
  * D-80-01, and `scoresOf` is the thirteenth reader added by D-80-02b.
@@ -331,7 +331,7 @@ function routeTable(): DiscoveredRoute[] {
   if (found.length === 0) {
     throw new Error(
       `No route file exists under app/api/{${OWNED_API_TREES.join(",")}}/**.\n` +
-        `  backend.md §T080 owns those three trees and D-80-02 publishes eleven routes in ` +
+        `  T080 owns those three trees and D-80-02 publishes eleven routes in ` +
         `them, "because two acceptance criteria live only there".\n` +
         `  This is a failed acceptance criterion — the read API is absent — and not a ` +
         `broken test. Nothing here binds a file path: the routes are discovered.`,

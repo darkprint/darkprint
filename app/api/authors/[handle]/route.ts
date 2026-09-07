@@ -1,8 +1,7 @@
 /* ============================================================
    GET /api/authors/[handle]
    Published by D-130-05: `200 ProfileRecord | 404`, and nothing
-   else. The public author surface behind `/u/[username]`
-   (SEAM-52/53, whose `ProfileView` shape the contract supersedes).
+   else. The public author surface behind `/u/[username]`.
 
    ── Why the 404 is built here and not raised in the module ──
    D-130-02. `getProfile` answers `undefined` for an unknown

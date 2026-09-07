@@ -2,8 +2,8 @@
    DarkPrint backend — B-14's download event, delegated
    "Downloads are counted by an explicit event at the serving
    edge, never derived from logs." This is that edge. The event
-   itself is now `@/lib/server/counters`', which is what
-   **SEAM-19's `TODO` asked for and this file discharges**: it
+   itself is now `@/lib/server/counters`', which is what this
+   file's own earlier `TODO` asked for and this file discharges: it
    read *"written here rather than through
    `@/lib/server/counters` because T150 is unmerged, and a dynamic
    `import()` specifier resolves at compile time, so importing an

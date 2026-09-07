@@ -121,7 +121,7 @@ describe("AC1 — readPersisted reads back what persistArtefacts froze", () => {
         got,
         `${EXPORT}'s \`readPersisted\` answered ${describeValue(got)} for \`${file.path}\` at a ` +
           `digest whose object was written by \`persistArtefacts\` one line earlier.\n` +
-          `  backend.md §T091 (${CONTRACT_SHA}): ${PUBLISHED.readPersisted}\n` +
+          `  T091's contract (${CONTRACT_SHA}): ${PUBLISHED.readPersisted}\n` +
           `  \`undefined\` here is the pre-persistence answer, and this release is not one: the ` +
           `object is present and holds this exact path.`,
       ).toBeInstanceOf(Uint8Array);

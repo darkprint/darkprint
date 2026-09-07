@@ -65,7 +65,7 @@ describe("T080 published signatures", () => {
     const searchShaped = Object.keys(mod).filter((name) => /search|rank|query/i.test(name));
     expect(
       searchShaped,
-      `backend.md §T080 Out of scope: "semantic search (T200)". \`lib/core\`'s \`Registry\` ` +
+      `T080's Out of scope line: "semantic search (T200)". \`lib/core\`'s \`Registry\` ` +
         `declares \`searchCards\`; the Published signatures block leaves it out on purpose.`,
     ).toEqual([]);
   });

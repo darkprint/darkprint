@@ -30,7 +30,7 @@
    not public.
 
    ── one tier of binding, and no candidate list at all ──
-   `backend.md` §T060 carries a Published signatures block, and the
+   T060's contract carries a Published signatures block, and the
    rule above it: "every task's Contract section states the exact
    exported signatures of its public surface". `can` and `visibleTo`
    are therefore bound *exactly*, and their absence is a red whose
@@ -109,7 +109,7 @@ export function loadPolicy(): Promise<Namespace> {
 }
 
 /**
- * The Published signatures block of `backend.md` §T060, quoted so a red says where the name
+ * The Published signatures block of T060's contract, quoted so a red says where the name
  * comes from and not merely that a test wanted it. This is the whole of the named surface.
  */
 export const PUBLISHED = {
@@ -137,7 +137,7 @@ export function required(mod: Namespace, name: string, clause: string): unknown 
     `@/lib/server/policy exports no \`${name}\`.\n` +
       `  the contract publishes: ${clause}\n` +
       `  found: ${exported}\n` +
-      `  This is a failed acceptance criterion, not a naming difference. backend.md's T060 ` +
+      `  This is a failed acceptance criterion, not a naming difference. T060's ` +
       `Published signatures block names this export exactly, and the rule above it ("the ` +
       `contract must name the interface, not only the behaviour") exists because two rounds ` +
       `of candidate lists in T000 each resolved to the wrong thing. Do not add a synonym to ` +

@@ -1,7 +1,7 @@
 /* ============================================================
    DarkPrint backend — blueprint bump: brute-force oracle
 
-   backend.md T025, round 6. `worstPairing` and `worstStranded` both
+   `worstPairing` and `worstStranded` both
    claim exactness by an "any single choice is achievable" argument
    rather than an exhaustive search — this file is the exhaustive
    search, kept as a permanent regression test rather than one

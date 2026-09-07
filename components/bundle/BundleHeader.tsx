@@ -9,15 +9,6 @@ import { MetaPill } from "@/components/ui/MetaPill";
 import { ForkButton } from "@/components/bundle/ForkButton";
 import { blueprintHref } from "@/lib/href";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-20 LIVE (T280): the Star control (`star`) and the Fork button (`fork`, SEAM-70) each
-// take an additive prop below. Absent, each draws the same pill switched off, with a `title`
-// naming what is not stored yet.
-// SEAM-57 (watch) is no longer anchored here. The owner asked the Watch pill off this band
-// on 2026-09-06; the seam is still LIVE and `components/profile/ProfileHeader.tsx` still
-// mounts a Watch control over it, so the route is unchanged and only this file's stake in
-// it is gone.
-
 /* ============================================================
    The band a bundle opens with: who owns it, what it is called, where it came from.
 

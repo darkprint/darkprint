@@ -103,7 +103,7 @@ describe("T240 AC1 — one call, one row, and the row is the one that was asked 
     expect(
       totalAdded(added),
       `AC1: one \`writeAudit\` call added ${totalAdded(added)} rows (${describeAdded(added)}). ` +
-        `backend.md §T240: "a test asserting a row EXISTS passes when three are written".`,
+        `T240's contract: "a test asserting a row EXISTS passes when three are written".`,
     ).toBe(1);
   });
 

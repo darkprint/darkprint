@@ -151,7 +151,7 @@ describe("AC1 / D-260-05: the shelf is not frozen at the last deploy", () => {
       archive,
       `${ROUTES[shelf]} still imports ${archive.join(", ")}.\n\n` +
         `\`lib/content/read.ts\` walks \`content/\` at BUILD TIME and memoizes at module ` +
-        `scope (SEAM-107), so a route reading it serves whatever was on disk when the ` +
+        `scope, so a route reading it serves whatever was on disk when the ` +
         `deploy was cut. AC1 is the negative about exactly that: a blueprint published ` +
         `after the last deploy appears on this shelf WITHOUT a rebuild.`,
     ).toEqual([]);
@@ -377,9 +377,9 @@ describe("D-260-06: `/blueprints` declines a fork default rather than acquiring 
 describe("AC2: the query keys and the `Clear filters` sets are unchanged", () => {
   /*
    * B-12 and the Contract: unchanged, so existing shared links keep working. The three
-   * cleared sets were taken from `seams.md` and then checked against the three
+   * cleared sets were taken from the frontend's seam notes and then checked against the three
    * declarations by the orchestrator, element-wise (D-260-12) — see `partition.ts`. The
-   * check was not ceremony: `seams.md` is stale on the same rows about `sort`.
+   * check was not ceremony: those notes were stale on the same rows about `sort`.
    *
    * Matched as a SET against every string array in the file rather than by the identifier
    * the component gives it. The criterion is that the set is unchanged; pinning the name

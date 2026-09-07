@@ -131,7 +131,7 @@ describe("T190 surface: the barrel file names what the block publishes", () => {
     expect(
       source,
       `\`${BARREL_FILE}\` does not exist.\n` +
-        `  backend.md §T190 owns \`lib/server/notifications/**\` and names the barrel ` +
+        `  T190 owns \`lib/server/notifications/**\` and names the barrel ` +
         `\`${NOTIFICATIONS}\`.\n` +
         `  This is the blind position: the implementation half has not landed. Every other ` +
         `cell in this suite reds for the same reason, and none of them can distinguish it ` +

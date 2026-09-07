@@ -66,7 +66,7 @@ function databaseUrlFor(name: string): string {
   if (!base) {
     throw new Error(
       "DATABASE_URL is not set. Run `docker compose up -d` and `set -a; . ./.env.example; set +a` " +
-        "first — backend.md records that every DATABASE_URL failure in this run has been an unset " +
+        "first — every DATABASE_URL failure in this run so far has been an unset " +
         "shell rather than a defect.",
     );
   }
@@ -146,7 +146,7 @@ export async function scratchDatabase(tag: string): Promise<Scratch> {
      scenario, it would have been measuring an upstream failure and reporting it as a criterion.
      `openView` merges over `CORE_ONTOLOGY` and reaches no store, so there is no precondition
      left to forget. A2 ("`openView` REQUIRED, T030 joins the composition set") was ruled in a
-     message and never reached `backend.md`; `openView` is still in the composition set and no
+     message and never reached the contract; `openView` is still in the composition set and no
      longer takes a database. */
 
   return {

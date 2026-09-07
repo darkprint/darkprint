@@ -63,7 +63,7 @@ export function loadNaming(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${NAMING} does not load.\n` +
-          `  backend.md §T070 owns \`lib/server/naming/**\` and publishes \`checkHandle\`, ` +
+          `  T070 owns \`lib/server/naming/**\` and publishes \`checkHandle\`, ` +
           `\`allocateHandle\`, \`releaseHandle\`, \`checkSlug\`, \`isReservedSlug\`, ` +
           `\`validateCardId\` and \`validateNamespace\`, from the barrel \`@/lib/server/naming\`.\n` +
           `  This is a failed acceptance criterion — the namespace module is absent — and not a ` +
@@ -77,7 +77,7 @@ export function loadNaming(): Promise<Namespace> {
 
 /* --------------------- what the contract publishes --------------------- */
 
-/** The Published signatures block of backend.md §T070, quoted so a red says where the name comes from. */
+/** The Published signatures block of T070's contract, quoted so a red says where the name comes from. */
 export const PUBLISHED = {
   checkHandle: "checkHandle(db: Db, handle: string): Promise<Availability>",
   allocateHandle: "allocateHandle(db: Db, accountId: string, handle: string): Promise<void>",
@@ -210,7 +210,7 @@ export function asAvailability(value: unknown, where: string): Availability {
  * returns; both error classes are struck. A query asked 'is this available' answers, and one
  * that throws to say 'no' makes its own return type meaningless." So the tolerance is gone and a
  * throw here is a red — keeping it would be a suite carrying a withdrawn clause, which is the
- * exact failure recorded at "Resolving `backend.md`".
+ * exact failure this run has recorded before.
  */
 export async function unavailable(
   call: () => unknown,
@@ -336,7 +336,7 @@ export async function availableNow(call: () => unknown, where: string): Promise<
 /* --------------------- the admissible message forms --------------------- */
 
 /*
- * backend.md §T070, after D-70-01 struck two of the five and D-70-05 added one:
+ * T070's admissible message forms, after D-70-01 struck two of the five and D-70-05 added one:
  *
  *     HandleTakenError      "allocateHandle: the handle `<handle>` is not available."
  *     NamingStoreError      "<operation>: the database call failed."
@@ -440,7 +440,7 @@ export function expectSealedError(
     throw new Error(
       `${where} rejected with\n` +
         `    message  ${JSON.stringify(err.message)}\n` +
-        `  where backend.md §T070's admissible message form for this path is\n` +
+        `  where T070's admissible message form for this path is\n` +
         `    expected ${JSON.stringify(expectation.expectedMessage)}\n` +
         `  The forms were published before the implementation existed, so this is a contract ` +
         `mismatch rather than a wording preference. Note for whoever reads this red: making it ` +

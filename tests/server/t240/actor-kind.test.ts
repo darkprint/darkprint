@@ -2,7 +2,7 @@
    T240 AC2 — an operator action is audited and distinguishable
    from an owner's
 
-   backend.md §T240: "AC2 is `actor_kind`, already in the schema
+   T240's contract: "AC2 is `actor_kind`, already in the schema
    … State it so nobody adds a parallel `isOperator` boolean or
    encodes the distinction in `action` strings."
 
@@ -168,7 +168,7 @@ describe("T240 AC2 — the operator/owner distinction, asserted over the pair", 
       operator.action,
       `AC2: the two rows carry different actions — owner ${JSON.stringify(owner.action)}, ` +
         `operator ${JSON.stringify(operator.action)}.\n` +
-        `  backend.md §T240: nobody may "encode the distinction in \`action\` strings". Both ` +
+        `  T240's contract: nobody may "encode the distinction in \`action\` strings". Both ` +
         `entries named the same action, so both rows must.`,
     ).toBe(owner.action);
 

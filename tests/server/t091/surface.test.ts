@@ -50,7 +50,7 @@ describe("T091 published surface", () => {
     expect(
       fn.length,
       `${EXPORT}'s \`readPersisted\` declares ${fn.length} parameters.\n` +
-        `  backend.md §T091 (${CONTRACT_SHA}): ${PUBLISHED.readPersisted}\n` +
+        `  T091's contract (${CONTRACT_SHA}): ${PUBLISHED.readPersisted}\n` +
         `  The \`path\` argument is the whole reason the container is one object per digest: ` +
         `\`keyForDigest\` refuses anything that is not \`sha256:\` + 64 hex, so a folder cannot ` +
         `be stored file-per-key and the verb has to select WITHIN the object. A two-parameter ` +

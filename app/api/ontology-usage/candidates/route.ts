@@ -7,13 +7,6 @@
    else: AC5 is the eligible SUBSET, and a route that pre-filtered
    would take the thresholds back out of a caller's reach and leave
    `meetsAuthors`/`meetsBlueprints` reading `true` on every row.
-
-   SEAM-18's `GET /api/ontology/promotion-candidates` is STALE in
-   its path — which is T210's Forbidden tree — and in its field
-   names (`distinctAuthors`, `distinctBlueprints`, `eligible`
-   against the block's `authors`, `blueprints`, `meetsAuthors`,
-   `meetsBlueprints`). The block governs; the docs are the
-   orchestrator's to fix.
    ============================================================ */
 
 import { getSharedDbClient } from "@/lib/db";

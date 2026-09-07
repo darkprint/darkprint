@@ -278,8 +278,8 @@ describe("inferBlueprintBump, an ambiguous pairing infers the most expensive pla
         // `worstPairing` alone) and asserting a hidden deletion on top of
         // that would invent structure the multiset does not contain — the
         // same reasoning AC-3 already rests on for the identical-input
-        // case. See backend.md §T025's round-5 Log entry for the traced
-        // example (`[1.1.0,1.0.0] → [rc.1] major` vs `→ [rc.1,rc.1] minor`).
+        // case. The traced example: `[1.1.0,1.0.0] → [rc.1] major` against
+        // `→ [rc.1,rc.1] minor`.
         const rand = mulberry32(seed);
         for (let trial = 0; trial < 200; trial++) {
           const before = randomPins(rand, 1 + Math.floor(rand() * 3));

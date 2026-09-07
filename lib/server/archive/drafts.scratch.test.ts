@@ -1,6 +1,6 @@
 /**
  * Scratch coverage against a real database, run by the implementer only — does not count
- * as verification (docs/ORCHESTRATION.md, Agent A). 0007_drafts (T280): the archive's
+ * as verification. 0007_drafts (T280): the archive's
  * five new columns and its two new owner-only writers, plus the draft-to-publish
  * continuity the contract names by name.
  */

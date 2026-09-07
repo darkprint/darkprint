@@ -1,6 +1,6 @@
 /* ============================================================
    T280 implementer's scratch harness for `serveCardSource` — not
-   the criterion suite (docs/ORCHESTRATION.md, Agent A). `serveCard`
+   the criterion suite. `serveCard`
    is `export.scratch.test.ts`'s AC5, verified against the full
    fixture corpus; this file exists for exactly the one property
    comparison against that suite adds nothing to — **the same

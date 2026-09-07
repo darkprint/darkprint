@@ -6,11 +6,6 @@ import { cx, prettyDate } from "@/lib/format";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-79/SEAM-82 LIVE (T280): GET/POST /api/blueprints/{owner}/{slug}/notes and the card
-// mirror at /api/cards/{id}/notes, plus /{noteId} (PATCH/DELETE) and /{noteId}/vote (POST).
-// `live` below is the wiring; the fixture path underneath it is untouched.
-
 /**
  * Community notes on a blueprint or a card. Two renderers behind one export, chosen by
  * whether `live` is present — the pinned cross-agent interface CONTRACT-FE.md's frontend

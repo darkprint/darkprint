@@ -1,7 +1,3 @@
-
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-18) (cited at line 66): GET /api/ontology/promotion-candidates
-// TODO(SEAM-85) (cited at line 167): GET /api/blueprints/{slug}/cost
 /* ============================================================
    DarkPrint core — the single configuration file
    Doc 1 §11's closing note, taken literally: "Tutte le soglie e i

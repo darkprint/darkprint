@@ -1,6 +1,6 @@
 /* ============================================================
    PUT /api/authors/[handle]/pinned
-   SEAM-55's write, published at D-131-07: `{ pinned: PinnedRef[] }`
+   The pin write: `{ pinned: PinnedRef[] }`
    in, `{ pinned }` out, `200 | 400 | 401 | 404`.
 
    D-130-05 stated this route as BLOCKED rather than omitting it,
@@ -85,7 +85,7 @@ export async function PUT(
         session.accountId,
         pinned as Parameters<typeof setPins>[3],
       );
-      /* Only `pinned` on the wire (SEAM-55), though the verb answers the whole record: this
+      /* Only `pinned` on the wire, though the verb answers the whole record: this
          is the pin surface, and returning a profile from it would give `ProfileRecord` a
          second, differently-shaped home. */
       return ok({ pinned: record.pinned });

@@ -45,9 +45,9 @@ export interface Profile {
   support: number;
   /**
    * How many OTHER accounts' blueprints this handle downloaded, ran, and submitted a run
-   * report for (SEAM-84) that made it onto that blueprint's own evidence layer.
+   * report for that made it onto that blueprint's own evidence layer.
    *
-   * Seeded, same limit as `support` and `watchers`: SEAM-84 has no submission form and no
+   * Seeded, same limit as `support` and `watchers`: run reports have no submission form and no
    * endpoint, so nothing here was ever actually run. This is what an account WOULD have
    * accrued through a run pipeline that does not exist yet, said with the same `◐` marker
    * as everything else on this account panel.

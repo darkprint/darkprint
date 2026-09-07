@@ -18,8 +18,7 @@
    * `CounterTarget` — the shape every function above takes. The
      block writes it inline at each of them, so without a name
      every consumer retypes the union — and **a third naming of the
-     same three kinds is exactly what D-140-04 charged `seams.md`
-     for.**
+     same three kinds is one more place for them to drift.**
    * `CounterTargetKind` — the union itself, for a caller narrowing
      a string before it builds a target.
 

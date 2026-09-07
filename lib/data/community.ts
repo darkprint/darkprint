@@ -11,10 +11,6 @@
 import type { Comment } from "@/lib/types";
 import { AUTHORS } from "./users";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-77): POST /api/blueprints/{slug}/downloads (or derived from access logs)
-// TODO(SEAM-84) (cited at line 30): POST /api/blueprints/{slug}/runs
-
 /**
  * What an opt-in telemetry aggregate has to carry before it means anything (§8).
  *

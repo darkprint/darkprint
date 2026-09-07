@@ -1,6 +1,6 @@
 /**
  * Scratch coverage of `app/api/blueprints/[owner]/[slug]/runs/**`, run by the implementer
- * only — does not count as verification (docs/ORCHESTRATION.md, Agent A).
+ * only — does not count as verification.
  *
  * Same harness as `../votes/votes-routes.scratch.test.ts` and
  * `app/api/bundles/[owner]/[slug]/fork/lineage-routes.scratch.test.ts`: a scratch database

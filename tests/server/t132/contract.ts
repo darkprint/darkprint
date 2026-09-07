@@ -67,7 +67,7 @@ export const REGISTRY = "@/lib/server/registry";
  * The three readers T132 adds to T080's published surface, quoted so a red says where the
  * name comes from and not merely that a test wanted it.
  *
- * `scoresFor` was the one name in this table that backend.md did not pin. D-132-01 wrote it
+ * `scoresFor` was the one name in this table that the contract did not pin. D-132-01 wrote it
  * as "(suggested `scoresFor(db, actor, keys): Promise<ReadonlyMap<string, Scores>>`)", and a
  * grep of the record at `c84db8c` found the string nowhere else — while D-132-03 exists
  * precisely because a name neither half invents has to be written down. Charged before this

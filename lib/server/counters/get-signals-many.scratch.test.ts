@@ -1,6 +1,6 @@
 /* ============================================================
    T280 implementer's scratch harness for `getSignalsMany` — not
-   the criterion suite (docs/ORCHESTRATION.md, Agent A).
+   the criterion suite.
    `counters.db.scratch.test.ts` already covers `getSignals` /
    `toggleStar` / `recordDownload` against their own acceptance
    criteria; this file exists for the one property no single-target

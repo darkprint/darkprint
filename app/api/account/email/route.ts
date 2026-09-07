@@ -1,6 +1,6 @@
 /* ============================================================
    PATCH /api/account/email
-   SEAM-46, superseded — and `verificationSent` is deliberately
+   `verificationSent` is deliberately
    NOT in the response, because nothing sends a verification and
    the field would assert a capability that does not exist.
    `200 AccountRecord | 400 401 403`.

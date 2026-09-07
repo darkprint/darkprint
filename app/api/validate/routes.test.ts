@@ -182,10 +182,9 @@ describe("the three sibling routes", () => {
   });
 
   it("names `source` rather than `text` in its refusal, which is the contract's field", async () => {
-    /* `docs/architecture/seams.md` SEAM-33 publishes `{ text }` for these two routes and the
-       contract publishes `{ source }`. The contract wins, and the marker on that document
-       now says so — but a one-word difference reds a correct implementation, so it is
-       asserted here rather than left to a reader to notice. */
+    /* The frontend mock sent `{ text }` to these two routes and the contract publishes
+       `{ source }`. The contract wins, but a one-word difference reds a correct
+       implementation, so it is asserted here rather than left to a reader to notice. */
     const response = await postCard(
       post({ text: "id: a" }, "http://localhost/api/validate/card"),
     );

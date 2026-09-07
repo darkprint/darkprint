@@ -4,8 +4,8 @@
    `CodeMenu` is a server component and a native `<details>`, and both halves of that are
    load-bearing rather than stylistic. The command, its limit and every file link are in
    the prerendered HTML whether the panel is open or shut, which is the property that makes
-   the sentences below assertable at all: `ForkAction`'s `open && (…)` toggle renders none
-   of its panel into a static string, and no cell can be written over what is not there.
+   the sentences below assertable at all: a panel gated on `open && (…)` renders none of
+   itself into a static string, and no cell can be written over what is not there.
 
    So this renders with `renderToStaticMarkup` — the same idiom as
    `components/blueprint/attractor-compatibility.test.ts` — and reads the markup. Two

@@ -77,7 +77,7 @@ export const T005_TABLES = ["save", "ballot", "note", "note_vote", "run_report",
 export type T005Table = (typeof T005_TABLES)[number];
 
 /**
- * The ten tables T000 shipped, quoted from `backend.md` §T000's own list and from the
+ * The ten tables T000 shipped, quoted from T000's own list and from the
  * `CONTRACT_TABLES` constant in `tests/server/migrations.test.ts`. AC7 is a claim about
  * exactly these.
  */
@@ -100,7 +100,7 @@ export const BASE_MIGRATION_ID = "0001_init";
 /** Clauses quoted so a red says where the requirement comes from, not merely that a test wanted it. */
 export const CONTRACT = {
   tables:
-    "backend.md §T005 Contract: six tables that five already-written contracts require — " +
+    "T005 Contract: six tables that five already-written contracts require — " +
     "save, ballot, note, note_vote, run_report, api_key",
   ac1:
     'AC1 — T140 AC2 "saving one target twice is idempotent" is a unique constraint on ' +
@@ -432,7 +432,7 @@ export function requireT005Shipped(scratch: Scratch): void {
 /* --------------------- what the contract publishes --------------------- */
 
 /**
- * `backend.md` §T005's **Published signatures** block, granted as D-05-03 on the argument
+ * T005's **Published signatures** block, granted on the argument
  * that a task with no exported functions has *identifiers* as its acceptance surface and a
  * raw-SQL test has to type them. Quoted here so a red says where a name comes from rather
  * than merely that a test wanted it.

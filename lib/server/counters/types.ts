@@ -4,8 +4,8 @@
    ship beside it on `@/lib/server/saves`' precedent: the block
    writes `{ kind: "blueprint" | "card" | "term"; refId: string }`
    inline at all three functions, so without a name every consumer
-   retypes the union — and D-140-04 charged `seams.md` for exactly
-   a third naming of these same three kinds.
+   retypes the union, and a third naming of these same three kinds
+   is one more place for them to drift.
    ============================================================ */
 
 /** The three things B-10 counts against. `target_kind` in the schema, and the same three saves take. */

@@ -36,7 +36,7 @@
    `lib/server/export/downloads.ts:40`, published from
    `@/lib/server/export`, called by `serveFile` and `serveCard`, and
    its own header says "fold into T150's counter service once it
-   exists" (TODO(SEAM-19)). §T150 publishes the same name from
+   exists". T150 publishes the same name from
    `@/lib/server/counters`. This suite binds §T150's barrel, because
    that is what the block says; if the implementer re-exports T090's
    function the cells below still pass, and that is a state worth
@@ -78,7 +78,7 @@ export function loadCounters(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${COUNTERS} does not load.\n` +
-          `  backend.md §T150 owns \`lib/server/counters/**\` and publishes \`getSignals\`, ` +
+          `  T150 owns \`lib/server/counters/**\` and publishes \`getSignals\`, ` +
           `\`toggleStar\` and \`recordDownload\` from the barrel \`@/lib/server/counters\`.\n` +
           `  This is the module failing to load, NOT a member being absent — the two produce ` +
           `different reds on purpose. Before reading it as a missing export, check whether the ` +

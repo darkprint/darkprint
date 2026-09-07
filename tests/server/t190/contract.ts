@@ -5,8 +5,8 @@
    and this module is imported by the suites beside it.
 
    ── what this author could and could not see ──
-   GIVEN, and read: `backend.md` §T190 in full with D-190-01..05,
-   §T110, §T050, §T060, §T120, §T005; `lib/data/account.ts`;
+   GIVEN, and read: the contract's §T190 in full with D-190-01..05,
+   §T110, §T050, §T060, §T120, §T005;
    `lib/db/schema.ts`; the barrels of
    `lib/server/{policy,http,auth,archive,publish,lineage,ontology}`;
    `lib/core`'s `canonicalJson` and `contentDigest`; `tests/support/**`;
@@ -117,7 +117,7 @@ export function loadNotifications(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${NOTIFICATIONS} does not load.\n` +
-          `  backend.md §T190 owns \`lib/server/notifications/**\` and publishes ` +
+          `  T190 owns \`lib/server/notifications/**\` and publishes ` +
           `${PUBLISHED_NAMES.join(", ")} from the barrel \`${NOTIFICATIONS}\`.\n` +
           `  This is a failed acceptance criterion — the notifications module is absent — and ` +
           `not a broken test. The specifier is a literal so the \`@\` alias resolves.`,
@@ -151,7 +151,7 @@ export function barrelSource(): string | undefined {
 /* ============================================================
    What the contract publishes, quoted verbatim
 
-   The Published signatures block of backend.md §T190, so a red says
+   The Published signatures block of T190's contract, so a red says
    where a name comes from rather than merely that a test wanted it.
    ============================================================ */
 
@@ -741,7 +741,7 @@ export async function queueRows(scratch: Scratch, accountId?: string): Promise<Q
   } catch (cause) {
     throw new Error(
       `\`notification_queue\` could not be read.\n` +
-        `  backend.md §T190's block publishes it as ` +
+        `  T190's block publishes it as ` +
         `\`notification_queue (id, kind notification_kind, account_id -> account, subject jsonb, ` +
         `subject_digest, delivered_at timestamptz NULL, created_at) UNIQUE (kind, account_id, ` +
         `subject_digest)\`, in migration \`0005_notifications\`.\n` +
@@ -778,7 +778,7 @@ export async function tokenRows(scratch: Scratch, accountId?: string): Promise<T
   } catch (cause) {
     throw new Error(
       `\`unsubscribe_token\` could not be read.\n` +
-        `  backend.md §T190's block publishes it as \`unsubscribe_token (token PK, account_id -> ` +
+        `  T190's block publishes it as \`unsubscribe_token (token PK, account_id -> ` +
         `account, kind, created_at) UNIQUE (account_id, kind)\`, in \`0005_notifications\`.`,
       { cause },
     );

@@ -185,7 +185,7 @@ describe("D-140-07: the four published URLs are served", () => {
   it("two URLs across four routes, and `saves` carries three verbs", () => {
     /*
      * The block publishes GET, POST and DELETE on one path plus POST on a second. Asserted so a
-     * later split into four paths — the shape `seams.md` published and D-140-04 withdrew — reds
+     * later split into four paths — the shape the frontend mock published and D-140-04 withdrew — reds
      * here rather than passing because each route was individually findable.
      */
     expect(servedPatterns()).toEqual(["/api/account/saves", "/api/account/saves/migrate"]);

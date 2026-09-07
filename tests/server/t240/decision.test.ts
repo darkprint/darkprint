@@ -31,7 +31,7 @@
    waiting for an implementation that never sets it.
 
    ── and the distinction may not live in `action` ──
-   backend.md §T240 forbids encoding it in action strings for
+   T240's contract forbids encoding it in action strings for
    `actor_kind`, and the same reasoning binds `decision`: a
    `bundle.publish.denied`/`bundle.publish.failed` pair
    distinguishes the two rows to a human reading the table and to

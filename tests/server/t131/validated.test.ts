@@ -4,7 +4,7 @@
 
    `lib/data/profiles.ts:47-56`: "how many OTHER accounts'
    blueprints this handle downloaded, ran, and submitted a run
-   report for (SEAM-84) that made it onto that blueprint's own
+   report for that made it onto that blueprint's own
    evidence layer."
 
    D-131-06 rules all four points that were open at dispatch, and
@@ -44,7 +44,7 @@
    can express: "that made it onto that blueprint's own evidence
    layer". There is no evidence-layer acceptance state anywhere —
    `EvidenceLayers` reads "no verified runs" on every blueprint and
-   SEAM-86 has no runner — so a row in `run_report` IS an accepted
+   nothing runs anything — so a row in `run_report` IS an accepted
    submission and there is nothing further to filter on. Recorded
    here rather than asserted, because a cell about a state the
    schema cannot hold would be a cell about my reading of a

@@ -1,5 +1,5 @@
 /* ============================================================
-   T-01 (backend.md): a raw NUL byte lands in a test file while
+   T-01: a raw NUL byte lands in a test file while
    someone is writing a fixture for SQLSTATE 22021 — Postgres
    refusing a NUL in `text`. It has now happened three consecutive
    times, in three different tasks, written by three different
@@ -45,8 +45,8 @@ const BINARY = /\.(png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf|eot|pdf|zip
  * `git ls-files` alone was the original and it is one commit too late for the case this guard
  * exists for: a blind test author's entire output is untracked until it commits, so the fifth and
  * sixth recurrences of T-01 both landed in files this check could not see. Found by T090's blind
- * author, which put two NULs in an uncommitted test file and then two more into `backend.md` while
- * writing the Log entry describing the first pair.
+ * author, which put two NULs in an uncommitted test file and then two more into the log entry
+ * describing the first pair.
  *
  * `--others --exclude-standard` adds what is new and not gitignored, which is exactly the window
  * the guard was blind to.

@@ -6,9 +6,6 @@ import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { announceMenuOpened, useCloseWhenAnotherMenuOpens } from "@/components/ui/menu-group";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-23): n/a — CLI, unbuilt
-
 /* ============================================================
    Taking the folder from a terminal — GitHub's "Code ▾", honestly.
 
@@ -41,16 +38,16 @@ import { announceMenuOpened, useCloseWhenAnotherMenuOpens } from "@/components/u
    operable with no code (Enter/Space on the summary, tab into the panel), find-in-page
    reaches the command inside it, and — the reason it is allowed to carry a "not built
    yet" claim at all — the whole panel is in the prerendered HTML whether it is open or
-   shut. `ForkAction` gates its panel on `open && (…)`, so its badge is simply absent from
-   the static markup and no honesty assertion can be written over it. This one is always
-   there, which is the precondition for the ledger entry in
+   shut. A panel gated on `open && (…)` renders none of itself into the static markup, so
+   no honesty assertion can be written over its badge. This one is always there, which is
+   the precondition for the ledger entry in
    `components/site/honesty.test.ts` that holds the CLI's disclaimer in place.
 
    ── Two shapes, one body ──
    `menu` is the dropdown for a header row, where the reader is one click from it. `plain`
-   is the same body with no trigger, for inside `DownloadPanel`, which already sits behind
-   a `<More summary="Download">` — a dropdown inside a disclosure would be two clicks and
-   a floating panel inside a panel.
+   is the same body with no trigger, for inside a panel that already sits behind a
+   disclosure — a dropdown inside a disclosure would be two clicks and a floating panel
+   inside a panel.
    ============================================================ */
 
 /** Which page this renders on, so the copy names the right thing. */
@@ -199,15 +196,14 @@ export function CloneMenu({
         </span>
       </summary>
 
-      {/* `right-0`, where `ForkAction`'s sibling panel is centred, and the difference is
-          measured rather than stylistic. Both triggers sit in a header group the page
-          pushes to the right with `ml-auto … justify-end`, so this one — the last item
-          before the download button — has its right edge at or near the column's right
-          edge at every width. Centring it there is what breaks: at 390px the trigger runs
-          229→366, a centred 358px panel lands 118→476, and 86px of it is off the screen
-          with the body scrolling sideways to reach it. Anchored right, the same panel
-          lands 8→366 and is wholly visible. `ForkAction` is the leftmost of the group and
-          measured the mirror image of this, which is why the two differ.
+      {/* `right-0` rather than centred under the trigger, and the difference is measured
+          rather than stylistic. The trigger sits in a header group the page pushes to the
+          right with `ml-auto … justify-end`, so this one — the last item before the
+          download button — has its right edge at or near the column's right edge at every
+          width. Centring it there is what breaks: at 390px the trigger runs 229→366, a
+          centred 358px panel lands 118→476, and 86px of it is off the screen with the body
+          scrolling sideways to reach it. Anchored right, the same panel lands 8→366 and is
+          wholly visible.
 
           `z-30` rather than `z-20`: if a reader somehow gets both panels open, the one
           they just asked for is the readable one. */}

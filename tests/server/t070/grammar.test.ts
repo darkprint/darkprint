@@ -66,7 +66,7 @@ describe("isReservedSlug: the segments the profile tabs occupy", () => {
     });
   }
 
-  it("covers the two segments backend.md §T070 names, and no others exist to cover", () => {
+  it("covers the two segments T070 names, and no others exist to cover", () => {
     /* A check on `components/profile/tabs.ts` rather than on T070: it states what the loop
        above currently ranges over, so the coverage claim cannot go stale silently. Blueprints
        moved to the segmentless index at T280, so a red here means the tabs changed and §T070's

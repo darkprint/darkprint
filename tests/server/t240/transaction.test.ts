@@ -3,7 +3,7 @@
    partway leaves ONE row saying so, not an `allowed` and an
    `error`
 
-   backend.md §T240 names this as the case AC1 turns on, and
+   T240's contract names this as the case AC1 turns on, and
    D-240-01 makes it drivable from this partition: **`writeAudit`
    handed a transaction handle participates in it**, so an
    operation that fails partway leaves ZERO rows and its caller
@@ -142,7 +142,7 @@ describe("T240 AC1 — `writeAudit` participates in the caller's transaction", (
   });
 
   /**
-   * **AC1's criterion, as backend.md §T240 states it**: "the discriminating case is an
+   * **AC1's criterion, as T240's contract states it**: "the discriminating case is an
    * operation that fails partway, which must write exactly one row saying so rather than
    * one saying `allowed` and another saying `error`."
    *
@@ -195,7 +195,7 @@ describe("T240 AC1 — `writeAudit` participates in the caller's transaction", (
       rows.map((r) => r.decision),
       `AC1: the failed-partway operation left ${rows.length} rows deciding ` +
         `${JSON.stringify(rows.map((r) => r.decision))}.\n` +
-        `  backend.md §T240: it "must write exactly one row saying so rather than one ` +
+        `  T240's contract: it "must write exactly one row saying so rather than one ` +
         `saying \`allowed\` and another saying \`error\`".\n` +
         `  \`["allowed","error"]\` is the failure this cell exists for, and it passes every ` +
         `per-call count — one call, one row, twice.`,

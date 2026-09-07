@@ -1,7 +1,7 @@
 /**
  * Scratch coverage against a real database, run by the implementer only — does not
- * count as verification (docs/ORCHESTRATION.md, Agent A). One case per acceptance
- * criterion in backend.md's T070 section, plus the two things the criteria rest on
+ * count as verification. One case per acceptance
+ * criterion in T070, plus the two things the criteria rest on
  * and do not state: that the derived primary-key constraint name matches a real
  * 23505, and that nothing this module raises leaks anything.
  */
@@ -243,7 +243,7 @@ describe.skipIf(!hasDb)("lib/server/naming", () => {
 
     /* Expected strings are literals. Building them from the module would assert that it
        agrees with itself and would pass unchanged if the template started interpolating
-       a driver value (`backend.md`, the whitelist-enforcement clause). */
+       a driver value. */
     expect(err.message).toBe("allocateHandle: the handle `sealed` is not available.");
     expect(Object.keys(err)).toEqual([]);
     expect(JSON.stringify(err)).toBe("{}");

@@ -8,7 +8,7 @@ import { ENVIRONMENT_VARIABLES, requireEnv } from "./contract";
    T000 — the environment contract
 
    No acceptance criterion covers this, and the goal does: "the
-   local infrastructure both branches run against". `backend.md`
+   local infrastructure both branches run against". The contract
    publishes the eight variables so the implementer and this file
    agree without seeing each other, which makes the list itself a
    thing that can drift.

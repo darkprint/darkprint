@@ -1,7 +1,7 @@
 /**
  * Scratch coverage against the pure function directly, run by the
- * implementer only — does not count as verification (docs/ORCHESTRATION.md,
- * Agent A). No database needed; these are the depth/cycle probes the
+ * implementer only — does not count as verification.
+ * No database needed; these are the depth/cycle probes the
  * adversary ran (C3.6, B2.3, B2.4), reproduced at the same scale.
  */
 import { describe, expect, it } from "vitest";

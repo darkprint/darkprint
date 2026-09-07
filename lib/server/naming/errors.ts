@@ -34,8 +34,8 @@
  * `name` goes on the prototype, never on the instance: `this.name = "..."` in a
  * constructor creates an own **enumerable** property, which would put the class
  * name into `Object.keys(err)` and `JSON.stringify(err)` and break the invariant
- * those two renderings are pinned to (`backend.md`, the whitelist amendment:
- * `Object.keys` empty, `JSON.stringify(err)` exactly `"{}"`).
+ * those two renderings are pinned to (`Object.keys` empty, `JSON.stringify(err)`
+ * exactly `"{}"`).
  */
 function nameOnPrototype(ctor: { prototype: object }, name: string): void {
   Object.defineProperty(ctor.prototype, "name", {
@@ -52,7 +52,7 @@ class NamingError extends Error {
    * undefined })` still *installs* `cause`, because the spec installs on
    * `HasProperty` rather than on the value — so every error would answer true to
    * `hasOwnProperty("cause")` and a test written to check a cause is present would
-   * be a guard that cannot fail (`backend.md`, T030's `expectCausePresent`).
+   * be a guard that cannot fail.
    */
   constructor(message: string, cause?: unknown) {
     super(message, cause === undefined ? undefined : { cause });

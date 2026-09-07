@@ -125,7 +125,7 @@ beforeAll(async () => {
  * a scratch database (close the pool, open an admin pool, `drop database … with (force)`) crosses
  * that under the parallel worktree load this repository runs at. When it does, the run reports
  * `Tests 75 passed (75)` with two FAILED FILES and exit 1, because a hook that fails runs no
- * test and adds nothing to the failed column. That is backend.md's "read the exit code and the
+ * test and adds nothing to the failed column. That is the rule "read the exit code and the
  * failed-file count, never the test total", arriving in this suite's own teardown; it was found
  * by the falsification harness refusing to measure against an unclean baseline.
  */
@@ -352,7 +352,7 @@ describe("AC4 — the export gate admits every shipped bundle's graph", () => {
 
   it("refuses the same release through serveFile too, rather than serving factory.dot from it", async () => {
     /*
-     * Reachable through the published surface, not only through the component. backend.md's
+     * Reachable through the published surface, not only through the component. The
      * contract checklist: "Each criterion reachable through the published surface, not only
      * through a component. AC6 was satisfied by testing `inferOntologyBump` directly while the
      * store's refusal path was unobserved."

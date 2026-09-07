@@ -1,6 +1,6 @@
 /**
  * Scratch coverage against a real database, run by the implementer only — does not count
- * as verification (docs/ORCHESTRATION.md, Agent A). 0007_drafts (T280): `ownedBundles`
+ * as verification. 0007_drafts (T280): `ownedBundles`
  * and `draftBundle`, the profile shelf's and the detail page's readers over `bundle`
  * directly.
  */

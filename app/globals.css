@@ -1026,9 +1026,9 @@ body {
    default, revealed by script — leaves the content invisible whenever the reveal does not
    fire, which is exactly what happened to the first version of `LifecycleStrip`, a
    component no longer in the tree. What wears this today is
-   `components/ui/ReachList.tsx`, `components/explain/WhichTasksGlance.tsx` and
-   `components/explain/ConceptFigures.tsx`, and each of the three restates the contract in
-   its own header. Anything that goes wrong here costs the animation and never the text. */
+   `components/ui/ReachList.tsx` and `components/explain/ConceptFigures.tsx`, and each of
+   the two restates the contract in its own header. Anything that goes wrong here costs the
+   animation and never the text. */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes strip-in {
     from { opacity: 0; transform: translateY(6px); }

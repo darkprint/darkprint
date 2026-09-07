@@ -3,11 +3,6 @@
    Hand a bundle to another handle. `200 BundleRecord | 400 401
    403 404 409 500`.
 
-   Published by D-120-14, which also records that **SEAM-50/51 are
-   STALE** — SEAM-51's path is outside this task's `Owns`
-   entirely — and that the block governs. The `docs/**` fix is the
-   orchestrator's.
-
    `withSession` is the outermost wrapper, and what
    T000's AC3 actually rests on is that it is PRESENT rather than
    that it is outermost — measured, not assumed: swapping the two

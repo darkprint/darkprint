@@ -1,7 +1,7 @@
 /* ============================================================
    DarkPrint backend — archive: published record shapes
-   Mirrors what `addRelease` stores (second amendment, backend.md,
-   T010): the only door T080, T090 and T100 have to a release's
+   Mirrors what `addRelease` stores: the only door T080, T090 and
+   T100 have to a release's
    content, since none of them own `lib/db/schema.ts` and the
    layering rule forbids reaching past this module's own barrel.
    ============================================================ */

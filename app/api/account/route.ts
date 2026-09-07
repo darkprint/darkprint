@@ -1,7 +1,6 @@
 /* ============================================================
    GET /api/account
-   The signed-in account's own record (SEAM-43, superseded there
-   and published in T050's contract). `200 AccountRecord | 401`,
+   The signed-in account's own record. `200 AccountRecord | 401`,
    and the 401 is `withSession`'s — AC5 requires that a request
    with no session receives `problem+json` and never a fixture,
    and a wrapping guard is what makes "the handler never runs"

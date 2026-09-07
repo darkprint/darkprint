@@ -19,9 +19,6 @@ import {
   type TermUsage,
 } from "@/components/ontology/TermTable";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-16) (cited at line 40): GET /api/ontology/terms/{id}
-
 /**
  * One page per term in the vocabulary.
  *

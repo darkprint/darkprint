@@ -62,8 +62,8 @@
    real reports exist, and it is outside this task's `Owns`
    (D-180-01).
 
-   **It imports `lib/server/ballot/**` and `lib/server/counters/**`
-   nowhere**, both Forbidden, and nothing there imports this.
+   **It imports `lib/server/counters/**` nowhere**, and nothing
+   there imports this.
 
    `tests/error-hygiene.test.ts` builds its domain by construction
    over every `lib/server/<module>/index.ts` **on `backend`**, so

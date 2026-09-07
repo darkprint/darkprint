@@ -2,7 +2,7 @@
    The control-character fixtures every task's suite needs, written
    once so that nobody has to type one.
 
-   T-01 (backend.md) has now fired eight times across four authors,
+   T-01 has now fired eight times across four authors,
    every occurrence on the same fixture: someone writing a
    deliberate control character for a SQLSTATE 22021 case types the
    raw byte instead of the escape. It has caught an implementer, a

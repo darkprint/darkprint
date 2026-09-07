@@ -1,6 +1,6 @@
 /* ============================================================
    DarkPrint backend — archive: typed rejections
-   D-13 (backend.md): no rejection this module produces may carry
+   No rejection this module produces may carry
    the failed statement or its bound parameters, whatever its
    SQLSTATE — `DrizzleQueryError.message` opens with the full query
    and every bound parameter, including a losing writer's entire

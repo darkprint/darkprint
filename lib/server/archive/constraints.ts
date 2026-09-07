@@ -1,6 +1,6 @@
 /* ============================================================
    DarkPrint backend — archive: constraint names, derived
-   D-14 (backend.md, round 4): the index names `ArchiveConflictError`'s
+   The index names `ArchiveConflictError`'s
    `kind` depends on were declared in three places — `lib/db/schema.ts`,
    the migration SQL, and a literal in this module — with nothing
    checking them against each other. A rename in the schema would

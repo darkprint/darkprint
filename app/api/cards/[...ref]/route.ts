@@ -9,7 +9,7 @@
    one `owner/name` segment pair, so `berti/solver-a` spans two
    URL segments and `[id]/versions` as a literal folder could not
    express it. The frontend's own `/nodes/[...id]` is a catch-all
-   for that same reason (SEAM-09). The URLs served are exactly the
+   for that same reason. The URLs served are exactly the
    ones published; only the file that serves them is shared.
 
    The dispatch is total rather than heuristic: a pinned ref always

@@ -120,7 +120,7 @@ export interface DraftDetail {
   files: readonly BundleFile[];
   history: readonly HistoryEntry[];
   releases: readonly Release[];
-  /** The rows the `BundlePanel` prints for a bundle the engine has resolved. */
+  /** The summary rows for a bundle the engine has resolved. */
   facts: {
     nodes: number;
     pinnedCards: number;
