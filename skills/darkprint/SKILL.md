@@ -173,7 +173,7 @@ words, and ask:
 
 Recommend one. If they start from it, the rest of the interview is a diff: Phase 2 asks only
 about nodes the task adds or removes, Phase 3 re-runs the ledger over the changed ports, and
-Phase 4 re-asks Q3.2 because it is never inherited. The `README.md` then names the blueprint
+Phase 4 re-asks Q4.2 because it is never inherited. The `README.md` then names the blueprint
 it started from, and the release records the lineage when they publish it as a fork.
 
 **Q1.2, individual cards.** When no blueprint fits but `find_cards` returns a card that does
@@ -214,7 +214,7 @@ yourself:
 | a fixed shell command the runner executes | `shell-tool` | **ask for the exact command**: it goes in `params.tool_command`, and a missing one is `card/missing-field` |
 | a person approving or rejecting | `human-gate` | nothing; the type alone says a person acts here |
 | a person supplying content or data | `human-input` | nothing; same |
-| a switch that only routes | `decision` | guarded edges out of it (Phase 4, Q3.7) |
+| a switch that only routes | `decision` | guarded edges out of it (Phase 4, Q4.7) |
 | a check that produces a verdict with evidence | `validation` | the criteria on an input port, evidence on an output port |
 | the same step run on several inputs at once | `parallel`, then `parallel.fan-in` where the copies rejoin | both nodes, and a card each |
 | a supervisor that polls a sub-run and decides whether to go round again | `manager-loop` | a cap on the loop it supervises |
@@ -407,7 +407,7 @@ identifiers and explain why they differ:
 
 | field | from |
 |---|---|
-| `slug` | the graph name from Q5.2, in card-id grammar; also the folder name and the name they create at `/new` |
+| `slug` | the graph name from Q5.2, in card-id grammar; also the folder name, and the name the first publish creates under their handle |
 | `title` | Q0.1, as a title |
 | `summary` | Q0.1, one sentence. It becomes the compiled pipeline's `goal`, so it is the one line the runner reads |
 | `description` | Q2.1's walk-through, in prose, ending with the edge that is deliberately absent |
@@ -437,9 +437,12 @@ answered**. Ask until all seven of these hold, and not one question longer:
 6. every `shell-tool` has its command;
 7. **Q4.2 has an explicit yes or no.**
 
-The first four and the last are the facts `loadBundle` refuses a bundle over; the fifth and
-sixth are the facts a runner refuses it over. Everything past them is prose, and prose is your
-job.
+The first four and the last are the facts `loadBundle` refuses a bundle over. The fifth is
+refused by nothing: an unguarded fork is legal to every validator, and a runner decides it by
+the spelling of the target ids, which is why it is on this list at all. Only a malformed
+`condition` is refused, as `attractor/condition-syntax`. The sixth fails later still: a
+`shell-tool` without its command loads cleanly and fails the first time the runner reaches it.
+Everything past these seven is prose, and prose is your job.
 
 ## What you write without asking
 
@@ -562,8 +565,12 @@ curl -X POST https://www.darkprint.io/api/bundles \
 
 where `publish.json` is `{ "ownerHandle": "<handle>", "slug": "<slug>", "version": "1.0.0",
 "visibility": "private", "dot": ..., "cardFiles": ..., "manifest": ..., "vocabulary": ... }`.
-The response names the release and its digest. A 401 is a missing or read-only key; a 404
-on a slug the author owns means the slug was never created.
+The response names the release and its digest, and says whether this call created the
+bundle or appended a release to one that existed: a slug never published before is created
+by its first publish, so this path does not need `/new` first. A 401 is a missing or
+read-only key. A 404 never means "no such slug"; it means `ownerHandle` is not a handle the
+key's account holds, which is the same answer for a misspelled handle and for somebody
+else's, on purpose.
 
 Either way, say the rest plainly: this skill wrote the files and checked them. It ran no
 node, and it published nothing itself. What happens to the folder from here is the author's

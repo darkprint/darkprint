@@ -3,14 +3,14 @@
   "archiveRoot": "skills/darkprint",
   "archive": {
     "path": "darkprint.tgz",
-    "bytes": 43893,
-    "sha256": "ed55d4f2a16327a212cbf2b262e6f4eb46d08810fb562eba31333ffb624bee79"
+    "bytes": 44104,
+    "sha256": "f0c6ac331877b596d2e6f6bdca971af519247e62d01051effb9104738c38c52c"
   },
   "files": [
     {
       "path": "SKILL.md",
-      "bytes": 33643,
-      "sha256": "04cae62107863f954f5217d4f7193b9b343b7a132515e770776396b9c933193f"
+      "bytes": 34304,
+      "sha256": "b84c7e81a6bdf42bac6522fd6a5fae1391ceec92f27d0c082b39104e305c61bd"
     },
     {
       "path": "references/card-schema.md",

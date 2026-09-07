@@ -163,6 +163,19 @@ describe("the hand-written references and SKILL.md", () => {
     expect(read(file)).not.toContain("—");
   });
 
+  /**
+   * The questions were renumbered when the phases were, and a cross-reference to a number
+   * that now names a different question misdirects the interview at exactly the point it
+   * is trying to send the agent back to. Every mention has to be a heading.
+   */
+  it("cross-references only questions SKILL.md asks", () => {
+    const skill = read("SKILL.md");
+    const asked = new Set([...skill.matchAll(/\*\*(Q\d+\.\d+)/g)].map((m) => m[1]));
+    expect(asked.size).toBeGreaterThan(20);
+    const mentioned = [...skill.matchAll(/\bQ\d+\.\d+\b/g)].map((m) => m[0]);
+    for (const q of mentioned) expect(asked.has(q), `SKILL.md mentions ${q}, which it never asks`).toBe(true);
+  });
+
   it("names every node type the vocabulary has, in SKILL.md", () => {
     const skill = read("SKILL.md");
     const concrete = CORE_ONTOLOGY.terms.filter(
