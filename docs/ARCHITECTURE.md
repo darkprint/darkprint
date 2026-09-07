@@ -165,6 +165,8 @@ public view; `cookie, refuses anonymous` lets the module answer 401; `anonymous`
 | `/api/ontology/categories`, `/api/ontology/phases`, `/api/ontology/phases/[phase]/cards`, `/api/ontology/tags`, `/api/ontology-usage`, `/api/ontology-usage/candidates` | GET | cookie optional |
 | `/api/search/blueprints`, `/api/search/cards`, `/api/search/terms` | GET | cookie optional |
 | `/api/transfer` (POST), `/api/transfer/plan` (GET) | POST; GET | session |
+| `/api/tutorial/live` | POST (GET answers 405, OPTIONS 204) | anonymous; opens a live tutorial page and answers `LiveOpened` with a 24-hour token, counted in the `live` bucket by address |
+| `/api/tutorial/live/[token]` | GET, PUT | anonymous; GET answers `LiveRecord` with `ETag: "<revision>"`, `Cache-Control: no-store` and 304 on a matching `If-None-Match`; PUT takes a `LiveDraft`, answers `{ revision, updatedAt, expiresAt }` and refreshes the expiry, 400 naming the field, 413 over `LIVE_DRAFT_MAX_BYTES`; both answer 404 for an unknown or expired token and 400 for a malformed one |
 | `/api/validate/bundle`, `/api/validate/card`, `/api/validate/dot`, `/api/validate/ontology` | POST | anonymous; nothing persisted |
 
 Refusals are `application/problem+json` with `type` under `https://darkprint.io/problems/`. A
