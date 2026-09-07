@@ -1,5 +1,5 @@
 <!--
-  GENERATED FILE — do not edit by hand.
+  GENERATED FILE. Do not edit by hand.
   Rendered from lib/core/card/schema.ts and lib/core/card/validate.ts by scripts/skill-refs.ts.
   Regenerate with: npm run generate:skill-refs
   scripts/generate-skill-refs.test.ts fails the suite if this file drifts.
@@ -8,7 +8,7 @@
 # The node card, on the wire
 
 A card is one YAML or JSON document describing one node. The wire format is
-**snake_case** — `risk_markers`, `will_not` — and the validator maps it onto the
+**snake_case** (`risk_markers`, `will_not`), and the validator maps it onto the
 camelCase model quoted at the bottom of this file.
 
 ## Every key the validator accepts
@@ -75,14 +75,14 @@ comes back at all.
 
 | key | default | checked against the ontology? |
 | --- | --- | --- |
-| `phase` / `phases` | `[]` | yes — the five, never namespaced |
-| `tools` | `[]` | yes — `tool` terms |
-| `mcp` | `[]` | **no** — free text, installed server names |
-| `params` | `{}` | no — any JSON-serialisable mapping, nesting depth under 100 |
-| `dependencies` | `[]` | no here — checked against the graph by the resolver |
-| `cannot` | `[]` | yes — `data-type` terms, and see below |
-| `will_not` | `[]` | **no** — free text, see below |
-| `risk_markers` | `[]` | yes — `risk-marker` terms |
+| `phase` / `phases` | `[]` | yes: the five, never namespaced |
+| `tools` | `[]` | yes: `tool` terms |
+| `mcp` | `[]` | **no**: free text, installed server names |
+| `params` | `{}` | no: any JSON-serialisable mapping, nesting depth under 100 |
+| `dependencies` | `[]` | not here: checked against the graph by the resolver |
+| `cannot` | `[]` | yes: `data-type` terms, and see below |
+| `will_not` | `[]` | **no**: free text, see below |
+| `risk_markers` | `[]` | yes: `risk-marker` terms |
 | `model`, `agent`, `skill`, `notes`, `author`, `provenance` | absent | no |
 
 ## `cannot` and `will_not` are two prohibitions, and only one is checked
@@ -99,7 +99,7 @@ written here is `card/unknown-term`, an error, and the card does not load.
 twice. On an edge with no `out=` pin the carriers are **every output of the source card**,
 so an edge out of a node that emits the criteria at all is refused. On an edge pinned with
 `out=`, the carrier is **that one port**, so pinning the edge to a different port satisfies
-the prohibition. The bundle then loads — and the analyzer charges `criteria-leak` anyway,
+the prohibition. The bundle then loads, and the analyzer charges `criteria-leak` anyway,
 because its topological walk reads the graph at node level and does not care which port an
 edge carries. `cannot` is the fast tripwire that stops the bundle loading; the analyzer is
 the backstop that prices it. Neither replaces the other.
@@ -121,8 +121,8 @@ Two asymmetries that decide what to put in `cannot`:
 
 ## Who acts at the node
 
-`type`, and nothing else. A `type` subsumed by `human-in-the-loop` — `human-gate`,
-`human-input`, or `human-in-the-loop` itself, since subsumption is reflexive — is a node
+`type`, and nothing else. A `type` subsumed by `human-in-the-loop` (`human-gate`,
+`human-input`, or `human-in-the-loop` itself, since subsumption is reflexive) is a node
 where a person acts, and every other type is a node that runs unattended. The autonomy
 reading, the schematic and the card page all ask that one question of that one field.
 
@@ -134,7 +134,7 @@ and the diagnostic says what the card's own `type` answers instead.
 ## Which vocabulary a card is read against
 
 The one this build ships. A card used to declare `ontology_version`, and the engine read
-it against the vocabulary that string named — but a release stores its whole scorecard at
+it against the vocabulary that string named, but a release stores its whole scorecard at
 publish time, so no score is ever recomputed against an older vocabulary and nothing ever
 asked for the older one. Terms are added and retired inside the one vocabulary with
 `deprecated: {since, replacedBy}`, which is what a card naming a renamed term follows.
@@ -144,11 +144,42 @@ terms as `requires_human`.
 ## Re-emitting a card
 
 A published version is never edited in place. Rewriting a card's content while leaving
-the old file beside it is `bundle/digest-mismatch` (error). Bumping too small for what
-changed is `card/version-bump-too-small` (error): a changed `spec` prices as **minor**, a
-changed port, type or param prices as **major**. A card version nothing instantiates is
-`bundle/orphan-card` (warning) — delete the superseded file rather than keep it for
-history.
+the old file beside it is `bundle/digest-mismatch` (error). A card version nothing
+instantiates is `bundle/orphan-card` (warning): delete the superseded file rather than
+keep it for history.
+
+Bumping too small for what changed is `card/version-bump-too-small` (error). The engine
+infers the smallest bump the edit needs, from `lib/core/version/bump.ts`, and the
+declared version has to be at least that. The strongest reason wins when an edit touches
+several rows.
+
+| bump | forced by |
+| --- | --- |
+| **major** | a port removed or renamed |
+| **major** | a port's `type` changed |
+| **major** | an existing input made required |
+| **major** | a required input added |
+| **major** | `id` changed |
+| **major** | `type` changed |
+| **major** | a `cannot` entry added |
+| **major** | a `will_not` entry withdrawn |
+| **minor** | `spec` changed |
+| **minor** | `skill` set, repointed or dropped |
+| **minor** | `model` set, changed or dropped |
+| **minor** | an optional input added |
+| **minor** | an output added |
+| **minor** | a `tools`, `mcp`, `risk_markers` or `dependencies` entry added |
+| **minor** | a `params` key added |
+| **minor** | a `cannot` entry withdrawn |
+| **minor** | a `will_not` entry stated |
+| **minor** | a phase added or dropped |
+| **patch** | `name`, `action` or `notes` reworded |
+| **patch** | a port `description` changed |
+| **patch** | `agent` changed |
+| **patch** | a `params` value changed, or a `params` key removed |
+| **patch** | an input no longer required |
+| **patch** | a `tools`, `mcp`, `risk_markers` or `dependencies` entry withdrawn |
+| **patch** | a list reordered |
 
 ## `lib/core/card/schema.ts`, verbatim
 

@@ -4,6 +4,10 @@
 # references/card-schema.md; anything outside that set is silently ignored, so a typo in
 # `risk_markers` does nothing rather than failing loudly.
 #
+# This is the skeleton for a node instructed by prose (`agent`, `tool`, `validation`,
+# `decision`, `human-gate`, `human-input`). A node that IS a command is `shell-tool` and
+# has its own skeleton in `shell-tool-card.yaml`, because it owes `params.tool_command`.
+#
 # NEVER name a card file `blueprint.yaml` or `extensions.yaml`. Those names are claimed by
 # the manifest and the local vocabulary, and a card called either disappears from the bundle.
 #
@@ -13,7 +17,7 @@
 #   description: "Where it failed: the line and the text"   <- fine
 
 # ---- identity ----
-id: card-id                 # ^(?:namespace/)?[a-z0-9]+(-[a-z0-9]+)*$ — lowercase, hyphens, no underscores
+id: card-id                 # ^(?:namespace/)?[a-z0-9]+(-[a-z0-9]+)*$ lowercase, hyphens, no underscores
 name: Human Readable Name
 type: agent                 # exactly one node-type term. Never an abstract category.
 phase: implementation       # optional and repeatable; omit it entirely when the node sits in none of the five
@@ -26,16 +30,18 @@ spec: >-
   that does not see the rest of the graph, so it must be self-sufficient: what arrives, what
   to do in order, what to emit on which port and in what form, and what not to do. If this
   node's work is judged, it must name no criterion, quote no threshold and paraphrase nothing
-  the criteria producer wrote — the engine measures the overlap and warns above 0.35.
+  the criteria producer wrote. The engine measures the overlap and warns above 0.35.
 model: claude-sonnet-5      # optional. A default the runner can override, not a binding.
 agent: Role Name            # optional
 tools: []                   # tool terms. web-search / http-fetch / sql / ci infer a risk marker.
 mcp: []                     # installed server names. Free text, checked against nothing.
 skill: skills/card-id.md    # optional pointer; nothing in the engine reads what it points at
 params:
-  # The iteration cap, when this node sits in a cycle. TOP LEVEL only — nested it is not read,
-  # and the whole cycle takes -1.5 with no obvious cause. Also accepted: maxIterations, max_retries.
-  max_iterations: 3
+  # The iteration cap, when this node sits in a cycle. TOP LEVEL only: nested it is not read,
+  # and the whole cycle takes -1.5 with no obvious cause. It counts the attempts AFTER the
+  # first, so 2 means three runs in all. Say the total in `spec` and make the two agree.
+  # `max_iterations` and `maxIterations` are accepted aliases and mean the same number.
+  max_retries: 2
 
 # ---- interfaces ----
 inputs:                     # must be PRESENT. Write [] when the node needs nothing.

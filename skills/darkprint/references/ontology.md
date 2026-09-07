@@ -1,5 +1,5 @@
 <!--
-  GENERATED FILE — do not edit by hand.
+  GENERATED FILE. Do not edit by hand.
   Rendered from lib/core/ontology/core.ts and lib/core/config.ts by scripts/skill-refs.ts.
   Regenerate with: npm run generate:skill-refs
   scripts/generate-skill-refs.test.ts fails the suite if this file drifts.
@@ -11,17 +11,17 @@
 Attractor node IS, and Attractor fixes those shapes in its own spec.
 
 Every card field that names a term is resolved against this list. A term that is not
-here is `card/unknown-term` (error). A term of the wrong kind — a `data-type` in the
-`tools` list, a `tool` in `type` — is `card/wrong-term-kind` (error).
+here is `card/unknown-term` (error). A term of the wrong kind, a `data-type` in the
+`tools` list or a `tool` in `type`, is `card/wrong-term-kind` (error).
 
 A card names no vocabulary version either. There is one vocabulary and every card is
 read against it, so writing `ontology_version:` on a card is `card/retired-field`
 (warning).
 
-## phase — the five, closed
+## phase: the five, closed
 
-Optional and repeatable. A card may declare none, one, or several. `phase: []` — or the
-field omitted entirely — is a **complete and correct answer**, and the validator emits
+Optional and repeatable. A card may declare none, one, or several. `phase: []`, or the
+field omitted entirely, is a **complete and correct answer**, and the validator emits
 nothing at all about it: an intake step, a retrieval step and a memory store sit in none
 of the five. Phase coverage is descriptive and nothing scores off it, so never invent a
 phase to fill a strip.
@@ -38,7 +38,7 @@ reports in.
 | `debugging` | Debugging | From failure evidence to a targeted fix. |
 | `deployment` | Deployment | Release, publication, delivery. |
 
-## node-type — what does the job
+## node-type: what does the job
 
 Exactly one per card, in `type`. Three of these are **abstract categories** and a node
 should not be typed with one: they exist so the metrics can ask a subsumption question.
@@ -83,7 +83,7 @@ asked, not because nothing was found. The engine says so with
 `analysis/criteria-leak-unanchored` (warning). Whatever decides the run is finished is
 `validation`.
 
-## risk-marker — what it costs
+## risk-marker: what it costs
 
 Declared in `risk_markers`. The security score starts at 4 and each distinct marker
 present anywhere in the blueprint is charged **once**, however many nodes carry it:
@@ -109,16 +109,16 @@ one does not hide it.
 
 How the three inferred ones are found:
 
-- `unbounded-loop` — every strongly connected component in the graph, unless some card
+- `unbounded-loop`: every strongly connected component in the graph, unless some card
   in it declares an iteration cap. The cap is a **top-level** key of `params`, one of
   `max_iterations`, `maxIterations`, `max_retries`, holding a non-negative
   integer (`0` counts). Nested inside another object it is not read, and the cycle takes
   the charge on every member with no obvious cause.
-- `unvalidated-external-access` — a node whose `tools` include anything subsumed by
+- `unvalidated-external-access`: a node whose `tools` include anything subsumed by
   `web-search`, `http-fetch`, `sql` or `ci`, which has at least one successor, and at
   least one of those successors is not a `validation` node. `messaging`, `git`,
   `vector-store`, `file-io`, `shell` and `python-sandbox` are deliberately excluded.
-- `criteria-leak` — see below. This is the one the whole design is built around.
+- `criteria-leak`: see below. This is the one the whole design is built around.
 
 ### criteria-leak, precisely
 
@@ -127,31 +127,31 @@ is subsumed by `acceptance-criteria`. **Judges** are nodes typed `validation`, a
 **generators** are the predecessors of any judge, closed upward through non-judge nodes.
 The marker fires, at −2.0, when:
 
-- **topological** — walking forward from a producer, absorbing at judges, reaches a
+- **topological**: walking forward from a producer, absorbing at judges, reaches a
   generator. The criteria reach the node whose work is being judged.
-- **declarative** — one node emits both an `acceptance-criteria` port *and* another port
+- **declarative**: one node emits both an `acceptance-criteria` port *and* another port
   a directly connected judge reads as the artefact under judgement. One node writing the
   criteria and the work is structurally illegal, off the declarations alone.
 
 And it warns without charging when:
 
-- **content** — the 3-gram Jaccard similarity between a generator's `spec` and a producer's
+- **content**: the 3-gram Jaccard similarity between a generator's `spec` and a producer's
   exceeds 0.35
   (`analysis/criteria-leak-suspected`). An absent edge with the criteria paraphrased into
   the prose is a false isolation, and this is the half that catches it. Specs under three
   words are excluded from the comparison entirely.
-- **relayed** — reachable only by walking *through* a judge
+- **relayed**: reachable only by walking *through* a judge
   (`analysis/criteria-relayed-through-judge`). The engine cannot tell an endorsed
   `judge → fixer → judge` loop from a forbidden `judge → builder → judge` one, so it
   declines to decide and says which it saw.
-- **out of band** — a `params` key matching `/criteri/i` naming something nothing in the
+- **out of band**: a `params` key matching `/criteri/i` naming something nothing in the
   graph produces (`analysis/criteria-out-of-band`). Isolation has stopped being a property
   of the topology for that node.
-- **unanchored** — one of the two legs is missing: producers with no generators, or
+- **unanchored**: one of the two legs is missing: producers with no generators, or
   generators with no producers (`analysis/criteria-leak-unanchored`). **The check did not
   run.** A 4 in this state is silence, not a pass. Both sets empty is silent by design.
 
-## data-type — what an edge carries
+## data-type: what an edge carries
 
 Every port declares one, in `type`. Compatibility along an edge is directional: a source
 port fits a target port when the types are equal, when either side is `any`, or when the
@@ -204,15 +204,15 @@ any
     markdown
 ```
 
-## tool — what a node is permitted to do
+## tool: what a node is permitted to do
 
 Declared in `tools`. Note the deliberate id collision: `tool` is both a `node-type` and
 the *kind* of these terms. The field a term appears in decides which is meant, so there
-is no ambiguity to resolve — `type: tool` is the node type and `tools: [shell]` is a
+is no ambiguity to resolve: `type: tool` is the node type and `tools: [shell]` is a
 capability.
 
 `tools` says what the node is permitted to do. `mcp` says which installed server supplies
-it, is free text, and is checked against nothing — an MCP server is a process somebody
+it, is free text, and is checked against nothing, because an MCP server is a process somebody
 installed and the vocabulary has no term for one. A node can carry either without the other.
 
 | id | label | broader | meaning |
