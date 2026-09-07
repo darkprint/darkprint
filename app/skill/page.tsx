@@ -39,11 +39,11 @@ const NEVER: readonly { label: string; body: React.ReactNode }[] = [
         <Link href="/new" className={LINK}>
           New blueprint
         </Link>
-        , then press Publish on{" "}
+        , then drop the folder on{" "}
         <Link href="/upload" className={LINK}>
-          Upload
+          Publish
         </Link>{" "}
-        or POST the folder from your terminal with a write-scoped API key from{" "}
+        or POST it from your terminal with a write-scoped API key from{" "}
         <Link href="/settings" className={LINK}>
           Settings
         </Link>

@@ -152,7 +152,7 @@ export function SkillSetup({ className }: { className?: string }) {
               and it does nothing of the kind otherwise.
             </p>
             <p className="text-[15px] leading-relaxed text-muted">
-              Read it before you run it:{" "}
+              Read it before you run it if you like:{" "}
               <a href={`${SKILL_TREE_PATH}/SKILL.md`} className={LINK}>
                 SKILL.md
               </a>{" "}
@@ -179,7 +179,8 @@ export function SkillSetup({ className }: { className?: string }) {
           <p className="text-[15px] leading-relaxed text-muted">
             An interview, not a generator. Ask it for a blueprint and it asks you what the
             work is first, because a graph nobody described is a graph nobody can check.
-            Six things, and one of them it looks up for you.
+            Six things, all of which you would have had to decide anyway, and one of them it
+            looks up for you.
           </p>
 
           {/* A list that happens to be aligned, not a table: `QUESTIONS` has no second axis.
@@ -235,12 +236,12 @@ export function SkillSetup({ className }: { className?: string }) {
             <p className="text-[15px] leading-relaxed text-muted">
               Before you see the folder, the DarkPrint skill runs the registry&rsquo;s own
               validator over it, with the darkprint CLI when it is installed and through this
-              site&rsquo;s API when you say yes, and reads every warning back to you. Publish
-              it on{" "}
+              site&rsquo;s API when you say yes, and reads every warning back to you. Drop the
+              folder on{" "}
               <Link href="/upload" className={LINK}>
-                Upload
+                Publish
               </Link>
-              , or from your terminal with a write-scoped API key from{" "}
+              , or publish it from your terminal with a write-scoped API key from{" "}
               <Link href="/settings" className={LINK}>
                 Settings
               </Link>

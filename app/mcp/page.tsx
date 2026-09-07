@@ -22,7 +22,7 @@ import { NPX_INVOCATION } from "@/packages/cli/src/index";
 
 export const metadata: Metadata = {
   title: "Connect via MCP",
-  description: `Give your coding agent read access to the DarkPrint registry over MCP. One command adds ${MCP_ENDPOINT_URL} to Claude Code, Codex, Cursor or VS Code, with nothing to install. Search by task, read a card, fetch a whole blueprint pinned to its digest.`,
+  description: `Give your coding agent read access to the DarkPrint registry over MCP. One command adds ${MCP_ENDPOINT_URL} to Claude Code, Codex, Cursor or VS Code, with nothing to install. Search by task, then read a card or fetch a whole blueprint pinned to its digest.`,
 };
 
 /** One row per tool, in the order the server lists them. Names are the tool names an agent calls. */
@@ -84,7 +84,7 @@ const NOTES = [
   {
     label: "who is asking",
     body:
-      "Send an API key from Settings as a bearer token and get_blueprint, read_card, inspect_provenance and fetch_release also reach your own private blueprints; the two find tools search public blueprints only. A key of either scope raises the rate limit, and none lets this server write anything.",
+      "With a key, get_blueprint, read_card, inspect_provenance and fetch_release reach your own private blueprints; the two find tools search public blueprints only. A key of either scope raises the rate limit, and none lets this server write anything.",
   },
   {
     label: "cards and releases",
@@ -119,9 +119,9 @@ export default function McpPage() {
         <InstallTabs />
         <p className="text-sm leading-relaxed text-dim">
           The same server also runs on your own machine over stdio, as{" "}
-          <code className="font-mono text-[13px] text-blueprint-ink">{NPX_INVOCATION} mcp</code>
-          . The darkprint package is not published to npm yet, so use the remote address
-          above.
+          <code className="font-mono text-[13px] text-blueprint-ink">{NPX_INVOCATION} mcp</code>,
+          once the darkprint package is on npm. It is not published to npm yet, so use the
+          remote address above.
         </p>
         <p className="text-sm leading-relaxed text-dim">
           The server can only read. Without a key every call reads as anonymous and sees public
@@ -207,8 +207,9 @@ export default function McpPage() {
         </div>
 
         <p className="text-[15px] leading-relaxed text-muted">
-          Fetch by slug and you get whatever the registry holds today. Fetch by digest and you
-          get the bytes you tested against, even after a newer release is cut.
+          The digest is what makes a result safe to depend on. Fetch by slug and you get whatever
+          the registry holds today. Fetch by digest and you get the bytes you tested against, even
+          after a newer release is cut.
         </p>
 
         <p className="text-[15px] leading-relaxed text-muted">
