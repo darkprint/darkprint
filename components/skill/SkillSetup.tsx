@@ -147,7 +147,9 @@ export function SkillSetup({ className }: { className?: string }) {
               Both lines fetch one archive from this site and unpack it as{" "}
               <code className="font-mono text-[13px] text-fg">skills/darkprint</code> under
               the folder they name, which is where each agent reads its own skills. Nothing
-              else is installed and no account is created.
+              else is installed and no account is created. When you ask it to, the DarkPrint
+              skill can post your draft to a live page on this site while it interviews you,
+              and it does nothing of the kind otherwise.
             </p>
             <p className="text-[15px] leading-relaxed text-muted">
               Read it before you run it if you like:{" "}

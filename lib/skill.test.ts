@@ -5,7 +5,7 @@
    and a character React escaped on the way into the markup.
    ============================================================ */
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -13,6 +13,9 @@ import { describe, expect, it } from "vitest";
 import {
   CLAUDE_CODE_SKILLS_PARENT,
   CODEX_SKILLS_PARENT,
+  LIVE_OPEN_PATH,
+  LIVE_OPEN_URL,
+  LIVE_PAGE_PATH,
   SKILL_ARCHIVE_PATH,
   SKILL_ARCHIVE_ROOT,
   SKILL_ARCHIVE_URL,
@@ -82,5 +85,26 @@ describe("the paths the site serves the skill from", () => {
 
   it("name a tree that exists in the repository, with a SKILL.md at its root", () => {
     expect(existsSync(join(ROOT, SKILL_ARCHIVE_ROOT, "SKILL.md"))).toBe(true);
+  });
+});
+
+describe("the live page the DarkPrint skill posts a draft to", () => {
+  it("hangs off the www origin and carries none of the characters React escapes", () => {
+    expect(LIVE_OPEN_URL).toBe(`${SKILL_SITE_ORIGIN}/api/tutorial/live`);
+    expect(LIVE_OPEN_URL).toBe(`${SKILL_SITE_ORIGIN}${LIVE_OPEN_PATH}`);
+    expect(LIVE_OPEN_URL).not.toMatch(/[&<>"'\s]/);
+    expect(LIVE_PAGE_PATH).toBe("/tutorial/live");
+  });
+
+  /**
+   * The skill is a document an agent reads, so the URL it posts to is typed into prose
+   * that no surface renders from the constant. Held to it here instead: a route renamed
+   * changes one string, and both documents red until they follow it.
+   */
+  it.each(["SKILL.md", "references/live-preview.md"])("%s prints the same three URLs", (file) => {
+    const doc = readFileSync(join(ROOT, SKILL_ARCHIVE_ROOT, file), "utf8");
+    expect(doc).toContain(`POST ${LIVE_OPEN_URL}`);
+    expect(doc).toContain(`PUT "${LIVE_OPEN_URL}/$DARKPRINT_LIVE_TOKEN"`);
+    expect(doc).toContain(`${SKILL_SITE_ORIGIN}${LIVE_PAGE_PATH}/<token>`);
   });
 });
