@@ -526,7 +526,15 @@ export const LEARN_PRACTICE: readonly SpecPage[] = [
     title: "Write your first blueprint",
     question:
       "Make one: the blueprint-writing skill interviews you and the graph draws itself as you answer.",
-    sections: [],
+    /* The five steps of the page, in the order a reader takes them. The work happens in
+       the reader's own agent; the live page is what this site adds to it. */
+    sections: [
+      { id: "install", label: "Install the DarkPrint skill" },
+      { id: "open-live", label: "Open a live page" },
+      { id: "design", label: "Describe the task" },
+      { id: "enrich", label: "Enrich over MCP" },
+      { id: "keep", label: "Keep it" },
+    ],
   },
 ];
 

@@ -98,7 +98,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 | `/skill` | static | install the blueprint-writing skill for Claude Code or Codex |
 | `/spec/attractor`, `/spec/topology` | static | the Attractor crosswalk; the DOT dialect |
 | `/spec/card` | dynamic | the node card format, with the vocabulary browser |
-| `/towards-a-dark-factory`, `/tutorial` | static | the essay on the phases of automation; write your first blueprint |
+| `/towards-a-dark-factory`, `/tutorial` | static | the essay on the phases of automation; the five-step walkthrough that has the reader write a blueprint in their own agent with the blueprint-writing skill, opens the live page the draft is posted to, and points at MCP and `/upload` |
 | `/tutorial/live/[token]` | per request, client-polled | one reader's live page: the draft the blueprint-writing skill posts, drawn as the graph takes shape, the registry hits, and the next step per phase; 404 on a malformed or expired token |
 | `/u/[username]` | dynamic | a profile |
 | `/u/[username]/[slug]` | dynamic | a permanent redirect to `/blueprints/[username]/[slug]` |
