@@ -127,6 +127,9 @@ interface TransformersModule {
  */
 let loading: Promise<Encoder | undefined> | undefined;
 
+/** Why the last load answered "absent", for the health route. Message only, never a stack. */
+let failure: string | undefined;
+
 async function load(): Promise<Encoder | undefined> {
   let extract: Encoder;
   try {
@@ -145,11 +148,15 @@ async function load(): Promise<Encoder | undefined> {
     mod.env.localModelPath = MODEL_ROOT;
 
     extract = await mod.pipeline("feature-extraction", MODEL_ID, { dtype: MODEL_DTYPE });
-  } catch {
+  } catch (err) {
     /* The package is not installed, or the model directory is not provisioned: the same
        condition from a caller's point of view. Only the load is inside this block; the
        width probe below stays outside it, because an ABSENT encoder degrades and a WRONG
-       one must not be able to masquerade as absent. */
+       one must not be able to masquerade as absent. The reason is kept for /api/health,
+       because a deployment that silently ranks by words alone is the failure this module
+       has already had once. */
+    failure = err instanceof Error ? err.message : String(err);
+    console.error(`darkprint: the sentence encoder did not load: ${failure}`);
     return undefined;
   }
 
@@ -197,4 +204,9 @@ export async function encoderAvailable(): Promise<boolean> {
 /** The same answer, spelled the way `Results.encoder` reports it. */
 export async function encoderState(): Promise<"present" | "absent"> {
   return (await encoderAvailable()) ? "present" : "absent";
+}
+
+/** The load error's message when the encoder is absent, `undefined` when it loaded. */
+export async function encoderFailure(): Promise<string | undefined> {
+  return (await encoderAvailable()) ? undefined : failure;
 }

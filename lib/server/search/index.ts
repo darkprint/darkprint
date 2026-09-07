@@ -46,4 +46,4 @@ export type { ReembedSweep } from "./reembed";
 
 /* Whether this process can encode. Published for the health route, which has to say so
    without running a search; the constants and `embed` itself stay internal. */
-export { encoderAvailable } from "./embed";
+export { encoderAvailable, encoderFailure } from "./embed";

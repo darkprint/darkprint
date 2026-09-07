@@ -7,7 +7,7 @@
  */
 
 import { getSharedDbClient } from "@/lib/db";
-import { encoderAvailable } from "@/lib/server/search";
+import { encoderAvailable, encoderFailure } from "@/lib/server/search";
 import { sessionSecretState } from "@/lib/server/auth";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +28,7 @@ interface Health {
    */
   db: { latencyMs: number; migrationsHead: string | null; migrationsApplied: number } | { error: string };
   encoder: "present" | "absent";
+  encoderFailure?: string;
   storage: "configured" | "missing";
   auth: { providers: string[]; sessionSecret: "set" | "example" | "missing" };
   commit: string | null;
@@ -56,6 +57,7 @@ export async function GET(): Promise<Response> {
     ok: !("error" in db),
     db,
     encoder: encoder ? "present" : "absent",
+    ...(encoder ? {} : { encoderFailure: await encoderFailure() }),
     storage: STORAGE_VARIABLES.every(isSet) ? "configured" : "missing",
     auth: {
       providers: Object.entries(PROVIDERS)
