@@ -15,8 +15,8 @@ spec: >-
   with `unparseable_records` in the same way. Emit one notice on `signal`. When any threshold is
   crossed, the notice is a breach and names the step, the metric, the threshold and the figure
   the report carries, worst first when several crossed; when none is crossed, the notice says
-  the run is clear and carries the totals. Quote the report's figures as they stand: never
-  recompute them, never edit the report, and never move a threshold to make a run pass.
+  the run is clear and carries the totals. Quote the report's figures as they stand: the
+  report is not yours to edit, and the thresholds are not yours to move.
 model: claude-haiku-4-5
 agent: Threshold judge
 tools: []

@@ -572,7 +572,7 @@ describe("the archive schematics keep their type as large as the box allows", ()
       "guarded-merge-bot": 6.5,
       "incident-commander": 6.5,
       "nightly-data-janitor": 6.5,
-      /* On the floor exactly at the design width: the rail's 16px take the 0.2 CSS px away. */
+      /* On the floor exactly at the design width: its narrower canvas takes the 0.2 CSS px away. */
       "pipeline-observability": 10.0,
       "schema-forge-etl": 6.5,
       "starter-software-factory": 12.0,

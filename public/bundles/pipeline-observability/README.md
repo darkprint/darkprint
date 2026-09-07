@@ -1,10 +1,10 @@
 # Pipeline Observability
 
-Observability for a pipeline you already have: tracing on every watched step, metrics per step in one report, monitoring of that report against thresholds, and an alert when a step fails or runs long. To feed the tracer, a step has to emit one structured value per run, json or a table will do, plus its outcome signal when it has one; the alert sender never receives the records or the report, only the gate's signal.
+Observability for a pipeline you already have: tracing on every watched step, metrics per step in one report, monitoring of that report against thresholds, and an alert when a step fails or runs long. To feed the tracer, a step has to emit one structured value per run, json or a table will do, plus its outcome signal when it has one; the gate's signal is the only thing that reaches the alert sender.
 
 ```
 blueprint      pipeline-observability
-bundle digest  sha256:8850a6f00958ce0f610b9f8feab945817f158ea7231e33afd1bedb0dc74f6851
+bundle digest  sha256:c6ef312cfffd549b691b3339a155ac1e12c280fac1329d7c61fda272354b39d1
 nodes          4
 cards pinned   4
 ```
