@@ -33,8 +33,7 @@ describe("API key scope copy", () => {
     expect(PUBLISH_CURL).toContain('-H "Authorization: Bearer $DARKPRINT_API_KEY"');
     expect(PUBLISH_CURL).toContain('-H "Content-Type: application/json"');
     expect(PUBLISH_CURL).toContain("--data @publish.json");
-    /* Never the apex: production serves www and the apex redirects, which turns a POST into
-       a GET on the way across. */
+    /* Never the apex: production serves www. */
     expect(PUBLISH_CURL).not.toMatch(/https:\/\/darkprint\.io\//);
   });
 
