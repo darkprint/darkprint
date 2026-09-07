@@ -3,13 +3,15 @@ import type { NextConfig } from "next";
 /**
  * Files the sentence encoder reads from disk at runtime, which the build's import tracer
  * cannot see: the vendored MiniLM weights under `models/` and the onnxruntime binary with
- * the shared library it dlopens. Vercel runs this project's functions on linux/arm64 (the
- * builder writes `"architecture": "arm64"` into every function), so that is the one platform
- * traced; the others are excluded below so no function carries a binary it cannot load.
+ * the shared library it dlopens. The function runtime is linux/x64 (a deployed /api/health
+ * named the x64 binding as the missing module), so that is the one platform traced. The
+ * binding is required through a `${platform}/${arch}` template, which makes the tracer keep
+ * every platform's binaries unless they are excluded, and that surplus alone pushed the
+ * deployment past the Hobby plan's function grouping.
  */
-const ENCODER_FILES = ["./models/**", "./node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**"];
+const ENCODER_FILES = ["./models/**", "./node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**"];
 const FOREIGN_BINARIES = [
-  "./node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**",
+  "./node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**",
   "./node_modules/onnxruntime-node/bin/napi-v6/darwin/**",
   "./node_modules/onnxruntime-node/bin/napi-v6/win32/**",
 ];
