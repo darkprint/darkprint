@@ -1,37 +1,37 @@
 /* ============================================================
    POST /api/blueprints/[owner]/[slug]/runs
-   T280's wire layer over `lib/server/runs` (T180): `200
-   { reported } | 400 | 401 | 404`. Session required — a run
-   report is recorded against an account (D-180-03) — and the
-   digest is resolved and checked server-side rather than trusted
-   from the caller (D-180-01, CONTRACT.md's Runs section):
+   The wire layer over `lib/server/runs`: `200 { reported } | 400 |
+   401 | 404`. A run report is recorded against an account, so the
+   caller is a session or a write-scoped API key, and the digest is
+   resolved and checked server-side rather than trusted from the
+   caller:
 
      * body omits `releaseDigest`      -> this bundle's CURRENT release
      * body names a digest of THIS
        bundle's own history           -> accepted as given
-     * body names any other digest    -> refused, 404-shaped (B-03)
+     * body names any other digest    -> refused, 404-shaped
 
    `submitReport` itself is digest-scoped and knows nothing about a
-   bundle (`release_digest` is not a foreign key, D-05-01 — a fork
-   shares its upstream's digest), so its own existence check is
-   GLOBAL: any real digest anywhere passes it. Handed a caller's
-   digest unchecked, this route would let a request addressed at
+   bundle (`release_digest` is not a foreign key: a fork shares its
+   upstream's digest), so its own existence check is GLOBAL: any
+   real digest anywhere passes it. Handed a caller's digest
+   unchecked, this route would let a request addressed at
    `owner/slug` attach a report to a DIFFERENT bundle's cost
-   aggregate — the very thing "the digest must belong to the
+   aggregate, the very thing "the digest must belong to the
    addressed bundle" refuses. That check is this route's own, made
    before `submitReport` is ever called.
 
-   No unit normalization anywhere on this file (D-180-01): the
-   accepted report and `reported` both carry `costUnits`/raw
-   figures exactly as `lib/server/runs` publishes them.
+   No unit normalization anywhere on this file: the accepted report
+   and `reported` both carry `costUnits`/raw figures exactly as
+   `lib/server/runs` publishes them.
    ============================================================ */
 
 import { getSharedDbClient, type Db } from "@/lib/db";
-import { readJsonObject, resolveOwner } from "@/lib/server/accounts";
+import { actorFrom, readJsonObject, resolveOwner } from "@/lib/server/accounts";
 import { getBundle, getRelease } from "@/lib/server/archive";
-import { withSession } from "@/lib/server/auth";
+import { withSessionOrWriteKey } from "@/lib/server/auth";
 import { PROBLEM_TYPE_BASE, badRequest, notFound, ok, problem, unauthorized } from "@/lib/server/http";
-import { actorFrom, blueprint } from "@/lib/server/registry";
+import { blueprint } from "@/lib/server/registry";
 import {
   RunReportRefusedError,
   RunReportStoreError,
@@ -53,19 +53,16 @@ function storeFailed(request: Request, err: RunReportStoreError): Response {
 }
 
 /**
- * `RunReportRefusedError` carries no `kind` (D-180-04's own ruling: ONE class, THREE
- * messages, because a caller distinguishing them by `instanceof` would be distinguishing two
- * things it must handle identically — fix the request and send it again). This route still
- * answers three different STATUSES, so it reads which of the three RULED forms
- * (backend.md:19667, D-180-03/04) it caught — a match against a published, ruled contract
- * rather than an incidental string compare.
+ * `RunReportRefusedError` carries no `kind`: one class, three messages, because a caller
+ * distinguishing them by `instanceof` would be distinguishing two things it must handle
+ * identically (fix the request and send it again). This route still answers three different
+ * STATUSES, so it reads which of the three published forms it caught.
  *
- * Both the account and the digest arms are unreachable in the ordinary path: `withSession`
- * guarantees an authenticated actor before `submitReport` ever runs, and the digest is
- * checked against this bundle's own releases (below) before the call. Mapped anyway, on
- * `lib/server/profiles/http.ts`'s precedent for its own unreachable `not-signed-in` arm — a
- * race between the check and the write, or a fourth message added later, must not fall
- * through into somebody else's status.
+ * Both the account and the digest arms are unreachable in the ordinary path: the guard
+ * guarantees an account before `submitReport` ever runs, and the digest is checked against
+ * this bundle's own releases (below) before the call. Mapped anyway: a race between the
+ * check and the write, or a fourth message added later, must not fall through into somebody
+ * else's status.
  */
 function refused(request: Request, err: RunReportRefusedError): Response {
   if (err.message === "submitReport: a run report needs an account.") return unauthorized(request);
@@ -108,7 +105,7 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ owner: string; slug: string }> },
 ): Promise<Response> {
-  return withSession(request, async () =>
+  return withSessionOrWriteKey(request, async (session) =>
     withRunsErrors(request, async () => {
       const body = await readJsonObject(request);
       if (body === undefined) {
@@ -117,12 +114,14 @@ export async function POST(
 
       const { owner, slug } = await context.params;
       const { db } = getSharedDbClient();
-      const actor = actorFrom(request);
+      /* From the guard rather than re-read off the cookie: a write-scoped key sends no cookie,
+         and its report must count against the account the key belongs to. */
+      const actor = actorFrom(session);
 
-      /* `blueprint()` is registry's own B-03 answer (undefined for absent AND unreadable
-         alike) and it also carries the CURRENT release's digest — the one this route needs
-         when the caller omits one, resolved by the same "highest semver, tiebroken on row
-         id" rule every other reader uses (D-80-03), never re-derived here. */
+      /* `blueprint()` is registry's own answer (undefined for absent AND unreadable alike)
+         and it also carries the CURRENT release's digest, the one this route needs when the
+         caller omits one, resolved by the same "highest semver, tiebroken on row id" rule
+         every other reader uses and never re-derived here. */
       const record = await blueprint(db, actor, owner, slug);
       if (record === undefined) return notFound(request, NO_SUCH_BUNDLE);
 

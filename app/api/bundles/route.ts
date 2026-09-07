@@ -1,17 +1,18 @@
 /* ============================================================
    POST /api/bundles
-   B-06's one endpoint, serving the wizard, the bundle page and the
-   CLI. Create if the slug is free for that owner, append a release
+   The one publish endpoint, serving the wizard, the bundle page,
+   the CLI and any terminal or agent holding a write-scoped API
+   key. Create if the slug is free for that owner, append a release
    if it is not; the caller does not say which, `created` in the
    answer reports which it was.
 
    ── the two refusals are different objects ──
    A malformed BODY is 400 problem+json: there is nothing to run a
    publish on. A well-formed body the registry declines to publish
-   is a `PublishRefusedError` and maps by `kind` (D-100-01):
+   is a `PublishRefusedError` and maps by `kind`:
 
      conflict           -> 409
-     not-owner          -> 404   B-03: existence must not leak
+     not-owner          -> 404   existence must not leak
      unfinished         -> 422
      in-error           -> 422
      version-not-higher -> 422
@@ -31,7 +32,7 @@
 import type { BundleManifest } from "@/lib/core";
 import { getSharedDbClient } from "@/lib/db";
 import { actorFrom } from "@/lib/server/accounts";
-import { withSession } from "@/lib/server/auth";
+import { withSessionOrWriteKey } from "@/lib/server/auth";
 import { LimitExceededError, validateVocabularySource } from "@/lib/server/engine";
 import { badRequest, ok, problem } from "@/lib/server/http";
 import { ArchiveConflictError, MalformedVocabularyError } from "@/lib/server/archive";
@@ -49,7 +50,9 @@ import {
 } from "../validate/body";
 
 export async function POST(request: Request): Promise<Response> {
-  return withSession(request, async (session) => {
+  /* A session cookie or a write-scoped API key. The handler receives the same
+     `{ accountId, handle }` either way, so `publish` and `can` judge both callers alike. */
+  return withSessionOrWriteKey(request, async (session) => {
     const parsed = await readObjectBody(request);
     if ("refusal" in parsed) return parsed.refusal;
     const { body } = parsed;
