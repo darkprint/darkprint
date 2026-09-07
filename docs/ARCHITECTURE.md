@@ -393,8 +393,8 @@ written; the result is validated with `darkprint validate`, else `POST /api/vali
 else `/upload`, and handed to the author to publish.
 
 The live preview and the enrich mode: when the author opts in, or arrives from `/tutorial`
-with a live URL, the skill opens a page with `POST /api/tutorial/live` (or takes the token
-off the URL), keeps the token in the shell, and `PUT`s a `LiveDraft` from
+with a live URL, the blueprint-writing skill opens a page with `POST /api/tutorial/live` (or
+takes the token off the URL), keeps the token in the shell, and `PUT`s a `LiveDraft` from
 `lib/core/tutorial/live.ts` to `/api/tutorial/live/<token>` at every phase boundary and once
 more after writing, so `/tutorial/live/<token>` draws the graph as it takes shape. The bundle
 in a draft may be partial. A failed PUT is one line to the author and never blocks the
