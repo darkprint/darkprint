@@ -996,7 +996,7 @@ export function NodeBrowser({
               onClick={clearFilters}
               className="mt-1 cursor-pointer font-mono text-xs text-amber underline-offset-4 hover:underline"
             >
-              Reset all filters
+              Clear filters
             </button>
           )}
         </div>

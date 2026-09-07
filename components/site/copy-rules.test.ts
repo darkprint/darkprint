@@ -135,8 +135,7 @@ const COPY_TREES = [
   "components/settings",
   // `components/profile` is older but its copy is not: the accounts pass rewrote every
   // string in it and added six files, and a check confirmed the tree carries no pause dash
-  // in visible text today. `app/u/` stays in `APP_EXEMPT` below — the route files are a
-  // separate question and were not part of that check.
+  // in visible text today.
   "components/profile",
   // Added 2026-09-02 with `/capabilities` and `/tutorial`, whole and for the reason this
   // list already gives twice: both directories are new, so there is no legacy punctuation
@@ -146,29 +145,19 @@ const COPY_TREES = [
   // one string a reader sees before a node has a card. That is what these two lines catch.
   "components/capabilities",
   "components/tutorial",
-];
-
-/**
- * Routes whose page copy predates the rule, kept out for the reason `COPY_TREES` records.
- *
- * `app/nodes`, `app/ontology` and `app/upload` are the page halves of the component trees
- * already named above. `app/blueprints/[owner]` and `app/u` carry the same kind of legacy
- * punctuation. All five are a copy edit rather than a guard, and adding them here before
- * that edit would only fail on text nobody in this pass wrote.
- *
- * **The blueprint entry says `[owner]` because the page moved there, and the exemption
- * followed it (B-09, D-261-01/05).** It was granted to that page's legacy copy, and a URL
- * migration must not silently revoke a grandfather nobody decided to revoke. What is left
- * behind at `app/blueprints/[slug]/` is the redirector, which is new code that renders no
- * copy at all, so it is guarded rather than exempt: the exemption tracks the prose, not
- * the path it used to sit at.
- */
-const APP_EXEMPT = [
-  "app/nodes/",
-  "app/ontology/",
-  "app/upload/",
-  "app/blueprints/[owner]/",
-  "app/u/",
+  // The registry, publish and shared trees, whole, once the copy pass over them left no
+  // pause dash in visible text: a tree covers whatever the next pass writes into it.
+  "components/auth",
+  "components/blueprint",
+  "components/bundle",
+  "components/graph",
+  "components/learn",
+  "components/nodes",
+  "components/ontology",
+  "components/panes",
+  "components/ui",
+  "components/upload",
+  "components/welcome",
 ];
 
 /**
@@ -182,10 +171,7 @@ const APP_EXEMPT = [
  * the `/spec` and `/towards-a-dark-factory` splits need from it.
  */
 function appPages(): string[] {
-  return sourcesUnder("app").filter(
-    (path) =>
-      path.endsWith("/page.tsx") && !APP_EXEMPT.some((dir) => path.startsWith(dir)),
-  );
+  return sourcesUnder("app").filter((path) => path.endsWith("/page.tsx"));
 }
 
 /**
@@ -234,17 +220,6 @@ const EM_DASH_FILES = [
   ...new Set([
     ...LIB_COPY_FILES,
     ...AUTONOMY_COPY_FILES,
-    "components/panes/GraphPane.tsx",
-    // The port descriptions the skeleton prints are composed here, one line per port.
-    "components/panes/build.ts",
-    // Product copy that is not a component: one paragraph per card field, rendered on
-    // `/nodes/<id>` and inside the blueprint page's card skeleton. Named here because a
-    // `.ts` file of prose is exactly the shape a tree-based walk misses.
-    "components/panes/field-notes.ts",
-    "components/panes/SkeletonPane.tsx",
-    "components/panes/SynchronisedPanes.tsx",
-    // New copy from this pass inside an otherwise-exempt tree — see the comment on
-    // `COPY_TREES` above for why it is named here rather than by widening that list.
     ...COPY_TREES.flatMap(sourcesUnder),
     ...appPages(),
   ]),

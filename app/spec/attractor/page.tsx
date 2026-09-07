@@ -203,7 +203,7 @@ function scopeLead(scope: AttractorScope): string {
     darkprint === 0
       ? "all of them carrying Attractor's own meaning."
       : `${attractor} carrying Attractor's own meaning and ${darkprint} carrying DarkPrint's, which a runner reads as nothing.`;
-  return `The compiled file writes ${total} attributes here, ${carried} Not every one is written every time: the right-hand column says what a missing value means.`;
+  return `The compiled file writes ${total} attributes here, ${carried} Not every one is written every time: a row that can be missing says so under "when absent".`;
 }
 
 /**
