@@ -497,7 +497,7 @@ function refusalSentence(
           ? "the registry resolved this bundle against its own vocabulary and some node has no card yet."
           : `${progress.placed} of ${progress.total} nodes have their card.`}{" "}
         There is nothing to fix. Write the rest and publish again. The Preview step names
-        the ones still waiting.
+        the ones still waiting. The report below travels with you meanwhile.
       </>
     );
   }

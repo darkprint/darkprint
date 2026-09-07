@@ -190,8 +190,8 @@ export function AttractorOffer({
           pipeline. Its nodes carry{" "}
           <span className="font-mono">prompt</span> and <span className="font-mono">shape</span>{" "}
           and pin no cards, so the validator has nothing to resolve and reports one missing
-          card for every node. DarkPrint can read it here instead, into a draft bundle you
-          can correct and publish.
+          card for every node. DarkPrint can read it here instead, in this tab, into a draft
+          bundle you can correct and publish.
         </p>
       </div>
 

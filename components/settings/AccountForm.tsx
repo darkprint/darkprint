@@ -214,7 +214,7 @@ export function AccountForm({
             id="handle"
             label="Handle"
             className="max-w-[36rem]"
-            hint="Your handle is written into every card you publish as its author. If you rename, the old handle stays reserved: nobody else can take it, and you can claim it back."
+            hint="Your handle is written into every card you publish as its author. If you rename, the old handle stays reserved: nobody else can ever take it, and you can claim it back."
           >
             {/* D-70-15's product bound, 32. Written as a literal and NOT imported from
                 `@/lib/server/naming`: this is a client component, and that barrel reaches

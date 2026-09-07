@@ -65,7 +65,7 @@ export const SCOPE_COPY: Record<Scope, { name: string; blurb: string }> = {
   read: {
     name: "Read",
     blurb:
-      "It raises the rate ceiling for reads over the MCP endpoints and authorizes no write. " +
+      "It raises the rate ceiling for reads over the MCP endpoints and authorises no write. " +
       "Anything that changes your account or your bundles needs a write key or your session.",
   },
   write: {
