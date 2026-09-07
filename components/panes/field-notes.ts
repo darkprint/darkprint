@@ -29,7 +29,7 @@ export const FIELD_NOTE: Record<string, string> = {
 
   type: "Exactly one `node-type` term from the vocabulary. It says what kind of work the node does and whether a person acts at it: a type under `human-in-the-loop`, such as `human-gate`, holds the run until somebody acts; every other type lets it pass. The static analysis groups nodes by this term. Either way it is the author's design choice; nothing here is measured.",
 
-  phase: "Which of the five phases the node stands in, any number of them. The phases describe a blueprint's shape. They do not put every node into one of them. Intake, retrieval and routing are real work that none of the five names, so declaring none is a valid answer. Nothing here reads an empty list as a defect.",
+  phase: "Which of the five phases the node stands in, any number of them. The phases describe a blueprint's shape rather than placing every node in one. Intake, retrieval and routing are real work that none of the five names, so declaring none is a valid answer.",
 
   /* --------------------- behaviour --------------------- */
 
@@ -51,7 +51,7 @@ export const FIELD_NOTE: Record<string, string> = {
 
   /* --------------------- interfaces --------------------- */
 
-  inputs: "The ports data arrives on, each with a name and a `data-type` term from the vocabulary. Every incoming edge is checked against them: an edge whose source produces nothing this node accepts is reported as `bundle/type-mismatch`. These ports are the part of the card the checker reads on every edge.",
+  inputs: "The ports data arrives on, each with a name and a `data-type` term from the vocabulary. Every incoming edge is checked against them: an edge whose source produces nothing this node accepts is reported as `bundle/type-mismatch`.",
 
   outputs: "The ports data leaves on. An output type makes an edge into the next node meaningful. The next node's declared inputs and prohibitions are checked against it.",
 
@@ -71,7 +71,7 @@ export const FIELD_NOTE: Record<string, string> = {
 
   version: "Semver of the card itself. A published version is never edited in place, so a pinned `id@version` means the same content forever and a change ships as a new version beside it.",
 
-  author: "Who wrote the card. This is attribution. It is excluded from the card's digest, along with `provenance`. Two cards describing the same node are the same card, whoever typed them.",
+  author: "Who wrote the card. It is excluded from the card's digest, along with `provenance`. Two cards describing the same node are the same card, whoever typed them.",
 
   provenance: "Where the card came from when it did not start here, such as the blueprint it was forked from or the document behind it. Free text, and excluded from the card's digest.",
 };

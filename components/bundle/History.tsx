@@ -134,9 +134,8 @@ export function History({ entries }: { entries: readonly HistoryEntry[] }) {
       </ul>
 
       <p className="border-t border-line bg-surface-2/50 px-5 py-4 text-xs leading-relaxed text-dim">
-        Each row is a published snapshot, addressed by its digest. There is no repository
-        behind it, so there is nothing to pull. Comparing two releases and copying one into
-        your account are designed and not built.
+        There is no repository behind a release, so there is nothing to pull. Comparing two
+        releases and copying one into your account are designed and not built.
       </p>
     </section>
   );

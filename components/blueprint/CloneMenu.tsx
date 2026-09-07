@@ -279,10 +279,10 @@ function CloneBody({
       <p className="text-xs leading-relaxed text-muted">
         These are static files over HTTP.{" "}
         <span className="text-fg">
-          The command copies {kind === "node" ? "the file" : "the folder"} as it stands
-          right now. That is a snapshot, not a clone.
+          The command copies {kind === "node" ? "the file" : "the folder"} as it stands.
+          That is a snapshot, not a clone.
         </span>{" "}
-        There is no repository behind it and no history. There is nothing to pull
+        There is no repository behind it and no history, so there is nothing to pull
         later. When{" "}
         {kind === "node" ? "a new version is published" : "a card in this blueprint is repinned"},
         come back for the command again rather than re-running an old copy of it.
@@ -322,8 +322,7 @@ function CloneBody({
           {kind === "node"
             ? ", and fetches the version you ask for"
             : ", resolves every card it pins and tells you when one of them moves"}
-          . There is nothing to install today. The line above is a preview. It is not a
-          command.
+          . There is nothing to install today. The line above is a preview, not a command.
         </p>
       </div>
     </div>

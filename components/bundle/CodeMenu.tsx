@@ -115,8 +115,8 @@ export function CodeMenu({
 
         <p className="text-xs leading-relaxed text-muted">
           <span className="text-fg">
-            It copies the release named above, as it stands right now. That is a snapshot,
-            not a clone.
+            It copies the release named above, as it stands. That is a snapshot, not a
+            clone.
           </span>{" "}
           There is no repository behind it and no history, so there is nothing to pull
           later.

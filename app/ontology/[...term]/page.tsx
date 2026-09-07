@@ -384,7 +384,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   <p className="text-xs leading-relaxed text-dim">
                     Read left to right as the arc of a piece of work. The order is the
                     lifecycle, not a ranking. The arrows show the sequence a blueprint
-                    tends to run in. They are not a sequence it must follow.
+                    tends to run in, not one it must follow.
                   </p>
                 </div>
 
@@ -392,7 +392,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   The five are the one dimension a local namespace cannot extend. A node
                   type or a risk marker can be coined by anybody. A sixth phase would be
                   a different definition of what a dark factory is. There is no abstract
-                  root above them either. A root would make the set look open.
+                  root above them either, since a root would make the set look open.
                 </p>
                 <p className="text-sm leading-relaxed text-muted">
                   A card may name one of them, several, or none. The five describe the
@@ -537,13 +537,13 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                   {weight === undefined
                     ? children.length > 0
                       ? `${term.id} is a category, not a marker a card declares. A rule written about ${children.length === 1 ? "the marker" : "the markers"} underneath it catches ${children.length === 1 ? "it" : "them all"}. It carries no weight and never moves the security level. The terms narrower than it carry the weight themselves.`
-                      : `No weight is configured for ${term.id} anywhere, so it counts ${formatWeight(DARKPRINT_CONFIG.security.unknownMarkerWeight)} and does not move the security level. A locally namespaced marker must declare a weight, or it documents a risk without pricing it. The author is told this. It is not silently charged a number nobody chose.`
+                      : `No weight is configured for ${term.id} anywhere, so it counts ${formatWeight(DARKPRINT_CONFIG.security.unknownMarkerWeight)} and does not move the security level. A locally namespaced marker must declare a weight, or it documents a risk without pricing it. The author is told this rather than silently charged a number nobody chose.`
                     : `A blueprint starts at a clean 4, loses the weight of every marker present, and the result is clamped into 1–4. ${term.id} is charged once for the whole blueprint no matter how many nodes carry it. The explanation still lists every node that established it.`}
                 </p>
 
                 <p className="text-sm leading-relaxed text-muted">
                   {inferred
-                    ? `${term.id} is one of the three markers the analyzer derives from the graph itself. It can fire on a blueprint whose cards never mention it. The author who most needs to hear it is the one who did not see it. A card that declares it and a graph that implies it are the same marker, charged once. The finding records which way round it was established.`
+                    ? `${term.id} is one of the three markers the analyzer derives from the graph itself. It can fire on a blueprint whose cards never mention it. A card that declares it and a graph that implies it are the same marker, charged once. The finding records which way round it was established.`
                     : `Nothing in the topology can establish ${term.id} on its own, it is a fact about what the node does that only its author can state. The analyzer takes the card at its word and names the node in the explanation.`}
                 </p>
 
@@ -557,7 +557,7 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                 <p className="text-sm leading-relaxed text-muted">
                   {configured
                     ? "The number lives in the engine's configuration and not in this vocabulary. A recalibration touches one file, so every blueprint is charged the same way. Nothing records which calibration an evaluation was made under, so move a weight and two evaluations stop being comparable."
-                    : `The engine's configuration prices the curated markers. It is silent about this one. The number is the ${term.id.includes("/") ? "namespaced" : "local"} term's own declared weight, read from the vocabulary the bundle ships. Nothing records which weight an evaluation was made under, so move it and two evaluations stop being comparable.`}
+                    : `The engine's configuration prices the curated markers and is silent about this one. The number is the ${term.id.includes("/") ? "namespaced" : "local"} term's own declared weight, read from the vocabulary the bundle ships. Nothing records which weight an evaluation was made under, so move it and two evaluations stop being comparable.`}
                 </p>
                 {/* "Every weight the engine knows" hung off the end of that paragraph,
                     pointing at `#weights` — `ScoringModel`'s own id, which the weight table
@@ -593,12 +593,8 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                         ✓
                       </span>
                       <span>
-                        Nothing in the archive spells it {term.id} any more. A card
-                        that did would still load, type-check and resolve. The resolver
-                        follows the pointer to{" "}
-                        {term.deprecated.replacedBy ?? "its successor"} and carries on.
-                        The zero is not a gap. It is what a finished rename looks like.
-                        The count is the only way to tell.
+                        Nothing in the registry spells it {term.id} any more. The zero is
+                        not a gap; it is what a finished rename looks like.
                       </span>
                     </>
                   ) : reach.cards > 0 ? (
@@ -622,7 +618,6 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
                       <span>
                         No card in the registry names {term.id} yet. None names
                         anything narrower. A term with no takers is not a broken term.
-                        It is vocabulary waiting for a use.
                       </span>
                     </>
                   )}
@@ -773,10 +768,8 @@ export default async function Page({ params }: PageProps<"/ontology/[...term]">)
               <StatRow label="Distinct authors" value={usage.authors.length} />
             </dl>
             <p className="mt-4 text-xs leading-relaxed text-dim">
-              How widely the term is used: the cards that name it, the blueprints those
-              cards appear in, and how many different authors wrote them. The counts are
-              live. Nothing is decided from them yet; promoting a widely used local term
-              into the core vocabulary is planned and not built.
+              The counts are live. Nothing is decided from them yet; promoting a widely
+              used local term into the core vocabulary is planned and not built.
             </p>
           </section>
         </aside>
