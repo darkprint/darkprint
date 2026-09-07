@@ -677,7 +677,8 @@ export function SectionLevels() {
           <p className="mt-4 text-base leading-relaxed text-muted">
             The technology to run at level 4 already exists. The patterns for structuring
             the work are missing: what each agent is handed, and what each one is kept
-            away from. Better models will not supply that. This site collects designs.
+            away from. Better models will not supply that. It is a design problem. This
+            site collects designs.
           </p>
         </div>
 

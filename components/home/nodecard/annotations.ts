@@ -109,7 +109,7 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
     keys: ["inputs"],
     title: "What arrives",
     body:
-      "One input, and it carries a type. `brief` is a `plan`, a term from the shared vocabulary " +
+      "One input. It carries a type. `brief` is a `plan`, a term from the shared vocabulary " +
       "rather than free text. The validator checks an incoming edge against it. In the " +
       "starter blueprint nothing points at this node. The brief arrives with the run.",
   },

@@ -214,7 +214,8 @@ export function WhatACardReaches({
            checked one. */
         note="Risk-marker terms from the vocabulary, and nothing else. Writing one here puts the blast radius in the file, where the validator can hold the author to a word the vocabulary defines."
       >
-        What this step could break if it goes wrong.
+        The blast radius, declared. The card states what this step could break if it goes
+        wrong.
       </ReachRow>
     </ReachList>
   );

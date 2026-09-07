@@ -918,7 +918,7 @@ export function SectionSameRun() {
         </div>
 
         <BeatCaption href="/what-a-blueprint-is#run" cta="What surrounds a run">
-          Reproducibility buys a system you can study a part at a time, and
+          That is what reproducibility buys: a system you can study a part at a time, and
           improve on purpose rather than by luck.
         </BeatCaption>
       </div>

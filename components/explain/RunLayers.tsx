@@ -100,7 +100,7 @@ export const LAYERS = [
     body:
       "This runs the loop. It dispatches the tools, manages the context, keeps the " +
       "session state and holds the safety rules. An agent is a model with tools, memory " +
-      "and state acting in that loop. You bring your own.",
+      "and state acting in that loop. You bring your own harness.",
   },
   {
     id: "rubric",
