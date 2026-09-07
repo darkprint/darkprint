@@ -89,3 +89,15 @@ export const SKILL_INSTALL_FROM_REPOSITORY = "npx skills@latest add Brotherhood9
  * other.
  */
 export const SKILL_ROUTE = "/skill";
+
+/**
+ * Where the blueprint-writing skill opens a live page for the tutorial: a `POST` with an
+ * empty object answers a token and the page's URL, and the draft is then `PUT` to the same
+ * path with the token appended. The skill is a document and prints this URL as prose, so
+ * `lib/skill.test.ts` holds `SKILL.md` and `references/live-preview.md` to this spelling.
+ */
+export const LIVE_OPEN_PATH = "/api/tutorial/live";
+export const LIVE_OPEN_URL = `${SKILL_SITE_ORIGIN}${LIVE_OPEN_PATH}`;
+
+/** The page a token opens, as `/tutorial/live/<token>`. */
+export const LIVE_PAGE_PATH = "/tutorial/live";

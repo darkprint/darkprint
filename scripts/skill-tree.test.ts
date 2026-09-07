@@ -25,6 +25,7 @@ import {
   parseDot,
   readIterationCap,
 } from "@/lib/core";
+import { LIVE_PHASES, LIVE_PHASE_LABELS } from "@/lib/core/tutorial/live";
 import { SKILL_ARCHIVE_ROOT } from "@/lib/skill";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
@@ -37,6 +38,7 @@ const HAND_WRITTEN = [
   "references/dot-and-attractor.md",
   "references/preflight.md",
   "references/writing-cards.md",
+  "references/live-preview.md",
   "templates/topology.dot",
   "templates/card.yaml",
   "templates/shell-tool-card.yaml",
@@ -183,6 +185,38 @@ describe("the hand-written references and SKILL.md", () => {
     );
     expect(concrete.length).toBe(10);
     for (const term of concrete) expect(skill, term.id).toContain(`\`${term.id}\``);
+  });
+
+  /**
+   * The live reference transcribes `lib/core/tutorial/live.ts` by hand, because the skill
+   * reads markdown and not TypeScript. Every phase the PUT accepts has to be a row in it,
+   * in the contract's order, and every label the page prints has to be quoted, or the
+   * skill sends a phase the route refuses or promises the author a heading nobody shows.
+   */
+  it("transcribes every live phase and every page label, in the contract's order", () => {
+    const reference = read("references/live-preview.md");
+    const skill = read("SKILL.md");
+    expect(LIVE_PHASES.length).toBe(9);
+    const rows = LIVE_PHASES.map((phase) => reference.indexOf(`| \`${phase}\` |`));
+    for (const [i, at] of rows.entries()) expect(at, `no row for ${LIVE_PHASES[i]}`).toBeGreaterThan(-1);
+    expect(rows).toEqual([...rows].sort((a, b) => a - b));
+    for (const phase of LIVE_PHASES) expect(skill, phase).toContain(`\`${phase}\``);
+    for (const label of Object.values(LIVE_PHASE_LABELS)) expect(reference).toContain(`"${label}"`);
+  });
+
+  /**
+   * Posture rule 6 forbids writing a file before the author confirms, and a live PUT that
+   * reads `--data @draft.json` is a file written mid-interview. Only the curls aimed at the
+   * live endpoint are held to stdin: the publish curl reads a file after the yes, legitimately.
+   */
+  it.each(["SKILL.md", "references/live-preview.md"])("%s sends the draft from stdin, never from a file", (file) => {
+    /* A curl is its first line plus every line before it that ends in a backslash. */
+    const liveCurls = [...read(file).matchAll(/curl (?:[^\n]*\\\n)*[^\n]*/g)]
+      .map((m) => m[0])
+      .filter((curl) => curl.includes("api/tutorial/live"));
+    expect(liveCurls.length, "no curl aimed at the live endpoint").toBeGreaterThan(1);
+    for (const curl of liveCurls) expect(curl).not.toMatch(/--data(?:-binary)? @[A-Za-z]/);
+    expect(liveCurls.some((curl) => curl.includes("--data-binary @-"))).toBe(true);
   });
 
   it("ships exactly the files the packager expects, and nothing generated is hand-listed", () => {

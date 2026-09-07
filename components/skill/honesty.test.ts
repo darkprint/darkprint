@@ -46,6 +46,12 @@ const CLAIMS: readonly Claim[] = [
     html: SKILL_PAGE,
   },
   {
+    surface: "/skill · step 1",
+    why: "the live preview posts the draft to this site, so the page has to say it happens only when the reader asks for it, in the same paragraph that says nothing else is installed",
+    says: "when you ask it to, the darkprint skill can post your draft to a live page on this site while it interviews you, and it does nothing of the kind otherwise",
+    html: SKILL_PAGE,
+  },
+  {
     surface: "/skill · the closing section",
     why: "publishing exists now, from the browser and with a key, so the limit is not that it cannot be done but that the skill does not do it: the reader does",
     says: "publishing is your step",

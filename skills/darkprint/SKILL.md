@@ -1,6 +1,6 @@
 ---
 name: darkprint
-description: Interview an author from the task they want done to a complete DarkPrint blueprint (topology.dot, cards/*.yaml, blueprint.yaml, README.md), searching the registry for a blueprint or cards to reuse before drawing anything, deriving the topology from declared ports, guarding every fork, and forcing an explicit decision on which node may see the acceptance criteria. Use when someone wants to design an agent pipeline as a typed graph, turn a workflow or a set of prompts into a DarkPrint bundle, write or repair node cards, decide what a node must never receive, or validate a blueprint before publishing it. This skill writes files and validates them. It runs no graph, calls no model on the author's behalf, publishes nothing by itself and sends nothing anywhere until the author chooses to publish, which is a step they take on darkprint.io or with their own API key.
+description: Interview an author from the task they want done to a complete DarkPrint blueprint (topology.dot, cards/*.yaml, blueprint.yaml, README.md), searching the registry for a blueprint or cards to reuse before drawing anything, deriving the topology from declared ports, guarding every fork, and forcing an explicit decision on which node may see the acceptance criteria. Use when someone wants to design an agent pipeline as a typed graph, turn a workflow or a set of prompts into a DarkPrint bundle, write or repair node cards, decide what a node must never receive, or validate a blueprint before publishing it. This skill writes files and validates them. It runs no graph, calls no model on the author's behalf, publishes nothing by itself and sends nothing anywhere unless the author chooses to publish, to validate over HTTP, or to open an optional live preview of the draft on darkprint.io; each is a step they take and can decline.
 ---
 
 # DarkPrint: author a blueprint
@@ -24,7 +24,7 @@ that bundle, by interviewing them. Not by filling in a form for them, and not by
 | Does not write | `factory.dot` or `AGENTS.md`. Neither is part of a published blueprint folder; duplicating either here would give an author a folder that disagrees with the registry's |
 | Validates | with `darkprint validate <dir>` when the CLI is installed, else by POSTing the files to `https://www.darkprint.io/api/validate/bundle`, else by asking the author to drop the folder on `/upload` |
 | Does not do | run the graph, run any node, call a model on the author's behalf, start a server, or publish by itself |
-| Sends | nothing, until the author chooses to validate over HTTP or to publish. Both are steps the author takes and can decline |
+| Sends | nothing, until the author chooses to validate over HTTP, to publish, or to open a live preview; the preview posts the draft to darkprint.io under an unguessable link and nothing else. All three are steps the author takes and can decline |
 
 Say those plainly if the author asks what happens next. The registry has accounts
 (`/welcome`), drafts (`/new`), per-release visibility, publishing from `/upload`, and API
@@ -46,6 +46,8 @@ beyond them.
   against it before you run the validator, so nothing the validator prints surprises you.
 - `references/writing-cards.md`: the prose rules for `action`, `spec`, port descriptions,
   `notes`, `README.md` and `blueprint.yaml`.
+- `references/live-preview.md`: the optional live page on darkprint.io, the draft it takes
+  field by field, the three endpoints and the curl lines. Read it when the author opts in.
 - `templates/`: a skeleton DOT, a skeleton card for a node instructed by prose, and a
   skeleton card for a node that is a shell command. All three are annotated.
 
@@ -89,6 +91,51 @@ This is a grill, not a form.
 Derive everything derivable. The author never types a card id, a DOT node id, a version, a
 `dependencies` list, a port description, a `spec`, a slug or a `condition`. Those come out of
 answers they already gave.
+
+---
+
+# Live preview
+
+The author can watch the blueprint take shape on darkprint.io while you interview them. It
+is their choice, asked once before Q0.1, and declining costs nothing. When they arrived with
+a live URL already (the tutorial at `https://www.darkprint.io/tutorial` hands them one, shaped
+`https://www.darkprint.io/tutorial/live/<token>`), the answer is yes: take the token from the
+last path segment, 32 URL-safe characters, and skip the opening call.
+
+**Open a page.** One POST with an empty object; the answer carries `token` and `url`:
+
+```
+curl -fsS -X POST https://www.darkprint.io/api/tutorial/live \
+  -H "content-type: application/json" --data '{}'
+```
+
+Keep the token in the shell as `$DARKPRINT_LIVE_TOKEN`, print the `url` and ask the author to
+open it. The page is reachable only through that token, it holds the last draft you sent and
+nothing else, and it expires 24 hours after it was opened, refreshed by every accepted PUT.
+
+**Send the draft.** At every phase boundary, once more after the files are written, and
+again after the folder is enriched or published, PUT one JSON `LiveDraft`:
+
+```
+curl -fsS -X PUT "https://www.darkprint.io/api/tutorial/live/$DARKPRINT_LIVE_TOKEN" \
+  -H "content-type: application/json" --data-binary @-
+```
+
+with the JSON on stdin, so no file lands on disk before rule 6 allows it. The draft carries
+`phase` (`need`, `reuse`, `nodes`, `ports`, `guards`, `risk`, `written`, `enriched` or
+`published`), `task` (the Q0.1 sentence), `bundle` (`manifest` with `slug`, `title`, `summary`
+and `tags`; `dot`; `cardFiles` keyed `cards/<id>@<version>.yaml`), `ledger` (the three lists
+of posture rule 4: `settled`, `open`, `blocked`), `hits` (every registry hit you considered,
+each `kind`, `ref`, `title`, `score`) and, after publishing, `publishedRef`. The bundle may
+be partial: send the DOT as soon as the nodes have names and each card as soon as it is
+drafted in memory. The page draws what the engine can resolve and lists the rest as still to
+settle. `references/live-preview.md` has the shape field by field, and the provisional
+manifest to send before Q5.3 has derived the real one.
+
+A PUT that fails is reported to the author in one line and never blocks the interview: the
+folder is the deliverable and the page is a window on it. Nothing else leaves the machine
+because a page is open; the draft is the whole payload, and it holds only what the author
+already said.
 
 ---
 
@@ -422,6 +469,46 @@ absence carries no judgement.
 
 ---
 
+# Enrich an existing blueprint
+
+The author has a folder already and wants to add a capability to it: observability on top of
+a node, or a review gate before the release. The interview is a diff, the way Q1.1 makes it
+one, and the registry is searched first for the same reason.
+
+1. **Read the folder.** `topology.dot`, every card in `cards/`, `blueprint.yaml`, `README.md`.
+   Which node the addition attaches to, and what that node emits, are facts; look them up.
+   What the addition should do is the author's sentence; take it as the task.
+2. **Search with the addition as the task.** `find_blueprints` with that sentence, or the
+   anonymous GET from Phase 1. Show the top hits in the author's words, `ref`, `title` and
+   `score`, and recommend one. When a live page is open, send them as `hits`. The tutorial's
+   case, observability on a node, is `darkprint/pipeline-observability`.
+3. **Fetch the one they chose.** `get_blueprint` with its owner and slug, or
+   `GET https://www.darkprint.io/api/mcp/blueprints/<owner>/<slug>/bundle`. The answer lists
+   the release's files by path, with the version and the digest that name those bytes.
+4. **Merge, in this order.**
+   - Copy its `cards/<id>@<version>.yaml` files into `cards/` byte for byte, pinned by
+     `id@version`. A file already there under the same name is either the same bytes or a
+     conflict you report; it is never overwritten.
+   - Add its nodes and edges to `topology.dot`, keeping every `card=` pin. A DOT id that
+     collides with one already in the graph is renamed in the DOT only; the card keeps its id.
+   - Wire the addition to the graph by data type: an input of the new nodes is fed by an
+     output of the existing node whose type carries into it, source narrower than target as
+     Q3.4 says, never broader. Name the port on both ends with `out=` and `in=`. An input
+     nothing in the graph produces goes back to the author, as Q3.3 does.
+   - Re-ask Q4.2 over the new edges: does the node that produces the work now see the
+     criteria through anything you just drew? Guard every new fork as Q4.7 says. The existing
+     `cannot` and `will_not` entries stand; the addition never loosens one.
+   - Show back the three things, get a yes, then write.
+5. **Validate as in "After writing"**, and read every warning back before the author sees it.
+6. **Name the lineage in `README.md`**: which blueprint was merged in, at which version and
+   digest, and which of its nodes now sit in this graph.
+7. **When a live page is open**, PUT phase `enriched` with the grown bundle and the `hits`.
+
+The fetched cards are reused, never rewritten: a card you edit is a new card with a new id at
+`1.0.0`, as Q1.2 says. Nothing here runs the graph or the nodes it gained.
+
+---
+
 # Where you stop asking and start writing
 
 The stop condition is **the closing of the port ledger, with every fork guarded and Q4.2
@@ -541,10 +628,17 @@ A warning you cannot explain is a defect you have not found yet.
 
 ## 2. Hand-off
 
-Publishing is the author's step, and it needs their account. Tell them the two ways, and
-which one you recommend:
+Publishing is the author's step, and it needs their account. Tell them the ways below and
+which one you recommend; for a first release the short path is usually it:
 
-**From the browser.** Sign in at `https://www.darkprint.io/welcome`; create the slug at
+**The short path, private by default.** Sign in at `https://www.darkprint.io/welcome`, drop
+the folder on `https://www.darkprint.io/upload`, and press Publish. Visibility defaults to
+private there, so the blueprint is theirs alone until they change it on its own page, and a
+slug never published before is created by that first publish. When a live page is open,
+PUT phase `published` with `publishedRef` set to `<handle>/<slug>` once the upload page
+reports the release.
+
+**From the browser, naming it first.** Sign in at `https://www.darkprint.io/welcome`; create the slug at
 `https://www.darkprint.io/new`, choosing public or private; then drop the folder on
 `https://www.darkprint.io/upload?owner=<handle>&slug=<slug>` and press Publish. The upload
 page re-runs the validator and refuses only errors; every warning you predicted appears

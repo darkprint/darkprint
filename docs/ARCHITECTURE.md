@@ -377,7 +377,7 @@ Environment: `DARKPRINT_URL` (registry base, default `https://www.darkprint.io`)
 
 ## 11. The skill
 
-`skills/darkprint/` is the blueprint-writing skill: `SKILL.md`, five references (`ontology.md`
+`skills/darkprint/` is the blueprint-writing skill: `SKILL.md`, six references (`ontology.md`
 and `card-schema.md` are generated from the engine by `npm run generate:skill-refs`, and
 `scripts/generate-skill-refs.test.ts` fails when they are stale) and three annotated templates.
 It writes `topology.dot`, `cards/<id>@<version>.yaml`, `blueprint.yaml`, `README.md` and
@@ -391,6 +391,20 @@ Phase 4 decides isolation and the guard on every fork; Phase 5 covers risk and i
 edge list, the prohibitions and the judged nodes' specs are shown back before any file is
 written; the result is validated with `darkprint validate`, else `POST /api/validate/bundle`,
 else `/upload`, and handed to the author to publish.
+
+The live preview and the enrich mode: when the author opts in, or arrives from `/tutorial`
+with a live URL, the skill opens a page with `POST /api/tutorial/live` (or takes the token
+off the URL), keeps the token in the shell, and `PUT`s a `LiveDraft` from
+`lib/core/tutorial/live.ts` to `/api/tutorial/live/<token>` at every phase boundary and once
+more after writing, so `/tutorial/live/<token>` draws the graph as it takes shape. The bundle
+in a draft may be partial. A failed PUT is one line to the author and never blocks the
+interview, and the draft is all that leaves the machine. The enrich mode takes a folder
+that exists and an addition in prose, searches with `find_blueprints`, fetches the chosen
+blueprint with `get_blueprint`, copies its cards verbatim, adds its nodes and edges wired to
+the existing node's outputs by data type, re-asks Q4.2 over the new edges, validates as
+after a first write, names the lineage in `README.md`, and sends phase `enriched` with the
+hits when a page is open. `references/live-preview.md` holds the draft field by field and
+the curl lines.
 
 Install: `prebuild` packs the tree into `public/skill/darkprint.tgz` with a deterministic tar
 and a `manifest.json` of per-file hashes. Claude Code: `curl -fsSL
