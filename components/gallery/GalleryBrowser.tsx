@@ -510,7 +510,7 @@ export function GalleryBrowser({
               onClick={clearFilters}
               className="mt-1 cursor-pointer font-mono text-xs text-cyan underline-offset-4 hoverable:hover:underline"
             >
-              Reset all filters
+              Clear filters
             </button>
           )}
         </div>

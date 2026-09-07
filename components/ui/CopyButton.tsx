@@ -69,7 +69,7 @@ export function CopyButton({
     <button
       type="button"
       onClick={copy}
-      aria-label={copied ? `${ariaLabel} — copied to the clipboard` : ariaLabel}
+      aria-label={copied ? `${ariaLabel}, copied to the clipboard` : ariaLabel}
       className={cx(
         "shrink-0 rounded border border-line px-2 py-1 font-mono text-[11px] text-muted transition-colors hoverable:hover:border-cyan hoverable:hover:text-cyan",
         className,

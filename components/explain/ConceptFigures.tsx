@@ -150,7 +150,7 @@ export function WhatACardReaches({
         /* The direction is the claim: a graph-level model_stylesheet looks like the outer
            scope, so a reader arriving from the DOT side reads it as the thing that wins,
            and Attractor spec §8.5 ranks it the other way. `rows.test.ts` reads this note. */
-        note="Written the way the provider writes it. A stylesheet on the graph is a default for the nodes that name no model; a line here outranks it. A reader can still point the run at something else."
+        note="A stylesheet on the graph is a default for the nodes that name no model; a line here outranks it. A reader can still point the run at something else."
       >
         The model this step runs on, named the way the provider names it.
       </ReachRow>
@@ -185,8 +185,7 @@ export function WhatACardReaches({
           </>
         }
       >
-        A written procedure it follows. A pointer only: the document does not travel in
-        the folder.
+        A written procedure it follows. A pointer only.
       </ReachRow>
       <ReachRow
         field="cannot"
@@ -215,8 +214,7 @@ export function WhatACardReaches({
            checked one. */
         note="Risk-marker terms from the vocabulary, and nothing else. Writing one here puts the blast radius in the file, where the validator can hold the author to a word the vocabulary defines."
       >
-        The blast radius, declared. The card states what this step could break if it goes
-        wrong. A reader does not need to guess.
+        What this step could break if it goes wrong.
       </ReachRow>
     </ReachList>
   );

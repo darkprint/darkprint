@@ -83,7 +83,7 @@ function EmptyState() {
       <span className="font-mono text-emerald" aria-hidden>
         ✓
       </span>
-      No problems found, the validator had nothing to say about this bundle.
+      The validator had nothing to say about this bundle.
     </p>
   );
 }

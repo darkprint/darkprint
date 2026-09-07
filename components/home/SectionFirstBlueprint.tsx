@@ -26,7 +26,7 @@ const STEPS = [
       <>
         Install the{" "}
         <Link href="/skill" className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hoverable:hover:decoration-cyan">
-          blueprint-writing skill
+          DarkPrint skill
         </Link>{" "}
         in your coding agent and describe a small task: watch the prices of a few trading
         cards across the sites that list them. The DarkPrint skill interviews you and drafts

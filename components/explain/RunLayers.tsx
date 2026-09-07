@@ -91,8 +91,8 @@ export const LAYERS = [
     role: "the specification",
     body:
       "The graph and the cards it pins define which agents exist, what each agent is " +
-      "handed, and what each agent is kept away from. It is text. It is versioned and " +
-      "checkable. It is the only one of the four you download from here.",
+      "handed, and what each agent is kept away from. It is text, versioned and " +
+      "checkable, and the only one of the four you download from here.",
   },
   {
     id: "harness",
@@ -100,8 +100,7 @@ export const LAYERS = [
     body:
       "This runs the loop. It dispatches the tools, manages the context, keeps the " +
       "session state and holds the safety rules. An agent is a model with tools, memory " +
-      "and state acting in that loop. The harness is what the loop runs on. You bring " +
-      "your own.",
+      "and state acting in that loop. You bring your own.",
   },
   {
     id: "rubric",

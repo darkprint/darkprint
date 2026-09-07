@@ -63,7 +63,7 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
     body:
       "The operation, in one sentence a person can read at a glance. Nothing checks it. " +
       "`action` is prose for whoever opens the card. It travels into the " +
-      "download unchanged. The instruction the agent is actually handed is the block under it.",
+      "download unchanged. The instruction the agent is handed is the block under it.",
   },
   {
     id: "spec",
@@ -101,7 +101,7 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
     title: "The behaviour document",
     body:
       "`skills/code-builder.md` is where this agent's behaviour is written. The field is a " +
-      "pointer. Nothing here reads what it points at. No skill document travels in " +
+      "pointer. Nothing here reads what it points at, and no skill document travels in " +
       "the download. Each blueprint's README lists the paths you supply yourself.",
   },
   {
@@ -109,7 +109,7 @@ export const NODE_CARD_ANNOTATIONS: readonly AnnotationSpec[] = [
     keys: ["inputs"],
     title: "What arrives",
     body:
-      "One input. It carries a type. `brief` is a `plan`, a term from the shared vocabulary " +
+      "One input, and it carries a type. `brief` is a `plan`, a term from the shared vocabulary " +
       "rather than free text. The validator checks an incoming edge against it. In the " +
       "starter blueprint nothing points at this node. The brief arrives with the run.",
   },
