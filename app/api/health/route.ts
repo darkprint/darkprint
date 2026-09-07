@@ -19,7 +19,13 @@ const PROVIDERS = {
 
 interface Health {
   ok: boolean;
-  db: { latencyMs: number; migrationsHead: string | null } | { error: string };
+  /**
+   * `migrationsApplied` sits beside the head because the head alone cannot tell a database
+   * with the additive migrations applied ahead of the destructive one (head 0010, nine
+   * applied) from a fully migrated one (head 0010, ten applied), and the deploy runbook
+   * passes through exactly that state.
+   */
+  db: { latencyMs: number; migrationsHead: string | null; migrationsApplied: number } | { error: string };
   encoder: "present" | "absent";
   storage: "configured" | "missing";
   auth: { providers: string[] };
@@ -34,8 +40,8 @@ async function readDb(): Promise<Health["db"]> {
     const started = performance.now();
     await query("select 1");
     const latencyMs = Math.round(performance.now() - started);
-    const head = await query<{ id: string }>(`select id from "_migrations" order by id desc limit 1`);
-    return { latencyMs, migrationsHead: head.rows[0]?.id ?? null };
+    const applied = await query<{ id: string }>(`select id from "_migrations" order by id`);
+    return { latencyMs, migrationsHead: applied.rows.at(-1)?.id ?? null, migrationsApplied: applied.rowCount ?? applied.rows.length };
   } catch (err) {
     /* The message names the failure class (a refused connection, a missing table) and never
        the connection string: `pg` does not put credentials in its errors. */
