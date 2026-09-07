@@ -32,7 +32,7 @@
    has to carry the register without carrying an honesty claim's shape.
 
    ── The fork's refusals are held as a table, not as a render ──
-   `POST /api/cards/{id}/fork` shipped (SEAM-118) and this header now calls it. Its live
+   `POST /api/cards/{id}/fork` shipped and this header now calls it. Its live
    half cannot be rendered here at all: it reaches for `useRouter`, which throws outside an
    App Router tree under `environment: "node"`, and there is no DOM to click in either. So
    the part worth guarding is held where it can be: `refusalFor` is a pure table from the
@@ -136,8 +136,8 @@ describe("star, fork, download card, in that order", () => {
   });
 
   /**
-   * `ForkAction kind="node"` held the first slot until this pass. It is a dropdown that
-   * explains what forking a card would mean and then points at the download, which is the
+   * A fork explainer held the first slot until this pass. It was a dropdown that
+   * explained what forking a card would mean and then pointed at the download, which is the
    * wrong thing to draw beside a Fork button: two controls a click apart, the left one
    * explaining that the right one does not exist. A later pass restoring it would put four
    * controls in a row the owner asked down to three.

@@ -1,6 +1,6 @@
 /**
  * Scratch coverage of `DELETE /api/bundles/[owner]/[slug]`, run by the implementer only —
- * does not count as verification (docs/ORCHESTRATION.md, Agent A). Same DATABASE_URL-swap
+ * does not count as verification. Same DATABASE_URL-swap
  * pattern as the sibling `visibility/route.scratch.test.ts`.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";

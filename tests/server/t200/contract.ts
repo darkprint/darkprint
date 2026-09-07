@@ -54,7 +54,7 @@ export const SEARCH = "@/lib/server/search";
 /* --------------------- what the contract publishes --------------------- */
 
 /**
- * The Published signatures block of `backend.md` §T200, quoted so a red says where the
+ * The Published signatures block of T200's contract, quoted so a red says where the
  * name comes from and not merely that a test wanted it.
  */
 export const PUBLISHED = {
@@ -107,7 +107,7 @@ export function loadSearch(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${SEARCH} does not load.\n` +
-          `  backend.md §T200 owns \`lib/server/search/**\` and publishes four functions: ` +
+          `  T200 owns \`lib/server/search/**\` and publishes four functions: ` +
           `${PUBLISHED_NAMES.join(", ")}.\n` +
           `  This is a failed acceptance criterion — the search surface is absent — and not ` +
           `a broken test. The specifier is a literal so the \`@\` alias resolves.`,
@@ -724,7 +724,7 @@ export function sameSet(a: readonly string[], b: readonly string[]): boolean {
  *     GET /api/search/cards?q&type&phase&human&risk&sort                -> Results<CardSummary>
  *     GET /api/search/terms?q&kind&origin                               -> Results<OntologyTerm>
  *
- * GET and not SEAM-93's `POST /api/search`, decided by the contract's own justification:
+ * GET and not the mock's `POST /api/search`, decided by the contract's own justification:
  * the parameter sets are fixed by the live URLs and may not change or shared links break,
  * and a POST body is not a link. The 200 body is the `Results` object itself, not an
  * envelope around it.
@@ -778,7 +778,7 @@ function routeTable(): DiscoveredRoute[] {
   if (found.length === 0) {
     throw new Error(
       `No route file exists under app/api/search/**.\n` +
-        `  backend.md §T200 owns that tree and D-200-16 publishes three GET routes in it: ` +
+        `  T200 owns that tree and D-200-16 publishes three GET routes in it: ` +
         `${ROUTE_NAMES.map((n) => ROUTES[n].url).join(", ")}.\n` +
         `  AC3's "an empty result returns the facet vocabularies, not a 404" is HTTP ` +
         `language, so a route is unambiguously in scope.\n` +

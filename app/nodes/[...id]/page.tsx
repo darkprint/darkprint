@@ -36,15 +36,6 @@ import { Ticked } from "@/components/ui/Ticked";
 import { FieldDisclosure } from "@/components/ui/FieldDisclosure";
 import { FIELD_NOTE } from "@/components/panes/field-notes";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-09) (cited at line 53): GET /api/cards/{id}
-// TODO(SEAM-10) (cited at line 841): GET /api/cards/{id}@{version}/source
-// TODO(SEAM-12) (cited at line 839): folded into SEAM-09
-// TODO(SEAM-22) (cited at line 999): GET /cards/{id}@{version}.yaml (static)
-// TODO(SEAM-76) (cited at line 859): POST /api/cards/{id}/star
-// TODO(SEAM-78) (cited at line 858): POST /api/cards/{id}/downloads
-// TODO(SEAM-80) (cited at line 1892): POST /api/cards/{id}/comments
-
 /**
  * An id outside `generateStaticParams` is a 404 at build time rather than a render at
  * request time. The archive reader behind this page walks `content/` off the working
@@ -1185,13 +1176,13 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             Card". Three controls where four stood, and each of the two that left went for
             its own reason.
 
-            `ForkAction kind="node"` stood first. It was a dropdown that explained what
-            forking a card would mean and then pointed at the download, which was the right
-            thing to draw while a card had no fork at all. Beside a Fork button it is the
-            wrong thing: two controls a click apart, the left one explaining that the right
-            one does not exist. `CardForkButton` takes the slot and does the thing instead,
-            over `POST /api/cards/{id}/fork` (SEAM-118), which is why that branch of
-            `ForkAction` is deleted rather than moved.
+            A fork explainer stood first: a dropdown that explained what forking a card
+            would mean and then pointed at the download, which was the right thing to draw
+            while a card had no fork at all. Beside a Fork button it is the wrong thing: two
+            controls a click apart, the left one explaining that the right one does not
+            exist. `CardForkButton` takes the slot and does the thing instead, over
+            `POST /api/cards/{id}/fork`, which is why the explainer is deleted rather than
+            moved.
 
             The "Download card" button stood third, and it has not been dropped: it is
             passed to `CloneMenu` as `save` and is the first thing inside that panel. The
@@ -1199,10 +1190,9 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             command — and the row the owner asked for has room for the idea, not for both
             drawings of it.
 
-            The group's `download` anchor left with `ForkAction`. Its own comment recorded
-            that it existed because that component's panel linked it, and nothing on this
-            page links it now; `components/blueprint/DownloadPanel.tsx` still declares the
-            same anchor for the blueprint page that does. Spelled here without the
+            The group's `download` anchor left with the fork explainer. Its own comment
+            recorded that it existed because that component's panel linked it, and nothing
+            on this page links it now. Spelled here without the
             `id=` attribute form on purpose — `components/site/anchors.test.ts` walks the
             source for that literal, so a comment writing it out is an anchor as far as
             that guard is concerned, and it found this one.
@@ -1225,7 +1215,7 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 signedIn: actor.kind === "account",
               }}
             />
-            {/* `fork`, so this is live: `POST /api/cards/{id}/fork` (SEAM-118) copies this
+            {/* `fork`, so this is live: `POST /api/cards/{id}/fork` copies this
                 version into the reader's own namespace. The URL carries the BARE card id,
                 one segment or two, and the version travels in the body because the URL has
                 no room for it and the route refuses to fork whatever is latest.
@@ -1675,10 +1665,9 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               </section>
 
               {/* No em dash in here, even though `app/nodes` is outside the trees
-                  `components/build/workspace.test.ts` guards. That exemption exists for copy
-                  that predates doc 2 §2.5, not as a licence for new copy, and the guard
-                  file says as much about `ForkAction.tsx`. This sentence was written in
-                  this pass, so it follows the rule the guard cannot see it break. */}
+                  `components/site/copy-rules.test.ts` guards. That exemption exists for copy
+                  that predates doc 2 §2.5, not as a licence for new copy. This sentence was
+                  written in this pass, so it follows the rule the guard cannot see it break. */}
               <p className="text-xs leading-relaxed text-dim">
                 Only a data type can be checked automatically, because a data type is the
                 only thing an edge carries. The promises in the second group cannot be read

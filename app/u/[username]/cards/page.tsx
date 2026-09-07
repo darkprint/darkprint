@@ -7,11 +7,6 @@ import { EmptyState, ShelfToolbar } from "@/components/profile/parts";
 import { profileMetadata, profileView } from "@/components/profile/load";
 import { readSession } from "@/components/profile/session";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-59 LIVE (T132): the visitor branch below, off `cardsOwnedBy` — see `load.ts`.
-// SEAM-113 LIVE (T132): the owner branch below, public and private together, off
-//   `cardsOwnedBy` — see `load.ts`.
-
 /**
  * `/u/[username]/cards` — every node card this handle's account HOLDS, public and (for the
  * owner) private together.

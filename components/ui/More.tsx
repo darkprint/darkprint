@@ -17,8 +17,8 @@ import { cx } from "@/lib/format";
    been deleted and this component outlived them, which is the
    argument for having moved it.
 
-   A native `<details>`, the same disclosure `DownloadPanel` and
-   `DiagnosticList` already use, so the whole site opens one the
+   A native `<details>`, the same disclosure `DiagnosticList`
+   already uses, so the whole site opens one the
    same way. It is deliberately not a tab and not a modal: the
    content stays in the document, keyboard reachable, printable,
    searchable by find-in-page, and — the reason it is allowed here

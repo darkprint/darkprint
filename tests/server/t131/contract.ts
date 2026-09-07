@@ -89,7 +89,7 @@ export const ACCOUNTS = "@/lib/server/accounts";
 /* --------------------- what the contract publishes --------------------- */
 
 /**
- * The Published signatures block of `backend.md` §T131, D-131-04, quoted so a red says where
+ * The Published signatures block of T131's contract (D-131-04), quoted so a red says where
  * the name comes from rather than merely that a test wanted it.
  *
  * **This section had no block at all until D-131-04.** Both halves reported binding to T130's
@@ -289,7 +289,7 @@ export function asProfileRecord(value: unknown, where: string): ProfileRecord {
     throw new Error(
       `${where}.pinned is ${describe_(r.pinned)}; D-131-04 declares ` +
         `\`pinned: readonly PinnedRef[]\` — REFS the actor can resolve, never resolved items ` +
-        `(SEAM-55's \`PinnedItem[]\` is a frontend view shape and is superseded).`,
+        `(the frontend's \`PinnedItem[]\` is a view shape and is superseded).`,
     );
   }
   r.pinned.forEach((pin, i) => asPinnedRef(pin, `${where}.pinned[${i}]`));
@@ -368,7 +368,7 @@ export interface SupportAnswer {
  * `toggleFollow`'s published return.
  *
  * **The member is `followedByCaller` at the MODULE and `watching` on the WIRE, and D-131-04(c)
- * publishes both on purpose** — the module keeps the inherited suite's spelling, SEAM-57 keeps
+ * publishes both on purpose** — the module keeps the inherited suite's spelling, the wire keeps
  * the mock's, and the route maps between them. So a module answering `watching` is wrong here
  * and a route answering `followedByCaller` is wrong there, and neither validator may be reused
  * for the other surface.
@@ -382,7 +382,7 @@ export function asFollowAnswer(value: unknown, where: string): FollowAnswer {
     throw new Error(
       `${where}.followedByCaller is ${describe_(a.followedByCaller)}; ` +
         `${PUBLISHED.toggleFollow}\n` +
-        `  \`watching\` is the WIRE's spelling (SEAM-57, D-131-04(c)); the module says ` +
+        `  \`watching\` is the WIRE's spelling (D-131-04(c)); the module says ` +
         `\`followedByCaller\` and the route maps.`,
     );
   }
@@ -967,7 +967,7 @@ export const AUTHOR_ROUTE = "GET /api/authors/[handle]";
 /**
  * The write route D-131-01 publishes, and the ONE it publishes.
  *
- * `POST/DELETE /api/authors/{handle}/watch` is SEAM-57's and appears nowhere in T131's
+ * `POST/DELETE /api/authors/{handle}/watch` is the frontend's and appears nowhere in T131's
  * section. That absence is reported rather than filled: T130's D-130-05 named both write
  * routes as blocked precisely so a blind author could see a decision instead of an oversight,
  * and inventing the follow route's method, body and status here would be the candidate list

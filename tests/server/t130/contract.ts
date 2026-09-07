@@ -26,8 +26,8 @@
    AC5's 404 lived at a surface that did not exist and inventing
    URLs would have been the candidate list this run charges.
    **D-130-05 published it** — `GET /api/authors/[handle]` ->
-   `200 ProfileRecord | 404` — and `seams.md`'s SEAM-52/53
-   `ProfileView` is superseded with it. So `routes.test.ts` exists.
+   `200 ProfileRecord | 404` — and the frontend's `ProfileView`
+   is superseded with it. So `routes.test.ts` exists.
 
    **The two WRITE routes are still not written, and that is the
    ruling rather than an omission.** D-130-05 publishes them as
@@ -97,7 +97,7 @@ export function loadProfiles(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${PROFILES} does not load.\n` +
-          `  backend.md §T130 owns \`lib/server/profiles/**\` and publishes three functions: ` +
+          `  T130 owns \`lib/server/profiles/**\` and publishes three functions: ` +
           `${FUNCTION_NAMES.join(", ")}.\n` +
           `  This is a failed acceptance criterion — the profile surface is absent — and not ` +
           `a broken test. The specifier is a literal so the \`@\` alias resolves.`,
@@ -111,7 +111,7 @@ export function loadProfiles(): Promise<Namespace> {
 /* --------------------- what the contract publishes --------------------- */
 
 /**
- * The Published signatures block of backend.md §T130, quoted so a red says where the name
+ * The Published signatures block of T130's contract, quoted so a red says where the name
  * comes from rather than merely that a test wanted it.
  */
 export const PUBLISHED = {
@@ -247,7 +247,7 @@ function integer(value: unknown, where: string, clause: string): number {
  * signature. Every message quotes the block, so a red says which clause is unmet.
  *
  * `validated` is a NUMBER. The first version of this file pinned it as a boolean, which is
- * what the block said, while reporting that `lib/data/profiles.ts:57` and SEAM-56 both make
+ * what the block said, while reporting that `lib/data/profiles.ts:57` and the profile header both make
  * it a count and that `PublicAuthor` already carries the boolean — so the published field
  * was either a duplicate or a wrong transcription. **D-130-01 ruled it the count**, by
  * displacement, and this pin follows the ruling rather than the sentence it replaced.

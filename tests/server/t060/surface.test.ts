@@ -55,7 +55,7 @@ type Exact<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ?
 /**
  * Three compile-time assertions and one runtime value. `npm run typecheck` rejects this
  * declaration the moment `@/lib/server/policy` publishes a type whose shape differs from
- * the block in `backend.md`; the array is exported into the test below so that neither
+ * the published block; the array is exported into the test below so that neither
  * eslint nor the reader has to wonder what an unused constant is doing here.
  */
 const CONTRACT_TYPES_MATCH: [

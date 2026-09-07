@@ -1053,7 +1053,7 @@ describe("a frozen file and a generated file are the same kind of answer", () =>
 describe("digest still resolves before version once a freeze exists", () => {
   it("serves the pinned release's frozen bytes for a ref carrying a newer version", async () => {
     /*
-     * backend.md §T090: "`serveFile` resolves `digest` **before** `version`, and a `version`
+     * T090's contract: "`serveFile` resolves `digest` **before** `version`, and a `version`
      * reference is a convenience that moves while a digest reference never does."
      *
      * t090/serve.test.ts already measures that clause. It cannot measure it with a frozen

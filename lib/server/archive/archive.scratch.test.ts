@@ -1,7 +1,7 @@
 /**
  * Scratch coverage against a real database, run by the implementer only —
- * does not count as verification (docs/ORCHESTRATION.md, Agent A). One
- * file per acceptance criterion in backend.md's T010 section.
+ * does not count as verification. One
+ * file per acceptance criterion in T010.
  */
 import { bundleDigest } from "@/lib/core";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";

@@ -1,6 +1,3 @@
-
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-41) (cited at line 99): POST /api/validate/attractor
 /* ============================================================
    DarkPrint core — the public surface
    The one module the app imports: `import { loadBundle } from

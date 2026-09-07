@@ -1,7 +1,7 @@
 /* ============================================================
    T090 — the published surface
 
-   backend.md, "The contract must name the interface, not only the
+   "The contract must name the interface, not only the
    behaviour": three separate T000 defects had one cause, which was
    a contract that said what each capability must *do* and never
    what it must *look like*. These tests bind the three names the
@@ -63,7 +63,7 @@ describe("T090 published surface", () => {
       expect(
         fn.length,
         `${EXPORT}'s \`${name}\` declares ${fn.length} parameters.\n` +
-          `  backend.md §T090: ${PUBLISHED[name as keyof typeof PUBLISHED]}\n` +
+          `  T090's contract: ${PUBLISHED[name as keyof typeof PUBLISHED]}\n` +
           `  A default or rest parameter moves this number legitimately; a swapped parameter ` +
           `list does not, and the two are indistinguishable to a caller crossing a dynamic ` +
           `import.`,

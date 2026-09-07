@@ -1,6 +1,6 @@
 /**
  * Scratch coverage of `POST /api/bundles/draft`, run by the implementer only — does not
- * count as verification (docs/ORCHESTRATION.md, Agent A). Modeled on
+ * count as verification. Modeled on
  * `app/api/files/routes.scratch.test.ts`'s DATABASE_URL-swap pattern: `getSharedDbClient`
  * is lazy and cached on `globalThis`, so pointing `DATABASE_URL` at a scratch database
  * before the route's first call binds it there for good.

@@ -16,7 +16,7 @@
    produce. The specifier stays a literal so the `@` alias resolves.
 
    ── why the barrel ──
-   backend.md §T025 now states it: "All four are published from the
+   T025's contract states it: "All four are published from the
    barrel `@/lib/server/versioning`. Deep paths are not the public
    interface". The first round of these tests bound to that specifier
    as an inference — the only one consistent with the rule
@@ -68,7 +68,7 @@ export function loadVersioning(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${VERSIONING} does not load.\n` +
-          `  backend.md §T025 owns \`lib/server/versioning/**\` and publishes ` +
+          `  T025 owns \`lib/server/versioning/**\` and publishes ` +
           `\`inferBlueprintBump\` and \`checkDeclaredBump\`.\n` +
           `  This is a failed acceptance criterion — the service is absent — and not a ` +
           `broken test. The specifier is a literal so the \`@\` alias resolves; if the ` +
@@ -83,7 +83,7 @@ export function loadVersioning(): Promise<Namespace> {
 /* --------------------- what the contract publishes --------------------- */
 
 /**
- * The Published signatures block of backend.md §T025, quoted so a red says where the name
+ * The Published signatures block of T025's contract, quoted so a red says where the name
  * comes from and not merely that a test wanted it. These are the whole of the named
  * surface. `BumpLevel`, `BumpAnalysis`, `inferBump`, `checkVersionChain`, `parseSemver`
  * and `compareSemver` are **consumed from `@/lib/core`, never reimplemented**, so they are
@@ -143,8 +143,8 @@ export function required(mod: Namespace, name: keyof typeof PUBLISHED): unknown 
     `${VERSIONING} exports no \`${name}\`.\n` +
       `  the contract publishes: ${PUBLISHED[name]}\n` +
       `  found: ${exported}\n` +
-      `  This is a failed acceptance criterion, not a naming difference. backend.md's ` +
-      `T025 Published signatures block names this export exactly, and the rule above it ` +
+      `  This is a failed acceptance criterion, not a naming difference. T025's ` +
+      `Published signatures block names this export exactly, and the rule above it ` +
       `("the contract must name the interface, not only the behaviour") exists because ` +
       `two rounds of candidate lists in T000 each resolved to the wrong thing. Do not add ` +
       `a synonym to a list here; publish the name the contract states.`,

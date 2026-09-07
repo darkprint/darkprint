@@ -152,7 +152,7 @@ describe("AC1 against the build", () => {
   });
 
   it("AC4: the archive's bucket sizes do not sum to its card count", async () => {
-    /* The one place the inequality is a fact rather than a fixture. backend.md: "assert the
+    /* The one place the inequality is a fact rather than a fixture. The contract: "assert the
        sum only against the archive" — on a small fixture one card in two buckets and one in
        none cancel exactly, and the inequality reds against correct code. Here it does not
        cancel: 17 of the 57 card versions declare no phase and one declares two. */

@@ -1,9 +1,8 @@
 /* ============================================================
    GET / PATCH /api/account/notifications
-   The signed-in account's four notification preferences
-   (D-190-05, superseding SEAM-47's `NotificationSetting[]` response
-   shape — that shape is the FRONTEND fixture's row, carrying a
-   title and a note this API has no business restating).
+   The signed-in account's four notification preferences. Not the
+   frontend fixture's `NotificationSetting[]` row, which carries a
+   title and a note this API has no business restating.
 
    Both answer `200 { preferences }` and the 401 is `withSession`'s
    — a wrapping guard is what makes "the handler never runs"

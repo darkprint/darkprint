@@ -17,22 +17,6 @@ import { readSession } from "@/components/profile/session";
 import { profileHref } from "@/components/profile/author";
 import { SIGN_IN_PRIVACY_NOTE, SignInButtons } from "@/components/auth/SignInButtons";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-43 LIVE: GET /api/account, read in-process here rather than over HTTP.
-// SEAM-52 / SEAM-111 LIVE: the authored counts, off `@/lib/server/profiles` and
-//   `@/lib/server/registry` rather than a per-handle counts endpoint.
-// SEAM-45, SEAM-46, SEAM-47, SEAM-48 LIVE: see `components/settings/AccountForm.tsx`.
-// SEAM-49 PLANNED: no per-account validator read exists, and since Q14 there is no ballot for
-//   one to weight: GET/POST /api/blueprints/{owner}/{slug}/votes and the write path under it
-//   are deleted. This section displays a badge; nothing anywhere applies a weight.
-// SEAM-50 LIVE: GET /api/account/delete/plan, POST /api/account/delete — see
-//   `components/settings/DangerZone.tsx`.
-// SEAM-51 LIVE: GET /api/transfer/plan, POST /api/transfer — see `DangerZone.tsx`. (SEAM-51's
-//   own path, `POST /api/bundles/{owner}/{slug}/transfer`, was never built; D-120-14 records
-//   it stale in favour of the two routes actually shipped.)
-// NEW, no prior SEAM number: GET/POST /api/account/keys, DELETE /api/account/keys/[keyId] —
-//   see `components/settings/ApiKeys.tsx`.
-
 /* ============================================================
    /settings — what the registry knows about you.
 

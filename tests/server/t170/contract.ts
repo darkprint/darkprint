@@ -5,7 +5,7 @@
    and this module is imported by the suites beside it.
 
    ── what this author could and could not see ──
-   GIVEN, and read: `backend.md`'s §T170 in full with D-WAVE-01, plus
+   GIVEN, and read: the contract's §T170 in full with D-WAVE-01, plus
    §T005's log (D-05-02), §T240's D-240-08/09/16, §T140's D-140-02;
    `lib/db/schema.ts`; the barrels and types of
    `lib/server/{policy,accounts,observability}`; `lib/types.ts`;
@@ -45,8 +45,7 @@
    wrong in both directions, D-05-02 ruled it, and T005 shipped
    `note_vote` with `note_vote_note_account_key` on
    `(note_id, account_id)` FOR THIS CRITERION, its implementer
-   including the discriminating case behaviourally
-   (`backend.md:11957`).
+   including the discriminating case behaviourally.
 
    So AC4 here is `note_vote`, and this suite additionally asserts
    that T170 writes NO `target_actor` row at all. Reported to the
@@ -177,7 +176,7 @@ export const NOTES = "@/lib/server/notes";
            catch it — a precision gap is not an offset — so it has
            a cell of its own.
 
-   ── all six are now in `backend.md` §T170 (D-WAVE-03, D-WAVE-04)
+   ── all six are now in the contract (D-WAVE-03, D-WAVE-04)
    at `39ba5b1`, and the provenance clause this file used to stamp
    into every such red is deleted with them. ──
 
@@ -194,10 +193,10 @@ export const NOTES = "@/lib/server/notes";
 
    CLOSED  THE ROUTE SURFACE — D-WAVE-02: no route surface in this
            wave, `app/api/**` dropped from all four `Owns` lines.
-           `docs/architecture/seams.md` predicts SEAM-79/80/81/82
-           under `/api/blueprints/{slug}/comments`,
+           The frontend mock predicted comment routes under
+           `/api/blueprints/{slug}/comments`,
            `/api/cards/{id}/comments` and `/api/comments/{id}/vote`,
-           and SEAM-81 carries a `{ direction: 1 | -1 }` body for a
+           with a `{ direction: 1 | -1 }` vote body for a
            `voteNote(db, actor, noteId)` that takes no direction —
            a downvote the contract cannot express. This suite is
            MODULE-LEVEL ONLY and invents no path.
@@ -373,7 +372,7 @@ export async function bindMaxNoteBody(): Promise<number> {
         `and the limit is published from this barrel so a cell can quantify over it instead ` +
         `of hard-coding a number beside a number nothing compares.\n` +
         `  found: ${exported}\n` +
-        `  backend.md §T170, D-WAVE-03.`,
+        `  D-WAVE-03.`,
     );
   }
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0) {
@@ -398,7 +397,7 @@ export async function bindErrorClass(name: string): Promise<new (...args: never[
         `\`tests/error-hygiene.test.ts\` both build their domain by construction over every ` +
         `\`lib/server/<module>/index.ts\`, so this barrel is measured against D-13's hygiene ` +
         `clause from the day it exists — and an absent class leaks by not existing.\n` +
-        `  backend.md §T170, D-WAVE-04.`,
+        `  D-WAVE-04.`,
     );
   }
   /* ── THE VACUITY THIS CLOSES, MEASURED ──
@@ -469,7 +468,7 @@ export function loadNotes(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${NOTES} does not load.\n` +
-          `  backend.md §T170 owns \`lib/server/notes/**\` and publishes \`listNotes\`, ` +
+          `  T170 owns \`lib/server/notes/**\` and publishes \`listNotes\`, ` +
           `\`postNote\`, \`editNote\`, \`deleteNote\` and \`voteNote\` from the barrel ` +
           `\`${NOTES}\`.\n` +
           `  This is a failed acceptance criterion — the notes module is absent — and not a ` +
@@ -505,8 +504,8 @@ export async function bind(name: PublishedName): Promise<UnknownFn> {
       `${NOTES} exports no \`${name}\`.\n` +
         `  the contract publishes: ${PUBLISHED[name]}\n` +
         `  found: ${exported}\n` +
-        `  This is a failed acceptance criterion, not a naming difference — backend.md ` +
-        `§T170's Published signatures block names this export exactly.`,
+        `  This is a failed acceptance criterion, not a naming difference — ` +
+        `T170's Published signatures block names this export exactly.`,
     );
   }
   if (typeof value !== "function") {

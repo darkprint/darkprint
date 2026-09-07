@@ -5,10 +5,6 @@ import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { SupportButton, WatchButton } from "./SocialControls";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-56 LIVE: downloads and stars, off `getSignalsMany` (`components/profile/load.ts`).
-// SEAM-57 LIVE: POST/DELETE /api/authors/{handle}/watch and .../support.
-
 /* ============================================================
    Identity first, then what this account holds, then what you can do about it.
 

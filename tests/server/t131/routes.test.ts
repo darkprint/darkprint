@@ -210,7 +210,7 @@ describe("D-131-07: `PUT .../pinned` answers `{ pinned }` and validates its body
     ).toEqual(["pinned"]);
     expect(
       payload.pinned,
-      "REFS, never resolved items. SEAM-55's `{ pinned: PinnedItem[] }` is a frontend view " +
+      "REFS, never resolved items. The frontend's `{ pinned: PinnedItem[] }` is a view " +
         "shape carrying `Blueprint` and `CardVersionRecord`, and D-131-04 supersedes it here.",
     ).toEqual([
       { kind: "blueprint", slug: a.slug },
@@ -308,7 +308,7 @@ describe("D-131-07: POST and DELETE are IDEMPOTENT over the toggle verbs (A6)", 
     });
 
     it(`.../${suffix} answers the WIRE's key set and never the module's`, async () => {
-      /* D-131-04(c). The module says `followedByCaller` and SEAM-57's wire says `watching`; the
+      /* D-131-04(c). The module says `followedByCaller` and the wire says `watching`; the
          route maps. A route handing the module's answer straight through answers
          `{ followedByCaller, watchers }` and passes every count assertion above, because the
          count member's name is the same on both sides. Only the key set catches it. */

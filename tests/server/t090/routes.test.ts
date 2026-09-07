@@ -89,7 +89,7 @@ beforeAll(async () => {
  * a scratch database (close the pool, open an admin pool, `drop database … with (force)`) crosses
  * that under the parallel worktree load this repository runs at. When it does, the run reports
  * `Tests 75 passed (75)` with two FAILED FILES and exit 1, because a hook that fails runs no
- * test and adds nothing to the failed column. That is backend.md's "read the exit code and the
+ * test and adds nothing to the failed column. That is the rule "read the exit code and the
  * failed-file count, never the test total", arriving in this suite's own teardown; it was found
  * by the falsification harness refusing to measure against an unclean baseline.
  */
@@ -142,7 +142,7 @@ async function loadRoute(specifier: string): Promise<Handler> {
   } catch (cause) {
     throw new Error(
       `${specifier} does not load.\n` +
-        `  backend.md §T090 D-90-04 publishes three routes under \`app/api/files/**\`, which is ` +
+        `  D-90-04 publishes three routes under \`app/api/files/**\`, which is ` +
         `this task's \`Owns\`:\n` +
         `    GET /api/files/blueprints/[owner]/[slug]/v/[version]/[...path]\n` +
         `    GET /api/files/blueprints/[owner]/[slug]/d/[digest]/[...path]\n` +

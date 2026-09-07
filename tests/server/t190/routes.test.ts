@@ -6,14 +6,14 @@
                                                             -> 200 { preferences } | 400 | 401
         GET   /api/account/notifications/unsubscribe?token= -> 200 { kind } | 404
 
-   ── SEAM-47's response is SUPERSEDED, and this file binds the
+   ── The mock's response is SUPERSEDED, and this file binds the
    block ──
-   `docs/architecture/seams.md:109` publishes
+   The frontend mock published
    `{ notifications: NotificationSetting[] }` — four objects
    carrying title and note copy. The block publishes
-   `{ preferences }`, four booleans. D-190-05 settles it: "SEAM-47's
-   NotificationSetting[] response SUPERSEDED". A blind suite binding
-   the docs here would have reported a defect against an
+   `{ preferences }`, four booleans. D-190-05 settles it in the
+   block's favour. A blind suite binding
+   the mock here would have reported a defect against an
    implementer who followed the contract.
 
    ── the unsubscribe route carries NO SESSION, deliberately ──
@@ -72,7 +72,7 @@ function preferencesOf(json: unknown, where: string): Record<string, unknown> {
   if (typeof preferences !== "object" || preferences === null) {
     throw new Error(
       `${where} answered ${JSON.stringify(body)}.\n` +
-        `  D-190-05 publishes the response as \`{ preferences }\` and SUPERSEDES SEAM-47's ` +
+        `  D-190-05 publishes the response as \`{ preferences }\` and SUPERSEDES the mock's ` +
         `\`{ notifications: NotificationSetting[] }\`, which is a frontend view shape carrying ` +
         `title and note copy this module does not own.`,
     );

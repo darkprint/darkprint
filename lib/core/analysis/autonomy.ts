@@ -118,9 +118,6 @@ import { controlCitation, humanCitation } from "../ontology/resolve";
 import type { DarkprintConfig } from "../config";
 import { DARKPRINT_CONFIG } from "../config";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-36) (cited at line 236): POST /api/analysis/autonomy (or folded into SEAM-30)
-
 /**
  * Why a node counted as one where a person acts.
  *

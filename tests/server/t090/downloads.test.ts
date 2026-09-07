@@ -22,7 +22,7 @@
    table, call `recordDownload` once, and diff. Whatever moved IS
    the medium, by construction. The same diff then measures what
    each of the three published functions does, and neither side of
-   the comparison is hand-written. Same instrument backend.md
+   the comparison is hand-written. Same instrument this run
    reached for when a blind author had no published wording to pin
    — derive both sides rather than curate either.
    ============================================================ */
@@ -125,7 +125,7 @@ describe("the download event, measured through whatever medium recordDownload wr
       totalRowsAdded(added),
       `A call to \`recordDownload\` changed no row in any table of this database, so nothing in ` +
         `this file could distinguish an implementation that records from one that does not.\n` +
-        `  backend.md §T090: ${PUBLISHED.recordDownload}\n` +
+        `  T090's contract: ${PUBLISHED.recordDownload}\n` +
         `  B-14 makes the event explicit rather than derived from request logs, which is T240's ` +
         `absolute constraint — so it has to land somewhere.`,
     ).toBeGreaterThan(0);

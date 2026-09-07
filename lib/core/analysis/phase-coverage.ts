@@ -40,9 +40,6 @@ import type { ResolvedBlueprint } from "../bundle/types";
 import type { NodeCard } from "../card/schema";
 import { CORE_PHASE_IDS } from "../ontology/core";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-38) (cited at line 88): folded into SEAM-30
-
 /** Which of doc 3 §2's phases a blueprint has nodes in, and which nodes those are. */
 export interface PhaseCoverage {
   /** Phase ids with at least one node, in doc 3 §2's lifecycle order. */

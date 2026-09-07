@@ -8,9 +8,6 @@ import {
 import { SITE_ORIGIN } from "@/lib/site";
 import { blueprintFileHref, cardFileHref } from "@/lib/href";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-66) (cited at line 141): folded into SEAM-65
-
 /* ============================================================
    One bundle page's data, from whichever of the two sources can answer.
 

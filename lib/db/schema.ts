@@ -2,7 +2,7 @@
    DarkPrint backend — Postgres schema
    The index half of B-01 (bytes live in S3, keyed by digest; the
    index lives here). Covers the ten tables named in T000's
-   contract in `backend.md`: account, handle_reservation, bundle,
+   contract: account, handle_reservation, bundle,
    release, card_version, ontology_version, ontology_term, target,
    target_actor, audit -- of which `ontology_version` and
    `ontology_term` were dropped by 0009 and are the two this file no
@@ -331,8 +331,8 @@ export const audit = pgTable("audit", {
 
    Six tables for five tasks (T140, T160, T170, T180, T230) that
    each have this file Forbidden and so could not add their own.
-   Column names and shapes are T005's Published signatures block in
-   `backend.md`, which is this task's whole acceptance surface: it
+   Column names and shapes are T005's Published signatures block,
+   which is this task's whole acceptance surface: it
    ships no exported function, so the identifiers a raw-SQL test has
    to type ARE the interface.
 

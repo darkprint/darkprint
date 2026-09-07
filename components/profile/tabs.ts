@@ -1,6 +1,3 @@
-
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-58 folded into SEAM-53, both LIVE as of T280 — see load.ts.
 /* ============================================================
    The four tabs on a profile, and the three route segments they cost.
 
@@ -67,8 +64,7 @@ export const PROFILE_TABS: readonly ProfileTab[] = [
    The owner removed it with the profile header's `downloads` and `validated` figures, in
    the same instruction: "remove the section Ontology terms".
 
-   `app/u/[username]/terms/page.tsx` went with it, and SEAM-60
-   (`GET /api/authors/{handle}/terms`) lost its only anchor in the tree with that file.
+   `app/u/[username]/terms/page.tsx` went with it.
    The vocabulary itself is untouched: a local term is still namespaced by the handle that
    minted it, `/ontology` still lists local terms as local, and `/spec/ontology` still
    carries the extension model. What left is one PROFILE VIEW of that data, not the data.

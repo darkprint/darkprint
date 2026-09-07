@@ -1,7 +1,7 @@
 /* ============================================================
    T150 — the published surface
 
-   Every name here is bound EXACTLY. backend.md §T150 carries a
+   Every name here is bound EXACTLY. T150's contract carries a
    Published signatures block, and the rule above it is that the
    contract names the interface and not only the behaviour, so a
    name the block publishes is no longer a thing either side may

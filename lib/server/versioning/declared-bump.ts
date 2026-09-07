@@ -1,6 +1,6 @@
 /* ============================================================
    DarkPrint backend — versioning: declared-vs-inferred bump check
-   backend.md T025. The shared refusal all three stores use when a
+   The shared refusal all three stores use when a
    release's declared semver bump is smaller than the change
    actually requires.
    ============================================================ */
@@ -22,8 +22,8 @@ export type BumpSubject = "card" | "bundle";
 
 /**
  * `subject`'s mapping to a code, as an exhaustive switch rather than an
- * object index. A diagnostic's `code` must always be classifiable
- * (backend.md §T025) — unreachable from a typed caller since `subject` is a
+ * object index. A diagnostic's `code` must always be classifiable.
+ * That is unreachable from a typed caller since `subject` is a
  * closed union, but an untyped one (plain JS, an `as` cast) can still call
  * this with a value outside it, and an object index would silently answer
  * `undefined` rather than a `DiagnosticCode` nothing could then filter by.

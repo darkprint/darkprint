@@ -7,7 +7,7 @@
    tree). Reverting that fix reds three tests there and zero here —
    this file gives `tests/server/t025/**` an equivalent it owns.
 
-   backend.md §T025, round 6: "Every term [of the leftover pricing]
+   T025's contract, round 6: "Every term [of the leftover pricing]
    is a maximum over its own admissible choices." The pair term was
    already a true maximum; deletions and additions took a
    sorted-tail slice instead, so the most expensive residue-free
@@ -109,8 +109,7 @@ describe("leftover pricing: a stranded item is the worst admissible choice, not 
    Built from the rule as it was ultimately stated, not guessed and
    not narrated from memory — the exact per-item contribution table
    was confirmed against a worked example that contradicted this
-   file's first draft (backend.md §T025, round 6, the correction
-   recorded at `2d0f728`):
+   file's first draft (the round-6 correction recorded at `2d0f728`):
 
      stranded on      | its value in the FULL original opposite list | price
      before (deleted) | absent — genuinely gone                      | major
@@ -170,7 +169,7 @@ function strandedPrice(value: string, side: "before" | "after", fullOppositeList
 
 /** Independent implementation of the per-id leftover pricing rule. Not the module under
  *  test's algorithm reimplemented from having read it — `lib/server/versioning/**` is
- *  Forbidden here and unread — but the rule as `backend.md` states it, worked out and
+ *  Forbidden here and unread — but the rule as the contract states it, worked out and
  *  checked by hand against six examples before it is trusted against anything else. */
 function oracleLevel(before: readonly string[], after: readonly string[]): BumpLevel {
   const [beforeLeftover, afterLeftover] = cancel(before, after);

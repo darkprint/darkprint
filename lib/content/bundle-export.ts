@@ -82,9 +82,6 @@ import { autonomyStatement } from "@/lib/format";
 import { SITE_ORIGIN } from "@/lib/site";
 import { ONTOLOGY_EXTENSIONS_FILE } from "./ontology-file";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-25) (cited at line 639): folded into SEAM-19; server-side generation on publish
-
 /* --------------------- the layout --------------------- */
 
 /** The DarkPrint topology, as the registry stores it. */

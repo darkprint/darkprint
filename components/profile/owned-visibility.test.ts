@@ -148,7 +148,7 @@ describe("the owner can change visibility from their own list", () => {
 });
 
 describe("the address the control patches", () => {
-  it("is SEAM-67's, built from the handle and the slug of the row", () => {
+  it("is built from the handle and the slug of the row", () => {
     /* The render cannot see this: `api` reaches `fetch` and nothing else. Pinned as a
        literal rather than against a second template, which would be the same expression
        twice and would agree with itself however wrong it was. */

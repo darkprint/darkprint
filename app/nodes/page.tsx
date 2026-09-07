@@ -13,7 +13,7 @@ import type { Actor } from "@/lib/server/policy";
 import { latestCards, usersOfMany } from "@/lib/server/registry";
 import type { Author } from "@/lib/types";
 
-// SEAM-07 LIVE: the card library is read from the registry (T080) rather than from
+// The card library is read from the registry rather than from
 // `content/` at build time. `GET /api/cards` never existed; the merged route is
 // `GET /api/search/cards`, and this page consumes the MODULE rather than the route
 // (D-260-13) because a server component that reads `searchParams` cannot stay a server

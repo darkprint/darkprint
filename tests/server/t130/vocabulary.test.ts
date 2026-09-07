@@ -80,7 +80,7 @@ async function classFrom(name: string): Promise<new (...a: never[]) => Error> {
 }
 
 /**
- * The published renderer. `backend.md`: "`withProfileStore` is published and no caller needs
+ * The published renderer. The contract: "`withProfileStore` is published and no caller needs
  * it — the route uses `withProfileErrors` only", and D-130-13 takes the former off the barrel.
  * Bound by name so its absence quotes the clause rather than merely failing.
  */

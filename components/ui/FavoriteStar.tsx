@@ -64,15 +64,9 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { ActionPill } from "@/components/ui/ActionPill";
 import { cx } from "@/lib/format";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-62 is LIVE for cards: POST /api/account/saves, DELETE /api/account/saves, body
-// { kind, refId } (D-140-07). Its note that "mapping STORAGE_KEY onto the enum is T262's"
-// is corrected by D-262-04: the card half is mapped here, and the blueprint half assigns a
-// translation with nowhere to put it. SEAM-61 stays PLANNED for blueprints.
-// T280 wires `star`: the control reaches lib/server/counters' toggleStar through
-// POST /api/blueprints/{owner}/{slug}/star or /api/cards/{id}/star — see StarControl below.
-// The fold above makes that one control the save gesture too, so SEAM-62's card write now
-// has TWO callers in this file: the bookmark a tile still draws, and the star.
+// The card save (`POST`/`DELETE /api/account/saves`, body `{ kind, refId }`) has two callers
+// in this file: the bookmark a tile still draws, and `StarControl`, since the fold above made
+// the star the save gesture too.
 
 const STORAGE_KEY = "darkprint:favorites";
 

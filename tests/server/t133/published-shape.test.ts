@@ -52,7 +52,7 @@ type NotUnknown<T> = IsUnknown<T> extends true
 
 /**
  * D-133-01's interface, restated here as the pin. The literal on the right is the contract
- * text and is the half a reviewer diffs against `backend.md`.
+ * text and is the half a reviewer diffs against the contract.
  */
 const storedVocabularyIsExact: Exact<
   StoredVocabulary,

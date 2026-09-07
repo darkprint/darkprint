@@ -1,7 +1,6 @@
 /* ============================================================
    GET /api/search/blueprints?q&tag&cat&phase&autonomy&df&forks&sort
-   The gallery's search (D-200-16, superseding SEAM-93's proposed
-   `POST /api/search`). GET and not POST because the contract's own
+   The gallery's search. GET and not POST because the contract's own
    justification for freezing the parameter set is that the live
    URLs are shared links, and a POST body is not a link.
 

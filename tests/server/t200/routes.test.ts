@@ -12,7 +12,7 @@
      GET /api/search/cards?q&type&phase&human&risk&sort
      GET /api/search/terms?q&kind&origin
 
-   GET and not SEAM-93's `POST /api/search`, decided by the
+   GET and not the mock's `POST /api/search`, decided by the
    contract's own justification — the parameter sets are fixed by
    the LIVE URLS and may not change or shared links break, and a
    POST body is not a link.

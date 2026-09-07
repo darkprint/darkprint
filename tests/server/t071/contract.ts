@@ -15,8 +15,8 @@
    agree about a published form, that agreement is evidence. If this
    file were `export * from "../t070/contract"` it would be nothing.
 
-   So every literal here is written out again from `backend.md`
-   §T070 and §T071 rather than re-exported, and where the two files
+   So every literal here is written out again from the T070 and
+   T071 contracts rather than re-exported, and where the two files
    differ the difference is a finding rather than a merge conflict.
 
    ── the published block this task adds ──
@@ -62,7 +62,7 @@ export function loadNaming(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${NAMING} does not load.\n` +
-          `  backend.md §T071 publishes \`MAX_HANDLE_LENGTH = 32\` on this barrel and enforces ` +
+          `  T071 publishes \`MAX_HANDLE_LENGTH = 32\` on this barrel and enforces ` +
           `the bound at \`checkHandle\` and \`allocateHandle\`, both of which §T070 publishes ` +
           `here.\n` +
           `  This is a failed acceptance criterion — the namespace module is absent — and not ` +
@@ -306,7 +306,7 @@ export async function availableNow(call: () => unknown, where: string): Promise<
 /* --------------------- the admissible message forms --------------------- */
 
 /*
- * backend.md §T070, quoted:
+ * T070's admissible message forms, quoted:
  *
  *     HandleTakenError      "allocateHandle: the handle `<handle>` is not available."
  *     InvalidNameError      "<operation>: `<value>` is not a valid <kind>."

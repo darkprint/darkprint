@@ -318,7 +318,7 @@ suite("T005 AC7a — a NULL-owner reservation is unstorable", () => {
 
   it("AC7a: after this, T070's W0/W5 discriminating cell is unreachable through any writer", async () => {
     requireT005Shipped(scratch);
-    /* Recorded as an assertion rather than as prose because `backend.md` says it will need
+    /* Recorded as an assertion rather than as prose because it will need
        saying: T070's adversary confirmed the shipped predicate is
        `handle_reservation.account_id = excluded.account_id` rather than the null-safe form by
        seeding a NULL-owner row, releasing it, and claiming it with a NULL claimant. That row

@@ -2,7 +2,7 @@
    DarkPrint backend — saves: the transport boundary
    Four routes over ONE request shape (D-140-07), and the shape is
    `saveTarget`'s own `target` parameter. **So nothing here
-   translates.** SEAM-62's compound key space is withdrawn rather
+   translates.** The frontend's compound key space is withdrawn rather
    than mapped — it cannot address a three-member enum, it carries
    a card version B-10 forbids in that column, and its bare slug
    cannot resolve to a bundle — and the browser-local mapping is

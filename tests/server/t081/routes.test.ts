@@ -185,7 +185,7 @@ describe("AC4 — the route set is the one the contract quantifies over", () => 
   it("the tree serves exactly twenty routes under the three owned trees", () => {
     /* Eleven were T080/T081's; T280 published ten more under the same trees (star, notes,
        note edit, note vote and votes/runs on blueprints; star, notes, note edit, note vote
-       on cards — backend.md §T280). The sweep below still quantifies over T081's own
+       on cards). The sweep below still quantifies over T081's own
        eleven, whose readers are the fixture's; the count here keeps refusing a route
        NOBODY published, which is what it was written for.
 

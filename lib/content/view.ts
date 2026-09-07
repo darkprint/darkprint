@@ -25,16 +25,10 @@ import { graphForBlueprint, requiredAgents, requiredTools } from "@/lib/graph-se
 import type { ReportedCostUnits } from "@/lib/server/runs";
 import type { SignalState } from "@/lib/server/counters";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// No seam is anchored here any more. `TODO(SEAM-74)` named `POST /api/blueprints/{slug}/votes`
-// and cited line 167, and both halves were stale: the route was deleted on 2026-09-05 with the
-// ballot write path (the owner's ruling on §11.0 Q14), and line 167 had already moved onto the
-// analysis rationale.
-
 /* --------------------- the ballot aggregate --------------------- */
 
 /*
- * These two shapes were `lib/server/ballot`'s, and that folder is gone.
+ * These two shapes came here from a `lib/server` folder that is gone.
  *
  * T160 published five shapes and two functions over them; Q14 deleted the functions and the
  * route above them, and what was left was a `lib/server` module with no store, no refusal and

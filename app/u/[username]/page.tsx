@@ -10,11 +10,6 @@ import { EmptyState, SectionTitle, ShelfToolbar } from "@/components/profile/par
 import { profileCounts, profileMetadata, profileView } from "@/components/profile/load";
 import { readSession } from "@/components/profile/session";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-53 LIVE: the identity, off `@/lib/server/accounts`.
-// SEAM-55 LIVE: the pinned selection, off `getProfile` (T131/T280).
-// SEAM-63/64 LIVE: the shelf, off `ownedBundles` (T280) — see `components/profile/load.ts`.
-
 /* ============================================================
    /u/[username] — blueprints, the profile's own index (T280).
 

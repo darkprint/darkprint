@@ -1,5 +1,5 @@
 -- Wave 5 (T200, semantic search) needs pgvector; enabling it now means the image never
--- has to be swapped later, per T000's environment contract in backend.md. No column
+-- has to be swapped later, per T000's environment contract. No column
 -- uses it yet, so this is the whole of T000's obligation toward it.
 CREATE EXTENSION IF NOT EXISTS vector;--> statement-breakpoint
 CREATE TYPE "public"."actor_kind" AS ENUM('owner', 'operator', 'system');--> statement-breakpoint

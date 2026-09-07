@@ -35,13 +35,13 @@
       derives rather than a caller supplying, so its shape is
       contract; the digest over it gives one row per recipient per
       new version, which is the idempotency the kind needs, and two
-      versions of one card are two rows by construction. SEAM-103's
+      versions of one card are two rows by construction. The mock's
       `{cardId, from, to}` was an ingress payload for a route
       D-190-05 struck and is not this."
 
    So the subject IS asserted now, and it is asserted as an
    EQUALITY over the key set rather than as a containment: `from`
-   and `to` are exactly the extra keys SEAM-103 would have brought,
+   and `to` are exactly the extra keys the mock's shape would have brought,
    and a subject carrying them digests differently for one repin
    depending on where the reader's copy happened to sit — which is
    the per-recipient duplication the two-key shape exists to
@@ -157,7 +157,7 @@ describe("T190: `enqueueRepinEvents` notifies the accounts that pin the card", (
       `D-190-07(1) publishes the repin subject as \`{ cardId: string, version: string }\`, ` +
         `exactly those two keys, and the row carries ` +
         `${JSON.stringify(added[0]!.subject)}.\n` +
-        `  Asserted as an EQUALITY and not a containment. SEAM-103's \`{cardId, from, to}\` ` +
+        `  Asserted as an EQUALITY and not a containment. The mock's \`{cardId, from, to}\` ` +
         `would add the reader's OWN pinned version to a subject that is supposed to be one ` +
         `event: two accounts pinning different versions of one card would then digest ` +
         `differently for the same repin, and the "one row per recipient per new version" the ` +

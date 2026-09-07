@@ -1,7 +1,7 @@
 /* ============================================================
    T140 — the published surface
 
-   Every name here is bound EXACTLY. backend.md §T140 carries a
+   Every name here is bound EXACTLY. T140's contract carries a
    Published signatures block, and the rule above it is that the
    contract must name the interface and not only the behaviour, so
    a name the block publishes is no longer a thing either side may
@@ -80,7 +80,7 @@ interface PublishedSaveRecord {
 
 const saveRecordIsExact: Exact<SaveRecord, PublishedSaveRecord> = true;
 
-describe("T140 publishes exactly the surface backend.md names", () => {
+describe("T140 publishes exactly the surface its contract names", () => {
   /* One test per name, so an absence is its own red rather than five hidden behind the first. */
   it.each(PUBLISHED_NAMES)("%s is exported from the barrel as a function", async (name) => {
     const fn = await bind(name as PublishedName);
@@ -129,7 +129,7 @@ describe("the domain this suite quantifies over is the published one", () => {
    * without somebody looking at this line.
    */
   it("the five published names partition into readers and writers, totally", () => {
-    expect(PUBLISHED_NAMES.length, "backend.md §T140 publishes five functions").toBe(5);
+    expect(PUBLISHED_NAMES.length, "T140's contract publishes five functions").toBe(5);
     expect([...PUBLISHED_READERS, ...PUBLISHED_WRITERS].sort()).toEqual([...PUBLISHED_NAMES].sort());
     expect(PUBLISHED_READERS.length, "listSaves and countSaves hand the caller data").toBe(2);
     expect(PUBLISHED_WRITERS.length, "saveTarget, unsaveTarget and migrateLocalSaves answer void").toBe(3);

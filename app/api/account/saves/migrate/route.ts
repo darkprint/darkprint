@@ -5,7 +5,7 @@
 
    **The body carries `{ kind, refId }` targets, ALREADY in the
    enum's own vocabulary — this route translates nothing.**
-   SEAM-62's `localStorage` key space is withdrawn rather than
+   The frontend's `localStorage` key space is withdrawn rather than
    mapped: it names three kinds against a three-member enum with
    two outside it and `term` absent, it carries the `@<version>`
    grain B-10 forbids in that column, and its bare slug cannot

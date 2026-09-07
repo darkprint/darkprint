@@ -44,27 +44,12 @@ import { ValidationReport, verdictLine } from "./ValidationReport";
 import { SIGN_IN_HREF, useUploadSession } from "./session";
 import { publishBundle, type PublishOutcome, type PublishRefusedKind } from "./publish-client";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-26): PUT /api/bundles/{owner}/{slug}/agents-md
-// TODO(SEAM-27) (cited at line 769): n/a — File API, then SEAM-30 for the server counterpart
-// TODO(SEAM-28) (cited at line 606): GET /api/blueprints/{slug}/as-upload
-// TODO(SEAM-30) (cited at line 555): POST /api/validate/bundle
-// TODO(SEAM-31) (cited at line 130): folded into SEAM-30
-// TODO(SEAM-32) (cited at line 1040): POST /api/validate/report
-// SEAM-33: POST /api/validate/card, POST /api/validate/ontology — **LIVE** since T280.
-//   The effect near "SEAM-33, **LIVE**" below calls one or the other by `kind`. No TODO:
-//   the seam is closed for these two kinds; Blueprint still resolves in this tab (SEAM-30).
-// TODO(SEAM-34) (cited at line 600): folded into SEAM-27
-// TODO(SEAM-35) (cited at line 720): GET /api/slugs/available?slug=
-// SEAM-69: POST /api/bundles — **LIVE** since T263. `doPublish` calls it through
-//   `./publish-client`. No TODO: the seam is closed.
-// SEAM-42 (partial): GET /api/auth/session — **LIVE** for this route's read-only use,
-//   in `./session`. The sign-in and sign-out halves are still the header's and unbuilt.
-//   Reported to the orchestrator: `docs/architecture/seams.md` has no id for a session
-//   READ, and inventing one in code would put a document's decision in a component.
-// SEAM-30 stays PLANNED on purpose. `docs/ARCHITECTURE.md` §7 puts the server's
-//   authoritative pass at PUBLISH time and keeps the client-side pass for latency, so the
-//   preview is deliberately not a round trip. See the D-263-01 note in `reportMarkdown`.
+// A lone Node or Ontology document is checked over HTTP (`POST /api/validate/card` or
+// `POST /api/validate/ontology`, chosen by `kind` in the effect below). A Blueprint still
+// resolves in this tab on purpose: the server's authoritative pass runs at PUBLISH time and
+// the client-side pass is kept for latency, so the preview is deliberately not a round trip.
+// See the note in `reportMarkdown`. Publishing goes through `./publish-client`, and the
+// session read this route needs lives in `./session`.
 
 /* ------------------------------------------------------------------ */
 /*  Static config                                                      */
@@ -142,7 +127,7 @@ const KIND_NOUN: Record<ContentKind, string> = {
 };
 
 /** The endpoint a Node or Ontology `singleDoc` validates against. Never asked for `blueprint`
-    — that kind resolves in this tab (see the SEAM-30 note near the top of this file). */
+    — that kind resolves in this tab (see the note near the top of this file). */
 const VALIDATE_ENDPOINT: Partial<Record<ContentKind, string>> = {
   node: "/api/validate/card",
   ontology: "/api/validate/ontology",
@@ -813,7 +798,7 @@ export function UploadFlow({
   /**
    * What `POST /api/validate/card` or `POST /api/validate/ontology` answered about
    * `singleDoc`, kept apart from `result` above because the two ask different servers:
-   * the blueprint pass runs `loadBundle` in this tab (SEAM-30 stays client-side, by
+   * the blueprint pass runs `loadBundle` in this tab (it stays client-side by
    * design — see the header), while a lone document is checked over HTTP, and a network
    * call has a `checking` and a `failed` state a synchronous call never needs.
    */
@@ -959,7 +944,7 @@ export function UploadFlow({
   );
 
   /**
-   * SEAM-33, **LIVE**: a lone Node or Ontology document, checked over HTTP the moment it
+   * A lone Node or Ontology document is checked over HTTP the moment it
    * lands rather than on an explicit "check" press — the same automatic-on-drop behaviour
    * the Blueprint kind already has via the synchronous `result` above, so a reader does
    * not have to learn two different rhythms for three kinds of one wizard.

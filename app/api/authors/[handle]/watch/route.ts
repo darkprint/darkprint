@@ -1,13 +1,13 @@
 /* ============================================================
    POST | DELETE /api/authors/[handle]/watch
-   SEAM-57's two verbs, published at D-131-07:
+   Two verbs, both answering
    `200 { watching, watchers } | 401 | 404`.
 
    ── `watching` on the wire, `followedByCaller` in the module ──
-   D-131-04(c), and both spellings are in the block so neither half
-   of this task had to guess. SEAM-57 is the mock and the mock is
-   the spec for the WIRE; the inherited T130 suite drives the
-   module and its spelling is the module's. This file is the one
+   Both spellings are in the block so neither half of this task
+   had to guess. The frontend mock is the spec for the WIRE; the
+   inherited T130 suite drives the module and its spelling is the
+   module's. This file is the one
    place the two meet, which is why the mapping is written out
    rather than achieved by naming a variable cleverly.
 

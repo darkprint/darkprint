@@ -1,6 +1,6 @@
 /**
  * Scratch coverage of `app/api/files/**`, run by the implementer only — does not count as
- * verification (docs/ORCHESTRATION.md, Agent A).
+ * verification.
  *
  * It sat under `lib/server/export/` for one round, because `vitest.config.ts` did not
  * collect `app/**` and an uncollected suite runs zero tests and reads as green. Reported,

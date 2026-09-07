@@ -1,6 +1,6 @@
 /* ============================================================
    DarkPrint backend — publish: freezing a release's artefacts
-   backend.md, T090's block: *persisting the artefacts is not
+   *Persisting the artefacts is not
    tidiness, it is the only mechanism by which "the bytes of that
    release" stay the bytes of that release.* T100 writes them at
    publish; T090 serves what was written. B-01's split then reads

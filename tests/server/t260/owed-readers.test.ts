@@ -233,7 +233,7 @@ describe("T260's dependency: the batch graph reader `/blueprints` needs", () => 
      * The first version of this cell matched bare call names against the barrel's exports
      * and reddened `app/nodes/page.tsx` before the cutover had touched it. The match was
      * `usersOf() inside .map()` — and it was real, and it was not a defect: `usersOf` is a
-     * method on `lib/core/archive/registry.ts`'s IN-MEMORY archive (SEAM-12) as well as a
+     * method on `lib/core/archive/registry.ts`'s IN-MEMORY archive as well as a
      * published reader on `lib/server/registry`. Same name, no cost in common. One is a
      * property lookup on an object already in memory; the other is a query.
      *

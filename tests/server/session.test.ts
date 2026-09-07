@@ -34,7 +34,7 @@ import {
 
    ── the guard is named now ──
    `withSession(request, handler): Promise<Response>`, published in
-   `backend.md` §T000, and the reason it is published is this
+   T000's contract, and the reason it is published is this
    criterion: only a wrapping guard makes "the handler never runs"
    structurally true, where one returning `payload | Response` leaves
    it to every caller to check the union. So there is no candidate

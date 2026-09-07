@@ -1,6 +1,6 @@
 /* ============================================================
    DarkPrint backend — versioning: blueprint bump inference
-   backend.md T025. A blueprint's diff is its DOT plus the MULTISET
+   A blueprint's diff is its DOT plus the MULTISET
    of card refs it pins; nothing else moves a blueprint's version.
 
    Multiset, not set: `lib/core/hash/digest.ts`'s `bundleDigest`
@@ -14,8 +14,8 @@
    be required to move its version.
 
    A ref the write-site validator would refuse is still a member of
-   that multiset: "never answer `none` for input you could not read"
-   (backend.md §T025). So a ref is read two ways, not one — an id
+   that multiset: "never answer `none` for input you could not read".
+   So a ref is read two ways, not one — an id
    parses out where it can, for a repin priced by semver, and the raw
    refs are always compared by count on top, so a member cannot
    vanish just because it did not parse.
@@ -37,7 +37,7 @@ import { compareSemver, compareVersionStrings, declaredBump, parseSemver } from 
 
 import { LEVEL_RANK, summarize, type Reason } from "./reasons";
 
-/** The two fields that decide a blueprint's version, per backend.md T025. */
+/** The two fields that decide a blueprint's version. */
 export interface BlueprintSnapshot {
   dot: string;
   cardRefs: readonly string[];
@@ -348,7 +348,7 @@ function compareVersions(
 }
 
 /**
- * Which bump a blueprint release demands (backend.md T025). Every id ever
+ * Which bump a blueprint release demands. Every id ever
  * pinned on either side is checked by `compareVersions` above. On top of
  * that, the raw pinned refs are compared by count regardless of whether
  * they parsed, and the DOT text is compared byte for byte — three checks

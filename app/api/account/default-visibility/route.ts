@@ -1,6 +1,6 @@
 /* ============================================================
    PATCH /api/account/default-visibility
-   What a new bundle defaults to (SEAM-48, superseded).
+   What a new bundle defaults to.
    `200 AccountRecord | 400 401 403`.
    ============================================================ */
 

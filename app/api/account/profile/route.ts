@@ -1,7 +1,7 @@
 /* ============================================================
    PATCH /api/account/profile
-   The three fields `/settings`' Public profile section edits
-   (SEAM-44, superseded). `200 AccountRecord | 400 401 403`.
+   The three fields `/settings`' Public profile section edits.
+   `200 AccountRecord | 400 401 403`.
 
    **No field type-checking here.** The body is forwarded whole
    and `updateProfile` narrows every value from `unknown` through

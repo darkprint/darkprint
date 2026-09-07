@@ -41,7 +41,7 @@ describe("T025 published signatures", () => {
       if (mod[name] === undefined) return; // not re-exported at all, which is the ordinary case
       expect(
         mod[name],
-        `${VERSIONING} exports its own \`${name}\`. backend.md §T025 says it "already ` +
+        `${VERSIONING} exports its own \`${name}\`. T025's contract says it "already ` +
           `exists in \`lib/core\` for cards and is **consumed, never reimplemented**". ` +
           `Re-exporting \`@/lib/core\`'s is fine; a second implementation under the same ` +
           `name is a second versioning authority.`,

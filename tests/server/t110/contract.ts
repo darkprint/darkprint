@@ -76,7 +76,7 @@ export function loadLineage(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${LINEAGE} does not load.\n` +
-          `  backend.md §T110 owns \`lib/server/lineage/**\`, and its Published signatures block ` +
+          `  T110 owns \`lib/server/lineage/**\`, and its Published signatures block ` +
           `names \`forkBundle\`, \`driftOf\`, \`forksOf\`, \`DriftTone\`, \`Repin\` and \`Drift\`, ` +
           `with "Barrel: \`@/lib/server/lineage\`".\n` +
           `  This is a failed acceptance criterion — the lineage layer is absent — and not a ` +
@@ -137,7 +137,7 @@ export function warmWith<T>(setup: { require(): Promise<T> }): () => Promise<voi
 /* --------------------- what the contract publishes --------------------- */
 
 /**
- * The Published signatures block of backend.md §T110, quoted so a red says where the name
+ * The Published signatures block of T110's contract, quoted so a red says where the name
  * comes from rather than leaving a reader to guess which document decided it.
  *
  * `lineage` carries the dispatch correction inline because the block itself does: it read
@@ -169,10 +169,9 @@ export const PUBLISHED = {
  * because a ruling that lives in one message and six paraphrases is a ruling that drifts. Where a
  * cell depends on one it names it by key.
  *
- * **`Q1` and `Q6` are not yet in `backend.md`.** The block still reads "`forksOf` filters through
- * `visibleTo`" and still lists `app/api/lineage/**` under Owns; both were ruled the other way in
- * the dispatch message. `backend.md` is the orchestrator's document and this suite does not write
- * it — the divergence is reported, and these cells follow the ruling, not the stale sentence.
+ * **`Q1` and `Q6` were ruled in the dispatch message, not in the block.** The block read
+ * "`forksOf` filters through `visibleTo`" and listed `app/api/lineage/**` under Owns; both were
+ * ruled the other way, and these cells follow the ruling, not the stale sentence.
  */
 export const RULINGS = {
   /**
@@ -306,7 +305,7 @@ export function refusalOf(thrown: unknown): Refusal {
     throw new Error(
       `forkBundle rejected with a non-Error: ${typeof thrown} ${JSON.stringify(thrown)}.\n` +
         `  A caller cannot read a message off a value that is not an Error, and the two ` +
-        `admissible sentences backend.md §T110 publishes are the whole of its refusal contract.`,
+        `admissible sentences T110's contract publishes are the whole of its refusal contract.`,
     );
   }
   return { message: thrown.message, name: thrown.name, error: thrown };
@@ -327,7 +326,7 @@ export async function refusalFrom(call: Promise<unknown>, criterion: string): Pr
     return refusalOf(thrown);
   }
   throw new Error(
-    `${criterion}: forkBundle RESOLVED where backend.md §T110 requires a refusal.\n` +
+    `${criterion}: forkBundle RESOLVED where the contract requires a refusal.\n` +
       `  It returned ${JSON.stringify(resolved)}.`,
   );
 }

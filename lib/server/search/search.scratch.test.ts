@@ -1,6 +1,6 @@
 /**
  * Scratch coverage against a real database, run by the implementer only —
- * does not count as verification (docs/ORCHESTRATION.md, Agent A). The blind
+ * does not count as verification. The blind
  * author's suite in `tests/server/t200/**` is the one that measures a
  * criterion; this exists because the four database-backed entry points would
  * otherwise have typechecked, linted and NEVER RUN, and a module whose only

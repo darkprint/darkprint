@@ -2,8 +2,7 @@
    T050 implementer's scratch harness — the half that needs
    Postgres. Not the blind suite (`tests/server/t050/**`, written
    against the contract in a worktree that has never seen this
-   file); scratch coverage does not count as verification
-   (docs/ORCHESTRATION.md, Agent A).
+   file); scratch coverage does not count as verification.
 
    ── The injection, and why it is asserted rather than trusted ──
    Every route here reaches `getSharedDbClient()`, which opens
@@ -415,7 +414,7 @@ describe.skipIf(!hasDb)("lib/server/accounts against Postgres", () => {
   });
 
   describe("D-50-21 at the transport: a naming fault the closed port cannot reach", () => {
-    /* **Scratch coverage, not verification** (docs/ORCHESTRATION.md, Agent A).
+    /* **Scratch coverage, not verification**.
 
        The blind axis could not write this cell and the reason is structural rather
        than an omission: `changeHandle` reads the account row BEFORE it calls

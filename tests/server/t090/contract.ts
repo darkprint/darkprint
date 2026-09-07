@@ -22,7 +22,7 @@
    worktree, and are imported statically by `fixtures.ts` — they are
    how a release gets into the database, not the thing under test.
    `lib/content/bundle-export.ts` is shipped code too and decides the
-   file set; backend.md §T090 says it is "consumed, never restated",
+   file set; T090's contract says it is "consumed, never restated",
    so this suite consumes it as the oracle for AC1 and AC3 rather
    than hand-listing names.
 
@@ -55,7 +55,7 @@ export function loadExport(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${EXPORT} does not load.\n` +
-          `  backend.md §T090 owns \`lib/server/export/**\` and \`app/api/files/**\`, and its ` +
+          `  T090 owns \`lib/server/export/**\` and \`app/api/files/**\`, and its ` +
           `Published signatures block names \`exportRelease\`, \`serveFile\`, \`serveCard\` and ` +
           `the \`ServedFile\` interface, with "Barrel: \`@/lib/server/export\`".\n` +
           `  This is a failed acceptance criterion — the distribution layer is absent — and not ` +
@@ -70,7 +70,7 @@ export function loadExport(): Promise<Namespace> {
 /* --------------------- what the contract publishes --------------------- */
 
 /**
- * The Published signatures block of backend.md §T090, quoted verbatim so a red says where the
+ * The Published signatures block of T090's contract, quoted verbatim so a red says where the
  * name comes from rather than leaving a reader to guess which document decided it.
  */
 export const PUBLISHED = {
@@ -96,7 +96,7 @@ export const PUBLISHED = {
  * tautological. Two were published with the block and five arrived with D-90-02, all as fixed
  * literals with no interpolation, so every one is pinnable by **exact match**.
  *
- * Written out here as literals and never rebuilt from the module under test. backend.md: "a test
+ * Written out here as literals and never rebuilt from the module under test. The rule: "a test
  * that builds its expectation from the module under test — importing the template, reusing the
  * format helper, reconstructing it from an exported constant — asserts 'does the module agree
  * with itself', and passes unchanged if the template itself starts interpolating a driver value."
@@ -162,7 +162,7 @@ export const RELEASE_FACT_FORMS: readonly string[] = [
 /**
  * Bind one published name, or throw naming the clause that published it.
  *
- * No fallback and no synonym: backend.md's own rule is that "where a signature is left open,
+ * No fallback and no synonym: the rule is that "where a signature is left open,
  * the test author reports it rather than resolving it — a candidate list papers over the gap
  * and then resolves to whichever name happens to exist first".
  */
@@ -172,7 +172,7 @@ export function requiredFn(mod: Namespace, name: keyof typeof PUBLISHED): Unknow
     const exported = Object.keys(mod).sort().join(", ");
     throw new Error(
       `${EXPORT} exports no function \`${name}\`.\n` +
-        `  backend.md §T090 Published signatures: ${PUBLISHED[name]}\n` +
+        `  T090 Published signatures: ${PUBLISHED[name]}\n` +
         `  It exports: ${exported === "" ? "(nothing)" : exported}\n` +
         `  Bind this name rather than adding a synonym: the contract is what two agents who ` +
         `cannot see each other converge on.`,
@@ -222,7 +222,7 @@ export async function outcomeOf(call: () => unknown): Promise<Outcome> {
 /**
  * Assert a call refused by throwing the exact published literal, and say what it did instead.
  *
- * The wrong outcome is content. backend.md records a suite that tolerated either a throw or an
+ * The wrong outcome is content. This run has seen a suite that tolerated either a throw or an
  * intact base and passed with validation removed, "because the permitted outcome was the
  * silently-wrong one" — so nothing here admits a value, and the two admissible-looking wrong
  * answers (`undefined`, or a throw with different wording) each get their own sentence.
@@ -251,7 +251,7 @@ export function expectThrewExactly(
   if (outcome.message !== expected) {
     throw new Error(
       `${what} threw ${JSON.stringify(outcome.message)}.\n` +
-        `  backend.md §T090 publishes ${JSON.stringify(expected)} for this path, as a fixed ` +
+        `  T090's contract publishes ${JSON.stringify(expected)} for this path, as a fixed ` +
         `literal with no interpolation, written before any implementation existed. The expected ` +
         `string is written out in this suite rather than imported, because a test that rebuilds ` +
         `its expectation from the module asks whether the module agrees with itself.`,

@@ -1,8 +1,7 @@
 /* ============================================================
    DarkPrint backend — lib/server/cards typed errors
-   The error-hygiene clause (backend.md, "How this run is
-   governed" -> the `Object.keys`/whitelist amendment), not
-   restated in full here: `Object.keys(err)` empty and
+   The error-hygiene clause, not restated in full here:
+   `Object.keys(err)` empty and
    `JSON.stringify(err)` exactly `"{}"`; `cause` present but
    non-enumerable (the ES2022 Error-cause option makes it so by
    spec — nothing here has to force it); `stack` retained, not

@@ -109,10 +109,11 @@ describe("the panels the owner asked off the page", () => {
    * `components/bundle/DraftLanding.tsx` and, once the profile lane lands it, on the
    * account's own blueprint list. What is asserted is that THIS page stopped mounting them.
    *
-   * `<DownloadPanel` is the one needle whose component may not exist at all any more: the
-   * owner deleted `/build` and `components/build/**` on the same day, and `DownloadStep`
-   * was its last mount. A `not.toContain` is the right shape either way — a component that
-   * does not exist cannot come back to this page by accident, and one that does must not.
+   * `<DownloadPanel` and `<BundlePanel` are needles whose components no longer exist at
+   * all: the owner deleted `/build` and `components/build/**` on the same day, `DownloadStep`
+   * was the download panel's last mount, and both components went after. A `not.toContain`
+   * is the right shape either way — a component that does not exist cannot come back to
+   * this page by accident, and one that does must not.
    */
   it.each([
     ["<Forks", "the fork panel is back in the aside"],

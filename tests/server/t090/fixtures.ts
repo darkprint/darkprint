@@ -53,7 +53,7 @@ function databaseUrlFor(name: string): string {
   if (!base) {
     throw new Error(
       "DATABASE_URL is not set. Run `docker compose up -d` and `set -a; . ./.env.example; set +a` " +
-        "first — backend.md records that every DATABASE_URL failure in this run has been an unset " +
+        "first — every DATABASE_URL failure in this run so far has been an unset " +
         "shell rather than a defect.",
     );
   }
@@ -157,7 +157,7 @@ export async function scratchDatabase(tag: string): Promise<Scratch> {
  * So the medium is *derived*: snapshot everything, call `recordDownload` once, diff. Whatever
  * moved is the medium, by construction — and the same diff then measures what `serveFile`,
  * `serveCard` and `exportRelease` each do. Neither side of that comparison is hand-written, which
- * is the shape backend.md reached for when a blind author had no published wording to pin.
+ * is the shape this run reached for when a blind author had no published wording to pin.
  *
  * Rows rather than counts, because "exactly once per served file" needs the row and `refId` needs
  * its contents. Ordered by the text of the row so two snapshots compare stably.
@@ -693,7 +693,7 @@ function analysisFor(
 /* --------------------- residue --------------------- */
 
 /*
- * backend.md: "Residue includes the filesystem, not only the media you thought of." T090 is the
+ * "Residue includes the filesystem, not only the media you thought of." T090 is the
  * first task whose implementation may write distribution artefacts to object storage, so a run
  * of this suite can leave bytes in the shared bucket — and `ObjectStorage` publishes `put`,
  * `get` and `delete` and no `list`, so no in-suite assertion can count them. The bucket is

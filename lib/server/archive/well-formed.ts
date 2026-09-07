@@ -1,6 +1,6 @@
 /* ============================================================
    DarkPrint backend — archive: content integrity
-   D-12 (backend.md): `pg` encodes a string parameter as UTF-8, and
+   `pg` encodes a string parameter as UTF-8, and
    an unpaired UTF-16 surrogate has no UTF-8 encoding — it is
    replaced with U+FFFD silently rather than raising. For a
    content-addressed store that is not a cosmetic loss: the digest

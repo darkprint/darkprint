@@ -62,9 +62,6 @@ import { Badge } from "@/components/ui/Badge";
 import { cx } from "@/lib/format";
 import { termHref } from "@/lib/href";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-17): GET /api/ontology/usage
-
 /* --------------------- the five kinds --------------------- */
 
 /**

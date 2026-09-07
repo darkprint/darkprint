@@ -3,7 +3,7 @@
    B-06: append-only per bundle, enforced by the schema's own
    unique index on (bundle_id, version) rather than a check here.
    Identity is computed inside this module and never accepted from
-   a caller (second amendment, backend.md, T010) — the stored
+   a caller — the stored
    digest and the stored bytes agree by construction rather than by
    whatever calls this.
    ============================================================ */

@@ -13,13 +13,12 @@
    the contract, which is the shape D-70-12 re-opened a blind suite
    to fix; the difference here is that it arrived before any code.
 
-   `docs/architecture/seams.md` carried a CONTRADICTING second
-   reading — `{ ok, verificationSent }` payloads, a `DELETE
-   /api/account` that is T120's, a `GET /api/auth/me` the tree
-   never had — and `CLAUDE.md` makes that document binding, so a
-   blind author could have bound to it in good faith. It is marked
-   superseded above its own rows. Nothing here reads it: every
-   expectation below comes from the contract's own route block.
+   The frontend's mock carried a CONTRADICTING second reading —
+   `{ ok, verificationSent }` payloads, a `DELETE /api/account` that
+   is T120's, a `GET /api/auth/me` the tree never had — and a blind
+   author could have bound to it in good faith. Nothing here reads
+   it: every expectation below comes from the contract's own route
+   block.
 
    ── the four SHIPPED auth routes are not driven here ──
    They are base, they are in T050's `Owns`, and this author never
@@ -112,8 +111,8 @@ describe("the five published URLs are served", () => {
    *
    * Moved rather than repaired in place, for two reasons. It is a claim about the whole partition
    * and not about T050: restricted to this tree it covered 5 of 29 shipped routes, and it now
-   * covers all 29. And **this file opens a scratch database**, so once the check parses
-   * `backend.md` a prose-only commit moving an `Owns` line could flip a database-touching guard —
+   * covers all 29. And **this file opens a scratch database**, so once the check parsed
+   * the task ledger a prose-only commit moving an `Owns` line could flip a database-touching guard —
    * which the cheap file-guard exemption to the re-gate rule does not cover. T140's implementer
    * reported that consequence; the new file opens no connection.
    *

@@ -4,7 +4,7 @@
    D-130-05: `GET /api/authors/[handle]` -> `200 ProfileRecord |
    404`. **404 is AC5 and it is the ROUTE's**, because `getProfile`
    answers `undefined` (D-130-02) and `undefined` is not a status.
-   `seams.md`'s SEAM-52/53 `ProfileView` is superseded.
+   The frontend's `ProfileView` is superseded.
 
    ── the two write routes are absent BY RULING ──
    D-130-05 publishes `PUT .../pinned` and `POST/DELETE .../watch`

@@ -41,21 +41,6 @@ import {
 import { Comments, type NoteView } from "@/components/blueprint/Comments";
 import { ToolScopes } from "@/components/blueprint/Requirements";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-03 LIVE: the blueprint is read from the registry (T080) per request.
-// SEAM-19 LIVE: the folder is served by `/api/files/blueprints/{owner}/{slug}/d/{digest}/…`.
-// SEAM-75 LIVE (T280): POST /api/blueprints/{owner}/{slug}/star — the star pill.
-// SEAM-79 LIVE (T280): GET/POST /api/blueprints/{owner}/{slug}/notes and its /{noteId},
-// /{noteId}/vote siblings — `Comments`' `live` prop.
-// SEAM-20/70/71 LIVE (T280): star and fork — see the mounts below.
-// SEAM-57 (watch) and SEAM-67 (visibility) are no longer anchored here. The owner took the
-// Watch pill off the band and the visibility switch off this page entirely on 2026-09-06;
-// both routes are untouched and both still have a reader — `ProfileHeader` for the watch,
-// and the owner's own blueprint list for the visibility switch.
-// SEAM-74 (votes) is no longer anchored here. The owner removed the whole scoring reading
-// from this page, so the ballot control and the panels it fed came off with it; the write
-// itself is untouched and still answers at /api/blueprints/{owner}/{slug}/votes.
-
 /* ============================================================
    /blueprints/[owner]/[slug] — the canonical public page for a bundle.
 
@@ -412,7 +397,7 @@ export default async function Page({
   const at = { digest: summary.digest };
   const paths = folder?.files ?? [];
   /* `topologyHref`, a sorted `downloadCards` list and a `parseStoredVocabulary` reading of
-     the release's local vocabulary stood here. All three fed `DownloadPanel`, which the
+     the release's local vocabulary stood here. All three fed the download panel, which the
      owner asked off this page with the `Exact release` section around it, and none of them
      is a second reader's input: the same files are reachable one row down in the listing
      and one click away in the `Code` menu, which lists `paths` whole rather than the three
@@ -494,7 +479,7 @@ export default async function Page({
   };
 
   /* `bundleNodes` stood here, joining `graph.nodes` to `cardRefs` by index for
-     `BundlePanel`'s node list. It had that one consumer and went with the panel. The join
+     the Bundle panel's node list. It had that one consumer and went with the panel. The join
      itself is not lost: `paneModel` below builds the same correspondence for the
      synchronised panes, which is the surface that still draws it. */
 
@@ -546,7 +531,7 @@ export default async function Page({
   /* The diagnostics split stood here. An error-severity diagnostic never reaches this page
      (`graphsOf` answers absent for a release carrying one), so what remained were the
      engine's footnotes, divided into the four criteria codes `Explainability` used to
-     expand and everything else. Both halves fed `BundlePanel` and nothing else, and they
+     expand and everything else. Both halves fed the Bundle panel and nothing else, and they
      went with it on 2026-09-05.
 
      THIS PAGE NOW DRAWS NO DIAGNOSTICS AT ALL, and that is a loss rather than a tidy: eight
@@ -862,7 +847,7 @@ export default async function Page({
 
           THE MOVE HAS LANDED, and this note said it was owed for a wave after it did.
           `components/profile/OwnedBundles.tsx` draws a `RowVisibility` per row on
-          `/u/[username]`, over the same SEAM-67 route. That is the shelf's own component
+          `/u/[username]`, over the same visibility route. That is the shelf's own component
           rather than this file's export, which is why `components/bundle/Aside.tsx` still
           exports `VisibilitySwitch` with `DraftLanding` as its one caller. A published
           bundle's owner has a control again, and nothing here should say otherwise.
@@ -870,11 +855,11 @@ export default async function Page({
           Four panels the aside had already lost are recorded here rather than being lost
           with the container: `Forks` (the owner: "remove the fork panel from blueprint" —
           the header's Fork button still makes one and prints how many exist), `Releases`
-          (`History` below still lists what changed and when), `BundlePanel`, and the Score
-          card with `VoteControl` under it. The digest `BundlePanel` printed survives in the
+          (`History` below still lists what changed and when), the Bundle panel, and the Score
+          card with `VoteControl` under it. The digest the Bundle panel printed survives in the
           rendered README above.
 
-          ONE THING DID NOT SURVIVE, and it is a loss rather than a tidy. `BundlePanel` was
+          ONE THING DID NOT SURVIVE, and it is a loss rather than a tidy. The Bundle panel was
           the only surface on this page that drew the validator's diagnostics, and eight of
           the nine shipped bundles carry `analysis/criteria-leak-unanchored`, which doc 3
           §4.1 calls the most important check in the system. A reader of a published
@@ -899,45 +884,29 @@ export default async function Page({
         <History entries={sections.history} />
 
         {/* `#use-this-blueprint` stood here: a `<details>` under the eyebrow `Exact release`
-            and the heading `Use this blueprint`, holding `ForkAction`, the full digest and
-            `DownloadPanel`. The owner asked it off the page, and chose where its download
-            goes — the `Code` control on the file list above, which lists every file rather
-            than the three the panel named. Where the other three things it carried stand,
-            re-checked rather than carried forward:
+            and the heading `Use this blueprint`, holding a fork explainer, the full digest
+            and a download panel. The owner asked it off the page, and chose where its
+            download goes — the `Code` control on the file list above, which lists every
+            file rather than the three the panel named. Where the other three things it
+            carried stand, re-checked rather than carried forward:
 
               the full digest   the README below the listing prints it in full beside the
-                                instruction for recomputing it. This line used to add
-                                `BundlePanel` "in the aside", and both halves of that went:
-                                the aside on 2026-09-06 and `BundlePanel` off this route
-                                before it. The README is the only surface here that carries
-                                the digest now.
-              `ForkAction`      an explanation of forking that pointed at the header's own
-                                Fork button. The button is live and unchanged. THE PANEL HAS
-                                NO MOUNT: a grep over `app/` and `components/` for its own
-                                JSX opening tag finds nothing, and no file in the tree
-                                imports it. The token is described rather than written out,
-                                because a needle quoted in prose is a needle a source-reading
-                                guard cannot tell from a mount. `/nodes/[...id]`
-                                was the last route that drew it, under `kind="node"`, and
-                                that slot holds `components/nodes/CardForkButton.tsx` now.
-                                Its own docblock records the same thing; whether an unmounted
-                                component survives is the owner's call.
+                                instruction for recomputing it, and it is the only surface
+                                here that carries the digest now.
+              the fork explainer  an explanation of forking that pointed at the header's
+                                own Fork button. The button is live and unchanged, and the
+                                explainer's component is deleted: `/nodes/[...id]` was the
+                                last route that drew it, and that slot holds
+                                `components/nodes/CardForkButton.tsx` now.
               the honesty line  "DarkPrint distributes these files. Your own harness decides
                                 how to execute them." The claim is doc 1 §0.1.3's and it is
                                 NOT dropped: the README this page now renders makes it in
                                 the bundle author's own words ("This runs on your machine.
                                 DarkPrint hands out the files and analyses them statically.
                                 It executes nothing and holds none of your provider keys").
-                                This line used to add that `DownloadPanel` carried its own
-                                copy on `/build`; that route and the whole of
-                                `components/build/` are deleted, so the README is where the
-                                claim lives.
-
-            `DownloadPanel` is not deleted either, and it has no caller left. The one that
-            mounted it was `components/build/DownloadStep.tsx`, which went with `/build`, so
-            the component is in the same standing as `ForkAction` above: it compiles, and
-            nothing on the site renders it. Said here rather than left for a reader to infer
-            a mount from a file that is still in the tree. */}
+                                `/build` carried its own copy, and that route and the whole
+                                of `components/build/` are deleted, so the README is where
+                                the claim lives. */}
 
         {/* `#blueprint-source` stood here: `DotBreakdown` over `bp.graph.dot`, the file
             listed block by block at the full width of the body, with the rail beside it

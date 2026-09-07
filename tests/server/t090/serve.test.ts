@@ -116,7 +116,7 @@ beforeAll(async () => {
  * a scratch database (close the pool, open an admin pool, `drop database … with (force)`) crosses
  * that under the parallel worktree load this repository runs at. When it does, the run reports
  * `Tests 75 passed (75)` with two FAILED FILES and exit 1, because a hook that fails runs no
- * test and adds nothing to the failed column. That is backend.md's "read the exit code and the
+ * test and adds nothing to the failed column. That is the rule "read the exit code and the
  * failed-file count, never the test total", arriving in this suite's own teardown; it was found
  * by the falsification harness refusing to measure against an unclean baseline.
  */
@@ -147,7 +147,7 @@ async function callServeCard(cardRef: string, actor: Actor = ANONYMOUS): Promise
 function asServedFile(value: unknown, what: string): Served {
   if (value === null || typeof value !== "object") {
     throw new Error(
-      `${what} answered ${show(value)}.\n  backend.md §T090: ${PUBLISHED.ServedFile}`,
+      `${what} answered ${show(value)}.\n  T090's contract: ${PUBLISHED.ServedFile}`,
     );
   }
   const file = value as Record<string, unknown>;
@@ -158,7 +158,7 @@ function asServedFile(value: unknown, what: string): Served {
   if (!(file.bytes instanceof Uint8Array)) {
     throw new Error(
       `${what} carries \`bytes\` as ${show(file.bytes)}.\n` +
-        `  backend.md §T090 publishes \`bytes: Uint8Array\`. A string here would make the type ` +
+        `  T090's contract publishes \`bytes: Uint8Array\`. A string here would make the type ` +
         `wrong for the one thing a route does with it — write it to a response body as the ` +
         `file's own bytes, not as a JSON envelope (D-90-04).`,
     );
@@ -422,7 +422,7 @@ describe("AC6 — fetching by digest returns the bytes of that release even afte
 
   it("resolves digest BEFORE version when a reference carries both", async () => {
     /*
-     * backend.md §T090: "`serveFile` resolves `digest` **before** `version`, and a `version`
+     * T090's contract: "`serveFile` resolves `digest` **before** `version`, and a `version`
      * reference is a convenience that moves while a digest reference never does." A reference
      * carrying the first release's digest and the second's version is the only input on which
      * the two orderings give different answers, so it is the only one that tests the clause.
@@ -633,7 +633,7 @@ describe("AC7 — a path outside the release is refused, not traversed", () => {
   /*
    * The discriminating cases, and what makes them discriminating.
    *
-   * backend.md §T090: "A test asserting `../../etc/passwd` is refused passes against a naive
+   * T090's contract: "A test asserting `../../etc/passwd` is refused passes against a naive
    * `path.join` guard too; the discriminating test asserts the membership check by exhibiting a
    * path that normalises to a legal file and is still refused because it is not the string the
    * export produced."
@@ -799,7 +799,7 @@ describe("AC7 — a path outside the release is refused, not traversed", () => {
      * is a listing the caller has not been granted."
      *
      * Asserted as an exact match against the published literal rather than by scanning for
-     * forbidden substrings, which is backend.md's own correction: "a whitelist asserted with a
+     * forbidden substrings, which is the standing correction: "a whitelist asserted with a
      * blacklist test IS a blacklist". The published form is fixed and has no interpolation, so
      * pinning it exactly forbids every leak at once, including the ones nobody enumerated.
      */

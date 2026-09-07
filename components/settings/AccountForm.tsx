@@ -17,14 +17,6 @@ import {
 } from "./controls";
 import { ProfileFields } from "./ProfileFields";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// SEAM-44 LIVE: PATCH /api/account/profile
-// SEAM-45 LIVE: PATCH /api/account/handle
-// SEAM-46 LIVE: PATCH /api/account/email
-// SEAM-47 LIVE: PATCH /api/account/notifications, fanned out from this component's own Save
-//   exactly as the other three fields are — see §03 below.
-// SEAM-48 LIVE: PATCH /api/account/default-visibility
-
 /* ============================================================
    Sections 01 to 04, plus 03's four switches since T280, and the one Save that writes them.
 

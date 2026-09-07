@@ -21,7 +21,7 @@ import {
        | { kind: "note"; authorId: string;
              parent: { ownerId: string; visibility: "public" | "private" } }
 
-   backend.md, in its own words: "`Resource.note` carried only
+   The contract, in its own words: "`Resource.note` carried only
    `authorId`, so its implementer modelled note reads as open to
    everyone ... a note on a **private** bundle would have been
    world-readable, because the shape gave the policy nothing to

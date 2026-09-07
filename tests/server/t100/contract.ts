@@ -63,7 +63,7 @@ export function loadPublish(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${PUBLISH} does not load.\n` +
-          `  backend.md §T100 owns \`lib/server/publish/**\` and \`app/api/bundles/**\`, and its ` +
+          `  T100 owns \`lib/server/publish/**\` and \`app/api/bundles/**\`, and its ` +
           `Published signatures block names \`publish\`, \`PublishInput\` and \`PublishResult\`, ` +
           `with "Barrel: \`@/lib/server/publish\`".\n` +
           `  This is a failed acceptance criterion — the publishing layer is absent — and not a ` +
@@ -78,7 +78,7 @@ export function loadPublish(): Promise<Namespace> {
 /* --------------------- what the contract publishes --------------------- */
 
 /**
- * The Published signatures block of backend.md §T100, quoted verbatim so a red says where the
+ * The Published signatures block of T100's contract, quoted verbatim so a red says where the
  * name comes from rather than leaving a reader to guess which document decided it.
  *
  * `vocabulary` carries D-133-09's correction inline because the block itself does: the field was
@@ -191,7 +191,7 @@ export function refusalOf(thrown: unknown): Refusal {
   if (!(thrown instanceof Error)) {
     throw new Error(
       `publish rejected with a non-Error: ${typeof thrown} ${JSON.stringify(thrown)}.\n` +
-        `  backend.md §T100 requires a \`PublishRefusedError\` carrying a \`kind\`; a caller ` +
+        `  T100's contract requires a \`PublishRefusedError\` carrying a \`kind\`; a caller ` +
         `cannot branch on a value that is not an Error and the routes cannot map it to a status.`,
     );
   }
@@ -218,7 +218,7 @@ export async function refusalFrom(call: Promise<unknown>, criterion: string): Pr
     return refusalOf(thrown);
   }
   throw new Error(
-    `${criterion}: publish RESOLVED where backend.md §T100 requires a refusal.\n` +
+    `${criterion}: publish RESOLVED where the contract requires a refusal.\n` +
       `  It returned ${JSON.stringify(resolved)}.`,
   );
 }

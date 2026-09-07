@@ -71,7 +71,7 @@ export function loadEngine(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${ENGINE} does not load.\n` +
-          `  backend.md §T040 owns \`lib/server/engine/**\` and publishes \`validateBundle\`, ` +
+          `  T040 owns \`lib/server/engine/**\` and publishes \`validateBundle\`, ` +
           `\`validateDot\`, \`validateCardSource\` and \`validateVocabularySource\` from the ` +
           `barrel \`@/lib/server/engine\`.\n` +
           `  This is a failed acceptance criterion — the engine service is absent — and not a ` +
@@ -86,7 +86,7 @@ export function loadEngine(): Promise<Namespace> {
 /* --------------------- what the contract publishes --------------------- */
 
 /**
- * The Published signatures block of backend.md §T040 at `42b7470`, quoted so a red says where
+ * The Published signatures block of T040's contract at `42b7470`, quoted so a red says where
  * the name comes from.
  *
  * Three amendments landed in prose before they landed here — `extensions`/`ontology?`, AC5's

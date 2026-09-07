@@ -99,7 +99,7 @@ export function loadSeed(): Promise<Namespace> {
     (cause: unknown) => {
       throw new Error(
         `${SEED} does not load.\n` +
-          "  backend.md §T250 owns `lib/server/seed/**` and publishes `planImport` and " +
+          "  T250 owns `lib/server/seed/**` and publishes `planImport` and " +
           "`runImport` from the barrel `@/lib/server/seed`.\n" +
           "  This is the MODULE failing to load, NOT a member being absent: the two produce " +
           "different reds on purpose. Before reading it as a missing export, check whether the " +

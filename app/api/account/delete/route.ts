@@ -12,11 +12,8 @@
    also called at the module boundary, and because `planDeletion`
    and `deleteAccount` must answer a stranger identically.
 
-   **`DELETE /api/account` is NOT this route** and the correction
-   is already on the record: D-50-… fixes `seams.md`'s SEAM-50,
-   deletion is `app/api/account/delete/**`, and D-120-14 adds that
-   SEAM-50/51 are stale in the other direction too. `docs/**` is
-   the orchestrator's.
+   **`DELETE /api/account` is NOT this route**: deletion is
+   `app/api/account/delete/**`.
 
    ── the response body, and why it is the plan ──
    `deleteAccount` returns `void`, and a route answering 204 would

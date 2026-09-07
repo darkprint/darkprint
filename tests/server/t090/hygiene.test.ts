@@ -2,7 +2,7 @@
    T090 — error hygiene, the clause this run has spent the most
    rounds on
 
-   backend.md's governance section, in full:
+   The error-hygiene clause, in full:
 
      - `Object.keys(err)` is empty and `JSON.stringify(err)` is
        exactly `"{}"`.
@@ -25,7 +25,7 @@
    an own enumerable `detail` reddened 0 blind tests.
 
    ── why the whitelist is asserted by EXACT MATCH here ──
-   backend.md: "a whitelist asserted with a blacklist test IS a
+   The rule: "a whitelist asserted with a blacklist test IS a
    blacklist", and "assert the whitelist by exact match against the
    admissible form, never by scanning for forbidden substrings."
    T090 is the task that can actually do that: all eight forms are
@@ -289,7 +289,7 @@ describe("every refusal is sealed, per the governance clause", () => {
      * The path the whole clause was written for, and the only one this suite can reach with a
      * live driver error underneath. The medium is broken the way `downloads.test.ts` breaks the
      * counter's table — renamed out from under the read — so the failure arrives through the
-     * entry point a caller uses rather than being constructed by hand. backend.md: "a test that
+     * entry point a caller uses rather than being constructed by hand. The rule: "a test that
      * constructs the failure object directly proves the assertion works, not that the guard does".
      *
      * Two things are asserted that the other cases cannot exercise: `cause` really is present and

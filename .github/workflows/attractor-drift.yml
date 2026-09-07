@@ -18,7 +18,7 @@ name: attractor spec drift
 # `pull_request` trigger is narrowed to the transcription itself, so re-verifying that file
 # re-checks the pin in the same PR, and every other PR is left alone.
 #
-# ── continue-on-error, deliberately, and this is the same reasoning docs-drift.yml gives ──
+# ── continue-on-error, deliberately ──
 # A red here reports that SOMEBODY ELSE changed a document. That is a job for a person to
 # read, and it must not block a merge that has nothing to do with Attractor. The script's
 # own exit codes keep the two failures apart: 1 is a drift, 2 is "could not check", and a

@@ -10,9 +10,6 @@ import type { NodeCard } from "../card/schema";
 import { canonicalJson } from "./canonical";
 import { sha256Hex } from "./sha256";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-39) (cited at line 44): folded into SEAM-30; must be recomputed server-side at publish
-
 /** The only algorithm in use; kept as a prefix so a future one can coexist. */
 const ALGORITHM = "sha256";
 

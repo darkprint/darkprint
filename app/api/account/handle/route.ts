@@ -1,8 +1,6 @@
 /* ============================================================
    PATCH /api/account/handle
-   Sign-up's missing half and the rename (SEAM-45, superseded —
-   `reservedOldHandle` is dropped because it is derivable, being
-   the previous `author.handle`). `200 AccountRecord | 400 401 409`.
+   Sign-up's missing half and the rename. `200 AccountRecord | 400 401 409`.
 
    **The ONE write route that accepts a `handle: null` session**
    (D-50-05). It is the route that allocates the first handle, so

@@ -1,7 +1,6 @@
 /* ============================================================
    DarkPrint backend — lib/server/export typed refusals
-   The error-hygiene clause (backend.md, "How this run is
-   governed" -> the `Object.keys`/whitelist amendment), applied
+   The error-hygiene clause, applied
    the way `lib/server/cards/errors.ts` applies it: `Object.keys
    (err)` empty and `JSON.stringify(err)` exactly `"{}"`; `cause`
    present but non-enumerable (the ES2022 Error-cause option makes

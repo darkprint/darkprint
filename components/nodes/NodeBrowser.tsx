@@ -12,9 +12,6 @@ import {
 import { PHASE_ORDER } from "@/components/ui/PhaseCoverage";
 import { NodeCardSummary, type NodeSummary } from "./NodeCardSummary";
 
-// Backend contract seams anchored in this file (see docs/architecture/seams.md):
-// TODO(SEAM-08) (cited at line 286): GET /api/cards?q&type&phase&human&risk&sort
-
 type SortKey = "used" | "name" | "type" | "phase";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [

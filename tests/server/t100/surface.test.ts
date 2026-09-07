@@ -2,7 +2,7 @@
    T100 — the published surface
 
    No database. What this file asks is whether the barrel
-   backend.md §T100 promises exists and carries the names it
+   T100's contract promises exists and carries the names it
    published.
    ============================================================ */
 
@@ -308,7 +308,7 @@ describe("T100 — the barrel exists and names what it published", () => {
     expect(
       existsSync(BARREL_FILE),
       `${BARREL_FILE} does not exist.\n` +
-        `  backend.md §T100 Owns \`lib/server/publish/**\` and its Published signatures block ` +
+        `  T100 owns \`lib/server/publish/**\` and its Published signatures block ` +
         `ends "Barrel: \`@/lib/server/publish\`".\n` +
         `  This cell exists because the type pins in this file CANNOT report it: an unresolved ` +
         `import collapses to the error type and every pin over it accepts any verdict.`,

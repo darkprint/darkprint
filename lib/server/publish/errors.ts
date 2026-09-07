@@ -1,6 +1,6 @@
 /* ============================================================
    DarkPrint backend — publish: the one typed refusal
-   backend.md T100. Five refusal shapes behind ONE class carrying a
+   Five refusal shapes behind ONE class carrying a
    `kind`, because the UI writes three different sentences from them
    (`components/upload/UploadFlow.tsx:1176-1201`) and a generic
    refusal satisfies "is refused" while losing the sentence the page

@@ -140,7 +140,7 @@ describe("AC1: `counts.terms` is namespaced ownership, under either store", () =
     const a = await freshAccount("core-terms");
     const bundle = await insertBundle(s, { owner: a, slug: "core-terms", cards: [] });
     /* A term with no `<handle>/` prefix. `components/profile/load.ts:163` reads ownership off
-       the id prefix precisely because "a term has no author field" (seams.md SEAM-52), so an
+       the id prefix precisely because a term has no author field, so an
        unprefixed term belongs to no handle and must not land on anyone's count. */
     await insertNamespacedTerm(s, { bundle, termId: "planning" });
 

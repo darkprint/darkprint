@@ -29,8 +29,8 @@
    named, and a sixth added later.
 
    `app/api/auth/github/callback` is driven too, because
-   `docs/architecture/routes.md:56` publishes what it does — "upserts
-   a bare `account` row keyed by GitHub id" — and `upsertFromGitHub`
+   it is published as "upserts
+   a bare `account` row keyed by GitHub id" and `upsertFromGitHub`
    takes a `Db`. Its route file was not opened; it is imported and
    driven, which is not the same as read.
 

@@ -1,7 +1,7 @@
 /**
  * Scratch coverage against a real database, run by the implementer only —
- * does not count as verification (docs/ORCHESTRATION.md, Agent A). One or
- * more cases per acceptance criterion in backend.md's T090 section, plus the
+ * does not count as verification. One or
+ * more cases per acceptance criterion in T090, plus the
  * rulings D-90-01 through D-90-07 settled.
  *
  * The fixture is the **real archive**: `readContent()`'s nine bundles, their

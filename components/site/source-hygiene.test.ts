@@ -30,7 +30,7 @@
    It was written in `components/build`, beside the file that got caught. The owner deleted
    that route and its component tree on 2026-09-06, and this guard walks every tracked
    `.ts`/`.tsx` in the repository: it never had anything to do with `/build` except its
-   birthplace. `backend.md` records it catching a raw NUL twice since, both times in files
+   birthplace. It has caught a raw NUL twice since, both times in files
    under `tests/server/`, so deleting it with the directory it happened to live in would have
    removed a live tree-wide check on the strength of its path. `components/site` is where the
    site-wide guards are.

@@ -1,7 +1,7 @@
 "use client";
 
 /* ============================================================
-   `POST /api/bundles`, from the tab. SEAM-69's server counterpart.
+   `POST /api/bundles`, from the tab.
 
    ── The seam is HTTP and NOT the barrel (D-263-08) ──
    T263's Published-signatures line says this task consumes
@@ -44,7 +44,7 @@ export interface PublishedRelease {
   created: boolean;
 }
 
-/** What the wizard sends. `ownerHandle` and `version` are required and SEAM-69 omits both. */
+/** What the wizard sends. `ownerHandle` and `version` are required. */
 export interface PublishSubmission {
   ownerHandle: string;
   slug: string;

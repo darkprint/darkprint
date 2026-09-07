@@ -15,7 +15,7 @@
    * **`NoteTarget`** — the shape three of the five take. The block
      writes it inline at each of them, so without a name every
      consumer retypes the union, and a third spelling of one shape
-     is what D-140-04 charged `seams.md` for.
+     is one more place for it to drift.
    * **`NoteTargetKind`** — the union itself, for a caller
      narrowing a string before it builds a target.
    * **`MAX_NOTE_BODY`** — AC5 requires the refusal STATE the
@@ -58,13 +58,8 @@
    wording starts interpolating something it should not.
 
    ── What is NOT here at all: the routes ──
-   **D-WAVE-02 drops `app/api/**` from this task.** No path, method,
-   request body or status code is published for any of the four
-   wave-4 tasks, and `docs/architecture/seams.md` predicts
-   addresses that contradict the `Owns` lines three ways — SEAM-81
-   publishes a `{ direction: 1 | -1 }` body for a `voteNote` that
-   takes no direction. A blind author cannot assert a shape nobody
-   published, so the transport boundary is published afterwards, as
+   No path, method, request body or status code is published from
+   this barrel: the transport boundary is published separately, as
    T140's and T110's were.
    ============================================================ */
 

@@ -1,7 +1,6 @@
 /* ============================================================
    GET / POST / DELETE /api/account/saves
-   The signed-in account's private bookmarks (D-140-07, superseding
-   `seams.md`'s SEAM-61 and SEAM-62). All three answer
+   The signed-in account's private bookmarks. All three answer
    `200 SavesView`, and the 401 is `withSession`'s — a wrapping
    guard is what makes "the handler never runs" structural rather
    than remembered.

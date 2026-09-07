@@ -307,7 +307,7 @@ describe("the sweep's own case count", () => {
        edit still takes a second decision. Thirteen at T081's merge; sixteen since T132's
        three ruled amendments to §T080's block; seventeen since T260's merge added
        `usersOfMany` (D-260-31); nineteen since T280 added `ownedBundles` and
-       `draftBundle` (backend.md §T280). */
+       `draftBundle`. */
     expect(driven.size).toBe(19);
   }, 60_000);
 });

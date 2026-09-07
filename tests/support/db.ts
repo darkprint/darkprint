@@ -6,7 +6,7 @@
    here instead of nine copies that could each get the
    FK-safe delete order wrong differently.
 
-   Test isolation (backend.md, T000): "the database is addressed
+   Test isolation, per T000: "the database is addressed
    by name — a test needing a clean one creates and drops its
    own." `DATABASE_URL` names the shared development database, so
    a client opened directly against it is a suite sharing state
@@ -81,8 +81,8 @@ export async function createTestDb(): Promise<TestDb> {
  *
  * Louder is not the same as visible, which is why deriving it still matters. That
  * throw lands in `beforeEach`, and a failing hook runs no test — so it reports as a
- * failed *file* with nothing added to the failed *test* count, the trap `backend.md`
- * already records at `Tests 3954 passed` beside two failed files. And the silent
+ * failed *file* with nothing added to the failed *test* count, a trap that has already
+ * fired once (`Tests 3954 passed` beside two failed files). And the silent
  * reading does become true for any future table with no foreign-key path into the
  * set, which a hand list and a cascade would both miss.
  *

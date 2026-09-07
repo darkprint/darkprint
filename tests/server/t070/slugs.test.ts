@@ -15,7 +15,7 @@
    whichever shape arrived — is gone. `unavailable()` requires a
    returned `{ available: false }` and a throw here is a red. Keeping
    the tolerance would be a suite carrying a withdrawn clause, which
-   is the failure recorded at "Resolving `backend.md`".
+   is a failure this run has recorded before.
 
    ── and the `reason` is the point of the ruling ──
    The two classes were struck *and* `Availability` gained `reason`

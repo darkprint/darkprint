@@ -1,6 +1,6 @@
 /* ============================================================
    GET /api/cards/duplicates
-   SEAM-13. A static segment, so it is matched before the
+   A static segment, so it is matched before the
    catch-all beside it — and it can never shadow a card, since a
    pinned ref always carries `@version` and this path has none.
    ============================================================ */

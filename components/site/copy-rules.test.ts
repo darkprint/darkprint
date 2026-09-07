@@ -90,17 +90,16 @@ const AUTONOMY_COPY_FILES = [
  * They are a copy edit, not a guard, and putting them in the list before the edit would
  * only produce a skipped test.
  *
- * `components/blueprint/ForkAction.tsx` is the one file under an exempt tree this rule
- * does hold, named explicitly in `EM_DASH_FILES` below rather than folded into
- * `COPY_TREES`. It is brand new copy from the lifecycle-scoring pass (spec §3.2, doc 2
- * §2.5), not text that predates the rule like the rest of `components/blueprint` — a
- * reviewer found that the directory-level exemption above, written before this pass
- * existed, silently covered it too, so a pause dash typed into this file today would
- * ship past a guard the constraint sheet cites as enforcing exactly that. Naming the file
+ * A single file under an exempt tree can still be held to this rule by naming it in
+ * `EM_DASH_FILES` below rather than folding it into `COPY_TREES`. That is how brand new
+ * copy written under `components/blueprint` (spec §3.2, doc 2 §2.5) was guarded: a
+ * reviewer found that the directory-level exemption above, written before that pass
+ * existed, silently covered the new file too, so a pause dash typed into it would ship
+ * past a guard the constraint sheet cites as enforcing exactly that. Naming the file
  * rather than the tree keeps the fix scoped to the new copy and leaves the sibling
  * files' pre-existing violations (`Explainability.tsx`, `Comments.tsx`, `Requirements.tsx`,
- * `BundlePanel.tsx`, `DownloadPanel.tsx`, `BlueprintCanvas.tsx`) as the copy edit they
- * still are, not a guard this fix is not scoped to make.
+ * `BlueprintCanvas.tsx`) as the copy edit they still are, not a guard this fix is not
+ * scoped to make.
  */
 const COPY_TREES = [
   "components/home",
@@ -116,7 +115,7 @@ const COPY_TREES = [
   // `/install` from a preview of an unbuilt server into a route with a working command at
   // the top of it. Two files were already in that directory and neither carried a pause
   // dash in visible copy, so the tree went in whole rather than the one new file being
-  // named the way `ForkAction.tsx` is below: there was no legacy punctuation to
+  // named on its own in `EM_DASH_FILES` below: there was no legacy punctuation to
   // grandfather, and a tree covers whatever the next pass writes into it.
   //
   // `components/install` became these two on 2026-08-07, when the author split the route
@@ -236,9 +235,8 @@ const EM_DASH_FILES = [
     // The port descriptions the skeleton prints are composed here, one line per port.
     "components/panes/build.ts",
     // Product copy that is not a component: one paragraph per card field, rendered on
-    // `/nodes/<id>` and inside the blueprint page's card skeleton. Named here for the
-    // same reason `ForkAction.tsx` is, and because a `.ts` file of prose is exactly the
-    // shape a tree-based walk misses.
+    // `/nodes/<id>` and inside the blueprint page's card skeleton. Named here because a
+    // `.ts` file of prose is exactly the shape a tree-based walk misses.
     "components/panes/field-notes.ts",
     "components/panes/SkeletonPane.tsx",
     "components/panes/SynchronisedPanes.tsx",

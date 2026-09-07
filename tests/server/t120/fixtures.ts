@@ -17,8 +17,8 @@
    database. The module under test is loaded dynamically in
    `contract.ts` and only there.
 
-   `@/lib/server/ballot` (T160) was on that list until 2026-09-05.
-   Q14 deleted its write path, so the ballot row is seeded at the
+   The ballot module was on that list until 2026-09-05. Q14
+   deleted its write path, so the ballot row is seeded at the
    table now and the reason is at that fixture's own docstring.
 
    D-250-09 is what makes that list legitimate: every one of them
@@ -100,7 +100,7 @@ function databaseUrlFor(name: string): string {
   if (!base) {
     throw new Error(
       "DATABASE_URL is not set. Run `docker compose up -d` and `set -a; . ./.env.example; set +a` " +
-        "first — backend.md records that every DATABASE_URL failure in this run has been an unset " +
+        "first — every DATABASE_URL failure in this run so far has been an unset " +
         "shell rather than a defect.",
     );
   }
@@ -517,7 +517,7 @@ export async function note(
  * A community ballot, written straight at the table.
  *
  * **It went through `castBallot` until 2026-09-05 and there is no longer a writer to go
- * through.** Q14 deleted `lib/server/ballot`'s write path and the route above it, and left
+ * through.** Q14 deleted the ballot module's write path and the route above it, and left
  * the TABLE standing for exactly the reason this file needs it: `deletion.ts:141` and `:155`
  * and `bundle-deletion.ts:96` still cascade through `ballot`, so D-120-13's ruling about it is
  * live and has to be measured against a row that exists.

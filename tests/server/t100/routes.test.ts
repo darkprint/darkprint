@@ -133,7 +133,7 @@ async function post(body: unknown, cookie?: string): Promise<Response> {
   } catch (cause) {
     throw new Error(
       `${ROUTE} does not load.\n` +
-        `  backend.md §T100 Owns \`app/api/bundles/**\`, and D-100-01 published the route as ` +
+        `  T100 owns \`app/api/bundles/**\`, and D-100-01 published the route as ` +
         `POST /api/bundles.\n` +
         `  This is a failed acceptance criterion — the publish endpoint is absent — and not a ` +
         `broken test.`,

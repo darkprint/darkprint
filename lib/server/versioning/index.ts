@@ -1,6 +1,6 @@
 /* ============================================================
    DarkPrint backend — lib/server/versioning public surface
-   backend.md T025: one versioning authority for cards and
+   One versioning authority for cards and
    blueprints — declare a semver, compute a digest, infer the bump
    the content actually implies, hold a chain to it, carry
    deprecation forward.

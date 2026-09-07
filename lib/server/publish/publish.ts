@@ -1,6 +1,6 @@
 /* ============================================================
    DarkPrint backend — publish
-   backend.md T100, as amended by D-100-01. B-06: one verb, because
+   B-06: one verb, because
    one endpoint serves the wizard, the bundle page and the CLI.
    `created` distinguishes a new bundle from an appended release; a
    caller does not choose which act it is performing, the slug's
