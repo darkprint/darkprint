@@ -8,12 +8,11 @@ import { SKILL_ROUTE } from "@/lib/skill";
 /* ============================================================
    The two ways in, as a band across the top of the hero.
 
-   Two links and nothing else: the band used to print the install command and the connect
-   command as well, and the owner asked them off, since a line here was only clickable and
-   the page each cell leads to has the command with a copy control beside it. So the band is
-   its own component with no timeline to join: nothing here fades, scales or waits, and a
-   reader who arrives knowing what DarkPrint is meets the two doors immediately, with JS,
-   without it, and with reduced motion.
+   Two links and nothing else. A command printed here would only be clickable, and the page
+   each cell leads to has the same command with a copy control beside it, so the band carries
+   the two labels alone. It is its own component with no timeline to join: nothing here
+   fades, scales or waits, and a reader who arrives knowing what DarkPrint is meets the two
+   doors immediately, with JS, without it, and with reduced motion.
 
    ── The SURFACE reaches the viewport edge; the TEXT stays in the page column ──
    The band is two nested boxes. The outer div carries the border and the background all the

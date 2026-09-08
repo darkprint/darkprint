@@ -29,12 +29,12 @@ import { blueprintHref } from "@/lib/href";
    not looking at. The route is untouched and `components/profile/ProfileHeader.tsx` still
    draws a Watch control on the profile it actually addresses.
 
-   `Get the folder` CAME BACK, as `download`. It spent one pass as a `Code` dropdown on the
-   file list's header row, which is GitHub's shape; the owner asked it back into the band, on
-   the right of Star and Fork. The slot is a `ReactNode` rather than `CodeMenu`'s props
-   because a blueprint and a card do not hand over the same thing: this page passes
-   `components/bundle/CodeMenu.tsx` in cyan, and a card's page passes its own control in
-   copper (`--color-copper-line`), which is what tells the two registers apart.
+   `download` is the "Get" menu, on the right of Star and Fork, where GitHub places its
+   "Code" menu. The slot is a `ReactNode` rather than `CodeMenu`'s props because a blueprint
+   and a card do not hand over the same thing: this page passes
+   `components/bundle/CodeMenu.tsx` in cyan, and a card's page passes
+   `components/blueprint/CloneMenu.tsx` in amber, which is what tells the two registers
+   apart.
 
    `Save` FOLDED INTO `Star`. They were a private bookmark and a public counter drawn as
    two adjacent controls; the owner ruled them one concept, so `FavoriteStar` draws a

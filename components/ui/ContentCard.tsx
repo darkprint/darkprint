@@ -34,9 +34,9 @@ import { TagPill } from "./TagPill";
    right-2 top-2` and now sits on this row.
 
    The footer keeps `N tools` and takes what the author chip left: when the bundle was last
-   touched, and how many published forks it has. The `✓ resolved` tag came off on the
-   owner's instruction: every blueprint on this shelf resolves, or it would not be on it, so
-   the tick was a fact about the shelf printed on every tile. Neither figure is a version —
+   touched, and how many published forks it has. No resolution tick: every blueprint on this
+   shelf resolves, or it would not be on it, so a tick per tile would state a fact about the
+   shelf. Neither figure is a version —
    there is no version field on a blueprint and the archive holds one snapshot per bundle,
    so a `v1.3.0` here would be a number nothing produced.
    ============================================================ */

@@ -15,7 +15,7 @@ import { CopyButton } from "@/components/ui/CopyButton";
    Download comes first because it is the item that needs nothing installed. Clone sits
    under a badge because the package that would carry the command to a stranger's machine is
    not published to npm; the copy button stays, since the line is the CLI's own grammar and
-   runs from a checkout today.
+   the verb runs from a build of the repository.
 
    The word "git" is not rendered. There is no repository behind a blueprint, no history and
    nothing to pull.
@@ -143,8 +143,9 @@ export function CodeMenu({
           <div className="flex flex-col gap-2 rounded-md border border-amber/30 border-l-2 border-l-amber bg-amber/8 p-3">
             <ComingSoonBadge className="self-start" />
             <p className="text-xs leading-relaxed text-muted">
-              Not installable yet: the darkprint package is not published to npm, so this
-              line runs only from a checkout of the repository.
+              Not installable yet: the darkprint package is not published to npm, so npx
+              finds nothing to run. The verb itself runs from a build of the private
+              repository.
             </p>
           </div>
         </div>

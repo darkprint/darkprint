@@ -458,13 +458,9 @@ describe("the download control is amber, and the blueprint's is not", () => {
   });
 
   /**
-   * The Download item, which the row gave up its fourth control for.
-   *
-   * The header used to carry a "Download card" `ButtonLink` next to this menu: press it and
-   * the card document lands on disk, no terminal involved. The owner asked the row down to
-   * three controls, so the link moved INSIDE this panel as its first item, and a panel that
-   * quietly stopped rendering what it was handed would take the working half of the menu
-   * with it and leave a reader nothing but a command that runs nowhere yet.
+   * The Download item is the working half of the menu: press it and the card document lands
+   * on disk, no terminal involved. A panel that quietly stopped rendering what it was handed
+   * would leave a reader nothing but a command that runs nowhere yet.
    */
   it("renders the download link it is handed, first", () => {
     const withDownload = renderToStaticMarkup(
@@ -492,7 +488,7 @@ describe("the download control is amber, and the blueprint's is not", () => {
 
   /**
    * Two items and no third. The owner asked for Download and Clone the way GitHub's menu has
-   * them; a `curl` line was the panel's first item before and must not come back beside them.
+   * them, and a `curl` line beside them would be a third.
    */
   it("has exactly the two items, Download then Clone", () => {
     const menu = DOWNLOAD();

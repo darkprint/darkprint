@@ -258,17 +258,10 @@ describe("the action row: star, fork, download blueprint", () => {
   });
 
   /*
-   * One array, three renderings. The listing, the hrefs and the menu all come off `paths`,
-   * which is `releaseFiles`' answer for this release — `components/bundle/load.ts` states
-   * the rule this preserves: a command naming a file the folder does not have aborts
-   * partway through and leaves half a folder behind.
-   */
-  /*
-   * ONE ARRAY, two readers, since the folder became navigable on 2026-09-06.
-   *
-   * The root listing and the `cards/` listing must describe the same folder, so both are
-   * built from `paths`. The menu no longer lists files at all: its Download is the archive
-   * of the same release, pinned by digest above, so it cannot name a different folder.
+   * ONE ARRAY, two readers. The root listing and the `cards/` listing must describe the
+   * same folder, so both are built from `paths`, which is `releaseFiles`' answer for this
+   * release. The menu lists no files at all: its Download is the archive of the same
+   * release, pinned by digest above, so it cannot name a different folder.
    *
    * Both readers are asserted to take `paths` rather than asserting the ternary's text.
    * A cell that pinned the whole expression would red on any later rearrangement of it while

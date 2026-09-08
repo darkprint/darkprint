@@ -135,9 +135,10 @@ export function DraftLanding({
                 />
               </div>
               <p className="mt-2 text-xs leading-relaxed text-dim">
-                Not installable yet: the darkprint package is not published to npm, so the
-                line above runs only from a checkout of the repository. There is no release
-                yet either, so it has nothing to fetch until you publish one.
+                Not installable yet: the darkprint package is not published to npm, so npx
+                finds nothing to run. The verb itself runs from a build of the private
+                repository. There is no release yet either, so it has nothing to fetch until
+                you publish one.
               </p>
             </div>
           </section>

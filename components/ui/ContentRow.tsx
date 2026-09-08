@@ -240,9 +240,11 @@ export function ContentRow({
           covered={item.analysis.phaseCoverage.covered}
           missing={item.analysis.phaseCoverage.missing}
         />
-        {/* The tile's own footer pair, moved under the strip: when it last changed, whether
-            it resolves, and how many published forks it has. The fork count states a fact
-            and orders nothing — doc 2 §1.1, and there is no `forks` sort. */}
+        {/* The tile's own footer pair, moved under the strip: when it last changed and how
+            many published forks it has. No resolution tick: every blueprint on this shelf
+            resolves or it would not be listed, so a tick per row states a fact about the
+            shelf. The fork count states a fact and orders nothing — doc 2 §1.1, and there
+            is no `forks` sort. */}
         <span className="font-mono text-[11px] text-dim">
           {prettyDate(item.updatedAt)}
           {forks > 0 && (
@@ -251,13 +253,6 @@ export function ContentRow({
               {forks} fork{forks === 1 ? "" : "s"}
             </>
           )}
-          {" · "}
-          <span
-            className="text-emerald"
-            title="Every card this graph pins was found in the registry."
-          >
-            ✓ resolved
-          </span>
         </span>
       </div>
     </article>

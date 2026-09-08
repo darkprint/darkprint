@@ -98,17 +98,14 @@ describe("Wordmark", () => {
   /**
    * Two doors, each a link to its own page, and neither cell prints a command or hedges.
    *
-   * The band used to print the install command and the connect command inside the cells.
-   * The owner asked them off ("they are only clickable, just keep the texts"), so the cells
-   * are the two labels alone and the command with its copy control lives on the page each
-   * one opens. Both commands are asserted ABSENT here so an edit that puts one back is
-   * caught, and both are still imported so a renamed constant breaks this file loudly rather
-   * than letting the needle go stale.
+   * The cells are the two labels alone; the command with its copy control lives on the page
+   * each one opens, where a reader can act on it. Both commands are asserted ABSENT here so
+   * an edit that puts one back is caught, and both are still imported so a renamed constant
+   * breaks this file loudly rather than letting the needle go stale.
    *
-   * The "coming soon" half is inverted from what this case once required: the band drew a
-   * `ComingSoonBadge` on the MCP cell and the author asked it off. The disclosure it was
-   * repeating lives on `/mcp`, where `components/mcp/honesty.test.ts` pins it; the link
-   * asserted here is what puts a reader in front of it.
+   * No "coming soon" on either cell: the disclosure about MCP lives on `/mcp`, where
+   * `components/mcp/honesty.test.ts` pins it, and the link asserted here is what puts a
+   * reader in front of it.
    */
   it("links both doors to their pages as labels alone, and neither cell hedges", () => {
     const html = renderChips();

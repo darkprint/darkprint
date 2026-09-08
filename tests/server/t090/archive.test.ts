@@ -3,8 +3,8 @@
 
    Three things only this route can get wrong, held here over a
    scratch database of this file's own: that a private bundle is a
-   404 to everyone but its owner (B-03, the same answer for absent
-   and unreadable), that the archive holds exactly the files
+   404 to everyone but its owner (the same answer for absent and
+   unreadable), that the archive holds exactly the files
    `exportRelease` answers and their bytes, and that the query names
    a release the way the file routes do. The tar is read back by
    hand: the writer is in-house, so the reader that checks it must

@@ -19,7 +19,6 @@ import { describe, expect, it } from "vitest";
 
 import SkillPage, { metadata as skillMetadata } from "@/app/skill/page";
 import { DraftLanding } from "@/components/bundle/DraftLanding";
-import { SetupChips } from "@/components/hero/SetupChips";
 import { QUESTIONS, SkillSetup } from "@/components/skill/SkillSetup";
 import { openText, plainText } from "@/components/ui/visible-text";
 import {
@@ -32,7 +31,6 @@ import {
 
 const SETUP = renderToStaticMarkup(createElement(SkillSetup));
 const PAGE = renderToStaticMarkup(createElement(SkillPage as never));
-const CHIPS = renderToStaticMarkup(createElement(SetupChips));
 const DRAFT = renderToStaticMarkup(
   createElement(DraftLanding, {
     draft: {
@@ -96,11 +94,11 @@ describe("the install commands", () => {
   /**
    * The claims that were true while the repository was the only source, held as their own
    * inversion: the command runs now, and a page that kept saying otherwise would be the
-   * false claim in the other direction.
+   * false claim in the other direction. The landing band is not a row here: it prints two
+   * links and no command, and `components/hero/Wordmark.test.ts` holds it to that.
    */
   it.each([
     ["/skill · the whole route", PAGE],
-    ["the landing band", CHIPS],
     ["a draft bundle · the quick-setup panel", DRAFT],
   ] as const)("%s no longer says the command fails", (_name, html) => {
     const text = openText(html).toLowerCase();

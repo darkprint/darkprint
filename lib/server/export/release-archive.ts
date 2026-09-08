@@ -31,8 +31,9 @@ export interface ReleaseArchive {
 
 /**
  * The archive of the release a `ReleaseRef` names, or `undefined` for the same four
- * silences as `serveFile` (B-03): no such handle, no such slug, a bundle this actor may not
- * read, a `version` or `digest` naming no release. `exportRelease`'s own refusals for a
+ * silences as `serveFile`: no such handle, no such slug, a bundle this actor may not read,
+ * a `version` or `digest` naming no release. Absent and unreadable are one value so that
+ * existence never leaks through the difference. `exportRelease`'s own refusals for a
  * release that does not resolve are thrown through unchanged, so a route maps them exactly
  * as the file routes do.
  *

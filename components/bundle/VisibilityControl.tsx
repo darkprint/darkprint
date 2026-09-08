@@ -7,7 +7,7 @@ import { cx } from "@/lib/format";
    The visibility radiogroup, live: PATCH /api/bundles/[owner]/[slug]/visibility.
    Owner-only by construction — its one caller, `RowVisibility` in
    `components/profile/OwnedBundles.tsx`, mounts it for the owner alone — and the route
-   re-checks ownership itself (B-03), so a stray mount here is inert rather than a second
+   re-checks ownership itself, so a stray mount here is inert rather than a second
    authorization decision.
 
    ── The two optional props, and what asked for each ──

@@ -84,7 +84,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 
 | Path | Rendering | Shows |
 | --- | --- | --- |
-| `/` | static | the landing page: wordmark hero, install and connect commands, archive counts |
+| `/` | static | the landing page: wordmark hero, the two doors to the DarkPrint skill and MCP, archive counts |
 | `/blueprints` | dynamic | the registry index with search, category and tag filters, sorting |
 | `/blueprints/[owner]` | dynamic | a redirect only: a handle goes to its profile, a legacy slug to the owner that holds it |
 | `/blueprints/[owner]/[slug]` | dynamic | one blueprint: graph, files, releases, notes, downloads; the owner's controls when signed in |

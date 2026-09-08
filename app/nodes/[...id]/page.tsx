@@ -9,7 +9,8 @@ import { openView } from "@/lib/server/ontology";
 import { latestCards, usersOf, usersOfMany, versionsOf } from "@/lib/server/registry";
 import { searchTerms } from "@/lib/server/search";
 import { serveCardSource } from "@/lib/server/export";
-import { actorFrom, getPublicAuthor } from "@/lib/server/accounts";
+import { resolveCardRef } from "@/lib/server/cards";
+import { actorFrom, getPublicAuthor, publicAuthorsByIds } from "@/lib/server/accounts";
 import { getSignals } from "@/lib/server/counters";
 import { listNotes, type NoteRecord } from "@/lib/server/notes";
 import { authorFor } from "@/components/profile/author";
@@ -985,6 +986,16 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   const account =
     card.author === undefined ? undefined : await getPublicAuthor(db, card.author);
   const author = account === undefined ? undefined : authorFor(account);
+  /* The clone line names the account that published this version, which `CardSummary`
+     does not carry: the stored row has the owner's id, and the public reader turns it into
+     a handle. An account that has not chosen a handle yet leaves the bare ref. */
+  const stored = await resolveCardRef(db, ANONYMOUS, record.ref);
+  const publisher =
+    stored === undefined
+      ? undefined
+      : (await publicAuthorsByIds(db, [stored.ownerId])).get(stored.ownerId);
+  const publisherHandle = publisher?.handle ?? null;
+  const cloneLine = `npx -y darkprint clone ${publisherHandle === null ? "" : `${publisherHandle}/`}${record.ref}`;
   /* The document, verbatim, from the published per-card reader. `cardSource` walked
      `content/`, so a card published since the last deploy showed an empty source panel —
      the same reason the blueprint page's panes moved (D-261-12). Bytes on the wire is
@@ -1152,23 +1163,11 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
         {/* The right column, at `BundleHeader`'s measure: one action row, and the figure
             those actions move underneath them.
 
-            ── Star, Fork, Download card, in that order ──
-            The owner, 2026-09-05: "In the node card, it should be star, fork, Download
-            Card". Three controls where four stood, and each of the two that left went for
-            its own reason.
-
-            A fork explainer stood first: a dropdown that explained what forking a card
-            would mean and then pointed at the download, which was the right thing to draw
-            while a card had no fork at all. Beside a Fork button it is the wrong thing: two
-            controls a click apart, the left one explaining that the right one does not
-            exist. `CardForkButton` takes the slot and does the thing instead, over
-            `POST /api/cards/{id}/fork`, which is why the explainer is deleted rather than
-            moved.
-
-            The "Download card" button stood third, and it has not been dropped: it is
-            passed to `CloneMenu` as `download` and is the first item inside that panel,
-            with the clone command as the second. The row the owner asked for has room for
-            one menu, not for two drawings of one idea.
+            ── Star, Fork, Get card, in that order ──
+            Three controls. `CardForkButton` does the thing over `POST /api/cards/{id}/fork`
+            rather than explaining it, so no explainer sits beside it. The card document's
+            download is the first item inside `CloneMenu`, with the clone command as the
+            second: the row has room for one menu, not for two drawings of one idea.
 
             The group's `download` anchor left with the fork explainer. Its own comment
             recorded that it existed because that component's panel linked it, and nothing
@@ -1223,12 +1222,13 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 do for, and the class list is spelled out so the amber lands rather than
                 being decided by stylesheet order against `outline`'s `text-fg`.
 
-                The clone line names the card by its author's handle, which is the only
-                handle a card carries on this page; the CLI's card verb is lane D's and the
-                owner-qualified form is the one it is being given. */}
+                The clone line names the account that published this version, the way a
+                blueprint's line names its owner; `card.author` is attribution inside the
+                document and can be a different person. The CLI's card verb is not built
+                yet, and the owner-qualified form is the grammar it is being given. */}
             <CloneMenu
               kind="node"
-              cloneCommand={`npx -y darkprint clone ${card.author === undefined ? "" : `${card.author}/`}${record.ref}`}
+              cloneCommand={cloneLine}
               download={
                 source !== undefined ? (
                   <a

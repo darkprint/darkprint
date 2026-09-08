@@ -173,7 +173,8 @@ const CLAIMS: Claim[] = [
      The blueprint menu used to be held to "not built yet: a darkprint cli that clones a
      blueprint by name". That sentence became false in the other direction: `darkprint clone`
      is implemented. What is still true, and what the panel now says, is that the package is
-     not published to npm, so the line runs only from a checkout. */
+     not published to npm, so the printed line runs on nobody's machine and the verb itself
+     runs from a build of the repository. */
   {
     surface: "/blueprints/<owner>/<slug> · Get blueprint",
     why: "the panel prints a `darkprint clone` line with a copy button under a Download that really works, and a code block beside a working item reads as runnable. This is the sentence saying the CLI line does not run on a machine that has never seen the repository",

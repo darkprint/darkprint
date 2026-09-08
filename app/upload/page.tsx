@@ -36,8 +36,9 @@ export const metadata: Metadata = {
      Publish sends it to the registry and stores a release. That was not true when this
      note was written, and the sentences that said so came off in the change that made
      them false rather than in a later tidy (D-78, D-263-02). What still may not be
-     dropped for pace is the one limit that remains — the skill does not push from the
-     editor — and the divergence between the reading taken here and the registry's own.
+     dropped for pace is the divergence between the reading taken here and the registry's
+     own, and the sentence naming the other door: the DarkPrint skill publishes the folder
+     from the terminal it runs in.
      Two HIGH findings in this project were disclaimers going missing during a length
      pass. `components/site/nav.test.ts` holds the chrome to this name. */
   title: "Publish",

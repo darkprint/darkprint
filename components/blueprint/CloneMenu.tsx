@@ -201,8 +201,9 @@ function CloneBody({
               </>
             ) : (
               <>
-                Not installable yet: the darkprint package is not published to npm, so this
-                line runs only from a checkout of the repository.
+                Not installable yet: the darkprint package is not published to npm, so npx
+                finds nothing to run. The verb itself runs from a build of the private
+                repository.
               </>
             )}
           </p>

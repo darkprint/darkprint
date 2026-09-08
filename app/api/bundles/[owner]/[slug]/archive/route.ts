@@ -6,7 +6,8 @@
 
    The read policy is the file routes' own: `releaseArchive` answers
    `undefined` for a bundle the caller may not read exactly as it
-   does for one that is not there, and both are the same 404 (B-03).
+   does for one that is not there, and both are the same 404, so a
+   stranger cannot learn that a private bundle exists.
    The request is counted in the `read` bucket before anything is
    built, since an archive is the most expensive read this tree
    serves, and one successful answer is one download of the bundle.
