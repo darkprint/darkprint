@@ -196,7 +196,7 @@ export function draftAt(phase: string, overrides: Record<string, unknown> = {}):
       cardFiles: { "cards/fetch@1.0.0.yaml": "id: fetch\nversion: 1.0.0\n" },
     },
     ledger: { settled: ["the need"], open: ["the guards"], blocked: [] },
-    hits: [{ kind: "blueprint", ref: "darkprint/pipeline-observability", title: "Pipeline observability", score: 0.71 }],
+    hits: [{ kind: "blueprint", ref: "autogen/pipeline-observability", title: "Pipeline observability", score: 0.71 }],
     ...overrides,
   };
 }

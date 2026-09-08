@@ -82,7 +82,7 @@ describe("D-260-24: a publish writes a scorecard `scoresOf` accepts", () => {
    * exact call answered `undefined` for every release ever published (D-260-24, measured).
    */
   it("scoresOf answers a complete scorecard for a freshly published release", async () => {
-    const scores = await scoresOf(db, ANONYMOUS, "darkprint", "frontline-triage");
+    const scores = await scoresOf(db, ANONYMOUS, "autogen", "frontline-triage");
     expect(scores, "scoresOf answered undefined: the stamp did not land through publish()").toBeDefined();
     expect(scores?.autonomy).toBeDefined();
     expect(scores?.security).toBeDefined();

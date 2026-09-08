@@ -28,11 +28,12 @@ import {
   EXPECTED_CARD_FILES,
   EXPECTED_CARD_IDS,
   OVERLAY_TERM,
+  REGISTRY_HANDLE,
   REPO_ROOT,
   bundleSlugs,
   cardFiles,
   cardIds,
-  inventedAuthors,
+  manifestAuthors,
   printedDigests,
 } from "./contract";
 
@@ -88,24 +89,21 @@ describe("the archive this task imports", () => {
     expect(allCardVersions()).toHaveLength(EXPECTED_CARD_FILES);
   });
 
-  it("names exactly six invented authors", () => {
-    expect(inventedAuthors()).toEqual([
-      "hachi",
-      "k0bra",
-      "lupo",
-      "mara-veil",
-      "orin",
-      "sol-antczak",
-    ]);
-    expect(inventedAuthors()).toHaveLength(EXPECTED_AUTHORS);
+  /* The archive is generated, and every card and manifest credits the one account that owns
+     it. Read off `content/` rather than recalled, so a second handle appearing anywhere reds
+     here by name. */
+  it("credits every card and manifest to the registry handle, and to nobody else", () => {
+    expect(manifestAuthors()).toEqual([REGISTRY_HANDLE]);
+    expect(manifestAuthors()).toHaveLength(EXPECTED_AUTHORS);
   });
 
-  it("carries one overlay term, and its id sits in an invented namespace (D-250-06)", () => {
+  it("carries one overlay term, whose namespace names no author (D-250-06)", () => {
     const text = readFileSync(`${REPO_ROOT}content/ontology/extensions.yaml`, "utf8");
     const ids = [...text.matchAll(/^\s*-\s+id:\s*(\S+)\s*$/gm)].map((m) => m[1]);
     expect(ids).toEqual([OVERLAY_TERM]);
-    expect(OVERLAY_TERM.split("/")[0]).toBe("lupo");
-    expect(inventedAuthors()).toContain("lupo");
+    /* The segment is a namespace and nothing more: no `author:` line names it and no account
+       holds it. Renaming the term would move every card digest that declares it. */
+    expect(manifestAuthors()).not.toContain(OVERLAY_TERM.split("/")[0]);
   });
 });
 
@@ -151,7 +149,7 @@ describe("re-attribution is digest-safe, measured rather than read", () => {
    */
   it("cardDigest is unchanged by re-attribution, across all 61 card versions", () => {
     const moved = allCardVersions()
-      .filter(({ card }) => cardDigest(card as never) !== cardDigest({ ...card, author: "darkprint" } as never))
+      .filter(({ card }) => cardDigest(card as never) !== cardDigest({ ...card, author: "somebody-else" } as never))
       .map(({ id, version }) => `${id}@${version}`);
     expect(moved).toEqual([]);
   });
@@ -241,8 +239,8 @@ describe("AC3's second axis: there were numbers to import", () => {
    *
    * No criterion covers them and this suite writes no note cell. The count is asserted so the
    * open question has a measured number attached to it: the notes travel on the same records as
-   * everything else, and they are written in the six invented voices D-250-11 rules out of
-   * existence as accounts.
+   * everything else, and they are written in `lib/data`'s fixture voices, none of which the
+   * import creates an account for.
    */
   it("carries twelve seeded community notes across the ten bundles", () => {
     const comments = (allBlueprints() as unknown as { comments?: unknown[] }[]).map(
@@ -263,7 +261,7 @@ describe("D-250-13: the prefix traps, checked rather than assumed", () => {
       slugs: bundleSlugs(),
       cardIds: cardIds(),
       cardRefs: cardFiles().map((f) => f.replace(/\.yaml$/, "")),
-      authors: inventedAuthors(),
+      authors: manifestAuthors(),
     };
     const pairs: string[] = [];
     for (const [name, values] of Object.entries(sets)) {

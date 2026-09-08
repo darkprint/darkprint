@@ -45,7 +45,6 @@ import {
 } from "./bundle-export";
 import { parseOntologyTerms } from "./ontology-file";
 import { contentVocabulary, readContent, type LoadedBundle } from "./read";
-import { autonomyStatement } from "@/lib/format";
 
 /**
  * The name the compiled, runnable copy of the graph carried until the owner instructed it
@@ -515,9 +514,9 @@ describe("the README", () => {
     }
   });
 
-  // Doc 1 §0.1.3 and the item-10 contract: where execution happens, that the folder hands
-  // over the topology and its cards rather than a compiled command, and what is collected.
-  it("says where execution happens, what the folder hands over, and what is collected", () => {
+  // Doc 1 §0.1.3 and the item-10 contract: where execution happens, and that the folder hands
+  // over the topology and its cards rather than a compiled command.
+  it("says where execution happens and what the folder hands over", () => {
     for (const { slug, text } of readmes) {
       expect([slug, text.includes("This runs on your machine.")]).toEqual([slug, true]);
       expect([slug, text.includes("carries the topology and its pinned cards")]).toEqual([
@@ -530,7 +529,27 @@ describe("the README", () => {
       expect([slug, text.includes("executes nothing and holds none of your provider keys")]).toEqual(
         [slug, true],
       );
-      expect([slug, text.includes("No file in this folder calls home")]).toEqual([slug, true]);
+    }
+  });
+
+  // The owner took the two closing sections out of the generated README: the quoted scores
+  // and the telemetry paragraph. Neither heading may come back, and neither may the claim
+  // about a reporting channel that the site itself no longer makes in this file.
+  it("carries neither of the two sections the owner removed", () => {
+    for (const { slug, text } of readmes) {
+      expect([slug, text.includes("## What DarkPrint computed")]).toEqual([slug, false]);
+      expect([slug, text.includes("## What gets reported back")]).toEqual([slug, false]);
+      expect([slug, text.includes("designed and not built")]).toEqual([slug, false]);
+    }
+  });
+
+  // The README describes the folder in the fewest words: the headings are a fixed set, in a
+  // fixed order, and the section a reader is pointed at from `Run it` is among them.
+  it("carries exactly the four sections, in order", () => {
+    const expected = ["## Run it", "## What is in the folder", README_RUNNER_SECTION, "## The nodes"];
+    for (const { slug, text } of readmes) {
+      const headings = text.split("\n").filter((line) => line.startsWith("## "));
+      expect([slug, headings]).toEqual([slug, expected]);
     }
   });
 
@@ -565,159 +584,44 @@ describe("the README", () => {
     }
   });
 
-  // Telemetry, accounts and publishing are Fase 4. The README may describe the design and
-  // has to say it does not exist, so nobody downloads this expecting a dashboard.
-  it("says the opt-in reporting channel is designed and not built", () => {
-    for (const { slug, text } of readmes) {
-      expect([slug, text.includes("It is designed and not built")]).toEqual([slug, true]);
-    }
-  });
-
-  // Doc 1 §8.3: the numbers show their working. Quoted rather than restated — a
-  // paraphrase would be a second implementation of the analyzer inside a README.
-  //
-  // Autonomy is quoted through `autonomyStatement`, which is the whole engine sentence
-  // less the band ordinal it ends on (doc 2 §1.1). Still the engine's own wording and
-  // still its own arithmetic — the transform only drops the number, and the test below
-  // holds it to that.
-  it("quotes both analyzers verbatim", () => {
-    for (const { slug, entry, text } of readmes) {
-      expect([
-        slug,
-        text.includes(`> ${autonomyStatement(entry.analysis.autonomy.rationale)}`),
-      ]).toEqual([slug, true]);
-      expect([slug, text.includes(`> ${entry.analysis.security.rationale}`)]).toEqual([slug, true]);
-      expect([slug, text.includes(`Autonomy: ${entry.analysis.autonomy.label}.`)]).toEqual([
-        slug,
-        true,
-      ]);
-      expect([slug, text.includes(`Security level ${entry.analysis.security.level}.`)]).toEqual([
-        slug,
-        true,
-      ]);
-    }
-  });
-
   /**
    * Doc 2 §1.1, on the surface that outlives every other one.
    *
-   * The README is the file that stays behind in somebody's repository long after they
-   * have left the site, so the rule that keeps the autonomy band off a page holds here
-   * too: the only number a reader is taught to read as a rung is the organisational
-   * maturity ladder, and a second small integer beside the word "autonomy" reads as the
-   * same scale. The class carries the reading instead, and it loses nothing — it is what
-   * the band is called.
-   *
-   * The security level is a different metric on a real 0-to-4 penalty scale, and it is
-   * deliberately untouched.
+   * The README no longer prints a reading of either scale, and the negatives stay: the file
+   * is the one that stays behind in somebody's repository, so it is the last place an
+   * autonomy ordinal or the vocabulary of a shortfall may reappear. `level` belongs to the
+   * security scale and to the 1-to-5 organisational ladder, which is why the digit and the
+   * word are both checked.
    */
-  it("states the autonomy class and never the band behind it", () => {
-    for (const { slug, entry, text } of readmes) {
-      expect([slug, text.includes(`Autonomy: ${entry.analysis.autonomy.label}.`)]).toEqual([
-        slug,
-        true,
-      ]);
+  it("prints no autonomy ordinal and grades nobody", () => {
+    for (const { slug, text } of readmes) {
       // No "autonomy level 4", no "→ level 4 (Closed-loop)", however it is spelled.
       const ordinal = /autonomy[^.\n]{0,24}level\s*\d|→\s*level\s*\d/i;
       expect([slug, ordinal.test(text)]).toEqual([slug, false]);
-    }
-  });
-
-  /**
-   * The ordinal's vocabulary, not only its digits.
-   *
-   * The regex above wants a number touching the word, so the closing paragraph — "The
-   * autonomy level says what this factory automates" — walked past it in all nine
-   * READMEs, as did "the same arithmetic on your side gives the same two numbers" beside a
-   * reading that is no longer a number. `level` belongs to the security scale and to the
-   * 1-to-5 organisational ladder; the README is the file that stays behind in somebody's
-   * repository, so it is the last place the two should be spelled alike.
-   *
-   * "Security level" stays, and this checks it stays: the fix is a distinction, not a
-   * search-and-replace, and a README that stopped naming the security scale would have
-   * lost a real reading.
-   */
-  it("keeps the ordinal vocabulary for the scale that has one", () => {
-    for (const { slug, entry, text } of readmes) {
       const lower = text.toLowerCase();
-      for (const banned of ["autonomy level", "the same two numbers", "both numbers come"]) {
-        expect([slug, banned, lower.includes(banned)]).toEqual([slug, banned, false]);
-      }
-      expect([slug, text.includes("The autonomy class says what this blueprint automates")]).toEqual(
-        [slug, true],
-      );
-      expect([slug, text.includes(`Security level ${entry.analysis.security.level}.`)]).toEqual([
-        slug,
-        true,
-      ]);
-    }
-  });
-
-  /**
-   * Doc 2 §1.1. Three of the nine bundles put a person in the graph, and the README of
-   * those three has to name the node without any of the vocabulary of a shortfall. The
-   * check is deliberately two-sided: the human node is named (doc 1 §8.3 wants the
-   * working shown) and no scale, comparison or verdict is printed around the number.
-   */
-  it("names the human nodes and grades nobody", () => {
-    const withHumans = readmes.filter(
-      ({ entry }) => entry.analysis.autonomy.contributions.some((c) => c.requiresHuman),
-    );
-    expect(withHumans.map((r) => r.slug)).toEqual([
-      "frontline-triage",
-      "guarded-merge-bot",
-      "incident-commander",
-    ]);
-
-    for (const { slug, entry, text } of withHumans) {
-      expect([slug, text.includes("Where a person acts:")]).toEqual([slug, true]);
-      for (const contribution of entry.analysis.autonomy.contributions) {
-        if (!contribution.requiresHuman) continue;
-        expect([
-          slug,
-          contribution.nodeId,
-          text.includes(`- \`${contribution.nodeId}\` (${contribution.name}): ${contribution.explanation}`),
-        ]).toEqual([slug, contribution.nodeId, true]);
-      }
-    }
-
-    for (const { slug, text } of readmes) {
-      expect([slug, text.includes("Nothing here is a grade.")]).toEqual([slug, true]);
       for (const banned of [
+        "autonomy level",
+        "the same two numbers",
+        "both numbers come",
         "out of 4",
         "fully autonomous",
         "not autonomous",
         "room for improvement",
         "should automate",
       ]) {
-        expect([slug, banned, text.includes(banned)]).toEqual([slug, banned, false]);
+        expect([slug, banned, lower.includes(banned)]).toEqual([slug, banned, false]);
       }
     }
   });
 
-  it("lists every security finding, in the analyzer's words", () => {
+  // Two columns: the node and the card version it pins. The phase came off the row because
+  // the card under `cards/` states it, and the README repeats nothing a file in the folder
+  // already says.
+  it("tabulates every node with the card version it pins, and nothing the card already says", () => {
     for (const { slug, entry, text } of readmes) {
-      if (entry.analysis.security.findings.length === 0) {
-        expect([slug, text.includes("What was charged:")]).toEqual([slug, false]);
-        continue;
-      }
-      expect([slug, text.includes("What was charged:")]).toEqual([slug, true]);
-      for (const finding of entry.analysis.security.findings) {
-        expect([slug, finding.marker, text.includes(finding.explanation)]).toEqual([
-          slug,
-          finding.marker,
-          true,
-        ]);
-      }
-    }
-  });
-
-  it("tabulates every node with the card version it pins", () => {
-    for (const { slug, entry, text } of readmes) {
+      expect([slug, text.includes("| node | card |\n| --- | --- |\n")]).toEqual([slug, true]);
       for (const node of entry.blueprint.nodes) {
-        const phase =
-          node.card.phases.length === 0 ? "none declared" : node.card.phases.join(", ");
-        expect([slug, node.nodeId, text.includes(`| \`${node.nodeId}\` | \`${node.ref}\` | ${phase} |`)]).toEqual(
+        expect([slug, node.nodeId, text.includes(`| \`${node.nodeId}\` | \`${node.ref}\` |\n`)]).toEqual(
           [slug, node.nodeId, true],
         );
       }

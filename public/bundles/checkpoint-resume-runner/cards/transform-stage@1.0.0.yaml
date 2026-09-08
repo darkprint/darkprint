@@ -49,4 +49,4 @@ notes: >-
   a restored attempt has to produce the same result as the run that failed after it.
 
 version: 1.0.0
-author: k0bra
+author: autogen

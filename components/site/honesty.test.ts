@@ -89,9 +89,9 @@ const STARTER = canvas("starter-software-factory");
 const CODE_MENU = renderToStaticMarkup(
   createElement(CodeMenu, {
     command:
-      'curl --fail-early -fsSL --create-dirs -o "starter-software-factory/#1" "https://darkprint.io/api/files/blueprints/darkprint/starter-software-factory/d/sha256:abc/{README.md,topology.dot}"',
-    cliCommand: "darkprint clone darkprint/starter-software-factory --version 1.0.0",
-    files: [{ path: "README.md", href: "/api/files/blueprints/darkprint/starter-software-factory/d/sha256:abc/README.md" }],
+      'curl --fail-early -fsSL --create-dirs -o "starter-software-factory/#1" "https://darkprint.io/api/files/blueprints/autogen/starter-software-factory/d/sha256:abc/{README.md,topology.dot}"',
+    cliCommand: "darkprint clone autogen/starter-software-factory --version 1.0.0",
+    files: [{ path: "README.md", href: "/api/files/blueprints/autogen/starter-software-factory/d/sha256:abc/README.md" }],
   }),
 );
 const CLONE_NODE = renderToStaticMarkup(

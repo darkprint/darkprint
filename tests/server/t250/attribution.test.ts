@@ -1,27 +1,22 @@
 /* ============================================================
-   T250 — AC4, re-attribution
+   T250 — AC4, attribution
 
    "(4) every imported bundle is owned by the registry handle and no
    fictional account exists."
 
-   D-250-11 bound the strong reading: the import creates NO `account`
-   row for any of `hachi`, `k0bra`, `lupo`, `mara-veil`, `orin`,
-   `sol-antczak`. Re-attribution moves ownership to the registry
-   account and invents nobody, and a handle naming no account is the
-   honest end state rather than a gap to be filled.
-
-   D-250-04 fixed the account: handle `darkprint`, created by
-   `upsertFromGitHub(db, { githubId: 0, githubLogin: "darkprint" })`,
-   where `0` is a sentinel that cannot collide because GitHub ids
-   start at 1.
+   The archive is generated, and every `author:` line in it names the
+   registry handle, so the account that owns the rows is the one the
+   documents credit. The import creates that one account and nobody
+   else: the sentinel `upsertFromGitHub(db, { githubId: 0, githubLogin:
+   "autogen" })`, where `0` cannot collide because GitHub ids start
+   at 1.
 
    ── the control that keeps this from being satisfied by nothing ──
    "Every bundle owned by one account" is trivially true of a
-   database with one bundle, and "no account for the six" is
-   trivially true of a database with no accounts at all. Both are
-   asserted against a premise that DISAGREES with them: the archive
-   names six distinct authors across its nine bundles, so collapsing
-   to one owner is a real change, and the import demonstrably ran.
+   database with one bundle, and "no other account" is trivially true
+   of a database with no accounts at all. Both are asserted beside
+   the premise that the import demonstrably ran: ten bundles and 61
+   card versions stored, all under the one account.
 
    ── ownership is read from the DATABASE, never from the result ──
    AC4 is a claim about what is stored. A value `runImport` handed
@@ -38,7 +33,7 @@ import {
   REGISTRY_HANDLE,
   SEED_VERSION,
   bundleSlugs,
-  inventedAuthors,
+  manifestAuthors,
   printedDigests,
   REPO_ROOT,
 } from "./contract";
@@ -54,28 +49,26 @@ afterAll(async () => {
 
 const SLOW = 180_000;
 
-describe("the control: the archive does not already look like the answer", () => {
+describe("the control: what the archive credits", () => {
   /**
-   * Six distinct authors across nine bundles, read off the archive. Without this the ownership
-   * cells below are satisfied by an input that was already single-authored, which is the
-   * two-valued-criterion-asserted-against-one-actor shape: assert each value against a subject
-   * whose default DISAGREES with it.
+   * One handle across the ten manifests, read off the archive, and it is the registry handle.
+   * The ownership cells below are about `owner_id`; this one is about the bytes, so a manifest
+   * that quietly credited somebody else would red here by name rather than passing as one
+   * more row under the right owner.
    */
-  it("names six different authors across the nine bundles", () => {
+  it("credits every manifest to the registry handle", () => {
     const authors = bundleSlugs().map((slug) => {
       const text = readFileSync(`${REPO_ROOT}content/blueprints/${slug}/blueprint.yaml`, "utf8");
       return /^author:\s*(\S+)\s*$/m.exec(text)?.[1] ?? "";
     });
     expect(authors).toHaveLength(EXPECTED_BUNDLES);
-    expect(new Set(authors).size).toBeGreaterThan(1);
-    expect(inventedAuthors()).toHaveLength(EXPECTED_AUTHORS);
-    /* And none of them is the registry handle, so "owned by darkprint" cannot be true of the
-       input before the import touches it. */
-    expect(inventedAuthors()).not.toContain(REGISTRY_HANDLE);
+    expect(new Set(authors)).toEqual(new Set([REGISTRY_HANDLE]));
+    expect(manifestAuthors()).toHaveLength(EXPECTED_AUTHORS);
+    expect(manifestAuthors()).toEqual([REGISTRY_HANDLE]);
   });
 });
 
-describe("AC4: one registry account, and nobody invented", () => {
+describe("AC4: one registry account, and nobody else", () => {
   it(
     "creates exactly one account, holding the handle D-250-04 publishes",
     async () => {
@@ -102,24 +95,22 @@ describe("AC4: one registry account, and nobody invented", () => {
   );
 
   /**
-   * D-250-11's strong reading, one cell per invented author so a red names which one appeared.
-   *
-   * Exact equality on the handle, never `like` and never a substring: D-250-13 recorded that a
-   * substring match is how two distinct subjects collapse into one, and `lupo` sits inside the
-   * overlay term id `lupo/pii-handling` that D-250-06 leaves in place.
+   * The strong reading: no account row other than the registry's. Exact equality on the
+   * handle, never `like` and never a substring: D-250-13 recorded that a substring match is
+   * how two distinct subjects collapse into one.
    */
-  it.each(inventedAuthors())(
-    "creates no account for %s",
-    async (author: string) => {
+  it(
+    "creates no account other than the registry's",
+    async () => {
       const { scratch } = await imported();
       const rows = await scratch.query(
-        'select id, handle from "account" where handle = $1 or github_login = $1',
-        [author],
+        'select id, handle, github_login from "account" where handle is distinct from $1',
+        [REGISTRY_HANDLE],
       );
       expect(
         rows,
-        `an account exists for the invented author "${author}". D-250-11: re-attribution moves ` +
-          "ownership to the registry account and invents nobody.",
+        "an account exists beside the registry's. The import publishes under one handle and " +
+          "invents nobody.",
       ).toEqual([]);
     },
     SLOW,
@@ -187,22 +178,15 @@ describe("AC4: one registry account, and nobody invented", () => {
   );
 });
 
-describe("D-250-18: re-attribution moves OWNERSHIP, not AUTHORSHIP", () => {
+describe("ownership and authorship name the same handle", () => {
   /**
-   * The manifest keeps the handle the archive wrote, and it is a different claim from AC4.
-   *
-   * AC4 is about `bundle.owner_id` and says nothing about the manifest, which sits outside
-   * `bundleDigest` and is therefore digest-neutral either way. D-250-18 rules the bytes are
-   * kept: the registry did not write these blueprints, and a manifest saying it did would be a
-   * false claim on the one surface that records who authored a thing.
-   *
-   * The control is the same one AC4 uses in reverse. The nine bundles name six DIFFERENT
-   * authors, none of them the registry handle, so "the manifest kept its author" and "the
-   * manifest was rewritten to darkprint" produce different answers on every row -- and both
-   * halves are asserted, because "author is a non-empty string" would admit either.
+   * The manifest keeps the handle the archive wrote, and the archive writes the registry
+   * handle. AC4 is about `bundle.owner_id`; this is about `release.manifest.author`, which sits
+   * outside `bundleDigest` and is therefore digest-neutral either way. Both halves are
+   * asserted, because "author is a non-empty string" would admit a rewritten manifest.
    */
   it(
-    "keeps each manifest's original author, and it is never the registry handle",
+    "stores each manifest with the author the archive wrote, which is the registry handle",
     async () => {
       const expected = new Map(
         bundleSlugs().map((slug) => [
@@ -212,8 +196,7 @@ describe("D-250-18: re-attribution moves OWNERSHIP, not AUTHORSHIP", () => {
           )?.[1],
         ]),
       );
-      expect(new Set(expected.values()).size).toBe(EXPECTED_AUTHORS);
-      expect([...expected.values()]).not.toContain(REGISTRY_HANDLE);
+      expect(new Set(expected.values())).toEqual(new Set([REGISTRY_HANDLE]));
 
       const { scratch } = await imported();
       const rows = await scratch.query(
@@ -230,23 +213,15 @@ describe("D-250-18: re-attribution moves OWNERSHIP, not AUTHORSHIP", () => {
         .filter((r) => r.author !== expected.get(r.slug))
         .map((r) => `${r.slug}: stored ${String(r.author)}, archive ${expected.get(r.slug)}`);
       expect(wrong).toEqual([]);
-
-      /* And the bad output named explicitly: not one manifest may say the registry wrote it. */
-      const claimed = rows
-        .filter((r) => (r.manifest as { author?: unknown })?.author === REGISTRY_HANDLE)
-        .map((r) => String(r.slug));
-      expect(claimed).toEqual([]);
     },
     SLOW,
   );
 
   /**
-   * D-250-22's third ground, which its implementer reached and the ruling did not have:
-   * rewriting a stored `source` is the exact harm D-90-03 exists to prevent, and it would put
-   * the store and `content/` permanently out of agreement.
-   *
-   * So the stored card bytes are compared to the file on disk BYTE FOR BYTE. A card's `author:`
-   * line is inside those bytes, which is what makes this the same ruling one field over.
+   * Rewriting a stored `source` is the harm D-90-03 exists to prevent, and it would put the
+   * store and `content/` permanently out of agreement. So the stored card bytes are compared to
+   * the file on disk BYTE FOR BYTE, and the `author:` line inside those bytes is read back to
+   * show it names the registry handle rather than being absent.
    */
   it(
     "stores every card's bytes exactly as content/ holds them, author line included",
@@ -263,13 +238,11 @@ describe("D-250-18: re-attribution moves OWNERSHIP, not AUTHORSHIP", () => {
       }
       expect(wrong).toEqual([]);
 
-      /* The discriminating half: those bytes really do carry an invented author, so a store
-         that agreed with `content/` only because both had been rewritten is excluded. */
       const authors = new Set(
         rows.map((r) => /^author:\s*(\S+)\s*$/m.exec(String(r.source))?.[1]).filter(Boolean),
       );
       expect(authors.size).toBe(EXPECTED_AUTHORS);
-      expect([...authors]).not.toContain(REGISTRY_HANDLE);
+      expect([...authors]).toEqual([REGISTRY_HANDLE]);
     },
     SLOW,
   );

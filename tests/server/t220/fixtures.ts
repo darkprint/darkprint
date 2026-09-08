@@ -251,14 +251,14 @@ export interface Seeded {
   fork: { ownerHandle: string; slug: string };
 }
 
-const REGISTRY_HANDLE = "darkprint";
-const SEED_VERSION = "1.0.0";
+const REGISTRY_HANDLE = "autogen";
+const SEED_VERSION = "1.1.0";
 const SECOND_VERSION = "2.0.0";
 
 /**
  * The seed, plus the two rows the criteria need that the seed does not create.
  *
- * `runImport` gives nine public bundles under `darkprint` and a 57-document card library
+ * `runImport` gives ten public bundles under `autogen` and a 61-document card library
  * (53 distinct ids — four ids carry two versions, `seed/plan.ts:87-93`). What it does NOT
  * give is a bundle with two releases or a bundle with a lineage, and AC2 and the provenance
  * verb are exactly those two claims, so both are added here through `publish`.

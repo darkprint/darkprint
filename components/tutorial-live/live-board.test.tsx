@@ -265,12 +265,12 @@ describe("the registry hits", () => {
     const markup = html(
       createElement(RegistryHits, {
         hits: [
-          { kind: "blueprint", ref: "darkprint/pipeline-observability", title: "Pipeline observability", score: 0.8312 },
+          { kind: "blueprint", ref: "autogen/pipeline-observability", title: "Pipeline observability", score: 0.8312 },
           { kind: "card", ref: "berti/trace-emitter@1.2.0", title: "Trace emitter", score: 0.5 },
         ],
       }),
     );
-    expect(markup).toContain('href="/blueprints/darkprint/pipeline-observability"');
+    expect(markup).toContain('href="/blueprints/autogen/pipeline-observability"');
     expect(markup).toContain('href="/nodes/berti/trace-emitter"');
     const text = plainText(markup);
     expect(text).toContain("Found in the registry");
@@ -572,7 +572,7 @@ describe("the draft is data, never an instruction or an address", () => {
 
   it("links no hit whose ref is not in grammar", () => {
     const hits = [
-      { kind: "blueprint" as const, ref: "darkprint/starter?x=1#frag", title: "odd", score: 0.5 },
+      { kind: "blueprint" as const, ref: "autogen/starter?x=1#frag", title: "odd", score: 0.5 },
       { kind: "blueprint" as const, ref: "../settings/keys", title: "odder", score: 0.5 },
       { kind: "card" as const, ref: "code-builder@1.0.0?x", title: "card", score: 0.5 },
     ];
@@ -582,7 +582,7 @@ describe("the draft is data, never an instruction or an address", () => {
   });
 
   it("links a hit whose ref is in grammar", () => {
-    const hits = [{ kind: "blueprint" as const, ref: "darkprint/pipeline-observability", title: "Pipeline Observability", score: 0.68 }];
-    expect(html(createElement(RegistryHits, { hits }))).toContain('href="/blueprints/darkprint/pipeline-observability"');
+    const hits = [{ kind: "blueprint" as const, ref: "autogen/pipeline-observability", title: "Pipeline Observability", score: 0.68 }];
+    expect(html(createElement(RegistryHits, { hits }))).toContain('href="/blueprints/autogen/pipeline-observability"');
   });
 });

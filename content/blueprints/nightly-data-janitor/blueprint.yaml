@@ -3,17 +3,16 @@ title: Nightly Data Janitor
 summary: >-
   An unattended overnight cleanup line: extract deltas, normalize, validate against schema, and
   publish, repairing dirty rows in place.
-description: >-
-  A scheduled variant of the extract-validate pattern, tuned to run while nobody's watching. It
-  picks up the day's deltas, normalizes and validates them, repairs what it can, and quarantines
-  what it can't for a morning review queue. Built to be boring and dependable, the kind of
-  factory node you forget exists because it never pages you.
+description: |-
+  A scheduled variant of the extract-validate pattern, tuned to run while nobody is watching. What it cannot repair is quarantined for a morning review queue rather than dropped. It is built to be boring and dependable, the kind of line you forget exists because it never pages you.
+
+  This blueprint was generated automatically as an example for the registry.
 category: Data
 tags:
   - ETL
   - scheduled
   - data
   - cleanup
-author: k0bra
+author: autogen
 createdAt: "2026-05-19"
 updatedAt: "2026-07-14"

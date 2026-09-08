@@ -26,19 +26,19 @@ import { CodeMenu } from "./CodeMenu";
  * A real release's shape: `<owner>/<slug>` and a version, which is the two-part key
  * `packages/cli/src/clone.ts` parses and refuses anything else for.
  */
-const COMMAND = "darkprint clone darkprint/starter-software-factory --version 1.2.0";
+const COMMAND = "darkprint clone autogen/starter-software-factory --version 1.2.0";
 
 /** The line that runs today: every file of the release at its digest address, in one `curl`. */
 const CURL =
-  'curl --fail-early -fsSL --create-dirs -o "starter-software-factory/#1" "https://darkprint.io/api/files/blueprints/darkprint/starter-software-factory/d/sha256:abc/{README.md,topology.dot}"';
+  'curl --fail-early -fsSL --create-dirs -o "starter-software-factory/#1" "https://darkprint.io/api/files/blueprints/autogen/starter-software-factory/d/sha256:abc/{README.md,topology.dot}"';
 
 /** `releaseFiles` order and spelling: bundle-relative, forward slashes. */
 const FILES = [
-  { path: "README.md", href: "/api/blueprints/darkprint/starter/files/README.md" },
-  { path: "topology.dot", href: "/api/blueprints/darkprint/starter/files/topology.dot" },
+  { path: "README.md", href: "/api/blueprints/autogen/starter/files/README.md" },
+  { path: "topology.dot", href: "/api/blueprints/autogen/starter/files/topology.dot" },
   {
     path: "cards/spec-planner@1.0.0.yaml",
-    href: "/api/blueprints/darkprint/starter/files/cards/spec-planner@1.0.0.yaml",
+    href: "/api/blueprints/autogen/starter/files/cards/spec-planner@1.0.0.yaml",
   },
 ] as const;
 

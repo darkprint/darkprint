@@ -19,26 +19,28 @@
 import { readContent } from "@/lib/content/read";
 
 /**
- * The one handle every imported bundle and card is owned by (D-250-04).
+ * The one handle every imported bundle and card is owned by.
  *
- * Not a `lib/data` author and not a fixture: the six names in the archive's manifests
- * stay written where they are, and none of them becomes an account (AC4, D-250-11).
+ * The archive's blueprints and cards are generated examples, and every `author:` line in
+ * `content/` names this same handle, so the account that owns the rows is also the one
+ * the documents credit.
  */
-export const REGISTRY_HANDLE = "darkprint";
+export const REGISTRY_HANDLE = "autogen";
 
 /**
- * The version every seeded release lands under (D-250-03).
+ * The version every seeded release lands under.
  *
- * `BundleManifest` has no `version` field and none of the nine `blueprint.yaml` files
- * carries one — the site prints the DIGEST where a version would go. But `addRelease`
- * requires one, so it is ruled rather than derived, and it is ruled HERE rather than at
- * the call site so the plan and the write cannot come to disagree about it.
+ * `BundleManifest` has no `version` field and no `blueprint.yaml` carries one, so `addRelease`
+ * takes it from here rather than from the archive, and the plan and the write cannot come to
+ * disagree about it. It moved past `1.0.0` when the manifests' descriptions and author lines
+ * changed, so a registry still holding the earlier rows refuses them as an older version
+ * instead of as a conflict.
  *
- * Bare semver, never `v1.0.0`: `parseSemver` refuses a `v` prefix by name in its own doc
+ * Bare semver, never `v1.1.0`: `parseSemver` refuses a `v` prefix by name in its own doc
  * comment, and `lib/data/bundles.ts` spells its fixture versions that way, which is the
  * string somebody reaching for a precedent would find.
  */
-export const SEED_RELEASE_VERSION = "1.0.0";
+export const SEED_RELEASE_VERSION = "1.1.0";
 
 export interface ImportPlan {
   bundles: readonly { slug: string; digest: string; releases: number }[];

@@ -26,12 +26,12 @@
        .yaml        from it. A `risk_markers` entry the folder does
                     not define reads as `card/unknown-term` against
                     the core alone, the card is rejected with it, and
-                    the two scores the README quotes cannot be
-                    recomputed from the files that are supposed to
-                    have produced them.
+                    the scores the site prints cannot be recomputed
+                    from the files that are supposed to have produced
+                    them.
      README.md      product copy. Identity, digest, where execution
-                    happens, and what DarkPrint does not do (doc 1
-                    §0.1.3, doc 2 §2.5).
+                    happens, what the folder holds, and what a runner
+                    reads that no file here sets (doc 1 §0.1.3).
 
    PURE and deterministic: the same bundle always produces the same
    bytes in the same order.
@@ -78,7 +78,6 @@ import {
   ATTRACTOR_DEFAULTING_ATTRIBUTES,
   ATTRACTOR_HANDLER_NEEDED_ATTRIBUTES,
 } from "@/lib/core";
-import { autonomyStatement } from "@/lib/format";
 import { SITE_ORIGIN } from "@/lib/site";
 import { ONTOLOGY_EXTENSIONS_FILE } from "./ontology-file";
 
@@ -196,8 +195,12 @@ export interface ExportedVocabulary {
 
 export interface BundleExportInput {
   blueprint: ResolvedBlueprint;
-  /** The two computed scores, quoted verbatim in the README (doc 1 §8.3). */
-  analysis: BlueprintAnalysis;
+  /**
+   * The scores the release was published with. No file the export writes reads them: the
+   * README describes the folder and leaves the reading to the site, so a caller that holds
+   * no scorecard hands over nothing here.
+   */
+  analysis?: BlueprintAnalysis;
   /**
    * Every card the archive holds for this bundle. Order is irrelevant and duplicates
    * are collapsed, so the caller may hand over its own read order untouched.
@@ -455,21 +458,14 @@ function pinnedCards(input: BundleExportInput): ExportedCard[] {
 /**
  * The README, as product copy.
  *
- * Four things it has to say, from the item-10 contract: which blueprint this is and
- * what its content digest is; that execution happens on the reader's own machine (doc
- * 1 §0.1.3); the command that runs it; and that DarkPrint neither executes it nor
- * collects anything. Everything numeric in it comes from the engine, and the two
- * scores are quoted rather than paraphrased (doc 1 §8.3).
- *
- * Doc 2 §1.1 governs the score section. The autonomy class is a description of what
- * this factory automates and where a person stands in it, and it is a name rather than
- * an ordinal: "level" belongs to the security scale and to the 1-to-5 organisational
- * ladder, which are different scales about different subjects. The human nodes are named
- * because §8.3 requires the working to be visible, and named in the engine's own
- * neutral sentence.
+ * It says which blueprint this is and what its content digest is, that execution happens
+ * on the reader's own machine (doc 1 §0.1.3) and how the folder becomes a pipeline, what
+ * each file in the folder is, and what an Attractor runner reads that no file here sets.
+ * Everything numeric in it comes from the engine. One sentence per claim, and nothing the
+ * folder's own files already state.
  */
 export function bundleReadme(input: BundleExportInput): string {
-  const { blueprint, analysis } = input;
+  const { blueprint } = input;
   const { manifest } = blueprint;
   const cards = pinnedCards(input);
   const local = input.vocabulary === undefined ? [] : localTermsUsed(input);
@@ -502,42 +498,23 @@ export function bundleReadme(input: BundleExportInput): string {
     "",
   );
 
-  /* ---- run it: doc 1 §0.1.3, and what the folder hands over ---- */
+  /* ---- run it: doc 1 §0.1.3, and how the folder becomes a pipeline ---- */
   push("## Run it", "");
   push(
     "This runs on your machine. DarkPrint hands out the files and analyses them statically. It",
     "executes nothing and holds none of your provider keys.",
     "",
   );
-  /* Owner instruction, 2026-08-25: the folder no longer carries a compiled, runnable
-     `factory.dot`, so a section leading on `attractor run factory.dot` would be printing a
-     command against a file that is not there. That instruction was about the FOLDER, and it
-     stands: nothing compiled is written here.
-
-     The last sentence used to end "DarkPrint does not compile or execute one", which was
-     true of the folder and became false of the product when `darkprint export` shipped. The
-     two halves are now separated, because they were never one claim: DarkPrint compiles a
-     pipeline when somebody asks for one, and executes nothing under any circumstances. The
+  /* Two claims that were once one sentence and are kept apart on purpose: DarkPrint compiles
+     a pipeline when somebody asks for one, and executes nothing under any circumstances. The
      execution half is doc 1 §0.1.3 and is pinned above, in its own paragraph, where a length
      pass cannot take it out with a sentence about compilation. */
-  push(
-    ...wrap(
-      `This folder carries the topology and its pinned cards, nothing compiled. \`${TOPOLOGY_DOT}\` ` +
-        `names every node, every edge and the card version pinned on it. Each card under ` +
-        `\`${BUNDLE_CARDS_DIR}/\` carries the \`spec\` that becomes that node's prompt.`,
-    ),
-    "",
-  );
-  /* The compiled file's own header used to be the only place the disclosure existed, and this
-     paragraph pointed at it. It said the header showed "what the runner falls back to its own
-     defaults for", which was the single-list claim `emit.ts` has since split apart because it
-     is false for the names a handler reads bare. The sentence now points at the section below,
-     which carries both groups, and it only promises a section when one is printed. */
   const disclosure = runnerDisclosureSection();
   push(
     ...wrap(
-      "To compile these two into a pipeline a graph runner takes, run `darkprint export <dir> " +
-        "--attractor`. It writes Attractor DOT to stdout, " +
+      "This folder carries the topology and its pinned cards, nothing compiled. To compile them " +
+        "into a pipeline a graph runner takes, run `darkprint export <dir> --attractor`. It " +
+        "writes Attractor DOT to stdout, " +
         /* The empty arm is the day the emitter writes every reserved name: there is then no
            section to point at, and a sentence promising one would send a reader looking for a
            heading that is not in the file. */
@@ -575,11 +552,11 @@ export function bundleReadme(input: BundleExportInput): string {
   // Laid out from the list rather than by hand-counted spaces, so a row whose name is
   // longer than the others moves the column instead of falling out of it.
   const folder: readonly (readonly [string, string])[] = [
+    [TOPOLOGY_DOT, "node ids, edges, and the card version pinned on each node"],
     [
-      TOPOLOGY_DOT,
-      "the DarkPrint topology: node ids, edges, the card version pinned on each node",
+      `${BUNDLE_CARDS_DIR}/`,
+      "the pinned cards, as the registry stores them; each carries the `spec` that becomes its node's prompt",
     ],
-    [`${BUNDLE_CARDS_DIR}/`, "the pinned cards, byte for byte as the registry stores them"],
     ...(local.length === 0
       ? []
       : [
@@ -605,9 +582,9 @@ export function bundleReadme(input: BundleExportInput): string {
             ? "One card in this bundle names a skill document."
             : `${skills.length} of the nodes in this bundle name a skill document.`,
           "There is no `skills/` directory above and there is not meant to be: DarkPrint stores the",
-          "pointer and reads nothing at the other end of it, so a skill document is never part of a",
-          "bundle. The paths are relative to the repository you run this blueprint from, and writing the",
-          "documents is yours to do.",
+          "pointer and reads nothing at the other end of it. The paths are relative to the repository",
+          "you run this blueprint from, and writing the documents is yours to do. Nothing here needs",
+          "them to run, because every card carries its own `spec` inline.",
         ].join(" "),
       ),
       "",
@@ -616,17 +593,6 @@ export function bundleReadme(input: BundleExportInput): string {
     push("```");
     for (const pointer of skills) push(`${pointer.nodeId.padEnd(skillColumn)}${pointer.skill}`);
     push("```", "");
-    push(
-      ...wrap(
-        [
-          "Nothing here needs them to run. Every card carries its own `spec` inline, which is the",
-          "whole instruction for that node whatever harness compiles this topology into a running",
-          "pipeline. A skill document adds a capability to one agent; what the blueprint decides is",
-          "who is wired to whom.",
-        ].join(" "),
-      ),
-      "",
-    );
   }
 
   /* ---- what a runner reads and this folder cannot say ---- */
@@ -637,90 +603,13 @@ export function bundleReadme(input: BundleExportInput): string {
      paragraph decides whether it may point at it. */
   push(...disclosure);
 
-  /* ---- the node table ---- */
+  /* ---- the node table: the pin, and nothing the card already says about itself ---- */
   push("## The nodes", "");
-  push("| node | card | phase |", "| --- | --- | --- |");
+  push("| node | card |", "| --- | --- |");
   for (const node of blueprint.nodes) {
-    const phase = node.card.phases.length === 0 ? "none declared" : node.card.phases.join(", ");
-    push(`| \`${cell(node.nodeId)}\` | \`${cell(node.ref)}\` | ${cell(phase)} |`);
+    push(`| \`${cell(node.nodeId)}\` | \`${cell(node.ref)}\` |`);
   }
   push("");
-
-  /* ---- the two computed scores, quoted ---- */
-  push("## What DarkPrint computed", "");
-  /* The class, and the engine's sentence without the band ordinal it ends on. The README
-     travels further than any page on the site — it is the file that stays behind in
-     somebody's repository — so doc 2 §1.1's rule about the ordinal holds here more than
-     anywhere, not less. The arithmetic survives, so the quote can still be checked
-     against a local re-run. */
-  push(`Autonomy: ${analysis.autonomy.label}.`, "");
-  push(`> ${autonomyStatement(analysis.autonomy.rationale)}`, "");
-
-  const humans = analysis.autonomy.contributions.filter((c) => c.requiresHuman);
-  if (humans.length > 0) {
-    push("Where a person acts:", "");
-    for (const contribution of humans) {
-      push(`- \`${contribution.nodeId}\` (${contribution.name}): ${contribution.explanation}`);
-    }
-    push("");
-  }
-
-  push(`Security level ${analysis.security.level}.`, "");
-  push(`> ${analysis.security.rationale}`, "");
-
-  if (analysis.security.findings.length > 0) {
-    push("What was charged:", "");
-    for (const finding of analysis.security.findings) {
-      push(`- ${finding.explanation}`);
-    }
-    push("");
-  }
-
-  if (local.length > 0) {
-    // The one thing that can make the claim below false: a marker whose weight lives in a
-    // file the folder does not carry. It carries it, and this says where to look.
-    push(
-      ...wrap(
-        [
-          "Both were read against the core vocabulary and the local terms these",
-          `cards declare: ${local.map((term) => `\`${term.id}\``).join(", ")}.`,
-          `Their definitions and the weights that price them are in \`${BUNDLE_VOCABULARY}\`, in this`,
-          "folder. Score the folder without that file and those ids resolve against nothing, the",
-          "cards carrying them are rejected with them, and both numbers move.",
-        ].join(" "),
-      ),
-      "",
-    );
-  }
-  push(
-    "Both readings come from the topology and the cards, with nothing executed. These are the files",
-    "that produced them, so the same arithmetic on your side gives the same class and the same",
-    "security level.",
-    "",
-  );
-  // Doc 2 §1.1, stated where the reading is, in its own paragraph rather than as a
-  // qualifier tacked onto the arithmetic. "Level" is not written of autonomy anywhere in
-  // this file: the class is a name, and the one ordinal a reader meets on DarkPrint is
-  // the 1-to-5 organisational ladder, which describes an organisation and not a graph.
-  push(
-    "The autonomy class says what this blueprint automates and where a person stands in it.",
-    "Nothing here is a grade.",
-    "",
-  );
-
-  /* ---- what DarkPrint collects ---- */
-  push("## What gets reported back", "");
-  push(
-    "Nothing. No file in this folder calls home, and DarkPrint watches no run.",
-    "",
-  );
-  push(
-    "Cost and runtime on the blueprint page are labelled *reported* for that reason: whoever runs a",
-    "blueprint on their own hardware is the only party that can measure them. Sending a report",
-    "would be something you opt into. It is designed and not built, so there is no account, no",
-    "endpoint and no client for it in this bundle or on the site.",
-    "",
-  );
 
   push("---", "");
   push(`Exported from ${SITE_ORIGIN}/blueprints/${manifest.slug}`);

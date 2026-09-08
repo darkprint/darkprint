@@ -48,4 +48,4 @@ notes: >-
   could reach. Scope the token to the one repository and the branches you actually merge into.
 
 version: 1.0.0
-author: sol-antczak
+author: autogen

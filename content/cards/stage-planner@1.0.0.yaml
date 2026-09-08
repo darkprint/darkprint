@@ -43,4 +43,4 @@ notes: >-
   fine stages make the checkpoint writes dominate the run.
 
 version: 1.0.0
-author: k0bra
+author: autogen
