@@ -335,8 +335,8 @@ export function CreateBundleForm({
           })}
         </div>
         <p className="max-w-xl text-[11px] leading-relaxed text-dim">
-          Started from your account&rsquo;s default. Change it any time from the
-          blueprint&rsquo;s page once it exists.
+          Started from your account&rsquo;s default. Change it any time from the blueprint
+          list on your profile.
         </p>
       </fieldset>
 

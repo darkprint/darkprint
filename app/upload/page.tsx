@@ -8,7 +8,6 @@ import { actorFrom } from "@/lib/server/accounts";
 import { draftBundle } from "@/lib/server/registry";
 import { SKILL_ROUTE } from "@/lib/skill";
 import { readSession } from "@/components/profile/session";
-import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { Eyebrow, SectionHeading } from "@/components/ui/SectionHeading";
 import { UploadFlow, type ExampleBundle, type PublishTarget } from "@/components/upload/UploadFlow";
 
@@ -272,8 +271,7 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
             The owner ruled it runs in the browser (2026-09-04): `lib/core` is isomorphic by
             contract, `importAttractorDot` is pure, and this route already resolves whole
             bundles in the tab. So there is no endpoint behind this paragraph and no seam to
-            cite, which is why it does not carry a `ComingSoonBadge` the way the sentence
-            under it does.
+            cite, which is why it carries no badge.
 
             "offers" and never "converts". `components/upload/AttractorOffer.tsx` shows what
             the import cannot carry across before anything is written, and refuses outright
@@ -285,34 +283,15 @@ export default function UploadPage({ searchParams }: PageProps<"/upload">) {
           into a draft bundle in your browser, one card per node, attributed to you. Before
           it writes anything it lists what the two formats cannot express in each other.
         </p>
-        {/* ── Two of the three sentences that stood here are gone, and ONE stayed (D-263-02) ──
-            The paragraph used to refuse three things at once: an account to upload into,
-            a backend to upload to, and a push from the editor the skill runs in.
-
-            The first two became false in the change that wired this route. There is an
-            account (T050) and a registry that stores a release under it, and each release
-            is published public or private from the control on the Details step — which is
-            the whole of what the first sentence said was missing. D-78's direction rule is
-            what forces them off HERE and not in a later tidy: a marker over a figure that
-            has become real comes off in the same change that makes it real, because a true
-            statement that has become a lie about the product is worse than no statement.
-
-            **The third stayed, and it is not an oversight.** T270 is `todo`: the DarkPrint
-            skill still writes a folder to disk and nothing pushes it anywhere. Removing it
-            with the other two would have been a false claim in the opposite direction, and
-            "those three disclosures come off together" reads as licence to do exactly that.
-            It keeps the badge, because the badge is what the sentence is for.
-
-            `components/site/honesty.test.ts` holds this one sentence over the rendered
-            route; the two rows for the other two came off in this same commit. */}
-        {/* `max-w-2xl`, the same measure as the paragraph under it. Without one this line
-            set to the full 1152px container at 13px, which is roughly 150 characters —
-            two and a half times the measure everything else in this header keeps, and the
-            badge ended up alone at the far left of a single very long line. */}
-        <p className="mt-5 flex max-w-2xl flex-wrap items-center gap-2 text-[13px] leading-relaxed text-dim">
-          <ComingSoonBadge />
-          Not built yet: a live push from the editor the skill runs in. The DarkPrint skill
-          writes the folder to your disk, and you bring it here yourself.
+        {/* The other door. The DarkPrint skill's hand-off ends with a publish command for
+            the terminal it runs in, over `POST /api/bundles` with a write-scoped API key
+            from the reader's settings, so this page is one of two ways a folder arrives.
+            Said here because the paragraph above names a tool inside the reader's editor
+            that writes a folder for this page, and the next question anybody asks is how it
+            gets here. `components/site/honesty.test.ts` holds the sentence. */}
+        <p className="mt-5 max-w-2xl text-[13px] leading-relaxed text-dim">
+          The DarkPrint skill ends with a publish command for the terminal it runs in, using
+          a write-scoped API key from your settings. This page is the other door.
         </p>
         {/* The vocabulary asymmetry, moved here from `/what-it-isnt` when that page was
             removed. It is a statement about this page, and it was the only unconditional

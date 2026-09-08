@@ -78,27 +78,27 @@ const ENDING = renderToStaticMarkup(createElement(SectionFirstBlueprint));
 const STARTER = canvas("starter-software-factory");
 
 /**
- * The two download menus, exactly as the two header bands mount them: `CodeMenu` on a
- * blueprint page and `CloneMenu` on a card page. Each prints a `curl` line that runs beside a
- * `darkprint …` line that does not run on a stranger's machine, and a reader who has just
- * been handed a working command reads the next code block as another one unless the panel
+ * The two "Get" menus, exactly as the two header bands mount them: `CodeMenu` on a blueprint
+ * page and `CloneMenu` on a card page. Each offers a Download that works beside a `darkprint`
+ * clone line that does not run on a stranger's machine, and a reader who has just been
+ * handed a working file reads the next code block as another working thing unless the panel
  * says otherwise. Both are native `<details>`, so the whole panel is in the static markup
  * whether it is open or shut; `present` is enough because nothing they qualify is in the
  * open.
  */
 const CODE_MENU = renderToStaticMarkup(
   createElement(CodeMenu, {
-    command:
-      'curl --fail-early -fsSL --create-dirs -o "starter-software-factory/#1" "https://darkprint.io/api/files/blueprints/darkprint/starter-software-factory/d/sha256:abc/{README.md,topology.dot}"',
-    cliCommand: "darkprint clone darkprint/starter-software-factory --version 1.0.0",
-    files: [{ path: "README.md", href: "/api/files/blueprints/darkprint/starter-software-factory/d/sha256:abc/README.md" }],
+    download: {
+      href: "/api/bundles/darkprint/starter-software-factory/archive?digest=sha256%3Aabc",
+      name: "starter-software-factory-1.0.0.tgz",
+    },
+    cloneCommand: "npx -y darkprint clone darkprint/starter-software-factory",
   }),
 );
 const CLONE_NODE = renderToStaticMarkup(
   createElement(CloneMenu, {
     kind: "node",
-    command: 'curl -fsSL -O "https://darkprint.io/cards/spec-planner@1.0.0.yaml"',
-    cliCommand: "darkprint clone card spec-planner@1.0.0",
+    cloneCommand: "npx -y darkprint clone lupo/spec-planner@1.0.0",
   }),
 );
 
@@ -162,34 +162,34 @@ const CLAIMS: Claim[] = [
 
   /* ---- /upload ---- */
   {
-    surface: "/upload · no push from the editor the skill runs in",
-    why: "the paragraph above it says a tool inside the reader's own editor writes a folder for this page, and the next question anybody asks is whether the editor sends it. A page that answers by saying nothing is answering yes",
-    says: "not built yet: a live push from the editor the skill runs in",
+    surface: "/upload · the other door",
+    why: "the paragraph above it says a tool inside the reader's own editor writes a folder for this page, and the next question anybody asks is how it gets here. The DarkPrint skill's hand-off publishes over POST /api/bundles with a write-scoped key from the terminal it runs in, and this page is the other way in; a page that says nothing about the first leaves a reader thinking the folder has to be carried by hand",
+    says: "the darkprint skill ends with a publish command for the terminal it runs in",
     where: "open",
     html: UPLOAD_PAGE,
   },
 
-  /* ---- the download menus ----
+  /* ---- the "Get" menus ----
      The blueprint menu used to be held to "not built yet: a darkprint cli that clones a
      blueprint by name". That sentence became false in the other direction: `darkprint clone`
      is implemented. What is still true, and what the panel now says, is that the package is
      not published to npm, so the line runs only from a checkout. */
   {
-    surface: "/blueprints/<owner>/<slug> · Download blueprint",
-    why: "the panel prints a `darkprint clone` line under a curl command that really works, and a code block beside a working code block reads as runnable. This is the sentence saying the CLI line does not run on a machine that has never seen the repository",
+    surface: "/blueprints/<owner>/<slug> · Get blueprint",
+    why: "the panel prints a `darkprint clone` line with a copy button under a Download that really works, and a code block beside a working item reads as runnable. This is the sentence saying the CLI line does not run on a machine that has never seen the repository",
     says: "the darkprint package is not published to npm",
     where: "present",
     html: CODE_MENU,
   },
   {
-    surface: "/blueprints/<owner>/<slug> · Download blueprint",
-    why: "the honest difference between what the command does and the word a reader expects. Copying a folder over HTTP is a snapshot: no repository, no history, nothing to pull",
-    says: "a snapshot, not a clone",
+    surface: "/blueprints/<owner>/<slug> · Get blueprint",
+    why: "what the two items are, and what neither is. An item named Clone promises a repository to a reader who knows the word; there is none behind a release and no history, so Download hands over the files as they stand and Clone fetches the same files by name",
+    says: "there is no repository and no history behind a release",
     where: "present",
     html: CODE_MENU,
   },
   {
-    surface: "/nodes/<id> · Download card",
+    surface: "/nodes/<id> · Get card",
     why: "the same limit on the card page's own menu, so a reader who only ever opens a card still meets it. The noun differs because the CLI would clone a card there, and the card verb is not implemented",
     says: "not built yet: a darkprint cli that clones a card by name",
     where: "present",

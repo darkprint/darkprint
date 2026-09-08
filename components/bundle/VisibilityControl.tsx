@@ -5,10 +5,10 @@ import { cx } from "@/lib/format";
 
 /* ============================================================
    The visibility radiogroup, live: PATCH /api/bundles/[owner]/[slug]/visibility.
-   Owner-only by construction — every caller mounts it for the owner alone
-   (`VisibilitySwitch` in `Aside.tsx`, `RowVisibility` in
-   `components/profile/OwnedBundles.tsx`) — and the route re-checks ownership itself
-   (B-03), so a stray mount here is inert rather than a second authorization decision.
+   Owner-only by construction — its one caller, `RowVisibility` in
+   `components/profile/OwnedBundles.tsx`, mounts it for the owner alone — and the route
+   re-checks ownership itself (B-03), so a stray mount here is inert rather than a second
+   authorization decision.
 
    ── The two optional props, and what asked for each ──
    Both arrived with the owner's shelf mount (2026-09-06), where this control is drawn
@@ -25,7 +25,7 @@ import { cx } from "@/lib/format";
    heading, and, on an archived row, a `ContentRow` this file has no handle on. Those all
    render the value the page was LOADED with, so after a successful change they are
    stale, and the pill is stale in words. A caller that draws visibility elsewhere needs
-   to hear that the server agreed; `Aside.tsx` draws it nowhere else and passes nothing.
+   to hear that the server agreed.
    ============================================================ */
 
 export function VisibilityControl({

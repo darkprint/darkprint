@@ -33,8 +33,10 @@ import { TagPill } from "./TagPill";
    `pr-8` on the line for the same reason the heading has it: the bookmark is `absolute
    right-2 top-2` and now sits on this row.
 
-   The footer keeps `✓ resolved · N tools` and takes what the author chip left: when the
-   bundle was last touched, and how many published forks it has. Neither is a version —
+   The footer keeps `N tools` and takes what the author chip left: when the bundle was last
+   touched, and how many published forks it has. The `✓ resolved` tag came off on the
+   owner's instruction: every blueprint on this shelf resolves, or it would not be on it, so
+   the tick was a fact about the shelf printed on every tile. Neither figure is a version —
    there is no version field on a blueprint and the archive holds one snapshot per bundle,
    so a `v1.3.0` here would be a number nothing produced.
    ============================================================ */
@@ -237,7 +239,7 @@ export function ContentCard({
             )}
           </span>
           <span className="text-emerald">
-            ✓ resolved · {item.requiredTools.length} tool{item.requiredTools.length === 1 ? "" : "s"}
+            {item.requiredTools.length} tool{item.requiredTools.length === 1 ? "" : "s"}
           </span>
         </div>
       </div>

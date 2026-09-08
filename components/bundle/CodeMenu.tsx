@@ -3,19 +3,19 @@ import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { CopyButton } from "@/components/ui/CopyButton";
 
 /* ============================================================
-   "Download blueprint ▾" in the header band, right of Star and Fork.
+   "Get blueprint ▾" in the header band, right of Star and Fork.
 
-   One disclosure holding the command that works, the command that does not yet, and every
-   file in the release. A native `<details>` rather than a script-driven menu: it is keyboard
-   operable with no code, find-in-page reaches the command inside it, and the whole panel is
-   in the prerendered HTML whether it is open or shut, which is what lets `code-menu.test.ts`
-   hold the sentences below in place.
+   GitHub's "Code ▾", with its two items and nothing else: Download, a real file the browser
+   saves, and Clone, the command line that fetches the same files by name. A native
+   `<details>` rather than a script-driven menu: it is keyboard operable with no code,
+   find-in-page reaches the command inside it, and the whole panel is in the prerendered
+   HTML whether it is open or shut, which is what lets `code-menu.test.ts` hold the sentences
+   below in place.
 
-   The order is the argument. The `curl` line runs today and comes first, with a copy
-   button. The `darkprint clone` line sits last under a badge, with no copy button, because
-   the package that would carry it to a stranger's machine is not published to npm; a copy
-   button says "run this", and nothing here offers to load a line into a clipboard that
-   would fail there.
+   Download comes first because it is the item that needs nothing installed. Clone sits
+   under a badge because the package that would carry the command to a stranger's machine is
+   not published to npm; the copy button stays, since the line is the CLI's own grammar and
+   runs from a checkout today.
 
    The word "git" is not rendered. There is no repository behind a blueprint, no history and
    nothing to pull.
@@ -23,11 +23,12 @@ import { CopyButton } from "@/components/ui/CopyButton";
    A server component: nothing in it needs state, and the page it sits on is prerendered.
    ============================================================ */
 
-/** One file in the release, and where it is really served from. */
-interface CodeMenuFile {
-  /** Bundle-relative, forward slashes, as `releaseFiles` returns it. */
-  path: string;
+/** The file the Download item hands over. */
+interface CodeMenuDownload {
+  /** The archive route for this release, pinned to its digest so the file names the release shown. */
   href: string;
+  /** What the browser saves it as: `<slug>-<version>.tgz`. */
+  name: string;
 }
 
 /**
@@ -42,34 +43,37 @@ interface CodeMenuFile {
  * 50% border composites to 3.36:1, past the 3:1 floor for a non-text boundary.
  */
 const TONE = {
-  cyan: "border-cyan/40 bg-cyan/5 text-cyan hoverable:hover:border-cyan hoverable:hover:bg-cyan/10",
-  amber:
-    "border-amber/50 bg-transparent text-amber hoverable:hover:border-amber hoverable:hover:bg-amber/10",
+  cyan: {
+    trigger:
+      "border-cyan/40 bg-cyan/5 text-cyan hoverable:hover:border-cyan hoverable:hover:bg-cyan/10",
+    download:
+      "border-cyan/40 text-cyan hoverable:hover:border-cyan hoverable:hover:bg-cyan/10",
+  },
+  amber: {
+    trigger:
+      "border-amber/50 bg-transparent text-amber hoverable:hover:border-amber hoverable:hover:bg-amber/10",
+    download:
+      "border-amber/60 text-amber hoverable:hover:border-amber hoverable:hover:bg-amber/10",
+  },
 } as const;
 
 export function CodeMenu({
-  command,
-  cliCommand,
-  files,
-  label = "Download blueprint",
+  download,
+  cloneCommand,
+  label = "Get blueprint",
   tone = "cyan",
   className,
 }: {
-  /** The `curl` line that fetches every file of this release at its digest address. */
-  command: string;
+  /** The archive of this release, as the link the Download item is. */
+  download: CodeMenuDownload;
   /**
-   * The `darkprint clone …` line for this release, built by the caller so the CLI's own
-   * grammar has one home. Printed under a badge and never offered to the clipboard.
+   * The `npx -y darkprint clone <owner>/<slug>` line, built by the caller so the CLI's own
+   * grammar has one home.
    */
-  cliCommand: string;
-  /**
-   * Every file the download contains. Empty is a real state, a release with nothing to
-   * list, and the list is then omitted rather than drawn empty.
-   */
-  files: readonly CodeMenuFile[];
+  cloneCommand: string;
   /**
    * What the trigger says. The default is the blueprint band's; a card page passes
-   * `Download card`. The panel's prose is not parameterised: every sentence in it is a claim
+   * `Get card`. The panel's prose is not parameterised: every sentence in it is a claim
    * about a release, and a caller able to swap the copy could drop a disclosure without any
    * cell noticing.
    */
@@ -87,7 +91,7 @@ export function CodeMenu({
       <summary
         className={cx(
           "inline-flex h-9 cursor-pointer select-none list-none items-center gap-2 whitespace-nowrap rounded-md border px-3 text-sm transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:active:scale-[0.97] [&::-webkit-details-marker]:hidden",
-          TONE[tone],
+          TONE[tone].trigger,
         )}
       >
         {label}
@@ -101,86 +105,56 @@ export function CodeMenu({
 
       {/* Anchored to the right edge: this trigger is the last item in a row aligned to the
           band's right edge, and a panel centred on it runs off a 390px screen. */}
-      <div className="absolute right-0 top-[calc(100%+0.5rem)] z-30 flex w-[min(26rem,calc(100vw-2rem))] flex-col gap-3 rounded-lg border border-line-bright bg-surface-2 p-4 shadow-xl shadow-black/40">
-        <p className="label-lead text-fg">Download the folder</p>
-
-        {/* One unwrapped line in its own horizontal scroller. A `\`-continued form breaks
-            the moment it is pasted into a terminal that eats the backslash. */}
-        <div className="flex items-start gap-2">
-          <pre className="min-w-0 flex-1 overflow-x-auto rounded border border-line bg-void px-2 py-1.5 font-mono text-[11px] leading-relaxed text-fg">
-            <code>{command}</code>
-          </pre>
-          <CopyButton text={command} ariaLabel="Copy the command that downloads this folder" />
-        </div>
-
-        <p className="text-xs leading-relaxed text-muted">
-          <span className="text-fg">
-            It copies the release named above, as it stands. That is a snapshot, not a
-            clone.
-          </span>{" "}
-          There is no repository behind it and no history, so there is nothing to pull
-          later.
-        </p>
-
-        {/* PowerShell 5.1 aliases `curl` to `Invoke-WebRequest`, which rejects every flag
-            above with a parameter-binding error. */}
-        <p className="text-xs leading-relaxed text-dim">
-          On Windows PowerShell, write <code className="font-mono text-muted">curl.exe</code>:
-          the bare <code className="font-mono text-muted">curl</code> there is an alias for a
-          different program.
-        </p>
-
-        {/* Fenced in the honesty shape: a filled ground under a heavy leading rule, a badge
-            and the limit in words, so the claim stays readable beside an amber register. */}
-        <div className="flex flex-col gap-2 rounded-md border border-amber/30 border-l-2 border-l-amber bg-amber/8 p-3">
-          <ComingSoonBadge className="self-start" />
-          <code className="block overflow-x-auto font-mono text-[11px] leading-relaxed text-dim select-none">
-            {cliCommand}
-          </code>
+      <div className="absolute right-0 top-[calc(100%+0.5rem)] z-30 flex w-[min(26rem,calc(100vw-2rem))] flex-col gap-4 rounded-lg border border-line-bright bg-surface-2 p-4 shadow-xl shadow-black/40">
+        {/* ---- 1. Download ---- */}
+        <div className="flex flex-col gap-2">
+          <p className="label-lead text-fg">Download</p>
+          {/* `download` names the file so a browser that would otherwise open the archive
+              inline writes it to disk instead. */}
+          <a
+            href={download.href}
+            download={download.name}
+            className={cx(
+              "inline-flex h-9 w-fit items-center gap-2 rounded-md border px-3 font-mono text-[12px] transition-colors",
+              TONE[tone].download,
+            )}
+          >
+            <span aria-hidden>↓</span>
+            {download.name}
+          </a>
           <p className="text-xs leading-relaxed text-muted">
-            Not installable yet: the darkprint package is not published to npm, so this line
-            runs only from a checkout of the repository.
+            Every file of this release in one archive, ready to unpack into a folder.
           </p>
         </div>
 
-        {files.length > 0 && (
-          <div className="flex flex-col gap-2 border-t border-line pt-3">
-            <p className="flex items-center gap-2 font-mono text-xs text-muted">
-              Files
-              <span className="text-dim">
-                {files.length} file{files.length === 1 ? "" : "s"}
-              </span>
-            </p>
-            {/* One at a time, for the reader who wants the README and not the folder.
-                `download` names the path so a browser that would otherwise render the
-                document inline writes it to disk instead. */}
-            <ul className="flex flex-col divide-y divide-line">
-              {files.map((file) => (
-                <li key={file.path} className="py-1.5 first:pt-0 last:pb-0">
-                  <a
-                    href={file.href}
-                    download={file.path}
-                    className="group/file flex items-baseline justify-between gap-2"
-                  >
-                    <span
-                      className={cx(
-                        "min-w-0 truncate font-mono text-[11px] text-muted transition-colors",
-                        tone === "cyan"
-                          ? "group-hover/file:text-cyan"
-                          : "group-hover/file:text-amber",
-                      )}
-                    >
-                      {file.path}
-                    </span>
-                    <span aria-hidden className="shrink-0 font-mono text-[11px] text-dim">
-                      ↓
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ul>
+        {/* ---- 2. Clone ---- */}
+        <div className="flex flex-col gap-2 border-t border-line pt-4">
+          <p className="label-lead text-fg">Clone</p>
+          {/* One unwrapped line in its own horizontal scroller. A `\`-continued form breaks
+              the moment it is pasted into a terminal that eats the backslash. */}
+          <div className="flex items-start gap-2">
+            <pre className="min-w-0 flex-1 overflow-x-auto rounded border border-line bg-void px-2 py-1.5 font-mono text-[11px] leading-relaxed text-fg">
+              <code>{cloneCommand}</code>
+            </pre>
+            <CopyButton text={cloneCommand} ariaLabel="Copy the clone command" />
           </div>
-        )}
+          {/* Fenced in the honesty shape: a filled ground under a heavy leading rule, a badge
+              and the limit in words, so the claim stays readable beside an amber register. */}
+          <div className="flex flex-col gap-2 rounded-md border border-amber/30 border-l-2 border-l-amber bg-amber/8 p-3">
+            <ComingSoonBadge className="self-start" />
+            <p className="text-xs leading-relaxed text-muted">
+              Not installable yet: the darkprint package is not published to npm, so this
+              line runs only from a checkout of the repository.
+            </p>
+          </div>
+        </div>
+
+        {/* What both items are, said once under them: nothing here is a repository. */}
+        <p className="border-t border-line pt-3 text-xs leading-relaxed text-muted">
+          <span className="text-fg">There is no repository and no history behind a release.</span>{" "}
+          Download hands you its files as they stand, and Clone fetches the same files by
+          name.
+        </p>
       </div>
     </details>
   );

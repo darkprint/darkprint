@@ -3,7 +3,6 @@ import type { Author } from "@/lib/types";
 import { prettyDate } from "@/lib/format";
 import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
 import { BundleHeader } from "@/components/bundle/BundleHeader";
-import { VisibilitySwitch } from "@/components/bundle/Aside";
 import { ButtonLink } from "@/components/ui/Button";
 import { CopyButton } from "@/components/ui/CopyButton";
 
@@ -21,11 +20,9 @@ import { CopyButton } from "@/components/ui/CopyButton";
    so where the control would have been) and no `star`/`fork` (a target
    nothing has released is not a thing either of those is wired onto).
 
-   The visibility switch stays here, and this is the one route that
-   still draws one: the published page lost it to the account's
-   blueprint list, and a draft is on that list too, but removing it
-   here first would leave a bundle created through `/new` with no way
-   at all to be made public.
+   No visibility switch. The owner ruled that control belongs on the
+   blueprint list of the owner's profile and nowhere else, and a draft
+   is on that list too (`components/profile/OwnedBundles.tsx`).
    ============================================================ */
 
 export interface DraftLandingBundle {
@@ -38,22 +35,18 @@ export interface DraftLandingBundle {
   createdAt: string;
 }
 
-/* The CLI's own spelling. The package is not on npm, and the line below says so where it
-   renders, the same preview-not-control stance CloneMenu holds on the published branch. */
-const cloneCommand = (owner: string, slug: string) => `darkprint clone ${owner}/${slug}`;
+/* The CLI's own grammar. The package is not on npm, and the note under the line says so. */
+const cloneCommand = (owner: string, slug: string) => `npx -y darkprint clone ${owner}/${slug}`;
 
 export function DraftLanding({
   draft,
   owner,
   isOwner,
-  visibilityApi,
 }: {
   draft: DraftLandingBundle;
   owner: Author;
-  /** Whether the current actor holds this bundle — gates the visibility switch alone. */
+  /** Whether the current actor holds this bundle, which gates the quick-setup panel. */
   isOwner: boolean;
-  /** `/api/bundles/{owner}/{slug}/visibility`. Present only when `isOwner`. */
-  visibilityApi?: string;
 }) {
   const uploadHref = `/upload?owner=${encodeURIComponent(draft.ownerHandle)}&slug=${encodeURIComponent(draft.slug)}`;
 
@@ -88,75 +81,66 @@ export function DraftLanding({
         )}
 
         {isOwner ? (
-          <>
-            {/* ---------- Quick setup, the empty-repository panel ----------
-                Three ways in, same as a fresh repository offers: push a release from the
-                wizard, install the blueprint-writing skill and let it draft the graph, or
-                clone the bundle by name (a preview until the CLI ships). None of them is a
-                fallback for another. Owner-only: the upload wizard's own prefill only pins
-                a bundle the session owns, so offering this call to action to a visitor
-                would point them at a form that refuses them the moment they submit it. */}
-            <section className="panel flex flex-col gap-6 p-6">
-              <div>
-                <span className="label">Quick setup</span>
-                <p className="mt-2 text-sm leading-relaxed text-muted">
-                  Nobody can fetch this bundle yet. Publish a release from the upload
-                  wizard, pinned to this exact draft.
-                </p>
-              </div>
+          /* ---------- Quick setup, the empty-repository panel ----------
+             Three ways in, same as a fresh repository offers: push a release from the
+             wizard, install the DarkPrint skill and let it draft the graph, or clone the
+             bundle by name. None of them is a fallback for another. Owner-only: the upload
+             wizard's own prefill only pins a bundle the session owns, so offering this call
+             to action to a visitor would point them at a form that refuses them the moment
+             they submit it. */
+          <section className="panel flex flex-col gap-6 p-6">
+            <div>
+              <span className="label">Quick setup</span>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                Nobody can fetch this bundle yet. Publish a release from the upload
+                wizard, pinned to this exact draft.
+              </p>
+            </div>
 
-              <ButtonLink href={uploadHref} className="self-start">
-                Publish your first release
-              </ButtonLink>
+            <ButtonLink href={uploadHref} className="self-start">
+              Publish your first release
+            </ButtonLink>
 
-              <div className="border-t border-line pt-5">
-                <p className="text-sm leading-relaxed text-muted">
-                  Or point the{" "}
-                  <Link
-                    href={SKILL_ROUTE}
-                    className="text-cyan underline decoration-cyan/40 underline-offset-4"
-                  >
-                    DarkPrint skill
-                  </Link>{" "}
-                  at your own goal and let your agent draft the graph before you publish it
-                  here. The line installs it for Claude Code; its page has the Codex form:
-                </p>
-                <div className="mt-2 flex items-center gap-2 rounded-md border border-line bg-void px-3 py-2">
-                  <code className="flex-1 overflow-x-auto font-mono text-[12px] text-fg">
-                    {SKILL_INSTALL_COMMAND}
-                  </code>
-                  <CopyButton text={SKILL_INSTALL_COMMAND} ariaLabel="Copy the DarkPrint skill install command" />
-                </div>
+            <div className="border-t border-line pt-5">
+              <p className="text-sm leading-relaxed text-muted">
+                Or point the{" "}
+                <Link
+                  href={SKILL_ROUTE}
+                  className="text-cyan underline decoration-cyan/40 underline-offset-4"
+                >
+                  DarkPrint skill
+                </Link>{" "}
+                at your own goal and let your agent draft the graph before you publish it
+                here. The line installs it for Claude Code; its page has the Codex form:
+              </p>
+              <div className="mt-2 flex items-center gap-2 rounded-md border border-line bg-void px-3 py-2">
+                <code className="flex-1 overflow-x-auto font-mono text-[12px] text-fg">
+                  {SKILL_INSTALL_COMMAND}
+                </code>
+                <CopyButton text={SKILL_INSTALL_COMMAND} ariaLabel="Copy the DarkPrint skill install command" />
               </div>
+            </div>
 
-              <div className="border-t border-line pt-5">
-                <p className="text-sm leading-relaxed text-muted">
-                  Or clone it onto your own disk, the way you would a repository:
-                </p>
-                <div className="mt-2 flex items-center gap-2 rounded-md border border-line bg-void px-3 py-2">
-                  <code className="flex-1 overflow-x-auto font-mono text-[12px] text-fg">
-                    {cloneCommand(draft.ownerHandle, draft.slug)}
-                  </code>
-                  <CopyButton
-                    text={cloneCommand(draft.ownerHandle, draft.slug)}
-                    ariaLabel="Copy the clone command"
-                  />
-                </div>
-                <p className="mt-2 text-xs leading-relaxed text-dim">
-                  Not built yet. The darkprint CLI is not on npm, so the line above is a
-                  preview, not a command. Once it ships, it will fetch this bundle by
-                  name. There is no release yet, so it can only bring down the name and
-                  the folder to fill.
-                </p>
+            <div className="border-t border-line pt-5">
+              <p className="text-sm leading-relaxed text-muted">
+                Or clone it onto your own disk, the way you would a repository:
+              </p>
+              <div className="mt-2 flex items-center gap-2 rounded-md border border-line bg-void px-3 py-2">
+                <code className="flex-1 overflow-x-auto font-mono text-[12px] text-fg">
+                  {cloneCommand(draft.ownerHandle, draft.slug)}
+                </code>
+                <CopyButton
+                  text={cloneCommand(draft.ownerHandle, draft.slug)}
+                  ariaLabel="Copy the clone command"
+                />
               </div>
-            </section>
-
-            {visibilityApi !== undefined && (
-              <div className="max-w-md">
-                <VisibilitySwitch visibility={draft.visibility} live={{ api: visibilityApi }} />
-              </div>
-            )}
-          </>
+              <p className="mt-2 text-xs leading-relaxed text-dim">
+                Not installable yet: the darkprint package is not published to npm, so the
+                line above runs only from a checkout of the repository. There is no release
+                yet either, so it has nothing to fetch until you publish one.
+              </p>
+            </div>
+          </section>
         ) : (
           <section className="panel p-6">
             <p className="text-sm leading-relaxed text-muted">
