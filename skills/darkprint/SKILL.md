@@ -1,6 +1,8 @@
 ---
 name: darkprint
 description: Interview an author from the task they want done to a complete DarkPrint blueprint (topology.dot, cards/*.yaml, blueprint.yaml, README.md), searching the registry for a blueprint or cards to reuse before drawing anything, deriving the topology from declared ports, guarding every fork, and forcing an explicit decision on which node may see the acceptance criteria. Use when someone wants to design an agent pipeline as a typed graph, turn a workflow or a set of prompts into a DarkPrint bundle, write or repair node cards, add a capability from the registry to a blueprint that already exists (enrich mode), decide what a node must never receive, or validate a blueprint before publishing it. This skill writes files and validates them. It runs no graph, calls no model, publishes nothing by itself, and sends only the author's one-sentence task to the registry's search unless the author chooses to publish, to validate over HTTP, or to open an optional live preview on darkprint.io; each is a step they can decline.
+metadata:
+  version: "0.1.0"
 ---
 
 # DarkPrint: author a blueprint
@@ -22,7 +24,7 @@ that bundle, by interviewing them. Not by filling in a form for them, and not by
 | Searches | the DarkPrint registry, before drawing anything, for a blueprint or cards that already do the job (Phase 1) |
 | Writes | `topology.dot`, `cards/<id>@<version>.yaml`, `blueprint.yaml`, `README.md` in a directory the author names, plus `ontology/extensions.yaml` only when the author asked for a local term |
 | Does not write | `factory.dot` or `AGENTS.md`. Neither is part of a published blueprint folder; duplicating either here would give an author a folder that disagrees with the registry's |
-| Validates | with `darkprint validate <dir>` when the CLI is installed, else by POSTing the files to `https://www.darkprint.io/api/validate/bundle`, else by asking the author to drop the folder on `/upload` |
+| Validates | with `darkprint validate <dir>` when the CLI is on the PATH, else with `npx -y darkprint validate <dir>` when Node and a network are, else by POSTing the files to `https://www.darkprint.io/api/validate/bundle`, else by asking the author to drop the folder on `/upload` |
 | Does not do | run the graph, run any node, call a model on the author's behalf, start a server, or publish by itself |
 | Sends | the author's one-sentence task to the registry's search in Phase 1, and nothing else until the author chooses to validate over HTTP, to publish, or to open a live preview; the preview posts the draft to darkprint.io under an unguessable link and nothing else. Those three are steps the author takes and can decline |
 
@@ -595,10 +597,12 @@ blanks.
 Walk `references/preflight.md` first, so you already know what the validator will say. Then
 run it. Three ways, and you take the first that is available:
 
-**a. The CLI, if it is installed.** `command -v darkprint` answers; then
-`darkprint validate <slug>` prints every finding with its code and exits 1 only when one of
-them is an error. The package is not on npm yet, so most machines do not have it; do not try
-`npx darkprint`.
+**a. The CLI.** `command -v darkprint` answers; then `darkprint validate <slug>` prints every
+finding with its code and exits 1 only when one of them is an error. When it does not answer
+and the machine has Node and a network, `npx -y darkprint validate <slug>` runs the same
+check: npx fetches the `darkprint` package from npm on the first run and keeps it in its
+cache, and nothing else is installed. Say that in one line before you run it, because it is a
+download. Offline, or without Node, go to b.
 
 **b. The registry's validator, anonymous, over HTTP.** Ask first: this sends the whole folder
 to darkprint.io. The registry stores nothing from it and needs no account, but the files

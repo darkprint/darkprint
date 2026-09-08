@@ -20,12 +20,14 @@ class, security level and phase coverage of every release, computed by `lib/core
 and stored on the release row. Search that ranks by a sentence-encoder vector plus word
 coverage, with the model vendored under `models/`. Seven MCP tools served over HTTP at
 `/api/mcp`, which Claude Code, Codex, Cursor, VS Code and Gemini CLI connect to with nothing
-installed. The skill, served by the site as a tarball and installed with one `curl | tar` line.
+installed. The `darkprint` package on npm, built from `packages/mcp`: `npx -y darkprint` runs
+the CLI and the stdio MCP server, and `npx -y darkprint skill install` copies the
+blueprint-writing skill it carries into the agent's skills folder. The site still serves the
+skill's tree file by file with a manifest of hashes.
 
 Not real: nothing here runs a blueprint, runs a node or calls a model on anyone's behalf. The
 seeded community numbers that remain are labelled as seeded where they render. No mail is
-sent. The `darkprint` package is not on npm; the CLI and the stdio MCP server are built from a
-checkout.
+sent.
 
 ## Getting started
 
@@ -65,8 +67,8 @@ lib/server/          27 subsystems: accounts, archive, auth, cards, counters, en
                      observability, ontology, policy, profiles, publish, registry, runs,
                      saves, search, seed, terms, versioning
 lib/data/            seeded fixtures that several surfaces still read
-packages/cli/        the darkprint verbs: clone, validate, export, import, bump, report
-packages/mcp/        the darkprint bin, the stdio MCP server and the tool table
+packages/cli/        the darkprint verbs: clone, validate, export, import, bump, report, skill
+packages/mcp/        the darkprint package: the bin, the stdio MCP server, the tool table, the skill copy
 skills/darkprint/    the blueprint-writing skill: SKILL.md, references, templates
 content/             10 blueprints, 61 card versions, ontology/extensions.yaml
 models/              all-MiniLM-L6-v2, quantised ONNX (23 MB)

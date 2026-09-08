@@ -61,6 +61,11 @@ export {
 } from "./report";
 export { resolveSession } from "./registry";
 
+/* The verb that puts the DarkPrint skill on a machine. Published so a caller can install
+   without going through argv, and so the packaged tree can be located from outside. */
+export type { InstallSkillOptions, InstallSkillResult } from "./skill";
+export { installSkill, locatePackagedSkill } from "./skill";
+
 export { runCli } from "./run";
 
 /* The verb list and the environment as DATA, published because the help text is not the only

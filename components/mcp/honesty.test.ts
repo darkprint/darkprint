@@ -80,9 +80,9 @@ const CLAIMS: readonly Claim[] = [
     text: CAPABILITIES_PAGE,
   },
   {
-    surface: "/capabilities",
-    why: "the CLI tab and the MCP tab both mention the package, and both have to say it is not on npm",
-    says: "not published to npm",
+    surface: "/capabilities · the CLI tab",
+    why: "the tab prints commands a reader runs through npx, and unlike the remote MCP address beside them that downloads a package onto the machine; the tab has to say what comes down and where from, next to the commands",
+    says: "npx fetch the darkprint package from npm",
     text: CAPABILITIES_PAGE,
   },
   {
@@ -93,8 +93,8 @@ const CLAIMS: readonly Claim[] = [
   },
   {
     surface: "/capabilities · metadata.description",
-    why: "the one limit a shared link has to carry: the CLI cannot be installed yet",
-    says: "not on npm",
+    why: "the one fact about the CLI a shared link has to carry: where it comes from, so a reader knows a package download is part of the first command",
+    says: "install from npm",
     text: CAPABILITIES_DESCRIPTION,
   },
 ];

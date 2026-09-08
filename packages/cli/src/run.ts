@@ -21,6 +21,7 @@ import { exportPipeline } from "./export";
 import { importPipeline } from "./import";
 import type { Io } from "./io";
 import { report, RUN_MANIFEST } from "./report";
+import { installSkill } from "./skill";
 import { validate } from "./validate";
 
 /* --------------------- the verbs, as a table --------------------- */
@@ -46,7 +47,7 @@ export interface CliVerb {
 }
 
 /**
- * The seven verbs, in the order `darkprint --help` prints them.
+ * The eight verbs, in the order `darkprint --help` prints them.
  *
  * The list was prose in two places, this file's USAGE and `packages/mcp/src/cli.ts`'s, and the
  * two copies had already drifted. Both blocks are rendered from this table now and the
@@ -56,8 +57,11 @@ export interface CliVerb {
 export const CLI_VERBS: readonly CliVerb[] = [
   {
     name: "clone",
-    args: "clone <owner>/<slug> [--version <v> | --digest <d>] [--out <dir>]",
-    does: "Fetches a release into a directory, byte for byte as the registry exported it.",
+    args: "clone (<owner>/<slug> [--version <v> | --digest <d>] | <id>@<version>) [--out <dir>]",
+    does:
+      "Fetches a release into a directory, byte for byte as the registry exported it. Given a " +
+      "card reference <id>@<version> instead, writes that one card as cards/<id>@<version>.yaml " +
+      "under --out.",
     dispatchedBy: "packages/cli/src/run.ts",
   },
   {
@@ -101,6 +105,15 @@ export const CLI_VERBS: readonly CliVerb[] = [
     dispatchedBy: "packages/cli/src/run.ts",
   },
   {
+    name: "skill",
+    args: "skill install [--codex] [--dir <parent>]",
+    does:
+      "Copies the DarkPrint skill this package carries into ~/.claude/skills/darkprint, or " +
+      "~/.agents/skills/darkprint with --codex, replacing an earlier copy, and prints where it " +
+      "landed and the version from its frontmatter.",
+    dispatchedBy: "packages/cli/src/run.ts",
+  },
+  {
     /* The one row whose home is not this file: `runCli`'s switch below has no `case "mcp"`.
        Serving MCP means owning stdin and stdout for the JSON-RPC wire, and this package
        renders through `io` and holds no stream (D-270-03(1)), so the shim keeps that branch
@@ -120,8 +133,9 @@ export const CLI_VERBS: readonly CliVerb[] = [
  *
  * Two constants rather than two literals, because three surfaces write them: this file's
  * help block, the shim's, and `/capabilities`, which prints both in prose beside the table.
- * The npm form is derived from the other so a rename is one edit, and it is the form that
- * fails today: the package has never been published, so `npx -y darkprint` answers 404.
+ * The npm form is derived from the other so a rename is one edit; `lib/skill.ts` spells it a
+ * second time for the pages, and `lib/skill.test.ts` holds the two equal. `npx -y` fetches
+ * the `darkprint` package from npm on the first run and caches it for the next.
  */
 export const CLI_INVOCATION = "darkprint";
 export const NPX_INVOCATION = `npx -y ${CLI_INVOCATION}`;
@@ -264,6 +278,8 @@ export async function runCli(argv: readonly string[], io: Io): Promise<number> {
         return await runBump(argv.slice(1), io);
       case "report":
         return await runReport(argv.slice(1), io);
+      case "skill":
+        return runSkill(argv.slice(1), io);
       default:
         io.err(`darkprint: unknown command \`${command}\`.\n\n${USAGE}`);
         return 1;
@@ -507,6 +523,37 @@ function renderDiagnostic(diagnostic: Diagnostic): string {
 }
 
 /**
+ * Where the copy landed and which version it is, to stdout.
+ *
+ * `install` is the one action, and it is still spelled: `darkprint skill` alone could only
+ * mean one thing today, and a verb that acts on a bare noun keeps meaning that after a
+ * second action exists. The destination is printed in full because it is the one fact a
+ * reader then goes looking for on their own disk, and the version because two machines
+ * that installed on different days need a way to say which copy they hold.
+ */
+function runSkill(args: readonly string[], io: Io): number {
+  const { flags, positional } = parseFlags(args, SKILL_SWITCHES);
+  const action = positional[0];
+  if (action === undefined) {
+    io.err("skill: say what to do. `install` is the one action this build has.\n");
+    return 1;
+  }
+  if (action !== "install") {
+    io.err(`skill: \`${action}\` is not an action. \`install\` is the one this build has.\n`);
+    return 1;
+  }
+
+  const result = installSkill({
+    ...(flags.codex === undefined ? {} : { codex: true }),
+    ...(flags.dir === undefined || flags.dir === "" ? {} : { dir: flags.dir }),
+  });
+  const version = result.version ?? "(SKILL.md carries no version)";
+  io.out(`skill: installed the DarkPrint skill ${version} to ${result.destination}\n`);
+  io.out(`  ${result.files.length} files\n`);
+  return 0;
+}
+
+/**
  * The flags that carry no value, by verb.
  *
  * `--attractor` names a format, and the parser below assumes every `--flag` takes the token
@@ -516,6 +563,9 @@ function renderDiagnostic(diagnostic: Diagnostic): string {
  * inherit another verb's switches.
  */
 const EXPORT_SWITCHES: ReadonlySet<string> = new Set(["attractor"]);
+
+/** `--codex` names an agent, so `darkprint skill install --codex --dir x` must not read `--dir` as its value. */
+const SKILL_SWITCHES: ReadonlySet<string> = new Set(["codex"]);
 
 /**
  * `--flag value`, `--flag=value` and a bare `--switch`, with everything else positional.

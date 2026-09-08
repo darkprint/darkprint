@@ -1,18 +1,21 @@
 /* ============================================================
    The blueprint-writing skill, as the strings the site prints about it.
 
-   The skill is the `skills/darkprint` tree in this repository. `prebuild`
-   (`scripts/generate-bundles.ts`) copies it to `public/skill/darkprint/**` and packs it as
-   `public/skill/darkprint.tgz`, so the site serves it and a reader installs it with one
-   `curl | tar` line. The archive is rooted at `skills/darkprint/`, which is the suffix both
-   Claude Code (`~/.claude/skills/<name>`) and Codex (`~/.agents/skills/<name>`) load user
-   skills from, so one archive serves both and the install line only differs in the folder
-   `tar -C` is pointed at.
+   The skill is the `skills/darkprint` tree in this repository. It reaches a reader two
+   ways. The `darkprint` package on npm carries a copy of the tree, and `npx -y darkprint
+   skill install` (`packages/cli/src/skill.ts`) copies it into the folder the reader's agent
+   loads user skills from: `~/.claude/skills/darkprint` for Claude Code, `~/.agents/skills/
+   darkprint` for Codex. That is the install line the site prints. `prebuild`
+   (`scripts/generate-bundles.ts`) also copies the tree to `public/skill/darkprint/**` and
+   packs it as `public/skill/darkprint.tgz` with a manifest of per-file hashes, so a reader
+   can read every file before running anything and check what the package installed.
 
    Every command is defined once here because four surfaces print it (the landing band, a
    draft bundle's quick-setup panel, `/capabilities`, and `/skill`), and a command a reader
    retypes fails silently when copies drift: the error lands in somebody else's shell, never
-   in a test here.
+   in a test here. The npm form of the CLI is `NPX_INVOCATION` in `packages/cli/src/run.ts`;
+   it is spelled again here rather than imported because that barrel reaches `node:fs` and
+   the engine, and this module is read by pages. `lib/skill.test.ts` holds the two equal.
 
    ── Constraints on the command strings ──
    No `$` prompt: the prompt belongs to the surface, and a `$` that reaches the clipboard
@@ -27,16 +30,16 @@
    ============================================================ */
 
 /**
- * The host the archive is fetched from, spelled with `www` because that is the host
+ * The host the tree is served from, spelled with `www` because that is the host
  * production serves. Written here rather than imported: no site-wide origin constant
- * exists in this tree yet, and the command has to print the host that answers.
+ * exists in this tree yet, and the links have to print the host that answers.
  */
 export const SKILL_SITE_ORIGIN = "https://www.darkprint.io";
 
 /**
  * The directory the skill lives in, relative to the repository root, and the root of every
- * entry in the archive. The two are the same string on purpose: `tar -C <parent>` then
- * lands the skill at `<parent>/skills/darkprint`, which is where both agents look.
+ * entry in the served archive. It is also the suffix under which the CLI lands the copy:
+ * `<parent>/skills/darkprint`, which is where both agents look.
  */
 export const SKILL_ARCHIVE_ROOT = "skills/darkprint";
 
@@ -46,10 +49,10 @@ export const SKILL_PUBLIC_DIR = "skill";
 /** The raw tree, one URL per file: `/skill/darkprint/SKILL.md` and so on. */
 export const SKILL_TREE_PATH = `/${SKILL_PUBLIC_DIR}/darkprint`;
 
-/** The archive the install line fetches. */
+/** The same tree as one archive, the file the manifest's `archive` entry describes. */
 export const SKILL_ARCHIVE_PATH = `/${SKILL_PUBLIC_DIR}/darkprint.tgz`;
 
-/** Every file in the archive with its SHA-256, and the archive's own, for a reader who checks. */
+/** Every file in the tree with its SHA-256, and the archive's own, for a reader who checks. */
 export const SKILL_MANIFEST_PATH = `/${SKILL_PUBLIC_DIR}/manifest.json`;
 
 export const SKILL_ARCHIVE_URL = `${SKILL_SITE_ORIGIN}${SKILL_ARCHIVE_PATH}`;
@@ -60,28 +63,23 @@ export const SKILL_MANIFEST_URL = `${SKILL_SITE_ORIGIN}${SKILL_MANIFEST_PATH}`;
 export const CLAUDE_CODE_SKILLS_PARENT = "~/.claude";
 export const CODEX_SKILLS_PARENT = "~/.agents";
 
+/** The npm package that carries the CLI, the stdio MCP server and the skill. */
+export const SKILL_PACKAGE = "darkprint";
+
 /**
  * The command a Claude Code user types, exactly as it must be typed.
  *
- * `-f -` is spelled out because GNU tar and bsdtar disagree about where an archive comes
- * from when nothing says. `~/.claude` exists for anyone who has run Claude Code once, which
- * is the reader this line is for.
+ * `npx -y` fetches the package from npm on the first run and answers no prompt; the verb
+ * copies the packaged skill into `~/.claude/skills/darkprint`, which exists for anyone who
+ * has run Claude Code once. Nothing else is installed and no account is created.
  */
-export const SKILL_INSTALL_COMMAND = `curl -fsSL ${SKILL_ARCHIVE_URL} | tar -xzf - -C ${CLAUDE_CODE_SKILLS_PARENT}`;
+export const SKILL_INSTALL_COMMAND = `npx -y ${SKILL_PACKAGE} skill install`;
 
 /**
- * The same archive for Codex, which reads user skills from `~/.agents/skills` (its own
- * documentation names that directory and no other). `mkdir -p` first, because `tar -C`
- * does not create its target and nothing guarantees a Codex install has made the folder.
+ * The same verb for Codex, which reads user skills from `~/.agents/skills` (its own
+ * documentation names that directory and no other). The verb creates the folder.
  */
-export const SKILL_INSTALL_COMMAND_CODEX = `mkdir -p ${CODEX_SKILLS_PARENT}; curl -fsSL ${SKILL_ARCHIVE_URL} | tar -xzf - -C ${CODEX_SKILLS_PARENT}`;
-
-/**
- * The form the `skills` CLI takes. It clones the repository over git, and the repository is
- * private, so this line works for a reader with access to it and answers 404 for everyone
- * else. Printed only under a label that says so.
- */
-export const SKILL_INSTALL_FROM_REPOSITORY = "npx skills@latest add Brotherhood94/darkprint";
+export const SKILL_INSTALL_COMMAND_CODEX = `${SKILL_INSTALL_COMMAND} --codex`;
 
 /**
  * Where the commands are explained. One page for the skill and one for MCP, on the owner's

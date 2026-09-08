@@ -119,7 +119,8 @@ export function DraftLanding({
                     DarkPrint skill
                   </Link>{" "}
                   at your own goal and let your agent draft the graph before you publish it
-                  here. The line installs it for Claude Code; its page has the Codex form:
+                  here. The line has npx fetch the darkprint package from npm and install the
+                  DarkPrint skill for Claude Code; its page has the Codex form:
                 </p>
                 <div className="mt-2 flex items-center gap-2 rounded-md border border-line bg-void px-3 py-2">
                   <code className="flex-1 overflow-x-auto font-mono text-[12px] text-fg">

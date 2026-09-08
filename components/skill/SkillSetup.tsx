@@ -4,10 +4,13 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { PanelHeading } from "@/components/ui/SectionHeading";
 import { cx } from "@/lib/format";
 import {
+  CLAUDE_CODE_SKILLS_PARENT,
+  CODEX_SKILLS_PARENT,
+  SKILL_ARCHIVE_ROOT,
   SKILL_INSTALL_COMMAND,
   SKILL_INSTALL_COMMAND_CODEX,
-  SKILL_INSTALL_FROM_REPOSITORY,
   SKILL_MANIFEST_PATH,
+  SKILL_PACKAGE,
   SKILL_TREE_PATH,
 } from "@/lib/skill";
 import { BUNDLE_CARDS_DIR, BUNDLE_README, TOPOLOGY_DOT } from "@/lib/content/bundle-export";
@@ -144,12 +147,19 @@ export function SkillSetup({ className }: { className?: string }) {
 
           <div className="flex flex-col gap-3">
             <p className="text-[15px] leading-relaxed text-muted">
-              Each line unpacks one archive from this site as{" "}
-              <code className="font-mono text-[13px] text-fg">skills/darkprint</code> under
-              the folder it names, where that agent reads its skills. Nothing else is
-              installed and no account is created. When you ask it to, the DarkPrint
-              skill can post your draft to a live page on this site while it interviews you,
-              and it does nothing of the kind otherwise.
+              Either line has npx fetch the{" "}
+              <code className="font-mono text-[13px] text-fg">{SKILL_PACKAGE}</code> package
+              from npm and copy the DarkPrint skill it carries into{" "}
+              <code className="font-mono text-[13px] text-fg">{SKILL_ARCHIVE_ROOT}</code> under
+              that agent&rsquo;s folder,{" "}
+              <code className="font-mono text-[13px] text-fg">{CLAUDE_CODE_SKILLS_PARENT}</code>{" "}
+              for Claude Code and{" "}
+              <code className="font-mono text-[13px] text-fg">{CODEX_SKILLS_PARENT}</code> for
+              Codex, where the agent reads its skills. The first run downloads the package
+              and npx keeps it in its own cache. Nothing else is installed and no account is
+              created. When you ask it to, the DarkPrint skill can post your draft to a live
+              page on this site while it interviews you, and it does nothing of the kind
+              otherwise.
             </p>
             <p className="text-[15px] leading-relaxed text-muted">
               Read it before you run it if you like:{" "}
@@ -160,12 +170,9 @@ export function SkillSetup({ className }: { className?: string }) {
               <a href={SKILL_MANIFEST_PATH} className={LINK}>
                 manifest
               </a>{" "}
-              lists every file with its checksum.
-            </p>
-            <p className="text-[15px] leading-relaxed text-muted">
-              If you have access to the repository, the skills CLI works too:{" "}
-              <code className="font-mono text-[13px] text-fg">{SKILL_INSTALL_FROM_REPOSITORY}</code>
-              . The repository is private.
+              lists every file with its checksum, so the copy npx installed can be checked
+              against what this site serves. Running the line again replaces the copy with
+              the version the package carries.
             </p>
           </div>
         </div>
