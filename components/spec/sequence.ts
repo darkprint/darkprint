@@ -417,21 +417,16 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
     eyebrow: "Layers 02 and 03 of 03",
     title: "The node card (YAML)",
     question: "What one node is, in enough detail to instantiate it.",
-    /* Five rows since the fold, and five is what the two stops had between them.
-       ------------------------------------------------------------
-       `/spec/ontology` listed "Core vocabulary" and "Every term"; this page now declares
-       both of those ids, so the rail keeps the same number of ways in and the reader who
-       used to find the vocabulary in the rail still finds it. `every-term-heading` is the
-       catalog band whole. `field-values-heading` is the fold itself, and it is an `h3`
-       inside the field reference rather than a band of its own, which is the one place
-       this list departs from "one row per band": the row is a claim about an id the page
-       declares with `scroll-mt-24`, and dropping it would put the vocabulary further from
-       the rail than it was on its own route. */
+    /* One row per band, in page order. The curated ids a field may take sit under that
+       field inside the reference, so the vocabulary has two ways in from the rail: the
+       reference, and the whole set at the foot. `spec-routes.test.ts` holds this order
+       against the page's render, because the rail draws whatever order this list is in
+       and nothing else would notice a band moving. */
     sections: [
       { id: "card-reach", label: "Reach and limits" },
       { id: "node-card", label: "A real card, annotated" },
       { id: "fields-heading", label: "Field reference" },
-      { id: "field-values-heading", label: "What each field may hold" },
+      { id: "checks-heading", label: "What the validator checks" },
       { id: "every-term-heading", label: "Every term" },
     ],
     format: "YAML, JSON accepted",

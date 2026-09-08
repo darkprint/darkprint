@@ -1,19 +1,22 @@
 /* ============================================================
    What the validator checks, one table per layer.
 
-   The topology rows render on `/spec/topology` and the card rows on
-   `/spec/card`, in the same `CheckTable` shape, because they are one
-   claim made at two scales and a reader comparing the two tables is
+   The topology rows render on `/spec/topology` in the `CheckTable`
+   shape and the card rows on `/spec/card` as a stacked field
+   reference that draws the same check cell, because they are one
+   claim made at two scales and a reader comparing the two is
    comparing two halves of one document.
 
    Every code below is a real `Diagnostic.code` the validator can
-   raise. That is the point of the third column: a code can be grepped
+   raise. That is the point of the check: a code can be grepped
    for, it is what `/upload` and the build print, and it is what
    separates a checked rule from a promise.
 
    Plain data, no JSX, so a node test can import it. `rows.test.ts`
    holds the Attractor claims in here to the sections that state them.
    ============================================================ */
+
+import type { TermKind } from "@/lib/core";
 
 import type { CheckRow } from "./CheckTable";
 
@@ -108,22 +111,42 @@ export const TOPOLOGY_ROWS: readonly CheckRow[] = [
 ];
 
 /**
+ * A card row: a check row that may also name the kind of term whose ids are its legal
+ * values. `/spec/card` prints those ids under the row, off the engine's own core view, so
+ * a field and the strings that go in it are read in one place.
+ */
+export interface CardRow extends CheckRow {
+  values?: TermKind;
+}
+
+/**
  * Layer 02. One node, fully described.
  *
- * `/spec/card` opens with the annotated card, whose nine parts already teach most of these
- * fields at length from the same file, so each `what` below carries only the part the
- * annotation does not. The table's job is the third column, which is the only place
- * several of these diagnostic codes are named anywhere on the site.
+ * One row per key in the file, in the order the file writes them, and the one rule that is
+ * not a key last. Each row is the field's one home on `/spec/card`: what it holds, the
+ * curated ids it may take, and the diagnostic beside it. The reach figure and the annotated
+ * card above the reference say what the same fields do on one real file, so a sentence
+ * that belongs to those is not repeated here.
+ *
+ * Every sentence is `lib/core/card/schema.ts`, `lib/core/card/validate.ts` or
+ * `lib/core/bundle/resolve.ts` read back.
  */
-export const CARD_ROWS: readonly CheckRow[] = [
+export const CARD_ROWS: readonly CardRow[] = [
   {
     name: "id · version",
-    what: "A lowercase hyphenated id, optionally namespaced, and one semantic version: the card's own.",
+    what: "A lowercase hyphenated id, optionally namespaced, and the card's own semantic version. A graph pins a node to the pair as `id@version`.",
     check: { codes: ["card/bad-id", "card/bad-version"], level: "error" },
   },
   {
+    /* Optional, most cards leave `provenance` out, and leaving it out is not a defect: the
+       row says so rather than implying an absence. */
+    name: "name · action · agent · notes · author · provenance",
+    what: "Prose for whoever opens the card, carried into the download. `provenance` says where the card came from when its author says so, and most cards leave it out.",
+  },
+  {
     name: "type",
-    what: "One node-type term, and the only field that says whether a person acts at this step. The Autonomy reading asks two things of it: whether the type is a kind of human-in-the-loop, and whether it is a type that decides which other nodes run. The term must exist in the vocabulary.",
+    values: "node-type",
+    what: "One node-type term, and the only field that says what kind of actor the node is. The autonomy reading asks two things of it: whether the type is a kind of `human-in-the-loop`, and whether it decides which other nodes run. The exporter draws the node's shape from it. A `shell-tool` must also carry its command in `params.tool_command`. Three of the curated values are categories: `human-in-the-loop`, `evaluative` and `orchestration`. The validator accepts a category, and the exporter has no shape for one and falls back to `box`, so write the concrete subtype.",
     check: {
       codes: ["card/unknown-term", "card/wrong-term-kind"],
       level: "error",
@@ -131,56 +154,12 @@ export const CARD_ROWS: readonly CheckRow[] = [
   },
   {
     name: "phase",
-    what: "Which of the five lifecycle phases the node stands in. It can be any number of them. Never a namespaced one.",
+    values: "phase",
+    what: "Where in the lifecycle the node stands: any number of the five. The key takes a single term or a sequence, because both spellings read naturally in YAML. The five are closed and nobody may add one, so a namespaced entry is refused. An empty list is a complete answer rather than a hole, because the phases describe the blueprint rather than every node in it. An intake, a retrieval step or a memory store stands in none of them. An empty list is shown as empty, never as missing.",
     check: {
       codes: ["card/unknown-phase", "card/namespaced-phase"],
       level: "error",
     },
-  },
-  {
-    name: "tools · risk_markers",
-    what: "Capability terms the node needs from its host, and the risks it declares. Both are vocabulary references rather than labels.",
-    check: { codes: ["card/unknown-term"], level: "error" },
-  },
-  {
-    name: "inputs · outputs",
-    what: "The ports, each with a data-type term. This is what makes an edge checkable at all. Port names are unique within a side.",
-    check: {
-      codes: ["card/unknown-term", "card/duplicate-port"],
-      level: "error",
-    },
-  },
-  {
-    name: "dependencies",
-    what: "Which cards this one receives from. This is checked both ways: a declared dependency must have a matching edge, and an edge must have a matching declaration.",
-    check: { codes: ["bundle/missing-dependency"], level: "error" },
-  },
-  {
-    name: "cannot",
-    what: "Data types the node must never receive, as term ids from the vocabulary. The resolver holds every incoming edge to each one.",
-    check: { codes: ["bundle/prohibition-violated"], level: "error" },
-  },
-  {
-    /* The row states what nothing checks and then names the one thing that is checked
-       about it. Leaving the `check` column empty would put this row in the same visual
-       class as a field that is read and happens to be accepted, and the whole reason the
-       field exists is that a reader can see the difference. */
-    name: "will_not",
-    what: "What the node promises never to do, in sentences. No check reads it. The one thing the validator checks here is that no data type is written in it by mistake.",
-    check: { codes: ["card/prohibition-misfiled"], level: "warning" },
-  },
-  {
-    name: "params",
-    what: "Nested configuration, free in shape. It must survive a JSON round-trip, because the card's digest is a hash of its JSON form.",
-    check: { codes: ["card/bad-type"], level: "error" },
-  },
-  {
-    /* Exact about when the check runs, because for a while it never did: the rule needs a
-       predecessor to compare against, and a blueprint supplies one only when it carries two
-       versions of the same card id. */
-    name: "a second version of a card in one blueprint",
-    what: "When a blueprint carries two versions of one card, the newer one must bump its version at least as far as the change requires. Adding to cannot narrows what the node accepts, so it needs a major bump. Changing model needs a minor bump.",
-    check: { codes: ["card/version-bump-too-small"], level: "error" },
   },
   {
     name: "spec",
@@ -191,26 +170,81 @@ export const CARD_ROWS: readonly CheckRow[] = [
     /* The direction is the claim, and `rows.test.ts` holds it: Attractor spec §8.5 lists
        the explicit node attribute first and says the stylesheet only sets properties the
        node does not already have. §2.6's gloss "Overridable by stylesheet" names the field
-       and does not rank it, which is how this row once said the reverse. */
+       and does not rank it. */
     name: "model",
     what: "Written the way the provider writes the identifier. A default rather than a binding: a graph's model_stylesheet sets the model for every node matching a shape. An explicit field here outranks the sheet (Attractor spec §8.5). Whoever runs the blueprint outranks both.",
   },
   {
+    name: "tools",
+    values: "tool",
+    what: "The capabilities the node is permitted to reach for, as tool terms rather than labels. `tools` says what the node may do and `mcp` says which process supplies it, and a node can carry either without the other.",
+    check: {
+      codes: ["card/unknown-term", "card/wrong-term-kind"],
+      level: "error",
+    },
+  },
+  {
     name: "mcp",
-    what: "The MCP servers this node needs, under the names the machine running the graph registers them with. The vocabulary names no such thing.",
+    what: "The MCP servers the node needs, under the names the machine running the graph registers them with. The vocabulary has no term for a server and is not going to grow one, so every entry is free text.",
   },
   {
     name: "skill",
-    what: "A path inside the folder. Nothing reads what it points at.",
+    what: "The path, inside the folder, of the document that defines the agent's behaviour.",
   },
   {
-    name: "name · action · agent · notes · author",
-    what: "Prose for whoever reads the card. Carried into the download and checked by nothing.",
+    name: "inputs · outputs",
+    values: "data-type",
+    what: "The ports, each with a `name`, a `type`, a `description` and, on an input, `required`. The type is one data-type term, and it is the only part of a port the resolver pairs on. This is what makes an edge checkable at all: an edge holds when the source's output type is the target's input type or a narrower kind of it. The name is the end of an edge rather than a label. A DOT edge writes `[out=\"build\", in=\"brief\"]` to say which pair of ports it joins, so a name is unique within a side. The description is free text for whoever wires the graph, where a port says the part its type cannot. `required` is true unless the card says otherwise. On an output it describes nothing, and the validator reports it against the exact path rather than dropping the key in silence.",
+    check: {
+      codes: ["card/unknown-term", "card/wrong-term-kind", "card/duplicate-port"],
+      level: "error",
+    },
   },
   {
-    /* Optional, most cards leave it out, and leaving it out is not a defect: the row says
-       so rather than implying an absence. */
-    name: "provenance",
-    what: "Where the card came from, when its author says so. Optional, free text, and read by no analysis.",
+    /* The other direction is a warning under its own code, so it is named in the sentence
+       the way the topology table names `bundle/port-ambiguous`: one level per row, and the
+       row's level is the one that refuses. */
+    name: "dependencies",
+    what: "Which cards this one receives from, checked both ways. A declared dependency with no edge into the node is refused. An edge from a card the node does not list is reported as `bundle/undeclared-dependency`, and the bundle still loads.",
+    check: { codes: ["bundle/missing-dependency"], level: "error" },
+  },
+  {
+    name: "cannot",
+    what: "Data types the node must never receive: the same data-type terms a port takes, and nothing else. Each entry is a prohibition the resolver enforces. An incoming edge able to carry that type, or a narrower kind of it, fails the whole blueprint, whichever node draws the edge. A sentence written here does not resolve, because the validator has no way to hold a graph to a sentence and this is the field it holds graphs to.",
+    check: {
+      codes: ["card/unknown-term", "bundle/prohibition-violated"],
+      level: "error",
+    },
+  },
+  {
+    /* The row states what nothing checks and then names the one thing that is checked
+       about it. Leaving the check empty would put this row in the same visual class as a
+       field that is read and happens to be accepted, and the whole reason the field exists
+       is that a reader can see the difference. `honesty.test.ts` pins the two sentences
+       that say so. */
+    name: "will_not",
+    what: "The prohibitions the author states and the validator cannot check: “never opens a shell”, “does not edit the code under test”. Nothing reads them, and they are addressed to whoever runs the node and to the model that is handed the specification at run time. `cannot` holds the rules the validator enforces and `will_not` the ones it cannot. Both are legitimate. A reader has to be able to tell which is which without running anything. The one thing checked here is that no data type is written in it by mistake.",
+    check: { codes: ["card/prohibition-misfiled"], level: "warning" },
+  },
+  {
+    name: "risk_markers",
+    values: "risk-marker",
+    what: "What could go wrong if this step misbehaves, as risk-marker terms rather than sentences. Seven core markers carry a weight in DarkPrint's configuration, and Security subtracts each one it finds. A marker coined in a blueprint's own namespace sets its own weight. A marker with no weight, including the two category terms `execution-risk` and `isolation-breach`, is declared and never scored.",
+    check: {
+      codes: ["card/unknown-term", "card/wrong-term-kind"],
+      level: "error",
+    },
+  },
+  {
+    name: "params",
+    what: "Nested configuration, free in shape, which must survive a JSON round trip. The card's digest is a hash of its JSON form, and a blueprint pins a card by that digest. A value that cannot be serialised is refused where it is written rather than later, when two digests disagree. Two keys are read: `max_iterations` is the iteration cap, and `tool_command` is the command a `shell-tool` runs.",
+    check: { codes: ["card/bad-type"], level: "error" },
+  },
+  {
+    /* Exact about when the check runs: the rule needs a predecessor to compare against, and
+       a blueprint supplies one only when it carries two versions of the same card id. */
+    name: "a second version of a card in one blueprint",
+    what: "When a blueprint carries two versions of one card, the newer one must bump its version at least as far as the change requires. Adding to `cannot` narrows what the node accepts, so it needs a major bump. Changing `model` needs a minor bump.",
+    check: { codes: ["card/version-bump-too-small"], level: "error" },
   },
 ];

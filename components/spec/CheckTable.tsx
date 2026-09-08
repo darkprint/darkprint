@@ -1,11 +1,14 @@
 /* ============================================================
-   The spec layer pages — the same three columns for all three.
+   The check cell, and the table that carries it on `/spec/topology`.
 
-   The page's claim is one claim repeated at three scales: some of
+   The page's claim is one claim repeated at every scale: some of
    what you write is resolved against something and the rest is
    shown to a reader. A reader can only see that it is one claim if
-   the three sections answer it in the same shape, so the shape is
-   a component rather than three hand-built tables that drift.
+   every layer answers it in the same shape, so the cell that says
+   what holds a construct is a component. `/spec/topology` draws it
+   in this three-column table, and `/spec/card` draws the same cell
+   beside each field of a stacked reference, where the curated values
+   a field may take need room a table cell does not have.
 
    The third column carries a diagnostic code rather than a word
    like "validated". A code is greppable, it is what `/upload` and
@@ -24,7 +27,7 @@ import type { DiagnosticCode } from "@/lib/core";
 export interface CheckRow {
   /** The field, attribute or construct, spelled as it appears in the file. */
   name: string;
-  /** One sentence on what it holds. */
+  /** What it holds, in a sentence or a few. Backticks mark an identifier. */
   what: string;
   /**
    * What the engine does about it, or `undefined` when the answer is nothing.
@@ -103,32 +106,7 @@ export function CheckTable({
                 {row.what}
               </td>
               <td className="w-[15rem] py-3">
-                {row.check === undefined ? (
-                  <span className="font-mono text-[11px] text-dim">
-                    <span aria-hidden>◌ </span>
-                    free text
-                  </span>
-                ) : (
-                  <span className="flex flex-col gap-0.5">
-                    {row.check.codes.map((code) => (
-                      <code
-                        key={code}
-                        className={
-                          row.check?.level === "error"
-                            ? "font-mono text-[11px] text-emerald"
-                            : "font-mono text-[11px] text-amber"
-                        }
-                      >
-                        {code}
-                      </code>
-                    ))}
-                    <span className="font-mono text-[11px] text-dim">
-                      {row.check.level === "error"
-                        ? "refuses the bundle"
-                        : "reported, still loads"}
-                    </span>
-                  </span>
-                )}
+                <CheckCell check={row.check} />
               </td>
             </tr>
           ))}
@@ -138,7 +116,41 @@ export function CheckTable({
   );
 }
 
-/** The key the three tables share, printed once above the first of them. */
+/**
+ * What holds one construct: the codes in the tone the legend keys, and the level in words,
+ * or the free-text mark when the answer is nothing.
+ */
+export function CheckCell({ check }: { check: CheckRow["check"] }) {
+  if (check === undefined) {
+    return (
+      <span className="font-mono text-[11px] text-dim">
+        <span aria-hidden>◌ </span>
+        free text
+      </span>
+    );
+  }
+  return (
+    <span className="flex flex-col gap-0.5">
+      {check.codes.map((code) => (
+        <code
+          key={code}
+          className={
+            check.level === "error"
+              ? "font-mono text-[11px] text-emerald"
+              : "font-mono text-[11px] text-amber"
+          }
+        >
+          {code}
+        </code>
+      ))}
+      <span className="font-mono text-[11px] text-dim">
+        {check.level === "error" ? "refuses the bundle" : "reported, still loads"}
+      </span>
+    </span>
+  );
+}
+
+/** The key the check cells share, printed once above the first of them on a page. */
 export function CheckLegend() {
   return (
     <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11px] text-dim">

@@ -79,6 +79,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import SpecCardPage from "@/app/spec/card/page";
 import {
   SPEC_LAYERS,
   LEARN_PRACTICE,
@@ -398,6 +399,42 @@ describe("the figures each layer page opens with", () => {
      guard now is the mount, and that is correct: there is no mount. This comment stays
      so the next reader finds the reason rather than an unexplained gap between the two
      figure cases above. */
+});
+
+describe("the rail lists a page's sections in the order the page renders them", () => {
+  /**
+   * `sequence.ts` documents `sections` as "in the order they appear on it", and the rail
+   * draws whatever order the list is in. Nothing compared the two: a band moved on the page
+   * leaves the list consistent and the rail's rows out of order, which `anchors.test.ts`
+   * cannot see because every id still resolves. Rendered rather than scanned, because one
+   * of the card page's ids is declared in a component the page imports rather than in the
+   * page file. The registry band renders as its `Suspense` fallback here, which is fine:
+   * its heading, the id the rail points at, stands above the boundary.
+   */
+  it("/spec/card declares its rail ids in the rail's order", () => {
+    const html = renderToStaticMarkup(createElement(SpecCardPage as never));
+    const page = SPEC_SEQUENCE.find((stop) => stop.href === "/spec/card");
+    const sections = page?.sections ?? [];
+    // The premise: an empty list is trivially ordered.
+    expect(sections.length).toBeGreaterThan(1);
+
+    const positions = sections.map((section) => ({
+      id: section.id,
+      at: html.indexOf(`id="${section.id}"`),
+    }));
+    for (const { id, at } of positions) {
+      expect(at, `nothing on the rendered page declares id="${id}"`).toBeGreaterThan(-1);
+    }
+    for (let i = 1; i < positions.length; i += 1) {
+      const before = positions[i - 1];
+      const here = positions[i];
+      expect(
+        here.at,
+        `the rail lists #${before.id} before #${here.id}, and the page renders them the ` +
+          `other way round`,
+      ).toBeGreaterThan(before.at);
+    }
+  });
 });
 
 /**
