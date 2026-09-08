@@ -39,6 +39,7 @@ import {
   account,
   anonymous,
   bind,
+  bindStoredVersionsOf,
   bindUsersOfMany,
   dropScratchDatabases,
   keyOf,
@@ -239,7 +240,7 @@ describe("the leak instrument can see inside a Map", () => {
  * Bound LAST inside `run`, after the fixture gate has answered.
  */
 const CALLS: readonly {
-  name: "graphsOf" | "scoresFor" | "cardsOwnedBy" | "usersOfMany";
+  name: "graphsOf" | "scoresFor" | "cardsOwnedBy" | "usersOfMany" | "storedVersionsOf";
   reach: string;
   run: (actor: unknown, victim: Side) => Promise<unknown>;
 }[] = [
@@ -285,6 +286,19 @@ const CALLS: readonly {
       const ref = victim.sealedRefs[0] as string;
       const answered = (await fn(db, actor, [ref.slice(0, ref.lastIndexOf("@"))])) as Map<string, unknown>;
       return [...answered.values()];
+    },
+  },
+  /* The reader outside the pin index, asked for the sealed card's id by name. The sealed
+     rows are private, so the whole answer is the leak surface: a row coming back to anybody
+     but the owner is the card appearing in a response. */
+  {
+    name: "storedVersionsOf",
+    reach: "the id of a private card only the victim's sealed bundle pins, outside the pin index",
+    run: async (actor, victim) => {
+      const db = gate.get().db;
+      const fn = await bindStoredVersionsOf();
+      const ref = victim.sealedRefs[0] as string;
+      return fn(db, actor, ref.slice(0, ref.lastIndexOf("@")));
     },
   },
 ];
@@ -407,6 +421,27 @@ describe("AC6 control — each reader does return the public fixture", () => {
     const users = answered.get(id) ?? [];
     const keys = users.map((user) => keyOf(user as { ownerHandle: string; slug: string }));
     expect(keys).toContain(keyOf(publicKey(sides.A)));
+  });
+
+  /**
+   * Same shape as the `usersOfMany` control above and for the same reason: the sweep entry
+   * probes a sealed id whose correct anonymous answer is `[]`, so a reader answering nothing
+   * to everything would pass it. A card the public bundle pins must come back here.
+   */
+  it("storedVersionsOf() answers the public bundle's card to an anonymous reader", async () => {
+    const scratch = gate.get();
+    const [row] = await query(
+      scratch,
+      "select r.card_refs from release r join bundle b on b.id = r.bundle_id " +
+        "join account a on a.id = b.owner_id where a.handle = $1 and b.slug = $2",
+      [sides.A.owner.handle, sides.A.publicSlug],
+    );
+    const ref = ((row?.card_refs as string[]) ?? [])[0];
+    expect(ref, "the public bundle must pin at least one card").toBeDefined();
+    const id = ref.slice(0, ref.lastIndexOf("@"));
+    const fn = await bindStoredVersionsOf();
+    const answered = (await fn(scratch.db, anonymous, id)) as readonly { ref: string }[];
+    expect(answered.map((entry) => entry.ref)).toContain(ref);
   });
 });
 

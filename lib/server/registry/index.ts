@@ -1,9 +1,14 @@
 /* ============================================================
    DarkPrint backend — lib/server/registry public surface
-   Nineteen readers, each taking an `Actor`, plus the record shapes
+   Twenty readers, each taking an `Actor`, plus the record shapes
    they return, plus the fault path every one shares. Deep paths
    are internal; nothing outside this module should reach for one
    (T000 contract, D-01).
+
+   `storedVersionsOf` is the second card reader outside the pin
+   index, beside `cardsOwnedBy`: a card published on its own
+   through `POST /api/cards` has a page before any release pins it,
+   and the page and `GET /api/cards/<ref>` resolve through it.
 
    Thirteen until T132. The three amendments are all to this task's
    published record and each was ruled rather than proposed:
@@ -52,7 +57,7 @@ export { blueprint, blueprints } from "./blueprints";
    they do not go through `loadSnapshot`, and in particular why its release-skip for the
    public archive shelf is untouched by either. */
 export { draftBundle, ownedBundles } from "./owned";
-export { card, cards, cardsOwnedBy, latestCards, versionsOf } from "./cards";
+export { card, cards, cardsOwnedBy, latestCards, storedVersionsOf, versionsOf } from "./cards";
 export { graphsOf } from "./graphs";
 export { duplicates, usersOf, usersOfMany } from "./joins";
 export { cardsByPhase, categories, phases, tags } from "./facets";

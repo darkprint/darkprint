@@ -13,12 +13,38 @@
    The write-key harness installs the scratch client where every
    route reads it, and the rate-limit cell runs last because the
    counter is process-wide and it exhausts its own account.
+
+   The publish answers a page path, so the page is rendered here
+   too: `next/headers` is stubbed to hand `readSession` whichever
+   cookie a cell sets, and `next/navigation` to make `notFound()`
+   observable as a throw and to give the fork button a router.
    ============================================================ */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import type { ReactElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 
+/** The one cookie the page's `readSession()` sees; a cell sets it and puts it back. */
+const session = vi.hoisted(() => ({ cookie: undefined as string | undefined }));
+const NOT_FOUND = "cards-publish: notFound() was called";
+
+vi.mock("next/headers", () => ({
+  cookies: async () => ({
+    get: (name: string) =>
+      name === "darkprint_session" && session.cookie !== undefined ? { value: session.cookie } : undefined,
+  }),
+}));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: () => {}, refresh: () => {} }),
+  notFound: () => {
+    throw new Error(NOT_FOUND);
+  },
+}));
+
+import NodePage, { generateMetadata as nodeMetadata } from "@/app/nodes/[...id]/page";
 import { schema } from "@/lib/db";
+import { SESSION_COOKIE_NAME } from "@/lib/server/auth";
 import { addCard, getCard, listCardVersions } from "@/lib/server/cards";
 import type { Actor } from "@/lib/server/policy";
 
@@ -116,6 +142,25 @@ async function post(body: unknown, headers: Record<string, string>): Promise<Res
       body: typeof body === "string" ? body : JSON.stringify(body),
     }),
   );
+}
+
+/** `GET /api/cards/<...segments>`, the catch-all that serves one card and its versions. */
+async function getCards(segments: string[], headers: Record<string, string>): Promise<Response> {
+  const { GET } = await import("@/app/api/cards/[...ref]/route");
+  return GET(new Request(`http://localhost/api/cards/${segments.join("/")}`, { headers }), {
+    params: Promise.resolve({ ref: segments }),
+  });
+}
+
+/** The card's page, rendered as the session in `session.cookie` (none by default). */
+async function renderNodePage(cardId: string): Promise<string> {
+  const page = NodePage as unknown as (props: { params: Promise<{ id: string[] }> }) => Promise<ReactElement>;
+  return renderToStaticMarkup(await page({ params: Promise.resolve({ id: cardId.split("/") }) }));
+}
+
+/** The cookie's value alone, which is what the stubbed `cookies().get()` hands back. */
+function sessionValueOf(account: Account): string {
+  return cookieFor(account).slice(`${SESSION_COOKIE_NAME}=`.length);
 }
 
 async function profileCardCount(handle: string, headers: Record<string, string>): Promise<number> {
@@ -299,6 +344,58 @@ describe("POST /api/cards", () => {
 
     const versions = await listCardVersions(env.harness.client.db, ANONYMOUS, "cards-alice/planner");
     expect(versions.map((v) => v.version)).toEqual(["1.1.0", "1.0.0"]);
+  });
+
+  /* The address the 201 names has to resolve. The pin index does not hold a card nothing
+     pins, so the page and the card GET read through the registry's stored-versions reader,
+     and these cells are what make "its page path" a true sentence rather than a 404. */
+  it("answers GET /api/cards/<id>@<version> for the published card, and lists its versions", async () => {
+    setup.require();
+    const response = await getCards(["cards-alice", "planner@1.0.0"], {});
+    expect(response.status, await response.clone().text()).toBe(200);
+    const { card } = (await response.json()) as { card: { ref: string; usedIn: unknown[]; visibility: string } };
+    expect(card.ref).toBe("cards-alice/planner@1.0.0");
+    /* No release pins it, and the join says so rather than inventing a user. */
+    expect(card.usedIn).toEqual([]);
+    expect(card.visibility).toBe("public");
+
+    const versions = await getCards(["cards-alice", "planner", "versions"], {});
+    expect(versions.status).toBe(200);
+    const listed = (await versions.json()) as { versions: { version: string }[] };
+    expect(listed.versions.map((entry) => entry.version)).toEqual(["1.1.0", "1.0.0"]);
+  });
+
+  it("keeps the private card's GET a 404 for a stranger and answers it to its owner", async () => {
+    const env = setup.require();
+    expect((await getCards(["cards-alice", "secret@1.0.0"], {})).status).toBe(404);
+    expect((await getCards(["cards-alice", "secret@1.0.0"], { cookie: cookieFor(env.bob) })).status).toBe(404);
+    const own = await getCards(["cards-alice", "secret@1.0.0"], { cookie: cookieFor(env.alice) });
+    expect(own.status, await own.clone().text()).toBe(200);
+    expect(((await own.json()) as { card: { visibility: string } }).card.visibility).toBe("private");
+  });
+
+  it("renders the card's page at the path the publish answered, for a reader with no session", async () => {
+    setup.require();
+    const html = await renderNodePage("cards-alice/planner");
+    /* The bare id resolves to the newest version, which the bump above made 1.1.0. */
+    expect(html).toContain("cards-alice/planner@1.1.0");
+    expect(html).toContain("Write the plan.");
+    const metadata = await nodeMetadata({ params: Promise.resolve({ id: ["cards-alice", "planner"] }) } as never);
+    expect(metadata.title).toBe("Planner (node card)");
+  });
+
+  it("renders a private card's page for its owner and 404s it for everybody else", async () => {
+    const env = setup.require();
+    await expect(renderNodePage("cards-alice/secret")).rejects.toThrow(NOT_FOUND);
+    session.cookie = sessionValueOf(env.bob);
+    try {
+      await expect(renderNodePage("cards-alice/secret")).rejects.toThrow(NOT_FOUND);
+      session.cookie = sessionValueOf(env.alice);
+      const html = await renderNodePage("cards-alice/secret");
+      expect(html).toContain("cards-alice/secret@1.0.0");
+    } finally {
+      session.cookie = undefined;
+    }
   });
 
   it("passes the store's own refusal through as 422 when the bump is smaller than the change", async () => {

@@ -97,7 +97,9 @@ export function loadRegistry(): Promise<Namespace> {
  * equality over reader names, so adding a reader reds it BY DESIGN, and the amendment lands
  * in the same commit as the readers. `graphsOf` and `scoresFor` are D-132-01's, owed to T260
  * under D-260-14 and D-260-21; `cardsOwnedBy` is D-132-02's, the reader T130's blocked
- * `counts.cards` needed and the only card reader outside the pin index.
+ * `counts.cards` needed and the first card reader outside the pin index. `storedVersionsOf`
+ * is the second, added with the single-card publish door: the page and the card GET a
+ * `POST /api/cards` answer points at resolve through it.
  */
 export const PUBLISHED = {
   blueprints: "blueprints(db: Db, actor: Actor): Promise<readonly BlueprintSummary[]>",
@@ -145,6 +147,11 @@ export const PUBLISHED = {
     "of `usersOf` armed when T260's cutover turned /nodes' 53-snapshots-per-load cost from " +
     "build-time to per-request; an id nothing pins answers an EMPTY LIST, never an absent " +
     "key, because a map omitting what nothing names drops the rows a caller is iterating",
+  storedVersionsOf:
+    "storedVersionsOf(db: Db, actor: Actor, cardId: string): " +
+    "Promise<readonly CardSummary[]> — every stored version of the id `actor` may read, " +
+    "pinned or not, newest first; `/nodes/[...id]` and `GET /api/cards/<ref>` resolve " +
+    "through it so a card published on its own has a page before a release pins it",
 } as const;
 
 export type ReaderName = keyof typeof PUBLISHED;

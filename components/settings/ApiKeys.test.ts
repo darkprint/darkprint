@@ -8,13 +8,14 @@ import { ApiKeys, PUBLISH_CURL, SCOPE_COPY } from "./ApiKeys";
 /**
  * The scope sentences are read once, at the moment a key is minted, so they have to say what
  * the routes do today. The write sentence used to say no endpoint accepted a key for a write;
- * `POST /api/bundles` and `POST /api/blueprints/[owner]/[slug]/runs` now do, behind
- * `withSessionOrWriteKey`, and these cells pin the copy to that.
+ * `POST /api/bundles`, `POST /api/cards` and `POST /api/blueprints/[owner]/[slug]/runs` now
+ * do, behind `withSessionOrWriteKey`, and these cells pin the copy to that.
  */
 describe("API key scope copy", () => {
-  it("the write sentence names both write routes and the bearer form", () => {
+  it("the write sentence names the three write routes and the bearer form", () => {
     const blurb = SCOPE_COPY.write.blurb;
     expect(blurb).toContain("POST /api/bundles");
+    expect(blurb).toContain("POST /api/cards");
     expect(blurb).toContain("POST /api/blueprints/{owner}/{slug}/runs");
     expect(blurb).toContain("bearer token");
     expect(blurb).toContain("agent");

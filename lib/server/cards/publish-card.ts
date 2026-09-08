@@ -1,13 +1,13 @@
 /* ============================================================
    DarkPrint backend — publishCard
-   The public write path for one card on its own. Until now a
-   `card_version` row arrived in two ways only: pinned inside a
-   bundle that publishes, or copied by `forkCard`. This is the
-   third, and it is written from the fork rather than beside it:
-   the same read of the account, the same namespace rule, the same
-   occupancy check, the same restamp of the document, and `addCard`
-   for the write. Where it differs, a card an author wrote is not a
-   card an author copied, and each difference is argued below.
+   The public write path for one card on its own. A `card_version`
+   row arrives three ways: pinned inside a bundle that publishes,
+   copied by `forkCard`, or published here on its own. This door is
+   written from the fork rather than beside it: the same read of
+   the account, the same namespace rule, the same occupancy check,
+   the same restamp of the document, and `addCard` for the write.
+   Where it differs, a card an author wrote is not a card an author
+   copied, and each difference is argued below.
 
    ── the id is `<handle>/<name>`, and the caller chooses `name` only ──
    `forkCard`'s header makes the case and it holds unchanged here:

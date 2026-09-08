@@ -8,9 +8,11 @@
    downloader gets `id: planner` inside `forker/planner@1.0.0`, and
    `darkprint validate` reports the mismatch as the caller's fault.
 
-   So a fork rewrites three keys and only three: `id`, `author`,
-   `provenance`. Everything else is the upstream author's file,
-   including their comments, their blank lines and their quoting.
+   So a rewrite touches the keys the stamp carries and nothing
+   else: a fork (`forkCard`) stamps `id`, `author` and `provenance`,
+   and a card published on its own (`publishCard`) stamps `id`
+   alone. Everything else is the author's file, including their
+   comments, their blank lines and their quoting.
 
    ── why the yaml Document API and not a re-emitter ──
    Re-emitting from the parsed `NodeCard` is the obvious move and
@@ -20,14 +22,14 @@
    scalar to JSON — which is right for a document compiled from a
    pipeline and wrong for one somebody wrote. `yaml`'s
    `parseDocument` keeps the original tokens for the nodes nobody
-   touched, so a `doc.set` on three keys is the smallest edit that
-   can be made to the file at all.
+   touched, so a `doc.set` on the stamped keys is the smallest edit
+   that can be made to the file at all.
 
    ── why the result is checked before it is returned ──
-   "Only those three keys moved" is a property of the OUTPUT, so
+   "Only the stamped keys moved" is a property of the OUTPUT, so
    the way to know it is to read the output back: parse the
    restamped text, compare it against the parse of the original
-   with the three keys held aside, and refuse the rewrite if
+   with the stamped keys held aside, and refuse the rewrite if
    anything else moved. A silent reformat that dropped a key would
    otherwise reach the store as a card missing a field, and the
    failure would surface three layers away in a renderer, which is
@@ -42,8 +44,9 @@
    asked to touch. What it is FOR is the day that stops being true
    — a library upgrade that reflows, a `doc.set` that replaces a
    parent rather than a key — and on that day this returns
-   `undefined` and `forkCard` refuses, instead of storing a
-   document that no longer says what the row says. `restamp-source.test.ts`
+   `undefined` and both callers, `forkCard` and `publishCard`,
+   refuse, instead of storing a document that no longer says what
+   the row says. `restamp-source.test.ts`
    covers the arms that can be driven and says which one cannot.
    ============================================================ */
 

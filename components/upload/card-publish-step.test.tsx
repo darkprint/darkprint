@@ -171,6 +171,9 @@ describe("the endings", () => {
     const plain = text(markup);
     expect(plain).toContain("Published. The registry holds it.");
     expect(plain).toContain("Stored as berti/planner@1.0.0 , public");
+    /* A stranger's bundle cannot pin a private card, so the sentence names the owner's own. */
+    expect(plain).toContain("Your blueprints can pin it by that id");
+    expect(plain).not.toContain("Any blueprint");
     expect(markup).toContain('href="/nodes/berti/planner"');
     expect(plain).toContain("Open the card's page");
     expect(plain).toContain("Publish another card");

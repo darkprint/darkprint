@@ -1417,7 +1417,7 @@ export function UploadFlow({
                     A node card on its own checks against the curated core vocabulary
                     alone, the same reading a bundle&rsquo;s own cards get before any local
                     overlay is layered on. A card that resolves publishes on the last step,
-                    under your handle, and any blueprint can pin it from there.
+                    under your handle, and your blueprints can pin it from there.
                   </>
                 ) : (
                   <>

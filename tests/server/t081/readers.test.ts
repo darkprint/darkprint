@@ -85,7 +85,7 @@ async function faultOf(
 }
 
 describe("AC2/AC3 — the domain is §T080's published read surface", () => {
-  it("the barrel's read functions are exactly the nineteen the block publishes", async () => {
+  it("the barrel's read functions are exactly the twenty the block publishes", async () => {
     const mod = await loadRegistry();
     const present = READER_NAMES.filter((name) => typeof mod[name] === "function").sort();
 
@@ -93,7 +93,7 @@ describe("AC2/AC3 — the domain is §T080's published read surface", () => {
       READER_NAMES.length,
       "The loop below quantifies over this list. An empty or shortened one turns every sweep " +
         "in this file into a green over nothing, which is the failure AC3's floor clause names.",
-    ).toBe(19);
+    ).toBe(20);
 
     expect(
       present,
@@ -307,7 +307,7 @@ describe("the sweep's own case count", () => {
        edit still takes a second decision. Thirteen at T081's merge; sixteen since T132's
        three ruled amendments to §T080's block; seventeen since T260's merge added
        `usersOfMany` (D-260-31); nineteen since T280 added `ownedBundles` and
-       `draftBundle`. */
-    expect(driven.size).toBe(19);
+       `draftBundle`; twenty since the single-card publish door added `storedVersionsOf`. */
+    expect(driven.size).toBe(20);
   }, 60_000);
 });

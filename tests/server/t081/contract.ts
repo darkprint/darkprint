@@ -228,7 +228,9 @@ export const T081_NAMES = Object.keys(PUBLISHED_T081) as PublishedT081Name[];
  *
  * **Seventeen since T260's merge**: `usersOfMany` (D-260-31), the batch form of `usersOf`
  * armed when the /nodes cutover turned its 53-snapshots-per-load disclosure into a
- * per-request cost. Added here for the same reason as T132's three.
+ * per-request cost. Added here for the same reason as T132's three. `storedVersionsOf`
+ * joined with the single-card publish door, `POST /api/cards`: the card page and the card
+ * GET resolve through it, so its fault path is one a route renders.
  */
 export const PUBLISHED_READERS = {
   blueprints: "blueprints(db: Db, actor: Actor): Promise<readonly BlueprintSummary[]>",
@@ -274,6 +276,11 @@ export const PUBLISHED_READERS = {
   draftBundle:
     "draftBundle(db: Db, actor: Actor, owner: string, slug: string): " +
     "Promise<DraftBundle | undefined>",
+  /* The second card reader outside the pin index, beside `cardsOwnedBy`: every stored
+     version of one id the actor may read, pinned or not. */
+  storedVersionsOf:
+    "storedVersionsOf(db: Db, actor: Actor, cardId: string): " +
+    "Promise<readonly CardSummary[]>",
 } as const;
 
 export type ReaderName = keyof typeof PUBLISHED_READERS;
@@ -400,6 +407,12 @@ export const READER_PROBES: Record<ReaderName, ReaderProbe> = {
     args: [PROBE.ownerHandle, PROBE.slug],
     variantArgs: [VARIANT.ownerHandle, VARIANT.slug],
     supplied: [PROBE.ownerHandle, PROBE.slug],
+  },
+  /* Probed like `versionsOf`: one caller-supplied card id, so it owes the variant arm. */
+  storedVersionsOf: {
+    args: [PROBE.cardId],
+    variantArgs: [VARIANT.cardId],
+    supplied: [PROBE.cardId],
   },
 };
 

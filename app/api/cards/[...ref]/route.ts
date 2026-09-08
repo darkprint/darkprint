@@ -18,6 +18,13 @@
    segment `versions`/`users`" and "is this a ref" cannot both be
    true of one path.
 
+   ── what the card GETs read ──
+   `{ card }` and `{ versions }` resolve through `storedVersionsOf`,
+   the registry reader outside the pin index, so a card published
+   on its own through `POST /api/cards` answers here at the address
+   its 201 named before any release pins it. `{ users }` is the pin
+   join itself and stays on the index.
+
    ── the fork POST lives here and could not live anywhere else ──
    `app/api/cards/[...ref]/fork/route.ts` is not a route Next can
    serve: a catch-all consumes every remaining segment, so no
@@ -47,12 +54,20 @@
    two shapes off one path is the drift worth avoiding here.
    ============================================================ */
 
-import { getSharedDbClient } from "@/lib/db";
+import { cardRef, parseCardRef } from "@/lib/core";
+import { getSharedDbClient, type Db } from "@/lib/db";
 import { actorFrom as actorFromSession } from "@/lib/server/accounts";
 import { withSession } from "@/lib/server/auth";
 import { badRequest, notFound, ok } from "@/lib/server/http";
 import { forkCard, withLineageErrors, type CardForkTarget } from "@/lib/server/lineage";
-import { actorFrom, card, usersOf, versionsOf, withRegistryErrors } from "@/lib/server/registry";
+import type { Actor } from "@/lib/server/policy";
+import {
+  actorFrom,
+  storedVersionsOf,
+  usersOf,
+  withRegistryErrors,
+  type CardSummary,
+} from "@/lib/server/registry";
 import { isRefusal, readObjectBody, readOptionalString, readString } from "../../validate/body";
 
 const NO_SUCH_CARD = "card: no such card.";
@@ -76,15 +91,27 @@ export async function GET(
     if (ref.length > 1 && (last === "versions" || last === "users")) {
       const id = ref.slice(0, -1).join("/");
       return last === "versions"
-        ? ok({ versions: await versionsOf(db, actor, id) })
+        ? ok({ versions: await storedVersionsOf(db, actor, id) })
         : ok({ users: await usersOf(db, actor, id) });
     }
 
-    // One answer for three states — no such ref, a ref that is not a pinned reference, and a
-    // card private to somebody else — for the reason the blueprint route states (B-03).
-    const record = await card(db, actor, ref.join("/"));
+    // One answer for three states — no such ref, a ref that does not parse, and a card
+    // private to somebody else — for the reason the blueprint route states (B-03).
+    const record = await storedCardAt(db, actor, ref.join("/"));
     return record === undefined ? notFound(request, NO_SUCH_CARD) : ok({ card: record });
   });
+}
+
+/**
+ * The exact version a ref names, pinned or not, or `undefined` for a ref that does not parse
+ * or names nothing `actor` may read. The lookup is on the canonical `id@version` spelling,
+ * so a padded ref (`parseCardRef` trims) still finds its row.
+ */
+async function storedCardAt(db: Db, actor: Actor, ref: string): Promise<CardSummary | undefined> {
+  const parsed = parseCardRef(ref);
+  if (parsed === undefined) return undefined;
+  const wanted = cardRef(parsed.id, parsed.version);
+  return (await storedVersionsOf(db, actor, parsed.id)).find((entry) => entry.ref === wanted);
 }
 
 /** `visibility`, when supplied. Absent means the forker's own account default (D-110-09). */

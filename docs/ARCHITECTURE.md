@@ -103,7 +103,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 | `/u/[username]` | dynamic | a profile |
 | `/u/[username]/[slug]` | dynamic | a permanent redirect to `/blueprints/[username]/[slug]` |
 | `/u/[username]/blueprints`, `/u/[username]/cards`, `/u/[username]/saved` | dynamic | the three shelves |
-| `/upload` | dynamic | the wizard: drop a folder or a single card, validate it in the browser, publish |
+| `/upload` | dynamic | the wizard: drop a folder or a single card, validate it (a folder in the browser, a card over `/api/validate/card`), publish |
 | `/welcome` | dynamic | sign in and choose a handle |
 | `/what-a-blueprint-is` | static | the entry page of the Learn section |
 
@@ -264,7 +264,7 @@ candidates route) and `telemetry` (5 runs, z-score 3, read by the run aggregate)
 
 ## 7. Publishing
 
-Two doors, one verb. `/upload` reads the dropped files in the tab, runs `loadBundle` in the
+Two doors for a release and a third for a single card, one verb. `/upload` reads the dropped files in the tab, runs `loadBundle` in the
 browser, draws the graph and the scores, and publishes through `POST /api/bundles` for a
 signed-in account. A terminal or an agent posts the same body with `Authorization: Bearer
 $DARKPRINT_API_KEY` (a write-scoped key; the `curl` is printed under `/settings` and in the
@@ -291,9 +291,13 @@ same callers as `POST /api/bundles` and the `upload` rate bucket. `publishCard()
 answers `201 { card, path }`. Refusals: 400 malformed body or an illegal name, 401 no session
 and no write key, 403 an account with no handle, 409 an id another account holds or a version
 already stored, 422 a card that does not validate (with its diagnostics) or a bump the store
-prices as too small. The `/upload` wizard's Card kind ends on this door. A card published this
-way is not embedded for search until something pins it in a release; the search index's card
-writer runs at release time only.
+prices as too small. The `/upload` wizard's Card kind ends on this door. The card's page at
+`/nodes/<id>`, `GET /api/cards/<id>@<version>` and `GET /api/cards/<id>/versions` resolve
+through `storedVersionsOf`, the registry reader outside the pin index, and the owner's
+`/u/<handle>/cards` shelf lists it. Until a release pins it the card is not searchable at
+all: `searchCards` draws its candidates from the pin index and the search index's card writer
+runs at release time only, so `/api/search/cards`, the MCP search tools, `GET /api/cards` and
+the `/nodes` shelf do not carry it.
 
 Downloads: `/api/files/blueprints/<owner>/<slug>/d/<digest>/<path>` serves the frozen bytes,
 `/v/<version>/<path>` the version's files, `/api/files/cards/<id>@<version>.yaml` one card;
@@ -367,7 +371,7 @@ a key that does not resolve is treated as no key, never refused. Limits (`lib/se
 `read` allows 600 requests an hour for anonymous and signed-in callers and 6000 for a key;
 `write` is 120 an hour and `upload` 30, both refused to anonymous callers; `live` is 60 an hour
 for an anonymous caller and 120 for the two signed-in tiers. The MCP routes spend `read`; the
-live tutorial routes spend `live` on POST and PUT, `poll` (3 600 an hour for every tier) on every GET, and `read` on a GET that answers a body or a miss; nothing else spends a
+live tutorial routes spend `live` on POST and PUT, `poll` (3 600 an hour for every tier) on every GET, and `read` on a GET that answers a body or a miss; `POST /api/cards` spends `upload`; nothing else spends a
 bucket today. A refused request answers 429 problem+json carrying `limit`, `remaining`,
 `resetAt` and `keysAvailable`, and a tool call renders the same facts as a result.
 
@@ -583,8 +587,8 @@ keyed by row id and refreshed by step 11.
   keeps the `vector(384)` columns), or the Pro plan, where a build made on Vercel's machines with
   the x64 binaries is not subject to the 12-function cap.
 - The `darkprint` npm package is unpublished; `npx -y darkprint` answers 404.
-- The `write` and `upload` buckets are spent by nothing; the key-based publish and run-report
-  paths have no rate limit.
+- The `write` bucket is spent by nothing, and `upload` only by `POST /api/cards`; the key-based
+  bundle publish and run-report paths have no rate limit.
 - `darkprint report` still refuses `DARKPRINT_API_KEY` although the runs route accepts a
   write-scoped key.
 - No mail sender exists behind `NotificationDelivery`; the queue fills and nothing drains it.

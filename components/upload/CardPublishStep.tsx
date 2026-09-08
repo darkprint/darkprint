@@ -45,7 +45,7 @@ export type SingleCheck =
   | { state: "failed"; detail: string };
 
 /** The un-namespaced half of a card id. `CARD_ID` admits one separator, so this is total. */
-export function cardName(id: string): string {
+function cardName(id: string): string {
   const slash = id.lastIndexOf("/");
   return slash === -1 ? id : id.slice(slash + 1);
 }
@@ -253,8 +253,8 @@ function CardOutcome({
                 <span className="font-mono text-cyan">
                   {outcome.card.cardId}@{outcome.card.version}
                 </span>
-                , {outcome.card.visibility === "public" ? "public" : "private"}. Any blueprint
-                can pin it by that id, and it is listed under your handle.
+                , {outcome.card.visibility === "public" ? "public" : "private"}. Your
+                blueprints can pin it by that id, and it is listed under your handle.
               </>
             ) : outcome.state === "refused" ? (
               <>
