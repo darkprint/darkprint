@@ -19,9 +19,7 @@ import {
   LIVE_OPEN_PATH,
   LIVE_OPEN_URL,
   LIVE_PAGE_PATH,
-  SKILL_ARCHIVE_PATH,
   SKILL_ARCHIVE_ROOT,
-  SKILL_ARCHIVE_URL,
   SKILL_INSTALL_COMMAND,
   SKILL_INSTALL_COMMAND_CODEX,
   SKILL_MANIFEST_PATH,
@@ -89,8 +87,7 @@ describe("the install commands", () => {
 describe("the paths the site serves the skill from", () => {
   it("all hang off one public directory on the www host", () => {
     expect(SKILL_SITE_ORIGIN).toBe("https://www.darkprint.io");
-    expect(SKILL_ARCHIVE_URL).toBe(`${SKILL_SITE_ORIGIN}${SKILL_ARCHIVE_PATH}`);
-    for (const path of [SKILL_TREE_PATH, SKILL_ARCHIVE_PATH, SKILL_MANIFEST_PATH]) {
+    for (const path of [SKILL_TREE_PATH, SKILL_MANIFEST_PATH]) {
       expect(path.startsWith(`/${SKILL_PUBLIC_DIR}/`)).toBe(true);
     }
   });

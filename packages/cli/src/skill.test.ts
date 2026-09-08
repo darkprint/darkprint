@@ -90,7 +90,7 @@ describe("what the copy holds", () => {
     }
   });
 
-  it("replaces an earlier copy whole, so a file the skill dropped does not survive", () => {
+  it("replaces an earlier copy whole, so a file the DarkPrint skill dropped does not survive", () => {
     const home = freshHome();
     const destination = join(home, ".claude", "skills", "darkprint");
     mkdirSync(join(destination, "references"), { recursive: true });

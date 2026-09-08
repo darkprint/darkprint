@@ -49,13 +49,9 @@ export const SKILL_PUBLIC_DIR = "skill";
 /** The raw tree, one URL per file: `/skill/darkprint/SKILL.md` and so on. */
 export const SKILL_TREE_PATH = `/${SKILL_PUBLIC_DIR}/darkprint`;
 
-/** The same tree as one archive, the file the manifest's `archive` entry describes. */
-export const SKILL_ARCHIVE_PATH = `/${SKILL_PUBLIC_DIR}/darkprint.tgz`;
-
 /** Every file in the tree with its SHA-256, and the archive's own, for a reader who checks. */
 export const SKILL_MANIFEST_PATH = `/${SKILL_PUBLIC_DIR}/manifest.json`;
 
-export const SKILL_ARCHIVE_URL = `${SKILL_SITE_ORIGIN}${SKILL_ARCHIVE_PATH}`;
 export const SKILL_TREE_URL = `${SKILL_SITE_ORIGIN}${SKILL_TREE_PATH}`;
 export const SKILL_MANIFEST_URL = `${SKILL_SITE_ORIGIN}${SKILL_MANIFEST_PATH}`;
 
@@ -63,15 +59,16 @@ export const SKILL_MANIFEST_URL = `${SKILL_SITE_ORIGIN}${SKILL_MANIFEST_PATH}`;
 export const CLAUDE_CODE_SKILLS_PARENT = "~/.claude";
 export const CODEX_SKILLS_PARENT = "~/.agents";
 
-/** The npm package that carries the CLI, the stdio MCP server and the skill. */
+/** The npm package that carries the CLI, the stdio MCP server and the DarkPrint skill. */
 export const SKILL_PACKAGE = "darkprint";
 
 /**
  * The command a Claude Code user types, exactly as it must be typed.
  *
  * `npx -y` fetches the package from npm on the first run and answers no prompt; the verb
- * copies the packaged skill into `~/.claude/skills/darkprint`, which exists for anyone who
- * has run Claude Code once. Nothing else is installed and no account is created.
+ * copies the packaged skill into `~/.claude/skills/darkprint`. `~/.claude` exists for anyone
+ * who has run Claude Code once and the verb creates the rest. Nothing else is installed and
+ * no account is created.
  */
 export const SKILL_INSTALL_COMMAND = `npx -y ${SKILL_PACKAGE} skill install`;
 

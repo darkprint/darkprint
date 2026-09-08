@@ -23,7 +23,7 @@ coverage, with the model vendored under `models/`. Seven MCP tools served over H
 installed. The `darkprint` package on npm, built from `packages/mcp`: `npx -y darkprint` runs
 the CLI and the stdio MCP server, and `npx -y darkprint skill install` copies the
 blueprint-writing skill it carries into the agent's skills folder. The site still serves the
-skill's tree file by file with a manifest of hashes.
+DarkPrint skill's tree file by file with a manifest of hashes.
 
 Not real: nothing here runs a blueprint, runs a node or calls a model on anyone's behalf. The
 seeded community numbers that remain are labelled as seeded where they render. No mail is
@@ -68,7 +68,7 @@ lib/server/          27 subsystems: accounts, archive, auth, cards, counters, en
                      saves, search, seed, terms, versioning
 lib/data/            seeded fixtures that several surfaces still read
 packages/cli/        the darkprint verbs: clone, validate, export, import, bump, report, skill
-packages/mcp/        the darkprint package: the bin, the stdio MCP server, the tool table, the skill copy
+packages/mcp/        the darkprint package: the bin, the stdio MCP server, the tool table, a copy of the DarkPrint skill
 skills/darkprint/    the blueprint-writing skill: SKILL.md, references, templates
 content/             10 blueprints, 61 card versions, ontology/extensions.yaml
 models/              all-MiniLM-L6-v2, quantised ONNX (23 MB)

@@ -376,7 +376,7 @@ with `DARKPRINT_API_KEY` as a bearer when set. The package is named `darkprint`,
 | `import <pipeline.dot> --as <handle> --out <dir>` | reads an Attractor pipeline into a draft bundle on disk |
 | `bump [<dir>] --declare <version> --target <owner>/<slug>` | checks a declared version against what changed since the last release; writes nothing |
 | `report <run-dir> --target <owner>/<slug> --cost <units>` | posts a finished Attractor run to `/api/blueprints/<owner>/<slug>/runs` |
-| `skill install [--codex] [--dir <parent>]` | copies the skill the package carries into `~/.claude/skills/darkprint` (Claude Code), `~/.agents/skills/darkprint` (`--codex`) or `<parent>/skills/darkprint`, replacing an earlier copy; prints the destination and `metadata.version` from the frontmatter; the packaged tree is found beside `dist/`, never from the cwd |
+| `skill install [--codex] [--dir <parent>]` | copies the DarkPrint skill the package carries into `~/.claude/skills/darkprint` (Claude Code), `~/.agents/skills/darkprint` (`--codex`) or `<parent>/skills/darkprint`, replacing an earlier copy; prints the destination and `metadata.version` from the frontmatter; the packaged tree is found beside `dist/`, never from the cwd |
 | `mcp` | serves the registry over MCP on stdio |
 
 Environment: `DARKPRINT_URL` (registry base, default `https://www.darkprint.io`),

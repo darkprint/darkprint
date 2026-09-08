@@ -73,7 +73,8 @@ describe("the install commands", () => {
   /**
    * What the line does on the reader's machine, in the open beside it: a package comes
    * down from npm, one folder is written, and the two agents' folders are named so a reader
-   * can go and look. The repository form is gone with the private repository it needed.
+   * can go and look. One install path is printed, so a reader never has two to choose
+   * between.
    */
   it("say what npx does, where the copy lands, and offer no second install path", () => {
     const text = openText(SETUP);
@@ -85,6 +86,17 @@ describe("the install commands", () => {
     expect(text).not.toContain("skills@latest");
     expect(text.toLowerCase()).not.toContain("repository is private");
     expect(text.toLowerCase()).not.toContain("curl");
+  });
+
+  /**
+   * The draft panel prints the same line with less room, and a shorter sentence is where
+   * the two promises fall off: nothing pinned it here, and one of them did.
+   */
+  it("say where the copy lands and what else happens on the draft panel too", () => {
+    const text = openText(DRAFT);
+    expect(text).toContain("npx fetch the darkprint package from npm");
+    expect(text).toContain(`${CLAUDE_CODE_SKILLS_PARENT}/${SKILL_ARCHIVE_ROOT}`);
+    expect(text.toLowerCase()).toContain("nothing else is installed and no account is created");
   });
 
   it("link the served tree and the manifest, as plain anchors to static files", () => {

@@ -386,7 +386,7 @@ async function runClone(args: readonly string[], io: Io): Promise<number> {
   const { flags, positional } = parseFlags(args);
   const target = positional[0];
   if (target === undefined) {
-    io.err("clone: name a blueprint as <owner>/<slug>.\n");
+    io.err("clone: name a blueprint as <owner>/<slug> or a card as <id>@<version>.\n");
     return 1;
   }
 
@@ -395,6 +395,10 @@ async function runClone(args: readonly string[], io: Io): Promise<number> {
     ...(flags.digest === undefined ? {} : { digest: flags.digest }),
     ...(flags.out === undefined ? {} : { out: flags.out }),
   });
+  if (result.kind === "card") {
+    io.out(`clone: wrote ${result.files[0]} to ${result.root}\n`);
+    return 0;
+  }
   io.out(`clone: wrote ${result.files.length} files to ${result.root}\n`);
   for (const file of result.files) io.out(`  ${file}\n`);
   return 0;

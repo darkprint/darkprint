@@ -6,9 +6,9 @@
    guard is a table that can start describing a command nobody
    implemented. Two things needed holding and neither was:
 
-   1. `dispatchedBy` was pure documentation. Six rows claim
+   1. `dispatchedBy` was pure documentation. Seven rows claim
       `runCli` handles them and one claims the shim does, and
-      nothing compared either claim to a dispatcher. A seventh row
+      nothing compared either claim to a dispatcher. An eighth row
       added with `dispatchedBy: "packages/cli/src/run.ts"` and no
       `case` would have put a verb on `darkprint --help` that answers
       `unknown command`, which is the shape a help text is for
@@ -79,9 +79,9 @@ describe("`dispatchedBy` is a claim about a dispatcher", () => {
   );
 
   /**
-   * And the seventh is not, which is what its row says.
+   * And the eighth is not, which is what its row says.
    *
-   * This is the half that makes the six above mean something. Without it the cells could
+   * This is the half that makes the seven above mean something. Without it the cells could
    * all pass against a `default` branch that had stopped refusing, and `dispatchedBy` would
    * be describing a distinction the code no longer draws.
    */

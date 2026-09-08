@@ -53,14 +53,14 @@ export interface InstallSkillResult {
   files: readonly string[];
 }
 
-/** The folder name under `skills/`, which is also the skill's `name`. */
+/** The folder name under `skills/`, which is also the DarkPrint skill's `name`. */
 const SKILL_NAME = SKILL_ARCHIVE_ROOT.split("/").pop() ?? SKILL_ARCHIVE_ROOT;
 
 /**
  * Copy the packaged skill into an agent's skills folder, replacing any earlier copy.
  *
  * The whole destination directory is removed first rather than overwritten file by file:
- * a reference deleted from the skill would otherwise survive on every machine that had
+ * a reference deleted from the DarkPrint skill would otherwise survive on every machine that had
  * installed the version before it, and an agent would keep reading it.
  */
 export function installSkill(options: InstallSkillOptions | undefined = undefined): InstallSkillResult {

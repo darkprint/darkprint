@@ -156,4 +156,14 @@ describe("through runCli", () => {
     await runCli(["--help"], io);
     expect(io.stderr.join("")).toContain("<id>@<version>");
   });
+
+  /** A reader who types the bare verb to learn its grammar is told both targets. */
+  it("names both targets when given none, and exits 1", async () => {
+    const io = collectingIo();
+    expect(await runCli(["clone"], io)).toBe(1);
+    const said = io.stderr.join("");
+    expect(said).toContain("<owner>/<slug>");
+    expect(said).toContain("<id>@<version>");
+    expect(io.stdout.join("")).toBe("");
+  });
 });
