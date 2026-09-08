@@ -17,7 +17,7 @@ import {
   VocabularyBrowser,
   type VocabularyRow,
 } from "@/components/ontology/VocabularyBrowser";
-import { CheckCell, CheckLegend } from "@/components/spec/CheckTable";
+import { CheckCell, CheckLegend, prose } from "@/components/spec/CheckTable";
 import { Id, SpecLink } from "@/components/spec/parts";
 import { CARD_ROWS, type CardRow } from "@/components/spec/rows";
 import { specNeighbours } from "@/components/spec/sequence";
@@ -132,23 +132,6 @@ async function vocabularyView(
 }
 
 /**
- * Backticked identifiers in a row's prose render as inline code. `CARD_ROWS` is plain
- * strings so `rows.test.ts` and `honesty.test.ts` can read a sentence back, and the
- * backtick is the seam between a field name and the sentence around it.
- */
-function prose(text: string): React.ReactNode[] {
-  return text
-    .split(/(`[^`]+`)/)
-    .map((part, i) =>
-      part.startsWith("`") && part.endsWith("`") ? (
-        <Id key={i}>{part.slice(1, -1)}</Id>
-      ) : (
-        part
-      ),
-    );
-}
-
-/**
  * The terms a field will accept, printed as the ids a card has to spell rather than the
  * labels: a reader at this point in the page is holding a field and needs the string that
  * goes in it. The caption says curated because these come off `CORE_ONTOLOGY` and carry no
@@ -181,8 +164,8 @@ function FieldTerms({ terms }: { terms: readonly OntologyTerm[] }) {
  * One field of the card, read in one place: the key, what it holds, the curated ids it may
  * take and what holds it. Three columns above `md` and a stack below, and the check cell is
  * the one `/spec/topology`'s table draws, so the two layers read as one document. Never a
- * `<details>`: folding the chips away would put the vocabulary one interaction further from
- * the field than it was on a route of its own.
+ * `<details>`: folding the chips away puts the vocabulary one interaction further from the
+ * field that takes it.
  */
 function FieldEntry({ row, terms }: { row: CardRow; terms: readonly OntologyTerm[] }) {
   return (
@@ -382,8 +365,7 @@ export default function SpecCardPage() {
                 here and one removed disappears. */}
             <p className="text-[15px] leading-relaxed text-muted">
               The ids under a field are the curated core, spelled as a card has to spell
-              them. Every term a published blueprint declares in its own namespace is
-              listed under Every term.
+              them.
             </p>
           </div>
 

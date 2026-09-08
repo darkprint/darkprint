@@ -24,10 +24,15 @@
 
 import type { DiagnosticCode } from "@/lib/core";
 
+import { Id } from "./parts";
+
 export interface CheckRow {
   /** The field, attribute or construct, spelled as it appears in the file. */
   name: string;
-  /** What it holds, in a sentence or a few. Backticks mark an identifier. */
+  /**
+   * What it holds, in a sentence or a few. Backticks mark an identifier, and every
+   * renderer of a row prints it through `prose` so the mark reads the same on both pages.
+   */
   what: string;
   /**
    * What the engine does about it, or `undefined` when the answer is nothing.
@@ -50,6 +55,25 @@ export interface CheckRow {
    Uppercase at 10px with wide tracking is the least legible combination available. */
 const TH =
   "pb-2 text-left font-normal uppercase tracking-[0.14em] text-[11px] text-dim";
+
+/**
+ * Backticked identifiers in a row's prose render as inline code. The rows are plain strings
+ * so `rows.test.ts` and `honesty.test.ts` can read a sentence back, and the backtick is the
+ * seam between a field name and the sentence around it. Exported because `/spec/card`
+ * lays its rows out as a stacked reference rather than through `CheckTable`, and the two
+ * renderers have to agree on what the mark means.
+ */
+export function prose(text: string): React.ReactNode[] {
+  return text
+    .split(/(`[^`]+`)/)
+    .map((part, i) =>
+      part.startsWith("`") && part.endsWith("`") ? (
+        <Id key={i}>{part.slice(1, -1)}</Id>
+      ) : (
+        part
+      ),
+    );
+}
 
 export function CheckTable({
   rows,
@@ -103,7 +127,7 @@ export function CheckTable({
                 {row.name}
               </th>
               <td className="py-3 pr-4 leading-relaxed text-muted">
-                {row.what}
+                {prose(row.what)}
               </td>
               <td className="w-[15rem] py-3">
                 <CheckCell check={row.check} />

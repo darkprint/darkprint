@@ -65,10 +65,13 @@
    page that renders one and a page that forgets it look identical
    from the route table.
 
-   A source scan, and deliberately not a render. The pages are
-   server components that read the archive, and the fact worth
-   guarding is which files exist and what they import, which is
-   reachable from the filesystem. No DOM: the suite is
+   The walk is a source scan. The pages are server components that
+   read the archive, and the fact worth guarding is which files exist
+   and what they import, which is reachable from the filesystem. The
+   one render here is the rail-order cell at the foot, which draws
+   `/spec/card` through `renderToStaticMarkup` because one of its
+   rail ids is declared in a component the page imports rather than
+   in the page file. No DOM either way: the suite is
    `environment: "node"` by design.
    ============================================================ */
 

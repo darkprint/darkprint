@@ -1,5 +1,5 @@
 /* ============================================================
-   What the validator checks, one table per layer.
+   What the validator checks, one reference per layer.
 
    The topology rows render on `/spec/topology` in the `CheckTable`
    shape and the card rows on `/spec/card` as a stacked field
@@ -146,7 +146,7 @@ export const CARD_ROWS: readonly CardRow[] = [
   {
     name: "type",
     values: "node-type",
-    what: "One node-type term, and the only field that says what kind of actor the node is. The autonomy reading asks two things of it: whether the type is a kind of `human-in-the-loop`, and whether it decides which other nodes run. The exporter draws the node's shape from it. A `shell-tool` must also carry its command in `params.tool_command`. Three of the curated values are categories: `human-in-the-loop`, `evaluative` and `orchestration`. The validator accepts a category, and the exporter has no shape for one and falls back to `box`, so write the concrete subtype.",
+    what: "One node-type term, and the only field that says what kind of actor the node is. The autonomy reading asks two things of it: whether the type is a kind of `human-in-the-loop`, and whether it decides which other nodes run. The exporter draws the node's shape from it. A `shell-tool` with no command in `params.tool_command` is reported as `card/missing-field`, and the bundle still loads. Three of the curated values are categories: `human-in-the-loop`, `evaluative` and `orchestration`. The validator accepts a category, and the exporter has no shape for one and falls back to `box`, so write the concrete subtype.",
     check: {
       codes: ["card/unknown-term", "card/wrong-term-kind"],
       level: "error",
@@ -163,7 +163,7 @@ export const CARD_ROWS: readonly CardRow[] = [
   },
   {
     name: "spec",
-    what: "The instruction handed to the agent when the graph runs. Only its length is checked: under forty characters, it counts as a placeholder.",
+    what: "The instruction handed to the agent when the graph runs.",
     check: { codes: ["card/spec-too-thin"], level: "warning" },
   },
   {
@@ -185,7 +185,7 @@ export const CARD_ROWS: readonly CardRow[] = [
   },
   {
     name: "mcp",
-    what: "The MCP servers the node needs, under the names the machine running the graph registers them with. The vocabulary has no term for a server and is not going to grow one, so every entry is free text.",
+    what: "The MCP servers the node needs. The vocabulary has no term for a server and is not going to grow one, so every entry is free text.",
   },
   {
     name: "skill",
@@ -194,7 +194,7 @@ export const CARD_ROWS: readonly CardRow[] = [
   {
     name: "inputs · outputs",
     values: "data-type",
-    what: "The ports, each with a `name`, a `type`, a `description` and, on an input, `required`. The type is one data-type term, and it is the only part of a port the resolver pairs on. This is what makes an edge checkable at all: an edge holds when the source's output type is the target's input type or a narrower kind of it. The name is the end of an edge rather than a label. A DOT edge writes `[out=\"build\", in=\"brief\"]` to say which pair of ports it joins, so a name is unique within a side. The description is free text for whoever wires the graph, where a port says the part its type cannot. `required` is true unless the card says otherwise. On an output it describes nothing, and the validator reports it against the exact path rather than dropping the key in silence.",
+    what: "The ports, each with a `name`, a `type`, a `description` and, on an input, `required`. The type is one data-type term, and it is the only part of a port the resolver pairs on. This is what makes an edge checkable at all: an edge holds when the source's output type is the target's input type or a narrower kind of it. The name is the end of an edge rather than a label. A DOT edge writes `[out=\"build\", in=\"brief\"]` to say which pair of ports it joins, so a name is unique within a side. The description is free text for whoever wires the graph, where a port says the part its type cannot. `required` is true unless the card says otherwise. On an output it describes nothing, and the validator reports it as `card/bad-type` against the exact path rather than dropping the key in silence. The bundle still loads.",
     check: {
       codes: ["card/unknown-term", "card/wrong-term-kind", "card/duplicate-port"],
       level: "error",
@@ -210,9 +210,9 @@ export const CARD_ROWS: readonly CardRow[] = [
   },
   {
     name: "cannot",
-    what: "Data types the node must never receive: the same data-type terms a port takes, and nothing else. Each entry is a prohibition the resolver enforces. An incoming edge able to carry that type, or a narrower kind of it, fails the whole blueprint, whichever node draws the edge. A sentence written here does not resolve, because the validator has no way to hold a graph to a sentence and this is the field it holds graphs to.",
+    what: "Data types the node must never receive: the same data-type terms a port takes, and nothing else. Each entry is a prohibition the resolver enforces, held to the same rule that pairs an edge's ports. An incoming edge able to carry that type fails the whole blueprint. A sentence written here does not resolve, because the validator has no way to hold a graph to a sentence and this is the field it holds graphs to.",
     check: {
-      codes: ["card/unknown-term", "bundle/prohibition-violated"],
+      codes: ["card/unknown-term", "card/wrong-term-kind", "bundle/prohibition-violated"],
       level: "error",
     },
   },
