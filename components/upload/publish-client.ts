@@ -1,7 +1,7 @@
 "use client";
 
 /* ============================================================
-   `POST /api/bundles`, from the tab.
+   `POST /api/bundles` and `POST /api/cards`, from the tab.
 
    ── The seam is HTTP and NOT the barrel (D-263-08) ──
    T263's Published-signatures line says this task consumes
@@ -25,7 +25,16 @@
    are two different sentences, one of which must never mention an
    error count, and the status code cannot tell them apart — both
    are 422.
+
+   ── the card half, at the bottom of the file ──
+   `publishCard` speaks to `POST /api/cards` the same way: the
+   refusal `kind` is recovered from the `type` suffix
+   `card-publish-<kind>`, and a `card-invalid` refusal carries the
+   validator's diagnostics as an extension member, which is the
+   whole of what an author can act on.
    ============================================================ */
+
+import type { Diagnostic } from "@/lib/core";
 
 /** The five refusals `publish` owns. Transcribed from `PublishRefusedKind`. */
 export type PublishRefusedKind =
@@ -170,6 +179,140 @@ export async function publishBundle(
     state: "rejected",
     status: response.status,
     title: stringOr(problem.title, "The registry declined this bundle"),
+    detail:
+      response.status === 401
+        ? "Your session has expired. Sign in again and publish; nothing was stored."
+        : detail,
+  };
+}
+
+/* --------------------- one card on its own --------------------- */
+
+/**
+ * The refusals `publishCard` owns, transcribed from `CardPublishRefusedKind`, plus the
+ * store's own `card-refused`, which the route answers for a bump smaller than the change
+ * requires. `not-signed-in` is left out: the guard answers 401 before it can be raised.
+ */
+export type CardPublishRefusedKind =
+  | "no-handle"
+  | "card-invalid"
+  | "card-unrewritable"
+  | "card-id-invalid"
+  | "card-id-taken"
+  | "card-version-exists"
+  | "card-refused";
+
+/** What the wizard sends: the document, and the one choice the document cannot make. */
+export interface CardSubmission {
+  source: string;
+  visibility: "public" | "private";
+}
+
+/** The record as it arrives, reduced to the four things the screen names, plus its page. */
+export interface PublishedCard {
+  cardId: string;
+  version: string;
+  visibility: "public" | "private";
+  path: string;
+}
+
+export type CardPublishOutcome =
+  | { state: "published"; card: PublishedCard }
+  | { state: "refused"; kind: CardPublishRefusedKind; detail: string; diagnostics: Diagnostic[] }
+  | { state: "rejected"; title: string; detail: string; status: number }
+  | { state: "unreachable"; detail: string };
+
+const CARD_REFUSAL_PREFIX = "https://darkprint.io/problems/card-publish-";
+const CARD_STORE_REFUSAL = "https://darkprint.io/problems/card-refused";
+
+const CARD_REFUSAL_KINDS: readonly CardPublishRefusedKind[] = [
+  "no-handle",
+  "card-invalid",
+  "card-unrewritable",
+  "card-id-invalid",
+  "card-id-taken",
+  "card-version-exists",
+];
+
+function cardRefusalKind(type: unknown): CardPublishRefusedKind | undefined {
+  if (typeof type !== "string") return undefined;
+  if (type === CARD_STORE_REFUSAL) return "card-refused";
+  if (!type.startsWith(CARD_REFUSAL_PREFIX)) return undefined;
+  const suffix = type.slice(CARD_REFUSAL_PREFIX.length);
+  return CARD_REFUSAL_KINDS.find((kind) => kind === suffix);
+}
+
+function isVisibility(value: unknown): value is "public" | "private" {
+  return value === "public" || value === "private";
+}
+
+function publishedCardOf(value: unknown): PublishedCard | undefined {
+  if (!isRecord(value) || !isRecord(value.card) || typeof value.path !== "string") return undefined;
+  const { cardId, version, visibility } = value.card;
+  if (typeof cardId !== "string" || typeof version !== "string" || !isVisibility(visibility)) return undefined;
+  return { cardId, version, visibility, path: value.path };
+}
+
+/** The diagnostics a refusal carries, or none: a member that is not a list is not one. */
+function diagnosticsOf(value: unknown): Diagnostic[] {
+  return Array.isArray(value) ? (value as Diagnostic[]) : [];
+}
+
+/**
+ * Publish one card, and turn every answer into something the screen can render.
+ *
+ * Does not throw, for `publishBundle`'s reason: an exception escaping into the button's
+ * handler leaves the wizard on the form with no sentence at all.
+ */
+export async function publishCard(
+  submission: CardSubmission,
+  signal?: AbortSignal,
+): Promise<CardPublishOutcome> {
+  let response: Response;
+  try {
+    response = await fetch("/api/cards", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify(submission),
+      ...(signal === undefined ? {} : { signal }),
+    });
+  } catch {
+    return {
+      state: "unreachable",
+      detail: "The registry could not be reached. Nothing was published; your card is still here.",
+    };
+  }
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    body = undefined;
+  }
+
+  if (response.ok) {
+    const card = publishedCardOf(body);
+    if (card === undefined) {
+      return {
+        state: "unreachable",
+        detail: "The registry answered something this page cannot read. Check the card before publishing again.",
+      };
+    }
+    return { state: "published", card };
+  }
+
+  const problem = isRecord(body) ? body : {};
+  const kind = cardRefusalKind(problem.type);
+  const detail = stringOr(problem.detail, "The registry declined this card and said nothing more.");
+  if (kind !== undefined) {
+    return { state: "refused", kind, detail, diagnostics: diagnosticsOf(problem.diagnostics) };
+  }
+
+  return {
+    state: "rejected",
+    status: response.status,
+    title: stringOr(problem.title, "The registry declined this card"),
     detail:
       response.status === 401
         ? "Your session has expired. Sign in again and publish; nothing was stored."

@@ -103,7 +103,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 | `/u/[username]` | dynamic | a profile |
 | `/u/[username]/[slug]` | dynamic | a permanent redirect to `/blueprints/[username]/[slug]` |
 | `/u/[username]/blueprints`, `/u/[username]/cards`, `/u/[username]/saved` | dynamic | the three shelves |
-| `/upload` | dynamic | the wizard: drop a folder, validate it in the browser, publish |
+| `/upload` | dynamic | the wizard: drop a folder or a single card, validate it in the browser, publish |
 | `/welcome` | dynamic | sign in and choose a handle |
 | `/what-a-blueprint-is` | static | the entry page of the Learn section |
 
@@ -156,7 +156,8 @@ public view; `cookie, refuses anonymous` lets the module answer 401; `anonymous`
 | `/api/bundles/[owner]/[slug]` | DELETE | session |
 | `/api/bundles/[owner]/[slug]/visibility` | PATCH | session |
 | `/api/bundles/[owner]/[slug]/drift`, `/api/bundles/[owner]/[slug]/forks` | GET | cookie optional |
-| `/api/cards`, `/api/cards/duplicates`, `/api/cards/[id]/users`, `/api/cards/[id]/versions` | GET | cookie optional |
+| `/api/cards` | GET, POST | GET cookie optional; POST session or write key, publishes one card under the caller's handle |
+| `/api/cards/duplicates`, `/api/cards/[id]/users`, `/api/cards/[id]/versions` | GET | cookie optional |
 | `/api/cards/[...ref]` | GET, POST | GET cookie optional (`<id>`, `<id>/versions`, `<id>/users`); POST `<id>/fork` session |
 | `/api/files/blueprints/[owner]/[slug]/d/[digest]/[...path]`, `/api/files/blueprints/[owner]/[slug]/v/[version]/[...path]`, `/api/files/cards/[...ref]` | GET | cookie optional; each counts a download |
 | `/api/health` | GET | anonymous |
@@ -281,6 +282,18 @@ re-publish stores nothing; different bytes at an existing version are a conflict
 repin notifications, adds the release with its digest and its three analysis blobs, exports the
 release to files and freezes them in object storage under the digest, and embeds the release
 and its cards. A refusal anywhere rolls all of it back. No rate limit is wired on this path.
+
+A single card publishes through `POST /api/cards` with `{ source, name?, visibility? }`, the
+same callers as `POST /api/bundles` and the `upload` rate bucket. `publishCard()`
+(`lib/server/cards`) reads the handle off the account row, validates the document the way
+`POST /api/validate/card` does, stores it as `<handle>/<name>` at the version it declares
+(`name` defaults to the card's own, and the document's `id` is rewritten to match), and
+answers `201 { card, path }`. Refusals: 400 malformed body or an illegal name, 401 no session
+and no write key, 403 an account with no handle, 409 an id another account holds or a version
+already stored, 422 a card that does not validate (with its diagnostics) or a bump the store
+prices as too small. The `/upload` wizard's Card kind ends on this door. A card published this
+way is not embedded for search until something pins it in a release; the search index's card
+writer runs at release time only.
 
 Downloads: `/api/files/blueprints/<owner>/<slug>/d/<digest>/<path>` serves the frozen bytes,
 `/v/<version>/<path>` the version's files, `/api/files/cards/<id>@<version>.yaml` one card;

@@ -50,20 +50,24 @@
 import { isMap, parseDocument as parseYamlDocument } from "yaml";
 import { canonicalJson, parseDocument } from "@/lib/core";
 
-/** The three keys a fork owns. Every other key in the document belongs to whoever wrote it. */
+/**
+ * The keys a rewrite may own. A fork stamps all three; a card published on its own stamps
+ * `id` alone, because the namespace is the publisher's handle and the author's other two
+ * keys are theirs to keep. Every other key in the document belongs to whoever wrote it.
+ */
 export interface CardSourceStamp {
   id: string;
-  author: string;
-  provenance: string;
+  author?: string;
+  provenance?: string;
 }
 
 /**
- * `source` with `id`, `author` and `provenance` set to `stamp`, or `undefined` when the
+ * `source` with the keys present in `stamp` set to its values, or `undefined` when the
  * document cannot take the edit.
  *
  * `undefined` for a source that does not parse, that is not a mapping at the top level, and
- * for a rewrite whose re-parse disagrees with the original anywhere but the three stamped
- * keys. The caller decides what an unrewritable document means for its own surface —
+ * for a rewrite whose re-parse disagrees with the original anywhere but the stamped keys.
+ * The caller decides what an unrewritable document means for its own surface —
  * `storedCard`'s rule, for the same reason: a row this old is not an exception to raise in
  * whatever function happens to be running.
  *
@@ -76,20 +80,28 @@ export function restampCardSource(source: string, stamp: CardSourceStamp): strin
   if (doc.errors.length > 0) return undefined;
   if (!isMap(doc.contents)) return undefined;
 
-  doc.set("id", stamp.id);
-  doc.set("author", stamp.author);
-  doc.set("provenance", stamp.provenance);
+  const stamped = stampedKeys(stamp);
+  for (const key of stamped) doc.set(key, stamp[key]);
   const rewritten = doc.toString();
 
-  return unchangedApartFromStamp(source, rewritten, stamp) ? rewritten : undefined;
+  return unchangedApartFromStamp(source, rewritten, stamp, stamped) ? rewritten : undefined;
 }
 
-/** The three stamped keys, held aside on both sides so the rest can be compared as one value. */
-const STAMPED: readonly (keyof CardSourceStamp)[] = ["id", "author", "provenance"];
+/**
+ * The keys this stamp actually carries, in a fixed order. Only these are held aside in the
+ * comparison below: a key the caller did not stamp is compared like any other, so an
+ * unstamped `provenance` that moved is still a rewrite this function refuses.
+ */
+function stampedKeys(stamp: CardSourceStamp): readonly (keyof CardSourceStamp)[] {
+  const keys: (keyof CardSourceStamp)[] = ["id"];
+  if (stamp.author !== undefined) keys.push("author");
+  if (stamp.provenance !== undefined) keys.push("provenance");
+  return keys;
+}
 
-function withoutStamp(value: Record<string, unknown>): string {
+function withoutStamp(value: Record<string, unknown>, stamped: readonly (keyof CardSourceStamp)[]): string {
   const rest: Record<string, unknown> = { ...value };
-  for (const key of STAMPED) delete rest[key];
+  for (const key of stamped) delete rest[key];
   return canonicalJson(rest);
 }
 
@@ -99,15 +111,20 @@ function withoutStamp(value: Record<string, unknown>): string {
  * `parseDocument` is `lib/core`'s, so this reads the text the way every other reader of a
  * card document in this repository reads it, rather than the way the writer just wrote it.
  */
-function unchangedApartFromStamp(source: string, rewritten: string, stamp: CardSourceStamp): boolean {
+function unchangedApartFromStamp(
+  source: string,
+  rewritten: string,
+  stamp: CardSourceStamp,
+  stamped: readonly (keyof CardSourceStamp)[],
+): boolean {
   const before = parseDocument(source, "yaml").value;
   const after = parseDocument(rewritten, "yaml").value;
   if (!isPlainObject(before) || !isPlainObject(after)) return false;
-  for (const key of STAMPED) {
+  for (const key of stamped) {
     if (after[key] !== stamp[key]) return false;
   }
   try {
-    return withoutStamp(before) === withoutStamp(after);
+    return withoutStamp(before, stamped) === withoutStamp(after, stamped);
   } catch {
     /* `canonicalJson` throws on a value with no JSON form — a non-finite number in `params`,
        which `validateCard` refuses but a stored row can still hold. Unrewritable rather than
