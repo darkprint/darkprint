@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { AUTONOMY_LABELS, autonomyStatement } from "@/lib/format";
-import { AUTHOR_LIST } from "@/lib/data/users";
 import { communityFor } from "@/lib/data/community";
 import { parseCardRef } from "@/lib/core";
 import type { MetricKey } from "@/lib/types";
@@ -157,9 +156,11 @@ describe("allBlueprints", () => {
     }
   });
 
-  it("attributes every blueprint to a real author", () => {
-    const known = new Set(AUTHOR_LIST.map((a) => a.username));
-    for (const bp of blueprints) expect(known).toContain(bp.author.username);
+  // The archive's blueprints are generated examples, credited to the registry account that
+  // owns them. The assertion is about the credit: a handle outside `lib/data`'s fixture list
+  // still renders, under its own name.
+  it("attributes every blueprint to the registry handle", () => {
+    for (const bp of blueprints) expect([bp.slug, bp.author.username]).toEqual([bp.slug, "autogen"]);
   });
 });
 

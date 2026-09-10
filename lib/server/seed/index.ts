@@ -7,15 +7,18 @@
    inventory of what the module promises.
 
    **This module publishes NO error class, and that is measured
-   rather than an omission.** It authors no refusal: every rejection
-   an import can produce belongs to a merged module and leaves with
-   that module's own message unaltered (D-50-08) — `publish`'s
-   `PublishRefusedError`, T030's `UnknownOntologyVersionError` and
+   rather than an omission.** Every rejection a publish can produce
+   belongs to a merged module and leaves with that module's own
+   message unaltered (D-50-08) — `publish`'s `PublishRefusedError`,
+   T030's `UnknownOntologyVersionError` and
    `DuplicateOntologyVersionError`, T020's `CardStoreError`, T010's
-   `MalformedVocabularyError`, T070's `HandleTakenError`. There is
-   no decision here for a wrapper to pass through, so a class of
-   this module's own would be a second author on somebody else's
-   sentence.
+   `MalformedVocabularyError`, T070's `HandleTakenError`. The one
+   refusal this module authors is its own precondition, thrown as a
+   plain `Error` before any publish: the sentinel account already
+   holds a different handle, which no merged module can see, and
+   renaming it would silently move somebody's account. A class of
+   this module's own for the rest would be a second author on
+   somebody else's sentence.
 
    `tests/error-hygiene.test.ts` builds its domain by construction
    over every `lib/server/<module>/index.ts` and throws for a module

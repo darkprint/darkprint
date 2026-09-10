@@ -22,11 +22,11 @@ import { openText, plainText } from "@/components/ui/visible-text";
 import { CodeMenu } from "./CodeMenu";
 
 /** The CLI's own grammar: `<owner>/<slug>`, the two-part key `packages/cli/src/clone.ts` parses. */
-const CLONE = "npx -y darkprint clone darkprint/starter-software-factory";
+const CLONE = "npx -y darkprint clone autogen/starter-software-factory";
 
 /** The archive route pinned to the release's digest, and the name the browser saves it as. */
 const DOWNLOAD = {
-  href: "/api/bundles/darkprint/starter-software-factory/archive?digest=sha256%3Aabc",
+  href: "/api/bundles/autogen/starter-software-factory/archive?digest=sha256%3Aabc",
   name: "starter-software-factory-1.2.0.tgz",
 } as const;
 

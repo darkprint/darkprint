@@ -9,9 +9,9 @@
 
      OWNER   re-attribution moved ownership to a registry account
              that EXISTS -> `/u/{owner}` resolves -> the link STAYS
-     AUTHOR  `release.manifest.author` keeps the original handle,
-             one of the six that hold NO account (D-250-11)
-             -> every `/u/{handle}` is a 404 -> TEXT, no link
+     AUTHOR  `release.manifest.author` is whatever handle the
+             document credits; one that holds NO account
+             -> `/u/{handle}` is a 404 -> TEXT, no link
 
    ── why these assert on RENDERED OUTPUT and not on source ──
    Because the source has two spellings for one link and a grep
@@ -48,29 +48,25 @@ import { History } from "@/components/bundle/History";
 import { BundleHeader } from "@/components/bundle/BundleHeader";
 
 /**
- * One of D-250-11's six, verbatim.
+ * A handle no account holds.
  *
- * Named rather than invented: the ruling is about these six handles specifically, and a
- * fixture handle like `test-author` would be a claim about a handle the archive does not
- * contain and the registry has no opinion about.
+ * The rule is about any such handle: the archive itself now credits the registry account
+ * everywhere, so the fixture names a handle of its own rather than one out of the archive.
  */
-const ACCOUNTLESS = "lupo";
-
-/** The six, so a later reader can see the population the rule is about. */
-const THE_SIX = ["hachi", "k0bra", "lupo", "mara-veil", "orin", "sol-antczak"] as const;
+const ACCOUNTLESS = "nobody-here";
 
 const author: Author = {
   username: ACCOUNTLESS,
-  displayName: "Lupo",
+  displayName: "Nobody Here",
   avatarHue: 210,
   validator: false,
 };
 
-/** The re-attributed owner: D-250-04's own handle, which DOES hold an account. */
-const OWNER_HANDLE = "darkprint";
+/** The registry account, which DOES hold an account. */
+const OWNER_HANDLE = "autogen";
 const owner: Author = {
   username: OWNER_HANDLE,
-  displayName: "DarkPrint",
+  displayName: "autogen",
   avatarHue: 190,
   validator: true,
 };
@@ -149,9 +145,8 @@ describe("D-261-06: the instrument", () => {
     ).toBeGreaterThan(0);
   });
 
-  it("names the six D-250-11 handles the rule is about", () => {
-    expect(THE_SIX).toHaveLength(6);
-    expect(THE_SIX).toContain(ACCOUNTLESS);
+  it("keeps the fixture's accountless handle apart from the owner's", () => {
+    expect(ACCOUNTLESS).not.toBe(OWNER_HANDLE);
   });
 });
 
@@ -168,7 +163,7 @@ describe("D-261-06: an accountless AUTHOR is text", () => {
 
     expect(
       profileLinks(html, ACCOUNTLESS),
-      `FileTree still links \`/u/${ACCOUNTLESS}\`, which holds no account (D-250-11) and ` +
+      `FileTree still links \`/u/${ACCOUNTLESS}\`, which holds no account and ` +
         `404s.\n\n` +
         `NOTE THE TWO SURFACES: \`FileTree.tsx:80\` mounts \`<Avatar … link />\`, which builds ` +
         `its own \`/u/\` link inside \`components/ui/Avatar.tsx:66-69\`, and \`:81\` writes a ` +
@@ -186,9 +181,8 @@ describe("D-261-06: an accountless AUTHOR is text", () => {
     expect(
       profileLinks(html, ACCOUNTLESS),
       `History still links \`/u/${ACCOUNTLESS}\` (History.tsx:83-88). A published snapshot ` +
-        `records who authored it; under D-250-18 that handle stays the original one, and ` +
-        `under D-250-11 it holds no account. A rendered link behind it is the defect ` +
-        `D-260-25 named and D-261-06 assigns here.`,
+        `records who authored it, and that handle may hold no account. A rendered link ` +
+        `behind it is the defect D-260-25 named and D-261-06 assigns here.`,
     ).toEqual([]);
   });
 });
@@ -208,8 +202,8 @@ describe("D-261-06: the OWNER's link stays, and both of its surfaces do", () => 
 
     expect(
       links.length,
-      `the owner's profile link is gone from BundleHeader. Re-attribution moved OWNERSHIP to ` +
-        `a registry account that EXISTS (D-250-18), so \`/u/${OWNER_HANDLE}\` resolves and ` +
+      `the owner's profile link is gone from BundleHeader. The owner is a registry account ` +
+        `that EXISTS, so \`/u/${OWNER_HANDLE}\` resolves and ` +
         `D-261-06 rules this link STAYS. The author cells above must not be satisfied by ` +
         `removing every profile link on the page.`,
     ).toBeGreaterThanOrEqual(2);

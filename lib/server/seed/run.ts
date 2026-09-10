@@ -26,6 +26,7 @@
 import { contentVocabulary, readContent } from "@/lib/content/read";
 import type { Db, ObjectStorage } from "@/lib/db";
 import { changeHandle, upsertFromGitHub } from "@/lib/server/accounts";
+import { getBundle, getRelease } from "@/lib/server/archive";
 import type { Actor } from "@/lib/server/policy";
 import { PublishRefusedError, publish } from "@/lib/server/publish";
 import { REGISTRY_HANDLE, SEED_RELEASE_VERSION, type ImportPlan } from "./plan";
@@ -133,14 +134,10 @@ export async function runImport(
           ownerHandle: plan.registryHandle,
           slug: loaded.slug,
           version: SEED_RELEASE_VERSION,
-          /* Passed through as the loader read it, `author` included. Re-attribution moves
-             OWNERSHIP and invents nobody (AC4, D-250-11); it does not rewrite the archive's
-             prose. The six names in these manifests name no account afterwards, which is
-             the same end state D-250-06 rules for `lupo/pii-handling` — a handle naming no
-             account is honest rather than a gap to be filled. Rewriting the bytes would
-             also be the harm D-90-03 exists to prevent one field over: `addCard` stores
-             `source` verbatim and the export rebuilds the folder from it, so an edited
-             `author:` line would ship a document no author wrote. */
+          /* Passed through as the loader read it, `author` included: the archive credits
+             every document to the registry handle, so the owner and the author line already
+             agree, and `addCard` stores card `source` verbatim for the export to rebuild the
+             folder from. */
           manifest: loaded.bundle.manifest,
           dot: loaded.bundle.dot,
           cardFiles: { ...loaded.bundle.cardFiles },
@@ -159,7 +156,11 @@ export async function runImport(
          message: a conflict is what "this exact release is already here" refuses with, and
          the four other kinds mean the import did not do what it was asked. Narrowing on the
          class alone would count an unowned slug or a bundle in error as work skipped. */
-      if (err instanceof PublishRefusedError && err.kind === "conflict") {
+      if (
+        err instanceof PublishRefusedError &&
+        err.kind === "conflict" &&
+        (await holdsRelease(db, registry.accountId, loaded.slug, loaded.blueprint.digest))
+      ) {
         skipped += 1;
         continue;
       }
@@ -168,6 +169,21 @@ export async function runImport(
   }
 
   return { ...plan, created, skipped };
+}
+
+/**
+ * Whether the registry's own bundle already carries a release at this digest.
+ *
+ * `publish` refuses with the same `conflict` kind when a pinned card version is already
+ * stored under different bytes, which happens when an earlier import's card rows survive
+ * under another account. Counting that as skipped would report a whole archive as already
+ * present while nothing was written, so the skip is confirmed against the stored release
+ * and every other conflict leaves with `publish`'s own message.
+ */
+async function holdsRelease(db: Db, ownerId: string, slug: string, digest: string): Promise<boolean> {
+  const bundle = await getBundle(db, ownerId, slug);
+  if (bundle === undefined) return false;
+  return (await getRelease(db, bundle.id, digest)) !== undefined;
 }
 
 /**
@@ -184,15 +200,25 @@ export async function runImport(
  * what sets `account.handle`; `allocateHandle` writes only `handle_reservation`, and
  * `resolveOwner` — which `publish` calls — reads the account column.
  */
-async function registryActor(db: Db, handle: string): Promise<Actor> {
+async function registryActor(db: Db, handle: string): Promise<Extract<Actor, { kind: "account" }>> {
   const account = await upsertFromGitHub(db, { githubId: REGISTRY_GITHUB_ID, githubLogin: REGISTRY_HANDLE });
 
   if (account.handle === handle) return { kind: "account", accountId: account.accountId, handle };
 
+  /* The sentinel row may already hold a different handle, when an earlier registry account
+     was never retired. Renaming it here would move that account's bundles under the new
+     handle in silence and leave the old handle for a later `account:retire` to miss, so the
+     import stops and names both. */
+  if (account.handle !== null) {
+    throw new Error(
+      `runImport: the registry account already holds the handle \`${account.handle}\`, and this import publishes under \`${handle}\`. Retire that account first (npm run account:retire -- --handle ${account.handle}), then import again.`,
+    );
+  }
+
   /* `requireAccountOwner` compares the actor's `accountId` to the one being written, so the
-     account claims its own first handle. `handle` may legitimately be `null` here — AC1 of
-     T050 rules a session with no handle signed in and incomplete — and `changeHandle` does
-     not call `requireHandle`, which is what lets a first claim through. */
+     account claims its own first handle. `handle` is `null` here, which T050's AC1 rules a
+     signed-in and incomplete account, and `changeHandle` does not call `requireHandle`, which
+     is what lets a first claim through. */
   const claimant: Actor = { kind: "account", accountId: account.accountId, handle: account.handle };
   /* The result is discarded and the actor carries the handle just claimed. `AccountRecord`
      spells it `author.handle: string | null`, so reading it back would need a non-null

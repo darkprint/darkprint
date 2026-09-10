@@ -6,12 +6,15 @@ import { blueprintRecordHref } from "@/lib/href";
 
 import { ownedRowsFor } from "./owned-rows";
 
-/* The archive credits each blueprint to the person who wrote it while the registry owner of
-   all of them is one handle. The shelf has to pair by slug, or the owner's profile draws no
-   graph at all. */
+/* A shelf owner and the author an archive entry credits are two different facts: a fork or a
+   bundle published through the site sits on a shelf whose owner wrote none of it. The shelf
+   has to pair by slug, or such a profile draws no graph at all. The real archive credits its
+   owner everywhere now, so the fixture below credits somebody else on purpose, to keep the two
+   facts apart where the pairing rule is measured. */
 
-const ARCHIVE = allBlueprints();
-const OWNER = "darkprint";
+const OWNER = "autogen";
+const CREDITED = "someone-else";
+const ARCHIVE = allBlueprints().map((b) => ({ ...b, author: { ...b.author, username: CREDITED } }));
 
 function live(slug: string): OwnedBundleSummary {
   return {
@@ -23,10 +26,11 @@ function live(slug: string): OwnedBundleSummary {
 }
 
 describe("ownedRowsFor", () => {
-  it("premise: the archive credits authors other than the registry owner", () => {
+  it("premise: the fixture credits an author other than the shelf owner", () => {
     const authors = new Set(ARCHIVE.map((b) => b.author.username));
-    expect(authors.size, "the fixture no longer discriminates author from owner").toBeGreaterThan(1);
-    expect([...authors].some((a) => a !== OWNER)).toBe(true);
+    expect([...authors]).toEqual([CREDITED]);
+    expect(CREDITED).not.toBe(OWNER);
+    expect(ARCHIVE.length).toBeGreaterThan(0);
   });
 
   it("pairs every live row whose slug the archive carries, whoever wrote it", () => {

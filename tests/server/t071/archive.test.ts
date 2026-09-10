@@ -6,16 +6,15 @@
 
    ── "measured rather than asserted" is the whole instruction ──
    So no list of names appears in this file. A cell holding
-   `["hachi", "k0bra", …]` is green the day somebody adds a
+   `["one-handle", "another", …]` is green the day somebody adds a
    seventh author with a name this bound refuses, and it is green
    forever after, because the list it checks is its own.
 
    What IS recorded, because it is a premise and not an assertion:
-   walked on `66f502a`, `content/` carried 66 `author:` lines over 6
-   distinct values, the longest of them 11 characters — which is the
-   figure the contract states, arrived at independently. The floors
-   below are set from that measurement so a walk that lost the
-   archive reds rather than passing over an empty set.
+   `content/` carries one `author:` line per card and per manifest,
+   all naming the registry handle. The floors below sit under that
+   so a walk that lost the archive reds rather than passing over an
+   empty set.
 
    ── the carrier is `author`, and that was checked ──
    `lib/core/card/schema.ts:154` and `lib/core/bundle/types.ts:26`
@@ -50,11 +49,12 @@ import { MAX_HANDLE_LENGTH, clean, closeDatabase, db, openDatabase } from "./fix
 
 const CONTENT = fileURLToPath(new URL("../../../content/", import.meta.url));
 
-/* Measured at `66f502a`: 66 lines, 6 distinct, longest 11. The floors sit under those so a walk
-   that lost the archive — a moved directory, a renamed extension — reds instead of quantifying
-   over nothing. They are lower bounds and the archive is expected to grow past them. */
+/* The archive credits every card and manifest to the one registry handle, so the walk finds one
+   distinct value over seventy-odd lines. The floors sit under those so a walk that lost the
+   archive — a moved directory, a renamed extension — reds instead of quantifying over nothing.
+   They are lower bounds and the archive is expected to grow past them. */
 const AUTHOR_LINE_FLOOR = 40;
-const DISTINCT_HANDLE_FLOOR = 6;
+const DISTINCT_HANDLE_FLOOR = 1;
 
 function yamlFiles(dir: string): string[] {
   const out: string[] = [];
@@ -111,7 +111,7 @@ describe("premise: the archive walk can see the archive", () => {
     expect(
       walked.lines,
       `the walk found ${walked.lines} \`author:\` lines across ${walked.files} YAML files under ` +
-        `\`content/\`. Measured at \`66f502a\`: 66 lines over 6 distinct values. AC5 quantifies ` +
+        `\`content/\`. The archive carries one \`author:\` line per card and per manifest. AC5 quantifies ` +
         `over this set, and a criterion quantified over nothing passes without measuring ` +
         `anything — which is the exact thing "measured over \`content/\` rather than asserted" ` +
         `is guarding against.`,
@@ -137,7 +137,7 @@ describe("premise: the archive walk can see the archive", () => {
     expect(
       [...distinct].sort().length,
       `the archive carries ${distinct.size} distinct author handles: ` +
-        `${[...distinct].sort().join(", ")}. Six were measured at \`66f502a\`.`,
+        `${[...distinct].sort().join(", ")}. The archive credits one registry handle.`,
     ).toBeGreaterThanOrEqual(DISTINCT_HANDLE_FLOOR);
   });
 });

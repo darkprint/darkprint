@@ -12,17 +12,15 @@
 
    Both were charged as unruled before these cells were written and
    both were ruled at D-220-05, so both are now pinned exactly:
-   `publishedBy` is the OWNER's handle — `darkprint` for every seeded
-   blueprint after T250 — and NOT `manifest.author`, which names one
-   of six handles holding no account and which T250 deliberately left
-   in place (D-250-18: re-attribution moved OWNERSHIP, not
-   AUTHORSHIP, and both facts are true). `forkedFrom` resolves
-   `lineage.ownerId` — a UUID in the store — to a handle.
+   `publishedBy` is the OWNER's handle and NOT `manifest.author`.
+   `forkedFrom` resolves `lineage.ownerId` — a UUID in the store — to
+   a handle.
 
-   The seeded blueprints make the two readings DISAGREE rather than
-   coincide, which is what lets these cells discriminate: every one
-   of the nine is owned by `darkprint` and carries a manifest author
-   that is not.
+   The seeded blueprints credit the registry handle that owns them,
+   so on those the two readings coincide. The fork the fixture
+   publishes is where they DISAGREE: `t220forker` owns it and its
+   manifest, copied from the archive, still credits the registry
+   handle. That is the subject the `publishedBy` cell reads.
    ============================================================ */
 
 import { afterAll, describe, expect, it } from "vitest";
@@ -84,7 +82,7 @@ describe("T220 — inspect provenance", () => {
 
     expect(got.forkedFrom, "this bundle was published with a lineage").toBeDefined();
     expect(got.forkedFrom?.slug).toBe(w.twice);
-    expect(got.forkedFrom?.version).toBe("1.0.0");
+    expect(got.forkedFrom?.version).toBe("1.1.0");
     /* D-220-05 settled charge 2: `forkedFrom` resolves `lineage.ownerId` — a UUID in the
        store — to a HANDLE. Pinned exactly now, and the uuid is excluded by name rather than
        merely admitting the handle: `toBeTruthy()` would pass on the uuid, which is the
@@ -113,27 +111,34 @@ describe("T220 — inspect provenance", () => {
     ).toBeUndefined();
   });
 
-  it("says who published it", async () => {
+  it("says who published it, which is the owner and never the manifest's author", async () => {
     const w = await world();
     const provenance = await verb("mcpProvenance");
-    const got = (await provenance(
+    const seeded = (await provenance(
       w.scratch.db,
       anonymous,
       w.registry.handle,
       w.twice,
     )) as Provenance;
+    expect(seeded.publishedBy).toBe(w.registry.handle);
 
-    /* D-220-05 settled charge 1: `publishedBy` is the OWNER's handle. Pinned exactly, and
-       the six manifest handles are excluded by name — those are the stale claims T250
-       deliberately left in place (D-250-18), and an agent cannot act on a handle that holds
-       no account. This blueprint's manifest carries one of them, so the two readings really
-       do disagree here rather than coinciding. */
-    expect(got.publishedBy).toBe(w.registry.handle);
+    /* D-220-05 settled charge 1: `publishedBy` is the OWNER's handle. On a seeded blueprint the
+       owner and the manifest's author are the same handle, so the fork is where the field is
+       held to its meaning: `t220forker` published it, and its manifest, copied from the
+       archive, still credits the registry handle. Both halves are asserted, because "a
+       non-empty string" would admit either reading. */
+    const forked = (await provenance(
+      w.scratch.db,
+      anonymous,
+      w.fork.ownerHandle,
+      w.fork.slug,
+    )) as Provenance;
+    expect(w.fork.ownerHandle).not.toBe(w.registry.handle);
+    expect(forked.publishedBy).toBe(w.fork.ownerHandle);
     expect(
-      ["hachi", "k0bra", "lupo", "mara-veil", "orin", "sol-antczak"],
-      "`publishedBy` carried the manifest's author rather than the owner. Re-attribution " +
-        "moved OWNERSHIP, not AUTHORSHIP (D-250-18) — both facts are true and this field " +
-        "is the ownership one.",
-    ).not.toContain(got.publishedBy);
+      forked.publishedBy,
+      "`publishedBy` carried the manifest's author rather than the owner; this field is the " +
+        "ownership one.",
+    ).not.toBe(w.registry.handle);
   });
 });

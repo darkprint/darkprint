@@ -89,10 +89,10 @@ const STARTER = canvas("starter-software-factory");
 const CODE_MENU = renderToStaticMarkup(
   createElement(CodeMenu, {
     download: {
-      href: "/api/bundles/darkprint/starter-software-factory/archive?digest=sha256%3Aabc",
+      href: "/api/bundles/autogen/starter-software-factory/archive?digest=sha256%3Aabc",
       name: "starter-software-factory-1.0.0.tgz",
     },
-    cloneCommand: "npx -y darkprint clone darkprint/starter-software-factory",
+    cloneCommand: "npx -y darkprint clone autogen/starter-software-factory",
   }),
 );
 const CLONE_NODE = renderToStaticMarkup(

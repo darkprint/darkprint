@@ -2,21 +2,27 @@
    T261 / D-261-09(2) — `/nodes/<id>` renders an accountless author
    as TEXT, from the branch the route already had.
 
-   D-260-25 ruled end state (d) and D-261-06 assigned it. This route
-   closes itself rather than needing an edit: `app/nodes/[...id]/
-   page.tsx` already carries
+   `app/nodes/[...id]/page.tsx` carries
 
        {author !== undefined ? <AuthorChip author={author} />
                              : <span …>{card.author ?? "unattributed"}</span>}
 
-   and the cutover makes the SECOND arm the firing one, because the
-   archive's six author handles hold no accounts (D-250-11).
-   `AuthorChip` links unconditionally (`components/ui/Avatar.tsx:76`),
-   so the ternary is the entire mechanism.
+   and the second arm fires for a card whose `author:` line names a
+   handle no account holds. `AuthorChip` links unconditionally
+   (`components/ui/Avatar.tsx:76`), so the ternary is the entire
+   mechanism.
 
    The instruction that shaped this file: assert the TEXT arm fires,
    do NOT assert a deleted chip. A cell written against a removed
    component would red a correct route.
+
+   ── the fixture supplies the accountless author ──
+   The archive credits every card to the registry account, which
+   exists, so no imported card reaches the text arm. The fixture
+   publishes one more bundle through `publish`, the production path:
+   a copy of an archive bundle with one card's id and author
+   rewritten and the topology's pin moved with it. The author handle
+   on that card is one the product stored and no account holds.
 
    ── driveable, and that had to be checked ──
    T280 gave this page a session-aware actor (`actorNow()`, the star/
@@ -37,9 +43,6 @@
    reader could not take this shortcut and would need the rewrite the
    blueprint page's own docblock describes for its two members of this
    family; this file's four cells never need one.
-
-   Fixture through `runImport`, the production path, so the author
-   handle on the card is the one the product actually stores.
    ============================================================ */
 
 import type { ReactElement } from "react";
@@ -69,24 +72,24 @@ vi.mock("next/navigation", () => ({
 }));
 
 import NodePage from "@/app/nodes/[...id]/page";
-import { latestCards } from "@/lib/server/registry";
 import { schema } from "@/lib/db";
+import { readContent } from "@/lib/content/read";
+import { changeHandle, upsertFromGitHub } from "@/lib/server/accounts";
+import { publish } from "@/lib/server/publish";
 import { planImport, runImport } from "@/lib/server/seed";
 import { createObjectStorage } from "@/lib/db/storage";
-import type { Actor } from "@/lib/server/policy";
 
 import { createTestDb, type TestDb } from "../../support/db";
 
 let testDb: TestDb | undefined;
 let previousUrl: string | undefined;
-/** A card whose stored author handle holds no account — the firing branch. */
+/** The card whose stored author handle holds no account — the firing branch. */
 let subject: { id: string; version: string; author: string } | undefined;
 /** Set once the must-not-change arm has created an account for `subject`'s own author. */
 let accountCreated = false;
 
-const anonymous: Actor = { kind: "anonymous" };
-/** D-250-11's six, verbatim. */
-const ACCOUNTLESS = ["hachi", "k0bra", "lupo", "mara-veil", "orin", "sol-antczak"];
+/** A handle no account holds, written into the fixture card's own `author:` line. */
+const ACCOUNTLESS = "nobody-here";
 
 beforeAll(async () => {
   testDb = await createTestDb();
@@ -94,23 +97,45 @@ beforeAll(async () => {
   process.env.DATABASE_URL = testDb.client.pool.options.connectionString ?? previousUrl;
 
   const db = testDb.client.db;
-  await runImport(db, await planImport(), createObjectStorage());
+  const storage = createObjectStorage();
+  await runImport(db, await planImport(), storage);
 
-  /* The author is on the CARD BODY, not on `CardSummary` — `CardSummary` is
-     `{ref, id, version, digest, card, usedIn}` and the handle lives at `card.author`,
-     which is what `app/nodes/[...id]/page.tsx:582` reads via `one(c.author, …)`. Reading
-     it off the summary returned `undefined` for every card and looked exactly like
-     "re-attribution rewrote the manifest author", which would have been a false charge
-     against D-250-18. */
-  const cards = await latestCards(db, anonymous);
-  for (const card of cards) {
-    const author = card.card.author;
-    if (typeof author === "string" && ACCOUNTLESS.includes(author)) {
-      subject = { id: card.id, version: card.version, author };
-      break;
-    }
-  }
+  /* One archive bundle, republished under another account with one card renamed and
+     credited to `ACCOUNTLESS`. The other cards are byte-identical to the imported ones, so
+     `publish` reuses them; the renamed one is a new card version whose `author:` line the
+     product stores as written. `versionsOf` reads cards pinned by releases, so the card is
+     reachable at `/nodes/<id>` only because a public release pins it, which is why this goes
+     through `publish` rather than `addCard`. */
+  const source = readContent().find((b) => b.slug === "starter-software-factory");
+  if (source === undefined) throw new Error("starter-software-factory is not in the archive");
+  const [file, text] = Object.entries(source.bundle.cardFiles)[0]!;
+  const ref = file.replace(/^cards\//, "").replace(/\.yaml$/, "");
+  const [id, version] = ref.split("@") as [string, string];
+  const renamed = `t261-${id}`;
+  const cardFiles: Record<string, string> = { ...source.bundle.cardFiles };
+  delete cardFiles[file];
+  cardFiles[`cards/${renamed}@${version}.yaml`] = text
+    .replace(/^id: .*$/m, `id: ${renamed}`)
+    .replace(/^author: .*$/m, `author: ${ACCOUNTLESS}`);
+  const dot = source.bundle.dot.replaceAll(`card="${ref}"`, `card="${renamed}@${version}"`);
 
+  const owner = await upsertFromGitHub(db, { githubId: "t261-owner", githubLogin: "t261owner" });
+  await changeHandle(db, { kind: "account", accountId: owner.accountId, handle: null }, owner.accountId, "t261owner");
+  await publish(
+    db,
+    { kind: "account", accountId: owner.accountId, handle: "t261owner" },
+    {
+      ownerHandle: "t261owner",
+      slug: "t261-orphan-author",
+      version: "1.0.0",
+      manifest: { ...source.bundle.manifest, slug: "t261-orphan-author" },
+      dot,
+      cardFiles,
+      visibility: "public",
+    },
+    storage,
+  );
+  subject = { id: renamed, version, author: ACCOUNTLESS };
 }, 300_000);
 
 afterAll(async () => {
@@ -131,14 +156,13 @@ async function render(ref: string): Promise<string> {
 
 describe("the fixture", () => {
   /* A cell, not a hook assertion: a `beforeAll` throw produces SKIPS, which read as green
-     to anyone quoting a test total. Measured twice in this window, on my own fixtures. */
-  it("found a card stored under one of D-250-11's six accountless handles", () => {
-    expect(
-      subject,
-      `no imported card carries an author in ${ACCOUNTLESS.join(", ")}. Either re-attribution ` +
-        `started rewriting the manifest author — which D-250-18 forbids — or the import ` +
-        `published nothing. Either way the branch this file is about never fires.`,
-    ).toBeDefined();
+     to anyone quoting a test total. */
+  it("published a card whose author handle holds no account", async () => {
+    expect(subject, "the fixture published nothing, so the branch this file is about never fires").toBeDefined();
+    const rows = await testDb!.client.db
+      .select({ handle: schema.account.handle })
+      .from(schema.account);
+    expect(rows.map((r) => r.handle)).not.toContain(subject!.author);
   });
 });
 
@@ -160,7 +184,7 @@ describe("D-261-09(2): the absent-account arm renders text, not a link", () => {
       html,
       `/nodes/${subject!.id} no longer prints its author's handle at all. End state (d) is ` +
         `the handle as TEXT — dropping the name with the link is not the honest end state, ` +
-        `it is losing the attribution the archive carries (D-250-18).`,
+        `it is losing the attribution the card carries.`,
     ).toContain(subject!.author);
 
     const profileLinks = [...html.matchAll(/href="([^"]*)"/g)]
@@ -170,7 +194,7 @@ describe("D-261-09(2): the absent-account arm renders text, not a link", () => {
     expect(
       profileLinks,
       `/nodes/${subject!.id} links \`/u/${subject!.author}\`, a handle that holds no account ` +
-        `(D-250-11) and 404s. The route's own \`author !== undefined\` ternary should be ` +
+        `and 404s. The route's own \`author !== undefined\` ternary should be ` +
         `falling to its text arm — if a chip is rendering instead, the cutover is resolving ` +
         `an account for a handle that has none.`,
     ).toEqual([]);

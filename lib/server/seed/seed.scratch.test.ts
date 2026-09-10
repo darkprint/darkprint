@@ -13,7 +13,7 @@
    ============================================================ */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { inArray } from "drizzle-orm";
+import { ne } from "drizzle-orm";
 import { readFileSync } from "node:fs";
 import { schema, type Db, type ObjectStorage } from "@/lib/db";
 import { getBundle, listReleases } from "@/lib/server/archive";
@@ -24,9 +24,6 @@ import { readContent } from "@/lib/content/read";
 import type { Actor } from "@/lib/server/policy";
 import { createTestDb, type TestDb } from "@/tests/support/db";
 import { planImport, runImport, type ImportPlan } from "./index";
-
-/** The six voices the archive's manifests are written in. None becomes an account (AC4). */
-const INVENTED_AUTHORS = ["hachi", "k0bra", "lupo", "mara-veil", "orin", "sol-antczak"] as const;
 
 const ANONYMOUS: Actor = { kind: "anonymous" };
 
@@ -108,7 +105,7 @@ describe("planImport (AC1, no database)", () => {
      the database. The cell is kept rather than deleted because the handle half was never
      about the version: it is the one value `runImport` resolves an account from. */
   it("owns nothing about the database: the handle is named", () => {
-    expect(plan.registryHandle).toBe("darkprint");
+    expect(plan.registryHandle).toBe("autogen");
   });
 });
 
@@ -125,7 +122,7 @@ describe("runImport (AC2, AC4)", () => {
   });
 
   it("stores every bundle under the registry handle, one release each, at the printed digest", async () => {
-    const owner = await resolveOwner(db, "darkprint");
+    const owner = await resolveOwner(db, "autogen");
     expect(owner, "the registry account was not created").toBeDefined();
 
     for (const planned of plan.bundles) {
@@ -136,7 +133,7 @@ describe("runImport (AC2, AC4)", () => {
 
       const releases = await listReleases(db, bundle!.id);
       expect(releases.length, `${planned.slug}: a second run appended a release`).toBe(1);
-      expect(releases[0]!.version, planned.slug).toBe("1.0.0");
+      expect(releases[0]!.version, planned.slug).toBe("1.1.0");
       /* AC1 after the write, not only in the plan: `addRelease` recomputes the digest from
          the DOT and the card digests it was handed, so this is the stored identity rather
          than the planned one echoed back. */
@@ -148,7 +145,7 @@ describe("runImport (AC2, AC4)", () => {
   });
 
   it("stores the 61 card versions once, public, owned by the registry account", async () => {
-    const owner = await resolveOwner(db, "darkprint");
+    const owner = await resolveOwner(db, "autogen");
     const rows = await db.select().from(schema.cardVersion);
     expect(rows.length, "a card pinned by two bundles was stored twice").toBe(61);
     expect(rows.every((r) => r.ownerId === owner!.accountId)).toBe(true);
@@ -168,24 +165,30 @@ describe("runImport (AC2, AC4)", () => {
     }
   });
 
-  it("creates no account for any of the six invented authors (AC4)", async () => {
-    const rows = await db
+  it("creates exactly one account, the registry's, and every stored card credits it (AC4)", async () => {
+    const others = await db
       .select({ handle: schema.account.handle })
       .from(schema.account)
-      .where(inArray(schema.account.handle, [...INVENTED_AUTHORS]));
-    expect(rows.map((r) => r.handle)).toEqual([]);
+      .where(ne(schema.account.handle, "autogen"));
+    expect(others.map((r) => r.handle)).toEqual([]);
 
     /* The premise, so the emptiness above is a measurement rather than a query that matches
        nothing: exactly one account exists, and it is the registry's. */
     const all = await db
       .select({ handle: schema.account.handle, githubId: schema.account.githubId })
       .from(schema.account);
-    expect(all.map((r) => r.handle)).toEqual(["darkprint"]);
-    /* The sentinel, pinned because nothing else in the tree does: mutating it reddened zero
-       of eleven, so D-250-04's reason — GitHub ids start at 1, therefore no real signup can
-       ever reach this row — was a property nobody held. `"0"` and not `0`: the ruling writes
-       the number and `upsertFromGitHub` types the column's `string`. */
+    expect(all.map((r) => r.handle)).toEqual(["autogen"]);
+    /* The sentinel, pinned because nothing else in the tree does. `"0"` and not `0`:
+       `upsertFromGitHub` types the column's `string`, and GitHub ids start at 1, so no real
+       signup can reach this row. */
     expect(all.map((r) => r.githubId)).toEqual(["0"]);
+
+    /* The author line inside every stored card names the handle the row is owned by, so a
+       card page resolves its author to the account that published it. */
+    const sources = await db.select({ source: schema.cardVersion.source }).from(schema.cardVersion);
+    expect(sources.length).toBe(61);
+    const authors = new Set(sources.map((r) => /^author:\s*(\S+)\s*$/m.exec(r.source)?.[1]));
+    expect([...authors]).toEqual(["autogen"]);
   });
 });
 
@@ -244,16 +247,16 @@ describe("a refusal that is not a conflict", () => {
          target bundle's first release is the modified one below. There were two: an ontology
          version had to be published before any bundle could be, and there is no version
          table to write now. */
-      const account = await upsertFromGitHub(scratch, { githubId: "0", githubLogin: "darkprint" });
+      const account = await upsertFromGitHub(scratch, { githubId: "0", githubLogin: "autogen" });
       const actor: Actor = { kind: "account", accountId: account.accountId, handle: null };
-      await changeHandle(scratch, actor, account.accountId, "darkprint");
+      await changeHandle(scratch, actor, account.accountId, "autogen");
 
       const target = readContent()[0]!;
       await publish(
         scratch,
-        { kind: "account", accountId: account.accountId, handle: "darkprint" },
+        { kind: "account", accountId: account.accountId, handle: "autogen" },
         {
-          ownerHandle: "darkprint",
+          ownerHandle: "autogen",
           slug: target.slug,
           version: "2.0.0",
           manifest: target.bundle.manifest,
@@ -287,7 +290,7 @@ describe("a refusal that is not a conflict", () => {
 
 describe("the counters nobody counted (AC3, AC5)", () => {
   it("reads zero for every imported bundle, and the reader can report non-zero", async () => {
-    const owner = await resolveOwner(db, "darkprint");
+    const owner = await resolveOwner(db, "autogen");
     const bundles = [];
     for (const planned of plan.bundles) {
       bundles.push((await getBundle(db, owner!.accountId, planned.slug))!);
@@ -314,4 +317,105 @@ describe("the counters nobody counted (AC3, AC5)", () => {
     expect(after.downloadCount).toBe(1);
     expect(after.starCount).toBe(0);
   });
+});
+
+describe("a conflict that is not this owner's release", () => {
+  /**
+   * `publish` refuses a pinned card already stored under different bytes with the same
+   * `conflict` kind it uses for "this exact release is already here", and only the second is
+   * work a re-run may skip. Measured before the check existed: with one archive card stored
+   * under another account, a whole-archive import reported `skipped: 10` and wrote nothing,
+   * which is the shape a production re-import under a new handle takes while an earlier
+   * import's card rows survive.
+   */
+  it("throws naming the card rather than counting the bundle as skipped", async () => {
+    const other = await createTestDb();
+    try {
+      const scratch = other.client.db;
+      const scratchPlan = await planImport();
+      const scratchStore = memoryStorage();
+
+      const stranger = await upsertFromGitHub(scratch, { githubId: "seed-stranger", githubLogin: "stranger" });
+      await changeHandle(
+        scratch,
+        { kind: "account", accountId: stranger.accountId, handle: null },
+        stranger.accountId,
+        "stranger",
+      );
+      const actor: Actor = { kind: "account", accountId: stranger.accountId, handle: "stranger" };
+
+      /* The first bundle the import reaches, with one card's bytes changed by a trailing
+         comment: the parsed card and its digest are unchanged, so the stranger's release
+         publishes cleanly, and the stored `source` differs from the archive's by those bytes. */
+      const target = readContent()[0]!;
+      const [file, text] = Object.entries(target.bundle.cardFiles)[0]!;
+      const ref = file.replace(/^cards\//, "").replace(/\.yaml$/, "");
+      await publish(
+        scratch,
+        actor,
+        {
+          ownerHandle: "stranger",
+          slug: target.slug,
+          version: "1.0.0",
+          manifest: target.bundle.manifest,
+          dot: target.bundle.dot,
+          cardFiles: { ...target.bundle.cardFiles, [file]: `${text}# a copy another account published\n` },
+          visibility: "public",
+        },
+        scratchStore,
+      );
+
+      const error = await runImport(scratch, scratchPlan, scratchStore).then(
+        () => undefined,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(PublishRefusedError);
+      expect((error as PublishRefusedError).kind).toBe("conflict");
+      expect((error as Error).message).toContain(ref);
+
+      /* And nothing was counted: the registry account exists, because it is created before
+         the loop, and owns no bundle for the slug that refused. */
+      const registry = await resolveOwner(scratch, "autogen");
+      expect(registry).toBeDefined();
+      expect(await getBundle(scratch, registry!.accountId, target.slug)).toBeUndefined();
+    } finally {
+      await other.drop();
+    }
+  }, 180_000);
+});
+
+describe("a sentinel account that already holds another handle", () => {
+  /**
+   * `registryActor` resolves the account by the `"0"` sentinel and claims the registry handle
+   * for it. An account already holding a different handle is an earlier registry account
+   * nobody retired, and claiming would rename it under the archive's new handle in silence,
+   * with everything it owns. The import stops and names both handles instead.
+   */
+  it("refuses to rename it, naming both handles", async () => {
+    const other = await createTestDb();
+    try {
+      const scratch = other.client.db;
+      const account = await upsertFromGitHub(scratch, { githubId: "0", githubLogin: "elsewhere" });
+      await changeHandle(
+        scratch,
+        { kind: "account", accountId: account.accountId, handle: null },
+        account.accountId,
+        "elsewhere",
+      );
+
+      const error = await runImport(scratch, await planImport(), memoryStorage()).then(
+        () => undefined,
+        (e: unknown) => e,
+      );
+      expect(error, "the import renamed the account and went on").toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("`elsewhere`");
+      expect((error as Error).message).toContain("`autogen`");
+      /* The handle did not move, and nothing was published under either name. */
+      expect(await resolveOwner(scratch, "elsewhere")).toBeDefined();
+      expect(await resolveOwner(scratch, "autogen")).toBeUndefined();
+      expect(await scratch.select({ id: schema.bundle.id }).from(schema.bundle)).toEqual([]);
+    } finally {
+      await other.drop();
+    }
+  }, 180_000);
 });

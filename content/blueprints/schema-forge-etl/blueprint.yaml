@@ -3,17 +3,16 @@ title: Schema Forge ETL
 summary: >-
   Extracts, normalizes and schema-validates messy documents, repairing anything that fails
   validation before it ever reaches the store.
-description: >-
-  Unstructured input is where pipelines quietly rot. Schema Forge extracts fields, normalizes
-  them to a target shape, and validates against a strict schema. Anything invalid loops through
-  a repair pass rather than being dropped or, worse, written half-formed. Only records that pass
-  validation are stored and published, so downstream consumers get a hard guarantee about shape.
+description: |-
+  Unstructured input is where pipelines quietly rot. Anything invalid loops through a repair pass rather than being dropped or written half-formed, so downstream consumers get a hard guarantee about shape.
+
+  This blueprint was generated automatically as an example for the registry.
 category: Data
 tags:
   - ETL
   - extraction
   - validation
   - data
-author: lupo
+author: autogen
 createdAt: "2026-03-08"
 updatedAt: "2026-06-28"

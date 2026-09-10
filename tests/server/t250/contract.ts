@@ -49,8 +49,8 @@ export const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
    asserts nothing.
    ============================================================ */
 
-/** D-250-04. The one handle everything imports under. */
-export const REGISTRY_HANDLE = "darkprint";
+/** The one handle everything imports under, and the one every `author:` line in the archive names. */
+export const REGISTRY_HANDLE = "autogen";
 
 /**
  * D-250-04's sentinel. GitHub ids start at 1, so no real signup can ever reach this row, and
@@ -60,20 +60,21 @@ export const REGISTRY_HANDLE = "darkprint";
 export const REGISTRY_GITHUB_ID = 0;
 
 /**
- * D-250-03. `BundleManifest` has no `version` field and none of the nine `blueprint.yaml`
- * carries one, so the seeded release version is minted rather than read.
+ * D-250-03. `BundleManifest` has no `version` field and no `blueprint.yaml` carries one, so
+ * the seeded release version is minted rather than read. It moved past `1.0.0` with the
+ * manifests' descriptions and author lines.
  *
- * `v1.0.0` is the spelling `lib/data/bundles.ts` uses and `parseSemver` refuses the `v` prefix
+ * `v1.1.0` is the spelling `lib/data/bundles.ts` uses and `parseSemver` refuses the `v` prefix
  * by name, which is why the wrong answer is worth naming beside the right one.
  */
-export const SEED_VERSION = "1.0.0";
+export const SEED_VERSION = "1.1.0";
 export const RELEASES_PER_BUNDLE = 1;
 
 /** D-250-08. `created` and `skipped` count BUNDLES. Cards do not fold in. */
 export const SECOND_RUN_CREATED = 0;
 export const SECOND_RUN_SKIPPED = 10;
 
-/** D-250-06. The sole overlay term, whose id stays in `lupo`'s namespace because a rename moves card digests. */
+/** D-250-06. The sole overlay term. Its namespace segment names no author and no account; a rename would move card digests. */
 export const OVERLAY_TERM = "lupo/pii-handling";
 
 /* ============================================================
@@ -324,13 +325,13 @@ export function cardIds(): readonly string[] {
 }
 
 /**
- * The invented authors, read off the archive rather than recalled. AC4's domain.
+ * Every handle an `author:` line in the archive names, read off `content/` rather than recalled.
  *
- * Derived so that a seventh author appearing in `content/**` joins AC4's domain with nothing to
- * remember. The count is asserted in a cell rather than here: a throw in this function would
- * land in whichever hook called it first and produce SKIPS instead of a red.
+ * Derived so that a second author appearing in `content/**` is seen with nothing to remember.
+ * The count is asserted in a cell rather than here: a throw in this function would land in
+ * whichever hook called it first and produce SKIPS instead of a red.
  */
-export function inventedAuthors(): readonly string[] {
+export function manifestAuthors(): readonly string[] {
   const found = new Set<string>();
   const author = /^author:\s*(\S+)\s*$/m;
   for (const file of cardFiles()) {
@@ -344,7 +345,7 @@ export function inventedAuthors(): readonly string[] {
   return [...found].sort();
 }
 
-export const EXPECTED_AUTHORS = 6;
+export const EXPECTED_AUTHORS = 1;
 
 export interface PrintedBundle {
   slug: string;
