@@ -571,7 +571,13 @@ the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transa
 6. Card bodies: `DATABASE_URL="$D" npm run migrate:stored-cards -- --expect-db postgres` as a
    dry run, read the plan, then add `--write --rollback-sql <durable>/rb-prod.sql
    --rescore-analysis` and confirm at the prompt. This script reads `DATABASE_URL`, does not
-   itself refuse a pooler, and refuses a dirty `content/` or `public/bundles/`.
+   itself refuse a pooler, and refuses a dirty `content/` or `public/bundles/`. What the dry
+   run will show against production as it stands: 49 of the 61 archive cards differ from
+   `content/` and 12 are absent, and four of the 49 also carry rewritten `notes:` prose —
+   `acceptance-verifier@2.0.0`, `bounded-retry@2.0.0`, `confidence-escalation@1.0.0` and
+   `maintainer-approval@1.0.0`, whose notes described `cannot` and `requires_human` as live
+   fields. Those four are printed for confirmation; a disagreement in any field other than
+   `notes` stops the run instead.
 7. Additive schema: `MIGRATE_DATABASE_URL="$D" npm run db:migrate -- --to 0008_embedding_input`,
    then `-- --only 0010_key_scope`. The old code tolerates both.
 8. Promote with the prebuilt commands above (`--prod`). Verify `/blueprints` lists 9, a blueprint page and a
@@ -602,7 +608,10 @@ the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transa
     cannot run before it.** Production today holds 49 of the 61 archive cards under
     pre-migration bytes (`cannot:` unsplit, `requires_human` and `ontology_version` still
     present) and does not hold the other 12 at all; step 6 rewrites each archive card from
-    `content/cards/<ref>.yaml` verbatim, which is what makes them match here. Run out of
+    `content/cards/<ref>.yaml` verbatim, which is what makes them match here. The digest
+    collision that skips a bundle cannot bite the nine that are deployed: each one's stored
+    `topology.dot` differs from `content/`, so `bundleDigest` differs whatever step 6 does to
+    the card half, and `pipeline-observability` is not deployed at all. Run out of
     order and the import throws `conflict` at the first bundle pinning a stale card, leaving
     the archive half moved. It also stops, naming both handles, if the sentinel account
     still holds `darkprint`, which step 10 prevents.
