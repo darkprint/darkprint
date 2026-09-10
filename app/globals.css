@@ -780,10 +780,8 @@ body {
      draws one at the foot of six pages (`/what-a-blueprint-is`, the four `/spec/*` pages,
      and `/towards-a-dark-factory`), and `app/spec/ontology/page.tsx` mounts a second
      directly. `.route-label` is worn once without the box, on the node picker in
-     `components/panes/SynchronisedPanes.tsx`. One literal `.route-box` has no caller left
-     at all: `UpstreamMovedPanel` in `components/bundle/Aside.tsx`, which is this rule kept
-     alive by a component nothing mounts. The rule itself is unchanged: a box whose job is
-     to send a reader elsewhere wears this, and nothing else does.
+     `components/panes/SynchronisedPanes.tsx`. The rule itself is unchanged: a box whose job
+     is to send a reader elsewhere wears this, and nothing else does.
 
      What stood here was "both pagers, the three layer doors on `/spec`, and the climb's
      onward cards", and all three references died inside two weeks. `RoutePager` went with

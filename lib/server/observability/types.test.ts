@@ -45,8 +45,8 @@ describe("AUDIT_ACTIONS", () => {
   /**
    * The product's absolute constraint, quantified over the live set.
    *
-   * `components/bundle/Aside.tsx:33-36`: the registry holds this bundle and who owns it,
-   * and not "a run, a key, or any telemetry about either". So **no action may name a
+   * The registry holds this bundle and who owns it, and not "a run, a key, or any
+   * telemetry about either". So **no action may name a
    * blueprint run, in any spelling** — this is the test the block promised and could not
    * have, because `audit.action` is `text` and an open string has no live set.
    */

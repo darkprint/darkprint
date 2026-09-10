@@ -742,7 +742,7 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
     }
   });
 
-  it("the stored scorecard is what the README quotes, not a fresh computation", async () => {
+  it("the stored row is what the README quotes, not a fresh computation", async () => {
     const ids = seeded.get("frontline-triage")!;
     const [row] = await db
       .select()
@@ -751,16 +751,19 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
         and(eq(schema.release.bundleId, ids.bundleId), eq(schema.release.digest, ids.digest)),
       ))[0].id));
 
-    /* Rewrite the stored autonomy label to something no computation would produce. If the
-       README still quotes the computed one, B-08's stamp is being ignored. */
-    const autonomy = { ...(row.autonomy as Record<string, unknown>), label: "L9-fixture" };
-    await db.update(schema.release).set({ autonomy }).where(eq(schema.release.id, row.id));
+    /* Rewrite the stored summary to something no computation would produce. The README
+       quoted the stored autonomy label until the archive's copy was trimmed; what it still
+       prints off this row is the manifest, so that is where the stamp is observable. If the
+       README came back with the manifest `loadBundle` recomputed, the stored row is being
+       ignored. */
+    const manifest = { ...(row.manifest as Record<string, unknown>), summary: "L9-fixture summary" };
+    await db.update(schema.release).set({ manifest }).where(eq(schema.release.id, row.id));
 
     const files = await exportRelease(db, ANONYMOUS, ids.bundleId, ids.digest);
     const readme = files.find((file) => file.path === "README.md");
     expect(readme?.text).toContain("L9-fixture");
 
-    await db.update(schema.release).set({ autonomy: row.autonomy }).where(eq(schema.release.id, row.id));
+    await db.update(schema.release).set({ manifest: row.manifest }).where(eq(schema.release.id, row.id));
   });
 
   /**
@@ -783,8 +786,9 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
       .where(and(eq(schema.release.bundleId, ids.bundleId), eq(schema.release.digest, ids.digest)));
     const original = { autonomy: row.autonomy, security: row.security };
 
-    /* The two the README quotes, kept; the two the export never reads, removed — which is
-       exactly the shape a writer that stored only what it needed would produce. */
+    /* The fields a stored scorecard is typed to carry, minus the two a writer that stored
+       only what it needed would leave out. The export reads the row either way, so what is
+       measured below is that a partial scorecard still serves rather than throwing. */
     const strip = (value: unknown): unknown => {
       const { diagnostics, ontologyVersion, ...rest } = value as Record<string, unknown>;
       void diagnostics;
@@ -798,9 +802,10 @@ describe.skipIf(!hasDb)("lib/server/export", () => {
 
     const files = await exportRelease(db, ANONYMOUS, ids.bundleId, ids.digest);
     expect(files.map((file) => file.path)).toContain("README.md");
-    /* And it still quotes the stored scores rather than silently recomputing them. */
+    /* And the folder is whole rather than half-written: the partial scorecard passes
+       through `storedAnalysis` without throwing and every file the release pins is here. */
     const readme = files.find((file) => file.path === "README.md");
-    expect(readme?.text).toContain((row.autonomy as { label: string }).label);
+    expect(readme?.text).toContain((row.manifest as { title: string }).title);
 
     await db
       .update(schema.release)

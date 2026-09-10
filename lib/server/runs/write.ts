@@ -19,7 +19,7 @@
 
    **The run report's own table is its record.** The registry holds
    the bundle and who owns it, and not *"a run, a key, or any
-   telemetry about either"* (`components/bundle/Aside.tsx:33-36`) —
+   telemetry about either"* —
    D-240-11 scopes that sentence to what a bundle page holds about
    a bundle and to the audit vocabulary, which is how `key.issue`
    and `key.revoke` survive it. The audit log stays free of runs

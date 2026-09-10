@@ -380,7 +380,7 @@ The stdio server is `darkprint mcp` in `packages/mcp` (newline-delimited JSON-RP
 stdin and stdout); it calls the GET routes at `DARKPRINT_URL` (default `https://www.darkprint.io`)
 with `DARKPRINT_API_KEY` as a bearer when set. The package is named `darkprint`, bin
 `dist/cli.js`, built with `npm run build` inside `packages/mcp` (esbuild through
-`packages/cli/build.mjs`, then a copy of `skills/darkprint`). It is not published to npm.
+`packages/cli/build.mjs`, then a copy of `skills/darkprint`). It is not published to npm yet; `npm publish` from `packages/mcp` is what puts a build there, and it is step 16 of the deploy runbook.
 
 ## 10. CLI
 
@@ -605,6 +605,14 @@ the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transa
     to a scraping pipeline` and expect `pipeline-observability` first.
 15. Build and deploy with the prebuilt commands above (`--prod`).
 
+16. Publish the CLI package, which is what every `npx -y darkprint` line on the site fetches:
+    `cd packages/mcp && npm publish` (its `prepack` builds `dist/cli.js` and copies the skill
+    in). Check with `npm view darkprint version`, then `npx -y darkprint skill install` in a
+    scratch `HOME`. Until this runs, the install and clone lines are printed beside a
+    "not published to npm" note and a Coming soon badge on `/skill`, both download menus and
+    the draft panel; those sentences and the honesty rows that pin them come off in one
+    commit after the package is up, and not before, or the site claims something untrue.
+
 Rollback while the old code is still promoted: `psql "$D" -v ON_ERROR_STOP=1 -f rb-prod.sql`,
 then `DATABASE_URL="$D" npm run migrate:stored-cards -- --expect-db postgres --check-manifest
 rb-prod.sql.manifest.tsv`. After step 9 only the dump from step 3 restores the dropped rows, and
@@ -621,7 +629,9 @@ row id and refreshed by step 14.
   embedding provider (Vercel AI Gateway, `openai/text-embedding-3-small` at 384 dimensions, which
   keeps the `vector(384)` columns), or the Pro plan, where a build made on Vercel's machines with
   the x64 binaries is not subject to the 12-function cap.
-- The `darkprint` npm package is unpublished; `npx -y darkprint` answers 404.
+- The `darkprint` npm package is unpublished; `npx -y darkprint` answers 404. The package is
+  ready to publish from `packages/mcp` and every install line on the site is written for the
+  published state, with the limit stated beside it until step 16 of the runbook has run.
 - The `write` bucket is spent by nothing, and `upload` only by `POST /api/cards`; the key-based
   bundle publish and run-report paths have no rate limit.
 - `darkprint report` still refuses `DARKPRINT_API_KEY` although the runs route accepts a

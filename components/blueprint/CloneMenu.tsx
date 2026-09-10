@@ -189,23 +189,13 @@ function CloneBody({
 
         {/* The fence: a filled ground under a heavy leading rule, a badge and the limit in
             words. `border-l-2` after the `border` shorthand, which is the order Tailwind
-            emits them in, so the leading edge wins. The card verb is the half the CLI does
-            not have yet; the package is the half neither kind has. */}
+            emits them in, so the leading edge wins. The verb clones either kind by name;
+            what neither kind has yet is a package on npm for npx to fetch. */}
         <div className="flex flex-col gap-2 rounded-md border border-amber/30 border-l-2 border-l-amber bg-amber/8 p-3">
           <ComingSoonBadge className="self-start" />
           <p className="text-xs leading-relaxed text-muted">
-            {kind === "node" ? (
-              <>
-                Not built yet: a darkprint CLI that clones a card by name. The darkprint
-                package is not published to npm, so this line runs nowhere today.
-              </>
-            ) : (
-              <>
-                Not installable yet: the darkprint package is not published to npm, so npx
-                finds nothing to run. The verb itself runs from a build of the private
-                repository.
-              </>
-            )}
+            Not installable yet: the darkprint package is not published to npm, so npx finds
+            nothing to run. The verb itself runs from a build of the repository.
           </p>
         </div>
       </div>

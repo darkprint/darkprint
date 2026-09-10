@@ -38,8 +38,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * The three lineage columns are written and read together — `createBundle` writes all three
  * or none — so a row with some of them set is not a partial lineage to repair but a row no
  * published writer produced. Absent, like `toBundleRecord`'s, rather than half a pointer:
- * `Aside.tsx` renders lineage as one sentence naming an owner, a slug and a version, and two
- * of the three would render a pointer to nothing.
+ * lineage renders as one sentence naming an owner, a slug and a version, and two of the
+ * three would render a pointer to nothing.
  */
 function toBundleRecord(row: typeof schema.bundle.$inferSelect): BundleRecord {
   const record: BundleRecord = {

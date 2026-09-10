@@ -154,6 +154,7 @@ const { CARD_LIBRARY_DIR, bundleDir, exportBundle } = await import(
   "@/lib/content/bundle-export"
 );
 const { SKILL_ARCHIVE_ROOT, SKILL_PUBLIC_DIR } = await import("@/lib/skill");
+const { autonomyStatement } = await import("@/lib/format");
 const { SKILL_ARCHIVE_FILE, SKILL_MANIFEST_FILE, packSkill, readSkillTree } = await import(
   "./skill-package.ts"
 );
@@ -177,6 +178,21 @@ const OUTPUT_ROOT = join(ROOT, "public", "bundles");
  * adds no file to any bundle.
  */
 const CARD_LIBRARY_ROOT = join(ROOT, "public", CARD_LIBRARY_DIR);
+
+/**
+ * The two computed figures per bundle, written once for the whole archive.
+ *
+ * The README used to quote them and no longer does, so this is where a reader or a test
+ * finds what the engine said about the committed archive at build time. It sits BESIDE the
+ * bundle folders rather than inside one: `lib/content/bundle-export.test.ts` asserts the
+ * exact file set `exportBundle` returns, and a file inside a bundle would be a file the
+ * download does not carry.
+ *
+ * `tests/server/t040` measures the engine against this file, which is what makes it an
+ * oracle: it is produced here, by the generator, and not by the `loadBundle` path the
+ * suite is testing.
+ */
+const SCORECARD_FILE = join(ROOT, "public", "bundles.json");
 
 /**
  * The authoring skill, served from the site.
@@ -239,6 +255,15 @@ function main(): void {
   const summary: string[] = [];
   /** Every distinct card version any bundle pins, keyed by ref. See `CARD_LIBRARY_ROOT`. */
   const library = new Map<string, string>();
+  /** One row per bundle for `SCORECARD_FILE`, in the order the archive is loaded. */
+  const scorecards: {
+    slug: string;
+    digest: string;
+    autonomyClass: string;
+    autonomyStatement: string;
+    securityLevel: number;
+    securityRationale: string;
+  }[] = [];
 
   for (const entry of loaded) {
     const files = exportBundle({
@@ -301,6 +326,15 @@ function main(): void {
       continue;
     }
 
+    scorecards.push({
+      slug: entry.slug,
+      digest: entry.blueprint.digest,
+      autonomyClass: entry.analysis.autonomy.label.toLowerCase().replace(/\.$/, ""),
+      autonomyStatement: autonomyStatement(entry.analysis.autonomy.rationale),
+      securityLevel: entry.analysis.security.level,
+      securityRationale: entry.analysis.security.rationale,
+    });
+
     summary.push(
       `  ${entry.slug.padEnd(28)} ${String(files.length).padStart(2)} files  ${String(bytes).padStart(6)} bytes  ${entry.blueprint.digest.slice(0, 15)}…`,
     );
@@ -313,6 +347,11 @@ function main(): void {
     for (const [ref, text] of [...library].sort(([a], [b]) => (a < b ? -1 : 1))) {
       writeFileSync(join(CARD_LIBRARY_ROOT, `${ref}.yaml`), text, "utf8");
     }
+    writeFileSync(
+      SCORECARD_FILE,
+      `${JSON.stringify([...scorecards].sort((a, b) => (a.slug < b.slug ? -1 : 1)), null, 2)}\n`,
+      "utf8",
+    );
   }
 
   if (problems.length > 0) {
@@ -330,6 +369,7 @@ function main(): void {
   console.log(`public/${bundleDir("<slug>")} — ${loaded.length} bundles`);
   for (const line of summary) console.log(line);
   console.log(`public/${CARD_LIBRARY_DIR} — ${library.size} card versions`);
+  console.log(`public/bundles.json — ${scorecards.length} scorecards`);
 }
 
 main();

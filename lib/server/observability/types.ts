@@ -9,7 +9,7 @@
  * a run"* — and there is no enum: `audit.action` is `text` in `schema.ts`. Over an open
  * string that assertion has nothing to quantify over, so the product's absolute
  * constraint (the registry holds the bundle and who owns it, and not *"a run, a key, or
- * any telemetry about either"* — `components/bundle/Aside.tsx:33-36`) was held by memory.
+ * any telemetry about either"*) was held by memory.
  * Closed, an action naming a run **cannot be passed**, which is the same move the block
  * already makes for `detail`.
  *

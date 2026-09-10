@@ -15,8 +15,8 @@ export type DriftTone = "ok" | "moved" | "blocked";
  *
  * The four fields are `UpstreamMoved`'s (`lib/data/bundles.ts:107-113`), field for field,
  * and that file is what fixes their meaning: `from` is the version THIS copy still carries
- * and `to` is the version the upstream now pins. `components/bundle/Aside.tsx:185-215`
- * renders exactly that sentence — "`<owner>/<slug>` repinned `card@from → to` on `<date>`.
+ * and `to` is the version the upstream now pins. The drift notice renders exactly that
+ * sentence — "`<owner>/<slug>` repinned `card@from → to` on `<date>`.
  * Your copy still carries `<from>`" — so a reading where `to` is merely "the newest version
  * of that card in the registry" would print a claim about the upstream that the upstream
  * never made.

@@ -4,8 +4,8 @@
    The owner, 2026-09-06: "remove the panel visibility from the blueprint card; such option
    should be visible only on the user account list of the blueprints". The removal shipped
    and the second half did not, so for one wave an owner with a published bundle had no
-   visibility control on any page of the site. `components/bundle/Aside.tsx`'s own header
-   records the same gap from the other side.
+   visibility control on any page of the site. The row control this suite covers is what
+   closed it, and it is the only visibility control an owner has.
 
    ── Why the render, and not a source read ──
    The list draws a row in ONE of TWO shapes (`OwnedBundles.tsx`'s docblock argues the

@@ -21,8 +21,7 @@
    mechanically that gives `runs` -> *the run store failed*, and
    **this is the one module in the tree where that phrase is
    forbidden.** The registry holds the bundle and who owns it, and
-   not *"a run, a key, or any telemetry about either"*
-   (`components/bundle/Aside.tsx:33-36`) — a class whose message
+   not *"a run, a key, or any telemetry about either"* — a class whose message
    announces a *run store* names the exact thing the product says
    it does not have, on the surface a caller is most likely to
    paste into an issue. What this module stores is a run REPORT: a

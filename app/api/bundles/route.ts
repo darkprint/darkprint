@@ -252,8 +252,8 @@ function readVisibility(
  * `lineage`, when supplied — the upstream a fork points back at.
  *
  * All three fields are required together. A partial lineage is refused rather than filled
- * in: `Aside.tsx` renders the line as one sentence naming an owner, a slug and a version, and
- * two of the three would render a pointer to nothing.
+ * in: the line renders as one sentence naming an owner, a slug and a version, and two of
+ * the three would render a pointer to nothing.
  */
 function readLineage(
   body: Record<string, unknown>,

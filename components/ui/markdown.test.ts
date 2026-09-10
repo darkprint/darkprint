@@ -437,12 +437,14 @@ describe("markdown: the ten shipped bundle READMEs", () => {
       const html = render(readme.text);
 
       /* The constructs this corpus is measured to contain. If a future README loses one
-         that is a change to the document, not to the renderer, and it should be seen. */
+         that is a change to the document, not to the renderer, and it should be seen.
+         `<blockquote` was on this list while the README quoted the two computed figures as
+         blockquotes; the archive's copy carries neither, so no shipped document exercises
+         that construct today. `markdown: block constructs` above still renders one. */
       expect(html).toContain("<h1");
       expect(html).toContain("<h2");
       expect(html).toContain("<pre");
       expect(html).toContain("<table");
-      expect(html).toContain("<blockquote");
       expect(html).toContain("<code");
       expect(html).toContain("<hr");
       expect(html).not.toMatch(/<script/i);

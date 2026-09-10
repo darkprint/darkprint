@@ -75,6 +75,8 @@ export interface EngineInput {
 }
 
 export interface ArchiveOracle {
+  /** The bundle this row is for, so the file is a list rather than a map with a shape. */
+  slug: string;
   digest: string;
   autonomyClass: string;
   /**
@@ -103,55 +105,41 @@ const EXTENSIONS_FILE = "ontology/extensions.yaml";
 /** The archive as it ships. Ten, and the count is asserted rather than assumed. */
 export const EXPECTED_BUNDLE_COUNT = 10;
 
-function readOracle(slug: string): ArchiveOracle {
-  const path = join(BUNDLES_DIR, slug, "README.md");
-  const text = readFileSync(path, "utf8");
-
-  const digest = /^bundle digest\s+(sha256:[0-9a-f]{64})$/m.exec(text);
-  const autonomy = /^Autonomy: (.+)\.$/m.exec(text);
-  /* The autonomy sentence is the blockquote directly under the class line, anchored to it for
-     the same reason the security rationale is anchored to its own: the document carries two
-     blockquotes and an unanchored pattern would take whichever came first. */
-  const statement = /^Autonomy: .+\.\n\n> (.+)$/m.exec(text);
-  const level = /^Security level (\d+)\.$/m.exec(text);
-  /* The rationale is the blockquote directly under the level line. Anchored to that line so a
-     second blockquote elsewhere in the document cannot be picked up by accident. */
-  const rationale = /^Security level \d+\.\n\n> (.+)$/m.exec(text);
-
-  const missing = [
-    digest === null ? "bundle digest" : undefined,
-    autonomy === null ? "Autonomy:" : undefined,
-    statement === null ? "the autonomy sentence blockquote" : undefined,
-    level === null ? "Security level" : undefined,
-    rationale === null ? "the security rationale blockquote" : undefined,
-  ].filter((x): x is string => x !== undefined);
-
-  if (
-    missing.length > 0 ||
-    digest === null ||
-    autonomy === null ||
-    statement === null ||
-    level === null ||
-    rationale === null
-  ) {
+/**
+ * Every bundle's scorecard, read once.
+ *
+ * `public/bundles.json` is written by `scripts/generate-bundles.ts` at build time from the
+ * same engine this suite exercises, but through the generator rather than through
+ * `loadBundle`, which is what makes it an oracle here: the figures come off a committed
+ * artefact produced by a different route, so the engine is measured against something it
+ * did not compute at test time. The README carried these lines until the archive's copy
+ * was trimmed; the file moved, the property did not.
+ */
+const SCORECARDS: ReadonlyMap<string, ArchiveOracle> = (() => {
+  const path = "public/bundles.json";
+  if (!existsSync(path)) {
     throw new Error(
-      `${path} did not yield ${missing.join(", ")}.\n` +
-        `  This is a defect in THIS suite's oracle, not in \`@/lib/server/engine\`. AC1 is ` +
-        `measured against the figures \`prebuild\` writes into that file; if its format moved, ` +
-        `the parser above moves with it. Reporting the miss rather than returning an empty set ` +
-        `is the whole reason this throws.`,
+      `${path} is missing. It is written by \`npm run prebuild\` (and by \`npm run build\`), ` +
+        `and this suite measures \`@/lib/server/engine\` against it. Run the build once in a ` +
+        `fresh checkout before running these tests.`,
     );
   }
+  const rows = JSON.parse(readFileSync(path, "utf8")) as readonly ArchiveOracle[];
+  return new Map(rows.map((row) => [row.slug, row]));
+})();
 
-  return {
-    digest: digest[1],
-    /* "Closed-loop." in the document, `closed-loop` in `AutonomyClass`. Lowercased rather
-       than mapped through a table, because a table is a list and a list goes stale. */
-    autonomyClass: autonomy[1].toLowerCase(),
-    autonomyStatement: statement[1],
-    securityLevel: Number(level[1]),
-    securityRationale: rationale[1],
-  };
+function readOracle(slug: string): ArchiveOracle {
+  const row = SCORECARDS.get(slug);
+  if (row === undefined) {
+    throw new Error(
+      `public/bundles.json carries no row for ${slug}.\n` +
+        `  This is a defect in THIS suite's oracle, not in \`@/lib/server/engine\`. AC1 is ` +
+        `measured against the figures \`prebuild\` writes into that file; if the archive gained ` +
+        `a bundle the file has not been regenerated for, run the build. Reporting the miss ` +
+        `rather than returning an empty set is the whole reason this throws.`,
+    );
+  }
+  return row;
 }
 
 /**

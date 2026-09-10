@@ -11,8 +11,8 @@
    is visible on the page. `lib/data/bundles.ts:107-113` publishes
    `UpstreamMoved { card, from, to, at }` — `Repin`'s four fields,
    field for field — as "a card the UPSTREAM REPINNED after this
-   copy was taken", and `components/bundle/Aside.tsx:185-215`
-   prints "`<owner>/<slug>` repinned `card@from → to` on `<date>`.
+   copy was taken", and the drift notice prints
+   "`<owner>/<slug>` repinned `card@from → to` on `<date>`.
    Your copy still carries `<from>`". Under the other reading that
    sentence attributes to the upstream a repin the upstream never
    made, and `driftOf` would report `moved` on a bundle that has no

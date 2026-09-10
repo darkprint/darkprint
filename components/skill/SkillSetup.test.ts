@@ -121,15 +121,13 @@ describe("the install commands", () => {
 
   /**
    * The package is what the line fetches, so a surface that prints the line may not also
-   * say the package is missing. The draft panel is not in this list: its clone paragraph
-   * still carries that claim about the clone line beside it, and that paragraph is the
-   * clone command's to change.
+   * say the package is missing. Two surfaces are out of this list for reasons of their own:
+   * the draft panel's clone paragraph still carries that claim about the clone line beside
+   * it, which is the clone command's to change, and the landing band prints two links and
+   * no command at all, which `components/hero/Wordmark.test.ts` holds it to.
    */
-  it.each([
-    ["/skill · the whole route", PAGE],
-    ["the landing band", CHIPS],
-  ] as const)("%s does not say the package is off npm", (_name, html) => {
-    const text = openText(html).toLowerCase();
+  it("/skill · the whole route does not say the package is off npm", () => {
+    const text = openText(PAGE).toLowerCase();
     for (const stale of ["not on npm", "not published to npm"]) {
       expect(text).not.toContain(stale);
     }

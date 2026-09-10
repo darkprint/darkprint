@@ -191,8 +191,8 @@ const CLAIMS: Claim[] = [
   },
   {
     surface: "/nodes/<id> · Get card",
-    why: "the same limit on the card page's own menu, so a reader who only ever opens a card still meets it. The noun differs because the CLI would clone a card there, and the card verb is not implemented",
-    says: "not built yet: a darkprint cli that clones a card by name",
+    why: "the same limit on the card page's own menu, so a reader who only ever opens a card still meets it. `darkprint clone <ref>` writes the card's YAML, so the verb is not what is missing; the package the line fetches is",
+    says: "the darkprint package is not published to npm",
     where: "present",
     html: CLONE_NODE,
   },
