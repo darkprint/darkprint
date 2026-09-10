@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { badRequest, conflict, notFound, problem, unauthorized } from "./problem";
+import { badRequest, conflict, methodNotAllowed, notFound, problem, unauthorized } from "./problem";
 
 const REQUEST = new Request("https://darkprint.io/api/example?x=1");
 const RFC9457_MEMBERS = ["type", "title", "status", "detail", "instance"] as const;
@@ -60,6 +60,28 @@ describe.each([
     expect(body.type).toBe(type);
     // D-02: no caller has to remember to pass one — it falls out of the request.
     expect(body.instance).toBe("/api/example");
+  });
+});
+
+describe("methodNotAllowed", () => {
+  it("is a 405 problem+json whose Allow header carries the methods the caller was given", async () => {
+    const response = methodNotAllowed(REQUEST, "POST", "This address publishes and takes POST only.");
+
+    expect(response.status).toBe(405);
+    expect(response.headers.get("content-type")).toBe("application/problem+json");
+    /* The header is the whole reason this helper exists: the 405 Next synthesises for an
+       unexported method carries none, and a caller reading it learns nothing. */
+    expect(response.headers.get("allow")).toBe("POST");
+
+    const body = await response.json();
+    expect(RFC9457_MEMBERS.filter((m) => body[m] === undefined)).toEqual([]);
+    expect(body).toEqual({
+      type: "https://darkprint.io/problems/method-not-allowed",
+      title: "Method not allowed",
+      status: 405,
+      detail: "This address publishes and takes POST only.",
+      instance: "/api/example",
+    });
   });
 });
 

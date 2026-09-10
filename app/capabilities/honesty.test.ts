@@ -15,7 +15,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import CapabilitiesPage from "@/app/capabilities/page";
+import CapabilitiesPage, { metadata } from "@/app/capabilities/page";
 import { MCP_CLIENTS } from "@/components/mcp/clients";
 import { QUESTIONS } from "@/components/skill/SkillSetup";
 import { plainText } from "@/components/ui/visible-text";
@@ -67,6 +67,50 @@ function decode(text: string): string {
 
 /** The page as written, for the half of the claim a render cannot make. */
 const SOURCE = readFileSync(`${ROOT}app/capabilities/page.tsx`, "utf8");
+
+/**
+ * One tab panel's own text, from its `id` to the next panel's.
+ *
+ * The three panels are rendered together and hidden rather than unmounted, so a whole-page
+ * `toContain` is satisfied by a sentence written on a panel the reader is not looking at.
+ * A limit stated beside a command has to be on the panel that prints that command.
+ */
+const PANELS = ["cli", "mcp", "skill"] as const;
+function panel(id: (typeof PANELS)[number]): string {
+  const at = MARKUP.indexOf(`id="${id}"`);
+  expect(at, `no panel is marked id="${id}"`).toBeGreaterThan(-1);
+  /* Cut at the panel's own `</section>` rather than at wherever the next panel starts. The
+     last panel in the list has no next one, so a split alone hands it the whole rest of the
+     document, and a cell saying a sentence is ON that panel would be satisfied by the page
+     footer. The nesting check is what makes the first closer the right one. */
+  const end = MARKUP.indexOf("</section>", at);
+  expect(end, `the panel marked id="${id}" is never closed`).toBeGreaterThan(-1);
+  const inner = MARKUP.slice(at, end);
+  expect(
+    inner.includes("<section"),
+    `the panel marked id="${id}" now nests a <section>, so its first </section> closes the ` +
+      `inner one and every cell reading this panel is reading a fragment of it.`,
+  ).toBe(false);
+  return squeeze(plainText(inner));
+}
+
+/**
+ * One row of the intent list, as text: its name, what it answers with, and its status.
+ *
+ * Split on the opening `<li>` rather than read through `cell`, because an intent's answer
+ * is composed of `<code>` and `<span>` runs and the first `</span>` after the marker closes
+ * the innermost of them. The chunk is then cut at its own `</li>` rather than left to run to
+ * the next row: a split alone leaves the LAST row of a list holding the rest of the document,
+ * so a cell saying a word is ABSENT from one row would be reading the page below it, and the
+ * row that is last changes whenever somebody reorders `INTENTS`.
+ */
+function intentRow(intent: string): string {
+  const rows = MARKUP.split("<li").filter((row) => row.includes(`>${intent}<`));
+  expect(rows.length, `the intent list carries no one row named "${intent}"`).toBe(1);
+  const end = rows[0].indexOf("</li>");
+  expect(end, `the row for "${intent}" is never closed`).toBeGreaterThan(-1);
+  return squeeze(plainText(rows[0].slice(0, end)));
+}
 
 describe("the render carries what the modules define", () => {
   it("does not pass vacuously", () => {
@@ -191,6 +235,108 @@ describe("nothing on the page is a retyped copy", () => {
        the driver, and neither belongs in a prerendered reference page. */
     expect(SOURCE).not.toContain("@/packages/mcp/src/tools");
     expect(SOURCE).not.toContain("@/packages/mcp/src/local");
+  });
+});
+
+/* ============================================================
+   What the page owes a reader beside a command it prints
+
+   `npm view darkprint` answers 404. Every npx line on this site is
+   printed under the sentence saying so, and this page prints two of
+   them, on two different tabs. A reader sees one panel at a time, so
+   the limit is held per panel: a page-wide `toContain` is met by a
+   sentence on a panel nobody has opened.
+
+   These come off in the one commit that follows `npm publish`,
+   with the sentence itself on the other surfaces.
+   ============================================================ */
+
+describe("the limit every printed npx line is under", () => {
+  it("rendered three distinct panels, so no cell below reads the wrong one", () => {
+    const texts = PANELS.map(panel);
+    for (const [index, text] of texts.entries()) {
+      expect(text.length, `the ${PANELS[index]} panel`).toBeGreaterThan(400);
+    }
+    expect(new Set(texts).size).toBe(PANELS.length);
+    /* Three different lengths would satisfy the line above. What the two cells below need is
+       that a panel stops where the next one starts, so the CLI panel is held to NOT carrying
+       the DarkPrint skill panel's sentence. */
+    expect(panel("cli")).not.toContain("the line above finds nothing to run");
+  });
+
+  it("says it on the CLI panel, which is where the npx invocation is printed", () => {
+    expect(
+      panel("cli"),
+      "the panel prints a command for every verb and the package behind them is not on npm",
+    ).toContain("The package is not published to npm yet, so npx finds nothing to run today.");
+  });
+
+  it("says it on the DarkPrint skill panel, which prints a whole install line", () => {
+    expect(
+      panel("skill"),
+      "the panel prints the install command under a copy button, on its own tab",
+    ).toContain("The package is not published to npm yet, so the line above finds nothing to run");
+  });
+
+  it("says it above the intent list, which prints six npx lines before any panel", () => {
+    /* The intent list renders ahead of the three panels, so a reader meets `npx -y darkprint
+       <verb>` in six rows before reaching the panel that states the limit. Cut at the tab
+       section rather than read off the whole page, since every panel below says it too. */
+    const at = MARKUP.indexOf('id="intent-title"');
+    const end = MARKUP.indexOf('id="cli"');
+    expect(at, "no section is marked intent-title").toBeGreaterThan(-1);
+    expect(end, "the intent list no longer renders before the CLI panel").toBeGreaterThan(at);
+    expect(
+      squeeze(plainText(MARKUP.slice(at, end))),
+      "the rows answer with a command the reader cannot run yet, and this is where that is said",
+    ).toContain("is not published to npm");
+  });
+
+  it("says it in the description a shared link carries", () => {
+    const description = metadata.description ?? "";
+    /* `components/mcp/honesty.test.ts` holds this description to `install from npm`, so the
+       provenance stays and the limit is stated after it rather than in place of it. */
+    expect(description).toContain("install from npm");
+    expect(description).toContain("not published to npm yet");
+  });
+});
+
+/* ============================================================
+   The intent list is the site's index of what a reader can do
+
+   A row that is missing is an operation a reader concludes is not
+   offered. Each cell below names one address and holds it against
+   its own row, since a `toContain` over the page is satisfied by an
+   address printed on any of the other twenty.
+   ============================================================ */
+
+describe("the intent list names every door a reader has", () => {
+  it("sends a release publisher to the address that takes one", () => {
+    const row = intentRow("Publish a release from your agent");
+    expect(row.length).toBeGreaterThan(60);
+    /* Named in the row itself: `/settings` prints the curl only after the scope dropdown is
+       moved to Write, so a reader who has not made that click had nowhere to read it. */
+    expect(row).toContain("POST /api/bundles");
+    expect(row).toContain("write-scoped API key");
+  });
+
+  it("sends a card publisher to the address that takes a card", () => {
+    const row = intentRow("Publish one card on its own");
+    expect(row.length).toBeGreaterThan(40);
+    expect(row).toContain("POST /api/cards");
+    /* Its own row and not a widened one: a reader holding a single node reads past a row
+       whose answer names a release. */
+    expect(row).not.toContain("release");
+  });
+
+  it("names the visibility route, and says it is the blueprint's and not a release's", () => {
+    const row = intentRow("Change who can see a blueprint");
+    expect(row.length).toBeGreaterThan(40);
+    expect(row).toContain("PATCH /api/bundles/<owner>/<slug>/visibility");
+    /* `visibility` is a column on `bundle` (`lib/db/schema.ts`). A row that said release
+       would promise a per-version switch that does not exist and cannot be built from this
+       route. */
+    expect(row).not.toContain("release");
   });
 });
 

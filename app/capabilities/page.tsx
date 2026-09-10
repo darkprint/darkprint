@@ -37,7 +37,7 @@ import { TOOL_DEFINITIONS } from "@/packages/mcp/src/definitions";
 export const metadata: Metadata = {
   title: "What you can do",
   description:
-    "Every operation DarkPrint offers, from the command line, from a remote MCP server your coding agent connects to with nothing to install, and from the DarkPrint blueprint-writing skill. The CLI and the DarkPrint skill install from npm with one npx line.",
+    "Every operation DarkPrint offers, from the command line, from a remote MCP server your coding agent connects to with nothing to install, and from the DarkPrint blueprint-writing skill. The CLI and the DarkPrint skill install from npm with one npx line. The darkprint package is not published to npm yet.",
 };
 
 /**
@@ -95,15 +95,15 @@ const INTENTS: readonly {
     status: "live",
     because:
       "The MCP tool hands an agent every file of a release; the CLI verb fetches the same " +
-      "bytes on any machine with Node, since npx pulls the package from npm on the first run.",
+      "bytes on any machine with Node once npx can pull the package, which is not on npm yet.",
   },
   {
     intent: "Check a folder is valid",
     how: <Verb name="validate" />,
     status: "live",
     because:
-      "A CLI verb, run through npx or from an installed package. `/upload` runs the same engine " +
-      "in the tab with no install at all.",
+      "A CLI verb, and the npx line for it finds nothing until the package is on npm. `/upload` " +
+      "runs the same engine in the tab with no install at all, which is why this row is `live`.",
   },
   {
     intent: "Run one",
@@ -122,7 +122,9 @@ const INTENTS: readonly {
     intent: "Bring a foreign pipeline in",
     how: <Verb name="import" />,
     status: "live",
-    because: "A CLI verb, run through npx or from an installed package.",
+    because:
+      "A CLI verb, reachable today only from a checkout of this repository: the npx line " +
+      "answers 404 until the package is published.",
   },
   {
     intent: "Write one from nothing",
@@ -147,8 +149,9 @@ const INTENTS: readonly {
     status: "live",
     because:
       "`SKILL_INSTALL_COMMAND` has npx fetch the package from npm and copy the DarkPrint skill " +
-      "into the agent's skills folder, so the command runs for every reader with Node. " +
-      "`lib/skill.ts` forbids the bare phrase `the skill`, hence the qualifier.",
+      "into the agent's skills folder. That command answers 404 today, and the skill itself is " +
+      "served here file by file, which is what the `Assisted Design` panel says and why this " +
+      "row is `live`. `lib/skill.ts` forbids the bare phrase `the skill`, hence the qualifier.",
   },
   {
     intent: "Check a version bump matches the change",
@@ -167,19 +170,56 @@ const INTENTS: readonly {
       "the verb sends the cookie named in the environment table on the CLI tab.",
   },
   {
-    intent: "Publish from your agent",
+    intent: "Publish a release from your agent",
     how: (
       <span className="text-muted">
-        POST a release with a write-scoped API key; <Link href="/settings">Settings</Link> prints
-        the exact call when you mint one, and the <Link href="/upload">Publish</Link> page does the
-        same from a browser
+        <code className="font-mono text-blueprint-ink">POST /api/bundles</code> with a
+        write-scoped API key; <Link href="/settings">Settings</Link> prints the exact call when
+        you mint one, and the <Link href="/upload">Publish</Link> page does the same from a
+        browser
       </span>
     ),
     status: "live",
     because:
       "`POST /api/bundles` takes a session or a write-scoped key. The curl is `PUBLISH_CURL` in " +
       "`components/settings/ApiKeys.tsx`, a client module this server page does not import, so " +
-      "the row points at the page that prints it rather than typing it a second time.",
+      "the row points at the page that prints it rather than typing it a second time. The " +
+      "address itself is named here because `/settings` reveals that curl only after the scope " +
+      "dropdown is moved to Write, and a code span is not the curl.",
+  },
+  {
+    intent: "Publish one card on its own",
+    how: (
+      <span className="text-muted">
+        <code className="font-mono text-blueprint-ink">POST /api/cards</code> with a write-scoped
+        API key, or drop the YAML on <Link href="/upload">Publish</Link>
+      </span>
+    ),
+    status: "live",
+    because:
+      "`app/api/cards/route.ts` takes a session or a write-scoped key, reads one card document " +
+      "as `source` with an optional name and visibility, and answers 201 with the card and its " +
+      "path. Its own row rather than a wider publish row above: the address and the browser " +
+      "step both differ from a release's, and a reader holding one node reads past a row whose " +
+      "answer names a release.",
+  },
+  {
+    intent: "Change who can see a blueprint",
+    how: (
+      <span className="text-muted">
+        <code className="font-mono text-blueprint-ink">
+          PATCH /api/bundles/&lt;owner&gt;/&lt;slug&gt;/visibility
+        </code>
+        , or the switch on each row of your own shelf
+      </span>
+    ),
+    status: "live",
+    because:
+      "The route writes `bundle.visibility`, a column on the bundle row, so it moves the whole " +
+      "name at once and there is no such thing as a private release under a public blueprint. " +
+      "Session-only and owner-only, which is why this row names no key: `withSession`, then " +
+      "`setBundleVisibility` re-checks the actor. `VisibilityControl` on the owner's shelf is " +
+      "the same call from a browser.",
   },
   {
     intent: "Read a private blueprint over MCP",
@@ -282,13 +322,19 @@ export default function CapabilitiesPage() {
       <h2 id="cli-title" className="sr-only">
         The command-line surface
       </h2>
+      {/* The limit sits in this framing rather than at the top of the page, because this is
+          the panel that prints the npx invocation and a reader on either of the other two
+          tabs never sees this one. The status column stays `live` on every verb: the verbs
+          and the engine under them work, and it is the delivery that does not exist yet. */}
       <Framing>
         Every verb below runs as{" "}
         <code className="font-mono text-blueprint-ink">{NPX_INVOCATION} &lt;verb&gt;</code> on
         any machine with Node. The first run has npx fetch the{" "}
         <code className="font-mono text-blueprint-ink">{SKILL_PACKAGE}</code> package from npm
-        and keep it in its own cache, so nothing lands in your project. The table below is
-        what each command takes. Exit code 0 on success, 1 on anything else.
+        and keep it in its own cache, so nothing lands in your project. The package is not
+        published to npm yet, so npx finds nothing to run today. The verbs below exist; the
+        delivery does not. The table below is what each command takes. Exit code 0 on success,
+        1 on anything else.
       </Framing>
       <TableShell>
         <thead>
@@ -461,11 +507,16 @@ export default function CapabilitiesPage() {
           ariaLabel="Copy the command that installs the DarkPrint skill"
         />
       </div>
+      {/* Said again on this panel, and not only on the CLI one: the three surfaces are tabs,
+          so a reader here sees no sentence written over there, and this panel prints a whole
+          command under a copy button. */}
       <p className="text-sm leading-relaxed text-dim">
         The line has npx fetch the{" "}
         <code className="font-mono text-blueprint-ink">{SKILL_PACKAGE}</code> package from npm
         and copy the DarkPrint skill it carries into your agent&rsquo;s skills folder; nothing
-        else is installed and no account is created.{" "}
+        else is installed and no account is created. The package is not published to npm yet,
+        so the line above finds nothing to run today. The DarkPrint skill is served on this
+        site, file by file.{" "}
         <Link href={SKILL_ROUTE}>Assisted Design</Link> explains it and gives the Codex form, and{" "}
         <Link href="/tutorial">the tutorial</Link> walks a first blueprint through it, with a
         live page here drawing the graph as the interview runs.
@@ -549,6 +600,17 @@ export default function CapabilitiesPage() {
         <h2 id="intent-title" className="label scroll-mt-24">
           By intent
         </h2>
+        {/* Six rows below answer with an `npx -y darkprint <verb>` line, and this list sits
+            above the three panels, so a reader meets those commands before any panel that
+            states the limit. Said once here rather than in each row, which would print the
+            same sentence six times down one column. */}
+        <p className="text-sm leading-relaxed text-dim">
+          Rows answering with a{" "}
+          <code className="font-mono text-blueprint-ink">{NPX_INVOCATION}</code> line describe a
+          verb that is built and cannot be fetched yet: the{" "}
+          <code className="font-mono text-blueprint-ink">{SKILL_PACKAGE}</code> package is not
+          published to npm. Everything answered by an address or by this site works today.
+        </p>
         <KeyValueList>
           {INTENTS.map((row) => (
             <KeyValueRow

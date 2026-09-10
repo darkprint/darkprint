@@ -15,7 +15,7 @@ MCP server, the `darkprint` CLI and the blueprint-writing skill.
 ## What is real and what is not
 
 Real: the registry in Postgres, with accounts (GitHub and Google), publishing, forks, drafts,
-per-release visibility, saves, stars, notes, API keys and run-report ingestion. The autonomy
+per-bundle visibility, saves, stars, notes, API keys and run-report ingestion. The autonomy
 class, security level and phase coverage of every release, computed by `lib/core` at publish
 and stored on the release row. Search that ranks by a sentence-encoder vector plus word
 coverage, with the model vendored under `models/`. Seven MCP tools served over HTTP at

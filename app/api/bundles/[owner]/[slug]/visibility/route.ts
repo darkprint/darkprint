@@ -20,7 +20,7 @@ import { getSharedDbClient } from "@/lib/db";
 import { actorFrom, resolveOwner } from "@/lib/server/accounts";
 import { getBundle, setBundleVisibility } from "@/lib/server/archive";
 import { withSession } from "@/lib/server/auth";
-import { badRequest, notFound, ok } from "@/lib/server/http";
+import { badRequest, methodNotAllowed, notFound, ok } from "@/lib/server/http";
 import { isRefusal, readObjectBody } from "../../../../validate/body";
 
 const NO_SUCH_BUNDLE = "visibility: no such bundle.";
@@ -59,4 +59,27 @@ export async function PATCH(
     if (updated === undefined) return notFound(request, NO_SUCH_BUNDLE);
     return ok({ bundle: updated });
   });
+}
+
+/* --------------------- the verbs this address refuses --------------------- */
+
+/**
+ * GET is exported only so the refusal can carry an `Allow` header: the 405 Next synthesises
+ * for an unexported method has no header and no body, which is what left a caller guessing.
+ * OPTIONS is exported for the other half of that, because the one Next synthesises lists
+ * every method the file exports and would advertise GET as if the flag could be read here.
+ */
+const ALLOW = "PATCH";
+
+export function GET(request: Request): Response {
+  return methodNotAllowed(
+    request,
+    ALLOW,
+    'This address flips a bundle between public and private and takes PATCH only. Send ' +
+      '`{"visibility": "public"}` or `{"visibility": "private"}`.',
+  );
+}
+
+export function OPTIONS(): Response {
+  return new Response(null, { status: 204, headers: { allow: ALLOW } });
 }

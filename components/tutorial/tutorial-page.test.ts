@@ -178,6 +178,32 @@ describe("every command a reader pastes is the one its module defines", () => {
     expect(OPEN).toContain("skills/darkprint");
   });
 
+  /**
+   * The two lines above this sentence fetch a package `npm view darkprint` answers 404 for,
+   * and this is the page a first-time reader is sent to before any other. The limit is held
+   * inside step 1 rather than over the whole page: a sentence about npm printed down beside
+   * the account step qualifies nothing, and a reader copies the command before reading on.
+   *
+   * `openText`, because the thing it qualifies is printed in the open beside it. Verbatim,
+   * because the same sentence stands on six other surfaces and all seven come off together
+   * in the one commit that follows `npm publish`.
+   */
+  it("says the install lines fetch a package npm does not have, inside step 1", () => {
+    const step = MARKUP.slice(MARKUP.indexOf('id="install"'), MARKUP.indexOf('id="open-live"'));
+    expect(step.length, "step 1 is not the first section of the page").toBeGreaterThan(500);
+    const open = squeeze(openText(step));
+    expect(
+      open,
+      "the tutorial prints two npx lines and the package behind them is not published",
+    ).toContain(
+      "Not installable yet: the darkprint package is not published to npm, so npx finds " +
+        "nothing to run.",
+    );
+    expect(open, "the limit carries the badge the other six surfaces carry").toContain(
+      "Coming soon",
+    );
+  });
+
   it.each(["claude-code", "codex"])(
     "prints the %s MCP line exactly as MCP_CLIENTS holds it",
     (id) => {

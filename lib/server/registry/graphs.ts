@@ -62,7 +62,7 @@
 
 import { graphForBlueprint, requiredAgents, requiredTools } from "@/lib/graph-seed";
 import {
-  hasErrors,
+  isReleasable,
   resolveBundle,
   type Bundle,
   type CardRef,
@@ -176,10 +176,12 @@ async function draw(
 
   const bundle: Bundle = { manifest: release.manifest, dot: release.dot, cardFiles };
   const resolved = resolveBundle(bundle, ontology);
-  /* Both halves, and the second is not redundant: `resolveBundle` returns a blueprint for
-     a bundle carrying error diagnostics, and `readContent()` refuses to ship one. A stored
-     release is held to the same bar, which is `build.ts`'s rule read one line further. */
-  if (resolved.blueprint === undefined || hasErrors(resolved.diagnostics)) return undefined;
+  /* Both halves, and the second is `gate.ts`'s RELEASE gate rather than "any error": a port
+     that does not fit or a type that cannot flow is DarkPrint's reading of the author's own
+     wiring, the registry publishes a release carrying one, and this draws it with the finding
+     printed beside it. An unresolved card reference is still absent, because a drawing short a
+     node is a different factory. */
+  if (resolved.blueprint === undefined || !isReleasable(resolved.diagnostics)) return undefined;
 
   return Object.freeze({
     /* `cardsInRegistry: true` — the archive path, and the only caller that can promise a
@@ -190,7 +192,7 @@ async function draw(
     requiredAgents: Object.freeze(requiredAgents(resolved.blueprint)),
     requiredTools: Object.freeze(requiredTools(resolved.blueprint)),
     /* D-261-07(2): carried rather than dropped — this list was already in hand for the
-       `hasErrors` gate above, and the Evidence section it feeds had no other reader. */
+       release gate above, and the Evidence section it feeds had no other reader. */
     diagnostics: Object.freeze(resolved.diagnostics),
   });
 }

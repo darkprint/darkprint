@@ -151,10 +151,10 @@ public view; `cookie, refuses anonymous` lets the module answer 401; `anonymous`
 | `/api/blueprints/[owner]/[slug]/notes/[noteId]/vote`, `/api/cards/[id]/notes/[noteId]/vote` | POST | cookie, refuses anonymous |
 | `/api/blueprints/[owner]/[slug]/runs` | POST | session or write key |
 | `/api/blueprints/[owner]/[slug]/star`, `/api/cards/[id]/star` | POST | session |
-| `/api/bundles` | POST | session or write key |
-| `/api/bundles/draft`, `/api/bundles/[owner]/[slug]/fork` | POST | session |
-| `/api/bundles/[owner]/[slug]` | DELETE | session |
-| `/api/bundles/[owner]/[slug]/visibility` | PATCH | session |
+| `/api/bundles` | POST (GET answers 405, OPTIONS 204) | session or write key |
+| `/api/bundles/draft`, `/api/bundles/[owner]/[slug]/fork` | POST (GET answers 405, OPTIONS 204) | session |
+| `/api/bundles/[owner]/[slug]` | DELETE (GET answers 405, OPTIONS 204) | session |
+| `/api/bundles/[owner]/[slug]/visibility` | PATCH (GET answers 405, OPTIONS 204) | session |
 | `/api/bundles/[owner]/[slug]/archive` | GET | cookie optional; the release's files as one `.tgz` under a `<slug>/` folder, named `<slug>-<version>.tgz`; the latest release unless `?version=` or `?digest=` names one, 400 for both together, 404 for a bundle the caller may not read or a release it does not have; counted in the `read` bucket and as one download of the bundle |
 | `/api/bundles/[owner]/[slug]/drift`, `/api/bundles/[owner]/[slug]/forks` | GET | cookie optional |
 | `/api/cards` | GET, POST | GET cookie optional; POST session or write key, publishes one card under the caller's handle |

@@ -149,9 +149,10 @@ export interface BlueprintSchematic {
   /**
    * The resolver's own list for this release, sorted as `resolveBundle` sorts it —
    * D-261-07(2): the detail page's Evidence section renders these and had no reader
-   * (the shelf's `viewOf` writes `diagnostics: []` and says so). NON-error by
-   * construction: `draw()` answers absent for a release with error diagnostics, so what
-   * this carries is the notes-and-warnings layer of a blueprint that ships.
+   * (the shelf's `viewOf` writes `diagnostics: []` and says so). This MAY carry an
+   * error: `draw()` holds a stored release to `gate.ts`'s release gate, which lets a
+   * reading of the author's own wiring through and prints it beside the drawing. What it
+   * cannot carry is an unresolved reference, since a drawing short a node is refused.
    */
   diagnostics: readonly import("@/lib/core").Diagnostic[];
 }

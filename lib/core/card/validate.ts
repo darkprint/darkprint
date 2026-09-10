@@ -938,9 +938,14 @@ function checkTerm(
   const exact = ontology.get(id);
   const resolved = ontology.resolve(id);
   if (!exact && !resolved) {
+    // An id carrying a namespace has already taken the advice below once, and repeating it
+    // would ask for `me/me/check`. That author needs the file the term is declared in.
+    const hint = id.includes("/")
+      ? `Use an existing \`${kind}\` term, or declare \`${id}\` in \`ontology/extensions.yaml\` with a \`broader\` that reaches the core.`
+      : `Use an existing \`${kind}\` term, or declare your own in a local namespace such as \`me/${id}\`.`;
     ds.push(
       error("card/unknown-term", `Term \`${id}\` is not in the ontology.`, {
-        hint: `Use an existing \`${kind}\` term, or declare your own in a local namespace such as \`me/${id}\`.`,
+        hint,
         location: at(file, path),
       }),
     );

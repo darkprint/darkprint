@@ -29,7 +29,7 @@ that bundle, by interviewing them. Not by filling in a form for them, and not by
 | Sends | the author's one-sentence task to the registry's search in Phase 1, and nothing else until the author chooses to validate over HTTP, to publish, or to open a live preview; the preview posts the draft to darkprint.io under an unguessable link and nothing else. Those three are steps the author takes and can decline |
 
 Say those plainly if the author asks what happens next. The registry has accounts
-(`/welcome`), drafts (`/new`), per-release visibility, publishing from `/upload`, and API
+(`/welcome`), drafts (`/new`), per-bundle visibility, publishing from `/upload`, and API
 keys from `/settings`. Do not describe any of them as unbuilt, and do not invent anything
 beyond them.
 
@@ -676,6 +676,11 @@ by its first publish, so this path does not need `/new` first. A 401 is a missin
 read-only key. A 404 never means "no such slug"; it means `ownerHandle` is not a handle the
 key's account holds, which is the same answer for a misspelled handle and for somebody
 else's, on purpose.
+
+Changing visibility afterwards is a separate call.
+`PATCH /api/bundles/<handle>/<slug>/visibility` with `{ "visibility": "public" }`, or
+`"private"`, answers the updated bundle. That route takes a signed-in session rather than a
+key, so the author flips it from the blueprint list on their profile.
 
 Either way, say the rest plainly: this skill wrote the files and checked them. It ran no
 node, and it published nothing itself. What happens to the folder from here is the author's

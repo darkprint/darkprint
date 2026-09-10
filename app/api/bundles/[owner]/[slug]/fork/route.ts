@@ -34,7 +34,7 @@
 import { getSharedDbClient } from "@/lib/db";
 import { actorFrom } from "@/lib/server/accounts";
 import { withSession } from "@/lib/server/auth";
-import { badRequest, ok } from "@/lib/server/http";
+import { badRequest, methodNotAllowed, ok } from "@/lib/server/http";
 import { forkBundle, withLineageErrors, type ForkTarget } from "@/lib/server/lineage";
 import { isRefusal, readObjectBody, readOptionalString, readString } from "../../../../validate/body";
 
@@ -83,4 +83,27 @@ export async function POST(
       return ok(fork);
     }),
   );
+}
+
+/* --------------------- the verbs this address refuses --------------------- */
+
+/**
+ * GET is exported only so the refusal can carry an `Allow` header: the 405 Next synthesises
+ * for an unexported method has no header and no body, which is what left a caller guessing.
+ * OPTIONS is exported for the other half of that, because the one Next synthesises lists
+ * every method the file exports and would advertise GET as if a fork could be read here.
+ */
+const ALLOW = "POST";
+
+export function GET(request: Request): Response {
+  return methodNotAllowed(
+    request,
+    ALLOW,
+    "This address forks a bundle into the caller's own namespace and takes POST only. The " +
+      "body names the `version` to take; a different `slug` and `visibility` are optional.",
+  );
+}
+
+export function OPTIONS(): Response {
+  return new Response(null, { status: 204, headers: { allow: ALLOW } });
 }

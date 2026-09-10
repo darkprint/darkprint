@@ -35,7 +35,7 @@ import { getSharedDbClient } from "@/lib/db";
 import { actorFrom, getAccount } from "@/lib/server/accounts";
 import { ArchiveConflictError, createBundle } from "@/lib/server/archive";
 import { withSession } from "@/lib/server/auth";
-import { badRequest, conflict, ok, PROBLEM_TYPE_BASE, problem } from "@/lib/server/http";
+import { badRequest, conflict, methodNotAllowed, ok, PROBLEM_TYPE_BASE, problem } from "@/lib/server/http";
 import { checkSlug } from "@/lib/server/naming";
 import { isRefusal, readObjectBody, readOptionalString, readString } from "../../validate/body";
 
@@ -153,4 +153,27 @@ export async function POST(request: Request): Promise<Response> {
       throw thrown;
     }
   });
+}
+
+/* --------------------- the verbs this address refuses --------------------- */
+
+/**
+ * GET is exported only so the refusal can carry an `Allow` header: the 405 Next synthesises
+ * for an unexported method has no header and no body, which is what left a caller guessing.
+ * OPTIONS is exported for the other half of that, because the one Next synthesises lists
+ * every method the file exports and would advertise GET as if a draft could be read here.
+ */
+const ALLOW = "POST";
+
+export function GET(request: Request): Response {
+  return methodNotAllowed(
+    request,
+    ALLOW,
+    "This address creates a draft bundle and takes POST only. A draft is a bundle with no " +
+      "release yet; releases are published at /api/bundles.",
+  );
+}
+
+export function OPTIONS(): Response {
+  return new Response(null, { status: 204, headers: { allow: ALLOW } });
 }

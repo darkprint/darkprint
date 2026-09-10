@@ -34,7 +34,7 @@ import { getSharedDbClient } from "@/lib/db";
 import { actorFrom } from "@/lib/server/accounts";
 import { withSessionOrWriteKey } from "@/lib/server/auth";
 import { LimitExceededError, validateVocabularySource } from "@/lib/server/engine";
-import { badRequest, ok, problem } from "@/lib/server/http";
+import { badRequest, methodNotAllowed, ok, problem } from "@/lib/server/http";
 import { ArchiveConflictError, MalformedVocabularyError } from "@/lib/server/archive";
 import { ExportError } from "@/lib/server/export";
 import { CardStoreError } from "@/lib/server/cards";
@@ -268,4 +268,27 @@ function readLineage(
     return { detail: "`lineage` must carry string `ownerHandle`, `slug` and `version`." };
   }
   return { value: { ownerHandle, slug, version } };
+}
+
+/* --------------------- the verbs this address refuses --------------------- */
+
+/**
+ * GET is exported only so the refusal can carry an `Allow` header: the 405 Next synthesises
+ * for an unexported method has no header and no body, which is what left a caller guessing.
+ * OPTIONS is exported for the other half of that, because the one Next synthesises lists
+ * every method the file exports and would advertise GET as if it published something.
+ */
+const ALLOW = "POST";
+
+export function GET(request: Request): Response {
+  return methodNotAllowed(
+    request,
+    ALLOW,
+    "This address publishes a release and takes POST only. The first publish for a slug " +
+      "creates the bundle; every one after appends to it.",
+  );
+}
+
+export function OPTIONS(): Response {
+  return new Response(null, { status: 204, headers: { allow: ALLOW } });
 }

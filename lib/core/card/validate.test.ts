@@ -1140,6 +1140,27 @@ describe("validateCard, ontology terms", () => {
     expect(paths(diagnostics)).toEqual([path]);
   });
 
+  it("offers a local namespace to an author whose term carries none", () => {
+    const { diagnostics } = validateCard({ ...minimal(), type: "check" }, opts);
+    expect(codes(diagnostics)).toEqual(["card/unknown-term"]);
+    expect(diagnostics[0].hint).toBe(
+      "Use an existing `node-type` term, or declare your own in a local namespace such as `me/check`.",
+    );
+  });
+
+  it("names the file instead, once the author has a namespace already", () => {
+    /* The hint above is advice an author takes by rewriting `check` as `me/check`. Handed
+       back unchanged it then reads as `me/me/check`, which is the namespace growing a
+       segment every time somebody follows it. */
+    const { diagnostics } = validateCard({ ...minimal(), type: "me/check" }, opts);
+    expect(codes(diagnostics)).toEqual(["card/unknown-term"]);
+    expect(diagnostics[0].hint).not.toContain("me/me/");
+    expect(diagnostics[0].hint).toBe(
+      "Use an existing `node-type` term, or declare `me/check` in `ontology/extensions.yaml` " +
+        "with a `broader` that reaches the core.",
+    );
+  });
+
   it.each<[string, Record<string, unknown>, string, string]>([
     ["a tool term used as a node type", { type: "shell" }, "type", "tool"],
     ["a node type used as a risk marker", { risk_markers: ["agent"] }, "risk_markers[0]", "node-type"],

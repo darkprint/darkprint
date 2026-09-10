@@ -108,3 +108,23 @@ export function conflict(request: Request, detail: string): Response {
     detail,
   });
 }
+
+/**
+ * 405 carrying the `Allow` header RFC 9110 §10.2.1 requires. The header is the whole point:
+ * Next synthesises a bare 405 for any method a route file does not export, with no `Allow`
+ * and no body, so a caller who guessed wrong is told nothing about what the address takes.
+ *
+ * `allow` is one string rather than a list of methods because the same spelling has to reach
+ * the route's own `OPTIONS` answer, which does not come through here.
+ */
+export function methodNotAllowed(request: Request, allow: string, detail: string): Response {
+  const refused = problem(request, {
+    type: `${PROBLEM_TYPE_BASE}/method-not-allowed`,
+    title: "Method not allowed",
+    status: 405,
+    detail,
+  });
+  const headers = new Headers(refused.headers);
+  headers.set("allow", allow);
+  return new Response(refused.body, { status: 405, headers });
+}

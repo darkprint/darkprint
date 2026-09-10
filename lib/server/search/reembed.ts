@@ -31,7 +31,7 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
 import {
   cardRef,
-  hasErrors,
+  isReleasable,
   loadBundle,
   parseCardRef,
   requiresHuman,
@@ -309,9 +309,14 @@ export interface ResolvedGraph {
 /**
  * The release reassembled the way an export reassembles it: the local vocabulary layered
  * over the core, every pinned card's verbatim YAML under its bundle path, and `loadBundle`
- * over the result. `undefined` when the release does not resolve cleanly, which is the same
- * bar the registry holds a release to before it draws its graph; the document then falls
- * back to the manifest alone, so a vector always exists.
+ * over the result. `undefined` when the release does not clear `gate.ts`'s release gate, which
+ * is the same bar the registry holds a release to before it draws its graph; the document then
+ * falls back to the manifest alone, so a vector always exists.
+ *
+ * The bar is the release gate and not "any error", which is the distinction that keeps a
+ * published blueprint findable: a port that does not fit or a type that cannot flow is a
+ * reading of the author's own wiring and travels as a finding beside the release, while a
+ * node pointing at no card leaves the structure this document describes short a node.
  *
  * The stored scorecard wins over a fresh one where it exists, because it is the reading the
  * site publishes for this release.
@@ -335,7 +340,7 @@ export function resolvedGraph(release: ReleaseRecord, pinned: readonly CardRow[]
   } catch {
     return undefined;
   }
-  if (loaded.blueprint === undefined || loaded.analysis === undefined || hasErrors(loaded.diagnostics)) {
+  if (loaded.blueprint === undefined || loaded.analysis === undefined || !isReleasable(loaded.diagnostics)) {
     return undefined;
   }
   return { blueprint: loaded.blueprint, analysis: storedAnalysis(release) ?? loaded.analysis };
