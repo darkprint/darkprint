@@ -36,4 +36,4 @@ notes: >-
   the same record key at the store and upserts over itself rather than duplicating.
 
 version: 1.0.0
-author: autogen
+author: lupo

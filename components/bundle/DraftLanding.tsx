@@ -130,6 +130,13 @@ export function DraftLanding({
                 </code>
                 <CopyButton text={SKILL_INSTALL_COMMAND} ariaLabel="Copy the DarkPrint skill install command" />
               </div>
+              {/* The same limit the clone paragraph below states, said here too, because
+                  this line fetches the same unpublished package and a reader copies one
+                  block without reading the other. */}
+              <p className="mt-2 text-xs leading-relaxed text-dim">
+                Not installable yet: the darkprint package is not published to npm, so npx
+                finds nothing to run. The DarkPrint skill is served on this site, file by file.
+              </p>
             </div>
 
             <div className="border-t border-line pt-5">

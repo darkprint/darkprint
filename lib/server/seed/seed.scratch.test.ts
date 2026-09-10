@@ -165,7 +165,7 @@ describe("runImport (AC2, AC4)", () => {
     }
   });
 
-  it("creates exactly one account, the registry's, and every stored card credits it (AC4)", async () => {
+  it("creates exactly one account, the registry's, and leaves every card's author line alone (AC4)", async () => {
     const others = await db
       .select({ handle: schema.account.handle })
       .from(schema.account)
@@ -183,12 +183,15 @@ describe("runImport (AC2, AC4)", () => {
        signup can reach this row. */
     expect(all.map((r) => r.githubId)).toEqual(["0"]);
 
-    /* The author line inside every stored card names the handle the row is owned by, so a
-       card page resolves its author to the account that published it. */
+    /* The author line inside a stored card is UNCHANGED by the import, because publishing
+       under the registry handle moves ownership and not authorship. Every one of the 61
+       cards still credits the archive handle its file carries, and none of them credits
+       the registry, so a later pass that quietly rewrote the bytes to match the owner
+       would red here. */
     const sources = await db.select({ source: schema.cardVersion.source }).from(schema.cardVersion);
     expect(sources.length).toBe(61);
     const authors = new Set(sources.map((r) => /^author:\s*(\S+)\s*$/m.exec(r.source)?.[1]));
-    expect([...authors]).toEqual(["autogen"]);
+    expect([...authors].sort()).toEqual(["hachi", "k0bra", "lupo", "mara-veil", "orin", "sol-antczak"]);
   });
 });
 

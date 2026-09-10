@@ -11,6 +11,7 @@
     "seed:import": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/import-seed.ts",
     "bundle:delete": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/delete-bundle.ts",
     "account:retire": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/retire-account.ts",
+    "account:rename": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/rename-account.ts",
     "migrate:stored-cards": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/migrate-stored-cards.ts",
     "generate:wordmark": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-wordmark-paths.ts",
     "generate:skill-refs": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/generate-skill-refs.ts",

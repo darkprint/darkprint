@@ -361,10 +361,11 @@ function viewOf(
  *
  * ── An accountless handle is the honest end state, not a gap (D-260-25, D-250-11) ──
  *
- * The import creates no account for `hachi`, `k0bra`, `lupo`, `mara-veil`, `orin` or
- * `sol-antczak`, and `release.manifest.author` keeps the original handle because
- * re-attribution moves OWNERSHIP and not AUTHORSHIP (D-250-18). So all nine of these rows
- * name somebody who holds no account, and that is what the archive says.
+ * The archive publishes under one account and creates no others, so a manifest may name a
+ * handle nothing resolves: the six archive authors hold no accounts, and every release
+ * published before the registry was renamed still carries the handle it was written with.
+ * The current release of each archive bundle names the registry account and does resolve,
+ * which is what the account column moving cannot do to bytes already stored.
  *
  * `NodeSummary.author` is optional and `/nodes` drops it, which is the interim D-260-25
  * ruled for that surface. **`Blueprint.author` is REQUIRED, so this page cannot drop it**

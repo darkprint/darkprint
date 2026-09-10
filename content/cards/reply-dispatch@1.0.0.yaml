@@ -51,4 +51,4 @@ notes: >-
   capability, so `messaging` plus `http-fetch` is the closest honest pair.
 
 version: 1.0.0
-author: autogen
+author: hachi

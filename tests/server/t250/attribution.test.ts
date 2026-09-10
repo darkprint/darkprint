@@ -34,6 +34,8 @@ import {
   SEED_VERSION,
   bundleSlugs,
   manifestAuthors,
+  cardAuthors,
+  ARCHIVE_CARD_AUTHORS,
   printedDigests,
   REPO_ROOT,
 } from "./contract";
@@ -55,8 +57,14 @@ describe("the control: what the archive credits", () => {
    * The ownership cells below are about `owner_id`; this one is about the bytes, so a manifest
    * that quietly credited somebody else would red here by name rather than passing as one
    * more row under the right owner.
+   *
+   * The cards are asserted in the same cell and in the OTHER direction, because the pair is
+   * what carries the rule. Publishing moves the publisher and not the writer: a manifest's
+   * author is the account the bundle is listed under, a card's is the person who wrote the
+   * document. Rewriting the 61 card lines to match the manifests would satisfy any cell that
+   * only looked at one of the two sets, and it is what D-250-18 forbids.
    */
-  it("credits every manifest to the registry handle", () => {
+  it("credits every manifest to the registry handle and no card to it", () => {
     const authors = bundleSlugs().map((slug) => {
       const text = readFileSync(`${REPO_ROOT}content/blueprints/${slug}/blueprint.yaml`, "utf8");
       return /^author:\s*(\S+)\s*$/m.exec(text)?.[1] ?? "";
@@ -65,6 +73,9 @@ describe("the control: what the archive credits", () => {
     expect(new Set(authors)).toEqual(new Set([REGISTRY_HANDLE]));
     expect(manifestAuthors()).toHaveLength(EXPECTED_AUTHORS);
     expect(manifestAuthors()).toEqual([REGISTRY_HANDLE]);
+
+    expect(cardAuthors()).toEqual([...ARCHIVE_CARD_AUTHORS]);
+    expect(cardAuthors()).not.toContain(REGISTRY_HANDLE);
   });
 });
 
@@ -221,7 +232,8 @@ describe("ownership and authorship name the same handle", () => {
    * Rewriting a stored `source` is the harm D-90-03 exists to prevent, and it would put the
    * store and `content/` permanently out of agreement. So the stored card bytes are compared to
    * the file on disk BYTE FOR BYTE, and the `author:` line inside those bytes is read back to
-   * show it names the registry handle rather than being absent.
+   * show the import carried the writer's name through untouched rather than stamping the
+   * publisher's over it.
    */
   it(
     "stores every card's bytes exactly as content/ holds them, author line included",
@@ -238,11 +250,13 @@ describe("ownership and authorship name the same handle", () => {
       }
       expect(wrong).toEqual([]);
 
-      const authors = new Set(
-        rows.map((r) => /^author:\s*(\S+)\s*$/m.exec(String(r.source))?.[1]).filter(Boolean),
-      );
-      expect(authors.size).toBe(EXPECTED_AUTHORS);
-      expect([...authors]).toEqual([REGISTRY_HANDLE]);
+      const authors = [
+        ...new Set(
+          rows.map((r) => /^author:\s*(\S+)\s*$/m.exec(String(r.source))?.[1]).filter(Boolean),
+        ),
+      ].sort();
+      expect(authors).toEqual([...ARCHIVE_CARD_AUTHORS]);
+      expect(authors).not.toContain(REGISTRY_HANDLE);
     },
     SLOW,
   );

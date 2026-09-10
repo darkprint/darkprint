@@ -103,34 +103,25 @@ describe("the install commands", () => {
   });
 
   /**
-   * The claims that were true while the package was unpublished, held as their own
-   * inversion: the command runs now, and a page that kept saying otherwise would be the
-   * false claim in the other direction. The landing band is not a row here: it prints two
-   * links and no command, and `components/hero/Wordmark.test.ts` holds it to that.
+   * `npx -y darkprint skill install` fetches a package `npm view darkprint` answers 404 for,
+   * so every surface printing the line owes the reader the limit beside it. These two cells
+   * held the opposite until now — they asserted the page must NOT say the package is off
+   * npm — on the premise that publishing had happened. It has not, and a page that prints a
+   * failing command in silence is the site making a claim that is not true.
+   *
+   * The landing band is not a row here: it prints two links and no command, and
+   * `components/hero/Wordmark.test.ts` holds it to that.
+   *
+   * Both rows come off in the one commit that follows `npm publish` (runbook step 16),
+   * together with the sentence itself on all four surfaces.
    */
   it.each([
     ["/skill · the whole route", PAGE],
     ["a draft bundle · the quick-setup panel", DRAFT],
-  ] as const)("%s no longer says the command fails", (_name, html) => {
+  ] as const)("%s prints the install line and the limit that line is under", (_name, html) => {
     const text = openText(html).toLowerCase();
     expect(text).toContain(SKILL_INSTALL_COMMAND.toLowerCase());
-    for (const stale of ["fails today", "not runnable", "answers 404", "does not run yet"]) {
-      expect(text).not.toContain(stale);
-    }
-  });
-
-  /**
-   * The package is what the line fetches, so a surface that prints the line may not also
-   * say the package is missing. Two surfaces are out of this list for reasons of their own:
-   * the draft panel's clone paragraph still carries that claim about the clone line beside
-   * it, which is the clone command's to change, and the landing band prints two links and
-   * no command at all, which `components/hero/Wordmark.test.ts` holds it to.
-   */
-  it("/skill · the whole route does not say the package is off npm", () => {
-    const text = openText(PAGE).toLowerCase();
-    for (const stale of ["not on npm", "not published to npm"]) {
-      expect(text).not.toContain(stale);
-    }
+    expect(text).toContain("not published to npm");
   });
 });
 
@@ -207,11 +198,20 @@ describe("the route", () => {
   });
 
   /**
-   * No amber on this page. Every capability the closing section points at exists, and a
-   * "coming soon" marker over a design statement would read as an unbuilt feature.
+   * No amber over what the DarkPrint skill DOES. Every capability the tutorial and the
+   * closing section point at exists, and a "coming soon" marker over a design statement
+   * would read as an unbuilt feature.
+   *
+   * The install step is deliberately outside this: the command it prints fetches a package
+   * that is not on npm, so its amber marks a command that fails and not a feature nobody
+   * wrote. Measured from the second step onward for that reason, and the whole cell goes
+   * back to the whole page when runbook step 16 takes the marker off.
    */
-  it("carries no coming-soon marker and no not-built rule", () => {
-    expect(plainText(PAGE).toLowerCase()).not.toContain("coming soon");
-    expect(plainText(PAGE).toLowerCase()).not.toContain("not built yet");
+  it("carries no coming-soon marker and no not-built rule after the install step", () => {
+    const from = plainText(PAGE).indexOf("Answer its questions");
+    expect(from, "the second step is no longer where the install step ends").toBeGreaterThan(-1);
+    const rest = plainText(PAGE).slice(from).toLowerCase();
+    expect(rest).not.toContain("coming soon");
+    expect(rest).not.toContain("not built yet");
   });
 });

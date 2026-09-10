@@ -3,6 +3,7 @@ import { Logo } from "@/components/site/Logo";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { PanelHeading } from "@/components/ui/SectionHeading";
 import { cx } from "@/lib/format";
+import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import {
   CLAUDE_CODE_SKILLS_PARENT,
   CODEX_SKILLS_PARENT,
@@ -143,6 +144,19 @@ export function SkillSetup({ className }: { className?: string }) {
               command={SKILL_INSTALL_COMMAND_CODEX}
               ariaLabel="Copy the command that installs the DarkPrint skill for Codex"
             />
+            {/* Both lines fetch a package that is not on npm yet, so both answer 404 today.
+                The limit is stated where the command is printed rather than once at the top
+                of the page, because the command is what a reader copies. It comes off with
+                the same sentence on the two download menus and the draft panel, in the one
+                commit that follows `npm publish`. */}
+            <div className="flex flex-col gap-2 rounded-md border border-amber/30 border-l-2 border-l-amber bg-amber/8 p-3">
+              <ComingSoonBadge className="self-start" />
+              <p className="text-xs leading-relaxed text-muted">
+                Not installable yet: the darkprint package is not published to npm, so npx
+                finds nothing to run. The DarkPrint skill is served on this site, file by file,
+                and the links below reach it.
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-col gap-3">

@@ -122,13 +122,13 @@ export function FileTree({
           the inside of the corner actually is. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-t-[11px] border-b border-line bg-surface-2 px-5 py-3.5">
         {/* The AUTHOR, and it is rendered as text on purpose (D-261-06, D-260-25's end
-            state (d)). The archive's six author handles hold no accounts — D-250-11 rules
-            that the import creates none — and `release.manifest.author` keeps the original
-            handle because re-attribution moves ownership and not authorship (D-250-18). So
-            a handle here names somebody who has no profile, and a link to `/u/<handle>` was
-            a rendered promise of a page that 404s. A handle as text is the archive telling
-            the truth; the OWNER, who does hold an account, keeps both of its click targets
-            in `BundleHeader`.
+            state (d)). This reads a stored manifest, and a manifest can name a handle
+            nothing resolves: the archive's six author handles hold no accounts, D-250-11
+            rules that the import creates none, and any release published before an account
+            was renamed keeps the handle its bytes were written with. So a link to
+            `/u/<handle>` was a rendered promise of a page that 404s. A handle as text is
+            the manifest telling the truth; the OWNER, who does hold an account, keeps both
+            of its click targets in `BundleHeader`.
 
             Two things had to go, not one. `Avatar` builds its own `/u/{handle}` link when
             it is passed `link` (`components/ui/Avatar.tsx:66-69`), so dropping the visible

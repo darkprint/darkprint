@@ -56,4 +56,4 @@ notes: >-
   not let a node vouch for its own fetch, so the inference is correct and is left standing.
 
 version: 1.0.0
-author: autogen
+author: mara-veil

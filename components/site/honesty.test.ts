@@ -98,7 +98,7 @@ const CODE_MENU = renderToStaticMarkup(
 const CLONE_NODE = renderToStaticMarkup(
   createElement(CloneMenu, {
     kind: "node",
-    cloneCommand: "npx -y darkprint clone lupo/spec-planner@1.0.0",
+    cloneCommand: "npx -y darkprint clone spec-planner@1.0.0",
   }),
 );
 

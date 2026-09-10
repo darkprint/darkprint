@@ -331,21 +331,40 @@ export function cardIds(): readonly string[] {
  * The count is asserted in a cell rather than here: a throw in this function would land in
  * whichever hook called it first and produce SKIPS instead of a red.
  */
+const AUTHOR_LINE = /^author:\s*(\S+)\s*$/m;
+
+/**
+ * The distinct `author:` handles across the ten blueprint manifests.
+ *
+ * Manifests and cards are read SEPARATELY, and the split is the point. A blueprint's
+ * manifest author is the publisher, so the import moves it to the registry handle. A card's
+ * author line is authorship inside a document somebody wrote, so the import leaves it alone
+ * and `cardAuthors()` below answers the six archive handles. One union over both would be
+ * satisfied by rewriting either set to match the other, which is the move D-250-18 forbids.
+ */
 export function manifestAuthors(): readonly string[] {
   const found = new Set<string>();
-  const author = /^author:\s*(\S+)\s*$/m;
-  for (const file of cardFiles()) {
-    const m = author.exec(readFileSync(`${CARDS_DIR}/${file}`, "utf8"));
+  for (const slug of bundleSlugs()) {
+    const m = AUTHOR_LINE.exec(readFileSync(`${BUNDLES_DIR}/${slug}/blueprint.yaml`, "utf8"));
     if (m) found.add(m[1]);
   }
-  for (const slug of bundleSlugs()) {
-    const m = author.exec(readFileSync(`${BUNDLES_DIR}/${slug}/blueprint.yaml`, "utf8"));
+  return [...found].sort();
+}
+
+/** The distinct `author:` handles across the 61 card files. */
+export function cardAuthors(): readonly string[] {
+  const found = new Set<string>();
+  for (const file of cardFiles()) {
+    const m = AUTHOR_LINE.exec(readFileSync(`${CARDS_DIR}/${file}`, "utf8"));
     if (m) found.add(m[1]);
   }
   return [...found].sort();
 }
 
 export const EXPECTED_AUTHORS = 1;
+
+/** The six people the archive's cards are written by, none of whom holds an account. */
+export const ARCHIVE_CARD_AUTHORS = ["hachi", "k0bra", "lupo", "mara-veil", "orin", "sol-antczak"] as const;
 
 export interface PrintedBundle {
   slug: string;

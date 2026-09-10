@@ -9,8 +9,7 @@ import { openView } from "@/lib/server/ontology";
 import { latestCards, storedVersionsOf, usersOf, usersOfMany } from "@/lib/server/registry";
 import { searchTerms } from "@/lib/server/search";
 import { serveCardSource } from "@/lib/server/export";
-import { resolveCardRef } from "@/lib/server/cards";
-import { actorFrom, getPublicAuthor, publicAuthorsByIds } from "@/lib/server/accounts";
+import { actorFrom, getPublicAuthor } from "@/lib/server/accounts";
 import { getSignals } from "@/lib/server/counters";
 import { listNotes, type NoteRecord } from "@/lib/server/notes";
 import { authorFor } from "@/components/profile/author";
@@ -990,16 +989,13 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   const account =
     card.author === undefined ? undefined : await getPublicAuthor(db, card.author);
   const author = account === undefined ? undefined : authorFor(account);
-  /* The clone line names the account that published this version, which `CardSummary`
-     does not carry: the stored row has the owner's id, and the public reader turns it into
-     a handle. An account that has not chosen a handle yet leaves the bare ref. */
-  const stored = await resolveCardRef(db, ANONYMOUS, record.ref);
-  const publisher =
-    stored === undefined
-      ? undefined
-      : (await publicAuthorsByIds(db, [stored.ownerId])).get(stored.ownerId);
-  const publisherHandle = publisher?.handle ?? null;
-  const cloneLine = `npx -y darkprint clone ${publisherHandle === null ? "" : `${publisherHandle}/`}${record.ref}`;
+  /* The clone line is the reference and nothing else, because that is the whole address of
+     a card: `<id>@<version>` is unique across the registry and `/api/files/cards` is keyed
+     by it, where a blueprint needs its owner because two accounts may hold the same slug.
+     Qualifying it with the publisher was tried and 404s: the id itself may carry a
+     namespace, so the CLI reads a leading segment as part of the id and asks for a card
+     nobody published. */
+  const cloneLine = `npx -y darkprint clone ${record.ref}`;
   /* The document, verbatim, from the published per-card reader. `cardSource` walked
      `content/`, so a card published since the last deploy showed an empty source panel —
      the same reason the blueprint page's panes moved (D-261-12). Bytes on the wire is
@@ -1226,10 +1222,9 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 do for, and the class list is spelled out so the amber lands rather than
                 being decided by stylesheet order against `outline`'s `text-fg`.
 
-                The clone line names the account that published this version, the way a
-                blueprint's line names its owner; `card.author` is attribution inside the
-                document and can be a different person. The CLI's card verb is not built
-                yet, and the owner-qualified form is the grammar it is being given. */}
+                The clone line carries the reference alone, which is the grammar the CLI's
+                card verb takes; `card.author` above is attribution inside the document and
+                names a person, not the address the command resolves. */}
             <CloneMenu
               kind="node"
               cloneCommand={cloneLine}

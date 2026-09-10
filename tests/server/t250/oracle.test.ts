@@ -34,6 +34,8 @@ import {
   cardFiles,
   cardIds,
   manifestAuthors,
+  cardAuthors,
+  ARCHIVE_CARD_AUTHORS,
   printedDigests,
 } from "./contract";
 
@@ -89,21 +91,29 @@ describe("the archive this task imports", () => {
     expect(allCardVersions()).toHaveLength(EXPECTED_CARD_FILES);
   });
 
-  /* The archive is generated, and every card and manifest credits the one account that owns
-     it. Read off `content/` rather than recalled, so a second handle appearing anywhere reds
-     here by name. */
-  it("credits every card and manifest to the registry handle, and to nobody else", () => {
+  /* The archive is generated, and the two author sets say different things: the ten
+     manifests credit the one account that owns them, and the 61 cards credit the six people
+     the documents are written by. Read off `content/` rather than recalled, so a handle
+     crossing from one set to the other reds here by name. */
+  it("credits every manifest to the registry handle and every card to its writer", () => {
     expect(manifestAuthors()).toEqual([REGISTRY_HANDLE]);
     expect(manifestAuthors()).toHaveLength(EXPECTED_AUTHORS);
+    expect(cardAuthors()).toEqual([...ARCHIVE_CARD_AUTHORS]);
+    expect(cardAuthors()).not.toContain(REGISTRY_HANDLE);
   });
 
-  it("carries one overlay term, whose namespace names no author (D-250-06)", () => {
+  it("carries one overlay term, namespaced under one of the archive's authors (D-250-06)", () => {
     const text = readFileSync(`${REPO_ROOT}content/ontology/extensions.yaml`, "utf8");
     const ids = [...text.matchAll(/^\s*-\s+id:\s*(\S+)\s*$/gm)].map((m) => m[1]);
     expect(ids).toEqual([OVERLAY_TERM]);
-    /* The segment is a namespace and nothing more: no `author:` line names it and no account
-       holds it. Renaming the term would move every card digest that declares it. */
-    expect(manifestAuthors()).not.toContain(OVERLAY_TERM.split("/")[0]);
+    /* The segment names one of the six card authors and no account, which is the shape the
+       ruling asked for: a term declared by somebody, owned by nobody. It is NOT the registry
+       handle, so publishing the archive does not turn a namespace into an account. Renaming
+       the term would move every card digest that declares it. */
+    const namespace = OVERLAY_TERM.split("/")[0];
+    expect(cardAuthors()).toContain(namespace);
+    expect(manifestAuthors()).not.toContain(namespace);
+    expect(namespace).not.toBe(REGISTRY_HANDLE);
   });
 });
 
@@ -261,7 +271,7 @@ describe("D-250-13: the prefix traps, checked rather than assumed", () => {
       slugs: bundleSlugs(),
       cardIds: cardIds(),
       cardRefs: cardFiles().map((f) => f.replace(/\.yaml$/, "")),
-      authors: manifestAuthors(),
+      authors: [...new Set([...manifestAuthors(), ...cardAuthors()])].sort(),
     };
     const pairs: string[] = [];
     for (const [name, values] of Object.entries(sets)) {

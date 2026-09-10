@@ -494,12 +494,15 @@ blueprints under the handle `autogen` at version 1.1.0 through the same `publish
 uses, creating that account on the `github_id` sentinel `0`; a database already holding a slug
 under `autogen` at 1.1.0 with a different digest refuses the import, and one still holding an
 earlier import's card versions under another account stops at the first card whose bytes
-differ, naming it, so retire that account first rather than editing rows), `npm run dev`. Two
-operator scripts act as an account through the lifecycle barrel: `npm run account:retire --
+differ, naming it), `npm run dev`. Three operator scripts act as an account through the
+accounts and lifecycle barrels: `npm run account:rename -- --from <handle> --to <handle>
+--yes` prints the bundles whose URLs move and calls `changeHandle`, `npm run account:retire --
 --handle <handle> [--take-private] --yes` prints `planDeletion` and calls `deleteAccount`, and
 `npm run bundle:delete -- --owner <handle> --slug <slug> [--take-private] --yes` prints a bundle's
-rows and calls `deleteBundle`; both print and stop without `--yes`, and `--take-private` is the
-step that lets published rows be destroyed, since both doors keep everything public. Gates: `npm run typecheck`
+rows and calls `deleteBundle`; all three print and stop without `--yes`, and `--take-private` is the
+step that lets published rows be destroyed, since both deletion doors keep everything public.
+Moving the archive to a new registry handle is a rename, not a retire and re-import: renaming
+keeps every bundle, release, star, fork and note, where retiring destroys them. Gates: `npm run typecheck`
 (`tsc --noEmit`; needs a build or `npx next typegen` first for the route types), `npm run
 lint`, `npm test` (`vitest run` over `packages/**`, `lib/**`, `components/**`, `scripts/**`,
 `app/**`, `tests/**`; `maxWorkers` 3 because every worker shares one Postgres; 20 s test
@@ -577,29 +580,43 @@ the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transa
 9. Only after step 8 holds: `MIGRATE_DATABASE_URL="$D" npm run db:migrate` applies
    `0009_drop_ontology_versioning` (destructive) and `0011_tutorial_live` (the live tutorial
    table); the preflight then shows 11 applied.
-10. Retire the old registry account before importing, and in this order: the archive now
-    credits every card to `autogen`, `publish` compares a pinned card's bytes with the stored
-    row, and a card version still owned by `darkprint` refuses the new import at the first
-    bundle. `DATABASE_URL="$D" npm run account:retire -- --handle darkprint` prints
-    `planDeletion`, the bundles it owns and every card version another account's public
-    release pins (each of those survives and blocks step 12 until that release is gone too).
-    Expect published bundles and cards, none private: `deleteAccount` keeps everything public,
-    so run it again with `--take-private --yes`. That sets the bundles private through
-    `setBundleVisibility` and the card versions private with one direct update of
-    `card_version.visibility`, then `deleteAccount` destroys them, releases the handle and
-    tombstones the row. The stars, notes and forks on those rows stop resolving with them; the
-    star and note rows themselves stay in their tables under an id no page reaches.
+10. Rename the registry account, and do not retire it.
+    `DATABASE_URL="$D" npm run account:rename -- --from darkprint --to autogen` prints the
+    account, every bundle whose URL moves and the handle it releases, then writes with
+    `--yes`. `changeHandle` allocates the new name, moves `account.handle` and releases the
+    old one in one transaction, so the ten bundles, their releases, and the stars, forks and
+    notes on them all keep resolving under the new handle. What moves is public: every
+    `/blueprints/darkprint/<slug>` and `/u/darkprint` stops answering and the `autogen` form
+    starts, and `darkprint` goes into the reservation table as `released`, which
+    `checkHandle` refuses forever: no account claims it again, this one included, so the
+    rename is one-way.
+    Retiring instead would destroy all of it, and refuses outright while another account's
+    public fork pins a card version the archive also ships.
 11. `DATABASE_URL="$D" npm run bundle:delete -- --owner alessandro --slug smoke-checker`
     prints the bundle and its releases; a public bundle with a release is refused, so re-run
     with `--take-private --yes`.
 12. `DATABASE_URL="$D" npm run seed:import` publishes the whole archive under `autogen` at
-    1.1.0 and creates that account. Expect `created 10, skipped 0`. The import stops, naming
-    the card, if a card version with different bytes is still stored under another account,
-    and stops naming both handles if the sentinel account still holds `darkprint`, which step
-    10 prevents; a refused attempt leaves the `autogen` account in place, and the next attempt
-    reuses it.
+    1.1.0. Expect `created 10, skipped 0`: the manifests changed, so each bundle takes a new
+    release at a new digest, and no card conflicts, because `publishCard` skips a version
+    already stored under the same bytes. **That last part is step 6's doing and this step
+    cannot run before it.** Production today holds 49 of the 61 archive cards under
+    pre-migration bytes (`cannot:` unsplit, `requires_human` and `ontology_version` still
+    present) and does not hold the other 12 at all; step 6 rewrites each archive card from
+    `content/cards/<ref>.yaml` verbatim, which is what makes them match here. Run out of
+    order and the import throws `conflict` at the first bundle pinning a stale card, leaving
+    the archive half moved. It also stops, naming both handles, if the sentinel account
+    still holds `darkprint`, which step 10 prevents.
+    One thing the import cannot do: `bundleDigest` covers the DOT and the card digests and
+    NOT `blueprint.yaml`, so a bundle whose only change is its manifest keeps its digest,
+    `holdsRelease` finds that digest already stored and the bundle is counted skipped with
+    the old author and description left in place. Every one of the ten differs from what is
+    deployed today by more than its manifest, so all ten publish; a later pass that edits
+    only a description has to move the topology or a card as well, or delete the bundle and
+    import it again.
 13. Verify `/u/autogen` lists ten, `/blueprints/autogen/starter-software-factory` answers 200,
-    and `/api/files/cards/spec-planner@1.0.0` carries `author: autogen`.
+    and `/api/files/cards/spec-planner@1.0.0` still carries `author: orin`. The card's author
+    line is authorship and the account is ownership; the import moves the second and leaves
+    the first where the archive wrote it.
 14. `npm run db:reembed` against `$D` from a machine with `models/`: the descriptions changed,
     so every blueprint vector is stale. Re-probe the find route with `task=add observability
     to a scraping pipeline` and expect `pipeline-observability` first.
@@ -608,15 +625,22 @@ the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transa
 16. Publish the CLI package, which is what every `npx -y darkprint` line on the site fetches:
     `cd packages/mcp && npm publish` (its `prepack` builds `dist/cli.js` and copies the skill
     in). Check with `npm view darkprint version`, then `npx -y darkprint skill install` in a
-    scratch `HOME`. Until this runs, the install and clone lines are printed beside a
-    "not published to npm" note and a Coming soon badge on `/skill`, both download menus and
-    the draft panel; those sentences and the honesty rows that pin them come off in one
-    commit after the package is up, and not before, or the site claims something untrue.
+    scratch `HOME`. Until this runs, every printed `npx -y darkprint` line carries the same
+    "not published to npm" sentence beside it, on five surfaces:
+    `components/skill/SkillSetup.tsx` (the install step, with the badge),
+    `components/bundle/DraftLanding.tsx` (twice, the skill line and the clone line),
+    `components/bundle/CodeMenu.tsx`, `components/blueprint/CloneMenu.tsx` and
+    `app/mcp/page.tsx`. Those sentences, the two `ComingSoonBadge` mounts and the cells that
+    pin them come off in one commit after the package is up, and not before, or the site
+    claims something untrue. The cells to move are the two install rows in
+    `components/skill/SkillSetup.test.ts`, whose no-amber cell also goes back to measuring
+    the whole page, and the honesty rows in `components/site/honesty.test.ts`.
 
 Rollback while the old code is still promoted: `psql "$D" -v ON_ERROR_STOP=1 -f rb-prod.sql`,
 then `DATABASE_URL="$D" npm run migrate:stored-cards -- --expect-db postgres --check-manifest
 rb-prod.sql.manifest.tsv`. After step 9 only the dump from step 3 restores the dropped rows, and
-after step 10 only that dump restores the retired account's bundles and cards. Every
+step 10 cannot be undone: the released handle is reserved permanently, so the old URLs stay
+gone. Every
 `/d/<digest>` address recorded before step 6 answers 404 after it; the embeddings are keyed by
 row id and refreshed by step 14.
 

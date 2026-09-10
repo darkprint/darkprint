@@ -55,4 +55,4 @@ notes: >-
   Attractor's own default for `max_retries` is 0, and doc 3 §4.1's marker reads it as a bound.
 
 version: 1.1.0
-author: autogen
+author: mara-veil

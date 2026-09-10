@@ -50,6 +50,7 @@ import { describe, expect, it } from "vitest";
 import { CardForkButton, refusalFor, refusalKind } from "@/components/nodes/CardForkButton";
 import { CloneMenu } from "@/components/blueprint/CloneMenu";
 import { plainText } from "@/components/ui/visible-text";
+import { parseCardRef } from "@/lib/core";
 
 const PAGE = readFileSync(
   fileURLToPath(new URL("../../app/nodes/[...id]/page.tsx", import.meta.url)),
@@ -91,7 +92,7 @@ const DOWNLOAD = () =>
   renderToStaticMarkup(
     createElement(CloneMenu, {
       kind: "node",
-      cloneCommand: "npx -y darkprint clone lupo/spec-planner@1.0.0",
+      cloneCommand: "npx -y darkprint clone spec-planner@1.0.0",
     }),
   );
 
@@ -466,14 +467,14 @@ describe("the download control is amber, and the blueprint's is not", () => {
     const withDownload = renderToStaticMarkup(
       createElement(CloneMenu, {
         kind: "node",
-        cloneCommand: "npx -y darkprint clone lupo/spec-planner@1.0.0",
+        cloneCommand: "npx -y darkprint clone spec-planner@1.0.0",
         download: createElement("a", { download: "spec-planner@1.0.0.yaml" }, "spec-planner@1.0.0.yaml"),
       }),
     );
     expect(withDownload).toContain('download="spec-planner@1.0.0.yaml"');
     const text = plainText(withDownload);
     expect(text.indexOf("spec-planner@1.0.0.yaml")).toBeLessThan(
-      text.indexOf("npx -y darkprint clone lupo/spec-planner@1.0.0"),
+      text.indexOf("npx -y darkprint clone spec-planner@1.0.0"),
     );
   });
 
@@ -495,6 +496,36 @@ describe("the download control is amber, and the blueprint's is not", () => {
     const items = [...menu.matchAll(/class="label-lead text-fg">([^<]*)</g)].map((m) => m[1]);
     expect(items).toEqual(["Download", "Clone"]);
     expect(plainText(menu)).not.toContain("curl");
+  });
+});
+
+describe("the clone line is a command the CLI can actually run", () => {
+  /* The page printed `clone <publisher>/<ref>` and the registry answers 404 for it: a card
+     is addressed by its reference alone, and `CARD_ID` lets an id carry its own leading
+     segment, so the CLI reads the publisher as part of the id and asks for a card nobody
+     published. The prefix also doubles on a card whose id is already namespaced. Held here
+     because nothing else looks at the string the page hands the menu. */
+  const template = (() => {
+    const at = PAGE.indexOf("const cloneLine =");
+    expect(at, "the page no longer builds a `cloneLine`").not.toBe(-1);
+    return PAGE.slice(at, PAGE.indexOf("\n", at));
+  })();
+
+  it("names the reference and nothing before it", () => {
+    const printed = template.slice(template.indexOf("`") + 1, template.lastIndexOf("`"));
+    expect(printed).toBe("npx -y darkprint clone ${record.ref}");
+  });
+
+  it("parses to the card's own id, which a publisher-qualified line does not", () => {
+    /* The grammar the CLI uses, on the argument the template above produces for a card and
+       on the form that was shipped, so the cell fails for the reason it names rather than
+       on a spelling. */
+    const ref = "spec-planner@1.0.0";
+    const argument = template
+      .slice(template.indexOf("clone ") + "clone ".length, template.lastIndexOf("`"))
+      .replace("${record.ref}", ref);
+    expect(parseCardRef(argument)?.id).toBe("spec-planner");
+    expect(parseCardRef(`lupo/${ref}`)?.id).toBe("lupo/spec-planner");
   });
 });
 

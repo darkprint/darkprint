@@ -168,7 +168,7 @@ describe("the same row for a card", () => {
           href: "/api/bundles/mara-veil/spec-planner/archive?digest=sha256%3Adef",
           name: "spec-planner-1.0.0.tgz",
         },
-        cloneCommand: "npx -y darkprint clone mara-veil/spec-planner@1.0.0",
+        cloneCommand: "npx -y darkprint clone spec-planner@1.0.0",
         label: "Get card",
         tone: "amber" as const,
       }),

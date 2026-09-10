@@ -55,4 +55,4 @@ notes: >-
   optional because the first report of a run has nothing to be rebuilt from.
 
 version: 1.0.0
-author: autogen
+author: hachi

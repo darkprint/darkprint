@@ -46,4 +46,4 @@ notes: >-
   every cycle this node closes; drop it and the loop scores as unbounded iteration.
 
 version: 1.0.0
-author: autogen
+author: k0bra
