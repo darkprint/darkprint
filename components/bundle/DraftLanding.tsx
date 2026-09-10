@@ -1,7 +1,12 @@
 import Link from "next/link";
 import type { Author } from "@/lib/types";
 import { prettyDate } from "@/lib/format";
-import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
+import {
+  CLAUDE_CODE_SKILLS_PARENT,
+  SKILL_ARCHIVE_ROOT,
+  SKILL_INSTALL_COMMAND,
+  SKILL_ROUTE,
+} from "@/lib/skill";
 import { BundleHeader } from "@/components/bundle/BundleHeader";
 import { VisibilitySwitch } from "@/components/bundle/Aside";
 import { ButtonLink } from "@/components/ui/Button";
@@ -119,7 +124,13 @@ export function DraftLanding({
                     DarkPrint skill
                   </Link>{" "}
                   at your own goal and let your agent draft the graph before you publish it
-                  here. The line installs it for Claude Code; its page has the Codex form:
+                  here. The line has npx fetch the darkprint package from npm and copy the
+                  DarkPrint skill into{" "}
+                  <code className="font-mono text-[12px] text-fg">
+                    {CLAUDE_CODE_SKILLS_PARENT}/{SKILL_ARCHIVE_ROOT}
+                  </code>
+                  ; nothing else is installed and no account is created. Its page has the Codex
+                  form:
                 </p>
                 <div className="mt-2 flex items-center gap-2 rounded-md border border-line bg-void px-3 py-2">
                   <code className="flex-1 overflow-x-auto font-mono text-[12px] text-fg">

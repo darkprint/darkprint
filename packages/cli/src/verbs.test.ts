@@ -6,9 +6,9 @@
    guard is a table that can start describing a command nobody
    implemented. Two things needed holding and neither was:
 
-   1. `dispatchedBy` was pure documentation. Six rows claim
+   1. `dispatchedBy` was pure documentation. Seven rows claim
       `runCli` handles them and one claims the shim does, and
-      nothing compared either claim to a dispatcher. A seventh row
+      nothing compared either claim to a dispatcher. An eighth row
       added with `dispatchedBy: "packages/cli/src/run.ts"` and no
       `case` would have put a verb on `darkprint --help` that answers
       `unknown command`, which is the shape a help text is for
@@ -50,12 +50,12 @@ const SHIM = CLI_VERBS.filter((verb) => verb.dispatchedBy === "packages/mcp/src/
 
 describe("`dispatchedBy` is a claim about a dispatcher", () => {
   it("splits the table, so neither case below is vacuous", () => {
-    expect(OWN.length).toBe(6);
+    expect(OWN.length).toBe(7);
     expect(SHIM.map((verb) => verb.name)).toEqual(["mcp"]);
   });
 
   /**
-   * Driven with no arguments, which every one of the six refuses.
+   * Driven with no arguments, which every one of the seven refuses.
    *
    * What is asserted is the refusal it gives: a verb the switch knows answers with its own
    * name and what it wanted, and a verb it does not know answers `unknown command` and
@@ -63,7 +63,7 @@ describe("`dispatchedBy` is a claim about a dispatcher", () => {
    * want of an argument" from "not dispatched at all", which a bare exit code cannot: both
    * are 1.
    *
-   * None of the six writes anything on this path. `validate` and `export` default their
+   * None of the seven writes anything on this path. `validate` and `export` default their
    * directory to `.`, so both are given a name that is not there and refuse on reading it.
    */
   it.each(OWN.map((verb) => [verb.name] as const))(
@@ -79,9 +79,9 @@ describe("`dispatchedBy` is a claim about a dispatcher", () => {
   );
 
   /**
-   * And the seventh is not, which is what its row says.
+   * And the eighth is not, which is what its row says.
    *
-   * This is the half that makes the six above mean something. Without it the cells could
+   * This is the half that makes the seven above mean something. Without it the cells could
    * all pass against a `default` branch that had stopped refusing, and `dispatchedBy` would
    * be describing a distinction the code no longer draws.
    */
@@ -153,7 +153,7 @@ describe("both published help blocks come off the table", () => {
    * The shim leads with `mcp` and this file's own block ends with it.
    *
    * `MCP_FIRST` reorders the table for one entry point and not the other, and deleting the
-   * reordering reddened nothing: both blocks carried all seven verbs either way, which is
+   * reordering reddened nothing: both blocks carried all eight verbs either way, which is
    * all any cell asked. The order is the difference the shim exists to make, since it is
    * the bin of a package named for that subcommand and the line six client configurations
    * on the site already run.

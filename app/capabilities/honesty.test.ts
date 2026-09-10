@@ -73,7 +73,7 @@ describe("the render carries what the modules define", () => {
     /* Every loop below is `it.each` over an imported array. An array that arrived empty
        would run zero cells and the file would report green over nothing. */
     expect(PAGE.length).toBeGreaterThan(3000);
-    expect(CLI_VERBS.length).toBe(7);
+    expect(CLI_VERBS.length).toBe(8);
     expect(CLI_ENV.length).toBe(3);
     expect(TOOL_DEFINITIONS.length).toBe(7);
     expect(MCP_CLIENTS.length).toBe(6);

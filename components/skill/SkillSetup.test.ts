@@ -23,9 +23,11 @@ import { SetupChips } from "@/components/hero/SetupChips";
 import { QUESTIONS, SkillSetup } from "@/components/skill/SkillSetup";
 import { openText, plainText } from "@/components/ui/visible-text";
 import {
+  CLAUDE_CODE_SKILLS_PARENT,
+  CODEX_SKILLS_PARENT,
+  SKILL_ARCHIVE_ROOT,
   SKILL_INSTALL_COMMAND,
   SKILL_INSTALL_COMMAND_CODEX,
-  SKILL_INSTALL_FROM_REPOSITORY,
   SKILL_MANIFEST_PATH,
   SKILL_TREE_PATH,
 } from "@/lib/skill";
@@ -49,16 +51,12 @@ const DRAFT = renderToStaticMarkup(
 
 describe("the install commands", () => {
   /**
-   * Pinned as literals, because a typo in the host or the folder is a 404 or a skill
-   * nothing loads, in somebody else's terminal, and no test in this tree can see it.
+   * Pinned as literals, because a typo in the package name or the verb is a 404 from npm or
+   * an `unknown command`, in somebody else's terminal, and no test in this tree can see it.
    */
-  it("are the curl and tar lines, spelled out", () => {
-    expect(SKILL_INSTALL_COMMAND).toBe(
-      "curl -fsSL https://www.darkprint.io/skill/darkprint.tgz | tar -xzf - -C ~/.claude",
-    );
-    expect(SKILL_INSTALL_COMMAND_CODEX).toBe(
-      "mkdir -p ~/.agents; curl -fsSL https://www.darkprint.io/skill/darkprint.tgz | tar -xzf - -C ~/.agents",
-    );
+  it("are the npx lines, spelled out", () => {
+    expect(SKILL_INSTALL_COMMAND).toBe("npx -y darkprint skill install");
+    expect(SKILL_INSTALL_COMMAND_CODEX).toBe("npx -y darkprint skill install --codex");
   });
 
   it("are real text on the page, not something a script fills in", () => {
@@ -73,19 +71,32 @@ describe("the install commands", () => {
   });
 
   /**
-   * The `skills` CLI form clones a private repository, so it is printed under a label that
-   * says who it is for and never as the first line. A reader who pastes it without access
-   * gets a 404, and the page has to have said so beside it.
+   * What the line does on the reader's machine, in the open beside it: a package comes
+   * down from npm, one folder is written, and the two agents' folders are named so a reader
+   * can go and look. One install path is printed, so a reader never has two to choose
+   * between.
    */
-  it("print the repository form only under its access label", () => {
+  it("say what npx does, where the copy lands, and offer no second install path", () => {
     const text = openText(SETUP);
-    expect(text).toContain(SKILL_INSTALL_FROM_REPOSITORY);
-    const label = text.indexOf("If you have access to the repository");
-    const command = text.indexOf(SKILL_INSTALL_FROM_REPOSITORY);
-    expect(label).toBeGreaterThan(-1);
-    expect(command).toBeGreaterThan(label);
-    expect(text.indexOf(SKILL_INSTALL_COMMAND)).toBeLessThan(command);
-    expect(text.toLowerCase()).toContain("the repository is private");
+    expect(text).toContain("npx fetch the darkprint package from npm");
+    expect(text).toContain(SKILL_ARCHIVE_ROOT);
+    expect(text).toContain(CLAUDE_CODE_SKILLS_PARENT);
+    expect(text).toContain(CODEX_SKILLS_PARENT);
+    expect(text.toLowerCase()).toContain("nothing else is installed and no account is created");
+    expect(text).not.toContain("skills@latest");
+    expect(text.toLowerCase()).not.toContain("repository is private");
+    expect(text.toLowerCase()).not.toContain("curl");
+  });
+
+  /**
+   * The draft panel prints the same line with less room, and a shorter sentence is where
+   * the two promises fall off: nothing pinned it here, and one of them did.
+   */
+  it("say where the copy lands and what else happens on the draft panel too", () => {
+    const text = openText(DRAFT);
+    expect(text).toContain("npx fetch the darkprint package from npm");
+    expect(text).toContain(`${CLAUDE_CODE_SKILLS_PARENT}/${SKILL_ARCHIVE_ROOT}`);
+    expect(text.toLowerCase()).toContain("nothing else is installed and no account is created");
   });
 
   it("link the served tree and the manifest, as plain anchors to static files", () => {
@@ -94,7 +105,7 @@ describe("the install commands", () => {
   });
 
   /**
-   * The claims that were true while the repository was the only source, held as their own
+   * The claims that were true while the package was unpublished, held as their own
    * inversion: the command runs now, and a page that kept saying otherwise would be the
    * false claim in the other direction.
    */
@@ -106,6 +117,22 @@ describe("the install commands", () => {
     const text = openText(html).toLowerCase();
     expect(text).toContain(SKILL_INSTALL_COMMAND.toLowerCase());
     for (const stale of ["fails today", "not runnable", "answers 404", "does not run yet"]) {
+      expect(text).not.toContain(stale);
+    }
+  });
+
+  /**
+   * The package is what the line fetches, so a surface that prints the line may not also
+   * say the package is missing. The draft panel is not in this list: its clone paragraph
+   * still carries that claim about the clone line beside it, and that paragraph is the
+   * clone command's to change.
+   */
+  it.each([
+    ["/skill · the whole route", PAGE],
+    ["the landing band", CHIPS],
+  ] as const)("%s does not say the package is off npm", (_name, html) => {
+    const text = openText(html).toLowerCase();
+    for (const stale of ["not on npm", "not published to npm"]) {
       expect(text).not.toContain(stale);
     }
   });

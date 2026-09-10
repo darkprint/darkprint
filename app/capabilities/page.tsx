@@ -11,7 +11,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SpecPager } from "@/components/spec/SpecPager";
 import { StatusPill, type CapabilityStatus } from "@/components/ui/StatusPill";
 import { BUNDLE_CARDS_DIR, BUNDLE_README, TOPOLOGY_DOT } from "@/lib/content/bundle-export";
-import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
+import { SKILL_INSTALL_COMMAND, SKILL_PACKAGE, SKILL_ROUTE } from "@/lib/skill";
 import { CLI_ENV, CLI_INVOCATION, CLI_VERBS, NPX_INVOCATION } from "@/packages/cli/src/index";
 import { TOOL_DEFINITIONS } from "@/packages/mcp/src/definitions";
 
@@ -37,7 +37,7 @@ import { TOOL_DEFINITIONS } from "@/packages/mcp/src/definitions";
 export const metadata: Metadata = {
   title: "What you can do",
   description:
-    "Every operation DarkPrint offers, from the command line, from a remote MCP server your coding agent connects to with nothing to install, and from the DarkPrint blueprint-writing skill. The CLI is not on npm yet.",
+    "Every operation DarkPrint offers, from the command line, from a remote MCP server your coding agent connects to with nothing to install, and from the DarkPrint blueprint-writing skill. The CLI and the DarkPrint skill install from npm with one npx line.",
 };
 
 /**
@@ -89,19 +89,21 @@ const INTENTS: readonly {
     how: (
       <span>
         <code className="font-mono text-blueprint-ink">get_blueprint</code> from your agent, or{" "}
-        <Verb name="clone" /> from a checkout
+        <Verb name="clone" /> from your terminal, for a release or for one card
       </span>
     ),
     status: "live",
     because:
-      "The MCP tool hands an agent every file of a release today; the CLI verb needs a build " +
-      "from the private repository until the package is on npm.",
+      "The MCP tool hands an agent every file of a release; the CLI verb fetches the same " +
+      "bytes on any machine with Node, since npx pulls the package from npm on the first run.",
   },
   {
     intent: "Check a folder is valid",
     how: <Verb name="validate" />,
-    status: "checkout",
-    because: "A CLI verb. `/upload` runs the same engine in the tab with no install at all.",
+    status: "live",
+    because:
+      "A CLI verb, run through npx or from an installed package. `/upload` runs the same engine " +
+      "in the tab with no install at all.",
   },
   {
     intent: "Run one",
@@ -110,16 +112,17 @@ const INTENTS: readonly {
         nothing here runs a blueprint: <Verb name="export" />, then your own runner
       </span>
     ),
-    status: "checkout",
+    status: "by design",
     because:
-      "The site executes nothing, which `/upload` and `/mcp` both state in the open. The " +
-      "verb that gets you a runnable file is a CLI verb; `export_pipeline` returns the same file over MCP.",
+      "The site executes nothing, which `/upload` and `/mcp` both state in the open. The verb " +
+      "that gets you a runnable file is a CLI verb, and `export_pipeline` returns the same file " +
+      "over MCP; the running is the reader's runner's.",
   },
   {
     intent: "Bring a foreign pipeline in",
     how: <Verb name="import" />,
-    status: "checkout",
-    because: "A CLI verb.",
+    status: "live",
+    because: "A CLI verb, run through npx or from an installed package.",
   },
   {
     intent: "Write one from nothing",
@@ -138,18 +141,19 @@ const INTENTS: readonly {
     intent: "Have your agent write one",
     how: (
       <span className="text-muted">
-        install the DarkPrint skill from this site; it interviews you and writes the folder
+        install the DarkPrint skill with one npx line; it interviews you and writes the folder
       </span>
     ),
     status: "live",
     because:
-      "`SKILL_INSTALL_COMMAND` fetches the archive this site serves under `/skill/`, so the " +
-      "command runs for every reader. `lib/skill.ts` forbids the bare phrase `the skill`, hence the qualifier.",
+      "`SKILL_INSTALL_COMMAND` has npx fetch the package from npm and copy the DarkPrint skill " +
+      "into the agent's skills folder, so the command runs for every reader with Node. " +
+      "`lib/skill.ts` forbids the bare phrase `the skill`, hence the qualifier.",
   },
   {
     intent: "Check a version bump matches the change",
     how: <Verb name="bump" />,
-    status: "checkout",
+    status: "live",
     because:
       "`bump` cuts nothing. It holds a number you already declared against the actual diff " +
       "and writes nothing at all, so the intent is a check rather than a release.",
@@ -157,10 +161,10 @@ const INTENTS: readonly {
   {
     intent: "Say what a run cost",
     how: <Verb name="report" />,
-    status: "checkout",
+    status: "live",
     because:
       "The one verb that writes. The route takes a session cookie or a write-scoped key, and " +
-      "the verb itself still needs a build from the private repository.",
+      "the verb sends the cookie named in the environment table on the CLI tab.",
   },
   {
     intent: "Publish from your agent",
@@ -279,11 +283,12 @@ export default function CapabilitiesPage() {
         The command-line surface
       </h2>
       <Framing>
-        The darkprint package is not on npm, so{" "}
-        <code className="font-mono text-blueprint-ink">{NPX_INVOCATION}</code> fails, and the
-        source repository it would be built from is private. Until that changes, the table below
-        is a reference for what each command will take. Exit code 0 on success, 1 on anything
-        else.
+        Every verb below runs as{" "}
+        <code className="font-mono text-blueprint-ink">{NPX_INVOCATION} &lt;verb&gt;</code> on
+        any machine with Node. The first run has npx fetch the{" "}
+        <code className="font-mono text-blueprint-ink">{SKILL_PACKAGE}</code> package from npm
+        and keep it in its own cache, so nothing lands in your project. The table below is
+        what each command takes. Exit code 0 on success, 1 on anything else.
       </Framing>
       <TableShell>
         <thead>
@@ -309,14 +314,14 @@ export default function CapabilitiesPage() {
                 {verb.does}
               </td>
               <td className="px-5 py-3.5 align-top">
-                <StatusPill status="checkout" />
+                <StatusPill status="live" />
               </td>
             </tr>
           ))}
         </tbody>
       </TableShell>
       <p className="text-sm leading-relaxed text-dim">
-        One of the seven needs more than a checkout.{" "}
+        One of the eight needs more than the package.{" "}
         <code className="font-mono text-blueprint-ink">report</code> is the only verb that
         writes. It needs a signed-in session cookie, passed through the session variable below,
         or a write-scoped API key from <Link href="/settings">Settings</Link>. It also refuses
@@ -424,8 +429,10 @@ export default function CapabilitiesPage() {
         ))}
       </KeyValueList>
       <p className="text-sm leading-relaxed text-dim">
-        Copy the one for your client. The same server also runs on your own machine over stdio
-        once the darkprint package is published to npm; it is not published to npm yet.
+        Copy the one for your client. The same server also runs on your own machine over stdio,
+        as <code className="font-mono text-blueprint-ink">{NPX_INVOCATION} mcp</code>, out of the
+        same package that carries the CLI and the DarkPrint skill; the remote address above needs
+        no package at all.
       </p>
     </section>
   );
@@ -455,7 +462,10 @@ export default function CapabilitiesPage() {
         />
       </div>
       <p className="text-sm leading-relaxed text-dim">
-        The archive is served by this site, so the command runs for every reader.{" "}
+        The line has npx fetch the{" "}
+        <code className="font-mono text-blueprint-ink">{SKILL_PACKAGE}</code> package from npm
+        and copy the DarkPrint skill it carries into your agent&rsquo;s skills folder; nothing
+        else is installed and no account is created.{" "}
         <Link href={SKILL_ROUTE}>Assisted Design</Link> explains it and gives the Codex form, and{" "}
         <Link href="/tutorial">the tutorial</Link> walks a first blueprint through it, with a
         live page here drawing the graph as the interview runs.
@@ -532,8 +542,7 @@ export default function CapabilitiesPage() {
       />
       <p className="mt-3 text-sm leading-relaxed text-dim">
         <span className="text-emerald">live</span>: works as printed ·{" "}
-        <span className="text-blueprint-ink">checkout</span>: needs a build from the source
-        repository, which is private today
+        <span className="text-muted">by design</span>: built, and declines that step on purpose
       </p>
 
       <section aria-labelledby="intent-title" className="mt-10 flex min-w-0 flex-col gap-3">

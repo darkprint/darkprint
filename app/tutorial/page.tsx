@@ -6,7 +6,13 @@ import { SpecPager } from "@/components/spec/SpecPager";
 import { LivePrompt, StartLive } from "@/components/tutorial/StartLive";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { PanelHeading, SectionHeading } from "@/components/ui/SectionHeading";
-import { SKILL_INSTALL_COMMAND, SKILL_INSTALL_COMMAND_CODEX, SKILL_TREE_PATH } from "@/lib/skill";
+import {
+  SKILL_ARCHIVE_ROOT,
+  SKILL_INSTALL_COMMAND,
+  SKILL_INSTALL_COMMAND_CODEX,
+  SKILL_PACKAGE,
+  SKILL_TREE_PATH,
+} from "@/lib/skill";
 
 /* ============================================================
    /tutorial: write one blueprint in your own agent, and watch it here.
@@ -122,10 +128,12 @@ export default function TutorialPage() {
               </div>
               <div className="flex flex-col gap-3">
                 <p className={P}>
-                  Either line unpacks one archive from this site into{" "}
-                  <code className="font-mono text-[13px] text-fg">skills/darkprint</code>, where
-                  your agent reads its skills. Nothing else is installed and no account is
-                  created.
+                  Either line has npx fetch the{" "}
+                  <code className="font-mono text-[13px] text-fg">{SKILL_PACKAGE}</code> package
+                  from npm and copy the DarkPrint skill it carries into{" "}
+                  <code className="font-mono text-[13px] text-fg">{SKILL_ARCHIVE_ROOT}</code>{" "}
+                  under your agent&rsquo;s folder, where it reads its skills. Nothing else is
+                  installed and no account is created.
                 </p>
                 <p className={P}>
                   To read it first, open{" "}

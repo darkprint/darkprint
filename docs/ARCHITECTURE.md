@@ -387,12 +387,13 @@ with `DARKPRINT_API_KEY` as a bearer when set. The package is named `darkprint`,
 
 | Verb | Does |
 | --- | --- |
-| `clone <owner>/<slug> [--version <v> \| --digest <d>] [--out <dir>]` | fetches a release into a directory, byte for byte |
+| `clone (<owner>/<slug> [--version <v> \| --digest <d>] \| <id>@<version>) [--out <dir>]` | fetches a release into a directory, byte for byte; given a card reference, writes that one card as `cards/<id>@<version>.yaml` under `--out` (the cwd by default) through `/api/files/cards/` |
 | `validate [<dir>]` | runs the bundle checks offline; exit 1 only on an error finding |
 | `export [<dir>] --attractor` | writes Attractor DOT on stdout, findings on stderr |
 | `import <pipeline.dot> --as <handle> --out <dir>` | reads an Attractor pipeline into a draft bundle on disk |
 | `bump [<dir>] --declare <version> --target <owner>/<slug>` | checks a declared version against what changed since the last release; writes nothing |
 | `report <run-dir> --target <owner>/<slug> --cost <units>` | posts a finished Attractor run to `/api/blueprints/<owner>/<slug>/runs` |
+| `skill install [--codex] [--dir <parent>]` | copies the DarkPrint skill the package carries into `~/.claude/skills/darkprint` (Claude Code), `~/.agents/skills/darkprint` (`--codex`) or `<parent>/skills/darkprint`, replacing an earlier copy; prints the destination and `metadata.version` from the frontmatter; the packaged tree is found beside `dist/`, never from the cwd |
 | `mcp` | serves the registry over MCP on stdio |
 
 Environment: `DARKPRINT_URL` (registry base, default `https://www.darkprint.io`),
@@ -430,12 +431,17 @@ after a first write, names the lineage in `README.md`, and sends phase `enriched
 hits when a page is open. `references/live-preview.md` holds the draft field by field and
 the curl lines.
 
-Install: `prebuild` packs the tree into `public/skill/darkprint.tgz` with a deterministic tar
-and a `manifest.json` of per-file hashes. Claude Code: `curl -fsSL
-https://www.darkprint.io/skill/darkprint.tgz | tar -xzf - -C ~/.claude`; Codex: `mkdir -p
-~/.agents; curl -fsSL https://www.darkprint.io/skill/darkprint.tgz | tar -xzf - -C ~/.agents`.
-`npx skills@latest add Brotherhood94/darkprint` works only for a reader with access to this
-private repository.
+Install: the `darkprint` npm package carries the tree as `skill/darkprint` beside `dist/`
+(`npm run build` in `packages/mcp` copies it there, and `prepack` runs that build), and
+`npx -y darkprint skill install` copies it into `~/.claude/skills/darkprint`; `--codex` lands
+it in `~/.agents/skills/darkprint` and `--dir <parent>` under `<parent>/skills/darkprint`. The
+first run fetches the package from npm and npx keeps it in its cache; nothing else is
+installed. `SKILL.md`'s frontmatter carries `metadata.version`, which the verb prints. The
+strings the site prints are `SKILL_INSTALL_COMMAND` and `SKILL_INSTALL_COMMAND_CODEX` in
+`lib/skill.ts`, held equal to the CLI's `NPX_INVOCATION` by `lib/skill.test.ts`. `prebuild`
+still copies the tree to `public/skill/darkprint/**` and packs it into
+`public/skill/darkprint.tgz` with a deterministic tar and a `manifest.json` of per-file hashes,
+so a reader can read every file before running anything and check the installed copy.
 
 ## 12. Auth and policy
 

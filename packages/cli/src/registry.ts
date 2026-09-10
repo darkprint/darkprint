@@ -150,6 +150,19 @@ export async function postRunReport(
   });
 }
 
+/**
+ * The card file route: one card version as published, verbatim YAML.
+ *
+ * Each path segment is encoded separately, as `read_card` does in `packages/mcp`: a
+ * namespaced id spans two segments, and encoding the whole reference would turn its `/`
+ * into `%2F` and address nothing. The `.yaml` suffix is the spelling the site's own
+ * download command uses, and the route accepts both.
+ */
+export async function fetchCard(options: RegistryOptions, ref: string): Promise<string> {
+  const encoded = ref.split("/").map(seg).join("/");
+  return await request(options, `/api/files/cards/${encoded}.yaml`);
+}
+
 /** T090's file route: one file of one release, addressed by digest. */
 export async function fetchFile(
   options: RegistryOptions,
