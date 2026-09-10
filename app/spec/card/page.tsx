@@ -17,9 +17,9 @@ import {
   VocabularyBrowser,
   type VocabularyRow,
 } from "@/components/ontology/VocabularyBrowser";
-import { CheckLegend, CheckTable } from "@/components/spec/CheckTable";
+import { CheckCell, CheckLegend, prose } from "@/components/spec/CheckTable";
 import { Id, SpecLink } from "@/components/spec/parts";
-import { CARD_ROWS } from "@/components/spec/rows";
+import { CARD_ROWS, type CardRow } from "@/components/spec/rows";
 import { specNeighbours } from "@/components/spec/sequence";
 import { SpecCrumb, SpecPager } from "@/components/spec/SpecPager";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -39,32 +39,36 @@ import { getNodeCard } from "@/lib/content";
 /* ============================================================
    /spec/card: the node card, and the vocabulary that fills it.
 
-   The vocabulary has no page of its own because every term in it
-   exists to be a legal value of a card field: `type` takes a node
-   type, `phase` takes phases, `tools` takes tool capabilities,
-   `risk_markers` takes risk markers, and a port's `type` and every
-   entry of `cannot` take a data type. So the terms are printed beside
-   the field that takes them, and the whole listing closes the page.
+   Five bands, in the order a reader can follow: what a card reaches,
+   one real card annotated, every field once, what the validator
+   checks, and the whole vocabulary. The vocabulary has no page of its
+   own because every term in it exists to be a legal value of a card
+   field: `type` takes a node type, `phase` takes phases, `tools`
+   takes tool capabilities, `risk_markers` takes risk markers, and a
+   port's `type` and every entry of `cannot` take a data type. So the
+   curated ids are printed under the field that takes them, and the
+   whole listing closes the page.
+
+   Each field has one home. `CARD_ROWS` carries what a field holds
+   and the diagnostic beside it, the chips under a row are the ids it
+   may take, and the reach figure and the annotated card above the
+   reference say what the same fields do on one real file. A fact
+   stated in one of those is not restated in another.
 
    The specification is static and the registry is not, and the page
-   is split on that line. The chips beside each field are the curated
-   core, read off `CORE_ONTOLOGY` while the page renders; the band at
-   the foot is the registry, every core term plus every term a
-   published blueprint declares in its own namespace, with a live
-   usage count, which needs a query. The enumeration is therefore an
-   async child behind a `Suspense` boundary and the default export
-   stays synchronous, which keeps the page renderable by
+   is split on that line. The chips are the curated core, read off
+   `CORE_ONTOLOGY` while the page renders; the band at the foot is
+   the registry, every core term plus every term a published
+   blueprint declares in its own namespace, with a live usage count,
+   which needs a query. The enumeration is therefore an async child
+   behind a `Suspense` boundary and the default export stays
+   synchronous, which keeps the page renderable by
    `renderToStaticMarkup` and keeps `components/site/honesty.test.ts`
    collectible over the two sentences it pins here.
 
    The boundary sits under the band's heading rather than around the
    band, because `#every-term-heading` is a link target and an id that
    arrives with the stream is one a hash navigation can scroll past.
-
-   `SectionNodeCard` mounts `CardBreakdown`, the annotated card picked
-   with a click rather than walked with a scroll, on the owner's
-   instruction to keep the scroll walk for the landing only. The card
-   is read through `cardSource`, byte for byte.
    ============================================================ */
 
 export const metadata: Metadata = {
@@ -77,7 +81,7 @@ const HERE = "/spec/card";
 
 /**
  * Per request, because `VocabularyList` below runs a registry query and Next prerenders a
- * page it cannot see a request-time dependency in: without this line the segment came out
+ * page it cannot see a request-time dependency in: without this line the segment comes out
  * static, read from Postgres once at deploy and frozen there. A `Suspense` boundary does not
  * make a segment dynamic on its own; the declaration is about the segment and the boundary
  * about the order its parts arrive in.
@@ -87,7 +91,7 @@ const HERE = "/spec/card";
  * can render one. Next 16 removes `dynamic` once `cacheComponents` is enabled; that
  * follow-up should replace this line with `connection()` on every route carrying it.
  *
- * The cost: `getNodeCard`, `isolationDemo()` and the core ontology view now run per request.
+ * The cost: `getNodeCard`, `isolationDemo()` and the core ontology view run per request.
  * All three are pure functions over files that ship in the deployment and all three are
  * memoised; the registry query is the expensive one and it is the one held behind the
  * boundary.
@@ -128,177 +132,6 @@ async function vocabularyView(
 }
 
 /**
- * One field of the card, what its value means, and which kind of term it draws that value
- * from.
- *
- * `CARD_ROWS` answers "what holds it" per top-level key, which is the wrong shape for the
- * fields that hold structure (a port has four keys, `cannot` and `will_not` read against
- * each other) and for every field whose value comes out of the vocabulary. `values` names
- * the kind, and the entry prints the curated terms of that kind under the role: `checkTerm`
- * in `lib/core/card/validate.ts` is called with exactly one `TermKind` per field, and a term
- * of another kind is refused with `card/wrong-term-kind` even though it resolves. The chip
- * rows are captioned `curated` because a namespaced term a blueprint declares is legal in
- * the same field and lives in the band at the foot.
- *
- * Every sentence is `lib/core/card/schema.ts` or `lib/core/card/validate.ts` read back. The
- * prohibition pair is last on purpose: the quoted refusal under this list is the validator's
- * answer to the first of the two.
- */
-const FIELDS: readonly {
-  key: string;
-  role: React.ReactNode;
-  /** The kind whose terms are the legal values here, when the field takes one. */
-  values?: TermKind;
-}[] = [
-  {
-    key: "type",
-    values: "node-type",
-    role: (
-      <>
-        What kind of actor the node is, and the only field that decides it. Everything
-        downstream reads it: the shape the exporter draws, whether the autonomy reading
-        counts the node as a person or a process, and whether the node must carry a shell
-        command in <Id>params.tool_command</Id>, which only <Id>shell-tool</Id> does. Three
-        of the values below are categories (<Id>human-in-the-loop</Id>, <Id>evaluative</Id>,{" "}
-        <Id>orchestration</Id>): the validator accepts them, but the exporter has no shape
-        for a category and falls back to <Id>box</Id>, so write the concrete subtype. An id
-        the vocabulary does not carry is a <Id>card/unknown-term</Id>, and a term of another
-        kind is a <Id>card/wrong-term-kind</Id> rather than a silent pass.
-      </>
-    ),
-  },
-  {
-    key: "inputs[].name · outputs[].name",
-    role: (
-      <>
-        The end of an edge rather than a label. A DOT edge writes{" "}
-        <Id>{'[out="build", in="brief"]'}</Id> to say which pair of ports it joins, so a
-        port name is an address the topology can point at. Unique within a side: two inputs
-        both called <Id>brief</Id> leave the resolver no way to decide which one an edge
-        meant, and it raises <Id>card/duplicate-port</Id> rather than picking one.
-      </>
-    ),
-  },
-  {
-    key: "inputs[].type · outputs[].type",
-    values: "data-type",
-    role: (
-      <>
-        What travels along an edge, and the only subfield the resolver pairs on. An edge
-        holds when the source&rsquo;s output type is the target&rsquo;s input type or a
-        narrower kind of it, which is why the set below is a tree rather than a list.
-        Everything a card says about what actually moves is carried by this one word; the
-        rest of the port is written for a person.
-      </>
-    ),
-  },
-  {
-    key: "inputs[].description · outputs[].description",
-    role: (
-      <>
-        Free text for whoever wires the graph, read by nothing. It is where a port says the
-        part its type cannot: that <Id>brief</Id> is the ordered build steps the run was
-        started with, and the only thing this node ever sees.
-      </>
-    ),
-  },
-  {
-    key: "inputs[].required",
-    role: (
-      <>
-        Inputs only, and true unless the card says otherwise. On an output it describes
-        nothing, because an output is not something a node needs, and the validator reports{" "}
-        <Id>card/bad-type</Id> against the exact path rather than dropping the key in
-        silence.
-      </>
-    ),
-  },
-  {
-    key: "phase[]",
-    values: "phase",
-    role: (
-      <>
-        Where in the lifecycle the node sits. Any number of the five, and the key takes a
-        single term or a sequence because both spellings read naturally in YAML. The five
-        are closed and nobody may add one: a namespaced entry is a{" "}
-        <Id>card/namespaced-phase</Id> and anything else is a{" "}
-        <Id>card/unknown-phase</Id>. An empty list is a complete answer and never a hole,
-        because the phases describe the blueprint rather than every node in it, and an
-        intake, a retrieval step or a memory store stands in none of them. An empty list is
-        shown as empty, never as missing.
-      </>
-    ),
-  },
-  {
-    key: "tools[] · mcp[]",
-    values: "tool",
-    role: (
-      <>
-        What the node is allowed to reach for. Two lists that look alike and answer
-        different questions. A <Id>tools</Id> entry is a capability term, so it either
-        resolves or raises <Id>card/unknown-term</Id>. An <Id>mcp</Id> entry is the name a
-        concrete server is registered under on the machine that runs the graph, which the
-        vocabulary has no term for and is not going to grow one. <Id>tools</Id> says what
-        the node is permitted to do and <Id>mcp</Id> says which process supplies it; a node
-        can carry either without the other.
-      </>
-    ),
-  },
-  {
-    key: "risk_markers[]",
-    values: "risk-marker",
-    role: (
-      <>
-        What could go wrong if this step misbehaves, as terms from the vocabulary. Seven core
-        markers carry a weight in DarkPrint&rsquo;s configuration, and Security subtracts
-        each one it finds. A marker coined in a blueprint&rsquo;s own namespace sets its own
-        weight. A marker with no weight, including the two category terms{" "}
-        <Id>execution-risk</Id> and <Id>isolation-breach</Id>, subtracts nothing: the risk
-        is declared but never scored. The curated values below are the core set; the
-        listing at the foot of the page adds every marker a published blueprint declares in
-        its own namespace.
-      </>
-    ),
-  },
-  {
-    key: "params.*",
-    role: (
-      <>
-        Free in shape, but it must survive a JSON round trip. The digest is a hash of the
-        card&rsquo;s JSON form, and a blueprint pins a card by that digest. A value that
-        cannot be serialised is refused where it is written (<Id>card/bad-type</Id>), rather
-        than later, when two digests disagree.
-      </>
-    ),
-  },
-  {
-    key: "cannot[]",
-    role: (
-      <>
-        The same <Id>data-type</Id> terms a port takes, listed above, and nothing else. Each
-        entry is a prohibition the resolver enforces: an incoming edge able to carry that
-        type, or a narrower kind of it, fails the whole blueprint. A sentence written here is
-        a <Id>card/unknown-term</Id>, because the validator has no way to hold a graph to a
-        sentence and this is the field it holds graphs to.
-      </>
-    ),
-  },
-  {
-    key: "will_not[]",
-    role: (
-      <>
-        The prohibitions the author states and the validator cannot check: &ldquo;never opens
-        a shell&rdquo;, &ldquo;does not edit the code under test&rdquo;. Nothing reads
-        them, and they are addressed to whoever runs the node and to the model that is
-        handed the specification at run time. <Id>cannot</Id> holds the rules the validator
-        enforces and <Id>will_not</Id> the ones it cannot. Both are legitimate. A reader has
-        to be able to tell which is which without running anything.
-      </>
-    ),
-  },
-];
-
-/**
  * The terms a field will accept, printed as the ids a card has to spell rather than the
  * labels: a reader at this point in the page is holding a field and needs the string that
  * goes in it. The caption says curated because these come off `CORE_ONTOLOGY` and carry no
@@ -323,6 +156,28 @@ function FieldTerms({ terms }: { terms: readonly OntologyTerm[] }) {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/**
+ * One field of the card, read in one place: the key, what it holds, the curated ids it may
+ * take and what holds it. Three columns above `md` and a stack below, and the check cell is
+ * the one `/spec/topology`'s table draws, so the two layers read as one document. Never a
+ * `<details>`: folding the chips away puts the vocabulary one interaction further from the
+ * field that takes it.
+ */
+function FieldEntry({ row, terms }: { row: CardRow; terms: readonly OntologyTerm[] }) {
+  return (
+    <div className="grid gap-x-8 gap-y-3 border-t border-line py-5 md:grid-cols-[13rem_minmax(0,1fr)_14rem]">
+      <dt className="font-mono text-[12px] leading-relaxed text-fg">{row.name}</dt>
+      <dd className="min-w-0 text-sm leading-relaxed text-muted">
+        <p>{prose(row.what)}</p>
+        <FieldTerms terms={terms} />
+      </dd>
+      <dd className="min-w-0">
+        <CheckCell check={row.check} />
+      </dd>
     </div>
   );
 }
@@ -423,8 +278,10 @@ export default function SpecCardPage() {
   const phases = CORE_PHASE_IDS.map((id) => coreView.get(id)).filter(
     (term): term is OntologyTerm => term !== undefined,
   );
-  const termsOf = (kind: TermKind): readonly OntologyTerm[] =>
-    kind === "phase" ? phases : coreView.byKind(kind);
+  const termsOf = (kind: TermKind | undefined): readonly OntologyTerm[] => {
+    if (kind === undefined) return [];
+    return kind === "phase" ? phases : coreView.byKind(kind);
+  };
 
   /* The same card `SectionNodeCard` annotates, parsed, for the reach panel above it. */
   const reachCard = getNodeCard("code-builder")?.card;
@@ -450,12 +307,12 @@ export default function SpecCardPage() {
             as="h1"
             eyebrow={page.eyebrow}
             title={page.title}
-            lead="One YAML file per node: what the step is, what it is told to do, which model and tools it may use, what arrives and what must never arrive. The validator accepts the same fields as JSON. A published version is never edited in place, so a change means a new file and a new version number. Every term a field may take is listed beside it below."
+            lead="One YAML file per node: what the step is, what it is told to do, which model and tools it may use, what arrives and what must never arrive. The validator accepts the same fields as JSON. A published version is never edited in place, so a change means a new file and a new version number."
           />
         </div>
       </header>
 
-      {/* The six fields that decide a node's reach, above the annotated card: fields, then
+      {/* The seven fields that decide a node's reach, above the annotated card: fields, then
           the file. Every value is read off `code-builder@1.0.0`, the card the rest of the
           site opens with, so the figure cannot end up teaching a schema nobody ships. */}
       {reachCard !== undefined && (
@@ -467,8 +324,8 @@ export default function SpecCardPage() {
               mcp={reachCard.mcp.length > 0 ? reachCard.mcp.join(", ") : "none"}
               skill={reachCard.skill ?? "none"}
               /* Both fields are read rather than one being derived from the other by
-                 position, which once worked only because the archive's one enforced card
-                 happened to write them in that order. */
+                 position: the archive's one enforced card happens to write them in that
+                 order, and a figure should not depend on it. */
               cannot={
                 reachCard.cannot.length > 0 ? (reachCard.cannot[0] ?? "") : "no type refused"
               }
@@ -488,7 +345,7 @@ export default function SpecCardPage() {
       )}
 
       {/* The card the whole page is about, annotated line by line, read straight out of
-          `content/cards/`, and broken into nine parts a reader picks rather than scrolls
+          `content/cards/` and broken into nine parts a reader picks rather than scrolls
           through. */}
       <SectionNodeCard />
 
@@ -502,67 +359,42 @@ export default function SpecCardPage() {
             <h2 id="fields-heading" className={cx(BAND_H2, "scroll-mt-24")}>
               Every field, and what holds it
             </h2>
+            {/* No count in the sentence: a number typed beside a list somebody else owns
+                goes stale silently. Every id under a field comes out of `CORE_ONTOLOGY`
+                through the engine's own view, so a term renamed in the core is renamed
+                here and one removed disappears. */}
+            <p className="text-[15px] leading-relaxed text-muted">
+              The ids under a field are the curated core, spelled as a card has to spell
+              them.
+            </p>
           </div>
 
           <div className="flex flex-col gap-5">
-            {/* No count in the sentence: a number typed beside a table somebody else owns
-                goes stale silently. */}
-            <p className="text-sm text-muted">
-              One row per top-level key in the file. The third column names the diagnostic
-              code the validator prints, on{" "}
-              <SpecLink href="/upload">the upload page</SpecLink> and in the build, when the
-              rule is broken. A code can be grepped for and tripped on purpose, which is what
-              separates a checked rule from a promise.
-            </p>
             <CheckLegend />
-            <CheckTable
-              rows={CARD_ROWS}
-              caption="What the validator checks on a node card, and what it leaves to the author"
-            />
-          </div>
-
-          {/* One row per field, the key in a 15rem column and the prose beside it, with the
-              vocabulary a field draws from printed under it. Never a `<details>`: folding the
-              chip rows away would put the vocabulary one interaction further from the field
-              than it was on its own route. */}
-          <div className="flex flex-col gap-5">
-            <h3 id="field-values-heading" className="label-lead scroll-mt-24">
-              What each field may hold
-            </h3>
-            <p className="text-sm text-muted">
-              Several rows above apply to more than one thing, and the ones that take a
-              term draw it from one controlled vocabulary. What each key decides, what it
-              costs to leave it out or to get it wrong, and the curated ids that go in
-              it.
-            </p>
-            <dl className="flex flex-col">
-              {FIELDS.map((field) => (
-                <div
-                  key={field.key}
-                  className="grid gap-x-8 gap-y-1.5 border-t border-line py-5 md:grid-cols-[15rem_1fr]"
-                >
-                  {/* Spelled exactly as `CheckTable` spells its row heads, so the list
-                      reads as the table continued. Deliberately not copper: that register
-                      belongs to the figure above, where it marks the runs of one real file. */}
-                  <dt className="font-mono text-[12px] leading-relaxed text-fg">
-                    {field.key}
-                  </dt>
-                  <dd className="min-w-0 text-sm leading-relaxed text-muted">
-                    {field.role}
-                    {field.values !== undefined && (
-                      <FieldTerms terms={termsOf(field.values)} />
-                    )}
-                  </dd>
-                </div>
+            <dl className="flex flex-col border-b border-line">
+              {CARD_ROWS.map((row) => (
+                <FieldEntry key={row.name} row={row} terms={termsOf(row.values)} />
               ))}
             </dl>
-            {/* Every id and count above comes out of `CORE_ONTOLOGY` through the engine's
-                own view: a term renamed in the core is renamed here, and one removed
-                disappears. The strip claims no moment, because these come from a constant
-                compiled into the deployment and the request-time read is the band at the
-                foot. */}
-            <p className="border-t border-line pt-3 font-mono text-[11px] tracking-[0.06em] text-dim">
-              every id above comes from the engine&rsquo;s own core vocabulary
+          </div>
+        </div>
+      </section>
+
+      <section
+        className="border-t border-line bg-surface/40 py-16 sm:py-20"
+        aria-labelledby="checks-heading"
+      >
+        <div className="container-page flex flex-col gap-10">
+          <div className="flex flex-col gap-3">
+            <span className="label-lead">The checks</span>
+            <h2 id="checks-heading" className={cx(BAND_H2, "scroll-mt-24")}>
+              What the validator checks
+            </h2>
+            <p className="text-[15px] leading-relaxed text-muted">
+              Every code beside a field is a real diagnostic. The validator prints it on{" "}
+              <SpecLink href="/upload">the upload page</SpecLink> and in the build when the
+              rule is broken, so a code can be grepped for and tripped on purpose, which is
+              what separates a checked rule from a promise.
             </p>
           </div>
 
@@ -571,9 +403,9 @@ export default function SpecCardPage() {
               {/* No reading lane: this is a one-sentence caption for the panel directly under
                   it, and the panel is full width. */}
               <p className="text-[15px] leading-relaxed text-muted">
-                The message below is the validator&rsquo;s own output rather than text
-                written for this page. It comes from adding one edge,{" "}
-                <Id>{ADDED_DOT_LINE}</Id>, to the starter blueprint.
+                This message is the validator&rsquo;s own output rather than text written for
+                this page. It comes from adding one edge, <Id>{ADDED_DOT_LINE}</Id>, to the
+                starter blueprint.
               </p>
               <div className="rounded-lg border border-line bg-surface-2 p-4">
                 {/* The severity in word form, beside the code, from the same table the
@@ -605,14 +437,14 @@ export default function SpecCardPage() {
         </div>
       </section>
 
-      {/* The whole vocabulary, after the fields that consume it: the chips above answer
-          "what may I write here", and a reader who wants the set itself, with what each
-          term means and how many cards name it, gets it without leaving the page. The
+      {/* The whole vocabulary, after the fields that consume it: the chips under a field
+          answer "what may I write here", and a reader who wants the set itself, with what
+          each term means and how many cards name it, gets it without leaving the page. The
           catalog renders on the server and travels through the client boundary as
           children, which is what lets it draw subsumption rails no serialisable row shape
           could carry. */}
       <section
-        className="border-t border-line bg-surface/40 py-16 sm:py-20"
+        className="border-t border-line bg-void py-16 sm:py-20"
         aria-labelledby="every-term-heading"
       >
         <div className="container-page flex flex-col gap-10">
@@ -625,11 +457,9 @@ export default function SpecCardPage() {
                 bar, and a number typed in the half of the page that cannot see it would be
                 a second count of the same set. */}
             <p className="text-[15px] leading-relaxed text-muted">
-              The {CORE_ONTOLOGY.terms.length}{" "}
-              curated terms the fields above draw on, and every term a published blueprint
-              declares in its own namespace, with each
-              one&rsquo;s parent and how many cards name it. Search, or filter by kind and
-              origin, and the grouped view below swaps for the matching rows.
+              The {CORE_ONTOLOGY.terms.length} curated terms the fields draw on, and every
+              term a published blueprint declares in its own namespace, each with its parent
+              and how many cards name it.
             </p>
           </div>
 
