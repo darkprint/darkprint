@@ -6,7 +6,7 @@ import type { OntologyView } from "@/lib/core";
 import { getSharedDbClient } from "@/lib/db";
 import type { Actor } from "@/lib/server/policy";
 import { openView } from "@/lib/server/ontology";
-import { latestCards, usersOf, usersOfMany, versionsOf } from "@/lib/server/registry";
+import { latestCards, storedVersionsOf, usersOf, usersOfMany } from "@/lib/server/registry";
 import { searchTerms } from "@/lib/server/search";
 import { serveCardSource } from "@/lib/server/export";
 import { actorFrom, getPublicAuthor } from "@/lib/server/accounts";
@@ -65,10 +65,14 @@ const ANONYMOUS: Actor = Object.freeze({ kind: "anonymous" });
  * **Vocabulary stays on `ANONYMOUS` below, deliberately.** `vocabularyView` resolves the
  * ontology, and an ontology term is public and authorless regardless of who is reading
  * (B-07) — there is no per-reader answer to give it, so threading the session through it
- * would be a call nobody uses. The card's own content resolution (`versionsOf`,
- * `latestCards`, `usersOf`/`usersOfMany`) is unchanged for the same reason `serveCard`
- * moving to `serveCardSource` did not touch `serveCard` itself: this task wires the star,
- * download and note surfaces, not a second pass over content visibility.
+ * would be a call nobody uses. The pin joins (`latestCards`, `usersOf`/`usersOfMany`) stay
+ * anonymous too: they name blueprints, and a private blueprint's name is that blueprint
+ * appearing in a response.
+ *
+ * **The card's own versions resolve for the reader, through `storedVersionsOf`.** That is
+ * the registry reader outside the pin index, so an owner reaches a private card, and a card
+ * nobody pins yet has a page: a card published on its own through `POST /api/cards` is
+ * exactly that until a release pins it, and its 201 answers this page's path.
  */
 async function actorNow(): Promise<Actor> {
   const session = await readSession();
@@ -93,7 +97,7 @@ async function vocabularyView(db: ReturnType<typeof getSharedDbClient>["db"]): P
 export async function generateMetadata({ params }: PageProps<"/nodes/[...id]">) {
   const { id } = await params;
   const { db } = getSharedDbClient();
-  const record = (await versionsOf(db, ANONYMOUS, id.join("/")))[0];
+  const record = (await storedVersionsOf(db, await actorNow(), id.join("/")))[0];
   if (!record) return { title: "Card not found" };
   return {
     title: `${record.card.name} (node card)`,
@@ -832,8 +836,8 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   const actor = await actorNow();
   const { db } = getSharedDbClient();
 
-  // `versionsOf` is newest-first, so the head is what the bare id resolves to.
-  const versions = await versionsOf(db, ANONYMOUS, id);
+  // `storedVersionsOf` is newest-first, so the head is what the bare id resolves to.
+  const versions = await storedVersionsOf(db, actor, id);
   const record = versions[0];
   if (!record) notFound();
 

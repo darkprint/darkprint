@@ -18,3 +18,13 @@ export { CardStoreError } from "./errors";
 export { cardIdInUse } from "./card-id-in-use";
 export type { CardSourceStamp } from "./restamp-source";
 export { restampCardSource } from "./restamp-source";
+/* The public write path for one card on its own, behind `POST /api/cards`. Its refusals are
+   values rather than a class, so the route maps a `kind` and the barrel publishes no new
+   error type. */
+export type {
+  CardPublishRefusal,
+  CardPublishRefusedKind,
+  CardPublishResult,
+  PublishCardInput,
+} from "./publish-card";
+export { publishCard } from "./publish-card";

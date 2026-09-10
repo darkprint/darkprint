@@ -132,6 +132,8 @@ const READERS: readonly { operation: string; invoke: (db: Db) => Promise<unknown
   { operation: "usersOfMany", invoke: (d) => registry.usersOfMany(d, ANON, [PROBE_REF]) },
   { operation: "scoresFor", invoke: (d) => registry.scoresFor(d, ANON, [{ ownerHandle: PROBE_REF, slug: PROBE_REF }]) },
   { operation: "cardsOwnedBy", invoke: (d) => registry.cardsOwnedBy(d, ANON, PROBE_REF) },
+  /* The second reader outside the pin index, added with the single-card publish door. */
+  { operation: "storedVersionsOf", invoke: (d) => registry.storedVersionsOf(d, ANON, PROBE_REF) },
   { operation: "phases", invoke: (d) => registry.phases(d, ANON) },
   { operation: "cardsByPhase", invoke: (d) => registry.cardsByPhase(d, ANON, PROBE_REF) },
   { operation: "tags", invoke: (d) => registry.tags(d, ANON) },
@@ -175,13 +177,15 @@ const ROUTES: readonly { path: string; operation: string; drive: () => Promise<R
       }),
   },
   { path: "GET /api/cards", operation: "cards", drive: () => getCards(req("/api/cards")) },
+  /* Both card GETs read outside the pin index, so a card published on its own answers at
+     the address its 201 named; the operation a dead store surfaces is that reader's. */
   {
-    path: "GET /api/cards/[...ref]", operation: "card",
+    path: "GET /api/cards/[...ref]", operation: "storedVersionsOf",
     drive: () =>
       getCardPath(req(`/api/cards/${PROBE_REF}`), { params: Promise.resolve({ ref: [PROBE_REF] }) }),
   },
   {
-    path: "GET /api/cards/[id]/versions", operation: "versionsOf",
+    path: "GET /api/cards/[id]/versions", operation: "storedVersionsOf",
     drive: () =>
       getCardVersions(req("/api/cards/probe/versions"), { params: Promise.resolve({ id: "probe" }) }),
   },
@@ -375,15 +379,15 @@ describe("the barrel's fault surface is exactly one class, and its exports are p
 /* ------------------------------------------------------------------ */
 
 describe("AC2/AC3: every published reader seals what the driver throws", () => {
-  it("nineteen readers, each rejecting with its own operation and nothing from the statement", async () => {
+  it("twenty readers, each rejecting with its own operation and nothing from the statement", async () => {
     expect(
       READERS.length,
       "An empty or shortened case list would make every assertion below pass over nothing. " +
-        "Nineteen readers are published (13 + T132's three, D-132-01/03, + usersOfMany at " +
-        "T260's merge, D-260-31, + ownedBundles and draftBundle at 0007_drafts, T280) from " +
-        "the barrel; the partition test above is what keeps this number honest as the " +
-        "surface changes.",
-    ).toBe(19);
+        "Twenty readers are published (13 + T132's three, D-132-01/03, + usersOfMany at " +
+        "T260's merge, D-260-31, + ownedBundles and draftBundle at 0007_drafts, T280, + " +
+        "storedVersionsOf with the single-card publish door) from the barrel; the partition " +
+        "test above is what keeps this number honest as the surface changes.",
+    ).toBe(20);
 
     const leaked: string[] = [];
     const unreached: string[] = [];

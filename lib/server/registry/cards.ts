@@ -1,6 +1,7 @@
 /* ============================================================
-   DarkPrint backend — cards(), latestCards(), versionsOf(), card()
-   and cardsOwnedBy(), the one card reader outside the pin index
+   DarkPrint backend — cards(), latestCards(), versionsOf(), card(),
+   and the two card readers outside the pin index, cardsOwnedBy()
+   and storedVersionsOf()
    ============================================================ */
 
 import { eq } from "drizzle-orm";
@@ -10,7 +11,7 @@ import type { Actor } from "@/lib/server/policy";
 import type { CardRef, NodeCard } from "@/lib/server/types";
 import type { CardSummary } from "./types";
 import { cmpCards, frozen } from "./order";
-import { loadSnapshot, readable } from "./snapshot";
+import { loadSnapshot, readable, type RegistrySnapshot } from "./snapshot";
 import { withRegistryStore } from "./store";
 import { storedCard } from "@/lib/server/cards/stored-card";
 
@@ -62,7 +63,8 @@ export async function card(db: Db, actor: Actor, ref: CardRef): Promise<CardSumm
  * Every card version this handle OWNS that `actor` may read: id ascending, then version
  * descending, the same order `cards()` uses.
  *
- * **The one reader deliberately outside the pin index (D-132-02 C-1, reading (a)).** Every
+ * **One of the two readers deliberately outside the pin index (D-132-02 C-1, reading (a));
+ * `storedVersionsOf` below is the other.** Every
  * other card reader answers from `loadSnapshot`, which indexes only the versions some
  * current release pins — right for the registry's question, *which cards does this site
  * carry*, and wrong for *which cards does this person own*. The two sets differ by exactly
@@ -102,14 +104,7 @@ export async function cardsOwnedBy(
   return withRegistryStore("cardsOwnedBy", async () => {
     const rows = (
       await db
-        .select({
-          cardId: schema.cardVersion.cardId,
-          version: schema.cardVersion.version,
-          digest: schema.cardVersion.digest,
-          body: schema.cardVersion.body,
-          ownerId: schema.cardVersion.ownerId,
-          visibility: schema.cardVersion.visibility,
-        })
+        .select(STORED_COLUMNS)
         .from(schema.cardVersion)
         .innerJoin(schema.account, eq(schema.account.id, schema.cardVersion.ownerId))
         .where(eq(schema.account.handle, ownerHandle))
@@ -118,34 +113,88 @@ export async function cardsOwnedBy(
 
     /* Read AFTER the rows and only when there are some: a handle owning nothing is the
        common case for a visitor's profile, and it answers without reading the registry. */
-    const snapshot = await loadSnapshot(db, actor);
-    return frozen(
-      rows
-        .flatMap((row): CardSummary[] => {
-          const ref = cardRef(row.cardId, row.version);
-          /* A row whose body is not a card is SKIPPED rather than cast into one. It happens
-             when the schema moved and the row did not, and the alternative is a shelf that
-             throws three layers up in a renderer. `storedCardGaps` says why, for a caller
-             that wants to report it. */
-          const card = storedCard(row.body);
-          if (card === undefined) return [];
-          return [Object.freeze({
-            ref,
-            id: row.cardId,
-            version: row.version,
-            digest: row.digest,
-            card,
-            // The published join, read for this exact version. `[]` when the index does not
-            // hold the row at all, which is what an unpinned card's users are.
-            usedIn: snapshot.byRef.get(ref)?.usedIn ?? EMPTY_KEYS,
-            // Read straight from the row rather than the snapshot: this is the one reader
-            // that returns an owner's own private cards (D-132-04 C-C), so a caller needs to
-            // tell them apart from the public rows in the same array.
-            visibility: row.visibility,
-          })];
-        })
-        .sort(cmpCards),
-    );
+    return summarised(rows, await loadSnapshot(db, actor));
   });
+}
+
+/**
+ * Every stored version of one card id that `actor` may read, newest first, whether or not
+ * a release pins it.
+ *
+ * `cardsOwnedBy`'s reasoning turned round: that reader answers *which cards does this
+ * person own*, this one *what is stored at this id*. A card published on its own through
+ * `POST /api/cards` has a row, an owner and a page before any release pins it, and
+ * `versionsOf` cannot see it by construction, so the card's page and `GET /api/cards/<ref>`
+ * resolve through this reader instead. `versionsOf` keeps answering the registry's own
+ * question, *which cards does this site carry*, for the shelves that ask it.
+ *
+ * `usedIn` is the published join for a version the index holds and `[]` for one it does
+ * not, which is a true statement about that version. Visibility is `readable()`, so an
+ * owner reaches their private versions and a visitor does not. Empty for an id nothing
+ * stores and for one whose every version is private to somebody else, the same value, for
+ * B-03's reason.
+ */
+export async function storedVersionsOf(
+  db: Db,
+  actor: Actor,
+  cardId: string,
+): Promise<readonly CardSummary[]> {
+  return withRegistryStore("storedVersionsOf", async () => {
+    const rows = (
+      await db.select(STORED_COLUMNS).from(schema.cardVersion).where(eq(schema.cardVersion.cardId, cardId))
+    ).filter((row) => readable(actor, row));
+    if (rows.length === 0) return NONE;
+    return summarised(rows, await loadSnapshot(db, actor));
+  });
+}
+
+/** The columns the two readers outside the index select; `body` stays `unknown` until `storedCard` reads it. */
+const STORED_COLUMNS = {
+  cardId: schema.cardVersion.cardId,
+  version: schema.cardVersion.version,
+  digest: schema.cardVersion.digest,
+  body: schema.cardVersion.body,
+  ownerId: schema.cardVersion.ownerId,
+  visibility: schema.cardVersion.visibility,
+};
+
+interface StoredRow {
+  cardId: string;
+  version: string;
+  digest: string;
+  body: unknown;
+  ownerId: string;
+  visibility: "public" | "private";
+}
+
+/** Rows into summaries in `cards()` order, with the published join read off the snapshot per exact version. */
+function summarised(rows: readonly StoredRow[], snapshot: RegistrySnapshot): readonly CardSummary[] {
+  return frozen(
+    rows
+      .flatMap((row): CardSummary[] => {
+        const ref = cardRef(row.cardId, row.version);
+        /* A row whose body is not a card is SKIPPED rather than cast into one. It happens
+           when the schema moved and the row did not, and the alternative is a shelf that
+           throws three layers up in a renderer. `storedCardGaps` says why, for a caller
+           that wants to report it. */
+        const card = storedCard(row.body);
+        if (card === undefined) return [];
+        return [Object.freeze({
+          ref,
+          id: row.cardId,
+          version: row.version,
+          digest: row.digest,
+          card,
+          // The published join, read for this exact version. `[]` when the index does not
+          // hold the row at all, which is what an unpinned card's users are.
+          usedIn: snapshot.byRef.get(ref)?.usedIn ?? EMPTY_KEYS,
+          // Read straight from the row rather than the snapshot: these two readers return
+          // an owner's own private cards (D-132-04 C-C), so a caller needs to tell them
+          // apart from the public rows in the same array.
+          visibility: row.visibility,
+        })];
+      })
+      .sort(cmpCards),
+  );
 }
 

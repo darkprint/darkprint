@@ -71,8 +71,9 @@ export const SCOPE_COPY: Record<Scope, { name: string; blurb: string }> = {
   write: {
     name: "Write",
     blurb:
-      "It acts as your account on the two write routes: publishing a release with " +
-      "POST /api/bundles, and posting a run report with POST /api/blueprints/{owner}/{slug}/runs. " +
+      "It acts as your account on the write routes: publishing a release with " +
+      "POST /api/bundles or a card with POST /api/cards, and posting a run report with " +
+      "POST /api/blueprints/{owner}/{slug}/runs. " +
       "Send it as a bearer token from a terminal or an agent; no browser session is needed. " +
       "Revoking it is the only way to take that back.",
   },

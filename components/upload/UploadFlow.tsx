@@ -31,6 +31,8 @@ import {
   type UploadFile,
 } from "./BundleDropzone";
 import { SingleDocDropzone, type SingleDoc } from "./SingleDocDropzone";
+import { CardPublishStep, type CardIdentity, type SingleCheck } from "./CardPublishStep";
+import { VisibilityChoice } from "./VisibilityChoice";
 import { AttractorImported, AttractorOffer } from "./AttractorOffer";
 import {
   detectAttractorPipeline,
@@ -42,14 +44,22 @@ import { requiredAgents, requiredTools } from "@/lib/graph-seed";
 import { bundleProgress, type BundleProgress } from "./progress";
 import { ValidationReport, verdictLine } from "./ValidationReport";
 import { SIGN_IN_HREF, useUploadSession } from "./session";
-import { publishBundle, type PublishOutcome, type PublishRefusedKind } from "./publish-client";
+import {
+  publishBundle,
+  publishCard,
+  type CardPublishOutcome,
+  type PublishOutcome,
+  type PublishRefusedKind,
+} from "./publish-client";
 
 // A lone Node or Ontology document is checked over HTTP (`POST /api/validate/card` or
 // `POST /api/validate/ontology`, chosen by `kind` in the effect below). A Blueprint still
 // resolves in this tab on purpose: the server's authoritative pass runs at PUBLISH time and
 // the client-side pass is kept for latency, so the preview is deliberately not a round trip.
-// See the note in `reportMarkdown`. Publishing goes through `./publish-client`, and the
-// session read this route needs lives in `./session`.
+// See the note in `reportMarkdown`. A Blueprint publishes through `POST /api/bundles` and a
+// Node through `POST /api/cards`, both via `./publish-client`; the Node's last step is
+// `./CardPublishStep`. An Ontology ends in a report. The session read this route needs
+// lives in `./session`.
 
 /* ------------------------------------------------------------------ */
 /*  Static config                                                      */
@@ -81,13 +91,13 @@ const STEPS: { id: StepId; label: string; heading: string }[] = [
 ];
 
 /**
- * The three registry surfaces, all three ready now — reading them ready is not the same
- * as reading them published. Blueprint joins a DOT to the cards it pins and its wizard
- * ends in a release; Node and Ontology check one document each against the curated core
- * alone (`POST /api/validate/card`, `POST /api/validate/ontology`) and end in a report,
- * never a release — the registry stores a lone card or vocabulary only pinned inside a
- * bundle that publishes, and that path is not built. Step 4 says so for those two kinds
- * rather than offering a Publish button the registry has nowhere to put.
+ * The three registry surfaces. Blueprint joins a DOT to the cards it pins and its wizard
+ * ends in a release. Node checks one document against the curated core alone
+ * (`POST /api/validate/card`) and ends in a card version stored under the reader's handle
+ * (`POST /api/cards`). Ontology checks one document the same way
+ * (`POST /api/validate/ontology`) and ends in a report: the registry stores a vocabulary
+ * only inside a bundle that publishes, and step 4 says so for that kind rather than
+ * offering a Publish button the registry has nowhere to put.
  */
 const KINDS: {
   key: ContentKind;
@@ -134,17 +144,23 @@ const VALIDATE_ENDPOINT: Partial<Record<ContentKind, string>> = {
 };
 
 /**
- * What the endpoint above answered about `singleDoc`, mirroring `UploadSession`'s own
- * shape in `./session.ts`: `checking` stays distinct from `idle` so a reader is never
- * shown a verdict for the frame before its own request has landed, and a transport
- * failure (`failed`) is a fact about the network rather than a diagnostic about the
- * document — printing it as one would claim the validator said something it never saw.
+ * What the endpoint above answered about `singleDoc`. The shape is `CardPublishStep`'s,
+ * because that step renders it for the Node kind and one definition keeps the two from
+ * disagreeing; the Ontology kind reads the same states and never fills `card`.
  */
-type SingleValidation =
-  | { state: "idle" }
-  | { state: "checking" }
-  | { state: "done"; diagnostics: Diagnostic[]; ok: boolean }
-  | { state: "failed"; detail: string };
+type SingleValidation = SingleCheck;
+
+/**
+ * The three fields the Publish step names, read off a validated card. `undefined` for a
+ * body that carries no card or one this page cannot read, so the step withholds the id
+ * rather than printing blanks around an `@`.
+ */
+function cardIdentityOf(card: unknown): CardIdentity | undefined {
+  if (typeof card !== "object" || card === null) return undefined;
+  const { id, version, name } = card as Record<string, unknown>;
+  if (typeof id !== "string" || typeof version !== "string" || typeof name !== "string") return undefined;
+  return { id, version, name };
+}
 
 /** Exported so `components/upload/CreateBundleForm.tsx` renders the same field, on `/new`
     — "match the site's cyanotype identity" by reusing the one definition rather than a
@@ -818,6 +834,15 @@ export function UploadFlow({
   /** In flight. The button says so and cannot be pressed twice into two releases. */
   const [publishing, setPublishing] = useState(false);
   /**
+   * The Node kind's own three: what the registry said about the card, whether the press
+   * is in flight, and the visibility chosen on its Publish step. Kept apart from the
+   * bundle's because a pinned `target` fixes the bundle's visibility and must not fix a
+   * card's, and because the two outcomes are different shapes with different endings.
+   */
+  const [cardOutcome, setCardOutcome] = useState<CardPublishOutcome | undefined>(undefined);
+  const [publishingCard, setPublishingCard] = useState(false);
+  const [cardVisibility, setCardVisibility] = useState<"public" | "private">("private");
+  /**
    * Public or private, chosen rather than defaulted (D-263-09).
    *
    * `PublishInput.visibility` is optional and absence takes the account default, so this
@@ -996,7 +1021,13 @@ export function UploadFlow({
       // a blueprint's diagnostics, read here off the field's presence instead of re-summing
       // severities the response already resolved.
       const ok = kind === "node" ? body.card !== undefined : body.terms !== undefined;
-      setSingleValidationFetch({ state: "done", diagnostics, ok });
+      const identity = kind === "node" ? cardIdentityOf(body.card) : undefined;
+      setSingleValidationFetch({
+        state: "done",
+        diagnostics,
+        ok,
+        ...(identity === undefined ? {} : { card: identity }),
+      });
     })();
     return () => controller.abort();
   }, [kind, singleDoc]);
@@ -1077,12 +1108,14 @@ export function UploadFlow({
       goes to, which a reader typing a fresh title has not changed their mind about. */
   function reset() {
     setOutcome(undefined);
+    setCardOutcome(undefined);
     setStep(1);
     setKind("blueprint");
     setFiles([]);
     setSingleDoc(undefined);
     setDetails(detailsWithTarget(target));
     setVisibility(target?.visibility ?? "private");
+    setCardVisibility("private");
     setAttractorImport(undefined);
   }
 
@@ -1097,6 +1130,7 @@ export function UploadFlow({
    */
   function validateAnother() {
     setOutcome(undefined);
+    setCardOutcome(undefined);
     setStep(1);
     setFiles([]);
     setSingleDoc(undefined);
@@ -1278,6 +1312,19 @@ export function UploadFlow({
     setOutcome(answer);
   }
 
+  /**
+   * The Node kind's press. The document goes as dropped and the registry decides the id:
+   * `POST /api/cards` stores it under the session's handle, so nothing about the namespace
+   * is sent from here. `publishCard` does not reject, so there is no `catch`.
+   */
+  async function doPublishCard() {
+    if (singleDoc === undefined || publishingCard) return;
+    setPublishingCard(true);
+    const answer = await publishCard({ source: singleDoc.text, visibility: cardVisibility });
+    setPublishingCard(false);
+    setCardOutcome(answer);
+  }
+
   return (
     <div className="panel overflow-hidden">
       {/* Header: step indicator */}
@@ -1365,13 +1412,19 @@ export function UploadFlow({
                     The check reads the graph and the cards it names together, so drop the
                     whole folder.
                   </>
+                ) : kind === "node" ? (
+                  <>
+                    A node card on its own checks against the curated core vocabulary
+                    alone, the same reading a bundle&rsquo;s own cards get before any local
+                    overlay is layered on. A card that resolves publishes on the last step,
+                    under your handle, and your blueprints can pin it from there.
+                  </>
                 ) : (
                   <>
-                    A {KIND_NOUN[kind]} on its own checks against the curated core
-                    vocabulary alone, the same reading a bundle&rsquo;s own cards get
-                    before any local overlay is layered on. Publishing one by itself is
-                    not built. The registry stores a {KIND_NOUN[kind]} today only when
-                    pinned inside a blueprint bundle that publishes.
+                    An ontology on its own checks against the curated core vocabulary
+                    alone, the same reading a bundle&rsquo;s own overlay gets. Publishing
+                    one by itself is not built. The registry stores an ontology today only
+                    when pinned inside a blueprint bundle that publishes.
                   </>
                 )}
               </p>
@@ -1414,14 +1467,25 @@ export function UploadFlow({
 
         {step === 2 &&
           (kind !== "blueprint" ? (
-            /* Node and Ontology check one document each; neither has a release, a
-               visibility or cards to read agents and tools off, so the whole of the
-               blueprint-only form below does not apply. Title is the one field a report
-               can use, and it is offered rather than asked for. */
+            /* Node and Ontology check one document each; neither has a release or cards
+               to read agents and tools off, so the whole of the blueprint-only form below
+               does not apply. A card's visibility is asked on its Publish step, beside the
+               button that spends it. Title is the one field a report can use, and it is
+               offered rather than asked for. */
             <div className="grid max-w-3xl gap-5">
               <p className="max-w-xl text-sm leading-relaxed text-muted">
-                A {KIND_NOUN[kind]} is checked on its own. No release, no visibility, no
-                derived agents or tools. Give it a title for the report, if you want one.
+                {kind === "node" ? (
+                  <>
+                    A node card is checked on its own, with no release and no derived agents
+                    or tools. Its visibility is chosen on the Publish step. Give it a title
+                    for the report, if you want one.
+                  </>
+                ) : (
+                  <>
+                    An ontology is checked on its own. No release, no visibility, no derived
+                    agents or tools. Give it a title for the report, if you want one.
+                  </>
+                )}
               </p>
               <div className="flex flex-col gap-2 sm:max-w-md">
                 <label className="label" htmlFor="single-title">
@@ -1596,62 +1660,11 @@ export function UploadFlow({
                   </p>
                 </div>
               ) : (
-                <fieldset className="flex flex-col gap-2">
-                  <legend className="label mb-2">Visibility</legend>
-                  <div className="flex flex-wrap gap-2">
-                    {(
-                      [
-                        {
-                          value: "private" as const,
-                          label: "Private",
-                          hint: "Only you can read it",
-                          color: "var(--color-violet)",
-                        },
-                        {
-                          value: "public" as const,
-                          label: "Public",
-                          hint: "Anyone can read it",
-                          color: "var(--color-cyan)",
-                        },
-                      ] satisfies { value: "public" | "private"; label: string; hint: string; color: string }[]
-                    ).map((choice) => {
-                      const active = visibility === choice.value;
-                      return (
-                        <button
-                          key={choice.value}
-                          type="button"
-                          onClick={() => setVisibility(choice.value)}
-                          aria-pressed={active}
-                          aria-label={`${choice.label}: ${choice.hint}`}
-                          /* Same shape and the same gated hover as the kind selector on
-                             step one, for the reason that one records: an ungated
-                             `hover:` latches on a phone and a two-way selector then reads
-                             as both chosen. */
-                          className={cx(
-                            "flex items-center gap-2 rounded-md px-3.5 py-2 text-sm transition-colors",
-                            active
-                              ? "bg-surface-3 text-fg shadow-[inset_0_0_0_1px_var(--color-line-bright)]"
-                              : "text-muted hoverable:hover:text-fg",
-                          )}
-                        >
-                          <span
-                            className="h-2 w-2 rounded-full"
-                            style={{ background: active ? choice.color : "var(--color-line-bright)" }}
-                            aria-hidden
-                          />
-                          <span className="flex flex-col items-start leading-tight">
-                            <span className="font-medium">{choice.label}</span>
-                            <span className="text-[11px] text-dim">{choice.hint}</span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className="max-w-xl text-[11px] leading-relaxed text-dim">
-                    Private is the starting choice. You can publish a private release and
-                    keep working. Other people see only what you make public.
-                  </p>
-                </fieldset>
+                <VisibilityChoice
+                  value={visibility}
+                  onChange={setVisibility}
+                  note="Private is the starting choice. You can publish a private release and keep working. Other people see only what you make public."
+                />
               )}
             </div>
 
@@ -1928,11 +1941,26 @@ export function UploadFlow({
                 </Link>
               </p>
             </div>
-          ) : kind !== "blueprint" ? (
-            /* Node and Ontology validate, they do not publish: the registry stores a
-               lone card or vocabulary only pinned inside a blueprint bundle that
-               publishes, and that path is not built. Saying so plainly here beats a
-               Publish button wired to nowhere. */
+          ) : kind === "node" ? (
+            /* The card's own last step, in its own component so the sentences it owes a
+               reader can be rendered on their own and read. */
+            <CardPublishStep
+              title={details.title}
+              check={singleValidation}
+              session={session}
+              visibility={cardVisibility}
+              onVisibility={setCardVisibility}
+              publishing={publishingCard}
+              onPublish={() => void doPublishCard()}
+              outcome={cardOutcome}
+              onBack={() => setCardOutcome(undefined)}
+              onAnother={validateAnother}
+              onReset={reset}
+            />
+          ) : kind === "ontology" ? (
+            /* An ontology validates and does not publish: the registry stores a vocabulary
+               only inside a blueprint bundle that publishes, and that path is not built.
+               Saying so plainly here beats a Publish button wired to nowhere. */
             <div className="flex flex-col gap-6">
               <div className="panel flex flex-col gap-4 bg-surface-2/40 p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2175,7 +2203,7 @@ export function UploadFlow({
           counter until its steps were deleted, and this flow keeps it because it still has
           steps: four panels, in order, with an advance control at the bottom of each.
           `STEPS.length` rather than a typed 4, so the two can never disagree. */}
-      {!(step === 4 && outcome !== undefined) && (
+      {!(step === 4 && (outcome !== undefined || cardOutcome !== undefined)) && (
         <div className="flex items-center justify-between gap-3 border-t border-line bg-surface-2/40 px-5 py-4 sm:px-8">
           <Button variant="ghost" onClick={back} disabled={step === 1}>
             ← Back
@@ -2192,7 +2220,9 @@ export function UploadFlow({
                       : singleValidation.state === "failed"
                         ? "could not be checked"
                         : singleValidation.state === "done" && singleValidation.ok
-                          ? "resolves"
+                          ? kind === "node"
+                            ? "ready to publish"
+                            : "resolves"
                           : singleValidation.state === "done"
                             ? "rejected"
                             : "no document yet"

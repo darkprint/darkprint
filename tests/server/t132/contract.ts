@@ -120,8 +120,13 @@ export const T080_READER_COUNT = 13;
  *
  * `usersOfMany` — D-260-31, T260's merge: the batch form of `usersOf`, armed when the /nodes
  * cutover turned the disclosed 53-snapshots-per-load cost from build-time to per-request.
+ *
+ * `storedVersionsOf` — the single-card publish door, `POST /api/cards`: every stored version
+ * of one id the actor may read, pinned or not, so a card nothing pins yet has a page. Its
+ * AC6 cell is here because its reach is a private card row asked for by id, which is
+ * exactly the probe this fixture's sealed side supplies.
  */
-export const READERS_ADDED_AFTER = ["usersOfMany"] as const;
+export const READERS_ADDED_AFTER = ["usersOfMany", "storedVersionsOf"] as const;
 
 let registry: Promise<Namespace> | undefined;
 
@@ -196,6 +201,25 @@ export async function bindUsersOfMany(): Promise<UnknownFn> {
         `usersOfMany(db, actor, cardIds): Promise<ReadonlyMap<string, readonly ` +
         `BlueprintSummary[]>> at T260's merge; without it the AC6 sweep over the seventeenth ` +
         `reader binds nothing and greens over its absence.`,
+    );
+  }
+  return value as UnknownFn;
+}
+
+/**
+ * The reader the single-card publish door added, bound the way `bindUsersOfMany` binds its
+ * later addition: not in this task's `PUBLISHED` three, swept here because this list is
+ * where a reader added after the merge has its AC6 home.
+ */
+export async function bindStoredVersionsOf(): Promise<UnknownFn> {
+  const mod = await loadRegistry();
+  const value = mod.storedVersionsOf;
+  if (typeof value !== "function") {
+    throw new Error(
+      `${REGISTRY} exports \`storedVersionsOf\` as ${describe_(value)}. The single-card publish ` +
+        `door publishes it as storedVersionsOf(db, actor, cardId): Promise<readonly ` +
+        `CardSummary[]>; without it the AC6 sweep over the reader binds nothing and greens ` +
+        `over its absence.`,
     );
   }
   return value as UnknownFn;

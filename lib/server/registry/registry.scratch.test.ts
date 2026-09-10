@@ -507,7 +507,10 @@ describe("the read API", () => {
     const versions = await getCardPath(url("/api/cards/solver/versions"), {
       params: Promise.resolve({ ref: ["solver", "versions"] }),
     });
-    expect(refs((await versions.json()).versions)).toEqual(["solver@1.1.0", "solver@1.0.0"]);
+    /* The route lists every stored version the reader may see, pinned or not, which is how
+       a card published on its own answers before a release pins it; the public, unpinned
+       `solver@2.0.0` is therefore here while `versionsOf` above still leaves it out. */
+    expect(refs((await versions.json()).versions)).toEqual(["solver@2.0.0", "solver@1.1.0", "solver@1.0.0"]);
 
     const users = await getCardPath(url("/api/cards/solver/users"), {
       params: Promise.resolve({ ref: ["solver", "users"] }),
