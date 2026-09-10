@@ -1656,7 +1656,7 @@ export function UploadFlow({
                     </span>
                     : this release is{" "}
                     <span className="text-fg">{visibility === "public" ? "public" : "private"}</span>.
-                    Change it from the blueprint&rsquo;s page.
+                    Change it from the blueprint list on your profile.
                   </p>
                 </div>
               ) : (

@@ -71,9 +71,11 @@ function band(extra: Record<string, unknown> = {}): string {
 }
 
 const DOWNLOAD = createElement(CodeMenu, {
-  command: 'curl -fsSL -O "https://darkprint.io/f/README.md"',
-  cliCommand: "darkprint clone mara-veil/starter-software-factory --version 1.2.0",
-  files: [{ path: "README.md", href: "/f/README.md" }],
+  download: {
+    href: "/api/bundles/mara-veil/starter-software-factory/archive?digest=sha256%3Aabc",
+    name: "starter-software-factory-1.2.0.tgz",
+  },
+  cloneCommand: "npx -y darkprint clone mara-veil/starter-software-factory",
 });
 
 const BLUEPRINT = band({ download: DOWNLOAD });
@@ -162,10 +164,12 @@ describe("the same row for a card", () => {
       forks: 1,
       saveId: "node:spec-planner@1.0.0",
       download: createElement(CodeMenu, {
-        command: 'curl -fsSL -O "https://darkprint.io/f/spec-planner@1.0.0.yaml"',
-        cliCommand: "darkprint clone card spec-planner@1.0.0",
-        files: [],
-        label: "Download card",
+        download: {
+          href: "/api/bundles/mara-veil/spec-planner/archive?digest=sha256%3Adef",
+          name: "spec-planner-1.0.0.tgz",
+        },
+        cloneCommand: "npx -y darkprint clone mara-veil/spec-planner@1.0.0",
+        label: "Get card",
         tone: "amber" as const,
       }),
     }),
@@ -176,7 +180,7 @@ describe("the same row for a card", () => {
     expect(at.star).toBeGreaterThan(0);
     expect(at.star, "a card's band draws Fork before Star").toBeLessThan(at.fork);
     expect(at.fork, "a card's band draws the download before Fork").toBeLessThan(at.download);
-    expect(CARD, "a card's download is not labelled for a card").toContain("Download card");
+    expect(CARD, "a card's download is not labelled for a card").toContain("Get card");
     expect(CARD, "a card's download is not drawn in the amber register").toContain("amber");
     expect(
       CARD,

@@ -59,6 +59,10 @@ export { serveFile } from "./serve-file";
    Landed by the orchestrator ahead of T261's cutover; resolution is serveFile's, consumed. */
 export type { ReleaseFiles } from "./release-files";
 export { releaseFiles } from "./release-files";
+/* The whole release as one `.tgz`, for the Download item on the blueprint page: the same
+   file set `exportRelease` answers, in one transport a browser can save. */
+export type { ReleaseArchive } from "./release-archive";
+export { releaseArchive } from "./release-archive";
 export { serveCard } from "./serve-card";
 /* T280's page-render reader: `serveCard`'s bytes without B-14's download event
    (`release-files.ts`'s "a listing is not a download," applied to a single card). */

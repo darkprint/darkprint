@@ -86,7 +86,7 @@ describe("Wordmark", () => {
    * component there is no timeline to join, and nothing here can put them back on one
    * without this case saying so: no `data-mark`, and no opacity or transform to start from.
    */
-  it("paints the setup commands immediately, outside the entrance", () => {
+  it("paints the setup links immediately, outside the entrance", () => {
     const html = renderChips();
     expect(html).not.toContain("data-mark");
     expect(html).not.toContain("opacity-0");
@@ -96,27 +96,26 @@ describe("Wordmark", () => {
   });
 
   /**
-   * The two commands reach their own pages, and neither cell claims anything else.
+   * Two doors, each a link to its own page, and neither cell prints a command or hedges.
    *
-   * This case asserted `expect(mcp.toLowerCase()).toContain("coming soon")` — the band drew
-   * a `ComingSoonBadge` on the MCP cell and this held it there. The author asked the badge
-   * off on 2026-08-12 ("we will implement before sharing the service with people"), so the
-   * assertion is inverted rather than deleted: what used to be required is now forbidden, on
-   * BOTH cells, which is the strongest form of the same case and catches the badge being
-   * reinstated by an edit that does not read this file.
+   * The cells are the two labels alone; the command with its copy control lives on the page
+   * each one opens, where a reader can act on it. Both commands are asserted ABSENT here so
+   * an edit that puts one back is caught, and both are still imported so a renamed constant
+   * breaks this file loudly rather than letting the needle go stale.
    *
-   * **The claim it was protecting has not moved and is not weakened.** MCP is still unbuilt
-   * and the site still says so on `/mcp` — the lead, the `metadata.description` and the
-   * status column of the contract table — and `components/site/honesty.test.ts` pins all
-   * three verbatim. This band was repeating that disclosure, not holding it up alone. The
-   * link asserted below is what puts a reader in front of it.
+   * No "coming soon" on either cell: the disclosure about MCP lives on `/mcp`, where
+   * `components/mcp/honesty.test.ts` pins it, and the link asserted here is what puts a
+   * reader in front of it.
    */
-  it("links both setup commands to their detail pages, and neither cell hedges", () => {
+  it("links both doors to their pages as labels alone, and neither cell hedges", () => {
     const html = renderChips();
     const skill = plainText(setupCard(html, SKILL_ROUTE));
     const mcp = plainText(setupCard(html, MCP_ROUTE));
-    expect(skill).toContain(SKILL_INSTALL_COMMAND);
-    expect(mcp).toContain(MCP_CONNECT_COMMAND);
+    expect(skill).toContain("Design your blueprint via the DarkPrint skill");
+    expect(mcp).toContain("Connect via MCP");
+    expect(skill, "the install command is back in the band").not.toContain(SKILL_INSTALL_COMMAND);
+    expect(mcp, "the connect command is back in the band").not.toContain(MCP_CONNECT_COMMAND);
+    expect(html, "a cell prints a shell prompt, so a command came back").not.toContain("$ ");
     expect(skill.toLowerCase()).not.toContain("coming soon");
     expect(mcp.toLowerCase()).not.toContain("coming soon");
   });

@@ -55,7 +55,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 | `lib/server/cards` | card versions, immutable once written |
 | `lib/server/counters` | stars and download counts on `target` |
 | `lib/server/engine` | the four validate entry points over `lib/core`, with input limits |
-| `lib/server/export` | a release as files, frozen artefacts, file serving, download recording |
+| `lib/server/export` | a release as files, frozen artefacts, file serving, the release as one `.tgz`, download recording |
 | `lib/server/http` | `ok` and RFC 9457 problem responses |
 | `lib/server/lifecycle` | account and bundle deletion, tombstones |
 | `lib/server/limits` | API keys, rate-limit buckets, the 429 renderer |
@@ -84,7 +84,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 
 | Path | Rendering | Shows |
 | --- | --- | --- |
-| `/` | static | the landing page: wordmark hero, install and connect commands, archive counts |
+| `/` | static | the landing page: wordmark hero, the two doors to the DarkPrint skill and MCP, archive counts |
 | `/blueprints` | dynamic | the registry index with search, category and tag filters, sorting |
 | `/blueprints/[owner]` | dynamic | a redirect only: a handle goes to its profile, a legacy slug to the owner that holds it |
 | `/blueprints/[owner]/[slug]` | dynamic | one blueprint: graph, files, releases, notes, downloads; the owner's controls when signed in |
@@ -155,6 +155,7 @@ public view; `cookie, refuses anonymous` lets the module answer 401; `anonymous`
 | `/api/bundles/draft`, `/api/bundles/[owner]/[slug]/fork` | POST | session |
 | `/api/bundles/[owner]/[slug]` | DELETE | session |
 | `/api/bundles/[owner]/[slug]/visibility` | PATCH | session |
+| `/api/bundles/[owner]/[slug]/archive` | GET | cookie optional; the release's files as one `.tgz` under a `<slug>/` folder, named `<slug>-<version>.tgz`; the latest release unless `?version=` or `?digest=` names one, 400 for both together, 404 for a bundle the caller may not read or a release it does not have; counted in the `read` bucket and as one download of the bundle |
 | `/api/bundles/[owner]/[slug]/drift`, `/api/bundles/[owner]/[slug]/forks` | GET | cookie optional |
 | `/api/cards` | GET, POST | GET cookie optional; POST session or write key, publishes one card under the caller's handle |
 | `/api/cards/duplicates`, `/api/cards/[id]/users`, `/api/cards/[id]/versions` | GET | cookie optional |

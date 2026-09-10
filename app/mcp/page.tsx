@@ -249,39 +249,6 @@ export default function McpPage() {
           ))}
         </ol>
       </section>
-
-      {/* ---------- Without MCP ---------- */}
-      <section
-        id="today"
-        className="mt-11 flex scroll-mt-24 flex-col gap-3 border-t border-line pt-10"
-      >
-        <span className="label">Without MCP</span>
-        <p className="text-[15px] leading-relaxed text-muted">
-          Everything these tools return is also reachable by hand: browse{" "}
-          <Link
-            href="/blueprints"
-            className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
-          >
-            the blueprints
-          </Link>
-          , or{" "}
-          <Link
-            href="/nodes"
-            className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
-          >
-            the cards
-          </Link>
-          , where every card is listed with its digest. To have your agent write a blueprint
-          rather than read one, see{" "}
-          <Link
-            href="/skill"
-            className="text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:decoration-cyan"
-          >
-            Assisted Design
-          </Link>
-          .
-        </p>
-      </section>
     </div>
   );
 }

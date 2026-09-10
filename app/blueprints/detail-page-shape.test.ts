@@ -243,49 +243,39 @@ describe("the action row: star, fork, download blueprint", () => {
   });
 
   /*
-   * The command names the release, not just the bundle.
+   * The download names the release, not just the bundle.
    *
-   * `folder.version` and not `current?.version`: `releaseFiles` resolved the folder whose
-   * files the menu lists, so a command built from any other version would hand a reader a
-   * different release from the one they are looking at. The owner-qualified key is
-   * D-261-07(6)'s ruling and `tests/server/t261/honesty-direction.test.ts` holds every
-   * `darkprint clone` line on this page to it; what is local here is the `--version` pin.
+   * `folder.digest` and `folder.version` and not `current?.version`: `releaseFiles` resolved
+   * the folder whose files the listing shows, so an archive built from any other release
+   * would hand a reader a different folder from the one they are looking at. The clone line
+   * carries the owner-qualified key the CLI parses, with no version, since the CLI fetches
+   * the latest release by default and the archive is the item that pins one.
    */
-  it("pins the clone command to the release the listing is of", () => {
-    expect(header?.[1]).toMatch(
-      /darkprint clone \$\{owner\}\/\$\{slug\} --version \$\{folder\.version\}/,
-    );
+  it("pins the download to the release the listing is of", () => {
+    expect(header?.[1]).toContain("archive?digest=${encodeURIComponent(folder.digest)}");
+    expect(header?.[1]).toContain("name: `${slug}-${folder.version}.tgz`");
+    expect(header?.[1]).toMatch(/npx -y darkprint clone \$\{owner\}\/\$\{slug\}`/);
   });
 
   /*
-   * One array, three renderings. The listing, the hrefs and the menu all come off `paths`,
-   * which is `releaseFiles`' answer for this release — `components/bundle/load.ts` states
-   * the rule this preserves: a command naming a file the folder does not have aborts
-   * partway through and leaves half a folder behind.
-   */
-  /*
-   * ONE ARRAY, three readers, since the folder became navigable on 2026-09-06.
-   *
-   * The claim has not moved: the download menu, the root listing and the `cards/` listing
-   * must all describe the same folder, so all three are built from `paths`. What moved is
-   * the spelling — the listing is a ternary now, because `?path=cards` swaps which of the
-   * two readers fills it — and the old needle pinned `files: filesFromPaths(paths,` as one
-   * string, which is the shape rather than the claim.
+   * ONE ARRAY, two readers. The root listing and the `cards/` listing must describe the
+   * same folder, so both are built from `paths`, which is `releaseFiles`' answer for this
+   * release. The menu lists no files at all: its Download is the archive of the same
+   * release, pinned by digest above, so it cannot name a different folder.
    *
    * Both readers are asserted to take `paths` rather than asserting the ternary's text.
    * A cell that pinned the whole expression would red on any later rearrangement of it while
    * still passing the day somebody fed one of the two a different array, which is the only
    * thing here worth catching.
    */
-  it("builds the menu's file list from the same array both listings are built from", () => {
-    expect(SOURCE).toContain("const codeFiles = paths.map(");
+  it("builds both listings from the same array", () => {
     expect(SOURCE, "the root listing stopped reading `paths`").toContain(
       "filesFromPaths(paths,",
     );
     expect(SOURCE, "the cards listing stopped reading `paths`").toContain(
       "cardFilesFromPaths(paths,",
     );
-    expect(header?.[1]).toContain("files={codeFiles}");
+    expect(header?.[1], "the menu grew a file list again").not.toContain("files={");
   });
 
   /*

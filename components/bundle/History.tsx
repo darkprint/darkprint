@@ -1,6 +1,5 @@
 import type { HistoryEntry } from "@/lib/data/bundles";
 import { cx, prettyDate } from "@/lib/format";
-import { Button } from "@/components/ui/Button";
 
 /* ============================================================
    History, and the word this site will not let it mean.
@@ -11,10 +10,9 @@ import { Button } from "@/components/ui/Button";
    or merged, and the closing note says so in the open: a column of version numbers with
    messages beside them is a commit log to everybody who has ever seen one.
 
-   The two disabled controls are drawn rather than omitted because both are real things a
-   registry could do with a digest and neither is built; a dead control with a reason states
-   the design without claiming it. Compare only renders where there are two snapshots, since
-   on one it could never do anything even in a finished product.
+   No per-row controls. Copying a release into your own account is the header's Fork button,
+   over `POST /api/bundles/[owner]/[slug]/fork`; comparing two releases is not built, and a
+   disabled button advertising it would be a promise drawn as a control.
    ============================================================ */
 
 const TAG_TONE = {
@@ -23,16 +21,7 @@ const TAG_TONE = {
   upstream: "border-line text-dim",
 } as const;
 
-function Entry({
-  entry,
-  upstream,
-  comparable,
-}: {
-  entry: HistoryEntry;
-  upstream: boolean;
-  /** Whether there is a second snapshot to compare this one against. */
-  comparable: boolean;
-}) {
+function Entry({ entry, upstream }: { entry: HistoryEntry; upstream: boolean }) {
   return (
     <li className="relative flex gap-4 border-b border-line px-5 py-4 last:border-b-0">
       {/* The rail: a ring per entry and a hairline between them. The upstream row takes the
@@ -81,27 +70,6 @@ function Entry({
           · {prettyDate(entry.at)}
         </p>
       </div>
-
-      <div className="flex shrink-0 items-start gap-2">
-        {comparable && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled
-            title="Comparing two releases is designed and not built."
-          >
-            Compare (soon)
-          </Button>
-        )}
-        <Button
-          size="sm"
-          variant="outline"
-          disabled
-          title="Copying a release into your account is designed and not built."
-        >
-          Copy to my account (soon)
-        </Button>
-      </div>
     </li>
   );
 }
@@ -128,14 +96,12 @@ export function History({ entries }: { entries: readonly HistoryEntry[] }) {
             key={`${entry.version}-${entry.digest}`}
             entry={entry}
             upstream={entry.tag === "upstream"}
-            comparable={entries.length > 1}
           />
         ))}
       </ul>
 
       <p className="border-t border-line bg-surface-2/50 px-5 py-4 text-xs leading-relaxed text-dim">
-        There is no repository behind a release, so there is nothing to pull. Comparing two
-        releases and copying one into your account are designed and not built.
+        There is no repository behind a release, so there is nothing to pull.
       </p>
     </section>
   );

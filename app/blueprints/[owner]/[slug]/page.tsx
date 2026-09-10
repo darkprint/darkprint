@@ -33,11 +33,7 @@ import { CodeMenu } from "@/components/bundle/CodeMenu";
 import { FileTree } from "@/components/bundle/FileTree";
 import { History } from "@/components/bundle/History";
 import { ReadmePanel } from "@/components/bundle/ReadmePanel";
-import {
-  cardFilesFromPaths,
-  filesFromPaths,
-  releaseDownloadCommand,
-} from "@/components/bundle/load";
+import { cardFilesFromPaths, filesFromPaths } from "@/components/bundle/load";
 import { Comments, type NoteView } from "@/components/blueprint/Comments";
 import { ToolScopes } from "@/components/blueprint/Requirements";
 
@@ -261,14 +257,7 @@ export default async function Page({
       ...(draft.description !== undefined ? { description: draft.description } : {}),
     };
 
-    return (
-      <DraftLanding
-        draft={view}
-        owner={ownerAuthor}
-        isOwner={isOwner}
-        {...(isOwner ? { visibilityApi: `/api/bundles/${owner}/${slug}/visibility` } : {})}
-      />
-    );
+    return <DraftLanding draft={view} owner={ownerAuthor} isOwner={isOwner} />;
   }
 
   const key = { ownerHandle: owner, slug };
@@ -302,13 +291,12 @@ export default async function Page({
     avatarHue: null,
     validator: false,
   });
-  /* An `isOwner` stood here. `VisibilitySwitch` was its last reader on this branch, and the
-     owner moved that control off the page on 2026-09-06 — so the published view now renders
-     the same thing for the owner and for a stranger, which is the whole of what "such option
-     should be visible only on the user account list of the blueprints" asks for. The DRAFT
-     branch above still computes its own, because `DraftLanding` still draws the switch.
+  /* No `isOwner` on this branch: the published view renders the same thing for the owner
+     and for a stranger, which is what "such option should be visible only on the user
+     account list of the blueprints" asks for. The draft branch above computes one because
+     its quick-setup panel is owner-only.
 
-     `account` is not idle with it: `record` is `getBundle(db, account.accountId, slug)`, and
+     `account` is not idle for it: `record` is `getBundle(db, account.accountId, slug)`, and
      the release list, the visibility pill and every live signal below hang off `record`. */
   const viewerHandle = actor.kind === "account" ? (actor.handle ?? undefined) : undefined;
 
@@ -396,21 +384,6 @@ export default async function Page({
      cannot both be true of it. The mirror stays; this page stops linking it. */
   const at = { digest: summary.digest };
   const paths = folder?.files ?? [];
-  /* `topologyHref`, a sorted `downloadCards` list and a `parseStoredVocabulary` reading of
-     the release's local vocabulary stood here. All three fed the download panel, which the
-     owner asked off this page with the `Exact release` section around it, and none of them
-     is a second reader's input: the same files are reachable one row down in the listing
-     and one click away in the `Code` menu, which lists `paths` whole rather than the three
-     names the panel singled out. `parseStoredVocabulary` is untouched and still the one
-     published reading of that column; this page simply no longer asks it anything. */
-  /* Every file the release holds, as a link at its immutable digest address (D-261-04) —
-     built from the same `paths` array the listing above it is built from, so the rows a
-     reader scans and the files the `Code` menu hands over cannot name two different
-     folders. */
-  const codeFiles = paths.map((path) => ({
-    path,
-    href: blueprintFileHref(owner, slug, at, path),
-  }));
   /* The bundle's own `README.md`, carried through `releaseFiles` off the export it already
      built (see its docblock: no second pass and no second query). `undefined` is a real
      answer — a release with no README, which nothing `addRelease` accepts can produce today
@@ -573,12 +546,9 @@ export default async function Page({
     <BundleHeader
       owner={ownerAuthor}
       slug={bp.slug}
-      /* AC6 reaching the browser: the column, not a literal. `visibility="public"` was hard
-         coded here because the archive held only published bundles and had nowhere to read
-         it from; `bundle.visibility` is a real column now, and `Aside.tsx`'s "nothing stores
-         a visibility" marker comes off in this same commit (D-261-01). An absent record can
-         only mean a bundle the gate above already let through, so `public` is the honest
-         default rather than a guess. */
+      /* The column, not a literal: `bundle.visibility` is what the pill states. An absent
+         record can only mean a bundle the gate above already let through, so `public` is
+         the honest default rather than a guess. */
       visibility={record?.visibility ?? "public"}
       validator={ownerAuthor.validator}
       title={bp.title}
@@ -615,22 +585,22 @@ export default async function Page({
       /* THE DOWNLOAD, IN THE BAND, THIRD.
          ------------------------------------------------------------
          The owner: "remove the Code button and move on top right on the side right of the
-         Star; the order should be: star, fork, download blueprint." It spent one pass as a
-         `Code` dropdown on the file list's own header row and this is where it lands. What
-         it hands over is unchanged — the clone command for this release and every file in
-         it, at its digest address.
+         Star; the order should be: star, fork, download blueprint." Two items, the way
+         GitHub's "Code" menu has them: the archive of this release, and the clone command.
 
          Absent when there is no release. `folder` is `undefined` for a bundle whose files
-         this actor cannot fetch, and a control whose command names a version it does not
-         have would be a control that refuses. `folder.version` and not `current?.version`:
-         it is the version `releaseFiles` actually resolved, so the command, the listing
-         below and the hrefs all name one release. */
+         this actor cannot fetch, and a control whose file names a version it does not have
+         would be a control that refuses. `folder.digest` pins the archive and
+         `folder.version` names the file, both off the release `releaseFiles` actually
+         resolved, so the download, the listing below and the hrefs all name one release. */
       download={
         folder === undefined ? undefined : (
           <CodeMenu
-            command={releaseDownloadCommand(owner, slug, { digest: folder.digest }, paths)}
-            cliCommand={`darkprint clone ${owner}/${slug} --version ${folder.version}`}
-            files={codeFiles}
+            download={{
+              href: `/api/bundles/${owner}/${slug}/archive?digest=${encodeURIComponent(folder.digest)}`,
+              name: `${slug}-${folder.version}.tgz`,
+            }}
+            cloneCommand={`npx -y darkprint clone ${owner}/${slug}`}
           />
         )
       }
@@ -839,18 +809,11 @@ export default async function Page({
           and a two-column grid with one column is a third of a 1200px page left permanently
           blank.
 
-          `VisibilitySwitch` is the panel that moved rather than went. The owner: "remove the
-          panel visibility from the blueprint card; such option should be visible only on the
-          user account list of the blueprints." It is not drawn in THIS rendering, including
-          for the owner. It is still drawn on this route's OTHER branch: `DraftLanding`, for
-          a bundle with no release, is handed the live switch further up this file.
-
-          THE MOVE HAS LANDED, and this note said it was owed for a wave after it did.
-          `components/profile/OwnedBundles.tsx` draws a `RowVisibility` per row on
-          `/u/[username]`, over the same visibility route. That is the shelf's own component
-          rather than this file's export, which is why `components/bundle/Aside.tsx` still
-          exports `VisibilitySwitch` with `DraftLanding` as its one caller. A published
-          bundle's owner has a control again, and nothing here should say otherwise.
+          The visibility switch is the panel that moved rather than went. The owner: "remove
+          the panel visibility from the blueprint card; such option should be visible only on
+          the user account list of the blueprints." Neither branch of this route draws one,
+          the owner included. `components/profile/OwnedBundles.tsx` draws a `RowVisibility`
+          per row on `/u/[username]`, drafts included, over the same visibility route.
 
           Four panels the aside had already lost are recorded here rather than being lost
           with the container: `Forks` (the owner: "remove the fork panel from blueprint" —

@@ -2,17 +2,17 @@ import { Fragment } from "react";
 import Link from "next/link";
 
 import { cx } from "@/lib/format";
-import { MCP_CONNECT_COMMAND, MCP_ROUTE } from "@/lib/mcp";
-import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
+import { MCP_ROUTE } from "@/lib/mcp";
+import { SKILL_ROUTE } from "@/lib/skill";
 
 /* ============================================================
    The two ways in, as a band across the top of the hero.
 
-   A command a reader can copy is a different kind of thing from the wordmark below it,
-   which is a name, a rule and a claim animated as one object. So the band is its own
-   component with no timeline to join: nothing here fades, scales or waits, and a reader
-   who arrives knowing what DarkPrint is meets the two lines immediately, with JS, without
-   it, and with reduced motion.
+   Two links and nothing else. A command printed here would only be clickable, and the page
+   each cell leads to has the same command with a copy control beside it, so the band carries
+   the two labels alone. It is its own component with no timeline to join: nothing here
+   fades, scales or waits, and a reader who arrives knowing what DarkPrint is meets the two
+   doors immediately, with JS, without it, and with reduced motion.
 
    ── The SURFACE reaches the viewport edge; the TEXT stays in the page column ──
    The band is two nested boxes. The outer div carries the border and the background all the
@@ -24,52 +24,40 @@ import { SKILL_INSTALL_COMMAND, SKILL_ROUTE } from "@/lib/skill";
 
    ── One band split, not two panels ──
    The divider is a 1px grid track filled with `--color-line`, not a border on either cell,
-   so the pair reads as one surface with a seam. One label line and one command line per
-   cell is the whole shape; a sentence per entry in smaller type would compete with the
-   command, which is the one thing a reader came to copy.
+   so the pair reads as one surface with a seam.
    ============================================================ */
 
 /**
  * The two registers a cell can be in.
  *
- * `emerald` is the site's "this runs", the register the install line wears everywhere it
- * appears. `blueprint` is `--color-blueprint-line`, the blue `/mcp` sets its own snippet in
- * on the owner's instruction, so a reader who follows the band to that page meets the same
- * string in the same colour. One field per cell rather than a boolean, because a boolean
- * would drive two dots and two text colours and say nothing about why.
+ * `emerald` is the site's "this runs", the register the install line wears on `/skill`.
+ * `blueprint` is `--color-blueprint-line`, the blue `/mcp` sets its own snippet in, so a
+ * reader who follows the band to that page meets the same colour. One field per cell rather
+ * than a boolean, because a boolean would drive two dots and say nothing about why.
  */
 const TONE = {
-  emerald: { dot: "bg-emerald", command: "text-emerald" },
-  blueprint: { dot: "bg-blueprint-line", command: "text-blueprint-line" },
+  emerald: { dot: "bg-emerald" },
+  blueprint: { dot: "bg-blueprint-line" },
 } as const;
 
 /**
- * One cell per way in, in the owner's order: the skill, then MCP.
- *
- * Both commands are printed from the module that owns them and nothing here restates
- * them. The skill line fetches the archive the site serves under `/skill/`; the MCP line
- * is whatever `MCP_CLIENTS[0].snippet` says, which is the Claude Code form. Neither cell
+ * One cell per way in, in the owner's order: the DarkPrint skill, then MCP. Neither cell
  * carries a badge or a note: `components/hero/Wordmark.test.ts` forbids "coming soon" on
  * both, and a limit statement belongs on the page each cell links to, in words.
  */
 const SETUPS = [
   {
     key: "skill",
-    label: "Design your blueprint",
-    command: SKILL_INSTALL_COMMAND,
+    label: "Design your blueprint via the DarkPrint skill",
     href: SKILL_ROUTE,
     tone: "emerald",
   },
   {
     key: "mcp",
     label: "Connect via MCP",
-    command: MCP_CONNECT_COMMAND,
     href: MCP_ROUTE,
     tone: "blueprint",
   },
-  /* No `satisfies` clause: it would run an excess-property check that has to restate every
-     field to allow the ones it does not care about, and `TONE[setup.tone]` at the use site
-     already refuses anything that is not a key. */
 ] as const;
 
 export function SetupChips() {
@@ -79,13 +67,9 @@ export function SetupChips() {
        instead, which is what keeps a cell's hover ground running to the screen edge.
 
        `grid-cols-[1fr_1px_1fr]` is written for exactly two cells and one divider, which is
-       what `SETUPS` holds. A third entry would need the template to grow with it; the grid
-       would not error, it would drop the third cell onto a second row with the divider
-       under it.
-
-       One column below `sm`, where two long commands cannot both fit. The divider goes with
-       the second column (`hidden`, so it takes no row of its own) and the seam becomes a
-       `border-b` on every cell but the last. */
+       what `SETUPS` holds. One column below `sm`; the divider goes with the second column
+       (`hidden`, so it takes no row of its own) and the seam becomes a `border-b` on every
+       cell but the last. */
     <div className="grid grid-cols-1 border-b border-line bg-surface-2/72 sm:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)]">
         {SETUPS.map((setup, i) => (
           <Fragment key={setup.key}>
@@ -105,7 +89,7 @@ export function SetupChips() {
                  the gutter is `(100% - 1200px) / 2`; side by side, a cell is half the width,
                  so the same gutter is `100% - 600px`. */
               className={cx(
-                "group flex flex-col gap-2 px-10 py-5 transition-[transform,scale,color,background-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:bg-surface-2/60 hoverable:active:scale-[0.99]",
+                "group flex items-center px-10 py-5 transition-[transform,scale,color,background-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:bg-surface-2/60 hoverable:active:scale-[0.99]",
                 "px-[calc(max((100%-1200px)/2,0px)+4rem)]",
                 i === 0
                   ? "sm:ps-[calc(max(100%-600px,0px)+4rem)] sm:pe-10"
@@ -114,8 +98,8 @@ export function SetupChips() {
               )}
             >
               <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                {/* Decorative on purpose: `aria-hidden`, because it says at a glance exactly
-                    what the command's own colour says in full. */}
+                {/* Decorative on purpose: `aria-hidden`, because it says at a glance which
+                    register the page behind the link is in, and the label says the rest. */}
                 <span
                   aria-hidden
                   className={cx(
@@ -123,20 +107,12 @@ export function SetupChips() {
                     TONE[setup.tone].dot,
                   )}
                 />
-                <span className="label">{setup.label}</span>
-              </span>
-              {/* Never wrapped. A command broken across two lines is a command a reader
-                  cannot select in one gesture, and these are the one thing on the page
-                  somebody arrives to copy. Both lines are longer than a cell at 1440, so
-                  `overflow-x-auto` is doing real work: the cell scrolls, the band does not
-                  reflow. The full explanation and a copy control live one click away. */}
-              <span
-                className={cx(
-                  "block overflow-x-auto whitespace-nowrap font-mono text-sm transition-colors hoverable:group-hover:text-fg",
-                  TONE[setup.tone].command,
-                )}
-              >
-                {`$ ${setup.command}`}
+                <span className="label transition-colors hoverable:group-hover:text-fg">
+                  {setup.label}
+                </span>
+                <span aria-hidden className="label text-dim">
+                  →
+                </span>
               </span>
             </Link>
           </Fragment>

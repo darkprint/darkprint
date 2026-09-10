@@ -644,10 +644,10 @@ which one you recommend; for a first release the short path is usually it:
 
 **The short path, private by default.** Sign in at `https://www.darkprint.io/welcome`, drop
 the folder on `https://www.darkprint.io/upload`, and press Publish. Visibility defaults to
-private there, so the blueprint is theirs alone until they change it on its own page, and a
-slug never published before is created by that first publish. When a live page is open,
-PUT phase `published` with `publishedRef` set to `<handle>/<slug>` once the upload page
-reports the release.
+private there, so the blueprint is theirs alone until they change it from the blueprint list
+on their profile, and a slug never published before is created by that first publish. When a
+live page is open, PUT phase `published` with `publishedRef` set to `<handle>/<slug>` once the
+upload page reports the release.
 
 **From the browser, naming it first.** Sign in at `https://www.darkprint.io/welcome`; create the slug at
 `https://www.darkprint.io/new`, choosing public or private; then drop the folder on

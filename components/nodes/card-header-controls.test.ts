@@ -91,8 +91,7 @@ const DOWNLOAD = () =>
   renderToStaticMarkup(
     createElement(CloneMenu, {
       kind: "node",
-      command: 'curl -fsSL -O "https://darkprint.io/cards/spec-planner@1.0.0.yaml"',
-      cliCommand: "darkprint clone card spec-planner@1.0.0",
+      cloneCommand: "npx -y darkprint clone lupo/spec-planner@1.0.0",
     }),
   );
 
@@ -100,9 +99,7 @@ const FOLDER = () =>
   renderToStaticMarkup(
     createElement(CloneMenu, {
       kind: "blueprint",
-      command:
-        'curl --fail-early -fsSL --create-dirs -o "starter/#1" "https://darkprint.io/bundles/starter/{README.md}"',
-      cliCommand: "darkprint clone starter",
+      cloneCommand: "npx -y darkprint clone darkprint/starter",
     }),
   );
 
@@ -379,7 +376,8 @@ describe("the four refusals a reader can do something about", () => {
 
 describe("the download control is amber, and the blueprint's is not", () => {
   it("wears the node card's own register", () => {
-    expect(DOWNLOAD()).toContain("Download card");
+    // A neutral verb, the way GitHub's "Code" is: the menu clones as well as downloads.
+    expect(DOWNLOAD()).toContain("Get card");
     expect(DOWNLOAD()).toContain("border-amber/60");
     expect(DOWNLOAD()).toContain("text-amber");
     expect(
@@ -447,9 +445,9 @@ describe("the download control is amber, and the blueprint's is not", () => {
     ).toContain("border-l-2");
   });
 
-  it("leaves the blueprint's trigger exactly as it was", () => {
+  it("leaves the blueprint's trigger in the neutral register", () => {
     const folder = FOLDER();
-    expect(folder).toContain("Get the folder");
+    expect(folder).toContain("Get blueprint");
     expect(folder).not.toContain("copper");
     const summary = folder.slice(folder.indexOf("<summary"), folder.indexOf("</summary>"));
     expect(
@@ -460,34 +458,43 @@ describe("the download control is amber, and the blueprint's is not", () => {
   });
 
   /**
-   * The click-to-save path, which the row gave up its fourth control for.
-   *
-   * The header used to carry a "Download card" `ButtonLink` next to this menu: press it and
-   * the card document lands on disk, no terminal involved. The owner asked the row down to
-   * three controls, so the button moved INSIDE this panel rather than being dropped — and a
-   * panel that quietly stopped rendering what it was handed would take the working half of
-   * the download with it and leave a reader nothing but a `curl` line.
+   * The Download item is the working half of the menu: press it and the card document lands
+   * on disk, no terminal involved. A panel that quietly stopped rendering what it was handed
+   * would leave a reader nothing but a command that runs nowhere yet.
    */
-  it("renders the click-to-save control it is handed", () => {
-    const withSave = renderToStaticMarkup(
+  it("renders the download link it is handed, first", () => {
+    const withDownload = renderToStaticMarkup(
       createElement(CloneMenu, {
         kind: "node",
-        command: 'curl -fsSL -O "https://darkprint.io/cards/spec-planner@1.0.0.yaml"',
-        cliCommand: "darkprint clone card spec-planner@1.0.0",
-        save: createElement("a", { download: "spec-planner@1.0.0.yaml" }, "Save the card file"),
+        cloneCommand: "npx -y darkprint clone lupo/spec-planner@1.0.0",
+        download: createElement("a", { download: "spec-planner@1.0.0.yaml" }, "spec-planner@1.0.0.yaml"),
       }),
     );
-    expect(withSave).toContain("Save the card file");
-    expect(withSave).toContain('download="spec-planner@1.0.0.yaml"');
+    expect(withDownload).toContain('download="spec-planner@1.0.0.yaml"');
+    const text = plainText(withDownload);
+    expect(text.indexOf("spec-planner@1.0.0.yaml")).toBeLessThan(
+      text.indexOf("npx -y darkprint clone lupo/spec-planner@1.0.0"),
+    );
   });
 
   it("is handed one by the node page", () => {
-    expect(PAGE, "CloneMenu is mounted without a save control").toMatch(
-      /<CloneMenu[\s\S]{0,1200}?save=\{/,
+    expect(PAGE, "CloneMenu is mounted without a download link").toMatch(
+      /<CloneMenu[\s\S]{0,1200}?download=\{/,
     );
     expect(PAGE, "the saved file no longer carries the card's own name").toContain(
       "download={`${record.ref}.yaml`}",
     );
+  });
+
+  /**
+   * Two items and no third. The owner asked for Download and Clone the way GitHub's menu has
+   * them, and a `curl` line beside them would be a third.
+   */
+  it("has exactly the two items, Download then Clone", () => {
+    const menu = DOWNLOAD();
+    const items = [...menu.matchAll(/class="label-lead text-fg">([^<]*)</g)].map((m) => m[1]);
+    expect(items).toEqual(["Download", "Clone"]);
+    expect(plainText(menu)).not.toContain("curl");
   });
 });
 

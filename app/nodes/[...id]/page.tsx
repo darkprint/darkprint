@@ -9,12 +9,12 @@ import { openView } from "@/lib/server/ontology";
 import { latestCards, storedVersionsOf, usersOf, usersOfMany } from "@/lib/server/registry";
 import { searchTerms } from "@/lib/server/search";
 import { serveCardSource } from "@/lib/server/export";
-import { actorFrom, getPublicAuthor } from "@/lib/server/accounts";
+import { resolveCardRef } from "@/lib/server/cards";
+import { actorFrom, getPublicAuthor, publicAuthorsByIds } from "@/lib/server/accounts";
 import { getSignals } from "@/lib/server/counters";
 import { listNotes, type NoteRecord } from "@/lib/server/notes";
 import { authorFor } from "@/components/profile/author";
 import { readSession } from "@/components/profile/session";
-import { cardFileDownloadCommand } from "@/components/bundle/load";
 import { compact, cx } from "@/lib/format";
 import { CARD_BLOCKS } from "@/components/panes/model";
 import { termHref } from "@/lib/href";
@@ -127,10 +127,9 @@ export async function generateMetadata({ params }: PageProps<"/nodes/[...id]">) 
 
    The rule that comes with them: **a mono uppercase run is a
    LABEL, and a label is not a heading level.** Every panel title
-   here is a real `<h2>` wearing `.label-lead`, and the two `<h3>`s
-   that were only sub-group captions (`Notes from the author`,
-   `Risk markers`) are `<span className="label">` now and stop
-   claiming an outline position they never earned.
+   here is a real `<h2>` wearing `.label-lead`, and a sub-group
+   caption is a `<span className="label">` rather than an `<h3>`
+   claiming an outline position it never earned.
 
    One panel title on this page is drawn by a component no wave
    touches — `components/nodes/VersionHistory.tsx` hard-codes the
@@ -549,8 +548,6 @@ const FIELD_ROWS: readonly FieldRow[] = [
     block: "interfaces",
     name: "cannot",
     read: (c) => list(c.cannot, "no type is refused"),
-    seeHref: "#prohibitions",
-    seeLabel: "and what enforces it",
     detail: (_c, v) =>
       v.prohibitions.length === 0 ? undefined : (
         <div className="flex flex-col gap-2">
@@ -624,12 +621,9 @@ const FIELD_ROWS: readonly FieldRow[] = [
   {
     block: "evaluation",
     name: "notes",
-    /* Clamped here and printed in full under "Notes from the author" at the foot of this
-       panel, so the row points there rather than repeating the paragraph. */
+    /* Printed in full here: this row is the one place the page shows the author's notes. */
     read: (c) => prose(c.notes),
     measure: (c) => wordCount(c.notes),
-    seeHref: "#author-notes",
-    seeLabel: "in full below",
   },
 
   { block: "service", name: "version", read: (c) => one(c.version) },
@@ -996,6 +990,16 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   const account =
     card.author === undefined ? undefined : await getPublicAuthor(db, card.author);
   const author = account === undefined ? undefined : authorFor(account);
+  /* The clone line names the account that published this version, which `CardSummary`
+     does not carry: the stored row has the owner's id, and the public reader turns it into
+     a handle. An account that has not chosen a handle yet leaves the bare ref. */
+  const stored = await resolveCardRef(db, ANONYMOUS, record.ref);
+  const publisher =
+    stored === undefined
+      ? undefined
+      : (await publicAuthorsByIds(db, [stored.ownerId])).get(stored.ownerId);
+  const publisherHandle = publisher?.handle ?? null;
+  const cloneLine = `npx -y darkprint clone ${publisherHandle === null ? "" : `${publisherHandle}/`}${record.ref}`;
   /* The document, verbatim, from the published per-card reader. `cardSource` walked
      `content/`, so a card published since the last deploy showed an empty source panel —
      the same reason the blueprint page's panes moved (D-261-12). Bytes on the wire is
@@ -1062,18 +1066,6 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
       href: "#interfaces",
       label: "Interfaces",
       meta: `${card.inputs.length} in · ${card.outputs.length} out`,
-    },
-    {
-      href: "#prohibitions",
-      label: "Refusals",
-      /* Two numbers where one stood, and the two words are the sentence. "Declared" was
-         the only word available while one list held both kinds, and it flattened them:
-         a reader saw `2 declared` and could not tell whether the engine was holding the
-         graph to two rules or to none. */
-      meta:
-        prohibitions.length === 0 && card.willNot.length === 0
-          ? "none"
-          : `${prohibitions.length} checked · ${card.willNot.length} promised`,
     },
     {
       href: "#fields",
@@ -1175,24 +1167,11 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
         {/* The right column, at `BundleHeader`'s measure: one action row, and the figure
             those actions move underneath them.
 
-            ── Star, Fork, Download card, in that order ──
-            The owner, 2026-09-05: "In the node card, it should be star, fork, Download
-            Card". Three controls where four stood, and each of the two that left went for
-            its own reason.
-
-            A fork explainer stood first: a dropdown that explained what forking a card
-            would mean and then pointed at the download, which was the right thing to draw
-            while a card had no fork at all. Beside a Fork button it is the wrong thing: two
-            controls a click apart, the left one explaining that the right one does not
-            exist. `CardForkButton` takes the slot and does the thing instead, over
-            `POST /api/cards/{id}/fork`, which is why the explainer is deleted rather than
-            moved.
-
-            The "Download card" button stood third, and it has not been dropped: it is
-            passed to `CloneMenu` as `save` and is the first thing inside that panel. The
-            two download paths were always one idea drawn twice — press to save, or paste a
-            command — and the row the owner asked for has room for the idea, not for both
-            drawings of it.
+            ── Star, Fork, Get card, in that order ──
+            Three controls. `CardForkButton` does the thing over `POST /api/cards/{id}/fork`
+            rather than explaining it, so no explainer sits beside it. The card document's
+            download is the first item inside `CloneMenu`, with the clone command as the
+            second: the row has room for one menu, not for two drawings of one idea.
 
             The group's `download` anchor left with the fork explainer. Its own comment
             recorded that it existed because that component's panel linked it, and nothing
@@ -1236,44 +1215,33 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
                 signedIn: actor.kind === "account",
               }}
             />
-            {/* The same affordance the blueprint page's header carries, at the address
-                this page can honestly print. `scripts/generate-bundles.ts` writes every
-                pinned card version a second time under `public/cards/`, so a card has a
-                URL of its own rather than only one inside whichever blueprint happens to
-                pin it — which would name a blueprint the reader did not ask about and
-                404 the day it left the archive.
+            {/* The same two-item menu the blueprint page's header carries: Download is the
+                card document, Clone is the CLI line for it.
 
-                `save` is the click-to-save path, handed over as an element rather than as
-                a URL: `CloneMenu` is a client component and this link carries the whole
-                card document in its href, so passing the string would serialise the
-                document into the client payload on top of the markup it is already in.
+                `download` is handed over as an element rather than as a URL: `CloneMenu`
+                is a client component and this link carries the whole card document in its
+                href, so passing the string would serialise the document into the client
+                payload on top of the markup it is already in. A plain `<a>` rather than a
+                `ButtonLink`, since the href is a `data:` URI `next/link` has no routing to
+                do for, and the class list is spelled out so the amber lands rather than
+                being decided by stylesheet order against `outline`'s `text-fg`.
 
-                A plain `<a>` where this used to be a `ButtonLink`, for two reasons that
-                both bite. The href is a `data:` URI, which `next/link` has no routing to do
-                for — `prefetch={false}` was already there to say so. And the accent:
-                `ButtonLink`'s `outline` variant sets `border-line-bright` and `text-fg`, so
-                an amber `className` beside it is two utilities writing the same property
-                and Tailwind decides that by stylesheet order rather than by the order they
-                are written here. Spelling the class list out is the only way to be sure
-                which colour lands. It is `CloneMenu`'s own summary treatment at the same
-                height, which is what the two controls should look like anyway.
-
-                Amber rather than copper since 2026-09-06, with the trigger it sits under.
-                No ground at rest, for the reason `CloneMenu`'s `TRIGGER` writes out: this
-                link stands four rows above an amber fence around a CLI that does not
-                exist, and a filled amber rectangle is that fence's shape. */}
+                The clone line names the account that published this version, the way a
+                blueprint's line names its owner; `card.author` is attribution inside the
+                document and can be a different person. The CLI's card verb is not built
+                yet, and the owner-qualified form is the grammar it is being given. */}
             <CloneMenu
               kind="node"
-              command={cardFileDownloadCommand(record.ref)}
-              cliCommand={`darkprint clone card ${record.ref}`}
-              save={
+              cloneCommand={cloneLine}
+              download={
                 source !== undefined ? (
                   <a
                     href={`data:text/yaml;charset=utf-8,${encodeURIComponent(source)}`}
                     download={`${record.ref}.yaml`}
-                    className="inline-flex h-9 select-none items-center justify-center gap-2 self-start whitespace-nowrap rounded-md border border-amber/60 bg-transparent px-4 text-sm text-amber transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-amber hoverable:hover:bg-amber/10 hoverable:active:scale-[0.97]"
+                    className="inline-flex h-9 w-fit select-none items-center gap-2 whitespace-nowrap rounded-md border border-amber/60 bg-transparent px-3 font-mono text-[12px] text-amber transition-[transform,scale,color,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.23,1,0.32,1)] hoverable:hover:border-amber hoverable:hover:bg-amber/10 hoverable:active:scale-[0.97]"
                   >
-                    Save the card file
+                    <span aria-hidden>↓</span>
+                    {record.ref}.yaml
                   </a>
                 ) : undefined
               }
@@ -1369,26 +1337,23 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
               </span>
             )}
             {/* The negative half of the interface, named in the header so it is not
-                something a reader finds only by scrolling.
+                something a reader finds only by scrolling. Each chip lands on the Card
+                values table, whose `cannot` and `will_not` rows carry the entries and, one
+                click deeper, what the engine does about each.
 
-                A link now, not a statement: the panel carrying the entries is 1500px
-                down and this was the only mention of them above the fold. That also
-                settles its colour — it goes somewhere, so it is cyan like the two
-                vocabulary chips, and the row's remaining violet is the human one. */}
-            {/* Two chips, or one, or none. The pair of counts belongs in the header for
-                the reason the panel's meta line carries it too: `cannot · 2 declared` was
-                one number over two different promises, and a reader above the fold had no
-                way to tell how much of it the engine was standing behind. Each half draws
-                only when the card has one, so a card that refuses a type and undertakes
-                nothing shows one chip rather than a chip and a zero. */}
+                Two chips, or one, or none. `cannot · 2 declared` was one number over two
+                different promises, and a reader above the fold had no way to tell how much
+                of it the engine was standing behind. Each half draws only when the card has
+                one, so a card that refuses a type and undertakes nothing shows one chip
+                rather than a chip and a zero. */}
             {prohibitions.length > 0 && (
-              <a href="#prohibitions" className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}>
+              <a href="#fields" className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}>
                 <span className="text-muted">cannot ·</span>
                 {prohibitions.length} checked
               </a>
             )}
             {card.willNot.length > 0 && (
-              <a href="#prohibitions" className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}>
+              <a href="#fields" className={cx(CHIP, CHIP_LINK, CHIP_PRESS)}>
                 <span className="text-muted">will_not ·</span>
                 {card.willNot.length} promised
               </a>
@@ -1523,163 +1488,6 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             outputs={card.outputs.map(port)}
             dependencies={dependencies}
           />
-        </Panel>
-
-        {/* Directly under the interfaces, because it is the other half of the same
-            statement: those rows say what arrives on this node, and these say what may
-            not. It is also the field doc 2 §3's whole argument rests on — the rule that
-            a Skill cannot express, because it is a property of who is wired to whom —
-            so it gets a panel of its own rather than a line inside Behaviour.
-
-            ── Two groups, where one list used to stand ──
-            This panel drew one list holding two kinds of entry, badged each row with
-            which kind it was, and counted the two kinds in the meta line so a reader
-            could work out how much of what they were looking at the engine stood
-            behind. Every one of those devices was a repair on the card format, which
-            carried both promises under one key. The format has been repaired instead.
-            `cannot` holds the data types the resolver refuses; `will_not` holds the
-            author's own sentences. So the panel draws the two fields as two groups
-            under headings that say what the engine does about each, and the question
-            "which of these is actually checked" is answered by a heading rather than
-            by counting badges down a list.
-
-            Both groups are drawn even when one of them is empty, as long as the card
-            declared something. A card that undertakes four things and refuses no type
-            is making a real statement about itself, and hiding the empty half would
-            leave a reader who had never seen the other one unable to tell that there
-            was a difference to look for. */}
-        <Panel
-          id="prohibitions"
-          className="scroll-mt-24"
-          label="What it refuses"
-          meta={
-            prohibitions.length === 0 && card.willNot.length === 0
-              ? "none declared"
-              : `${prohibitions.length} checked · ${card.willNot.length} promised`
-          }
-        >
-          {prohibitions.length === 0 && card.willNot.length === 0 ? (
-            <div className="flex flex-col gap-2">
-              <p className="text-[15px] leading-relaxed text-muted">
-                <span className="text-fg">Nothing declared.</span> The ordinary case: a
-                node is usually isolated by the edges its graph does not draw. Writing
-                the rule down here makes it checkable.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-6">
-              {/* Emerald on the heading, matching the rows under it. What separates
-                  this group from the one below is that the resolver holds the graph to
-                  it, a fact read off the engine, which is the job emerald carries
-                  everywhere else on this page. Violet stays out of both: it is reserved
-                  for where a person acts. */}
-              <section
-                className="flex flex-col gap-2.5"
-                aria-labelledby="prohibitions-enforced"
-              >
-                <h3
-                  id="prohibitions-enforced"
-                  className="label inline-flex items-center gap-1.5 text-emerald"
-                >
-                  <span aria-hidden>⊘</span> cannot receive · checked automatically on
-                  every incoming edge
-                </h3>
-                {prohibitions.length === 0 ? (
-                  <p className="text-[15px] leading-relaxed text-muted">
-                    No type is refused. Every edge the graph draws into this node passes
-                    this card&rsquo;s check.
-                  </p>
-                ) : (
-                  <ul className="flex flex-col gap-2.5">
-                    {prohibitions.map((p) => (
-                      <li
-                        key={p.entry}
-                        className="flex flex-col gap-1.5 rounded-md border border-emerald/30 bg-emerald/5 px-3 py-2.5"
-                      >
-                        <span className="flex flex-wrap items-center justify-between gap-2">
-                          <TermChip
-                            href={termHref(p.term.id)}
-                            label={p.entry}
-                            aria={`Ontology data type: ${p.term.label}`}
-                          />
-                        </span>
-                        {p.term.description !== undefined && (
-                          <span className="text-xs leading-relaxed text-muted">
-                            {p.term.description}
-                          </span>
-                        )}
-                        <span className="text-xs leading-relaxed text-dim">
-                          Any edge that could carry{" "}
-                          <code className="font-mono text-muted">{p.term.id}</code>, or a
-                          narrower type, fails the bundle with{" "}
-                          <code className="font-mono text-muted">
-                            bundle/prohibition-violated
-                          </code>
-                          .
-                          {p.entry !== p.term.id && (
-                            <>
-                              {" "}
-                              The card writes{" "}
-                              <code className="font-mono text-muted">{p.entry}</code>,
-                              which the vocabulary resolves to{" "}
-                              <code className="font-mono text-muted">{p.term.id}</code>.
-                            </>
-                          )}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-
-              {/* Drawn plainly and drawn at full size. The schema calls stating an
-                  undertaking legitimate, so this is a second kind of promise and not a
-                  lesser one: on `maintainer-approval` the two entries here are restated
-                  almost word for word in the specification at the top of this page,
-                  where the agent reads them. What separates the group is who acts on
-                  it, and the heading states that in words. */}
-              <section
-                className="flex flex-col gap-2.5"
-                aria-labelledby="prohibitions-undertaken"
-              >
-                <h3
-                  id="prohibitions-undertaken"
-                  className="label inline-flex items-center gap-1.5"
-                >
-                  <span aria-hidden>◌</span> will not · the author&rsquo;s promise, which
-                  nothing checks automatically
-                </h3>
-                {card.willNot.length === 0 ? (
-                  <p className="text-[15px] leading-relaxed text-muted">
-                    Nothing is promised. This card states no rule beyond the type it
-                    refuses above.
-                  </p>
-                ) : (
-                  <ul className="flex flex-col gap-2.5">
-                    {card.willNot.map((entry) => (
-                      <li
-                        key={entry}
-                        className="rounded-md border border-line bg-surface-2 px-3 py-2.5"
-                      >
-                        <span className="font-mono text-[12px] text-fg">{entry}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-
-              {/* No em dash in here, even though `app/nodes` is outside the trees
-                  `components/site/copy-rules.test.ts` guards. That exemption exists for copy
-                  that predates doc 2 §2.5, not as a licence for new copy. This sentence was
-                  written in this pass, so it follows the rule the guard cannot see it break. */}
-              <p className="text-xs leading-relaxed text-dim">
-                Only a data type can be checked automatically, because a data type is the
-                only thing an edge carries. The promises in the second group cannot be read
-                off a graph. They are addressed to whoever runs the node and to the agent,
-                which receives the specification at the top of this page.
-              </p>
-            </div>
-          )}
         </Panel>
 
         {/* One panel where two stood, and no prose in it.
@@ -1934,19 +1742,6 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
             </Link>
           </p>
 
-          {card.notes !== undefined && (
-            /* Kept, and kept out of the table. Everything above is a field and a value;
-               this is a paragraph the author wrote, and folding it into a `dd` would
-               make one row twenty times the height of the others. */
-            <div id="author-notes" className="mt-5 flex scroll-mt-24 flex-col gap-2 border-t border-line pt-5">
-              {/* A caption rather than a heading: it labels one paragraph inside a section
-                  that already has its `<h2>`. */}
-              <span className="label">Notes from the author</span>
-              <p className="border-l-2 border-line-bright pl-4 text-[15px] leading-relaxed text-muted">
-                <Ticked text={card.notes} />
-              </p>
-            </div>
-          )}
         </Panel>
 
         {/* Wrapped only to give the card map something to land on. `VersionHistory`
