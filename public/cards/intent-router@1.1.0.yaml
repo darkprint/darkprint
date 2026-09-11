@@ -58,4 +58,4 @@ notes: >-
   nor a `preferred_label`, so the spec sentence is the only place this key can come from.
 
 version: 1.1.0
-author: hachi
+author: autogen

@@ -100,29 +100,16 @@ describe("the ladder is credited to nobody who did not write it", () => {
  * The two-scales claim, after the panel that carried it was deleted.
  *
  * The author asked "Two scales, and only one of them is a number" off `SectionLevels` on
- * 2026-08-07. Doc 2 §1.1 did not go with it: the constraint moved to the deck of the one
- * route that mounts this section, which is where the correction had already been put when
- * it was decided that a disclaimer below the picture is downstream of the thing it
- * corrects.
+ * 2026-08-07. Doc 2 §1.1 did not go with it: the ladder counts an organisation, the
+ * autonomy class on a blueprint records where its author put a person and ranks nothing,
+ * and no surface may call the ladder the one numbered thing here.
  *
- * So both cases now read the page as well as the component. That is stricter than what
- * they replaced, not looser. The negative case used to let the page say the forbidden
- * thing as long as `SectionLevels` did not; the positive one would now pass on an empty
- * string, because the sentence it looks for is no longer in the file it was reading.
+ * The case read the mounting route's deck as well as the component until the owner asked
+ * that route off the site. `SectionLevels` is the whole of what the prohibition has left to
+ * read, and that is a narrower reach rather than a looser rule: there is one surface now,
+ * and it is covered. THE SECTION HAS NO MOUNT — no route imports it — so a reader meets
+ * this copy nowhere until one does.
  */
-/*
- * Whitespace collapsed, unlike `COPY`. A sentence in JSX is wrapped by the formatter at
- * whatever column it reaches, so "only one of them is a number" is split across two source
- * lines and a raw substring search does not find it — the phrase a reader sees in one line
- * is two lines in the file. `COPY`'s own cases all look for short fragments that happen to
- * survive that, which is luck rather than design; anything asserted here is a sentence.
- */
-const PAGE_COPY = visibleCopy(
-  readFileSync(join(process.cwd(), "app/towards-a-dark-factory/page.tsx"), "utf8"),
-)
-  .replace(/\s+/g, " ")
-  .toLowerCase();
-
 describe("the two-scales claim survives the panel that carried it", () => {
   it("does not call the ladder the one numbered thing on the site", () => {
     for (const phrase of [
@@ -131,7 +118,6 @@ describe("the two-scales claim survives the panel that carried it", () => {
       "nothing else on the site is counted",
     ]) {
       expect(COPY, `SectionLevels claims "${phrase}"`).not.toContain(phrase);
-      expect(PAGE_COPY, `the page claims "${phrase}"`).not.toContain(phrase);
     }
   });
 

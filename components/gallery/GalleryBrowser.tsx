@@ -8,7 +8,6 @@ import {
   SearchField,
 } from "@/components/ui/RegistryFilterBar";
 import type { AutonomyClass, Blueprint } from "@/lib/types";
-import { cx } from "@/lib/format";
 import { ContentRow } from "@/components/ui/ContentRow";
 import { PHASE_ORDER, phaseLabel } from "@/components/ui/PhaseCoverage";
 
@@ -108,13 +107,6 @@ export function GalleryBrowser({
     );
     return () => clearTimeout(timer);
   }, [draft, setParam]);
-  /* Doc 2 §1.1 permits autonomy as a way in and forbids it as a ranking, and this is the
-     same shape: a filter, never a sort, and the tiles still hide the token itself
-     (`showDarkFactory={false}` in `ContentCard`). What it selects became a real question
-     on 2026-08-04, when `isDarkFactory` started requiring all five lifecycle phases as
-     well as an unattended graph. Before that it meant "nobody stands in this graph",
-     which the autonomy class beside it already said. */
-  const darkFactory = params.get("df") === "1";
   /* `narrowOpen` stood here, with a note saying the disclosure below "is open when a filter
      inside it is set, so a reader can never have an active filter they cannot see", and
      `TagFromQuery` setting one from `?tag=` was the case it named.
@@ -181,7 +173,6 @@ export function GalleryBrowser({
       if (category && bp.category !== category) return false;
       if (phase && !bp.analysis.phaseCoverage.covered.includes(phase)) return false;
       if (autonomy !== null && bp.autonomy.autonomyClass !== autonomy) return false;
-      if (darkFactory && !bp.autonomy.isDarkFactory) return false;
       if (tag && !bp.tags.includes(tag)) return false;
       if (q) {
         const haystack =
@@ -208,15 +199,14 @@ export function GalleryBrowser({
       return bt.localeCompare(at) || a.title.localeCompare(b.title);
     });
     return sorted;
-  }, [blueprints, search, tag, category, phase, autonomy, darkFactory]);
+  }, [blueprints, search, tag, category, phase, autonomy]);
 
   const hasFilters =
     search.trim() !== "" ||
     tag !== null ||
     category !== null ||
     phase !== null ||
-    autonomy !== null ||
-    darkFactory;
+    autonomy !== null;
 
   /** The filters actually on, named the way the reader set them, for the empty state. */
   const activeFilters = [
@@ -225,7 +215,6 @@ export function GalleryBrowser({
     tag !== null && `#${tag}`,
     phase !== null && phase,
     autonomy !== null && autonomy,
-    darkFactory && "dark factory",
   ].filter((label): label is string => typeof label === "string");
 
   /**
@@ -254,10 +243,10 @@ export function GalleryBrowser({
     leadBlueprint === null ? results : results.filter((bp) => bp !== leadBlueprint);
 
   /* The sort survives a reset: it is how the reader chose to read the shelf, not a
-     narrowing of it. One write, so one history entry rather than six. */
+     narrowing of it. One write, so one history entry rather than five. */
   const clearFilters = useCallback(() => {
     setDraft("");
-    clear(["q", "tag", "cat", "phase", "autonomy", "df"]);
+    clear(["q", "tag", "cat", "phase", "autonomy"]);
   }, [clear]);
 
   return (
@@ -277,19 +266,17 @@ export function GalleryBrowser({
         total={blueprints.length}
         active={activeFilters.length}
       >
-        {/* Row 1: what a reader narrows by. Row 2: how the shelf is assembled.
+        {/* Four questions about the blueprints, in one open row.
             ------------------------------------------------------------
-            Two rows, both open, where this was one row and a `Narrow further` disclosure.
-            Phase and autonomy came up out of it because the shelf now DISPLAYS both — the
-            coverage strip is five slots down every row and the class is on the shape line —
-            and a filter you can see the answer to should not be behind a toggle. What that
-            left behind was forks and dark-factory, and a disclosure over two controls costs
-            a reader more than it saves.
+            Phase and autonomy are in the open rather than behind a `Narrow further`
+            disclosure because the shelf DISPLAYS both — the coverage strip is five slots
+            down every row and the class is on the shape line — and a filter whose answer is
+            already on screen should not cost a toggle to find.
 
-            The split is not arbitrary: row 1 is four questions about the blueprints, row 2
-            is two about the LIST. `Forks: rolled up` does not narrow anything — it decides
-            whether a fork is its own entry or a line under its upstream — and `dark factory`
-            is the one filter whose answer the rows deliberately do not print. */}
+            The fork stance is not one of them. `app/blueprints/page.tsx` asks the API for
+            `forks: "all"` on the premise that this component applies `rolled` itself, and
+            nothing in this file reads `forks`, so every published fork stands on the shelf
+            as its own row. */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <SearchField
             value={search}
@@ -348,30 +335,6 @@ export function GalleryBrowser({
                 </option>
               ))}
             </select>
-          </label>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          {/* Same 40px shell as the selects it stands beside — it is a control in that row,
-              and a control 6px shorter than its neighbours reads as a mistake rather than as
-              a different kind of thing. */}
-          <label
-            title="Every node runs unattended and all five lifecycle phases are covered"
-            className={cx(
-              "flex h-10 w-full cursor-pointer select-none items-center gap-2 rounded-md border px-3 font-mono text-xs transition-colors sm:w-auto",
-              darkFactory
-                ? "border-line-bright bg-surface-3 text-fg"
-                : "border-line bg-surface-2 text-muted hoverable:hover:text-fg",
-            )}
-          >
-            <input
-              type="checkbox"
-              checked={darkFactory}
-              onChange={(e) => setParam("df", e.target.checked ? "1" : null)}
-              className="h-3.5 w-3.5 accent-cyan"
-            />
-            <span aria-hidden>◼</span>
-            dark factory only
           </label>
         </div>
 
@@ -437,9 +400,9 @@ export function GalleryBrowser({
       {results.length > 0 ? (
         /* A column of rows, `gap-3`, where this was a three-column grid of tiles.
            ------------------------------------------------------------
-           The shelf offers phase coverage, autonomy class and dark-factory as ways in and no
-           tile showed any of them: a reader filtered on three axes the grid never displayed,
-           then had to open a blueprint to find out what they had just filtered for. A grid
+           The shelf offers phase coverage and autonomy class as ways in and no tile showed
+           either of them: a reader filtered on two axes the grid never displayed, then had
+           to open a blueprint to find out what they had just filtered for. A grid
            of nine posters is for browsing; choosing between nine is a comparison, and a
            comparison wants rows — each axis reads down a column now.
 

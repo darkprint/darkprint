@@ -120,7 +120,7 @@ import nextConfig from "../../../next.config";
  * with the subject by construction and could not fail. This is the independent statement
  * of what the redirect table is FOR, which is the only thing that can disagree with it.
  */
-const SIXTEEN: readonly (readonly [source: string, destination: string])[] = [
+const SEVENTEEN: readonly (readonly [source: string, destination: string])[] = [
   ["/gallery", "/blueprints"],
   ["/parts", "/nodes"],
   ["/parts/:slug", "/nodes"],
@@ -128,10 +128,17 @@ const SIXTEEN: readonly (readonly [source: string, destination: string])[] = [
   ["/ontologies", "/spec/card"],
   ["/ontologies/:slug", "/spec/card"],
   ["/spec/ontology", "/spec/card"],
-  ["/how-to-build-a-dark-factory", "/towards-a-dark-factory"],
-  ["/towards-a-dark-factory/the-climb", "/towards-a-dark-factory"],
-  ["/which-tasks", "/towards-a-dark-factory"],
-  ["/towards-a-dark-factory/which-tasks", "/towards-a-dark-factory"],
+  /* The essay these four pointed at was deleted on the owner's instruction, so they were
+     repointed at the nearest surviving explainer rather than dropped: each was in the
+     published sitemap and so has been crawled, and a crawled URL answering 404 is what
+     `next.config.ts`'s own header calls worse than a redirect. The bare source below is the
+     essay's own path, added in the same change: leaving it out while repointing its children
+     would send a reader of the parent to a 404 and a reader of its child to a page. */
+  ["/towards-a-dark-factory", "/what-a-blueprint-is"],
+  ["/how-to-build-a-dark-factory", "/what-a-blueprint-is"],
+  ["/towards-a-dark-factory/the-climb", "/what-a-blueprint-is"],
+  ["/which-tasks", "/what-a-blueprint-is"],
+  ["/towards-a-dark-factory/which-tasks", "/what-a-blueprint-is"],
   ["/spec", "/what-a-blueprint-is"],
   ["/spec/scoring", "/what-a-blueprint-is"],
   ["/reading-the-radar", "/what-a-blueprint-is"],
@@ -189,7 +196,7 @@ describe("AC2: the sixteen existing redirects still resolve", () => {
     expect((await rules()).length, "the redirect table is empty").toBeGreaterThan(0);
   });
 
-  it.each(SIXTEEN)("%s -> %s, permanently, onto a page that exists", async (source, destination) => {
+  it.each(SEVENTEEN)("%s -> %s, permanently, onto a page that exists", async (source, destination) => {
     const table = await rules();
     const rule = table.find((entry) => entry.source === source);
 
@@ -225,7 +232,7 @@ describe("AC2: the sixteen existing redirects still resolve", () => {
    *
    * Read off the config on both sides on purpose. This is the one claim in the file that is
    * ABOUT the table rather than about what the table should contain, so deriving it from
-   * `SIXTEEN` would make it a statement about a transcription instead of about what ships.
+   * `SEVENTEEN` would make it a statement about a transcription instead of about what ships.
    */
   it("lands no redirect on another redirect's source", async () => {
     const table = await rules();
@@ -254,7 +261,7 @@ describe("AC2: the sixteen existing redirects still resolve", () => {
    * statement, and the repair is the deletion the owner asked for and not an exemption
    * here.
    */
-  it.each(SIXTEEN.map(([source]) => source))("%s has no page shadowing its redirect", (source) => {
+  it.each(SEVENTEEN.map(([source]) => source))("%s has no page shadowing its redirect", (source) => {
     // `:slug` is a pattern rather than a path and cannot have a page of its own.
     if (source.includes(":")) return;
     expect(routeExists(source), `${source} has a page.tsx again, so its redirect is dead`).toBe(false);
@@ -270,7 +277,7 @@ describe("AC2's own instrument", () => {
    */
   it("names every rule the config actually carries, so a seventeenth cannot arrive unnoticed", async () => {
     const table = await rules();
-    const named = new Set(SIXTEEN.map(([source]) => source));
+    const named = new Set(SEVENTEEN.map(([source]) => source));
     const unnamed = table.map((entry) => entry.source).filter((source) => !named.has(source));
 
     expect(
@@ -280,13 +287,13 @@ describe("AC2's own instrument", () => {
         `arm twice over — a static rule cannot name an owner that is not in the URL, and ` +
         `\`/blueprints/:slug\` would also match \`/blueprints/{owner}\` and shadow the ` +
         `filesystem. The redirect is a page-level redirector; see ac1-redirector.test.ts.\n\n` +
-        `If it is a legitimate seventeenth from some other change, add it to SIXTEEN with its ` +
+        `If it is a legitimate eighteenth from some other change, add it to SEVENTEEN with its ` +
         `reason — the table is the independent statement, so it has to be updated deliberately.`,
     ).toEqual([]);
   });
 
-  it("counts sixteen, as a floor under the named table rather than instead of it", () => {
-    expect(SIXTEEN).toHaveLength(16);
-    expect(new Set(SIXTEEN.map(([s]) => s)).size, "a duplicated source hides a dropped one").toBe(16);
+  it("counts seventeen, as a floor under the named table rather than instead of it", () => {
+    expect(SEVENTEEN).toHaveLength(17);
+    expect(new Set(SEVENTEEN.map(([s]) => s)).size, "a duplicated source hides a dropped one").toBe(17);
   });
 });

@@ -34,7 +34,7 @@ description: |-
   ...longer prose, markdown...
 category: Software
 tags: [starter, tutorial, isolation, software]
-author: orin
+author: autogen
 createdAt: "2026-07-28"
 updatedAt: "2026-07-28"
 ```

@@ -44,4 +44,4 @@ notes: >-
   factory itself embedded, which is why no external-access marker is inferred here.
 
 version: 1.0.0
-author: hachi
+author: autogen

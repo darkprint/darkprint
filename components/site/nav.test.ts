@@ -356,21 +356,25 @@ describe("the task groups use distinct, descriptive labels", () => {
   });
 
   /**
-   * Was: the label is the page's eyebrow ("The climb"). The eyebrow on the renamed route
-   * is "The route", and the author named the nav label themselves, so this now holds the
-   * label against the page's `h1` instead. That is the stronger claim of the two: an
-   * eyebrow is a category and the `h1` is the page's name, and a reader who clicks a nav
-   * item wants to see what they clicked at the top of what loads.
+   * The nav label is the page's `h1`, held against the page file rather than against a
+   * remembered string. An eyebrow is a category and the `h1` is the page's name, and a
+   * reader who clicks a Learn item wants to see what they clicked at the top of what loads.
+   *
+   * Off `LEARN` rather than `HEADER_LABELS`: neither route has a `NAV` row, and
+   * `HEADER_LABELS` is built from that table, so reading it there would hold the page's
+   * title against `undefined` and pass on the string "undefined" appearing nowhere.
    */
-  it("labels the route page with the heading a reader lands on", () => {
-    /* Off `LEARN` rather than `HEADER_LABELS`. The route's `NAV` row was deleted on
-       2026-08-11 for drawing nothing, and `HEADER_LABELS` is built from that table, so this
-       was about to hold the page's title against `undefined` and pass on the string
-       "undefined" appearing nowhere. The Learn dropdown is the header surface that names
-       this route, so it is the one the page's own heading has to agree with. */
-    const label = LEARN.find((item) => item.href === "/towards-a-dark-factory")?.label;
-    expect(label, "the Learn dropdown no longer names /towards-a-dark-factory").toBeDefined();
-    const source = read("app/towards-a-dark-factory/page.tsx");
+  it.each([
+    /* The two practice stops, and they are the two the check can be made over: the four
+       specification pages write `title={page.title}` and read it back out of
+       `sequence.ts`, so a source scan finds the expression rather than the words. These
+       two spell their heading out, which is the form that can drift from the nav label. */
+    ["/capabilities", "app/capabilities/page.tsx"],
+    ["/tutorial", "app/tutorial/page.tsx"],
+  ])("labels %s with the heading a reader lands on", (href, page) => {
+    const label = LEARN.find((item) => item.href === href)?.label;
+    expect(label, `the Learn dropdown no longer names ${href}`).toBeDefined();
+    const source = read(page);
     expect(source).toContain('as="h1"');
     expect(source).toContain(`title="${label}"`);
   });
@@ -660,11 +664,7 @@ describe("the collapsed menu stays usable", () => {
          of the panel's Build group, until the owner took publishing out of the chrome
          (2026-08-25). The set below is empty now and stays as the mechanism; the source
          check flipped direction in the same amendment — the header must NOT link /upload,
-         so the button cannot come back without this file moving with it.
-       - `/towards-a-dark-factory` is stop 06 of the Learn sequence, so the dropdown and the
-         phone panel both carry it through `LEARN`. It needs no exemption; the entry is kept
-         here because the route has been in and out of that list twice and the next reader
-         should find the answer rather than the history. */
+         so the button cannot come back without this file moving with it. */
     const ELSEWHERE_THAN_THE_PANEL = new Set<string>([]);
     const learnHrefs = new Set([
       ...LEARN.map((item) => item.href as string),
@@ -689,12 +689,17 @@ describe("the collapsed menu stays usable", () => {
     expect(SOURCE, "a Publish link came back into the header without review").not.toContain(
       'href="/upload"',
     );
-    // And the essay reaches a reader through the sequence and the footer both.
-    expect(LEARN.map((item) => item.href)).toContain("/towards-a-dark-factory");
+    /* And every Learn stop reaches a reader through the footer as well as the dropdown.
+       The footer's columns are filtered out of `SPEC_SEQUENCE`, so this holds by
+       construction today; it is asserted rather than assumed because a hand-written column
+       is the obvious edit the next time one run needs a row the sequence does not carry,
+       and a stop that reaches a reader from one surface only disappears with that surface. */
+    expect(LEARN.length, "the Learn sequence is empty; this would pass vacuously").toBeGreaterThan(1);
+    const footerHrefs = new Set(FOOTER.map((link) => split(link.href).path));
     expect(
-      FOOTER.map((link) => link.href),
-      "the footer stopped carrying the essay",
-    ).toContain("/towards-a-dark-factory");
+      LEARN.map((item) => item.href).filter((href) => !footerHrefs.has(href)),
+      "a Learn stop the footer does not carry",
+    ).toEqual([]);
   });
 
   it("caps the panel below the header and lets it scroll", () => {
@@ -739,17 +744,22 @@ describe("the collapsed menu stays usable", () => {
  */
 describe("the routes that were retired still answer", () => {
   const RENAMED: [string, string][] = [
-    ["/how-to-build-a-dark-factory", "/towards-a-dark-factory"],
-    /* Deleted 2026-08-07 on the author's instruction; the route is one page again. */
-    ["/towards-a-dark-factory/the-climb", "/towards-a-dark-factory"],
-    /* Both of these land on the parent, and the first one does NOT chain through the
-       second. `/which-tasks` was 308'd to `/towards-a-dark-factory/which-tasks` by §4.2;
-       that child was merged into its own parent on 2026-08-07, and pointing the older
-       redirect at the newer redirect would cost every link written before §4.2 two hops
-       for no gain. The child path keeps an entry of its own because it was live long
-       enough to be linked. */
-    ["/which-tasks", "/towards-a-dark-factory"],
-    ["/towards-a-dark-factory/which-tasks", "/towards-a-dark-factory"],
+    /* Five paths for one subject, and all five land on the Learn entry point in ONE HOP.
+       The essay is off the site on the owner's instruction, so the parent that the other
+       four folded into is itself a source now, and pointing them at it would cost every
+       link written before any of those moves two hops. That is the no-chaining argument
+       the rows below make three more times, and `tests/server/t261/ac2-redirects.test.ts`
+       refuses any rule whose destination is another rule's source.
+
+       Each child keeps a row of its own rather than being covered by the bare path above
+       it: a `source` with no parameter is an anchored exact pattern, so `/towards-a-dark-
+       factory` matches neither of the two beneath it. Both were live long enough to be
+       linked. */
+    ["/towards-a-dark-factory", "/what-a-blueprint-is"],
+    ["/how-to-build-a-dark-factory", "/what-a-blueprint-is"],
+    ["/towards-a-dark-factory/the-climb", "/what-a-blueprint-is"],
+    ["/which-tasks", "/what-a-blueprint-is"],
+    ["/towards-a-dark-factory/which-tasks", "/what-a-blueprint-is"],
     ["/spec", "/what-a-blueprint-is"],
     /* `/spec/scoring` merged into `/reading-the-radar`; that page was deleted on 2026-09-04
        and repointed onto `/build`, and `/build` was itself deleted on 2026-09-06 ("it is not

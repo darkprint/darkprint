@@ -99,7 +99,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 | `/privacy`, `/terms` | static | what the database stores about a person and how to remove it; what a reader may do here and what the site promises back. Linked from the footer's legal row on every page, which is also where Google's OAuth consent screen reads the privacy link from |
 | `/spec/attractor`, `/spec/topology` | static | the Attractor crosswalk; the DOT dialect |
 | `/spec/card` | dynamic | the node card format, with the vocabulary browser |
-| `/towards-a-dark-factory`, `/tutorial` | static | the essay on the phases of automation; the five-step walkthrough that has the reader write a blueprint in their own agent with the blueprint-writing skill, opens the live page the draft is posted to, and points at MCP and `/upload` |
+| `/tutorial` | static | the five-step walkthrough that has the reader write a blueprint in their own agent with the blueprint-writing skill, opens the live page the draft is posted to, and points at MCP and `/upload` |
 | `/tutorial/live/[token]` | per request, client-polled | one reader's live page: the draft the blueprint-writing skill posts, drawn as the graph takes shape, the registry hits, and the next step per phase; 404 on a malformed token, and an expired or unknown one renders the expired notice with a link back to `/tutorial` |
 | `/u/[username]` | dynamic | a profile |
 | `/u/[username]/[slug]` | dynamic | a permanent redirect to `/blueprints/[username]/[slug]` |
@@ -119,7 +119,7 @@ at least that; CI (`.github/workflows/ci.yml`) and Vercel run Node 24.
 | `/gallery` | `/blueprints` |
 | `/parts`, `/parts/:slug` | `/nodes` |
 | `/ontology`, `/ontologies`, `/ontologies/:slug`, `/spec/ontology` | `/spec/card` |
-| `/how-to-build-a-dark-factory`, `/towards-a-dark-factory/the-climb`, `/which-tasks`, `/towards-a-dark-factory/which-tasks` | `/towards-a-dark-factory` |
+| `/towards-a-dark-factory`, `/how-to-build-a-dark-factory`, `/towards-a-dark-factory/the-climb`, `/which-tasks`, `/towards-a-dark-factory/which-tasks` | `/what-a-blueprint-is` |
 | `/spec`, `/spec/scoring`, `/reading-the-radar`, `/concepts` | `/what-a-blueprint-is` |
 | `/install` | `/skill` |
 
@@ -629,7 +629,7 @@ the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transa
     only a description has to move the topology or a card as well, or delete the bundle and
     import it again.
 13. Verify `/u/autogen` lists ten, `/blueprints/autogen/starter-software-factory` answers 200,
-    and `/api/files/cards/spec-planner@1.0.0` still carries `author: orin`. The card's author
+    and `/api/files/cards/spec-planner@1.0.0` carries `author: autogen`. The card's author
     line is authorship and the account is ownership; the import moves the second and leaves
     the first where the archive wrote it.
 14. `npm run db:reembed` against `$D` from a machine with `models/`: the descriptions changed,

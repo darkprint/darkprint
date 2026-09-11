@@ -100,9 +100,13 @@ export interface Keys {
 }
 
 export const KEYS: Readonly<Record<Shelf, Keys>> = {
+  /* `df` left with the dark-factory control the owner removed from the shelf. The server's
+     `searchBlueprints` still accepts the key, so a hand-written URL carrying it is not an
+     error; what is gone is any way for the browser to set it, and `Clear filters` cannot
+     drop a key the shelf never reads. */
   blueprints: {
-    all: ["q", "tag", "cat", "phase", "autonomy", "df", "forks", "sort"],
-    cleared: ["q", "tag", "cat", "phase", "autonomy", "df"],
+    all: ["q", "tag", "cat", "phase", "autonomy", "forks", "sort"],
+    cleared: ["q", "tag", "cat", "phase", "autonomy"],
     kept: ["forks", "sort"],
   },
   nodes: {

@@ -92,28 +92,31 @@ describe("the archive this task imports", () => {
   });
 
   /* The archive is generated, and the two author sets say different things: the ten
-     manifests credit the one account that owns them, and the 61 cards credit the six people
-     the documents are written by. Read off `content/` rather than recalled, so a handle
-     crossing from one set to the other reds here by name. */
-  it("credits every manifest to the registry handle and every card to its writer", () => {
+     manifests and the 61 cards now credit the one account that owns them. The six persona
+     names the cards carried were the seed's, and they were the one place authorship and
+     ownership disagreed; the owner collapsed them. Read off `content/` rather than recalled,
+     so a name reappearing in either set reds here. */
+  it("credits every manifest and every card to the registry handle", () => {
     expect(manifestAuthors()).toEqual([REGISTRY_HANDLE]);
     expect(manifestAuthors()).toHaveLength(EXPECTED_AUTHORS);
     expect(cardAuthors()).toEqual([...ARCHIVE_CARD_AUTHORS]);
-    expect(cardAuthors()).not.toContain(REGISTRY_HANDLE);
+    expect(cardAuthors()).toEqual([REGISTRY_HANDLE]);
   });
 
-  it("carries one overlay term, namespaced under one of the archive's authors (D-250-06)", () => {
+  it("carries one overlay term whose namespace is not the registry handle (D-250-06)", () => {
     const text = readFileSync(`${REPO_ROOT}content/ontology/extensions.yaml`, "utf8");
     const ids = [...text.matchAll(/^\s*-\s+id:\s*(\S+)\s*$/gm)].map((m) => m[1]);
     expect(ids).toEqual([OVERLAY_TERM]);
-    /* The segment names one of the six card authors and no account, which is the shape the
-       ruling asked for: a term declared by somebody, owned by nobody. It is NOT the registry
-       handle, so publishing the archive does not turn a namespace into an account. Renaming
-       the term would move every card digest that declares it. */
+    /* The half of D-250-06 that survives the author collapse, and it is the load-bearing
+       half: the namespace is NOT the registry handle, so publishing the archive does not
+       turn a namespace into an account. What no longer holds is that the segment names a
+       card author, because every card now credits one account; the namespace is a name
+       nobody answers to, which is what "declared by somebody, owned by nobody" reduces to
+       once the somebodies are gone. Renaming it would move every card digest declaring it. */
     const namespace = OVERLAY_TERM.split("/")[0];
-    expect(cardAuthors()).toContain(namespace);
-    expect(manifestAuthors()).not.toContain(namespace);
     expect(namespace).not.toBe(REGISTRY_HANDLE);
+    expect(manifestAuthors()).not.toContain(namespace);
+    expect(cardAuthors()).not.toContain(namespace);
   });
 });
 

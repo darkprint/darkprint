@@ -364,7 +364,10 @@ export function cardAuthors(): readonly string[] {
 export const EXPECTED_AUTHORS = 1;
 
 /** The six people the archive's cards are written by, none of whom holds an account. */
-export const ARCHIVE_CARD_AUTHORS = ["hachi", "k0bra", "lupo", "mara-veil", "orin", "sol-antczak"] as const;
+/* One name since the archive's cards were unified under the account that publishes them.
+   The six persona names this listed were the seed's, and a card's `author` is authorship
+   while the account is ownership, so they were the one place the two disagreed. */
+export const ARCHIVE_CARD_AUTHORS = ["autogen"] as const;
 
 export interface PrintedBundle {
   slug: string;

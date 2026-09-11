@@ -98,11 +98,15 @@ const nextConfig: NextConfig = {
       { source: "/ontologies", destination: "/spec/card", permanent: true },
       { source: "/ontologies/:slug", destination: "/spec/card", permanent: true },
       { source: "/spec/ontology", destination: "/spec/card", permanent: true },
-      // The four-phase guide and its "which tasks" child both folded into one page.
-      { source: "/how-to-build-a-dark-factory", destination: "/towards-a-dark-factory", permanent: true },
-      { source: "/towards-a-dark-factory/the-climb", destination: "/towards-a-dark-factory", permanent: true },
-      { source: "/which-tasks", destination: "/towards-a-dark-factory", permanent: true },
-      { source: "/towards-a-dark-factory/which-tasks", destination: "/towards-a-dark-factory", permanent: true },
+      /* The essay is off the site, so its own path and the four that had folded into it all
+         land on the Learn entry page in one hop rather than chaining through a route that no
+         longer exists. Each child keeps its own row: a `source` with no parameter is an
+         anchored exact pattern, so the bare path does not cover the two beneath it. */
+      { source: "/towards-a-dark-factory", destination: "/what-a-blueprint-is", permanent: true },
+      { source: "/how-to-build-a-dark-factory", destination: "/what-a-blueprint-is", permanent: true },
+      { source: "/towards-a-dark-factory/the-climb", destination: "/what-a-blueprint-is", permanent: true },
+      { source: "/which-tasks", destination: "/what-a-blueprint-is", permanent: true },
+      { source: "/towards-a-dark-factory/which-tasks", destination: "/what-a-blueprint-is", permanent: true },
       // The spec overview, the scoring page and the concepts page are all introduced by the first Learn page now.
       { source: "/spec", destination: "/what-a-blueprint-is", permanent: true },
       { source: "/spec/scoring", destination: "/what-a-blueprint-is", permanent: true },

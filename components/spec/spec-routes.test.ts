@@ -152,15 +152,11 @@ describe("the sequence and the filesystem agree", () => {
   /**
    * The sequence is two named runs over one list, and this is the shape of both.
    *
-   * It used to assert three practice stops numbered 04 to 06. Two of them left in the
-   * accounts pass and neither is a deletion of a route: the sandbox moved into the
-   * specification run as an unnumbered worked example under stop 03, and the essay left the
-   * sequence altogether while its page stayed exactly where it was.
-   *
-   * Written out stop by stop rather than derived, which is what makes it the statement of
-   * the 2026-09-06 reordering rather than a restatement of the list. Every `step` moved
-   * except the door's, and a table that read the steps off `SPEC_SEQUENCE` would have agreed
-   * with any renumbering at all.
+   * Written out stop by stop rather than derived, which is what makes it a statement about
+   * the numbering rather than a restatement of the list: a table that read the steps off
+   * `SPEC_SEQUENCE` would agree with any renumbering at all. The practice run closes the
+   * digits up when a stop leaves it, so the two remaining stops read 04 and 05 with no hole
+   * where the essay's number was, and this is where that is written down.
    */
   it("runs the specification, then the practice, over one list", () => {
     expect(
@@ -170,12 +166,10 @@ describe("the sequence and the filesystem agree", () => {
       { step: "01", href: "/spec/attractor", run: "specification" },
       { step: "02", href: "/spec/topology", run: "specification" },
       { step: "03", href: "/spec/card", run: "specification" },
-      { step: "04", href: "/towards-a-dark-factory", run: "practice" },
-      { step: "05", href: "/capabilities", run: "practice" },
-      { step: "06", href: "/tutorial", run: "practice" },
+      { step: "04", href: "/capabilities", run: "practice" },
+      { step: "05", href: "/tutorial", run: "practice" },
     ]);
     expect(LEARN_PRACTICE.map((page) => page.href)).toEqual([
-      "/towards-a-dark-factory",
       "/capabilities",
       "/tutorial",
     ]);
@@ -203,24 +197,22 @@ describe("the sequence and the filesystem agree", () => {
   });
 
   /**
-   * The essay is the last stop of the practice run.
+   * Where the practice run starts and where it ends, named by hand from both directions.
    *
-   * It left the sequence for one pass, on the hand-off's decision 3, and the author asked
-   * for it back: a reader who has been through the specification is exactly the reader who
-   * then asks which work belongs to an agent at all. Both halves are asserted, because the
-   * round trip broke each of them in turn — the page has to be in the list AND to draw the
-   * pager the list gives it.
+   * The run has opened on three different pages as stops were added and deleted around it,
+   * and each move left both arrays consistent and the reading order somewhere new. So the
+   * seam is asserted rather than derived: the first practice stop hands back to the last
+   * layer page, and the last stop hands on to nothing.
    *
-   * It is the whole practice run since 2026-09-06, and its PREVIOUS is the last layer page:
-   * the sandbox that stood between them went with `/build`, and the crosswalk that took the
-   * slot after that moved to the front of the sequence later the same day.
+   * Both halves for each page, because a page can be in the list and forget to draw the
+   * pager the list gives it, and the two failures look identical from the route table.
    */
-  it("opens the practice run with the essay and closes it with the tutorial", () => {
-    expect(specNeighbours("/towards-a-dark-factory").previous?.href).toBe("/spec/card");
+  it("opens the practice run at what you can do and closes it with the tutorial", () => {
+    expect(specNeighbours("/capabilities").previous?.href).toBe("/spec/card");
     expect(SPEC_SEQUENCE.at(-1)?.href).toBe("/tutorial");
     expect(specNeighbours("/tutorial").next).toBeUndefined();
     expect(specNeighbours("/tutorial").previous?.href).toBe("/capabilities");
-    for (const page of ["app/towards-a-dark-factory/page.tsx", "app/tutorial/page.tsx"]) {
+    for (const page of ["app/capabilities/page.tsx", "app/tutorial/page.tsx"]) {
       const text = readFileSync(join(ROOT, page), "utf8");
       expect(text, page).toMatch(/from "@\/components\/spec\/SpecPager"/);
       expect(text, page).toContain("<SpecPager href={HERE} />");
@@ -234,10 +226,10 @@ describe("the sequence and the filesystem agree", () => {
       position: 4,
       total: 4,
     });
-    expect(runPosition("/towards-a-dark-factory")).toEqual({
+    expect(runPosition("/capabilities")).toEqual({
       run: "practice",
       position: 1,
-      total: 3,
+      total: 2,
     });
     expect(Object.keys(RUNS).sort()).toEqual(["practice", "specification"]);
   });

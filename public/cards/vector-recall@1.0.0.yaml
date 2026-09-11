@@ -42,4 +42,4 @@ notes: >-
   a run's own output back, so one bad answer cannot poison the corpus for the next question.
 
 version: 1.0.0
-author: orin
+author: autogen

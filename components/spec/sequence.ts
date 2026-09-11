@@ -445,60 +445,22 @@ export const SPEC_LAYERS: readonly SpecLayerPage[] = [
 /**
  * The second run: what a reading of the specification looks like.
  *
- * One page. The specification says what the three files are, and this run is the question a
- * reader asks having read it: whether the work belonged to an agent at all.
+ * Two pages. The specification says what the three files are, and this run is what a reader
+ * does with it: the index of every operation the surfaces offer, then the walkthrough that
+ * uses them. Both left the AI Tools menu because a reader consults them while learning, and
+ * Learn is where the chrome puts what a reader consults.
  *
- * It was three until 2026-09-04, when the author asked the grading page off the site, and
- * two until 2026-09-06, when the owner deleted the sandbox at `/build` ("it is not useful
- * and make confusion"). It reads 04 since the vocabulary's stop folded into `/spec/card`
- * later the same day, having read 05 through the two deletions before it, and it renumbers
- * every time for the reason recorded there: a sequence with a hole where a number should be
- * tells a reader they missed a page.
- *
- * A one-entry constant is still a constant. The rail groups by run and prints "Practice",
- * and inlining this into `SPEC_SEQUENCE` would leave the grouping reading a shape nothing
- * names — which is how the run quietly stops being a run the next time a page is added.
- *
- * **"Towards a Dark Factory" is here and stays here.** It left for one pass, on the
- * hand-off's decision 3, and the author asked for it back: a reader who has been through
- * the specification is exactly the reader who then asks which work belongs to an agent at
- * all, and that question is what the second run is for. The landing keeps its own link to
- * it under the two doors — a page can be reached twice.
+ * The numbering closes up whenever a stop leaves, which is why these read 04 and 05: a
+ * sequence with a hole where a number should be tells a reader they missed a page.
  *
  * `LEARN_PRACTICE` stays a constant rather than being inlined: it is what the second run
- * IS, and the rail's grouping reads it.
+ * IS, and the rail's grouping reads it. Inlining it into `SPEC_SEQUENCE` would leave the
+ * grouping reading a shape nothing names, which is how a run quietly stops being one.
  */
 export const LEARN_PRACTICE: readonly SpecPage[] = [
   {
-    href: "/towards-a-dark-factory",
-    step: "04",
-    run: "practice",
-    nav: "Towards a Dark Factory",
-    eyebrow: "Four levels",
-    title: "Towards a Dark Factory",
-    question: "Decide which work can run unattended inside a deliberate harness.",
-    /* Empty until 2026-08-11, on the reading that this page is one argument with no headed
-       sections to jump between. Two of the three below were already headed and simply had
-       no id: the sources block carries an `h3`, and the cyan panel carries doc 2 §1's hook,
-       the loudest sentence on the page and the one a reader comes back for. A section a
-       reader can see and cannot address is not an unsectioned page, it is an unaddressable
-       one, and this is the only stop in either run whose rail row went nowhere.
-
-       Still no `PageContents` panel. The rail's indented list is the whole deliverable and
-       this page never had a panel; adding one would put a second table of contents above
-       the fold of the one page in the sequence that reads as a single argument. */
-    sections: [
-      { id: "levels", label: "The ladder" },
-      { id: "the-gap", label: "The gap" },
-      { id: "sources", label: "Where this framing comes from" },
-    ],
-  },
-  /* Two practice stops after the essay: the index of what the surfaces do, then the
-     walkthrough that uses them. Both left the AI Tools menu because a reader consults them
-     while learning, and Learn is where the chrome puts what a reader consults. */
-  {
     href: "/capabilities",
-    step: "05",
+    step: "04",
     run: "practice",
     nav: "What you can do",
     eyebrow: "Reference",
@@ -514,7 +476,7 @@ export const LEARN_PRACTICE: readonly SpecPage[] = [
   },
   {
     href: "/tutorial",
-    step: "06",
+    step: "05",
     run: "practice",
     nav: "Write your first blueprint",
     eyebrow: "Tutorial",
@@ -547,9 +509,8 @@ export const LEARN_PRACTICE: readonly SpecPage[] = [
  * the owner deleted that route on 2026-09-06, and `next.config.ts` repointed both onto
  * `/what-a-blueprint-is` rather than chaining them through a third redirect.
  *
- * The sequence is five stops: the door, the Attractor crosswalk, the two layer pages, the
- * essay. It was six until the vocabulary's stop folded into `/spec/card` on 2026-09-06, and
- * seven before the worked example at `/build` went with its route.
+ * The sequence is six stops: the door, the Attractor crosswalk, the two layer pages, then
+ * the practice run's reference and tutorial.
  *
  * `SPEC_CROSSWALK` is spread in by name rather than folded into `SPEC_LAYERS`, and it now
  * stands BEFORE it. Two reasons, and only the second one is new. The doors on

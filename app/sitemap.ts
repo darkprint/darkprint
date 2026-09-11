@@ -20,7 +20,6 @@ const ANONYMOUS: Actor = Object.freeze({ kind: "anonymous" });
 const STATIC_PATHS = [
   "/",
   "/what-a-blueprint-is",
-  "/towards-a-dark-factory",
   "/tutorial",
   "/spec/card",
   "/spec/topology",

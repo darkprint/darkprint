@@ -172,8 +172,20 @@ async function TargetedUploadFlow({
   // absent from a live Next request, but the render technique in the header note above
   // passes this component no real promise at all, and an absent record answers "no pin"
   // exactly the way an empty one does rather than throwing on the property read.
-  const target = await resolveTarget((await searchParams) ?? {});
-  return <UploadFlow example={exampleBundle()} {...(target === undefined ? {} : { target })} />;
+  const params = (await searchParams) ?? {};
+  const target = await resolveTarget(params);
+  /* `?kind=` is read but never trusted: it seeds the picker and nothing else, so an
+     unknown value opens the ordinary Blueprint kind rather than a state the flow has no
+     step for. */
+  const asked = firstString(params, "kind");
+  const initialKind = asked === "node" || asked === "ontology" || asked === "blueprint" ? asked : undefined;
+  return (
+    <UploadFlow
+      example={exampleBundle()}
+      {...(target === undefined ? {} : { target })}
+      {...(initialKind === undefined ? {} : { initialKind })}
+    />
+  );
 }
 
 /**

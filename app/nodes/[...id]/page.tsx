@@ -969,13 +969,17 @@ export default async function Page({ params }: PageProps<"/nodes/[...id]">) {
   /* THE ACCOUNT'S EXISTENCE COMES FROM THE REGISTRY, NOT FROM A FIXTURE (D-260-25's owed
      end state (d), and D-261-09(2) corrected).
      ------------------------------------------------------------
-     This read was `getAuthor(card.author)` — `lib/data/users.ts`, which answers for all six
-     archive handles — so `author` was defined for every card the six wrote and the text arm
-     below could never fire. `AuthorChip` links whatever it is given, so every one of those
-     pages shipped an `/u/<handle>` pointing at a profile that does not exist: accounts after
-     `runImport` are exactly `[darkprint]`, because the import creates no account for
-     `hachi`, `k0bra`, `lupo`, `mara-veil`, `orin` or `sol-antczak` (D-250-11) and
-     re-attribution moves OWNERSHIP, never AUTHORSHIP (D-250-18).
+     This read was `getAuthor(card.author)` — `lib/data/users.ts`, which answers for six
+     archive handles — so `author` was defined for every card and the text arm below could
+     never fire. `AuthorChip` links whatever it is given, so every one of those pages shipped
+     an `/u/<handle>` pointing at a profile that does not exist: the import creates no account
+     for `hachi`, `k0bra`, `lupo`, `mara-veil`, `orin` or `sol-antczak` (D-250-11).
+
+     Those six names are gone from `content/`. The archive's cards were generated rather than
+     written, and they now carry the handle that generated them, which IS an account, so the
+     chip resolves and the link lands on a profile that exists. The branch below still earns
+     its place: a card published by anyone else names its own author, and that author may
+     hold no account or may delete one.
 
      I had recorded this branch as the one the cutover would make fire (D-261-09(2)); that
      was wrong in the direction that costs nothing to believe, because the fixture kept it

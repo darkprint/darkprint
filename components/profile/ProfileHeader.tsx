@@ -29,9 +29,10 @@ import { SupportButton, WatchButton } from "./SocialControls";
      states the one thing neither can know: whether THIS viewer already watches or supports
      this handle, before their first click in this session.
 
-   The owner's two controls are the exception on THIS page, and only because both
-   destinations are real: `Edit profile` opens `/settings` and `New blueprint` opens the
-   create flow at `/new`, which hands back a real bundle. Neither claims to write to an
+   The owner's three controls are the exception on THIS page, and only because all three
+   destinations are real: `Edit profile` opens `/settings`, `New blueprint` opens the create
+   flow at `/new`, which hands back a real bundle, and `New card` opens `/upload` on its
+   Card kind, which publishes one card through `POST /api/cards`. None claims to write to an
    account beyond what it says.
 
    ── `validated`, and what it does not claim ──
@@ -152,6 +153,13 @@ export function ProfileHeader({
                   Edit profile
                 </ButtonLink>
                 <ButtonLink href="/new">New blueprint</ButtonLink>
+                {/* `/upload` rather than a `/new` of its own: a card is published whole from
+                    one document, so there is no draft to create first, and the flow that
+                    takes one already exists. `?kind=node` opens its picker on Card, which
+                    is the question this click has already answered. */}
+                <ButtonLink href="/upload?kind=node" variant="outline">
+                  New card
+                </ButtonLink>
               </>
             ) : (
               <>

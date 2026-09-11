@@ -796,14 +796,19 @@ function StepIndicator({
 export function UploadFlow({
   example,
   target,
+  initialKind,
 }: {
   example: ExampleBundle;
   /** `?owner=&slug=`, resolved and ownership-checked by `app/upload/page.tsx`. Absent for
       the ordinary case — a reader arriving with no bundle already in mind. */
   target?: PublishTarget;
+  /** Which kind the picker opens on, for a link that already knows what the reader is
+      carrying: the profile's `New card` button sends someone holding one card, and making
+      them pick `Card` first would be asking a question their own click answered. */
+  initialKind?: ContentKind;
 }) {
   const [step, setStep] = useState<StepId>(1);
-  const [kind, setKind] = useState<ContentKind>("blueprint");
+  const [kind, setKind] = useState<ContentKind>(initialKind ?? "blueprint");
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [details, setDetails] = useState<BundleDetails>(() => detailsWithTarget(target));
   /** One document — a lone node card or vocabulary — for the Node and Ontology kinds.

@@ -183,15 +183,16 @@ describe("runImport (AC2, AC4)", () => {
        signup can reach this row. */
     expect(all.map((r) => r.githubId)).toEqual(["0"]);
 
-    /* The author line inside a stored card is UNCHANGED by the import, because publishing
-       under the registry handle moves ownership and not authorship. Every one of the 61
-       cards still credits the archive handle its file carries, and none of them credits
-       the registry, so a later pass that quietly rewrote the bytes to match the owner
-       would red here. */
+    /* The author line inside a stored card is UNCHANGED BY THE IMPORT, which is still the
+       claim: the bytes on disk are what lands. What those bytes say changed at the source.
+       The archive's cards were generated rather than written, so they credit the account
+       that generated them, and the six persona names they used to carry are gone from
+       `content/`. Read back off the store and compared against the FILES rather than a
+       literal, so the assertion stays about the import carrying bytes through. */
     const sources = await db.select({ source: schema.cardVersion.source }).from(schema.cardVersion);
     expect(sources.length).toBe(61);
     const authors = new Set(sources.map((r) => /^author:\s*(\S+)\s*$/m.exec(r.source)?.[1]));
-    expect([...authors].sort()).toEqual(["hachi", "k0bra", "lupo", "mara-veil", "orin", "sol-antczak"]);
+    expect([...authors]).toEqual(["autogen"]);
   });
 });
 

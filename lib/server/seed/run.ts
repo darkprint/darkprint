@@ -25,7 +25,7 @@
 
 import { contentVocabulary, readContent } from "@/lib/content/read";
 import type { Db, ObjectStorage } from "@/lib/db";
-import { changeHandle, upsertFromGitHub } from "@/lib/server/accounts";
+import { changeHandle, updateProfile, upsertFromGitHub } from "@/lib/server/accounts";
 import { getBundle, getRelease } from "@/lib/server/archive";
 import type { Actor } from "@/lib/server/policy";
 import { PublishRefusedError, publish } from "@/lib/server/publish";
@@ -200,6 +200,21 @@ async function holdsRelease(db: Db, ownerId: string, slug: string, digest: strin
  * what sets `account.handle`; `allocateHandle` writes only `handle_reservation`, and
  * `resolveOwner` — which `publish` calls — reads the account column.
  */
+/**
+ * What the handle means, said on the profile every generated card and blueprint links to.
+ *
+ * The archive's cards used to carry six persona names, which read as six people who wrote
+ * them. Nobody did: they were generated to populate the registry. Collapsing them onto this
+ * account made the credit true and made the link resolve, and it also made the account the
+ * one place a reader arrives to ask who that is. So it answers, rather than showing a bare
+ * handle and a join date.
+ */
+export const REGISTRY_DISPLAY_NAME = "Autogen";
+export const REGISTRY_BIO =
+  "Generated, not written. The blueprints and cards under this handle were produced to " +
+  "populate the registry and give the format something to be read against. Treat them as " +
+  "worked examples rather than as pipelines anybody runs in production.";
+
 async function registryActor(db: Db, handle: string): Promise<Extract<Actor, { kind: "account" }>> {
   const account = await upsertFromGitHub(db, { githubId: REGISTRY_GITHUB_ID, githubLogin: REGISTRY_HANDLE });
 
@@ -226,5 +241,15 @@ async function registryActor(db: Db, handle: string): Promise<Extract<Actor, { k
      cast that would compile whatever the column held. `changeHandle` throws rather than
      returning a row that disagrees. */
   await changeHandle(db, claimant, account.accountId, handle);
+  const claimed: Actor = { kind: "account", accountId: account.accountId, handle };
+  await describeRegistryAccount(db, claimed, account.accountId);
   return { kind: "account", accountId: account.accountId, handle };
+}
+
+/** Idempotent: `updateProfile` takes a patch, so a re-import rewrites the same two columns. */
+async function describeRegistryAccount(db: Db, actor: Actor, accountId: string): Promise<void> {
+  await updateProfile(db, actor, accountId, {
+    displayName: REGISTRY_DISPLAY_NAME,
+    bio: REGISTRY_BIO,
+  });
 }
