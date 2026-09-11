@@ -37,6 +37,10 @@ interface Blueprint {
   };
   provenance: unknown;
   instantiate: { harness: string; steps: string[] };
+  /* Declared here rather than imported for the reason the rest of this shape is: the suite
+     reads the published answer as a stranger sees it, so a member missing from this
+     interface is a member the cells cannot reach. */
+  run: string[];
 }
 
 async function bundleId(w: Awaited<ReturnType<typeof world>>): Promise<string> {
