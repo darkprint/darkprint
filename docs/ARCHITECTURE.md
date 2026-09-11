@@ -474,12 +474,17 @@ visitor sees exclude the private half.
 | `PG_POOL_MAX` | `lib/db/client.ts` | no (3 in production, 10 elsewhere) | leave the default |
 | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | `lib/db/storage.ts`, `/api/health` | yes | the production bucket |
 | `SESSION_SECRET` | `lib/server/auth/session.ts`, `components/profile/session.ts` | yes | `openssl rand -hex 32`; the example value is refused |
-| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `lib/server/auth/github.ts` | for GitHub sign-in (the routes answer 400 without them) | set |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | `lib/server/auth/google.ts` | for Google sign-in | must be set; absent today |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `lib/server/auth/github.ts` | for GitHub sign-in (the routes answer 400 without them) | absent; `/api/auth/github/login` answers 400 |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | `lib/server/auth/google.ts` | for Google sign-in | absent; `/api/auth/google/login` answers 400 |
 | `NEXT_PUBLIC_SITE_ORIGIN` | `lib/site.ts` | no (default `https://www.darkprint.io`) | set on a preview |
 | `NODE_ENV`, `VERCEL_GIT_COMMIT_SHA` | pool size, cookie `Secure`, the example-secret refusal; `/api/health` (`commit`) | set by Next; no | `production`; null on CLI-driven deploys |
 | `WORDMARK_FONT_PATH` | `scripts/generate-wordmark-paths.ts` | only for `npm run generate:wordmark` | none |
 | `DARKPRINT_URL`, `DARKPRINT_API_KEY`, `DARKPRINT_SESSION` | `packages/cli`, `packages/mcp` | client side | none |
+
+Production holds six variables and no OAuth pair, so nobody can sign in there: `vercel env
+ls production` lists `DATABASE_URL`, the four `S3_*` and `SESSION_SECRET`, all of type Secret
+and therefore unreadable by `vercel env pull`, which writes `[SENSITIVE]` for each. A migration
+run needs the direct connection supplied by hand.
 
 `.env.example` matches `compose.yaml` and is the file `.env.local` is copied from. The skill's
 publish example names the key `$DARKPRINT_KEY` in the author's shell; the CLI reads
@@ -635,15 +640,22 @@ the session-mode pooler on 5432); the runtime `DATABASE_URL` stays on the transa
     `cd packages/mcp && npm publish` (its `prepack` builds `dist/cli.js` and copies the skill
     in). Check with `npm view darkprint version`, then `npx -y darkprint skill install` in a
     scratch `HOME`. Until this runs, every printed `npx -y darkprint` line carries the same
-    "not published to npm" sentence beside it, on five surfaces:
+    "not published to npm" sentence beside it, on seven surfaces:
     `components/skill/SkillSetup.tsx` (the install step, with the badge),
+    `app/tutorial/page.tsx` (the install step, with the badge),
     `components/bundle/DraftLanding.tsx` (twice, the skill line and the clone line),
-    `components/bundle/CodeMenu.tsx`, `components/blueprint/CloneMenu.tsx` and
-    `app/mcp/page.tsx`. Those sentences, the two `ComingSoonBadge` mounts and the cells that
-    pin them come off in one commit after the package is up, and not before, or the site
-    claims something untrue. The cells to move are the two install rows in
+    `components/bundle/CodeMenu.tsx`, `components/blueprint/CloneMenu.tsx`,
+    `app/mcp/page.tsx`, and `app/capabilities/page.tsx` in four places: the page
+    `description`, the line above the intent list, the CLI panel's framing and the Assisted
+    Design panel. Those sentences, the `ComingSoonBadge` mounts and the cells that pin them
+    come off in one commit after the package is up, and not before, or the site claims
+    something untrue. The cells to move are the two install rows in
     `components/skill/SkillSetup.test.ts`, whose no-amber cell also goes back to measuring
-    the whole page, and the honesty rows in `components/site/honesty.test.ts`.
+    the whole page, the four rows of "the limit every printed npx line is under" in
+    `app/capabilities/honesty.test.ts`, the install row in
+    `components/tutorial/tutorial-page.test.ts`, and the honesty rows in
+    `components/site/honesty.test.ts` and `components/mcp/honesty.test.ts`. Four `because`
+    strings in that page's `INTENTS` also describe the unpublished state.
 
 Rollback while the old code is still promoted: `psql "$D" -v ON_ERROR_STOP=1 -f rb-prod.sql`,
 then `DATABASE_URL="$D" npm run migrate:stored-cards -- --expect-db postgres --check-manifest
