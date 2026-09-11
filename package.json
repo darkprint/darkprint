@@ -2,6 +2,11 @@
   "name": "darkprint",
   "version": "0.1.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/darkprint/darkprint.git"
+  },
+  "homepage": "https://www.darkprint.io",
   "engines": {
     "node": ">=22.18.0"
   },

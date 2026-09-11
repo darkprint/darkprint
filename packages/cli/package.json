@@ -4,6 +4,11 @@
   "private": true,
   "description": "The verbs of the `darkprint` command. Not a distributable of its own: `packages/mcp` carries the bin and dispatches into this barrel (D-270-01 C1).",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/darkprint/darkprint.git",
+    "directory": "packages/cli"
+  },
   "dependencies": {
     "yaml": "^2.9.0"
   },
